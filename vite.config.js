@@ -6,7 +6,7 @@ export default defineConfig({
     plugins: [
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pdfjs/*.mjs'],
+            includeAssets: ['vite.svg', 'pdfjs/*.mjs'],
             manifest: {
                 name: 'ScoreFlow Elite',
                 short_name: 'ScoreFlow',
@@ -16,19 +16,14 @@ export default defineConfig({
                 display: 'standalone',
                 icons: [
                     {
-                        src: 'pwa-192x192.png',
+                        src: 'vite.svg',
                         sizes: '192x192',
-                        type: 'image/png'
-                    },
-                    {
-                        src: 'pwa-512x512.png',
-                        sizes: '512x512',
-                        type: 'image/png'
+                        type: 'image/svg+xml'
                     }
                 ]
             },
             workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,mjs}'],
+                globPatterns: ['**/*.{js,css,html,mjs,svg}'],
                 runtimeCaching: [
                     {
                         urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
