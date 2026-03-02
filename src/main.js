@@ -121,6 +121,12 @@ class ScoreFlow {
     this.lockSidebarBtn = document.getElementById('lock-sidebar')
     this.shortcutsModal = document.getElementById('shortcuts-modal')
     this.closeShortcutsBtn = document.getElementById('close-shortcuts')
+    this.closeSidebarBtn = document.getElementById('close-sidebar')
+    this.viewer = document.getElementById('viewer-container')
+    this.activeToolsContainer = document.getElementById('active-tools-container')
+    this.jumpLine = document.getElementById('jump-line')
+    this.jumpOffsetInput = document.getElementById('jump-offset')
+    this.jumpOffsetValue = document.getElementById('jump-offset-value')
 
     this.jumpOffsetPx = 1 * 37.8
   }
