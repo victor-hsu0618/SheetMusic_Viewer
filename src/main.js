@@ -119,7 +119,8 @@ class ScoreFlow {
     this.zoomLevelDisplay = document.getElementById('zoom-level')
     this.clearStampsBtn = document.getElementById('clear-stamps-btn')
     this.lockSidebarBtn = document.getElementById('lock-sidebar')
-    this.lockSidebarBtn = document.getElementById('lock-sidebar')
+    this.shortcutsModal = document.getElementById('shortcuts-modal')
+    this.closeShortcutsBtn = document.getElementById('close-shortcuts')
 
     this.jumpOffsetPx = 1 * 37.8
   }
@@ -142,7 +143,16 @@ class ScoreFlow {
       this.lockSidebarBtn.addEventListener('click', () => {
         this.isSidebarLocked = !this.isSidebarLocked
         this.lockSidebarBtn.classList.toggle('locked', this.isSidebarLocked)
-        // Update the lock icon logic could be here, but simpler via CSS toggle
+      })
+    }
+
+    if (this.closeShortcutsBtn) {
+      this.closeShortcutsBtn.addEventListener('click', () => this.toggleShortcuts(false))
+    }
+
+    if (this.shortcutsModal) {
+      this.shortcutsModal.addEventListener('click', (e) => {
+        if (e.target === this.shortcutsModal) this.toggleShortcuts(false)
       })
     }
 
@@ -173,10 +183,6 @@ class ScoreFlow {
       })
     }
 
-    if (this.nextJumpBtn) this.nextJumpBtn.addEventListener('click', () => this.jump(1))
-    if (this.prevJumpBtn) this.prevJumpBtn.addEventListener('click', () => this.jump(-1))
-    if (this.headerNextJumpBtn) this.headerNextJumpBtn.addEventListener('click', () => this.jump(1))
-    if (this.headerPrevJumpBtn) this.headerPrevJumpBtn.addEventListener('click', () => this.jump(-1))
 
     if (this.jumpOffsetInput) {
       this.jumpOffsetInput.addEventListener('input', (e) => {
@@ -203,27 +209,55 @@ class ScoreFlow {
 
     // No static stampTools anymore, they are dynamic
 
-    // Keyboard shortcuts
+    // Keyboard Actions
     window.addEventListener('keydown', (e) => {
-      if (e.key === '=' && e.metaKey) { e.preventDefault(); this.changeZoom(0.1); }
-      if (e.key === '-' && e.metaKey) { e.preventDefault(); this.changeZoom(-0.1); }
+      // Don't trigger if typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
 
-      // Navigation shortcuts
-      if (e.key === ' ' || e.key === 'ArrowDown' || e.key.toLowerCase() === 'j') {
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
-          e.preventDefault()
-          if (e.shiftKey && e.key === ' ') {
-            this.jump(-1)
-          } else {
-            this.jump(1)
-          }
+      // If modal is open, any key closes it except the shortcuts trigger
+      if (this.shortcutsModal && this.shortcutsModal.classList.contains('active')) {
+        if (e.key !== '?' && e.key.toLowerCase() !== 'h') {
+          this.toggleShortcuts(false)
+          return
         }
       }
-      if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'k') {
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
-          e.preventDefault()
+
+      // Help Overlay
+      if (e.key === '?' || e.key.toLowerCase() === 'h') {
+        this.toggleShortcuts()
+      }
+
+      // Sidebar Toggle
+      if (e.key.toLowerCase() === 's') {
+        this.sidebar.classList.toggle('open')
+      }
+
+      // Esc to close all
+      if (e.key === 'Escape') {
+        this.toggleShortcuts(false)
+        this.sidebar.classList.remove('open')
+      }
+
+      // Zoom
+      if (e.key === '=' || e.key === '+') {
+        this.changeZoom(0.1)
+      }
+      if (e.key === '-') {
+        this.changeZoom(-0.1)
+      }
+
+      // Musical Flow (Standardized J/K and Space)
+      if (e.key === ' ' || e.key.toLowerCase() === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        if (e.shiftKey && e.key === ' ') {
           this.jump(-1)
+        } else {
+          this.jump(1)
         }
+      }
+      if (e.key.toLowerCase() === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        this.jump(-1)
       }
     })
 
@@ -232,6 +266,15 @@ class ScoreFlow {
       // Debounced resize would be better but let's keep it simple
       if (this.pdf) this.renderPDF()
     })
+  }
+
+  toggleShortcuts(force) {
+    if (!this.shortcutsModal) return
+    if (force !== undefined) {
+      this.shortcutsModal.classList.toggle('active', force)
+    } else {
+      this.shortcutsModal.classList.toggle('active')
+    }
   }
 
   async handleUpload(e) {

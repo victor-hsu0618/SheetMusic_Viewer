@@ -172,13 +172,6 @@
               </div>
               <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="modern-slider">
             </div>
-            <div class="setting-item">
-              <label>Keyboard Hints</label>
-              <div class="help-hints">
-                <div class="hint-row"><span>Jump Next</span> <code>Space</code> / <code>J</code></div>
-                <div class="hint-row"><span>Jump Prev</span> <code>Shift + Space</code> / <code>K</code></div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -199,6 +192,55 @@
     </aside>
 
     <!-- Mobile Toolbar Removed -->
+
+    <!-- YouTube-style Keyboard Shortcuts Overlay -->
+    <div id="shortcuts-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Keyboard Shortcuts</h3>
+          <button id="close-shortcuts" class="modal-close-btn">✕</button>
+        </div>
+        <div class="shortcuts-grid">
+          <div class="shortcut-item">
+            <span class="shortcut-label">Jump Next Anchor</span>
+            <div class="keys">
+              <kbd>Space</kbd> <kbd>J</kbd>
+            </div>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-label">Jump Prev Anchor</span>
+            <div class="keys">
+              <kbd>Shift</kbd> + <kbd>Space</kbd> <kbd>K</kbd>
+            </div>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-label">Zoom In / Out</span>
+            <div class="keys">
+              <kbd>+</kbd> <kbd>-</kbd>
+            </div>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-label">Toggle Settings Sidebar</span>
+            <div class="keys">
+              <kbd>S</kbd>
+            </div>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-label">Show / Hide This Help</span>
+            <div class="keys">
+              <kbd>?</kbd> <kbd>H</kbd>
+            </div>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-label">Close Menus / Overlays</span>
+            <div class="keys">
+              <kbd>Esc</kbd>
+            </div>
+          </div>
+        </div>
+        <p class="modal-footer">Press any key to close</p>
+      </div>
+    </div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>
