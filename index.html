@@ -13,147 +13,199 @@
 
 <body>
   <div id="app">
-    <header class="app-header">
-      <div class="logo">
-        <span class="logo-icon">🎵</span>
-        <h1>ScoreFlow</h1>
-      </div>
-      <div class="actions">
-        <div class="navigation-controls">
-          <button id="header-prev-jump" class="btn btn-icon" title="Jump to Previous Anchor (↑)">
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-              <path d="m18 15-6-6-6 6" />
-            </svg>
-          </button>
-          <button id="header-next-jump" class="btn btn-icon" title="Jump to Next Anchor (↓ / Space)">
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
-        </div>
-        <div class="zoom-controls">
-          <button id="zoom-out" class="btn btn-icon" title="Zoom Out">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14" />
-            </svg>
-          </button>
-          <span id="zoom-level">150%</span>
-          <button id="zoom-in" class="btn btn-icon" title="Zoom In">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </button>
-        </div>
-        <button id="upload-btn" class="btn btn-primary" title="Upload PDF">
-          Upload PDF
-          <input type="file" id="pdf-upload" accept="application/pdf" hidden />
-        </button>
-        <button id="toggle-sidebar" class="btn btn-icon" title="Toggle Settings">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-            class="lucide lucide-settings-2">
-            <path d="M20 7h-9" />
-            <path d="M14 17H5" />
-            <circle cx="17" cy="17" r="3" />
-            <circle cx="7" cy="7" r="3" />
-          </svg>
-        </button>
-      </div>
-    </header>
+    <div id="sidebar-trigger" class="sidebar-trigger">
+      <div class="trigger-indicator">⚙️</div>
+    </div>
 
-    <main class="viewer-container" id="viewer-container">
+    <main class="viewer-container full-height" id="viewer-container">
       <!-- Visual Jump Line Indicator -->
       <div id="jump-line" class="jump-line">
         <span class="jump-line-label">Jump Target</span>
       </div>
       <!-- PDF Pages will be rendered here -->
-      <div id="pdf-viewer" class="pdf-viewer"></div>
+      <div id="pdf-viewer" class="pdf-viewer">
+        <div class="welcome-screen">
+          <div class="welcome-card">
+            <div class="welcome-header">
+              <div class="welcome-icon">🎼</div>
+              <h2>Welcome to ScoreFlow</h2>
+              <p>Your elite digital music stand is ready.</p>
+            </div>
+
+            <div class="guide-grid">
+              <div class="guide-item">
+                <div class="guide-step">1</div>
+                <div class="guide-body">
+                  <h4>Upload Score</h4>
+                  <p>Click "Upload New Score" in the Sidebar or drag a PDF here.</p>
+                </div>
+              </div>
+              <div class="guide-item">
+                <div class="guide-step">2</div>
+                <div class="guide-body">
+                  <h4>Annotate</h4>
+                  <p>Expand the <strong>Smart Palette</strong> at the bottom to pick notation tools.</p>
+                </div>
+              </div>
+              <div class="guide-item">
+                <div class="guide-step">3</div>
+                <div class="guide-body">
+                  <h4>Flow</h4>
+                  <p>Use <code>Space</code> or <code>J</code>/<code>K</code> to jump between musical anchors.</p>
+                </div>
+              </div>
+            </div>
+
+            <button onclick="document.getElementById('pdf-upload').click()" class="btn btn-primary start-btn">
+              Open My First Score
+            </button>
+          </div>
+        </div>
+      </div>
     </main>
+
+    <!-- Floating Stamp Toolbar (New!) -->
+    <div id="active-tools-container" class="floating-stamp-bar">
+      <!-- Dynamically populated by JS -->
+    </div>
 
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-content">
-        <section>
-          <h3>Layers</h3>
-          <div class="layer-list" id="layer-list">
-            <!-- Layers will be added here -->
+        <!-- Header -->
+        <div class="sidebar-header">
+          <div class="logo">
+            <span class="logo-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+            </span>
+            <h3>ScoreFlow <span class="v-tag">v2.0</span></h3>
           </div>
-          <button id="add-layer-btn" class="btn btn-outline btn-full">Add Layer</button>
-        </section>
+          <div class="sidebar-header-actions">
+            <button id="lock-sidebar" class="sidebar-lock-btn" title="Toggle Menu Lock">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </button>
+            <button id="close-sidebar" class="sidebar-close-btn">✕</button>
+          </div>
+        </div>
 
-        <section>
-          <h3>Stamp Tools</h3>
-          <div class="stamp-tools">
-            <div class="stamp-tool-wrapper">
-              <button class="stamp-tool active" data-stamp="circle" title="Circle Stamp">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-                  <circle cx="12" cy="12" r="10" />
-                </svg>
+        <!-- Group 1: Document & View -->
+        <div class="menu-group">
+          <div class="menu-group-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span>Document & Display</span>
+          </div>
+          <div class="menu-group-content">
+            <div class="setting-item">
+              <label>Library</label>
+              <button id="upload-btn" class="btn btn-primary btn-full">
+                Upload New Score
+                <input type="file" id="pdf-upload" accept="application/pdf" hidden />
               </button>
-              <span class="stamp-label">Circle</span>
             </div>
-            <div class="stamp-tool-wrapper">
-              <button class="stamp-tool" data-stamp="square" title="Square Stamp">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                </svg>
-              </button>
-              <span class="stamp-label">Square</span>
-            </div>
-            <div class="stamp-tool-wrapper">
-              <button class="stamp-tool" data-stamp="check" title="Check Stamp">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-              </button>
-              <span class="stamp-label">Check</span>
-            </div>
-            <div class="stamp-tool-wrapper">
-              <button class="stamp-tool" data-stamp="text" title="Text Stamp">
-                <span class="text-tool">T</span>
-              </button>
-              <span class="stamp-label">Text</span>
-            </div>
-            <div class="stamp-tool-wrapper">
-              <button class="stamp-tool" data-stamp="anchor" title="Anchor Point">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
-                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                  <line x1="4" y1="22" x2="4" y2="15" />
-                </svg>
-              </button>
-              <span class="stamp-label">Anchor</span>
+            <div class="setting-item">
+              <label>Magnification</label>
+              <div class="zoom-control-suite">
+                <button id="zoom-out" class="zoom-btn" title="Zoom Out">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+                <div class="zoom-display">
+                  <span id="zoom-level">150%</span>
+                  <span class="zoom-label">Scale</span>
+                </div>
+                <button id="zoom-in" class="zoom-btn" title="Zoom In">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
-          <button id="clear-stamps-btn" class="btn btn-danger-outline btn-full">Clear All Stamps</button>
-        </section>
+        </div>
 
-        <section>
-          <h3>Settings</h3>
-          <div class="settings-group">
-            <label for="scroll-mode">Scroll Mode</label>
-            <select id="scroll-mode" title="Select scrolling behavior">
-              <option value="continuous">Continuous</option>
-              <option value="paged">Paged (Disabled)</option>
-            </select>
+        <!-- Group 2: Notation Layers -->
+        <div class="menu-group">
+          <div class="menu-group-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            <span>Notation Groups</span>
           </div>
-          <div class="settings-group jump-settings">
-            <label for="jump-offset">Jump Target Offset (cm)</label>
-            <div class="settings-group-row">
-              <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="flex-input">
-              <span id="jump-offset-value">1.0cm</span>
+          <div class="menu-group-content">
+            <div class="setting-item">
+              <label>Active Target (General)</label>
+              <div id="layer-selector" class="layer-selector"></div>
             </div>
-            <p class="sub-text">調整跳轉後水平基準線的位置</p>
+            <div class="setting-item">
+              <label>Visibility Control</label>
+              <div class="layer-list" id="layer-list"></div>
+            </div>
           </div>
-        </section>
+        </div>
+
+        <!-- Group 3: Navigation & Workflow -->
+        <div class="menu-group">
+          <div class="menu-group-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>Workflow & Interaction</span>
+          </div>
+          <div class="menu-group-content">
+            <div class="setting-item">
+              <div class="jump-settings-header">
+                <label>Jump Offset</label>
+                <span id="jump-offset-value">1.0cm</span>
+              </div>
+              <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="modern-slider">
+            </div>
+            <div class="setting-item">
+              <label>Manual Navigation</label>
+              <div class="jump-panel mt-10">
+                <button id="header-prev-jump" class="btn btn-outline flex-1">↑ Previous</button>
+                <button id="header-next-jump" class="btn btn-outline flex-1">↓ Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group 4: Maintenance -->
+        <div class="menu-group danger-zone">
+          <div class="menu-group-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+            <span>Danger Zone</span>
+          </div>
+          <div class="menu-group-content">
+            <button id="clear-stamps-btn" class="btn btn-danger-outline btn-full">Reset All Annotation Data</button>
+          </div>
+        </div>
       </div>
     </aside>
 
-    <!-- Mobile Toolbar (Only on iOS/Mobile) -->
+    <!-- Mobile Toolbar -->
     <nav class="mobile-toolbar">
-      <button class="tool-btn" id="prev-jump" title="Previous Anchor">↑ Jump</button>
-      <button class="tool-btn" id="next-jump" title="Next Anchor">↓ Jump</button>
-      <button class="tool-btn" id="mobile-stamp-toggle">Tools</button>
+      <button class="tool-btn" id="prev-jump">↑ Jump</button>
+      <button class="tool-btn" id="next-jump">↓ Jump</button>
     </nav>
   </div>
   <script type="module" src="/src/main.js"></script>

@@ -8,18 +8,72 @@ class ScoreFlow {
   constructor() {
     this.pdf = null
     this.pages = []
-    this.layers = [{ id: 'default', name: 'Performance', color: '#ff4757', visible: true }]
-    this.stamps = [] // Vector storage for all stamps: { page, layerId, type, x, y, data }
-    this.activeLayerId = 'default'
+    // Professional Layer Presets
+    this.layers = [
+      { id: 'perf', name: 'Performance', color: '#ff4757', visible: true, type: 'general' },
+      { id: 'fingering', name: 'Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
+      { id: 'bowing', name: 'Bowing', color: '#10b981', visible: true, type: 'bowing' },
+      { id: 'personal', name: 'Personal', color: '#f59e0b', visible: true, type: 'general' }
+    ]
+    this.stamps = []
+    this.activeLayerId = 'perf'
     this.activeStampType = 'circle'
+    this.activeCategory = 'general'
     this.scale = 1.5
+    this.isSidebarLocked = false
 
+    this.initToolsets()
     this.initElements()
     this.initEventListeners()
+    this.initDraggable()
     this.renderLayerUI()
+    this.updateActiveTools()
     this.loadFromStorage()
     this.updateZoomDisplay()
     this.updateJumpLinePosition()
+  }
+
+  initToolsets() {
+    this.toolsets = [
+      {
+        name: 'General',
+        type: 'general',
+        tools: [
+          { id: 'circle', label: 'Circle', icon: '<circle cx="12" cy="12" r="10" />' },
+          { id: 'text', label: 'Text', icon: '<text x="6" y="16" font-family="Arial" font-weight="bold">T</text>' },
+          { id: 'accent', label: 'Accent', icon: '<path d="M7 8l10 4-10 4" />' },
+          { id: 'staccato', label: 'Staccato', icon: '<circle cx="12" cy="12" r="2" fill="currentColor" />' },
+          { id: 'forte', label: 'f', icon: '<path d="M12 4v16M8 8h8" />' },
+          { id: 'piano', label: 'p', icon: '<circle cx="10" cy="10" r="4" /><path d="M10 6v12" />' },
+          { id: 'eraser', label: 'Eraser', icon: '<path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" /><path d="M17 17L7 7" />' },
+          { id: 'anchor', label: 'Anchor', icon: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" />' }
+        ]
+      },
+      {
+        name: 'Bowing',
+        type: 'bowing',
+        tools: [
+          { id: 'down-bow', label: 'ㄇ', icon: '<path d="M6 14V6h12v8" />' },
+          { id: 'up-bow', label: 'V', icon: '<path d="M6 6l6 12 6-12" />' }
+        ]
+      },
+      {
+        name: 'Fingering',
+        type: 'fingering',
+        tools: [
+          { id: 'f0', label: '0', icon: '<text x="8" y="18">0</text>' },
+          { id: 'f1', label: '1', icon: '<text x="8" y="18">1</text>' },
+          { id: 'f2', label: '2', icon: '<text x="8" y="18">2</text>' },
+          { id: 'f3', label: '3', icon: '<text x="8" y="18">3</text>' },
+          { id: 'f4', label: '4', icon: '<text x="8" y="18">4</text>' },
+          { id: 'thumb', label: 'Thumb', icon: '<circle cx="12" cy="12" r="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="12" y1="6" x2="12" y2="18" />' },
+          { id: 'i', label: 'I', icon: '<text x="10" y="18">I</text>' },
+          { id: 'ii', label: 'II', icon: '<text x="8" y="18">II</text>' },
+          { id: 'iii', label: 'III', icon: '<text x="6" y="18">III</text>' },
+          { id: 'iv', label: 'IV', icon: '<text x="6" y="18">IV</text>' }
+        ]
+      }
+    ]
   }
 
   initElements() {
@@ -27,10 +81,9 @@ class ScoreFlow {
     this.uploader = document.getElementById('pdf-upload')
     this.uploadBtn = document.getElementById('upload-btn')
     this.sidebar = document.getElementById('sidebar')
-    this.toggleSidebarBtn = document.getElementById('toggle-sidebar')
+    this.sidebarTrigger = document.getElementById('sidebar-trigger')
     this.layerList = document.getElementById('layer-list')
     this.addLayerBtn = document.getElementById('add-layer-btn')
-    this.stampTools = document.querySelectorAll('.stamp-tool')
     this.zoomInBtn = document.getElementById('zoom-in')
     this.zoomOutBtn = document.getElementById('zoom-out')
     this.zoomLevelDisplay = document.getElementById('zoom-level')
@@ -43,8 +96,11 @@ class ScoreFlow {
     this.jumpLine = document.getElementById('jump-line')
     this.jumpOffsetInput = document.getElementById('jump-offset')
     this.jumpOffsetValue = document.getElementById('jump-offset-value')
+    this.closeSidebarBtn = document.getElementById('close-sidebar')
+    this.activeToolsContainer = document.getElementById('active-tools-container')
+    this.layerSelector = document.getElementById('layer-selector')
+    this.lockSidebarBtn = document.getElementById('lock-sidebar')
 
-    // Convert 1cm to pixels (approx 96 DPI, so 1 * 37.8)
     this.jumpOffsetPx = 1 * 37.8
   }
 
@@ -52,46 +108,80 @@ class ScoreFlow {
     this.uploadBtn.addEventListener('click', () => this.uploader.click())
     this.uploader.addEventListener('change', (e) => this.handleUpload(e))
 
-    this.toggleSidebarBtn.addEventListener('click', () => {
-      this.sidebar.classList.toggle('open')
+    this.sidebarTrigger.addEventListener('mouseenter', () => {
+      this.sidebar.classList.add('open')
     })
 
-    this.addLayerBtn.addEventListener('click', () => this.addNewLayer())
-
-    this.zoomInBtn.addEventListener('click', () => this.changeZoom(0.1))
-    this.zoomOutBtn.addEventListener('click', () => this.changeZoom(-0.1))
-
-    this.clearStampsBtn.addEventListener('click', () => {
-      if (confirm('Are you sure you want to clear ALL stamps across all layers?')) {
-        this.stamps = []
-        this.saveToStorage()
-        if (this.pdf) {
-          for (let i = 1; i <= this.pdf.numPages; i++) {
-            this.redrawStamps(i)
-          }
-        }
+    this.sidebar.addEventListener('mouseleave', () => {
+      if (!this.isSidebarLocked) {
+        this.sidebar.classList.remove('open')
       }
     })
 
-    this.nextJumpBtn.addEventListener('click', () => this.jump(1))
-    this.prevJumpBtn.addEventListener('click', () => this.jump(-1))
-    this.headerNextJumpBtn.addEventListener('click', () => this.jump(1))
-    this.headerPrevJumpBtn.addEventListener('click', () => this.jump(-1))
-
-    this.jumpOffsetInput.addEventListener('input', (e) => {
-      const cm = parseFloat(e.target.value)
-      this.jumpOffsetValue.textContent = `${cm.toFixed(1)}cm`
-      this.jumpOffsetPx = cm * 37.8
-      this.updateJumpLinePosition()
-    })
-
-    this.stampTools.forEach(tool => {
-      tool.addEventListener('click', () => {
-        this.stampTools.forEach(t => t.classList.remove('active'))
-        tool.classList.add('active')
-        this.activeStampType = tool.dataset.stamp
+    if (this.lockSidebarBtn) {
+      this.lockSidebarBtn.addEventListener('click', () => {
+        this.isSidebarLocked = !this.isSidebarLocked
+        this.lockSidebarBtn.classList.toggle('locked', this.isSidebarLocked)
+        // Update the lock icon logic could be here, but simpler via CSS toggle
       })
+    }
+
+    if (this.closeSidebarBtn) {
+      this.closeSidebarBtn.addEventListener('click', () => {
+        this.sidebar.classList.remove('open')
+      })
+    }
+
+    if (this.addLayerBtn) {
+      this.addLayerBtn.addEventListener('click', () => this.addNewLayer())
+    }
+
+    if (this.zoomInBtn) this.zoomInBtn.addEventListener('click', () => this.changeZoom(0.1))
+    if (this.zoomOutBtn) this.zoomOutBtn.addEventListener('click', () => this.changeZoom(-0.1))
+
+    if (this.clearStampsBtn) {
+      this.clearStampsBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear ALL stamps across all layers?')) {
+          this.stamps = []
+          this.saveToStorage()
+          if (this.pdf) {
+            for (let i = 1; i <= this.pdf.numPages; i++) {
+              this.redrawStamps(i)
+            }
+          }
+        }
+      })
+    }
+
+    if (this.nextJumpBtn) this.nextJumpBtn.addEventListener('click', () => this.jump(1))
+    if (this.prevJumpBtn) this.prevJumpBtn.addEventListener('click', () => this.jump(-1))
+    if (this.headerNextJumpBtn) this.headerNextJumpBtn.addEventListener('click', () => this.jump(1))
+    if (this.headerPrevJumpBtn) this.headerPrevJumpBtn.addEventListener('click', () => this.jump(-1))
+
+    if (this.jumpOffsetInput) {
+      this.jumpOffsetInput.addEventListener('input', (e) => {
+        const cm = parseFloat(e.target.value)
+        if (this.jumpOffsetValue) this.jumpOffsetValue.textContent = `${cm.toFixed(1)}cm`
+        this.jumpOffsetPx = cm * 37.8
+        this.updateJumpLinePosition()
+      })
+    }
+
+    // Viewer Event Delegation for Stamping (Reliable Fix)
+    this.viewer.addEventListener('click', (e) => {
+      const pageWrapper = e.target.closest('.page-container')
+      if (!pageWrapper) return
+
+      const pageNum = parseInt(pageWrapper.dataset.page)
+      const rect = pageWrapper.getBoundingClientRect()
+
+      const x = (e.clientX - rect.left) / rect.width
+      const y = (e.clientY - rect.top) / rect.height
+
+      this.addStamp(pageNum, this.activeStampType, x, y)
     })
+
+    // No static stampTools anymore, they are dynamic
 
     // Keyboard shortcuts
     window.addEventListener('keydown', (e) => {
@@ -99,13 +189,17 @@ class ScoreFlow {
       if (e.key === '-' && e.metaKey) { e.preventDefault(); this.changeZoom(-0.1); }
 
       // Navigation shortcuts
-      if (e.key === ' ' || e.key === 'ArrowDown') {
+      if (e.key === ' ' || e.key === 'ArrowDown' || e.key.toLowerCase() === 'j') {
         if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
           e.preventDefault()
-          this.jump(1)
+          if (e.shiftKey && e.key === ' ') {
+            this.jump(-1)
+          } else {
+            this.jump(1)
+          }
         }
       }
-      if (e.key === 'ArrowUp') {
+      if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'k') {
         if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
           e.preventDefault()
           this.jump(-1)
@@ -199,6 +293,28 @@ class ScoreFlow {
     }
   }
 
+  createCaptureOverlay(wrapper, pageNum, width, height) {
+    const overlay = document.createElement('div')
+    overlay.className = 'capture-overlay'
+    overlay.dataset.page = pageNum
+    overlay.style.width = `${width}px`
+    overlay.style.height = `${height}px`
+
+    const handleEvent = (e) => {
+      if (e.type === 'touchstart') e.preventDefault()
+      const rect = overlay.getBoundingClientRect()
+      const clientX = e.clientX || e.touches[0].clientX
+      const clientY = e.clientY || e.touches[0].clientY
+      const x = (clientX - rect.left) / rect.width
+      const y = (clientY - rect.top) / rect.height
+      this.addStamp(pageNum, this.activeStampType, x, y)
+    }
+
+    overlay.addEventListener('click', handleEvent)
+    overlay.addEventListener('touchstart', handleEvent, { passive: false })
+    wrapper.appendChild(overlay)
+  }
+
   drawPageEndAnchor(page, width, height) {
     const pageWrapper = document.querySelector(`.page-container[data-page="${page}"]`)
     // We draw the default anchor on a separate tiny overlay or the active layer?
@@ -220,66 +336,84 @@ class ScoreFlow {
   }
 
   createAnnotationLayers(wrapper, pageNum, width, height) {
-    this.layers.forEach(layer => {
-      const canvas = document.createElement('canvas')
-      canvas.className = `annotation-layer ${layer.id === this.activeLayerId ? 'active' : ''}`
-      canvas.dataset.layerId = layer.id
-      canvas.dataset.page = pageNum
-      canvas.width = width
-      canvas.height = height
-      canvas.style.display = layer.visible ? 'block' : 'none'
-      wrapper.appendChild(canvas)
-
-      this.attachCanvasListeners(canvas, pageNum, layer.id)
-    })
+    const canvas = document.createElement('canvas')
+    canvas.className = 'annotation-layer virtual-canvas'
+    canvas.dataset.page = pageNum
+    canvas.width = width
+    canvas.height = height
+    wrapper.appendChild(canvas)
   }
 
   attachCanvasListeners(canvas, pageNum, layerId) {
-    const handleEvent = (e) => {
-      if (layerId !== this.activeLayerId) return
-      if (e.type === 'touchstart') e.preventDefault()
-
-      const rect = canvas.getBoundingClientRect()
-      const clientX = e.clientX || e.touches[0].clientX
-      const clientY = e.clientY || e.touches[0].clientY
-
-      // Normalized coordinates (0 to 1) for zoom independence
-      const x = (clientX - rect.left) / rect.width
-      const y = (clientY - rect.top) / rect.height
-
-      this.addStamp(pageNum, layerId, this.activeStampType, x, y)
-    }
-
-    canvas.addEventListener('mousedown', handleEvent)
-    canvas.addEventListener('touchstart', handleEvent, { passive: false })
+    // Events now handled by createCaptureOverlay
   }
 
-  addStamp(page, layerId, type, x, y) {
+  addStamp(page, type, x, y) {
+    if (type === 'eraser') {
+      this.eraseStamp(page, x, y)
+      return
+    }
+
+    // Auto-Target Layer based on tool type
+    let targetLayerId = this.activeLayerId // Default to currently selected general layer
+
+    if (this.toolsets.find(group => group.type === 'bowing').tools.some(t => t.id === type)) {
+      targetLayerId = 'bowing'
+    } else if (this.toolsets.find(group => group.type === 'fingering').tools.some(t => t.id === type)) {
+      targetLayerId = 'fingering'
+    }
+
+    // Ensure the target layer exists and is visible (optionally auto-show it)
+    const layer = this.layers.find(l => l.id === targetLayerId)
+    if (layer) layer.visible = true
+
     let data = null
     if (type === 'text') {
       data = prompt('Enter marker text:')
       if (!data) return
     }
 
-    this.stamps.push({ page, layerId, type, x, y, data })
+    this.stamps.push({ page, layerId: targetLayerId, type, x, y, data })
     this.saveToStorage()
+    this.updateLayerVisibility() // Make sure it shows up if it was hidden
     this.redrawStamps(page)
+  }
+
+  eraseStamp(page, x, y) {
+    const threshold = 0.03 // Normalized distance tolerance
+    const initialCount = this.stamps.length
+
+    this.stamps = this.stamps.filter(s => {
+      if (s.page !== page) return true
+      const dist = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2))
+      return dist > threshold
+    })
+
+    if (this.stamps.length !== initialCount) {
+      this.saveToStorage()
+      this.redrawStamps(page)
+    }
   }
 
   redrawStamps(page) {
     const pageWrappers = document.querySelectorAll(`.page-container[data-page="${page}"]`)
     pageWrappers.forEach(wrapper => {
-      this.layers.forEach(layer => {
-        const canvas = wrapper.querySelector(`.annotation-layer[data-layer-id="${layer.id}"]`)
-        if (!canvas) return
+      const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
+      if (!canvas) return
 
-        const ctx = canvas.getContext('2d')
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
+      const ctx = canvas.getContext('2d')
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-        const layerStamps = this.stamps.filter(s => s.page === page && s.layerId === layer.id)
-        layerStamps.forEach(stamp => {
-          this.drawStampOnCanvas(ctx, canvas, stamp, layer.color)
-        })
+      // Filter stamps mapping to currently visible "Virtual Layers"
+      const visibleStamps = this.stamps.filter(s => {
+        if (s.page !== page) return false
+        const layer = this.layers.find(l => l.id === s.layerId)
+        return layer ? layer.visible : true
+      })
+
+      visibleStamps.forEach(stamp => {
+        const layer = this.layers.find(l => l.id === stamp.layerId)
+        this.drawStampOnCanvas(ctx, canvas, stamp, layer ? layer.color : '#000000')
       })
     })
   }
@@ -287,63 +421,187 @@ class ScoreFlow {
   drawStampOnCanvas(ctx, canvas, stamp, color) {
     const x = stamp.x * canvas.width
     const y = stamp.y * canvas.height
-    const size = 20 * (this.scale / 1.5) // Adjust size with scale
+    const size = 18 * (this.scale / 1.5)
 
     ctx.strokeStyle = color
     ctx.fillStyle = `${color}33`
-    ctx.lineWidth = 3 * (this.scale / 1.5)
+    ctx.lineWidth = 2.5 * (this.scale / 1.5)
     ctx.beginPath()
 
+    // Professional Music Symbols & Specialized Notation
     switch (stamp.type) {
       case 'circle':
-        ctx.arc(x, y, size, 0, Math.PI * 2)
-        ctx.fill(); ctx.stroke()
-        break
-      case 'square':
-        ctx.rect(x - size, y - size, size * 2, size * 2)
-        ctx.fill(); ctx.stroke()
-        break
-      case 'check':
-        ctx.moveTo(x - size, y)
-        ctx.lineTo(x - size / 3, y + size)
-        ctx.lineTo(x + size, y - size)
-        ctx.stroke()
-        break
+        ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); break
       case 'text':
-        ctx.font = `bold ${20 * (this.scale / 1.5)}px Outfit`
-        ctx.fillStyle = color
-        ctx.fillText(stamp.data, x, y)
-        break
+        ctx.font = `bold ${22 * (this.scale / 1.5)}px Outfit`
+        ctx.fillStyle = color; ctx.fillText(stamp.data, x, y); break
+      case 'accent':
+        ctx.moveTo(x - size, y - size / 2); ctx.lineTo(x + size, y); ctx.lineTo(x - size, y + size / 2); ctx.stroke(); break
+      case 'staccato':
+        ctx.beginPath(); ctx.arc(x, y, size * 0.2, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); break
+      case 'forte':
+        ctx.font = `italic bold ${24 * (this.scale / 1.5)}px serif`
+        ctx.fillStyle = color; ctx.fillText('f', x, y); break
+      case 'piano':
+        ctx.font = `italic bold ${24 * (this.scale / 1.5)}px serif`
+        ctx.fillStyle = color; ctx.fillText('p', x, y); break
+      case 'down-bow': // ㄇ
+        ctx.moveTo(x - size * 0.6, y + size * 0.4); ctx.lineTo(x - size * 0.6, y - size * 0.6);
+        ctx.lineTo(x + size * 0.6, y - size * 0.6); ctx.lineTo(x + size * 0.6, y + size * 0.4); ctx.stroke(); break
+      case 'up-bow': // V
+        ctx.moveTo(x - size * 0.6, y - size * 0.6); ctx.lineTo(x, y + size * 0.6); ctx.lineTo(x + size * 0.6, y - size * 0.6); ctx.stroke(); break
+      case 'thumb':
+        ctx.arc(x, y, size * 0.6, 0, Math.PI * 2); ctx.stroke()
+        ctx.moveTo(x, y - size * 0.9); ctx.lineTo(x, y + size * 0.9);
+        ctx.moveTo(x - size * 0.9, y); ctx.lineTo(x + size * 0.9, y); ctx.stroke(); break
+      case 'f0': case 'f1': case 'f2': case 'f3': case 'f4':
+        ctx.font = `bold ${18 * (this.scale / 1.5)}px Outfit`
+        ctx.fillStyle = color; ctx.fillText(stamp.type.slice(1), x - size * 0.3, y + size * 0.3); break
+      case 'i': case 'ii': case 'iii': case 'iv':
+        ctx.font = `bold ${16 * (this.scale / 1.5)}px Outfit`
+        ctx.fillStyle = color; ctx.fillText(stamp.type.toUpperCase(), x - size * 0.5, y + size * 0.3); break
       case 'anchor':
-        // Wave flag for anchor
         const isDefault = stamp.isDefault
-        ctx.fillStyle = isDefault ? '#3b82f6' : color // Blue for default, layer color for user
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo(x, y)
-        ctx.lineTo(x, y - (size * 1.5))
-        ctx.lineTo(x + size, y - (size * 1.1))
-        ctx.lineTo(x, y - (size * 0.7))
-        ctx.fill()
-        ctx.stroke()
-        break
+        ctx.fillStyle = isDefault ? '#3b82f6' : color
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - (size * 1.5));
+        ctx.lineTo(x + size, y - (size * 1.1)); ctx.lineTo(x, y - (size * 0.7)); ctx.fill(); ctx.stroke(); break
       case 'dynamic':
-        // Dynamic viewport anchor (semi-transparent yellow)
-        ctx.fillStyle = 'rgba(255, 235, 59, 0.5)'
-        ctx.strokeStyle = 'rgba(255, 193, 7, 0.8)'
-        ctx.beginPath()
-        ctx.moveTo(x, y)
-        ctx.lineTo(x, y - (size * 1.5))
-        ctx.lineTo(x + size, y - (size * 1.1))
-        ctx.lineTo(x, y - (size * 0.7))
-        ctx.fill()
-        ctx.stroke()
-        break
+        ctx.fillStyle = 'rgba(255, 235, 59, 0.5)'; ctx.strokeStyle = 'rgba(255, 193, 7, 0.8)';
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - (size * 1.5));
+        ctx.lineTo(x + size, y - (size * 1.1)); ctx.lineTo(x, y - (size * 0.7)); ctx.fill(); ctx.stroke(); break
+    }
+  }
+
+  updateActiveTools() {
+    this.activeToolsContainer.innerHTML = ""
+
+    // Check if expanded or collapsed
+    const isExpanded = this.activeToolsContainer.classList.contains("expanded")
+
+    // 0. Active Tool FAB (Visible ONLY when collapsed)
+    const fab = document.createElement("div")
+    fab.className = "active-tool-fab"
+    const activeTool = this.toolsets.flatMap(g => g.tools).find(t => t.id === this.activeStampType)
+    if (activeTool) {
+      fab.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none">${activeTool.icon}</svg>`
+    }
+    this.activeToolsContainer.appendChild(fab)
+
+    if (!isExpanded) {
+      this.activeToolsContainer.onclick = () => {
+        this.activeToolsContainer.classList.add("expanded")
+        this.updateActiveTools()
+      }
+      return
+    }
+
+    // 1. Drag / Toggle Handle
+    const handle = document.createElement("div")
+    handle.className = "drag-handle"
+    handle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6" /></svg>`
+
+    handle.onclick = (e) => {
+      e.stopPropagation()
+      this.activeToolsContainer.classList.remove("expanded")
+      this.updateActiveTools()
+    }
+    this.activeToolsContainer.appendChild(handle)
+
+    // 2. Category Switcher
+    const switcher = document.createElement("div")
+    switcher.className = "category-switcher"
+
+    this.toolsets.forEach(group => {
+      const catBtn = document.createElement("button")
+      catBtn.className = `cat-btn ${this.activeCategory === group.type ? "active" : ""}`
+      catBtn.title = group.name
+      catBtn.innerHTML = group.name.charAt(0)
+
+      catBtn.addEventListener("click", (e) => {
+        e.stopPropagation()
+        this.activeCategory = group.type
+        this.updateActiveTools()
+      })
+      switcher.appendChild(catBtn)
+    })
+    this.activeToolsContainer.appendChild(switcher)
+
+    // 3. Active Tools Grid
+    const activeGroup = this.toolsets.find(g => g.type === this.activeCategory)
+    if (!activeGroup) return
+
+    const grid = document.createElement("div")
+    grid.className = "active-tools-grid"
+
+    activeGroup.tools.forEach(tool => {
+      const wrapper = document.createElement("div")
+      wrapper.className = "stamp-tool-wrapper"
+
+      const btn = document.createElement("button")
+      btn.className = `stamp-tool ${this.activeStampType === tool.id ? "active" : ""}`
+      btn.dataset.stamp = tool.id
+      btn.title = tool.label
+      btn.innerHTML = `<svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2" fill="none">${tool.icon}</svg>`
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation()
+        this.activeStampType = tool.id
+        // Selecting a tool NO LONGER closes the bar automatically (User habit requested)
+        this.updateActiveTools()
+      })
+
+      const label = document.createElement("span")
+      label.className = "stamp-label"
+      label.textContent = tool.label
+
+      wrapper.appendChild(btn)
+      wrapper.appendChild(label)
+      grid.appendChild(wrapper)
+    })
+
+    this.activeToolsContainer.appendChild(grid)
+  }
+
+  initDraggable() {
+    let isDragging = false
+    let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0
+    const el = this.activeToolsContainer
+
+    el.addEventListener("mousedown", dragStart)
+    document.addEventListener("mousemove", drag)
+    document.addEventListener("mouseup", dragEnd)
+
+    function dragStart(e) {
+      if (!e.target.closest(".drag-handle")) return
+      initialX = e.clientX - xOffset
+      initialY = e.clientY - yOffset
+      isDragging = true
+    }
+
+    function drag(e) {
+      if (isDragging) {
+        e.preventDefault()
+        currentX = e.clientX - initialX
+        currentY = e.clientY - initialY
+        xOffset = currentX
+        yOffset = currentY
+        setTranslate(currentX, currentY, el)
+      }
+    }
+
+    function dragEnd(e) {
+      initialX = currentX
+      initialY = currentY
+      isDragging = false
+    }
+
+    function setTranslate(xPos, yPos, el) {
+      // Anchored to left 40px, so we just add the offset
+      el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`
     }
   }
 
   jump(direction) {
-    // Generate virtual "page end" anchors for all loaded pages
     const pageEndAnchors = []
     if (this.pdf) {
       for (let i = 1; i <= this.pdf.numPages; i++) {
@@ -410,10 +668,8 @@ class ScoreFlow {
 
   updateJumpLinePosition() {
     if (this.jumpLine) {
-      // The viewer-container starts below the header (64px)
-      // The jump line is fixed, so we calculate its top relative to the header
-      const headerHeight = 64
-      this.jumpLine.style.top = `${headerHeight + this.jumpOffsetPx}px`
+      // The header is gone, so the jump line is relative to the screen top
+      this.jumpLine.style.top = `${this.jumpOffsetPx}px`
     }
   }
 
@@ -423,10 +679,23 @@ class ScoreFlow {
   }
 
   loadFromStorage() {
-    const layers = localStorage.getItem('scoreflow_layers')
-    const stamps = localStorage.getItem('scoreflow_stamps')
-    if (layers) this.layers = JSON.parse(layers)
-    if (stamps) this.stamps = JSON.parse(stamps)
+    const layersData = localStorage.getItem('scoreflow_layers')
+    const stampsData = localStorage.getItem('scoreflow_stamps')
+
+    if (layersData) {
+      const storedLayers = JSON.parse(layersData)
+      // Merge logic: Ensure our core presets exist even if not in storage
+      const coreIds = ['perf', 'fingering', 'bowing', 'personal']
+      coreIds.forEach(id => {
+        if (!storedLayers.find(l => l.id === id)) {
+          const preset = this.layers.find(p => p.id === id)
+          if (preset) storedLayers.push(preset)
+        }
+      })
+      this.layers = storedLayers
+    }
+
+    if (stampsData) this.stamps = JSON.parse(stampsData)
     this.renderLayerUI()
   }
 
@@ -448,66 +717,56 @@ class ScoreFlow {
     this.layerList.innerHTML = ''
     this.layers.forEach(layer => {
       const item = document.createElement('div')
-      item.className = `layer-item ${layer.id === this.activeLayerId ? 'active' : ''}`
+      item.className = 'layer-item'
       item.innerHTML = `
         <div class="layer-info">
           <div class="color-dot" style="background:${layer.color}"></div>
-          <span>${layer.name}</span>
+          <div class="layer-meta">
+            <span class="layer-name">${layer.name}</span>
+            <span class="layer-type-tag">${layer.type.charAt(0).toUpperCase() + layer.type.slice(1)} Group</span>
+          </div>
         </div>
         <div class="layer-actions">
-           <button class="btn-icon layer-toggle" title="Toggle Visibility">
-             ${layer.visible ? '👁️' : '🙈'}
-           </button>
-           <button class="btn-icon layer-delete" title="Delete Layer">
-             🗑️
+           <button class="layer-vis-btn ${layer.visible ? 'visible' : 'hidden'}" title="Toggle Visibility">
+             ${layer.visible ? '<span>Show</span>' : '<span>Hide</span>'}
            </button>
         </div>
       `
-
-      item.addEventListener('click', (e) => {
-        if (e.target.closest('.layer-toggle')) {
-          layer.visible = !layer.visible
-          this.updateLayerVisibility()
-          this.renderLayerUI()
-          return
-        }
-        if (e.target.closest('.layer-delete')) {
-          if (confirm('Delete this layer and all its stamps?')) {
-            this.layers = this.layers.filter(l => l.id !== layer.id)
-            this.stamps = this.stamps.filter(s => s.layerId !== layer.id)
-            if (this.activeLayerId === layer.id && this.layers.length > 0) {
-              this.activeLayerId = this.layers[0].id
-            } else if (this.layers.length === 0) {
-              this.activeLayerId = null
-            }
-            this.saveToStorage()
-            this.renderLayerUI()
-            if (this.pdf) this.renderPDF()
-          }
-          return
-        }
-        this.activeLayerId = layer.id
+      item.querySelector('.layer-vis-btn').addEventListener('click', (e) => {
+        e.stopPropagation()
+        layer.visible = !layer.visible
         this.updateLayerVisibility()
         this.renderLayerUI()
       })
-
       this.layerList.appendChild(item)
+    })
+
+    // Active Selector for General Tools (Stability Fix)
+    this.layerSelector.innerHTML = ''
+    const generalLayers = this.layers.filter(l => l.type === 'general')
+    generalLayers.forEach(layer => {
+      const div = document.createElement('label')
+      div.className = 'selector-item'
+      div.dataset.id = layer.id
+      div.innerHTML = `
+        <input type="radio" name="active-layer" ${layer.id === this.activeLayerId ? 'checked' : ''}>
+        <span class="selector-label">${layer.name}</span>
+      `
+      div.querySelector('input').addEventListener('change', () => {
+        this.activeLayerId = layer.id
+      })
+      this.layerSelector.appendChild(div)
     })
   }
 
   updateLayerVisibility() {
-    document.querySelectorAll('.annotation-layer').forEach(canvas => {
-      const layerId = canvas.dataset.layerId
-      const layer = this.layers.find(l => l.id === layerId)
-      if (!layer) return
-
-      canvas.style.display = layer.visible ? 'block' : 'none'
-      if (layerId === this.activeLayerId) {
-        canvas.classList.add('active')
-      } else {
-        canvas.classList.remove('active')
+    this.saveToStorage()
+    // In Virtual Layer mode, we just redraw everything to respect visibility states
+    if (this.pdf) {
+      for (let i = 1; i <= this.pdf.numPages; i++) {
+        this.redrawStamps(i)
       }
-    })
+    }
   }
 }
 
