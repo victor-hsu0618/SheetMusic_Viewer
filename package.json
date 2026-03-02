@@ -1,0 +1,19 @@
+{
+  "name": "sheetmusic-viewer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1",
+    "vite-plugin-pwa": "^1.2.0"
+  },
+  "dependencies": {
+    "lucide-static": "^0.576.0",
+    "pdfjs-dist": "^5.5.207"
+  }
+}

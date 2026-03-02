@@ -1,0 +1,404 @@
+import './style.css'
+import * as pdfjsLib from 'pdfjs-dist'
+
+// Set worker path - using a CDN is easier for Vite sometimes, or the local one
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+
+class ScoreFlow {
+  constructor() {
+    this.pdf = null
+    this.pages = []
+    this.layers = [{ id: 'default', name: 'Performance', color: '#ff4757', visible: true }]
+    this.stamps = [] // Vector storage for all stamps: { page, layerId, type, x, y, data }
+    this.activeLayerId = 'default'
+    this.activeStampType = 'circle'
+    this.scale = 1.5
+
+    this.initElements()
+    this.initEventListeners()
+    this.renderLayerUI()
+    this.loadFromStorage()
+    this.updateZoomDisplay()
+  }
+
+  initElements() {
+    this.container = document.getElementById('pdf-viewer')
+    this.uploader = document.getElementById('pdf-upload')
+    this.uploadBtn = document.getElementById('upload-btn')
+    this.sidebar = document.getElementById('sidebar')
+    this.toggleSidebarBtn = document.getElementById('toggle-sidebar')
+    this.layerList = document.getElementById('layer-list')
+    this.addLayerBtn = document.getElementById('add-layer-btn')
+    this.stampTools = document.querySelectorAll('.stamp-tool')
+    this.zoomInBtn = document.getElementById('zoom-in')
+    this.zoomOutBtn = document.getElementById('zoom-out')
+    this.zoomLevelDisplay = document.getElementById('zoom-level')
+    this.clearStampsBtn = document.getElementById('clear-stamps-btn')
+    this.nextJumpBtn = document.getElementById('next-jump')
+    this.prevJumpBtn = document.getElementById('prev-jump')
+    this.headerNextJumpBtn = document.getElementById('header-next-jump')
+    this.headerPrevJumpBtn = document.getElementById('header-prev-jump')
+    this.viewer = document.getElementById('viewer-container')
+  }
+
+  initEventListeners() {
+    this.uploadBtn.addEventListener('click', () => this.uploader.click())
+    this.uploader.addEventListener('change', (e) => this.handleUpload(e))
+
+    this.toggleSidebarBtn.addEventListener('click', () => {
+      this.sidebar.classList.toggle('open')
+    })
+
+    this.addLayerBtn.addEventListener('click', () => this.addNewLayer())
+
+    this.zoomInBtn.addEventListener('click', () => this.changeZoom(0.1))
+    this.zoomOutBtn.addEventListener('click', () => this.changeZoom(-0.1))
+
+    this.clearStampsBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear ALL stamps across all layers?')) {
+        this.stamps = []
+        this.saveToStorage()
+        if (this.pdf) {
+          for (let i = 1; i <= this.pdf.numPages; i++) {
+            this.redrawStamps(i)
+          }
+        }
+      }
+    })
+
+    this.nextJumpBtn.addEventListener('click', () => this.jump(1))
+    this.prevJumpBtn.addEventListener('click', () => this.jump(-1))
+    this.headerNextJumpBtn.addEventListener('click', () => this.jump(1))
+    this.headerPrevJumpBtn.addEventListener('click', () => this.jump(-1))
+
+    this.stampTools.forEach(tool => {
+      tool.addEventListener('click', () => {
+        this.stampTools.forEach(t => t.classList.remove('active'))
+        tool.classList.add('active')
+        this.activeStampType = tool.dataset.stamp
+      })
+    })
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '=' && e.metaKey) { e.preventDefault(); this.changeZoom(0.1); }
+      if (e.key === '-' && e.metaKey) { e.preventDefault(); this.changeZoom(-0.1); }
+
+      // Navigation shortcuts
+      if (e.key === ' ' || e.key === 'ArrowDown') {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+          e.preventDefault()
+          this.jump(1)
+        }
+      }
+      if (e.key === 'ArrowUp') {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+          e.preventDefault()
+          this.jump(-1)
+        }
+      }
+    })
+
+    // Handle responsiveness/resizing
+    window.addEventListener('resize', () => {
+      // Debounced resize would be better but let's keep it simple
+      if (this.pdf) this.renderPDF()
+    })
+  }
+
+  async handleUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = async (event) => {
+      const typedarray = new Uint8Array(event.target.result)
+      this.pdf = await pdfjsLib.getDocument(typedarray).promise
+      this.renderPDF()
+    }
+    reader.readAsArrayBuffer(file)
+  }
+
+  async changeZoom(delta) {
+    this.scale = Math.min(Math.max(0.5, this.scale + delta), 4)
+    this.updateZoomDisplay()
+    if (this.pdf) await this.renderPDF()
+  }
+
+  updateZoomDisplay() {
+    if (this.zoomLevelDisplay) {
+      this.zoomLevelDisplay.textContent = `${Math.round(this.scale * 100)}%`
+    }
+  }
+
+  async renderPDF() {
+    this.container.innerHTML = ''
+    this.pages = []
+
+    for (let i = 1; i <= this.pdf.numPages; i++) {
+      const page = await this.pdf.getPage(i)
+      const pageWrapper = this.createPageElement(i)
+      this.container.appendChild(pageWrapper)
+
+      const canvas = pageWrapper.querySelector('.pdf-canvas')
+      const context = canvas.getContext('2d')
+
+      const viewport = page.getViewport({ scale: this.scale })
+      canvas.height = viewport.height
+      canvas.width = viewport.width
+
+      await page.render({ canvasContext: context, viewport }).promise
+
+      this.createAnnotationLayers(pageWrapper, i, viewport.width, viewport.height)
+      this.redrawStamps(i)
+    }
+  }
+
+  createPageElement(pageNum) {
+    const div = document.createElement('div')
+    div.className = 'page-container'
+    div.dataset.page = pageNum
+    div.style.width = 'fit-content'
+    div.innerHTML = `<canvas class="pdf-canvas"></canvas>`
+    return div
+  }
+
+  createAnnotationLayers(wrapper, pageNum, width, height) {
+    this.layers.forEach(layer => {
+      const canvas = document.createElement('canvas')
+      canvas.className = `annotation-layer ${layer.id === this.activeLayerId ? 'active' : ''}`
+      canvas.dataset.layerId = layer.id
+      canvas.dataset.page = pageNum
+      canvas.width = width
+      canvas.height = height
+      canvas.style.display = layer.visible ? 'block' : 'none'
+      wrapper.appendChild(canvas)
+
+      this.attachCanvasListeners(canvas, pageNum, layer.id)
+    })
+  }
+
+  attachCanvasListeners(canvas, pageNum, layerId) {
+    const handleEvent = (e) => {
+      if (layerId !== this.activeLayerId) return
+      if (e.type === 'touchstart') e.preventDefault()
+
+      const rect = canvas.getBoundingClientRect()
+      const clientX = e.clientX || e.touches[0].clientX
+      const clientY = e.clientY || e.touches[0].clientY
+
+      // Normalized coordinates (0 to 1) for zoom independence
+      const x = (clientX - rect.left) / rect.width
+      const y = (clientY - rect.top) / rect.height
+
+      this.addStamp(pageNum, layerId, this.activeStampType, x, y)
+    }
+
+    canvas.addEventListener('mousedown', handleEvent)
+    canvas.addEventListener('touchstart', handleEvent, { passive: false })
+  }
+
+  addStamp(page, layerId, type, x, y) {
+    let data = null
+    if (type === 'text') {
+      data = prompt('Enter marker text:')
+      if (!data) return
+    }
+
+    this.stamps.push({ page, layerId, type, x, y, data })
+    this.saveToStorage()
+    this.redrawStamps(page)
+  }
+
+  redrawStamps(page) {
+    const pageWrappers = document.querySelectorAll(`.page-container[data-page="${page}"]`)
+    pageWrappers.forEach(wrapper => {
+      this.layers.forEach(layer => {
+        const canvas = wrapper.querySelector(`.annotation-layer[data-layer-id="${layer.id}"]`)
+        if (!canvas) return
+
+        const ctx = canvas.getContext('2d')
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        const layerStamps = this.stamps.filter(s => s.page === page && s.layerId === layer.id)
+        layerStamps.forEach(stamp => {
+          this.drawStampOnCanvas(ctx, canvas, stamp, layer.color)
+        })
+      })
+    })
+  }
+
+  drawStampOnCanvas(ctx, canvas, stamp, color) {
+    const x = stamp.x * canvas.width
+    const y = stamp.y * canvas.height
+    const size = 20 * (this.scale / 1.5) // Adjust size with scale
+
+    ctx.strokeStyle = color
+    ctx.fillStyle = `${color}33`
+    ctx.lineWidth = 3 * (this.scale / 1.5)
+    ctx.beginPath()
+
+    switch (stamp.type) {
+      case 'circle':
+        ctx.arc(x, y, size, 0, Math.PI * 2)
+        ctx.fill(); ctx.stroke()
+        break
+      case 'square':
+        ctx.rect(x - size, y - size, size * 2, size * 2)
+        ctx.fill(); ctx.stroke()
+        break
+      case 'check':
+        ctx.moveTo(x - size, y)
+        ctx.lineTo(x - size / 3, y + size)
+        ctx.lineTo(x + size, y - size)
+        ctx.stroke()
+        break
+      case 'text':
+        ctx.font = `bold ${20 * (this.scale / 1.5)}px Outfit`
+        ctx.fillStyle = color
+        ctx.fillText(stamp.data, x, y)
+        break
+      case 'anchor':
+        // Wave flag for anchor
+        ctx.fillStyle = color
+        ctx.stroke() // Draw path from below
+        ctx.beginPath()
+        ctx.moveTo(x, y)
+        ctx.lineTo(x, y - (size * 1.5))
+        ctx.lineTo(x + size, y - (size * 1.1))
+        ctx.lineTo(x, y - (size * 0.7))
+        ctx.fill()
+        ctx.stroke()
+        break
+    }
+  }
+
+  jump(direction) {
+    const anchors = this.stamps
+      .filter(s => s.type === 'anchor')
+      .map(s => {
+        const pageElem = document.querySelector(`.page-container[data-page="${s.page}"]`)
+        if (!pageElem) return null
+        const canvas = pageElem.querySelector('.pdf-canvas')
+        const absoluteY = pageElem.offsetTop + (s.y * canvas.height)
+        return { ...s, absoluteY }
+      })
+      .filter(a => a !== null)
+      .sort((a, b) => a.absoluteY - b.absoluteY)
+
+    if (anchors.length === 0) return
+
+    const currentScroll = this.viewer.scrollTop
+    let target = null
+
+    if (direction === 1) {
+      // Find first anchor below current view (with 10px buffer)
+      target = anchors.find(a => a.absoluteY > currentScroll + 10)
+    } else {
+      // Find last anchor above current view (with 10px buffer)
+      target = [...anchors].reverse().find(a => a.absoluteY < currentScroll - 10)
+    }
+
+    if (target) {
+      this.viewer.scrollTo({
+        top: target.absoluteY,
+        behavior: 'smooth'
+      })
+    }
+  }
+
+  saveToStorage() {
+    localStorage.setItem('scoreflow_layers', JSON.stringify(this.layers))
+    localStorage.setItem('scoreflow_stamps', JSON.stringify(this.stamps))
+  }
+
+  loadFromStorage() {
+    const layers = localStorage.getItem('scoreflow_layers')
+    const stamps = localStorage.getItem('scoreflow_stamps')
+    if (layers) this.layers = JSON.parse(layers)
+    if (stamps) this.stamps = JSON.parse(stamps)
+    this.renderLayerUI()
+  }
+
+  addNewLayer() {
+    const name = prompt('Layer Name:') || `Layer ${this.layers.length + 1}`
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ff4757']
+    const color = colors[this.layers.length % colors.length]
+    const id = `layer-${Date.now()}`
+
+    this.layers.push({ id, name, color, visible: true })
+    this.activeLayerId = id
+    this.saveToStorage()
+    this.renderLayerUI()
+
+    if (this.pdf) this.renderPDF() // Re-render to add new canvases
+  }
+
+  renderLayerUI() {
+    this.layerList.innerHTML = ''
+    this.layers.forEach(layer => {
+      const item = document.createElement('div')
+      item.className = `layer-item ${layer.id === this.activeLayerId ? 'active' : ''}`
+      item.innerHTML = `
+        <div class="layer-info">
+          <div class="color-dot" style="background:${layer.color}"></div>
+          <span>${layer.name}</span>
+        </div>
+        <div class="layer-actions">
+           <button class="btn-icon layer-toggle" title="Toggle Visibility">
+             ${layer.visible ? '👁️' : '🙈'}
+           </button>
+           <button class="btn-icon layer-delete" title="Delete Layer">
+             🗑️
+           </button>
+        </div>
+      `
+
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.layer-toggle')) {
+          layer.visible = !layer.visible
+          this.updateLayerVisibility()
+          this.renderLayerUI()
+          return
+        }
+        if (e.target.closest('.layer-delete')) {
+          if (confirm('Delete this layer and all its stamps?')) {
+            this.layers = this.layers.filter(l => l.id !== layer.id)
+            this.stamps = this.stamps.filter(s => s.layerId !== layer.id)
+            if (this.activeLayerId === layer.id && this.layers.length > 0) {
+              this.activeLayerId = this.layers[0].id
+            } else if (this.layers.length === 0) {
+              this.activeLayerId = null
+            }
+            this.saveToStorage()
+            this.renderLayerUI()
+            if (this.pdf) this.renderPDF()
+          }
+          return
+        }
+        this.activeLayerId = layer.id
+        this.updateLayerVisibility()
+        this.renderLayerUI()
+      })
+
+      this.layerList.appendChild(item)
+    })
+  }
+
+  updateLayerVisibility() {
+    document.querySelectorAll('.annotation-layer').forEach(canvas => {
+      const layerId = canvas.dataset.layerId
+      const layer = this.layers.find(l => l.id === layerId)
+      if (!layer) return
+
+      canvas.style.display = layer.visible ? 'block' : 'none'
+      if (layerId === this.activeLayerId) {
+        canvas.classList.add('active')
+      } else {
+        canvas.classList.remove('active')
+      }
+    })
+  }
+}
+
+new ScoreFlow()
