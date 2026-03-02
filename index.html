@@ -36,8 +36,8 @@
               <div class="guide-item">
                 <div class="guide-step">1</div>
                 <div class="guide-body">
-                  <h4>Upload Score</h4>
-                  <p>Click "Upload New Score" in the Sidebar or drag a PDF here.</p>
+                  <h4>Open Score</h4>
+                  <p>Click "Open Score" in the Sidebar or drag a PDF here.</p>
                 </div>
               </div>
               <div class="guide-item">
@@ -110,7 +110,7 @@
             <div class="setting-item">
               <label>Library</label>
               <button id="upload-btn" class="btn btn-primary btn-full">
-                Upload New Score
+                Open Score
                 <input type="file" id="pdf-upload" accept="application/pdf" hidden />
               </button>
             </div>
@@ -148,10 +148,6 @@
           </div>
           <div class="menu-group-content">
             <div class="setting-item">
-              <label>Active Target (General)</label>
-              <div id="layer-selector" class="layer-selector"></div>
-            </div>
-            <div class="setting-item">
               <label>Visibility Control</label>
               <div class="layer-list" id="layer-list"></div>
             </div>
@@ -177,10 +173,10 @@
               <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="modern-slider">
             </div>
             <div class="setting-item">
-              <label>Manual Navigation</label>
-              <div class="jump-panel mt-10">
-                <button id="header-prev-jump" class="btn btn-outline flex-1">↑ Previous</button>
-                <button id="header-next-jump" class="btn btn-outline flex-1">↓ Next</button>
+              <label>Keyboard Hints</label>
+              <div class="help-hints">
+                <div class="hint-row"><span>Jump Next</span> <code>Space</code> / <code>J</code></div>
+                <div class="hint-row"><span>Jump Prev</span> <code>Shift + Space</code> / <code>K</code></div>
               </div>
             </div>
           </div>
@@ -202,11 +198,7 @@
       </div>
     </aside>
 
-    <!-- Mobile Toolbar -->
-    <nav class="mobile-toolbar">
-      <button class="tool-btn" id="prev-jump">↑ Jump</button>
-      <button class="tool-btn" id="next-jump">↓ Jump</button>
-    </nav>
+    <!-- Mobile Toolbar Removed -->
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

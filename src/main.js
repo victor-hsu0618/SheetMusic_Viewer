@@ -10,15 +10,16 @@ class ScoreFlow {
     this.pages = []
     // Professional Layer Presets
     this.layers = [
-      { id: 'perf', name: 'Performance', color: '#ff4757', visible: true, type: 'general' },
+      { id: 'draw', name: 'Draw Objects', color: '#ff4757', visible: true, type: 'draw' },
       { id: 'fingering', name: 'Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
-      { id: 'bowing', name: 'Bowing', color: '#10b981', visible: true, type: 'bowing' },
-      { id: 'personal', name: 'Personal', color: '#f59e0b', visible: true, type: 'general' }
+      { id: 'articulation', name: 'Articulations', color: '#10b981', visible: true, type: 'articulation' },
+      { id: 'performance', name: 'Performance', color: '#f59e0b', visible: true, type: 'performance' },
+      { id: 'other', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'other' }
     ]
     this.stamps = []
-    this.activeLayerId = 'perf'
-    this.activeStampType = 'circle'
-    this.activeCategory = 'general'
+    this.activeLayerId = 'draw'
+    this.activeStampType = 'pen'
+    this.activeCategory = 'draw'
     this.scale = 1.5
     this.isSidebarLocked = false
 
@@ -36,41 +37,70 @@ class ScoreFlow {
   initToolsets() {
     this.toolsets = [
       {
-        name: 'General',
-        type: 'general',
+        name: 'Pens',
+        type: 'draw',
         tools: [
-          { id: 'circle', label: 'Circle', icon: '<circle cx="12" cy="12" r="10" />' },
-          { id: 'text', label: 'Text', icon: '<text x="6" y="16" font-family="Arial" font-weight="bold">T</text>' },
-          { id: 'accent', label: 'Accent', icon: '<path d="M7 8l10 4-10 4" />' },
-          { id: 'staccato', label: 'Staccato', icon: '<circle cx="12" cy="12" r="2" fill="currentColor" />' },
-          { id: 'forte', label: 'f', icon: '<path d="M12 4v16M8 8h8" />' },
-          { id: 'piano', label: 'p', icon: '<circle cx="10" cy="10" r="4" /><path d="M10 6v12" />' },
-          { id: 'eraser', label: 'Eraser', icon: '<path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" /><path d="M17 17L7 7" />' },
-          { id: 'anchor', label: 'Anchor', icon: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" />' }
-        ]
-      },
-      {
-        name: 'Bowing',
-        type: 'bowing',
-        tools: [
-          { id: 'down-bow', label: 'ㄇ', icon: '<path d="M6 14V6h12v8" />' },
-          { id: 'up-bow', label: 'V', icon: '<path d="M6 6l6 12 6-12" />' }
+          { id: 'pen', label: 'Pen', icon: '<path d="M12 19l7-7 3 3-7 7-3-3z" /><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" /><path d="M2 2l5 2" /><path d="M2 2l2 5" />' },
+          { id: 'highlighter', label: 'Highlighter', icon: '<rect x="4" y="4" width="16" height="16" rx="2" /><line x1="4" y1="12" x2="20" y2="12" stroke-width="4" opacity="0.5" />' },
+          { id: 'line', label: 'Line', icon: '<line x1="4" y1="20" x2="20" y2="4" stroke-width="2" />' },
+          { id: 'eraser', label: 'Eraser', icon: '<path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" /><path d="M17 17L7 7" />' }
         ]
       },
       {
         name: 'Fingering',
         type: 'fingering',
         tools: [
-          { id: 'f0', label: '0', icon: '<text x="8" y="18">0</text>' },
-          { id: 'f1', label: '1', icon: '<text x="8" y="18">1</text>' },
-          { id: 'f2', label: '2', icon: '<text x="8" y="18">2</text>' },
-          { id: 'f3', label: '3', icon: '<text x="8" y="18">3</text>' },
-          { id: 'f4', label: '4', icon: '<text x="8" y="18">4</text>' },
-          { id: 'thumb', label: 'Thumb', icon: '<circle cx="12" cy="12" r="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="12" y1="6" x2="12" y2="18" />' },
-          { id: 'i', label: 'I', icon: '<text x="10" y="18">I</text>' },
-          { id: 'ii', label: 'II', icon: '<text x="8" y="18">II</text>' },
-          { id: 'iii', label: 'III', icon: '<text x="6" y="18">III</text>' },
-          { id: 'iv', label: 'IV', icon: '<text x="6" y="18">IV</text>' }
+          { id: 'f0', label: '0', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">0</text>' },
+          { id: 'f1', label: '1', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">1</text>' },
+          { id: 'f2', label: '2', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">2</text>' },
+          { id: 'f3', label: '3', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">3</text>' },
+          { id: 'f4', label: '4', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">4</text>' },
+          { id: 'f5', label: '5', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">5</text>' },
+          { id: 'thumb', label: 'Thumb', icon: '<circle cx="12" cy="12" r="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="12" y1="6" x2="12" y2="18" />' }
+        ]
+      },
+      {
+        name: 'Articulation',
+        type: 'articulation',
+        tools: [
+          { id: 'accent', label: 'Accent', icon: '<path d="M7 8l10 4-10 4" />' },
+          { id: 'staccato', label: 'Staccato', icon: '<circle cx="12" cy="12" r="2" fill="currentColor" />' },
+          { id: 'tenuto', label: 'Tenuto', icon: '<line x1="6" y1="12" x2="18" y2="12" stroke-width="3" />' },
+          { id: 'fermata', label: 'Fermata', icon: '<path d="M6 16a6 6 0 0 1 12 0" /><circle cx="12" cy="13" r="1.5" fill="currentColor" />' }
+        ]
+      },
+      {
+        name: 'Tempo',
+        type: 'performance',
+        tools: [
+          { id: 'tempo-quarter', label: 'q=', icon: '<path d="M10 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM12 16V4" />' },
+          { id: 'tempo-text', label: 'Tempo', icon: '<text x="2" y="16" font-size="10" font-weight="bold">Tempo</text>' },
+          { id: 'rit', label: 'rit.', icon: '<text x="4" y="16" font-size="10">rit.</text>' },
+          { id: 'accel', label: 'accel.', icon: '<text x="2" y="16" font-size="9">accel.</text>' }
+        ]
+      },
+      {
+        name: 'Text',
+        type: 'performance',
+        tools: [
+          { id: 'text', label: 'Exp.', icon: '<text x="6" y="18" font-family="Outfit" font-weight="bold">T</text>' },
+          { id: 'forte', label: 'f', icon: '<path d="M12 4v16M8 8h8" />' },
+          { id: 'piano', label: 'p', icon: '<circle cx="10" cy="10" r="4" /><path d="M10 6v12" />' }
+        ]
+      },
+      {
+        name: 'Layout',
+        type: 'other',
+        tools: [
+          { id: 'system-break', label: 'Break', icon: '<path d="M4 4h16M4 20h16M8 4v16M16 4v16M4 12l4-4 4 4-4 4-4-4z" />' },
+          { id: 'page-break', label: 'Page', icon: '<path d="M4 18h16M4 6h16M12 6v12" /><path d="M8 10l4 4 4-4" />' }
+        ]
+      },
+      {
+        name: 'Anchor',
+        type: 'other',
+        tools: [
+          { id: 'anchor', label: 'Anchor', icon: '<path d="M12 2v20M5 12h14" stroke-width="2"/><circle cx="12" cy="12" r="4"/>' }
         ]
       }
     ]
@@ -88,17 +118,7 @@ class ScoreFlow {
     this.zoomOutBtn = document.getElementById('zoom-out')
     this.zoomLevelDisplay = document.getElementById('zoom-level')
     this.clearStampsBtn = document.getElementById('clear-stamps-btn')
-    this.nextJumpBtn = document.getElementById('next-jump')
-    this.prevJumpBtn = document.getElementById('prev-jump')
-    this.headerNextJumpBtn = document.getElementById('header-next-jump')
-    this.headerPrevJumpBtn = document.getElementById('header-prev-jump')
-    this.viewer = document.getElementById('viewer-container')
-    this.jumpLine = document.getElementById('jump-line')
-    this.jumpOffsetInput = document.getElementById('jump-offset')
-    this.jumpOffsetValue = document.getElementById('jump-offset-value')
-    this.closeSidebarBtn = document.getElementById('close-sidebar')
-    this.activeToolsContainer = document.getElementById('active-tools-container')
-    this.layerSelector = document.getElementById('layer-selector')
+    this.lockSidebarBtn = document.getElementById('lock-sidebar')
     this.lockSidebarBtn = document.getElementById('lock-sidebar')
 
     this.jumpOffsetPx = 1 * 37.8
@@ -300,18 +320,82 @@ class ScoreFlow {
     overlay.style.width = `${width}px`
     overlay.style.height = `${height}px`
 
-    const handleEvent = (e) => {
-      if (e.type === 'touchstart') e.preventDefault()
+    let isDrawing = false
+    let currentPath = null
+
+    const getPos = (e) => {
       const rect = overlay.getBoundingClientRect()
-      const clientX = e.clientX || e.touches[0].clientX
-      const clientY = e.clientY || e.touches[0].clientY
-      const x = (clientX - rect.left) / rect.width
-      const y = (clientY - rect.top) / rect.height
-      this.addStamp(pageNum, this.activeStampType, x, y)
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX)
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY)
+      return {
+        x: (clientX - rect.left) / rect.width,
+        y: (clientY - rect.top) / rect.height
+      }
     }
 
-    overlay.addEventListener('click', handleEvent)
-    overlay.addEventListener('touchstart', handleEvent, { passive: false })
+    const startDraw = (e) => {
+      // Logic to determine if we should draw or stamp
+      const toolType = this.activeStampType
+      const isFreehand = ['pen', 'highlighter', 'line'].includes(toolType)
+
+      if (isFreehand) {
+        if (e.type === 'touchstart') e.preventDefault()
+        isDrawing = true
+        const pos = getPos(e)
+        currentPath = {
+          type: toolType,
+          page: pageNum,
+          layerId: 'draw',
+          points: [pos],
+          color: this.layers.find(l => l.id === 'draw').color
+        }
+      }
+    }
+
+    const moveDraw = (e) => {
+      if (!isDrawing) return
+      const pos = getPos(e)
+
+      if (this.activeStampType === 'line') {
+        currentPath.points[1] = pos
+      } else {
+        currentPath.points.push(pos)
+      }
+
+      // Local preview drawing for performance
+      const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
+      if (canvas) {
+        const ctx = canvas.getContext('2d')
+        this.drawPathOnCanvas(ctx, canvas, currentPath)
+      }
+    }
+
+    const endDraw = (e) => {
+      if (isDrawing && currentPath) {
+        this.stamps.push(currentPath)
+        this.saveToStorage()
+        this.redrawStamps(pageNum)
+      }
+      isDrawing = false
+      currentPath = null
+    }
+
+    const handleClick = (e) => {
+      if (['pen', 'highlighter', 'line'].includes(this.activeStampType)) return
+      const pos = getPos(e)
+      this.addStamp(pageNum, this.activeStampType, pos.x, pos.y)
+    }
+
+    overlay.addEventListener('mousedown', startDraw)
+    overlay.addEventListener('mousemove', moveDraw)
+    window.addEventListener('mouseup', endDraw) // Global to catch release outside
+
+    overlay.addEventListener('touchstart', startDraw, { passive: false })
+    overlay.addEventListener('touchmove', moveDraw, { passive: false })
+    overlay.addEventListener('touchend', endDraw)
+
+    overlay.addEventListener('click', handleClick)
+
     wrapper.appendChild(overlay)
   }
 
@@ -354,39 +438,45 @@ class ScoreFlow {
       return
     }
 
-    // Auto-Target Layer based on tool type
-    let targetLayerId = this.activeLayerId // Default to currently selected general layer
+    // Auto-Target Layer based on toolset metadata
+    let targetLayerId = 'draw' // Default
 
-    if (this.toolsets.find(group => group.type === 'bowing').tools.some(t => t.id === type)) {
-      targetLayerId = 'bowing'
-    } else if (this.toolsets.find(group => group.type === 'fingering').tools.some(t => t.id === type)) {
-      targetLayerId = 'fingering'
+    const group = this.toolsets.find(g => g.tools.some(t => t.id === type))
+    if (group) {
+      // Map category type to layer ID if exists
+      const layer = this.layers.find(l => l.type === group.type)
+      if (layer) targetLayerId = layer.id
     }
 
-    // Ensure the target layer exists and is visible (optionally auto-show it)
     const layer = this.layers.find(l => l.id === targetLayerId)
     if (layer) layer.visible = true
 
     let data = null
-    if (type === 'text') {
-      data = prompt('Enter marker text:')
+    if (type === 'text' || type === 'tempo-text') {
+      data = prompt('Enter text:')
       if (!data) return
     }
 
     this.stamps.push({ page, layerId: targetLayerId, type, x, y, data })
     this.saveToStorage()
-    this.updateLayerVisibility() // Make sure it shows up if it was hidden
+    this.updateLayerVisibility()
     this.redrawStamps(page)
   }
 
   eraseStamp(page, x, y) {
-    const threshold = 0.03 // Normalized distance tolerance
+    const threshold = 0.03
     const initialCount = this.stamps.length
 
     this.stamps = this.stamps.filter(s => {
       if (s.page !== page) return true
-      const dist = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2))
-      return dist > threshold
+
+      if (s.points) {
+        // Check distance to any point in the path
+        return !s.points.some(p => Math.sqrt(Math.pow(p.x - x, 2) + Math.pow(p.y - y, 2)) < threshold)
+      } else {
+        const dist = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2))
+        return dist > threshold
+      }
     })
 
     if (this.stamps.length !== initialCount) {
@@ -404,18 +494,50 @@ class ScoreFlow {
       const ctx = canvas.getContext('2d')
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Filter stamps mapping to currently visible "Virtual Layers"
       const visibleStamps = this.stamps.filter(s => {
         if (s.page !== page) return false
-        const layer = this.layers.find(l => l.id === s.layerId)
+        const layer = this.layers.find(l => l.id === (s.layerId || 'draw'))
         return layer ? layer.visible : true
       })
 
       visibleStamps.forEach(stamp => {
-        const layer = this.layers.find(l => l.id === stamp.layerId)
-        this.drawStampOnCanvas(ctx, canvas, stamp, layer ? layer.color : '#000000')
+        const layer = this.layers.find(l => l.id === (stamp.layerId || 'draw'))
+        const color = layer ? layer.color : '#000000'
+
+        if (stamp.points) {
+          this.drawPathOnCanvas(ctx, canvas, stamp)
+        } else {
+          this.drawStampOnCanvas(ctx, canvas, stamp, color)
+        }
       })
     })
+  }
+
+  drawPathOnCanvas(ctx, canvas, path) {
+    if (!path.points || path.points.length < 2) return
+
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    if (path.type === 'highlighter') {
+      ctx.strokeStyle = '#fde04788'
+      ctx.lineWidth = 14 * (this.scale / 1.5)
+    } else {
+      ctx.strokeStyle = path.color || '#ff4757'
+      ctx.lineWidth = (path.type === 'line' ? 2 : 3) * (this.scale / 1.5)
+    }
+
+    ctx.beginPath()
+    const startX = path.points[0].x * canvas.width
+    const startY = path.points[0].y * canvas.height
+    ctx.moveTo(startX, startY)
+
+    for (let i = 1; i < path.points.length; i++) {
+      const px = path.points[i].x * canvas.width
+      const py = path.points[i].y * canvas.height
+      ctx.lineTo(px, py)
+    }
+    ctx.stroke()
   }
 
   drawStampOnCanvas(ctx, canvas, stamp, color) {
@@ -514,8 +636,10 @@ class ScoreFlow {
     this.toolsets.forEach(group => {
       const catBtn = document.createElement("button")
       catBtn.className = `cat-btn ${this.activeCategory === group.type ? "active" : ""}`
-      catBtn.title = group.name
-      catBtn.innerHTML = group.name.charAt(0)
+      catBtn.style.width = 'auto'
+      catBtn.style.padding = '0 12px'
+      catBtn.style.borderRadius = '16px'
+      catBtn.innerHTML = `<span style="font-size: 0.8rem; font-weight: 700;">${group.name}</span>`
 
       catBtn.addEventListener("click", (e) => {
         e.stopPropagation()
@@ -682,20 +806,28 @@ class ScoreFlow {
     const layersData = localStorage.getItem('scoreflow_layers')
     const stampsData = localStorage.getItem('scoreflow_stamps')
 
+    // Always start with fresh core layers but attempt to restore visibility states
+    const coreLayers = [...this.layers]
+
     if (layersData) {
       const storedLayers = JSON.parse(layersData)
-      // Merge logic: Ensure our core presets exist even if not in storage
-      const coreIds = ['perf', 'fingering', 'bowing', 'personal']
-      coreIds.forEach(id => {
-        if (!storedLayers.find(l => l.id === id)) {
-          const preset = this.layers.find(p => p.id === id)
-          if (preset) storedLayers.push(preset)
-        }
+      coreLayers.forEach(l => {
+        const stored = storedLayers.find(sl => sl.id === l.id)
+        if (stored) l.visible = stored.visible
       })
-      this.layers = storedLayers
     }
 
-    if (stampsData) this.stamps = JSON.parse(stampsData)
+    this.layers = coreLayers
+
+    if (stampsData) {
+      this.stamps = JSON.parse(stampsData)
+      // Cleanup old stamps that might have invalid layerIds from previous versions
+      this.stamps.forEach(s => {
+        if (!this.layers.find(l => l.id === s.layerId)) {
+          s.layerId = 'draw' // Fallback to Draw group
+        }
+      })
+    }
     this.renderLayerUI()
   }
 
@@ -739,23 +871,6 @@ class ScoreFlow {
         this.renderLayerUI()
       })
       this.layerList.appendChild(item)
-    })
-
-    // Active Selector for General Tools (Stability Fix)
-    this.layerSelector.innerHTML = ''
-    const generalLayers = this.layers.filter(l => l.type === 'general')
-    generalLayers.forEach(layer => {
-      const div = document.createElement('label')
-      div.className = 'selector-item'
-      div.dataset.id = layer.id
-      div.innerHTML = `
-        <input type="radio" name="active-layer" ${layer.id === this.activeLayerId ? 'checked' : ''}>
-        <span class="selector-label">${layer.name}</span>
-      `
-      div.querySelector('input').addEventListener('change', () => {
-        this.activeLayerId = layer.id
-      })
-      this.layerSelector.appendChild(div)
     })
   }
 
