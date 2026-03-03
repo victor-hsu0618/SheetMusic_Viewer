@@ -9,6 +9,34 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    /* Anti-FOUC: welcome-screen covers entire viewport at highest z-index */
+    .welcome-screen:not(.hidden) {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 9999 !important;
+      background: var(--bg, #0f0f13) !important;
+    }
+
+    /* Modals hidden unless .active */
+    #shortcuts-modal:not(.active),
+    #quick-load-modal:not(.active),
+    #profile-modal:not(.active),
+    #system-dialog:not(.active) {
+      display: none !important;
+    }
+
+    /* Compact floating-doc-bar for iPad */
+    .floating-doc-bar {
+      zoom: 0.82;
+    }
+
+    #zoom-level {
+      font-size: 10px !important;
+      min-width: 28px !important;
+    }
+  </style>
 </head>
 
 <body>
@@ -85,19 +113,6 @@
               <circle cx="12" cy="12" r="3" />
             </svg>
           </button>
-          <div id="layer-shelf" class="layer-shelf toolbar-popover">
-            <div class="shelf-header">
-              <h4>Notation Settings</h4>
-              <button id="close-layer-shelf" class="btn-icon-mini">✕</button>
-            </div>
-            <div id="external-layer-list" class="layer-list-mini"></div>
-
-            <div class="shelf-footer mt-15 pt-15 border-top">
-              <button id="add-layer-btn" class="btn btn-primary btn-full mb-10">+ Add Category</button>
-              <button id="reset-layers-btn" class="btn btn-outline btn-full text-danger btn-smaller">Reset to System
-                Standards</button>
-            </div>
-          </div>
         </div>
 
       </div>
@@ -401,13 +416,25 @@
           <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="mini-slider"
             title="Adjust the vertical offset for anchor jumps">
           <span id="jump-offset-value">1.0cm</span>
-          <div class="tab-divider"></div>
-          <button id="reset-system-btn" class="btn-text-danger">Reset to System Default</button>
         </div>
 
       </div> <!-- End Tab Panels -->
     </div> <!-- End Sidebar Content -->
   </aside>
+
+  <!-- Notation Settings Panel (outside transform context) -->
+  <div id="layer-shelf" class="layer-shelf toolbar-popover">
+    <div class="shelf-header">
+      <h4>Notation Settings</h4>
+      <button id="close-layer-shelf" class="btn-icon-mini">✕</button>
+    </div>
+    <div id="external-layer-list" class="layer-list-mini"></div>
+    <div class="shelf-footer mt-15 pt-15 border-top">
+      <button id="add-layer-btn" class="btn btn-primary btn-full mb-10">+ Add Category</button>
+      <button id="reset-layers-btn" class="btn btn-outline btn-full text-danger btn-smaller">↺ Reset Notation
+        Categories</button>
+    </div>
+  </div>
 
 
   <!-- Mobile Toolbar Removed -->
@@ -454,6 +481,18 @@
           <span class="shortcut-label">Close Menus / Overlays</span>
           <div class="keys">
             <kbd>Esc</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">iPad: Next Anchor</span>
+          <div class="keys">
+            <kbd>Swipe Up ↑</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">iPad: Prev Anchor</span>
+          <div class="keys">
+            <kbd>Swipe Down ↓</kbd>
           </div>
         </div>
       </div>

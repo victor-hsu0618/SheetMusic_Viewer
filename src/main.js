@@ -2,6 +2,7 @@ import './style.css'
 import * as pdfjsLib from 'pdfjs-dist'
 import * as db from './db.js'
 import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
+import * as GDrive from './gdrive.js'
 
 // Use local worker for total offline reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
@@ -14,7 +15,7 @@ class ScoreFlow {
     this.layers = [...INITIAL_LAYERS]
     this.stamps = []
     this.activeLayerId = 'draw'
-    this.activeStampType = 'select'
+    this.activeStampType = 'view'
     this.activeCategories = ['Edit', 'Pens', 'Bowing', 'Fingering', 'Articulation', 'Tempo', 'Dynamic', 'Anchor']
     this.activeCategory = 'Edit'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
@@ -54,6 +55,7 @@ class ScoreFlow {
     this.renderLibrary()
     this.initDocBarDraggable()
     this.checkInitialView()
+    this.initGDriveWhenReady()
   }
 
   initToolsets() {
@@ -209,6 +211,17 @@ class ScoreFlow {
       }
     })
 
+    // iPad: tap outside sidebar to close it
+    document.addEventListener('touchstart', (e) => {
+      if (!this.isSidebarLocked &&
+        this.sidebar.classList.contains('open') &&
+        !this.sidebar.contains(e.target) &&
+        !this.sidebarTrigger.contains(e.target)) {
+        this.sidebar.classList.remove('open')
+        this.updateLayoutState()
+      }
+    }, { passive: true })
+
     if (this.lockSidebarBtn) {
       this.lockSidebarBtn.addEventListener('click', () => {
         this.isSidebarLocked = !this.isSidebarLocked
@@ -275,6 +288,16 @@ class ScoreFlow {
         this.layerShelf.classList.remove('active')
       })
     }
+
+    // iPad: tap outside layer-shelf to close it
+    document.addEventListener('touchstart', (e) => {
+      if (this.layerShelf &&
+        this.layerShelf.classList.contains('active') &&
+        !this.layerShelf.contains(e.target) &&
+        !this.layerToggleBtn.contains(e.target)) {
+        this.layerShelf.classList.remove('active')
+      }
+    }, { passive: true })
 
     // Keyboard shortcut for toggle visibility (Shift+V)
     document.addEventListener('keydown', (e) => {
@@ -401,19 +424,19 @@ class ScoreFlow {
     // Quick Mode Actions
     if (this.btnModeSelect) {
       this.btnModeSelect.onclick = () => {
-        this.activeStampType = 'select'
+        this.activeStampType = this.activeStampType === 'select' ? 'view' : 'select'
         this.updateActiveTools()
       }
     }
     if (this.btnModeEraser) {
       this.btnModeEraser.onclick = () => {
-        this.activeStampType = 'eraser'
+        this.activeStampType = this.activeStampType === 'eraser' ? 'view' : 'eraser'
         this.updateActiveTools()
       }
     }
     if (this.btnModeAnchor) {
       this.btnModeAnchor.onclick = () => {
-        this.activeStampType = 'anchor'
+        this.activeStampType = this.activeStampType === 'anchor' ? 'view' : 'anchor'
         this.updateActiveTools()
       }
     }
@@ -464,24 +487,26 @@ class ScoreFlow {
         this.sidebar.classList.toggle('open')
       }
 
-      // Quick Modes
+      // Quick Modes (toggle: press again to return to view mode)
       if (e.key.toLowerCase() === 'v') {
-        this.activeStampType = 'select'
+        this.activeStampType = this.activeStampType === 'select' ? 'view' : 'select'
         this.updateActiveTools()
       }
       if (e.key.toLowerCase() === 'e') {
-        this.activeStampType = 'eraser'
+        this.activeStampType = this.activeStampType === 'eraser' ? 'view' : 'eraser'
         this.updateActiveTools()
       }
       if (e.key.toLowerCase() === 'a') {
-        this.activeStampType = 'anchor'
+        this.activeStampType = this.activeStampType === 'anchor' ? 'view' : 'anchor'
         this.updateActiveTools()
       }
 
-      // Esc to close all
+      // Esc: close all + return to view mode
       if (e.key === 'Escape') {
         this.toggleShortcuts(false)
         this.sidebar.classList.remove('open')
+        this.activeStampType = 'view'
+        this.updateActiveTools()
       }
 
       // Zoom
@@ -542,6 +567,28 @@ class ScoreFlow {
       // Debounced resize would be better but let's keep it simple
       if (this.pdf) this.renderPDF()
     })
+
+    // iPad Swipe Gesture: swipe up = next anchor, swipe down = prev anchor
+    let swipeStartY = 0, swipeStartX = 0, swipeStartTime = 0
+    const viewer = document.getElementById('viewer-container')
+    if (viewer) {
+      viewer.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return
+        swipeStartY = e.touches[0].clientY
+        swipeStartX = e.touches[0].clientX
+        swipeStartTime = Date.now()
+      }, { passive: true })
+      viewer.addEventListener('touchend', (e) => {
+        if (e.changedTouches.length !== 1) return
+        const dy = swipeStartY - e.changedTouches[0].clientY
+        const dx = swipeStartX - e.changedTouches[0].clientX
+        const dt = Date.now() - swipeStartTime
+        // Fast (<400ms), mostly vertical, long enough (>60px)
+        if (dt < 400 && Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+          dy > 0 ? this.jump(1) : this.jump(-1)
+        }
+      }, { passive: true })
+    }
   }
 
   toggleShortcuts(force) {
@@ -586,9 +633,21 @@ class ScoreFlow {
   }
 
   async getFingerprint(buffer) {
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    // crypto.subtle requires HTTPS — fallback to simple hash for HTTP (local dev / iPad)
+    if (window.isSecureContext && crypto.subtle) {
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    }
+    // Fallback: fast non-cryptographic hash (djb2) for HTTP environments
+    const bytes = new Uint8Array(buffer)
+    let hash = 5381
+    // Sample every 64 bytes for speed on large PDFs
+    for (let i = 0; i < bytes.length; i += 64) {
+      hash = ((hash << 5) + hash) ^ bytes[i]
+      hash = hash >>> 0 // keep as unsigned 32-bit
+    }
+    return 'fallback_' + hash.toString(16) + '_' + bytes.length
   }
 
   async loadPDF(data) {
@@ -615,6 +674,7 @@ class ScoreFlow {
     this.pdf = await loadingTask.promise
     console.log(`PDF loaded successfully. Pages: ${this.pdf.numPages}, Fingerprint: ${newFingerprint.slice(0, 8)}...`)
     await this.renderPDF()
+    this.showMainUI()
   }
 
   // Safe file opener: handles File System Access API permission re-requests
@@ -710,10 +770,14 @@ class ScoreFlow {
     const startAction = (e) => {
       const pos = getPos(e)
       const toolType = this.activeStampType
-      const isFreehand = ['pen', 'highlighter', 'line'].includes(toolType)
+
+      // View mode: no editing, let browser handle scroll/touch freely
+      if (toolType === 'view') return
 
       if (e.type === 'touchstart') e.preventDefault()
       isInteracting = true
+
+      const isFreehand = ['pen', 'highlighter', 'line'].includes(toolType)
 
       if (toolType === 'select') {
         // Use the hover-highlighted stamp as the drag target.
@@ -1823,9 +1887,17 @@ class ScoreFlow {
     document.addEventListener("mousemove", drag)
     document.addEventListener("mouseup", dragEnd)
 
-    // Touch support for iPad
-    el.addEventListener("touchstart", (e) => dragStart(e.touches[0]))
-    document.addEventListener("touchmove", (e) => drag(e.touches[0]))
+    // Touch support for iPad — must be non-passive to allow preventDefault
+    el.addEventListener("touchstart", (e) => {
+      if (!e.target.closest(".doc-drag-handle")) return
+      dragStart(e.touches[0])
+    }, { passive: false })
+    document.addEventListener("touchmove", (e) => {
+      if (isDragging) {
+        e.preventDefault() // prevent browser scroll while dragging bar
+        drag(e.touches[0])
+      }
+    }, { passive: false })
     document.addEventListener("touchend", dragEnd)
 
     function dragStart(e) {
@@ -1985,7 +2057,7 @@ class ScoreFlow {
       this.layers = storedLayers
 
       // But we MUST ensure core layers still have their standard IDs if they were somehow lost
-      const coreIds = ['draw', 'fingering', 'articulation', 'performance', 'other']
+      const coreIds = ['draw', 'fingering', 'articulation', 'performance', 'other', 'bowing']
       coreIds.forEach(id => {
         if (!this.layers.find(l => l.id === id)) {
           // This shouldn't happen normally, but safe fallback
@@ -2046,7 +2118,7 @@ class ScoreFlow {
   }
 
   async deleteLayer(layerId) {
-    const coreIds = ['draw', 'fingering', 'articulation', 'performance', 'other']
+    const coreIds = ['draw', 'fingering', 'articulation', 'performance', 'other', 'bowing']
     if (coreIds.includes(layerId)) {
       this.showDialog({ title: 'Protected Layer', message: 'Cannot delete core system layers.', icon: '🛡️' })
       return
@@ -3028,6 +3100,15 @@ class ScoreFlow {
   hideWelcome() {
     const screen = document.querySelector('.welcome-screen')
     if (screen) screen.classList.add('hidden')
+  }
+
+  showMainUI() {
+    // Reveal toolbars once a score is loaded
+    const ids = ['sidebar-trigger', 'floating-doc-bar', 'active-tools-container', 'jump-line', 'layer-toggle-fab']
+    ids.forEach(id => {
+      const el = document.getElementById(id)
+      if (el) el.classList.remove('hidden')
+    })
   }
 
   showProjectRepertoire() {

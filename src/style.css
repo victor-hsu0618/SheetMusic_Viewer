@@ -416,17 +416,17 @@ body {
 /* Smart Hover Sidebar Trigger - Optimized */
 .sidebar-trigger {
   position: fixed;
-  top: 0;
-  right: 0;
-  width: 60px;
-  height: 100vh;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
   z-index: 1500;
-  cursor: default;
+  cursor: pointer;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding-top: 20px;
   background: transparent;
+  /* Small tap target only — does not block scroll or touch */
 }
 
 .trigger-indicator {
@@ -438,7 +438,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.6;
+  opacity: 0.85;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
@@ -2548,9 +2548,9 @@ kbd {
 }
 
 .layer-shelf {
-  position: absolute;
-  left: 60px;
-  top: -60px;
+  position: fixed;
+  left: 12px;
+  top: 70px;
   width: 280px;
   background: rgba(255, 255, 255, 0.9);
   -webkit-backdrop-filter: blur(20px);
@@ -2561,8 +2561,8 @@ kbd {
   padding: 16px;
   opacity: 0;
   visibility: hidden;
-  transform: translateX(-20px);
-  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transform: translateY(-10px);
+  transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
   z-index: 2005;
 }
 
@@ -2570,12 +2570,10 @@ kbd {
   background: rgba(30, 41, 59, 0.85);
 }
 
-.layer-shelf.active,
-#layer-toggle-fab:hover~.layer-shelf,
-.layer-shelf:hover {
+.layer-shelf.active {
   opacity: 1;
   visibility: visible;
-  transform: translateX(0);
+  transform: translateY(0);
 }
 
 /* Invisible bridge for hover transition */

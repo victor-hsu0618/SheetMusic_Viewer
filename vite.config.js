@@ -3,6 +3,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
     base: '/SheetMusic_Viewer/',
+    server: {
+        host: true
+    },
     plugins: [
         VitePWA({
             registerType: 'autoUpdate',
