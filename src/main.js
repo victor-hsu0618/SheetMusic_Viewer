@@ -716,30 +716,21 @@ class ScoreFlow {
       isInteracting = true
 
       if (toolType === 'select') {
-        // Find all nearby stamps
-        const nearby = this.findNearbyStamps(pageNum, pos.x, pos.y, true)
+        // Use the hover-highlighted stamp as the drag target.
+        // The blue hover glow already shows the user which object they're about to grab,
+        // so no picker menu needed — just confirm the target on mousedown.
+        const target = this.selectHoveredStamp
+          || this.findClosestStamp(pageNum, pos.x, pos.y, true)
 
-        if (nearby.length === 0) {
+        if (!target) {
           isInteracting = false
-        } else if (nearby.length === 1) {
-          // Single target — select and start drag immediately
-          isMovingExisting = true
-          activeObject = nearby[0]
-          this.lastFocusedStamp = activeObject
-          this.selectHoveredStamp = null
-          this.redrawStamps(pageNum)
         } else {
-          // Multiple nearby — show picker menu for Select
-          isInteracting = false
-          const clientX = e.clientX || (e.touches && e.touches[0].clientX)
-          const clientY = e.clientY || (e.touches && e.touches[0].clientY)
-          this.showSelectMenu(nearby, clientX, clientY, (chosen) => {
-            // After picking, activate that object for dragging on next mousedown
-            this.lastFocusedStamp = chosen
-            isMovingExisting = true
-            activeObject = chosen
-            this.redrawStamps(pageNum)
-          })
+          isMovingExisting = true
+          activeObject = target
+          this.lastFocusedStamp = activeObject
+          this._dragLastPos = pos   // initialise delta tracking
+          this.selectHoveredStamp = null // clear highlight while dragging
+          this.redrawStamps(pageNum)
         }
       } else if (isFreehand) {
         activeObject = {
@@ -791,14 +782,15 @@ class ScoreFlow {
 
       if (isMovingExisting) {
         if (activeObject.points) {
-          // Move entire path (relative or absolute?) Let's do delta
-          const dx = pos.x - activeObject.points[0].x
-          const dy = pos.y - activeObject.points[0].y
+          // Use mouse delta (pos - lastPos) to avoid compounding drift
+          const dx = pos.x - (this._dragLastPos?.x ?? pos.x)
+          const dy = pos.y - (this._dragLastPos?.y ?? pos.y)
           activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }))
         } else {
           activeObject.x = pos.x
           activeObject.y = pos.y
         }
+        this._dragLastPos = pos
         this.redrawStamps(pageNum)
       } else if (activeObject.points) {
         if (this.activeStampType === 'line') {
@@ -875,6 +867,7 @@ class ScoreFlow {
       isInteracting = false
       isMovingExisting = false
       activeObject = null
+      this._dragLastPos = null
     }
 
     overlay.addEventListener('mousedown', startAction)
