@@ -94,101 +94,197 @@
             </button>
             <button id="close-sidebar" class="sidebar-close-btn">✕</button>
           </div>
-        </div>
+        </div> <!-- End Sidebar Header -->
 
-        <!-- Group 1: Document & View -->
-        <div class="menu-group">
-          <div class="menu-group-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-            <span>Document & Display</span>
-          </div>
-          <div class="menu-group-content">
-            <div class="setting-item">
-              <label>Library</label>
-              <button id="upload-btn" class="btn btn-primary btn-full">
-                Open Score
-                <input type="file" id="pdf-upload" accept="application/pdf" hidden />
-              </button>
+        <div class="sidebar-scroll">
+          <!-- Group 0: Member Profile (New) -->
+          <div class="menu-group profile-group">
+            <div class="menu-group-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+              </svg>
+              <span>Member Identity</span>
             </div>
-            <div class="setting-item">
-              <label>Magnification</label>
-              <div class="zoom-control-suite">
-                <button id="zoom-out" class="zoom-btn" title="Zoom Out">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                </button>
-                <div class="zoom-display">
-                  <span id="zoom-level">150%</span>
-                  <span class="zoom-label">Scale</span>
+            <div class="menu-group-content">
+              <div id="active-profile-card" class="active-profile-card">
+                <div class="profile-avatar" id="profile-avatar-initial">V</div>
+                <div class="profile-details">
+                  <div class="profile-name" id="display-name">Victor Hsu</div>
+                  <div class="profile-meta" id="display-orchestra">Taipei Symphony Orchestra</div>
                 </div>
-                <button id="zoom-in" class="zoom-btn" title="Zoom In">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
+                <button id="edit-profile-btn" class="btn-sm-icon" title="Switch or Edit Profile">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 2.1l4 4-4 4M3 21l9-9m1.8-1.8a2.1 2.1 0 1 1 3 3L11.8 18H9v-2.8l5-5z" />
                   </svg>
                 </button>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Group 2: Notation Layers -->
-        <div class="menu-group">
-          <div class="menu-group-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-            <span>Notation Groups</span>
-          </div>
-          <div class="menu-group-content">
-            <div class="setting-item">
-              <label>Visibility Control</label>
-              <div class="layer-list" id="layer-list"></div>
+          <!-- Group 1: Document & Display -->
+          <div class="menu-group">
+            <div class="menu-group-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span>Document & Display</span>
             </div>
-          </div>
-        </div>
-
-        <!-- Group 3: Navigation & Workflow -->
-        <div class="menu-group">
-          <div class="menu-group-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-            <span>Workflow & Interaction</span>
-          </div>
-          <div class="menu-group-content">
-            <div class="setting-item">
-              <div class="jump-settings-header">
-                <label>Jump Offset</label>
-                <span id="jump-offset-value">1.0cm</span>
+            <div class="menu-group-content">
+              <div class="setting-item">
+                <label>Library</label>
+                <button id="upload-btn" class="btn btn-primary btn-full">
+                  Open Score
+                  <input type="file" id="pdf-upload" accept="application/pdf" hidden />
+                </button>
               </div>
-              <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="modern-slider">
+              <div class="setting-item">
+                <label>Magnification</label>
+                <div class="zoom-control-suite">
+                  <button id="zoom-out" class="zoom-btn" title="Zoom Out">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                  <div class="zoom-display">
+                    <span id="zoom-level">150%</span>
+                    <span class="zoom-label">Scale</span>
+                  </div>
+                  <button id="zoom-in" class="zoom-btn" title="Zoom In">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Group 4: Maintenance -->
-        <div class="menu-group danger-zone">
-          <div class="menu-group-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round">
-              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-            <span>Danger Zone</span>
+          <!-- Group 2: Community & Shared Space -->
+          <div class="menu-group">
+            <div class="menu-group-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              <span>Section Shared Space</span>
+            </div>
+            <div class="menu-group-content">
+              <div id="community-hub" class="community-hub">
+                <div class="community-header">
+                  <span class="hub-status">Section: First Violins</span>
+                  <button id="publish-btn" class="btn btn-primary btn-sm">Publish Work</button>
+                </div>
+                <div id="shared-list" class="shared-list">
+                  <!-- Shared marking cards will appear here -->
+                  <div class="empty-state">No shared work yet today.</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="menu-group-content">
-            <button id="clear-stamps-btn" class="btn btn-danger-outline btn-full">Reset All Annotation Data</button>
+
+          <!-- Group 3: Annotation Sources (Personas) -->
+          <div class="menu-group">
+            <div class="menu-group-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87m-4-12a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>Annotation Sources</span>
+            </div>
+            <div class="menu-group-content">
+              <div id="source-list" class="source-list">
+                <!-- Dynamically populated sources -->
+              </div>
+              <div class="mt-10">
+                <button id="add-source-btn" class="btn btn-outline btn-full btn-sm">
+                  + Add New Persona
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+
+          <!-- Group 3: Share & Exchange -->
+          <div class="menu-group">
+            <div class="menu-group-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8m-10-9v13m-5-5l5 5 5-5" />
+              </svg>
+              <span>Exchange & Backup</span>
+            </div>
+            <div class="menu-group-content">
+              <div class="setting-item">
+                <div class="exchange-row">
+                  <button id="export-btn" class="btn btn-outline flex-1"
+                    title="Export current annotations to a JSON file">
+                    Export JSON
+                  </button>
+                  <button id="import-btn" class="btn btn-outline flex-1" title="Import annotations from a JSON file">
+                    Import JSON
+                    <input type="file" id="import-file" accept=".json" hidden />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 3: Notation Layers -->
+          <div class="menu-group">
+            <div class="menu-group-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              <span>Notation Groups</span>
+            </div>
+            <div class="menu-group-content">
+              <div class="setting-item">
+                <label>Visibility Control</label>
+                <div class="layer-list" id="layer-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 3: Navigation & Workflow -->
+          <div class="menu-group">
+            <div class="menu-group-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span>Workflow & Interaction</span>
+            </div>
+            <div class="menu-group-content">
+              <div class="setting-item">
+                <div class="jump-settings-header">
+                  <label>Jump Offset</label>
+                  <span id="jump-offset-value">1.0cm</span>
+                </div>
+                <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="modern-slider">
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 4: Maintenance -->
+          <div class="menu-group danger-zone">
+            <div class="menu-group-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              <span>Danger Zone</span>
+            </div>
+            <div class="menu-group-content">
+              <button id="clear-stamps-btn" class="btn btn-danger-outline btn-full">Reset All Annotation Data</button>
+            </div>
+          </div>
+        </div> <!-- End Sidebar Scroll -->
+      </div> <!-- End Sidebar Content -->
     </aside>
 
     <!-- Mobile Toolbar Removed -->
@@ -241,8 +337,26 @@
         <p class="modal-footer">Press any key to close</p>
       </div>
     </div>
-  </div>
-  <script type="module" src="/src/main.js"></script>
+
+    <!-- Multi-Profile Manager Modal (New) -->
+    <div id="profile-modal" class="modal-overlay">
+      <div class="modal-content profile-modal">
+        <div class="modal-header">
+          <h3>Musical Identity Manager</h3>
+          <button class="close-modal" id="close-profile-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-intro">Manage your roles across different ensembles and orchestras.</p>
+          <div id="profile-list" class="profile-list">
+            <!-- Profiles populated here -->
+          </div>
+          <button id="add-new-profile-btn" class="btn btn-outline btn-full mt-20">+ Add New Orchestral Role</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.5.207/pdf.min.js"></script>
+    <script type="module" src="/src/main.js"></script>
 </body>
 
 </html>
