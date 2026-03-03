@@ -31,10 +31,10 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
     - **快速刪除熱鍵**：在選擇模式下，按下 `Delete` 或 `Backspace` 即可移除目前焦點物件。
 - **類別狀態記憶 (Category Memory)**：
     - 切換不同選單類別（如 Pens 換到 Fingering）時，系統會自動選回到該類別「上次最後使用」的物件，減少重複點擊。
-- **多重演奏人格引擎 (Musical Multi-Persona Engine)**：
-    - **數位疊加 (Digital Overlay)**：支援同時載入多個來源（如：自我研究、指揮筆記、首席弓法）。
-    - **對比與透明度 (Compare & Ghosting)**：各個人格具備獨立的顯隱開關與透明度滑條 (Opacity)，實現「透視比對」讀譜流。
-    - **來源歸屬**：新標記自動路由至當前 Active Persona，確保資料結構清晰不混亂。
+- **多重演奏風格引擎 (Multi-Style Interpretation Engine)**：
+    - **數位疊加 (Digital Overlay)**：支援同時載入多個來源（如：自我研究、指揮詮釋、首席風格）。
+    - **對比與透明度 (Compare & Ghosting)**：各個風格具備獨立的顯隱開關與透明度滑條 (Opacity)，實現「詮釋比對」讀譜流。
+    - **來源歸屬**：新標記自動路由至當前 Active Style，確保資料結構清晰不混亂。
 
 ### 3. 智慧錨點跳轉與基準線 (Smart Anchor & Jump System)
 - **Anchor 標記**：特殊的旗幟工具，用於標記樂譜中關鍵的跳轉點。
@@ -114,6 +114,7 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 
 ## 專業術語與流程定義 (Professional Terminology)
 - **Concertmaster Setup (首席標定)**：由樂團首席（Concertmaster）統一訂定的官方標記（包含弓法與指法）。全團團員通常以此為基準進行同步，確保舞台動作一致與音樂詮釋統一。
+- **Performance Interpretation (演奏風格/詮釋)**：針對同一曲目的不同處理方式（如不同指揮的詮釋、不同大師的指法）。
 - **Ghosting (幽靈預覽)**：標記物件在正式放置前，以半透明方式跟隨鼠標/筆尖的對位過程。
 - **Score Fingerprint (樂譜指紋)**：PDF 內容的唯一數位簽章，用來區分不同出版社或不同修訂時間的相同曲目，確保標記精準對齊。
 

@@ -981,7 +981,15 @@ code {
   pointer-events: auto;
 }
 
-.modal-card {
+/* No changes needed here, consolidating backgrounds into the block above */
+
+.modal-overlay.active .modal-card,
+.modal-overlay.active .modal-content {
+  transform: translateY(0);
+}
+
+.modal-card,
+.modal-content {
   background: var(--bg-card);
   width: 480px;
   max-width: 90vw;
@@ -991,10 +999,6 @@ code {
   padding: 32px;
   transform: translateY(20px);
   transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-}
-
-.modal-overlay.active .modal-card {
-  transform: translateY(0);
 }
 
 .modal-header {
