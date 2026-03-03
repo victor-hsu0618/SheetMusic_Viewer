@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "node tests/automation-check.js"
   },
   "devDependencies": {
+    "playwright": "^1.42.1",
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0"
   },
