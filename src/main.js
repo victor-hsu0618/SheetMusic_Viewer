@@ -974,6 +974,12 @@ class ScoreFlow {
     // Check if expanded or collapsed
     const isExpanded = this.activeToolsContainer.classList.contains("expanded")
 
+    // Always sync the active tool to the viewer so CSS cursors & overlay work
+    // regardless of whether the toolbar is collapsed or expanded
+    if (this.viewer) {
+      this.viewer.dataset.activeTool = this.activeStampType
+    }
+
     // 0. Active Tool FAB (Visible ONLY when collapsed)
     const fab = document.createElement("div")
     fab.className = "active-tool-fab"
@@ -1085,7 +1091,7 @@ class ScoreFlow {
       })
     })
     this.activeToolsContainer.appendChild(grid)
-    this.viewer.dataset.activeTool = this.activeStampType
+
 
     // 3.5 Resize Handle (Professional Custom Control)
     const resizer = document.createElement("div")
