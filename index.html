@@ -30,11 +30,76 @@
             <circle cx="15" cy="19" r="1.5" />
           </svg>
         </div>
-        <div class="zoom-box">
-          <button id="zoom-in" class="zoom-btn-mini">+</button>
-          <span id="zoom-level">150%</span>
-          <button id="zoom-out" class="zoom-btn-mini">-</button>
+
+        <div class="jump-control-suite">
+          <button id="btn-jump-head" class="zoom-btn-mini navigation-btn" title="Jump to Beginning (Home)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 20L9 12l10-8v16zM5 19V5" />
+            </svg>
+          </button>
+          <button id="btn-jump-end" class="zoom-btn-mini navigation-btn" title="Jump to End (End)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 4l10 8-10 8V4zM19 5v14" />
+            </svg>
+          </button>
         </div>
+
+        <div class="doc-bar-divider"></div>
+
+        <div class="quick-modes-suite">
+          <button id="btn-mode-select" class="zoom-btn-mini mode-btn active" title="Select (V)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+              <path d="M13 13l6 6" />
+            </svg>
+          </button>
+          <button id="btn-mode-eraser" class="zoom-btn-mini mode-btn" title="Eraser (E)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" />
+              <path d="M17 17L7 7" />
+            </svg>
+          </button>
+          <button id="btn-mode-anchor" class="zoom-btn-mini mode-btn" title="Anchor Tool (A)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M5 12h14" />
+              <circle cx="12" cy="12" r="4" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="doc-bar-divider"></div>
+
+        <div class="zoom-box">
+          <button id="zoom-in" class="zoom-btn-mini" title="Zoom In">+</button>
+          <span id="zoom-level">150%</span>
+          <button id="zoom-out" class="zoom-btn-mini" title="Zoom Out">-</button>
+        </div>
+
+        <div class="doc-bar-divider"></div>
+
+        <!-- NEW: Layer Visibility Toggle within Doc Bar -->
+        <div class="layer-control-suite">
+          <button id="layer-toggle-fab" class="zoom-btn-mini layer-btn-mini" title="Notation Visibility (Shift+V)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+          <div id="layer-shelf" class="layer-shelf toolbar-popover">
+            <div class="shelf-header">
+              <h4>Notation Settings</h4>
+              <button id="close-layer-shelf" class="btn-icon-mini">✕</button>
+            </div>
+            <div id="external-layer-list" class="layer-list-mini"></div>
+
+            <div class="shelf-footer mt-15 pt-15 border-top">
+              <button id="add-layer-btn" class="btn btn-primary btn-full mb-10">+ Add Category</button>
+              <button id="reset-layers-btn" class="btn btn-outline btn-full text-danger btn-smaller">Reset to System
+                Standards</button>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Visual Jump Line Indicator -->
@@ -45,325 +110,412 @@
       <div id="pdf-viewer" class="pdf-viewer">
         <div class="welcome-screen">
           <div class="welcome-card">
-            <div id="welcome-initial-view">
+            <!-- STAGE 1: Performance Mission Hub -->
+            <div id="mission-selection-view" class="mission-selection-view">
               <div class="welcome-header">
-                <div class="welcome-icon">🎼</div>
-                <h2>Welcome to ScoreFlow</h2>
-                <p>Your elite digital music stand is ready.</p>
+                <div class="welcome-icon">🎯</div>
+                <h2>Performance Missions</h2>
+                <p>Start a new ensemble project or resume a recent mission.</p>
               </div>
-
-              <div class="guide-grid">
-                <div class="guide-item">
-                  <div class="guide-step">1</div>
-                  <div class="guide-body">
-                    <h4>Launch Repertoire</h4>
-                    <p>Pick a single PDF or open an entire <strong>Performance Project</strong> folder.</p>
-                  </div>
-                </div>
-                <div class="guide-item">
-                  <div class="guide-step">2</div>
-                  <div class="guide-body">
-                    <h4>Annotate</h4>
-                    <p>Expand the <strong>Smart Palette</strong> at the bottom to pick notation tools.</p>
-                  </div>
-                </div>
-                <div class="guide-item">
-                  <div class="guide-step">3</div>
-                  <div class="guide-body">
-                    <h4>Flow</h4>
-                    <p>Use <code>Space</code> or <code>J</code>/<code>K</code> to jump between musical anchors.</p>
-                  </div>
-                </div>
-              </div>
-
               <div class="welcome-actions">
-                <button id="welcome-open-file" class="btn btn-primary start-btn">
-                  Open Solo Score (PDF)
-                </button>
-                <button id="welcome-open-project" class="btn btn-outline start-btn">
-                  📁 Open Performance Project (Folder)
-                </button>
+                <button id="start-new-mission-btn" class="btn btn-primary start-btn mb-20">+ Start New Mission</button>
+                <div id="recent-missions-container" class="recent-missions-list mb-20">
+                  <!-- Recent Mission Cards (Folder + Role) -->
+                </div>
+                <div class="text-center mt-20">
+                  <button id="welcome-open-file-alt" class="btn btn-text-muted">Start Solo Session (PDF) →</button>
+                </div>
               </div>
             </div>
 
-            <div id="project-repertoire-view" class="hidden">
+            <!-- STAGE 2: Mission Setup (Config & Identity) -->
+            <div id="identity-selection-view" class="identity-selection-view hidden">
               <div class="welcome-header">
-                <div class="welcome-icon">📂</div>
-                <h2 id="current-project-name">Project Repertoire</h2>
-                <p>Select a score to begin your performance.</p>
+                <div class="welcome-icon">⚡</div>
+                <h2 id="setup-mission-title" class="mission-setup-title">
+                  <span class="setup-subtitle">Setup</span>
+                  <span>PERFORMANCE MISSION</span>
+                </h2>
+                <p>Configure your workspace and identity to begin the ensemble session.</p>
               </div>
 
-              <div class="library-search-box mb-20">
-                <input type="text" id="project-search" placeholder="Search project scores..."
-                  title="Filter project files" class="search-input-mini" />
-              </div>
+              <div class="mission-setup-content">
+                <!-- PAGE 1: Identity Selection -->
+                <div id="setup-stage-1" class="setup-stage">
+                  <div class="setup-section">
+                    <span class="setup-label">
+                      <span class="setup-number">1</span>
+                      Choose your orchestral identity:
+                    </span>
+                    <div id="welcome-profile-list" class="welcome-profile-grid-mini mb-15">
+                      <!-- Populated by JS -->
+                    </div>
+                    <button id="welcome-add-profile-btn" class="btn btn-outline btn-smaller">+ Create New
+                      Identity</button>
+                  </div>
+                </div>
 
-              <div id="project-scores-list" class="project-scores-grid">
-                <!-- Dynamically populated -->
-              </div>
+                <!-- PAGE 2: Score Folder (Required) -->
+                <div id="setup-stage-2" class="setup-stage hidden">
+                  <div class="setup-section">
+                    <div class="setup-nav-header">
+                      <span class="setup-label">
+                        <span class="setup-number">2</span>
+                        Repertoire Selection:
+                      </span>
+                      <button class="setup-back-btn btn btn-outline btn-smaller" data-to="1">← Identity Stage</button>
+                    </div>
 
-              <button id="project-back-btn" class="btn btn-text-primary mt-20">← Switch Project</button>
+                    <div id="setup-card-score" class="setup-folder-card highlight-score large-card">
+                      <div class="card-icon">📂</div>
+                      <div class="card-title">Select Score Folder</div>
+                      <div id="setup-status-score" class="status-pill pulse">Required</div>
+                      <p class="card-hint">Point this to the folder containing your music PDFs.</p>
+                    </div>
+
+                    <div class="mission-tip">
+                      💡 ScoreFlow will scan this folder for all sheet music.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- PAGE 3: Shared Folder (Optional) -->
+                <div id="setup-stage-3" class="setup-stage hidden">
+                  <div class="setup-section">
+                    <div class="setup-nav-header">
+                      <span class="setup-label">
+                        <span class="setup-number">3</span>
+                        Ensemble Sync (Optional):
+                      </span>
+                      <button class="setup-back-btn btn btn-outline btn-smaller" data-to="2">← Scores Stage</button>
+                    </div>
+
+                    <div id="setup-card-shared" class="setup-folder-card optional large-card">
+                      <div class="card-icon">🎻</div>
+                      <div class="card-title">Link Shared Folder</div>
+                      <div id="setup-status-shared" class="status-pill blue">Optional</div>
+                      <p class="card-hint">Collaborate with your section in real-time.</p>
+                    </div>
+
+                    <div class="mission-tip">
+                      💡 You can choose to skip this and link it later.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Final Action Section -->
+              <div class="welcome-actions full-width-actions mt-40">
+                <button id="final-start-mission" class="btn btn-primary start-btn mb-15" disabled>
+                  Start Mission Now →
+                </button>
+                <div class="text-center">
+                  <button id="back-to-missions-btn" class="btn btn-text-muted">← Back to Mission Hub</button>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Hide Stage 1/2 Old Views -->
+          <div id="welcome-initial-view" class="hidden"></div>
+
+          <div id="project-repertoire-view" class="hidden">
+            <div class="welcome-header">
+              <div class="welcome-icon">📂</div>
+              <h2 id="current-project-name">Project Repertoire</h2>
+              <p>Select a score to begin your performance.</p>
+            </div>
+
+            <div class="library-search-box mb-20">
+              <input type="text" id="project-search" placeholder="Search project scores..." title="Filter project files"
+                class="search-input-mini" />
+            </div>
+
+            <div id="project-scores-list" class="project-scores-grid">
+              <!-- Dynamically populated -->
+            </div>
+
+            <button id="project-back-btn" class="btn btn-text-primary mt-20">← Switch Project</button>
           </div>
         </div>
       </div>
-    </main>
+  </div>
+  </main>
 
-    <!-- Floating Stamp Toolbar (New!) -->
-    <div id="active-tools-container" class="floating-stamp-bar">
-      <!-- Dynamically populated by JS -->
-    </div>
+  <!-- Floating Stamp Toolbar (New!) -->
+  <div id="active-tools-container" class="floating-stamp-bar">
+    <!-- Dynamically populated by JS -->
+  </div>
 
-    <aside id="sidebar" class="sidebar">
-      <div class="sidebar-content">
-        <!-- Header -->
-        <div class="sidebar-header">
-          <div class="logo">
-            <span class="logo-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round">
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-            </span>
-            <h3>ScoreFlow <span class="v-tag">v2.0</span></h3>
+  <aside id="sidebar" class="sidebar">
+    <div id="sidebar-resizer" class="sidebar-resizer"></div>
+    <div class="sidebar-content">
+      <!-- Header -->
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round">
+              <path d="M9 18V5l12-2v13" />
+              <circle cx="6" cy="18" r="3" />
+              <circle cx="18" cy="16" r="3" />
+            </svg>
+          </span>
+          <h3>ScoreFlow <span class="v-tag">v2.0</span></h3>
+        </div>
+        <div class="sidebar-header-actions">
+          <button id="lock-sidebar" class="sidebar-lock-btn" title="Toggle Menu Lock">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </button>
+          <button id="close-sidebar" class="sidebar-close-btn">✕</button>
+        </div>
+      </div> <!-- End Sidebar Header -->
+
+      <!-- Tab Navigation -->
+      <nav class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="library" title="Score Library">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+          <span>Library</span>
+        </button>
+        <button class="sidebar-tab" data-tab="orchestra" title="Orchestra Master">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="17" cy="21" r="3" />
+            <circle cx="7" cy="21" r="3" />
+            <path d="M7 18V9l10-2V7" />
+            <line x1="7" y1="14" x2="17" y2="12" />
+          </svg>
+          <span>Orchestra</span>
+        </button>
+        <button class="sidebar-tab" data-tab="settings" title="App Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <!-- Tab Panels -->
+      <div class="sidebar-tab-panels">
+
+        <!-- Tab: Library -->
+        <div class="tab-panel active" data-panel="library">
+          <button id="exit-mission-btn" class="exit-mission-btn" title="Close this mission and return to hub">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Exit Performance Mission
+          </button>
+          <button id="select-library-btn" class="btn btn-outline btn-full mb-10">
+            📁 Change Project Folder...
+          </button>
+          <div class="library-search-box mb-10">
+            <input type="text" id="library-search" placeholder="Search repertoire..."
+              title="Search for a score in your library" class="search-input-mini" />
           </div>
-          <div class="sidebar-header-actions">
-            <button id="lock-sidebar" class="sidebar-lock-btn" title="Toggle Menu Lock">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+          <button id="quick-load-menu-btn" class="btn btn-secondary btn-full mb-10">
+            🕒 Recent Scores...
+          </button>
+          <input type="file" id="pdf-upload" accept="application/pdf" title="Select a PDF score to open" hidden />
+          <div id="library-scores-list" class="library-scores-list">
+            <div class="empty-state">No scores in library yet.</div>
+          </div>
+        </div>
+
+
+        <!-- Tab: Orchestra -->
+        <div class="tab-panel" data-panel="orchestra">
+          <div class="tab-section-label">1. Private Workspace (My Backup)</div>
+          <div class="collaboration-setup-box mb-10">
+            <button id="connect-personal-btn" class="btn btn-outline btn-full">
+              📁 Link Personal Cloud Folder...
             </button>
-            <button id="close-sidebar" class="sidebar-close-btn">✕</button>
-          </div>
-        </div> <!-- End Sidebar Header -->
-
-        <div class="sidebar-scroll">
-
-          <!-- D. Score Library (New) -->
-          <div class="menu-group">
-            <div class="menu-group-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              </svg>
-              <span>Score Library</span>
-            </div>
-            <div class="menu-group-content">
-              <div class="library-actions mb-10">
-                <button id="select-library-btn" class="btn btn-outline btn-full mb-10">
-                  📁 Select Library Folder...
-                </button>
-                <div class="library-search-box mb-10">
-                  <input type="text" id="library-search" placeholder="Search repertoire..."
-                    title="Search for a score in your library" class="search-input-mini" />
-                </div>
-                <div class="sub-label">Quick Performance</div>
-                <button id="quick-load-menu-btn" class="btn btn-secondary btn-full mb-10">
-                  🕒 Recent Scores...
-                </button>
-                <input type="file" id="pdf-upload" accept="application/pdf" title="Select a PDF score to open" hidden />
-              </div>
-              <div id="library-scores-list" class="library-scores-list">
-                <!-- Folder-based listing of recent/cached scores -->
-                <div class="empty-state">No scores in recent folder.</div>
-              </div>
-            </div>
+            <div id="personal-status" class="hub-status-mini">No personal folder linked.</div>
           </div>
 
-          <!-- B. Score Functions (Current Document) -->
-          <div class="menu-group">
-            <div class="menu-group-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              <span>Score Systems</span>
-            </div>
-            <div class="menu-group-content">
-              <div class="setting-item">
-                <label>Notation Visibility Groups</label>
-                <div class="layer-list" id="layer-list"></div>
-              </div>
-              <div class="danger-zone-inline">
-                <button id="clear-stamps-btn" class="btn-text-danger">Clear Score Annotations</button>
-              </div>
-            </div>
+          <div class="tab-section-label">2. Orchestra Workspace (Shared)</div>
+          <div class="collaboration-setup-box mb-10">
+            <button id="connect-orchestra-btn" class="btn btn-outline btn-full">
+              👥 Link Orchestra Group Folder...
+            </button>
+            <div id="orchestra-status" class="hub-status-mini">No group folder linked.</div>
           </div>
 
-          <!-- C. Orchestra Master (Collaboration) -->
-          <div class="menu-group">
-            <div class="menu-group-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-              <span>Orchestra Master</span>
-            </div>
-            <div class="menu-group-content">
-              <!-- Shared Space -->
-              <div class="sub-label">Flow & Collaboration</div>
-              <div id="community-hub" class="community-hub-mini">
-                <div class="sync-actions-grid mb-10">
-                  <button id="share-notes-btn" class="btn btn-primary btn-full">
-                    📤 Share Notes to Section
-                  </button>
-                  <button id="fetch-notes-btn" class="btn btn-outline btn-full">
-                    📥 Fetch from Orchestra
-                  </button>
-                </div>
-                <div class="hub-actions">
-                  <button id="connect-cloud-btn" class="btn btn-text-primary btn-sm">Connect Cloud</button>
-                </div>
-                <div id="shared-list" class="shared-list-thin"></div>
-              </div>
+          <div class="tab-divider"></div>
 
-              <!-- Styles -->
-              <div class="sub-label mt-10">Interpretation Styles</div>
-              <div id="source-list" class="source-list-compact"></div>
-              <button id="add-source-btn" class="btn-text-primary">+ Add New Style</button>
+          <div id="community-hub" class="community-hub-mini">
+            <div class="tab-section-label">Collaboration Controls</div>
+            <div class="sync-actions-grid mb-10">
+              <button id="publish-personal-btn" class="btn btn-secondary btn-full"
+                title="Save your current markings to your private folder">
+                💾 Private Backup
+              </button>
+              <button id="publish-orchestra-btn" class="btn btn-primary btn-full"
+                title="Publish your current markings to the orchestra group">
+                📤 Share to Orchestra
+              </button>
+            </div>
+            <button id="sync-all-btn" class="btn btn-outline btn-full mb-10">
+              🔄 Refresh All Workspaces
+            </button>
+            <div id="shared-list" class="shared-list-thin">
+              <div class="empty-state-hub">Link folders to see available markings.</div>
             </div>
           </div>
-
-          <!-- A. App Systems -->
-          <div class="menu-group">
-            <div class="menu-group-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <path d="M9 3v18M3 9h18" />
-              </svg>
-              <span>App Systems</span>
-            </div>
-            <div class="menu-group-content">
-              <!-- Identity -->
-              <div id="active-profile-card" class="profile-card-minimal">
-                <div class="prof-avatar" id="profile-avatar-initial">V</div>
-                <div class="prof-text">
-                  <div id="display-name">Victor Hsu</div>
-                  <small id="display-orchestra">Taipei Symphony</small>
-                </div>
-                <button id="edit-profile-btn" class="btn-icon">⚙️</button>
-              </div>
-
-              <!-- Backup -->
-              <div class="exchange-grid mt-10">
-                <button id="export-btn" class="btn-outline-sm">Export Data</button>
-                <button id="import-btn" class="btn-outline-sm">
-                  Import Data
-                  <input type="file" id="import-file" accept=".json" title="Select a JSON file to import annotations"
-                    hidden />
-                </button>
-              </div>
-
-              <!-- Workflow -->
-              <div class="setting-item mt-10">
-                <label>Jump Interaction</label>
-                <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="mini-slider"
-                  title="Adjust the vertical offset for anchor jumps">
-                <span id="jump-offset-value">1.0cm</span>
-              </div>
-
-              <div class="danger-zone-footer mt-20">
-                <button id="reset-system-btn" class="btn-text-danger">Reset to System Default</button>
-              </div>
-            </div>
-          </div>
-
-        </div> <!-- End Sidebar Scroll -->
-      </div> <!-- End Sidebar Content -->
-    </aside>
-
-    <!-- Mobile Toolbar Removed -->
-
-    <!-- YouTube-style Keyboard Shortcuts Overlay -->
-    <div id="shortcuts-modal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>Keyboard Shortcuts</h3>
-          <button id="close-shortcuts" class="modal-close-btn">✕</button>
+          <div class="tab-divider"></div>
+          <div class="tab-section-label">Interpretation Styles</div>
+          <div id="source-list" class="source-list-compact"></div>
+          <button id="add-source-btn" class="btn-text-primary">+ Add New Style</button>
         </div>
-        <div class="shortcuts-grid">
-          <div class="shortcut-item">
-            <span class="shortcut-label">Jump Next Anchor</span>
-            <div class="keys">
-              <kbd>Space</kbd> <kbd>J</kbd>
+
+        <!-- Tab: Settings -->
+        <div class="tab-panel" data-panel="settings">
+          <div id="active-profile-card" class="profile-card-minimal">
+            <div class="prof-avatar" id="profile-avatar-initial">G</div>
+            <div class="prof-text">
+              <div id="display-name">Guest Musician</div>
+              <small id="display-orchestra">Standard Orchestra</small>
             </div>
+            <button id="edit-profile-btn" class="btn-icon">⚙️</button>
           </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Jump Prev Anchor</span>
-            <div class="keys">
-              <kbd>Shift</kbd> + <kbd>Space</kbd> <kbd>K</kbd>
-            </div>
+          <div class="tab-divider"></div>
+          <div class="tab-section-label">Data Backup</div>
+          <div class="exchange-grid">
+            <button id="export-btn" class="btn-outline-sm">Export Data</button>
+            <button id="import-btn" class="btn-outline-sm">
+              Import Data
+              <input type="file" id="import-file" accept=".json" title="Select a JSON file to import annotations"
+                hidden />
+            </button>
           </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Zoom In / Out</span>
-            <div class="keys">
-              <kbd>+</kbd> <kbd>-</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Toggle Settings Sidebar</span>
-            <div class="keys">
-              <kbd>S</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Show / Hide This Help</span>
-            <div class="keys">
-              <kbd>?</kbd> <kbd>H</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Close Menus / Overlays</span>
-            <div class="keys">
-              <kbd>Esc</kbd>
-            </div>
+          <div class="tab-divider"></div>
+          <div class="tab-section-label">Jump Interaction</div>
+          <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="mini-slider"
+            title="Adjust the vertical offset for anchor jumps">
+          <span id="jump-offset-value">1.0cm</span>
+          <div class="tab-divider"></div>
+          <button id="reset-system-btn" class="btn-text-danger">Reset to System Default</button>
+        </div>
+
+      </div> <!-- End Tab Panels -->
+    </div> <!-- End Sidebar Content -->
+  </aside>
+
+
+  <!-- Mobile Toolbar Removed -->
+
+  <!-- YouTube-style Keyboard Shortcuts Overlay -->
+  <div id="shortcuts-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Keyboard Shortcuts</h3>
+        <button id="close-shortcuts" class="modal-close-btn">✕</button>
+      </div>
+      <div class="shortcuts-grid">
+        <div class="shortcut-item">
+          <span class="shortcut-label">Jump Next Anchor</span>
+          <div class="keys">
+            <kbd>Space</kbd> <kbd>J</kbd>
           </div>
         </div>
-        <p class="modal-footer">Press any key to close</p>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Jump Prev Anchor</span>
+          <div class="keys">
+            <kbd>Shift</kbd> + <kbd>Space</kbd> <kbd>K</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Zoom In / Out</span>
+          <div class="keys">
+            <kbd>+</kbd> <kbd>-</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Toggle Settings Sidebar</span>
+          <div class="keys">
+            <kbd>S</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Show / Hide This Help</span>
+          <div class="keys">
+            <kbd>?</kbd> <kbd>H</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Close Menus / Overlays</span>
+          <div class="keys">
+            <kbd>Esc</kbd>
+          </div>
+        </div>
+      </div>
+      <p class="modal-footer">Press any key to close</p>
+    </div>
+  </div>
+
+  <!-- Quick Load Repertoire Modal (New) -->
+  <div id="quick-load-modal" class="modal-overlay">
+    <div class="modal-content recent-scores-modal">
+      <div class="modal-header">
+        <h3>Quick Load: Recent Repertoire</h3>
+        <button class="close-modal" id="close-quick-load-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">Quickly access your recently opened solo scores.</p>
+        <div id="recent-scores-list" class="recent-scores-list">
+          <!-- Populated from localStorage -->
+          <div class="empty-state">No recent solo scores recorded.</div>
+        </div>
+        <button id="open-new-solo-btn" class="btn btn-primary btn-full mt-20">+ Open New Solo PDF</button>
       </div>
     </div>
+  </div>
 
-    <!-- Quick Load Repertoire Modal (New) -->
-    <div id="quick-load-modal" class="modal-overlay">
-      <div class="modal-content recent-scores-modal">
-        <div class="modal-header">
-          <h3>Quick Load: Recent Repertoire</h3>
-          <button class="close-modal" id="close-quick-load-modal">&times;</button>
+  <!-- Multi-Profile Manager Modal (New) -->
+  <div id="profile-modal" class="modal-overlay">
+    <div class="modal-content profile-modal">
+      <div class="modal-header">
+        <h3>Musical Identity Manager</h3>
+        <button class="close-modal" id="close-profile-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">Manage your roles across different ensembles and orchestras.</p>
+        <div id="profile-list" class="profile-list">
+          <!-- Profiles populated here -->
         </div>
-        <div class="modal-body">
-          <p class="modal-intro">Quickly access your recently opened solo scores.</p>
-          <div id="recent-scores-list" class="recent-scores-list">
-            <!-- Populated from localStorage -->
-            <div class="empty-state">No recent solo scores recorded.</div>
-          </div>
-          <button id="open-new-solo-btn" class="btn btn-primary btn-full mt-20">+ Open New Solo PDF</button>
+        <button id="add-new-profile-btn" class="btn btn-outline btn-full mt-20">+ Add New Orchestral Role</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom System Dialog (New: Replaces native alert/confirm) -->
+  <div id="system-dialog" class="modal-overlay">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h3 id="dialog-title">System Message</h3>
+        <button class="close-modal" id="close-dialog">&times;</button>
+      </div>
+      <div class="modal-body text-center">
+        <div id="dialog-icon" class="dialog-icon mb-15">⚠️</div>
+        <p id="dialog-message" class="modal-intro"></p>
+        <div id="dialog-actions" class="dialog-actions-grid mt-20">
+          <!-- Dynamically populated buttons -->
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Multi-Profile Manager Modal (New) -->
-    <div id="profile-modal" class="modal-overlay">
-      <div class="modal-content profile-modal">
-        <div class="modal-header">
-          <h3>Musical Identity Manager</h3>
-          <button class="close-modal" id="close-profile-modal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p class="modal-intro">Manage your roles across different ensembles and orchestras.</p>
-          <div id="profile-list" class="profile-list">
-            <!-- Profiles populated here -->
-          </div>
-          <button id="add-new-profile-btn" class="btn btn-outline btn-full mt-20">+ Add New Orchestral Role</button>
-        </div>
-      </div>
-    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.5.207/pdf.min.js"></script>
-    <script type="module" src="/src/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.5.207/pdf.min.js"></script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 
 </html>

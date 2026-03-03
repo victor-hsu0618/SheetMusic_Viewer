@@ -1,5 +1,7 @@
 import './style.css'
 import * as pdfjsLib from 'pdfjs-dist'
+import * as db from './db.js'
+import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
 
 // Use local worker for total offline reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
@@ -9,18 +11,12 @@ class ScoreFlow {
     this.pdf = null
     this.pages = []
     // Professional Layer Presets
-    this.layers = [
-      { id: 'draw', name: 'Draw Objects', color: '#ff4757', visible: true, type: 'draw' },
-      { id: 'fingering', name: 'Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
-      { id: 'articulation', name: 'Articulations', color: '#10b981', visible: true, type: 'articulation' },
-      { id: 'performance', name: 'Performance', color: '#f59e0b', visible: true, type: 'performance' },
-      { id: 'other', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'other' }
-    ]
+    this.layers = [...INITIAL_LAYERS]
     this.stamps = []
     this.activeLayerId = 'draw'
-    this.activeStampType = 'pen'
-    this.activeCategories = ['Pens', 'Fingering', 'Bowing', 'Dynamic', 'Articulation', 'Tempo', 'Anchor']
-    this.activeCategory = 'Pens'
+    this.activeStampType = 'select'
+    this.activeCategories = ['Edit', 'Pens', 'Bowing', 'Fingering', 'Articulation', 'Tempo', 'Dynamic', 'Anchor']
+    this.activeCategory = 'Edit'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
     this.scale = 1.5
     this.toolbarWidth = 600 // High-Performance Default Width
@@ -28,19 +24,25 @@ class ScoreFlow {
     this.pdfFingerprint = null // Professional Score ID
     this.lastUsedToolPerCategory = {}
     this.sources = [
-      { id: 'self', name: 'My Study', visible: true, opacity: 1, color: '#6366f1' }
+      { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
     ]
     this.activeSourceId = 'self'
     this.profiles = [
-      { id: 'p1', name: 'Victor Hsu', orchestra: 'Taipei Symphony Orchestra', section: 'First Violins', initial: 'V' }
+      { id: 'p1', name: 'Guest Musician', orchestra: 'Standard Orchestra', section: 'Section', initial: 'G' }
     ]
     this.activeProfileId = 'p1'
+
+    // Mission State Context
+    this.pendingMissionProfileId = null
+    this.pendingMissionHandle = null
+    this.pendingOrchestraHandle = null
 
     this.initToolsets()
     this.initElements()
     this.initEventListeners()
     this.initDraggable()
-    this.initResizable()
+    this.initToolbarResizable()
+    this.initSidebarResizable()
     this.renderLayerUI()
     this.updateActiveTools()
     this.loadFromStorage()
@@ -51,94 +53,11 @@ class ScoreFlow {
     this.renderActiveProfile()
     this.renderLibrary()
     this.initDocBarDraggable()
+    this.checkInitialView()
   }
 
   initToolsets() {
-    this.toolsets = [
-      {
-        name: 'Edit',
-        type: 'edit',
-        tools: [
-          { id: 'select', label: 'Select', icon: '<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="M13 13l6 6" />' },
-          { id: 'eraser', label: 'Eraser', icon: '<path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" /><path d="M17 17L7 7" />' }
-        ]
-      },
-      {
-        name: 'Pens',
-        type: 'draw',
-        tools: [
-          { id: 'pen', label: 'Pen', icon: '<path d="M12 19l7-7 3 3-7 7-3-3z" /><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" /><path d="M2 2l5 2" /><path d="M2 2l2 5" />' },
-          { id: 'highlighter', label: 'Highlighter', icon: '<rect x="4" y="4" width="16" height="16" rx="2" /><line x1="4" y1="12" x2="20" y2="12" stroke-width="4" opacity="0.5" />' },
-          { id: 'line', label: 'Line', icon: '<line x1="4" y1="20" x2="20" y2="4" stroke-width="2" />' }
-        ]
-      },
-      {
-        name: 'Fingering',
-        type: 'fingering',
-        tools: [
-          { id: 'f0', label: '0', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">0</text>' },
-          { id: 'f1', label: '1', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">1</text>' },
-          { id: 'f2', label: '2', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">2</text>' },
-          { id: 'f3', label: '3', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">3</text>' },
-          { id: 'f4', label: '4', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">4</text>' },
-          { id: 'f5', label: '5', icon: '<text x="8" y="18" font-family="Outfit" font-weight="bold">5</text>' },
-          { id: 'thumb', label: 'Thumb', icon: '<circle cx="12" cy="12" r="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="12" y1="6" x2="12" y2="18" />' }
-        ]
-      },
-      {
-        name: 'Articulation',
-        type: 'articulation',
-        tools: [
-          { id: 'accent', label: 'Accent', icon: '<path d="M7 8l10 4-10 4" />' },
-          { id: 'staccato', label: 'Staccato', icon: '<circle cx="12" cy="12" r="2" fill="currentColor" />' },
-          { id: 'tenuto', label: 'Tenuto', icon: '<line x1="6" y1="12" x2="18" y2="12" stroke-width="3" />' },
-          { id: 'fermata', label: 'Fermata', icon: '<path d="M6 16a6 6 0 0 1 12 0" /><circle cx="12" cy="13" r="1.5" fill="currentColor" />' }
-        ]
-      },
-      {
-        name: 'Bowing',
-        type: 'articulation',
-        tools: [
-          { id: 'down-bow', label: 'Down', icon: '<path d="M6 10h12v8M6 18v-8M18 18v-8" stroke-width="2.5" />' },
-          { id: 'up-bow', label: 'Up', icon: '<path d="M6 8l6 10 6-10" stroke-width="2.5" />' },
-          { id: 'pizz', label: 'pizz.', icon: '<text x="2" y="16" font-size="10" font-weight="bold">pizz</text>' }
-        ]
-      },
-      {
-        name: 'Tempo',
-        type: 'performance',
-        tools: [
-          { id: 'tempo-quarter', label: 'q=', icon: '<path d="M10 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM12 16V4" />' },
-          { id: 'tempo-text', label: 'Tempo', icon: '<text x="2" y="16" font-size="10" font-weight="bold">Tempo</text>' },
-          { id: 'rit', label: 'rit.', icon: '<text x="4" y="16" font-size="10">rit.</text>' },
-          { id: 'accel', label: 'accel.', icon: '<text x="2" y="16" font-size="9">accel.</text>' }
-        ]
-      },
-      {
-        name: 'Dynamic',
-        type: 'performance',
-        tools: [
-          { id: 'forte', label: 'f', icon: '<text x="8" y="20" font-family="serif" font-style="italic" font-weight="bold" font-size="22">f</text>' },
-          { id: 'piano', label: 'p', icon: '<text x="8" y="20" font-family="serif" font-style="italic" font-weight="bold" font-size="22">p</text>' },
-          { id: 'text', label: 'Exp.', icon: '<text x="6" y="18" font-family="Outfit" font-weight="bold">T</text>' }
-        ]
-      },
-      {
-        name: 'Layout',
-        type: 'layout',
-        tools: [
-          { id: 'system-break', label: 'Break', icon: '<path d="M4 4h16M4 20h16M8 4v16M16 4v16M4 12l4-4 4 4-4 4-4-4z" />' },
-          { id: 'page-break', label: 'Page', icon: '<path d="M4 18h16M4 6h16M12 6v12" /><path d="M8 10l4 4 4-4" />' }
-        ]
-      },
-      {
-        name: 'Anchor',
-        type: 'anchor',
-        tools: [
-          { id: 'anchor', label: 'Anchor', icon: '<path d="M12 2v20M5 12h14" stroke-width="2"/><circle cx="12" cy="12" r="4"/>' }
-        ]
-      }
-    ]
+    this.toolsets = TOOLSETS
   }
 
   initElements() {
@@ -168,8 +87,17 @@ class ScoreFlow {
     this.importFileInput = document.getElementById('import-file')
     this.sourceList = document.getElementById('source-list')
     this.addSourceBtn = document.getElementById('add-source-btn')
-    this.publishBtn = document.getElementById('publish-btn')
     this.sharedList = document.getElementById('shared-list')
+
+    // Collaboration Buttons & UI
+    this.publishPersonalBtn = document.getElementById('publish-personal-btn')
+    this.publishOrchestraBtn = document.getElementById('publish-orchestra-btn')
+    this.connectPersonalBtn = document.getElementById('connect-personal-btn')
+    this.connectOrchestraBtn = document.getElementById('connect-orchestra-btn')
+    this.syncAllBtn = document.getElementById('sync-all-btn')
+
+    this.personalStatus = document.getElementById('personal-status')
+    this.orchestraStatus = document.getElementById('orchestra-status')
 
     // Quick Load Elements
     this.quickLoadModal = document.getElementById('quick-load-modal')
@@ -198,21 +126,69 @@ class ScoreFlow {
     this.profileDisplayName = document.getElementById('display-name')
     this.profileDisplayOrchestra = document.getElementById('display-orchestra')
     this.profileAvatarInitial = document.getElementById('profile-avatar-initial')
-    this.connectCloudBtn = document.getElementById('connect-cloud-btn')
-    this.syncCloudBtn = document.getElementById('sync-cloud-btn')
-    this.cloudSyncFolder = null // Handle for File System Access API
+    this.personalSyncFolder = null
+    this.orchestraSyncFolder = null
 
-    // New 4-Tier Elements
-    this.resetSystemBtn = document.getElementById('reset-system-btn')
+    // Mission & Welcome Elements
+    this.missionSelectionView = document.getElementById('mission-selection-view')
+    this.startMissionBtn = document.getElementById('start-new-mission-btn')
+    this.recentMissionsContainer = document.getElementById('recent-missions-container')
+    this.backToMissionsBtn = document.getElementById('back-to-missions-btn')
+    this.openSoloAltBtn = document.getElementById('welcome-open-file-alt')
+    this.exitMissionBtn = document.getElementById('exit-mission-btn')
+
+    this.identitySelectionView = document.getElementById('identity-selection-view')
+    this.setupStage1 = document.getElementById('setup-stage-1')
+    this.setupStage2 = document.getElementById('setup-stage-2')
+    this.setupStage3 = document.getElementById('setup-stage-3')
+
+    this.welcomeProfileList = document.getElementById('welcome-profile-list')
+    this.welcomeAddProfileBtn = document.getElementById('welcome-add-profile-btn')
+    this.resetLayersBtn = document.getElementById('reset-layers-btn')
     this.libraryList = document.getElementById('library-scores-list')
     this.selectLibraryBtn = document.getElementById('select-library-btn')
     this.librarySearchInput = document.getElementById('library-search')
+    this.resetSystemBtn = document.getElementById('reset-system-btn')
+
+    this.setupCardScore = document.getElementById('setup-card-score')
+    this.setupCardShared = document.getElementById('setup-card-shared')
+    this.setupStatusScore = document.getElementById('setup-status-score')
+    this.setupStatusShared = document.getElementById('setup-status-shared')
+    this.finalStartMissionBtn = document.getElementById('final-start-mission')
+    // Jump & Mode UI
+    this.btnJumpHead = document.getElementById('btn-jump-head')
+    this.btnJumpEnd = document.getElementById('btn-jump-end')
+    this.btnModeAnchor = document.getElementById('btn-mode-anchor')
+    this.btnModeSelect = document.getElementById('btn-mode-select')
+    this.btnModeEraser = document.getElementById('btn-mode-eraser')
 
     this.libraryFiles = [] // Scanned repertoire
     this.libraryFolderHandle = null
     this.activeScoreName = null
 
     this.jumpOffsetPx = 1 * 37.8
+
+    // Role Selection Elements
+    this.roleModal = document.getElementById('role-selection-modal')
+    this.closeRoleModalBtn = document.getElementById('close-role-modal')
+    this.roleBtns = document.querySelectorAll('.role-btn')
+
+    // Resizer
+    this.sidebarResizer = document.getElementById('sidebar-resizer')
+
+    // Floating Layer Control
+    this.layerToggleBtn = document.getElementById('layer-toggle-fab')
+    this.layerShelf = document.getElementById('layer-shelf')
+    this.closeLayerShelfBtn = document.getElementById('close-layer-shelf')
+    this.externalLayerList = document.getElementById('external-layer-list')
+
+    // Dialog Elements
+    this.systemDialog = document.getElementById('system-dialog')
+    this.dialogTitle = document.getElementById('dialog-title')
+    this.dialogMessage = document.getElementById('dialog-message')
+    this.dialogIcon = document.getElementById('dialog-icon')
+    this.dialogActions = document.getElementById('dialog-actions')
+    this.closeDialogBtn = document.getElementById('close-dialog')
   }
 
   initEventListeners() {
@@ -246,15 +222,28 @@ class ScoreFlow {
     this.importBtn.addEventListener('click', () => this.importFileInput.click())
     this.importFileInput.addEventListener('change', (e) => this.handleImport(e))
 
-    if (this.publishBtn) {
-      this.publishBtn.addEventListener('click', () => this.publishWork())
+    // Dialog Close
+    if (this.closeDialogBtn) {
+      this.closeDialogBtn.addEventListener('click', () => {
+        this.systemDialog.classList.remove('active')
+      })
     }
 
-    if (this.connectCloudBtn) {
-      this.connectCloudBtn.addEventListener('click', () => this.connectCloudFolder())
+    // Collaboration Listeners
+    if (this.publishPersonalBtn) {
+      this.publishPersonalBtn.addEventListener('click', () => this.publishWork('personal'))
     }
-    if (this.syncCloudBtn) {
-      this.syncCloudBtn.addEventListener('click', () => this.renderCommunityHub())
+    if (this.publishOrchestraBtn) {
+      this.publishOrchestraBtn.addEventListener('click', () => this.publishWork('orchestra'))
+    }
+    if (this.connectPersonalBtn) {
+      this.connectPersonalBtn.addEventListener('click', () => this.connectSyncFolder('personal'))
+    }
+    if (this.connectOrchestraBtn) {
+      this.connectOrchestraBtn.addEventListener('click', () => this.connectSyncFolder('orchestra'))
+    }
+    if (this.syncAllBtn) {
+      this.syncAllBtn.addEventListener('click', () => this.renderCommunityHub())
     }
 
     if (this.editProfileBtn) {
@@ -274,6 +263,25 @@ class ScoreFlow {
     if (this.resetSystemBtn) {
       this.resetSystemBtn.addEventListener('click', () => this.resetToSystemDefault())
     }
+
+    // Floating Layer Shelf Listeners
+    if (this.layerToggleBtn) {
+      this.layerToggleBtn.addEventListener('click', () => {
+        this.layerShelf.classList.toggle('active')
+      })
+    }
+    if (this.closeLayerShelfBtn) {
+      this.closeLayerShelfBtn.addEventListener('click', () => {
+        this.layerShelf.classList.remove('active')
+      })
+    }
+
+    // Keyboard shortcut for toggle visibility (Shift+V)
+    document.addEventListener('keydown', (e) => {
+      if (e.shiftKey && e.key === 'V') {
+        if (this.layerShelf) this.layerShelf.classList.toggle('active')
+      }
+    })
 
     if (this.quickLoadMenuBtn) {
       this.quickLoadMenuBtn.addEventListener('click', () => this.toggleQuickLoadModal(true))
@@ -312,15 +320,21 @@ class ScoreFlow {
       this.projectSearchInput.addEventListener('input', () => this.renderProjectRepertoire())
     }
 
-    this.zoomInBtn.addEventListener('click', () => this.zoom(0.1))
-    this.zoomOutBtn.addEventListener('click', () => this.zoom(-0.1))
+    if (this.zoomInBtn) {
+      this.zoomInBtn.addEventListener('click', () => this.changeZoom(0.1))
+    }
+    if (this.zoomOutBtn) {
+      this.zoomOutBtn.addEventListener('click', () => this.changeZoom(-0.1))
+    }
 
-    this.closeShortcutsBtn.addEventListener('click', () => this.toggleShortcuts(false))
+    if (this.closeShortcutsBtn) {
+      this.closeShortcutsBtn.addEventListener('click', () => this.toggleShortcuts(false))
+    }
 
     if (this.closeSidebarBtn) {
       this.closeSidebarBtn.addEventListener('click', () => {
         this.sidebar.classList.remove('open')
-        this.isSidebarLocked = false // Force unlock if explicitly closed
+        this.isSidebarLocked = false
         if (this.lockSidebarBtn) this.lockSidebarBtn.classList.remove('locked')
         this.updateLayoutState()
       })
@@ -330,25 +344,91 @@ class ScoreFlow {
       this.addLayerBtn.addEventListener('click', () => this.addNewLayer())
     }
 
-    if (this.zoomInBtn) this.zoomInBtn.addEventListener('click', () => this.changeZoom(0.1))
-    if (this.zoomOutBtn) this.zoomOutBtn.addEventListener('click', () => this.changeZoom(-0.1))
+    if (this.resetLayersBtn) {
+      this.resetLayersBtn.addEventListener('click', () => this.resetLayers())
+    }
 
-    if (this.clearStampsBtn) {
-      this.clearStampsBtn.addEventListener('click', () => {
-        const activeSource = this.sources.find(s => s.id === this.activeSourceId) || { name: 'Current Style' }
-        if (confirm(`⚠️ DANGER: Clear ALL markings belonging to "${activeSource.name}"?\n\nThis will NOT affect markings from other shared interpretations.`)) {
-          this.stamps = this.stamps.filter(s => s.sourceId !== this.activeSourceId)
-          this.saveToStorage()
-          if (this.pdf) {
-            for (let i = 1; i <= this.pdf.numPages; i++) {
-              this.redrawStamps(i)
-            }
-          }
-          alert(`All markings for "${activeSource.name}" have been cleared.`)
+    if (this.welcomeAddProfileBtn) {
+      this.welcomeAddProfileBtn.addEventListener('click', () => this.addNewProfile())
+    }
+
+    if (this.welcomeChangeIdentityBtn) {
+      this.welcomeChangeIdentityBtn.addEventListener('click', () => {
+        if (this.identitySelectionView) {
+          this.identitySelectionView.classList.remove('hidden')
+          this.showSetupStage(1)
         }
+        if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
       })
     }
 
+
+    if (this.startMissionBtn) {
+      this.startMissionBtn.addEventListener('click', () => this.startNewMission())
+    }
+    if (this.backToMissionsBtn) {
+      this.backToMissionsBtn.addEventListener('click', () => {
+        if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
+        if (this.missionSelectionView) this.missionSelectionView.classList.remove('hidden')
+      })
+    }
+    if (this.openSoloAltBtn) {
+      this.openSoloAltBtn.addEventListener('click', () => {
+        if (this.uploader) this.uploader.click()
+      })
+    }
+    if (this.exitMissionBtn) {
+      this.exitMissionBtn.addEventListener('click', () => this.exitMission())
+    }
+
+    // Mission Setup Card Listeners
+    if (this.setupCardShared) {
+      this.setupCardShared.onclick = () => this.selectOrchestraFolder()
+    }
+
+    // Step Navigation (Three Stages)
+    document.querySelectorAll('.setup-back-btn').forEach(btn => {
+      btn.onclick = () => {
+        const target = parseInt(btn.getAttribute('data-to'))
+        this.showSetupStage(target)
+      }
+    })
+
+    // Navigation (Jump) Actions
+    if (this.btnJumpHead) this.btnJumpHead.onclick = () => this.goToHead()
+    if (this.btnJumpEnd) this.btnJumpEnd.onclick = () => this.goToEnd()
+
+    // Quick Mode Actions
+    if (this.btnModeSelect) {
+      this.btnModeSelect.onclick = () => {
+        this.activeStampType = 'select'
+        this.updateActiveTools()
+      }
+    }
+    if (this.btnModeEraser) {
+      this.btnModeEraser.onclick = () => {
+        this.activeStampType = 'eraser'
+        this.updateActiveTools()
+      }
+    }
+    if (this.btnModeAnchor) {
+      this.btnModeAnchor.onclick = () => {
+        this.activeStampType = 'anchor'
+        this.updateActiveTools()
+      }
+    }
+
+    if (this.finalStartMissionBtn) {
+      this.finalStartMissionBtn.onclick = () => this.completeMissionSetup()
+    }
+
+    // Generic Setup Stage Navigation (Back/Next)
+    document.querySelectorAll('.setup-back-btn').forEach(btn => {
+      btn.onclick = () => {
+        const to = parseInt(btn.dataset.to)
+        this.showSetupStage(to)
+      }
+    })
 
     if (this.jumpOffsetInput) {
       this.jumpOffsetInput.addEventListener('input', (e) => {
@@ -382,6 +462,20 @@ class ScoreFlow {
       // Sidebar Toggle
       if (e.key.toLowerCase() === 's') {
         this.sidebar.classList.toggle('open')
+      }
+
+      // Quick Modes
+      if (e.key.toLowerCase() === 'v') {
+        this.activeStampType = 'select'
+        this.updateActiveTools()
+      }
+      if (e.key.toLowerCase() === 'e') {
+        this.activeStampType = 'eraser'
+        this.updateActiveTools()
+      }
+      if (e.key.toLowerCase() === 'a') {
+        this.activeStampType = 'anchor'
+        this.updateActiveTools()
       }
 
       // Esc to close all
@@ -425,6 +519,22 @@ class ScoreFlow {
         e.preventDefault()
         this.jump(-1)
       }
+    })
+
+    // Sidebar Tab Switcher
+    const tabs = this.sidebar.querySelectorAll('.sidebar-tab')
+    const panels = this.sidebar.querySelectorAll('.tab-panel')
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab
+
+        // Update Tabs
+        tabs.forEach(t => t.classList.toggle('active', t === tab))
+
+        // Update Panels
+        panels.forEach(p => p.classList.toggle('active', p.dataset.panel === target))
+      })
     })
 
     // Handle responsiveness/resizing
@@ -584,6 +694,8 @@ class ScoreFlow {
     let isInteracting = false
     let activeObject = null // Can be a new path or an existing stamp being moved
     let isMovingExisting = false
+    this.hoveredStamp = null
+    this.selectHoveredStamp = null // Separate hover state for Select mode
 
     const getPos = (e) => {
       const rect = overlay.getBoundingClientRect()
@@ -604,23 +716,30 @@ class ScoreFlow {
       isInteracting = true
 
       if (toolType === 'select') {
-        // Try to find a stamp near the click
-        const threshold = 0.05
-        const existingIndex = this.stamps.findIndex(s => {
-          if (s.page !== pageNum) return false
-          if (s.points) {
-            return s.points.some(p => Math.sqrt(Math.pow(p.x - pos.x, 2) + Math.pow(p.y - pos.y, 2)) < threshold)
-          }
-          return Math.sqrt(Math.pow(s.x - pos.x, 2) + Math.pow(s.y - pos.y, 2)) < threshold
-        })
+        // Find all nearby stamps
+        const nearby = this.findNearbyStamps(pageNum, pos.x, pos.y, true)
 
-        if (existingIndex !== -1) {
-          isMovingExisting = true
-          activeObject = this.stamps[existingIndex]
-          this.lastFocusedStamp = activeObject
-          // Optional: visually highlight it?
-        } else {
+        if (nearby.length === 0) {
           isInteracting = false
+        } else if (nearby.length === 1) {
+          // Single target — select and start drag immediately
+          isMovingExisting = true
+          activeObject = nearby[0]
+          this.lastFocusedStamp = activeObject
+          this.selectHoveredStamp = null
+          this.redrawStamps(pageNum)
+        } else {
+          // Multiple nearby — show picker menu for Select
+          isInteracting = false
+          const clientX = e.clientX || (e.touches && e.touches[0].clientX)
+          const clientY = e.clientY || (e.touches && e.touches[0].clientY)
+          this.showSelectMenu(nearby, clientX, clientY, (chosen) => {
+            // After picking, activate that object for dragging on next mousedown
+            this.lastFocusedStamp = chosen
+            isMovingExisting = true
+            activeObject = chosen
+            this.redrawStamps(pageNum)
+          })
         }
       } else if (isFreehand) {
         activeObject = {
@@ -632,7 +751,17 @@ class ScoreFlow {
           color: this.layers.find(l => l.id === 'draw').color
         }
       } else if (toolType === 'eraser') {
-        this.eraseStamp(pageNum, pos.x, pos.y)
+        // Gather ALL nearby stamps within threshold, sorted by distance
+        const nearby = this.findNearbyStamps(pageNum, pos.x, pos.y)
+        if (nearby.length === 1) {
+          // Only 1 nearby — delete directly
+          this.eraseStampTarget(nearby[0])
+        } else if (nearby.length > 1) {
+          // Multiple nearby — show picker menu so user chooses exactly which one
+          const clientX = e.clientX || (e.touches && e.touches[0].clientX)
+          const clientY = e.clientY || (e.touches && e.touches[0].clientY)
+          this.showEraseMenu(nearby, clientX, clientY)
+        }
         isInteracting = false
       } else {
         // Precise Placement for Stamps
@@ -693,6 +822,43 @@ class ScoreFlow {
       }
     }
 
+    const hoverAction = (e) => {
+      // ── Eraser hover ──
+      if (this.activeStampType === 'eraser' && !isInteracting) {
+        const pos = getPos(e)
+        const found = this.findClosestStamp(pageNum, pos.x, pos.y)
+        if (found !== this.hoveredStamp) {
+          this.hoveredStamp = found
+          this.redrawStamps(pageNum)
+          const oldChip = wrapper.querySelector('.erase-hover-chip')
+          if (oldChip) oldChip.remove()
+          if (found) {
+            const canvas = wrapper.querySelector('.pdf-canvas')
+            if (canvas) {
+              const chipX = found.x != null ? found.x * canvas.offsetWidth : (found.points?.[0]?.x ?? 0) * canvas.offsetWidth
+              const chipY = found.y != null ? found.y * canvas.offsetHeight : (found.points?.[0]?.y ?? 0) * canvas.offsetHeight
+              const chip = document.createElement('div')
+              chip.className = 'erase-hover-chip'
+              chip.textContent = '🗑 Delete'
+              chip.style.left = `${chipX}px`
+              chip.style.top = `${chipY}px`
+              wrapper.appendChild(chip)
+            }
+          }
+        }
+      }
+
+      // ── Select hover ──
+      if (this.activeStampType === 'select' && !isInteracting) {
+        const pos = getPos(e)
+        const found = this.findClosestStamp(pageNum, pos.x, pos.y, true)
+        if (found !== this.selectHoveredStamp) {
+          this.selectHoveredStamp = found
+          this.redrawStamps(pageNum)
+        }
+      }
+    }
+
     const endAction = (e) => {
       if (isInteracting && activeObject) {
         if (!isMovingExisting) {
@@ -712,7 +878,24 @@ class ScoreFlow {
     }
 
     overlay.addEventListener('mousedown', startAction)
-    overlay.addEventListener('mousemove', moveAction)
+    overlay.addEventListener('mousemove', (e) => {
+      moveAction(e)
+      hoverAction(e)
+    })
+    overlay.addEventListener('mouseleave', () => {
+      let needsRedraw = false
+      if (this.hoveredStamp) {
+        this.hoveredStamp = null
+        needsRedraw = true
+      }
+      if (this.selectHoveredStamp) {
+        this.selectHoveredStamp = null
+        needsRedraw = true
+      }
+      if (needsRedraw) this.redrawStamps(pageNum)
+      const chip = wrapper.querySelector('.erase-hover-chip')
+      if (chip) chip.remove()
+    })
     window.addEventListener('mouseup', endAction)
 
     overlay.addEventListener('touchstart', startAction, { passive: false })
@@ -793,28 +976,292 @@ class ScoreFlow {
     this.redrawStamps(page)
   }
 
-  eraseStamp(page, x, y) {
-    const threshold = 0.05 // Slightly larger for better UX (approx 40-50px)
-    const initialCount = this.stamps.length
+  // --- ERASER HELPERS ---
 
-    this.stamps = this.stamps.filter(s => {
-      if (s.page !== page) return true
+  // Get a human-readable label for a stamp type
+  getStampLabel(stamp) {
+    if (stamp.points) {
+      const typeMap = { pen: 'Pen Stroke', highlighter: 'Highlight', line: 'Line' }
+      return typeMap[stamp.type] || 'Drawing'
+    }
+    // Look up in toolsets
+    for (const set of this.toolsets) {
+      const tool = set.tools.find(t => t.id === stamp.type)
+      if (tool) return tool.label
+    }
+    return stamp.type || 'Object'
+  }
 
-      // OPTION A: Safety Lock
-      if (s.sourceId !== this.activeSourceId) return true
+  // Get an emoji icon for a stamp type
+  getStampIcon(stamp) {
+    if (stamp.type === 'pen') return '✏️'
+    if (stamp.type === 'highlighter') return '🖊'
+    if (stamp.type === 'line') return '—'
+    if (stamp.type === 'anchor') return '⚓'
+    if (stamp.type === 'text' || stamp.type === 'tempo-text') return 'T'
+    if (['down-bow', 'up-bow'].includes(stamp.type)) return '🎻'
+    if (stamp.type === 'accent') return '>'
+    if (stamp.type === 'staccato') return '·'
+    if (stamp.type === 'fermata') return '𝄐'
+    return '♩'
+  }
 
-      if (s.points) {
-        // Precise hit-test for pen/paths
-        return !s.points.some(p => Math.sqrt(Math.pow(p.x - x, 2) + Math.pow(p.y - y, 2)) < (threshold * 0.7))
+  // Return all stamps near (x,y) within threshold, sorted closest first
+  // allSources=true: include stamps from all sources (used by Select tool)
+  findNearbyStamps(page, x, y, allSources = false) {
+    const threshold = 0.06
+    const results = []
+
+    this.stamps.forEach(s => {
+      if (s.page !== page) return
+      if (!allSources && s.sourceId !== this.activeSourceId) return
+
+      let dist
+      if (s.points && s.points.length > 0) {
+        dist = Math.min(...s.points.map(p =>
+          Math.sqrt(Math.pow(p.x - x, 2) + Math.pow(p.y - y, 2))
+        ))
       } else {
-        const dist = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2))
-        return dist > threshold
+        dist = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2))
       }
+
+      if (dist < threshold) results.push({ stamp: s, dist })
     })
 
-    if (this.stamps.length !== initialCount) {
-      console.log(`Eraser: Removed ${initialCount - this.stamps.length} stamps from active source: ${this.activeSourceId}`)
-      this.saveToStorage()
+    return results.sort((a, b) => a.dist - b.dist).map(r => r.stamp)
+  }
+
+  // Find the single CLOSEST stamp to (x,y) on a page, within a max threshold
+  findClosestStamp(page, x, y, allSources = false) {
+    return this.findNearbyStamps(page, x, y, allSources)[0] || null
+  }
+
+  // Erase exactly one specific stamp object
+  eraseStampTarget(stamp) {
+    const page = stamp.page
+    const idx = this.stamps.indexOf(stamp)
+    if (idx === -1) return
+
+    this.stamps.splice(idx, 1)
+    console.log(`Eraser: Removed 1 stamp (type: ${stamp.type}) from source: ${this.activeSourceId}`)
+
+    // Clear hover state
+    this.hoveredStamp = null
+    this.closeEraseMenu()
+    const wrapper = document.querySelector(`.page-container[data-page="${page}"]`)
+    if (wrapper) {
+      const chip = wrapper.querySelector('.erase-hover-chip')
+      if (chip) chip.remove()
+    }
+    this.saveToStorage()
+    this.redrawStamps(page)
+  }
+
+  // Show a context menu listing nearby stamps to pick from
+  showEraseMenu(stamps, screenX, screenY) {
+    this.closeEraseMenu() // Remove any existing menu
+
+    const menu = document.createElement('div')
+    menu.className = 'erase-context-menu'
+    menu.id = 'erase-context-menu'
+
+    // Header
+    const header = document.createElement('div')
+    header.className = 'erase-menu-header'
+    header.textContent = `${stamps.length} Nearby Objects — Pick one to delete`
+    menu.appendChild(header)
+
+    // One row per stamp
+    stamps.forEach((stamp, idx) => {
+      const item = document.createElement('button')
+      item.className = 'erase-menu-item'
+
+      const iconEl = document.createElement('span')
+      iconEl.className = 'erase-item-icon'
+      iconEl.textContent = this.getStampIcon(stamp)
+
+      const label = document.createElement('span')
+      label.className = 'erase-item-label'
+      label.textContent = this.getStampLabel(stamp)
+
+      const badge = document.createElement('span')
+      badge.className = 'erase-item-badge'
+      badge.textContent = `Pg ${stamp.page}`
+
+      item.appendChild(iconEl)
+      item.appendChild(label)
+      item.appendChild(badge)
+
+      // Hover: highlight this stamp on canvas
+      item.addEventListener('mouseenter', () => {
+        this.hoveredStamp = stamp
+        this.redrawStamps(stamp.page)
+      })
+      item.addEventListener('mouseleave', () => {
+        this.hoveredStamp = null
+        this.redrawStamps(stamp.page)
+      })
+
+      // Click: delete this specific stamp
+      item.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.eraseStampTarget(stamp)
+      })
+
+      menu.appendChild(item)
+    })
+
+    // Cancel footer
+    const cancel = document.createElement('div')
+    cancel.className = 'erase-menu-cancel'
+    cancel.textContent = 'Esc to cancel'
+    menu.appendChild(cancel)
+
+    // Position menu near cursor, keeping it inside viewport
+    document.body.appendChild(menu)
+    const rect = menu.getBoundingClientRect()
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    let left = screenX + 12
+    let top = screenY + 12
+    if (left + rect.width > vw - 8) left = screenX - rect.width - 12
+    if (top + rect.height > vh - 8) top = screenY - rect.height - 12
+    menu.style.left = `${Math.max(8, left)}px`
+    menu.style.top = `${Math.max(8, top)}px`
+
+    // Close on outside click or Escape
+    this._eraseMenuDismiss = (e) => {
+      if (!menu.contains(e.target)) this.closeEraseMenu()
+    }
+    this._eraseMenuEsc = (e) => {
+      if (e.key === 'Escape') this.closeEraseMenu()
+    }
+    setTimeout(() => {
+      document.addEventListener('mousedown', this._eraseMenuDismiss)
+      document.addEventListener('keydown', this._eraseMenuEsc)
+    }, 0)
+  }
+
+  closeEraseMenu() {
+    const existing = document.getElementById('erase-context-menu')
+    if (existing) existing.remove()
+    if (this._eraseMenuDismiss) {
+      document.removeEventListener('mousedown', this._eraseMenuDismiss)
+      this._eraseMenuDismiss = null
+    }
+    if (this._eraseMenuEsc) {
+      document.removeEventListener('keydown', this._eraseMenuEsc)
+      this._eraseMenuEsc = null
+    }
+    // Clear any hover from menu navigation
+    if (this.hoveredStamp) {
+      const page = this.hoveredStamp.page
+      this.hoveredStamp = null
+      this.redrawStamps(page)
+    }
+  }
+
+  // Legacy alias kept for safety
+  eraseStamp(page, x, y) {
+    const target = this.findClosestStamp(page, x, y)
+    if (target) this.eraseStampTarget(target)
+  }
+
+  // ── Select context menu (Multi-object picker with blue highlight) ──
+  showSelectMenu(stamps, screenX, screenY, onSelect) {
+    this.closeSelectMenu()
+
+    const menu = document.createElement('div')
+    menu.className = 'erase-context-menu select-context-menu'
+    menu.id = 'select-context-menu'
+
+    // Header
+    const header = document.createElement('div')
+    header.className = 'erase-menu-header'
+    header.textContent = `${stamps.length} Nearby Objects — Pick one to move`
+    menu.appendChild(header)
+
+    stamps.forEach(stamp => {
+      const item = document.createElement('button')
+      item.className = 'erase-menu-item'
+
+      const iconEl = document.createElement('span')
+      iconEl.className = 'erase-item-icon'
+      iconEl.textContent = this.getStampIcon(stamp)
+
+      const label = document.createElement('span')
+      label.className = 'erase-item-label'
+      label.textContent = this.getStampLabel(stamp)
+
+      const badge = document.createElement('span')
+      badge.className = 'erase-item-badge'
+      badge.textContent = `Pg ${stamp.page}`
+
+      item.appendChild(iconEl)
+      item.appendChild(label)
+      item.appendChild(badge)
+
+      // Hover: show blue glow on canvas
+      item.addEventListener('mouseenter', () => {
+        this.selectHoveredStamp = stamp
+        this.redrawStamps(stamp.page)
+      })
+      item.addEventListener('mouseleave', () => {
+        this.selectHoveredStamp = null
+        this.redrawStamps(stamp.page)
+      })
+
+      // Click: select this object
+      item.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.selectHoveredStamp = null
+        this.closeSelectMenu()
+        if (onSelect) onSelect(stamp)
+      })
+
+      menu.appendChild(item)
+    })
+
+    const cancel = document.createElement('div')
+    cancel.className = 'erase-menu-cancel'
+    cancel.textContent = 'Esc to cancel'
+    menu.appendChild(cancel)
+
+    document.body.appendChild(menu)
+    const rect = menu.getBoundingClientRect()
+    const vw = window.innerWidth, vh = window.innerHeight
+    let left = screenX + 12, top = screenY + 12
+    if (left + rect.width > vw - 8) left = screenX - rect.width - 12
+    if (top + rect.height > vh - 8) top = screenY - rect.height - 12
+    menu.style.left = `${Math.max(8, left)}px`
+    menu.style.top = `${Math.max(8, top)}px`
+
+    this._selectMenuDismiss = (e) => {
+      if (!menu.contains(e.target)) this.closeSelectMenu()
+    }
+    this._selectMenuEsc = (e) => {
+      if (e.key === 'Escape') this.closeSelectMenu()
+    }
+    setTimeout(() => {
+      document.addEventListener('mousedown', this._selectMenuDismiss)
+      document.addEventListener('keydown', this._selectMenuEsc)
+    }, 0)
+  }
+
+  closeSelectMenu() {
+    const existing = document.getElementById('select-context-menu')
+    if (existing) existing.remove()
+    if (this._selectMenuDismiss) {
+      document.removeEventListener('mousedown', this._selectMenuDismiss)
+      this._selectMenuDismiss = null
+    }
+    if (this._selectMenuEsc) {
+      document.removeEventListener('keydown', this._selectMenuEsc)
+      this._selectMenuEsc = null
+    }
+    if (this.selectHoveredStamp) {
+      const page = this.selectHoveredStamp.page
+      this.selectHoveredStamp = null
       this.redrawStamps(page)
     }
   }
@@ -841,32 +1288,43 @@ class ScoreFlow {
         const layer = this.layers.find(l => l.id === stamp.layerId)
         if (!layer || !layer.visible) return
 
+        const isHovered = stamp === this.hoveredStamp           // red (eraser)
+        const isSelectHovered = stamp === this.selectHoveredStamp // blue (select)
+
         if (stamp.points) {
-          this.drawPathOnCanvas(ctx, canvas, stamp, isForeign)
+          this.drawPathOnCanvas(ctx, canvas, stamp, isForeign, isHovered, isSelectHovered)
         } else {
-          this.drawStampOnCanvas(ctx, canvas, stamp, layer.color, isForeign)
+          this.drawStampOnCanvas(ctx, canvas, stamp, layer.color, isForeign, isHovered, isSelectHovered)
         }
       })
       ctx.restore()
     })
   }
 
-  drawPathOnCanvas(ctx, canvas, path, isForeign = false) {
+  drawPathOnCanvas(ctx, canvas, path, isForeign = false, isHovered = false, isSelectHovered = false) {
     if (!path.points || path.points.length < 2) return
 
     ctx.save()
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
 
+    if (isHovered) {
+      ctx.shadowBlur = 10
+      ctx.shadowColor = '#ef4444'
+    } else if (isSelectHovered) {
+      ctx.shadowBlur = 12
+      ctx.shadowColor = '#6366f1'
+    }
+
     if (isForeign) {
       ctx.setLineDash([8 * (this.scale / 1.5), 6 * (this.scale / 1.5)])
     }
 
     if (path.type === 'highlighter') {
-      ctx.strokeStyle = isForeign ? '#e5e7ebAA' : '#fde04788'
+      ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : '#fde04788')
       ctx.lineWidth = 14 * (this.scale / 1.5)
     } else {
-      ctx.strokeStyle = path.color || '#ff4757'
+      ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
       ctx.lineWidth = (path.type === 'line' ? 2 : 3) * (this.scale / 1.5)
     }
 
@@ -884,87 +1342,122 @@ class ScoreFlow {
     ctx.restore()
   }
 
-  drawStampOnCanvas(ctx, canvas, stamp, color, isForeign = false) {
+  drawStampOnCanvas(ctx, canvas, stamp, color, isForeign = false, isHovered = false, isSelectHovered = false) {
     const x = stamp.x * canvas.width
     const y = stamp.y * canvas.height
     const size = 18 * (this.scale / 1.5)
 
     ctx.save()
+
+    if (isHovered) {
+      ctx.shadowBlur = 15
+      ctx.shadowColor = '#ef4444'
+    } else if (isSelectHovered) {
+      ctx.shadowBlur = 15
+      ctx.shadowColor = '#6366f1'
+    }
+
     if (isForeign) {
       ctx.setLineDash([4, 3])
       ctx.globalAlpha *= 0.7
     }
 
-    ctx.strokeStyle = color
-    ctx.fillStyle = `${color}33`
-    ctx.lineWidth = 2.5 * (this.scale / 1.5)
-    ctx.beginPath()
+    ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : color
+    ctx.fillStyle = isHovered ? '#ef444433' : isSelectHovered ? '#6366f133' : `${color}33`
+    ctx.lineWidth = 1.8 * (this.scale / 1.5)
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
 
-    // Professional Music Symbols & Specialized Notation
-    switch (stamp.type) {
-      case 'circle':
-        ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); break
-      case 'text':
-      case 'tempo-text':
-        ctx.font = `bold ${22 * (this.scale / 1.5)}px Outfit`
-        ctx.fillStyle = color
-        const lines = (stamp.data || '').split('\n')
-        const lineHeight = 26 * (this.scale / 1.5)
-        lines.forEach((line, i) => {
-          // Editorial text uses dashed underline or slightly lighter style if foreign
-          ctx.fillText(line, x, y + (i * lineHeight))
-          if (isForeign) {
-            ctx.beginPath()
-            ctx.setLineDash([2, 1])
-            ctx.moveTo(x, y + (i * lineHeight) + 2)
-            ctx.lineTo(x + ctx.measureText(line).width, y + (i * lineHeight) + 2)
+    // Data-Driven Rendering: Find tool metadata
+    let toolDef = null
+    for (const set of this.toolsets) {
+      const tool = set.tools.find(t => t.id === stamp.type)
+      if (tool) {
+        toolDef = tool
+        break
+      }
+    }
+
+    if (toolDef && toolDef.draw) {
+      const d = toolDef.draw
+      ctx.beginPath()
+
+      switch (d.type) {
+        case 'text':
+          ctx.font = `${d.font || ''} ${d.size * (this.scale / 1.5)}px ${d.fontFace || 'Outfit'}`
+          ctx.fillStyle = color
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(d.content, x, y)
+          break
+
+        case 'shape':
+          if (d.shape === 'circle') {
+            ctx.arc(x, y, size * (d.radius || 1), 0, Math.PI * 2)
+            if (d.fill) { ctx.fillStyle = color; ctx.fill() }
             ctx.stroke()
           }
-        })
-        break
-      case 'accent':
-        ctx.moveTo(x - size, y - size / 2); ctx.lineTo(x + size, y); ctx.lineTo(x - size, y + size / 2); ctx.stroke(); break
-      case 'staccato':
-        ctx.beginPath(); ctx.arc(x, y, size * 0.2, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); break
-      case 'forte':
-        ctx.font = `italic bold ${24 * (this.scale / 1.5)}px serif`
-        ctx.fillStyle = color; ctx.fillText('f', x, y); break
-      case 'piano':
-        ctx.font = `italic bold ${24 * (this.scale / 1.5)}px serif`
-        ctx.fillStyle = color; ctx.fillText('p', x, y); break
-      case 'down-bow': // ㄇ
-        ctx.moveTo(x - size * 0.6, y + size * 0.4); ctx.lineTo(x - size * 0.6, y - size * 0.6);
-        ctx.lineTo(x + size * 0.6, y - size * 0.6); ctx.lineTo(x + size * 0.6, y + size * 0.4); ctx.stroke(); break
-      case 'up-bow': // V
-        ctx.moveTo(x - size * 0.6, y - size * 0.6); ctx.lineTo(x, y + size * 0.6); ctx.lineTo(x + size * 0.6, y - size * 0.6); ctx.stroke(); break
-      case 'thumb':
-        ctx.arc(x, y, size * 0.6, 0, Math.PI * 2); ctx.stroke()
-        ctx.moveTo(x, y - size * 0.9); ctx.lineTo(x, y + size * 0.9);
-        ctx.moveTo(x - size * 0.9, y); ctx.lineTo(x + size * 0.9, y); ctx.stroke(); break
-      case 'f0': case 'f1': case 'f2': case 'f3': case 'f4': case 'f5':
-        ctx.font = `bold ${18 * (this.scale / 1.5)}px Outfit`
-        ctx.fillStyle = color; ctx.fillText(stamp.type.slice(1), x - size * 0.3, y + size * 0.3); break
-      case 'i': case 'ii': case 'iii': case 'iv':
-        ctx.font = `bold ${16 * (this.scale / 1.5)}px Outfit`
-        ctx.fillStyle = color; ctx.fillText(stamp.type.toUpperCase(), x - size * 0.5, y + size * 0.3); break
-      case 'anchor':
-        const isDefault = stamp.isDefault
-        ctx.fillStyle = isDefault ? '#3b82f6' : color
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - (size * 1.5));
-        ctx.lineTo(x + size, y - (size * 1.1)); ctx.lineTo(x, y - (size * 0.7)); ctx.fill(); ctx.stroke(); break
-      case 'tempo-quarter':
-        ctx.font = `bold ${20 * (this.scale / 1.5)}px Outfit`
-        ctx.fillStyle = color; ctx.fillText('q=', x, y); break
-      case 'rit':
-        ctx.font = `italic ${16 * (this.scale / 1.5)}px serif`
-        ctx.fillStyle = color; ctx.fillText('rit.', x, y); break
-      case 'accel':
-        ctx.font = `italic ${16 * (this.scale / 1.5)}px serif`
-        ctx.fillStyle = color; ctx.fillText('accel.', x, y); break
-      case 'pizz':
-        ctx.font = `bold italic ${14 * (this.scale / 1.5)}px serif`
-        ctx.fillStyle = color; ctx.fillText('pizz.', x, y); break
+          break
+
+        case 'path':
+          // Relative path rendering (-1 to 1 space)
+          const pParts = d.data.split(' ')
+          ctx.save()
+          ctx.translate(x, y)
+          ctx.scale(size, size)
+          // Adjust line width to be consistent despite scaling
+          ctx.lineWidth = (2.5 * (this.scale / 1.5)) / size
+          ctx.lineCap = 'round'
+          ctx.lineJoin = 'round'
+
+          for (let i = 0; i < pParts.length; i++) {
+            const cmd = pParts[i]
+            if (cmd === 'M') ctx.moveTo(parseFloat(pParts[++i]), parseFloat(pParts[++i]))
+            else if (cmd === 'L') ctx.lineTo(parseFloat(pParts[++i]), parseFloat(pParts[++i]))
+            // ...
+            else if (cmd === 'C') ctx.bezierCurveTo(parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]))
+          }
+          ctx.stroke()
+          ctx.restore()
+          break
+
+        case 'special':
+          if (d.variant === 'input-text') {
+            ctx.font = `bold ${22 * (this.scale / 1.5)}px Outfit`
+            ctx.fillStyle = color
+            const lines = (stamp.data || '').split('\n')
+            const lineHeight = 26 * (this.scale / 1.5)
+            lines.forEach((line, i) => {
+              ctx.fillText(line, x, y + (i * lineHeight))
+            })
+          }
+          break
+
+        case 'complex':
+          // Legacy support for complex visual logic
+          if (d.variant === 'thumb') {
+            ctx.arc(x, y, size * 0.6, 0, Math.PI * 2); ctx.stroke()
+            ctx.moveTo(x, y - size * 0.9); ctx.lineTo(x, y + size * 0.9);
+            ctx.moveTo(x - size * 0.9, y); ctx.lineTo(x + size * 0.9, y); ctx.stroke();
+          } else if (d.variant === 'fermata') {
+            const fSize = size * 0.45
+            ctx.arc(x, y, fSize, Math.PI, 0); ctx.stroke()
+            ctx.beginPath(); ctx.arc(x, y - fSize * 0.3, fSize * 0.15, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+          } else if (d.variant === 'anchor') {
+            const isDefault = stamp.isDefault
+            ctx.fillStyle = isDefault ? '#3b82f6' : color
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - (size * 1.5));
+            ctx.lineTo(x + size, y - (size * 1.1)); ctx.lineTo(x, y - (size * 0.7)); ctx.fill(); ctx.stroke();
+          }
+          break
+      }
+    } else {
+      // Fallback for tools without draw metadata (e.g. circle index which uses type name directly)
+      if (stamp.type === 'circle') {
+        ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
     }
+
     ctx.restore()
   }
 
@@ -975,10 +1468,14 @@ class ScoreFlow {
     const isExpanded = this.activeToolsContainer.classList.contains("expanded")
 
     // Always sync the active tool to the viewer so CSS cursors & overlay work
-    // regardless of whether the toolbar is collapsed or expanded
     if (this.viewer) {
       this.viewer.dataset.activeTool = this.activeStampType
     }
+
+    // Sync Mode Buttons in Doc Bar
+    if (this.btnModeSelect) this.btnModeSelect.classList.toggle('active', this.activeStampType === 'select')
+    if (this.btnModeEraser) this.btnModeEraser.classList.toggle('active', this.activeStampType === 'eraser')
+    if (this.btnModeAnchor) this.btnModeAnchor.classList.toggle('active', this.activeStampType === 'anchor')
 
     // 0. Active Tool FAB (Visible ONLY when collapsed)
     const fab = document.createElement("div")
@@ -1112,7 +1609,7 @@ class ScoreFlow {
         this.activeToolsContainer.style.overflowY = "auto"
       } else {
         this.activeToolsContainer.style.maxHeight = "none"
-        this.activeToolsContainer.style.overflowY = "visible"
+        this.activeToolsContainer.style.overflowY = "hidden" // Ensure no scrollbars ever show
       }
     }, 0)
   }
@@ -1128,7 +1625,7 @@ class ScoreFlow {
     // 3. ONLY if the img loads successfully, we hide the SVG and show the img
     return `
       <div class="icon-wrapper" style="width:${size}px; height:${size}px; position:relative; display:flex; align-items:center; justify-content:center;">
-        <svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="currentColor" stroke-width="2" fill="none" class="fallback-svg">
+        <svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="currentColor" stroke-width="1.3" fill="none" class="fallback-svg">
           ${tool.icon}
         </svg>
         <img src="${path}" 
@@ -1141,7 +1638,7 @@ class ScoreFlow {
     `
   }
 
-  initResizable() {
+  initToolbarResizable() {
     let isResizing = false
     let initialX, initialWidth
     const el = this.activeToolsContainer
@@ -1179,6 +1676,49 @@ class ScoreFlow {
     document.addEventListener("touchmove", handleMouseMove, { passive: false })
     document.addEventListener("mouseup", handleMouseUp)
     document.addEventListener("touchend", handleMouseUp)
+  }
+
+  initSidebarResizable() {
+    let isResizing = false
+    let initialX, initialWidth
+    const sidebar = this.sidebar
+
+    const handleMouseDown = (e) => {
+      isResizing = true
+      initialX = e.clientX || (e.touches && e.touches[0].clientX)
+      initialWidth = sidebar.offsetWidth
+      sidebar.classList.add('resizing')
+      document.body.style.cursor = 'ew-resize'
+      e.preventDefault()
+    }
+
+    const handleMouseMove = (e) => {
+      if (!isResizing) return
+      const currentX = e.clientX || (e.touches && e.touches[0].clientX)
+      // Since sidebar is on the right, moving X to the left (smaller X) increases width
+      const deltaX = initialX - currentX
+      const newWidth = Math.min(Math.max(280, initialWidth + deltaX), 800)
+
+      document.documentElement.style.setProperty('--sidebar-width', `${newWidth}px`)
+    }
+
+    const handleMouseUp = () => {
+      if (isResizing) {
+        isResizing = false
+        sidebar.classList.remove('resizing')
+        document.body.style.cursor = ''
+      }
+    }
+
+    if (this.sidebarResizer) {
+      this.sidebarResizer.addEventListener('mousedown', handleMouseDown)
+      this.sidebarResizer.addEventListener('touchstart', handleMouseDown, { passive: false })
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('touchmove', handleMouseMove, { passive: false })
+    document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('touchend', handleMouseUp)
   }
 
   toggleQuickLoadModal(show) {
@@ -1414,6 +1954,12 @@ class ScoreFlow {
     localStorage.setItem('scoreflow_recent_solo_scores', JSON.stringify(this.recentSoloScores || []))
     if (this.activeScoreName) {
       localStorage.setItem('scoreflow_last_opened_score', this.activeScoreName)
+      // Save mapping of filename to fingerprint
+      if (this.pdfFingerprint) {
+        const map = JSON.parse(localStorage.getItem('scoreflow_fingerprint_map') || '{}')
+        map[this.activeScoreName] = this.pdfFingerprint
+        localStorage.setItem('scoreflow_fingerprint_map', JSON.stringify(map))
+      }
     }
   }
 
@@ -1434,6 +1980,10 @@ class ScoreFlow {
     if (fingerprintData) this.pdfFingerprint = fingerprintData
     if (profilesData) this.profiles = JSON.parse(profilesData)
     if (activeProfileData) this.activeProfileId = activeProfileData
+
+    // Fingerprint Map for Library Indicators
+    const mapData = localStorage.getItem('scoreflow_fingerprint_map')
+    this.scoreFingerprintMap = mapData ? JSON.parse(mapData) : {}
 
     // PERSISTENCE SYNC: Preserve custom layers while respecting core defaults
     if (layersData) {
@@ -1473,47 +2023,172 @@ class ScoreFlow {
     this.renderSourceUI() // Render sources after loading
   }
 
-  addNewLayer() {
-    const name = prompt('Layer Name:') || `Layer ${this.layers.length + 1}`
+  async addNewLayer() {
+    const name = prompt('Notation Category Name (e.g., Bowing, Vibrato):')
+    if (!name) return
+
     const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ff4757']
     const color = colors[this.layers.length % colors.length]
-    const id = `layer-${Date.now()}`
+    const id = `layer_${Date.now()}`
 
-    this.layers.push({ id, name, color, visible: true })
+    this.layers.push({
+      id,
+      name,
+      color,
+      visible: true,
+      type: 'custom' // Mark as custom to allow deletion
+    })
+
     this.activeLayerId = id
     this.saveToStorage()
     this.renderLayerUI()
+    if (this.pdf) this.renderPDF() // Add new canvas for the layer
 
-    if (this.pdf) this.renderPDF() // Re-render to add new canvases
+    this.showDialog({
+      title: 'Category Created',
+      message: `Successfully added "${name}" to notation categories.`,
+      icon: '✅',
+      type: 'info'
+    })
+  }
+
+  async deleteLayer(layerId) {
+    const coreIds = ['draw', 'fingering', 'articulation', 'performance', 'other']
+    if (coreIds.includes(layerId)) {
+      this.showDialog({ title: 'Protected Layer', message: 'Cannot delete core system layers.', icon: '🛡️' })
+      return
+    }
+
+    const index = this.layers.findIndex(l => l.id === layerId)
+    if (index === -1) return
+
+    const layer = this.layers[index]
+    const confirmed = await this.showDialog({
+      title: 'Delete Category?',
+      message: `Are you sure you want to delete "${layer.name}"? Original markings will be moved to "Draw Objects".`,
+      icon: '🗑️',
+      type: 'confirm'
+    })
+
+    if (!confirmed) return
+
+    // Re-route stamps to standard 'draw' layer
+    this.stamps.forEach(s => {
+      if (s.layerId === layerId) s.layerId = 'draw'
+    })
+
+    // Splice is safer for in-place array management during multiple calls
+    this.layers.splice(index, 1)
+
+    // Fallback if we deleted the currently active layer
+    if (this.activeLayerId === layerId) this.activeLayerId = 'draw'
+
+    this.saveToStorage()
+    this.renderLayerUI()
+    if (this.pdf) this.renderPDF()
+  }
+
+  async resetLayers() {
+    const confirmed = await this.showDialog({
+      title: 'Emergency Reset?',
+      message: '🛑 This will remove ALL custom notation categories and restore the 5 professional standards. Markings will be moved to "Draw Objects". Continue?',
+      icon: '⚠️',
+      type: 'confirm',
+      confirmText: 'Yes, Reset Now'
+    })
+
+    if (!confirmed) return
+
+    // 1. Move all stamps to 'draw'
+    this.stamps.forEach(s => s.layerId = 'draw')
+
+    // 2. Reset layers array to defaults
+    this.layers = [
+      { id: 'draw', name: 'Draw Objects', color: '#ff4757', visible: true, type: 'draw' },
+      { id: 'fingering', name: 'Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
+      { id: 'articulation', name: 'Articulations', color: '#10b981', visible: true, type: 'articulation' },
+      { id: 'performance', name: 'Performance', color: '#f59e0b', visible: true, type: 'performance' },
+      { id: 'other', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'other' }
+    ]
+
+    this.activeLayerId = 'draw'
+    this.saveToStorage()
+    this.renderLayerUI()
+    if (this.pdf) this.renderPDF()
+
+    this.showDialog({
+      title: 'System Restored',
+      message: 'Layers have been reset to system standards successfully.',
+      icon: '🔄',
+      type: 'info'
+    })
   }
 
   renderLayerUI() {
-    this.layerList.innerHTML = ''
+    // We now render to the external left-side list
+    const list = this.externalLayerList || this.layerList
+    if (!list) return
+    list.innerHTML = ''
+
     this.layers.forEach(layer => {
+      if (layer.visible === undefined) layer.visible = true
+
       const item = document.createElement('div')
       item.className = 'layer-item'
+
+      const eyeIcon = layer.visible
+        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+
+      const isCore = ['draw', 'fingering', 'articulation', 'performance', 'other'].includes(layer.id)
+
       item.innerHTML = `
         <div class="layer-info">
           <div class="color-dot" style="background:${layer.color}"></div>
           <div class="layer-meta">
             <span class="layer-name">${layer.name}</span>
-            <span class="layer-type-tag">${layer.type.charAt(0).toUpperCase() + layer.type.slice(1)} Group</span>
           </div>
         </div>
         <div class="layer-actions">
-           <button class="layer-vis-btn ${layer.visible ? 'visible' : 'hidden'}" title="Toggle Visibility">
-             ${layer.visible ? '<span>Show</span>' : '<span>Hide</span>'}
+           <button class="layer-vis-btn ${layer.visible ? 'visible' : 'inactive'}" title="${layer.visible ? 'Hide' : 'Show'}">
+             ${eyeIcon}
            </button>
+           ${!isCore ? `<button class="btn-delete-layer" title="Delete Category">✕</button>` : ''}
         </div>
       `
-      item.querySelector('.layer-vis-btn').addEventListener('click', (e) => {
+
+      const btn = item.querySelector('.layer-vis-btn')
+      btn.addEventListener('click', (e) => {
         e.stopPropagation()
         layer.visible = !layer.visible
         this.updateLayerVisibility()
         this.renderLayerUI()
       })
-      this.layerList.appendChild(item)
+
+      const delBtn = item.querySelector('.btn-delete-layer')
+      if (delBtn) {
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          this.deleteLayer(layer.id)
+        })
+      }
+
+      list.appendChild(item)
     })
+
+    // Add Emergency Reset Button at the bottom
+    const resetWrapper = document.createElement('div')
+    resetWrapper.style.padding = '10px 0'
+    resetWrapper.style.borderTop = '1px solid var(--border)'
+    resetWrapper.style.marginTop = '10px'
+    resetWrapper.innerHTML = `
+      <button id="reset-layers-btn" class="btn-text-danger" style="width:100%; text-align:center; font-size:0.75rem;">
+        Reset to Standard Categories
+      </button>
+    `
+    const resetBtn = resetWrapper.querySelector('#reset-layers-btn')
+    resetBtn.addEventListener('click', () => this.resetLayers())
+    list.appendChild(resetWrapper)
   }
 
   spawnTextEditor(wrapper, pageNum, stamp) {
@@ -1573,187 +2248,6 @@ class ScoreFlow {
       editor.style.height = 'auto'
       editor.style.height = editor.scrollHeight + 'px'
     }
-  }
-
-  updateLayerVisibility() {
-    this.saveToStorage()
-    // In Virtual Layer mode, we just redraw everything to respect visibility states
-    if (this.pdf) {
-      for (let i = 1; i <= this.pdf.numPages; i++) {
-        this.redrawStamps(i)
-      }
-    }
-  }
-
-  exportProject() {
-    const data = {
-      version: '1.2',
-      timestamp: new Date().toISOString(),
-      layers: this.layers,
-      stamps: this.stamps,
-      sources: this.sources,
-      activeSourceId: this.activeSourceId
-    }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `ScoreFlow_FullProject_${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  handleImport(e) {
-    const file = e.target.files[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target.result)
-        const mode = confirm('Import Mode:\n\nClick [OK] to Merge as a New Persona (Maestro/Peer).\nClick [Cancel] to Overwrite current data.')
-
-        if (mode) {
-          // Merge as New Source
-          const newSourceId = 'res_' + Date.now()
-          const newSourceName = prompt('Enter name for this persona:', 'Imported Persona') || 'New Persona'
-
-          this.sources.push({
-            id: newSourceId,
-            name: newSourceName,
-            visible: true,
-            opacity: 0.6, // Default to a bit ghosted for comparison
-            color: '#' + Math.floor(Math.random() * 16777215).toString(16)
-          })
-
-          const importedStamps = (data.stamps || []).map(s => ({ ...s, sourceId: newSourceId }))
-          this.stamps = this.stamps.concat(importedStamps)
-          this.saveToStorage()
-          location.reload()
-        } else {
-          // Overwrite
-          this.layers = data.layers || this.layers
-          this.stamps = data.stamps || []
-          this.sources = data.sources || this.sources
-          this.activeSourceId = data.activeSourceId || this.sources[0].id
-          this.saveToStorage()
-          location.reload()
-        }
-      } catch (err) {
-        alert('Invalid project file.')
-      }
-    }
-    reader.readAsText(file)
-  }
-
-  addSource() {
-    const name = prompt('Interpretation Style (e.g., Conductor, Soloist, Principal):')
-    if (!name) return
-
-    const id = 'src_' + Date.now()
-    this.sources.push({
-      id,
-      name,
-      visible: true,
-      opacity: 1,
-      color: '#' + Math.floor(Math.random() * 16777215).toString(16)
-    })
-    this.activeSourceId = id
-    this.saveToStorage()
-    this.renderSourceUI()
-  }
-
-  renderSourceUI() {
-    if (!this.sourceList) return
-    this.sourceList.innerHTML = ''
-
-    this.sources.forEach(source => {
-      const isActive = this.activeSourceId === source.id
-      const item = document.createElement('div')
-      item.className = `source-item ${isActive ? 'active' : ''}`
-
-      item.innerHTML = `
-        <div class="source-header">
-          <div class="source-info">
-            <div class="source-dot" style="background: ${source.color}"></div>
-            <span class="source-name">${source.name}</span>
-            ${isActive ? '<span class="active-source-badge">Active</span>' : ''}
-          </div>
-          <div class="source-controls">
-            <button class="btn-sm-icon toggle-vis" title="Toggle Visibility">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                ${source.visible
-          ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
-          : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'}
-              </svg>
-            </button>
-            <button class="btn-sm-icon rename-src" title="Rename Persona">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            ${this.sources.length > 1 ? `
-              <button class="btn-sm-icon danger delete-src" title="Remove Persona">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              </button>
-            ` : ''}
-          </div>
-        </div>
-        <div class="source-opacity-box">
-          <label>Compare</label>
-          <input type="range" class="source-opacity-slider modern-slider" min="0" max="1" step="0.1" value="${source.opacity}">
-        </div>
-      `;
-
-      item.onclick = (e) => {
-        if (e.target.closest('.source-controls') || e.target.closest('.source-opacity-box')) return
-        this.activeSourceId = source.id
-        this.saveToStorage()
-        this.renderSourceUI()
-      }
-
-      item.querySelector('.toggle-vis').onclick = (e) => {
-        e.stopPropagation()
-        source.visible = !source.visible
-        this.saveToStorage()
-        this.renderSourceUI()
-        if (this.pdf) {
-          for (let i = 1; i <= this.pdf.numPages; i++) this.redrawStamps(i)
-        }
-      }
-
-      item.querySelector('.rename-src').onclick = (e) => {
-        e.stopPropagation()
-        const newName = prompt('Rename Interpretation Style:', source.name)
-        if (newName) {
-          source.name = newName
-          this.saveToStorage()
-          this.renderSourceUI()
-        }
-      }
-
-      const delBtn = item.querySelector('.delete-src')
-      if (delBtn) {
-        delBtn.onclick = (e) => {
-          e.stopPropagation()
-          if (confirm(`Remove "${source.name}" and all its annotations?`)) {
-            this.stamps = this.stamps.filter(s => s.sourceId !== source.id)
-            this.sources = this.sources.filter(s => s.id !== source.id)
-            if (this.activeSourceId === source.id) this.activeSourceId = this.sources[0].id
-            this.saveToStorage()
-            location.reload()
-          }
-        }
-      }
-
-      item.querySelector('.source-opacity-slider').oninput = (e) => {
-        source.opacity = parseFloat(e.target.value)
-        if (this.pdf) {
-          for (let i = 1; i <= this.pdf.numPages; i++) this.redrawStamps(i)
-        }
-      }
-      item.querySelector('.source-opacity-slider').onchange = () => this.saveToStorage()
-
-      this.sourceList.appendChild(item)
-    })
   }
 
   updateLayerVisibility() {
@@ -1866,28 +2360,174 @@ class ScoreFlow {
   renderSourceUI() {
     if (!this.sourceList) return
     this.sourceList.innerHTML = ''
-    // ... Existing Persona UI Logic (no changes needed)
+
+    this.sources.forEach(source => {
+      const isActive = this.activeSourceId === source.id
+      const item = document.createElement('div')
+      item.className = `source-item ${isActive ? 'active' : ''}`
+
+      // Check if it's a shared style with contributor info
+      const contributorBadge = source.author
+        ? `<div class="source-contributor">
+             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+             ${source.author} • ${source.section}
+           </div>`
+        : '';
+
+      // Calculate stamp count for this specific source
+      const stampCount = this.stamps.filter(s => s.sourceId === source.id).length;
+
+      item.innerHTML = `
+        <div class="source-header">
+          <div class="source-info">
+            <div class="source-dot" style="background: ${source.color}"></div>
+            <div class="source-meta-box">
+              <div class="style-name-row" style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="source-name">${source.name}</span>
+                <span class="stamp-count-mini" style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">${stampCount} marks</span>
+              </div>
+              ${contributorBadge}
+            </div>
+            ${isActive ? '<span class="active-source-badge">Active</span>' : ''}
+          </div>
+          <div class="source-controls">
+            <button class="btn-sm-icon toggle-vis" title="Toggle Visibility">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                ${source.visible
+          ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+          : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'}
+              </svg>
+            </button>
+            <button class="btn-sm-icon rename-src" title="Rename Style">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            ${this.sources.length > 1 ? `
+              <button class="btn-sm-icon danger delete-src" title="Remove Style">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+        <div class="source-opacity-box">
+          <label>Compare</label>
+          <input type="range" class="source-opacity-slider modern-slider" min="0" max="1" step="0.1" value="${source.opacity}">
+        </div>
+      `;
+
+      item.onclick = (e) => {
+        if (e.target.closest('.source-controls') || e.target.closest('.source-opacity-box')) return
+        this.activeSourceId = source.id
+        this.saveToStorage()
+        this.renderSourceUI()
+      }
+
+      item.querySelector('.toggle-vis').onclick = (e) => {
+        e.stopPropagation()
+        source.visible = !source.visible
+        this.saveToStorage()
+        this.renderSourceUI()
+        if (this.pdf) {
+          for (let i = 1; i <= this.pdf.numPages; i++) this.redrawStamps(i)
+        }
+      }
+
+      item.querySelector('.rename-src').onclick = (e) => {
+        e.stopPropagation()
+        const newName = prompt('Rename Interpretation Style:', source.name)
+        if (newName) {
+          source.name = newName
+          this.saveToStorage()
+          this.renderSourceUI()
+        }
+      }
+
+      const delBtn = item.querySelector('.delete-src')
+      if (delBtn) {
+        delBtn.onclick = (e) => {
+          e.stopPropagation()
+          if (confirm(`Remove "${source.name}" and all its annotations?`)) {
+            this.stamps = this.stamps.filter(s => s.sourceId !== source.id)
+            this.sources = this.sources.filter(s => s.id !== source.id)
+            if (this.activeSourceId === source.id) this.activeSourceId = this.sources[0].id
+            this.saveToStorage()
+            location.reload()
+          }
+        }
+      }
+
+      item.querySelector('.source-opacity-slider').oninput = (e) => {
+        source.opacity = parseFloat(e.target.value)
+        if (this.pdf) {
+          for (let i = 1; i <= this.pdf.numPages; i++) this.redrawStamps(i)
+        }
+      }
+      item.querySelector('.source-opacity-slider').onchange = () => this.saveToStorage()
+
+      this.sourceList.appendChild(item)
+    })
   }
+
 
   // --- NEW COMMUNITY FEATURES ---
 
-  async connectCloudFolder() {
-    try {
-      this.cloudSyncFolder = await window.showDirectoryPicker()
-      const statusEl = document.querySelector('.hub-status')
-      if (statusEl) statusEl.textContent = `☁️ Syncing: ${this.cloudSyncFolder.name}`
-      if (this.syncCloudBtn) this.syncCloudBtn.classList.remove('hidden')
+  async verifyPermission(fileHandle, readWrite) {
+    const options = {}
+    if (readWrite) {
+      options.mode = 'readwrite'
+    }
+    // Check if permission was already granted.
+    if ((await fileHandle.queryPermission(options)) === 'granted') {
+      return true
+    }
+    // Request permission.
+    if ((await fileHandle.requestPermission(options)) === 'granted') {
+      return true
+    }
+    return false
+  }
 
-      alert(`✅ Synchronized: ${this.cloudSyncFolder.name}\n\nScoreFlow is now linked to your shared folder. Every interpretation you "Publish" will be saved directly into this directory. If this folder is inside your Google Drive, it will automatically sync to your other orchestral members!`)
+  async connectSyncFolder(type) {
+    try {
+      const handle = await window.showDirectoryPicker({
+        mode: 'readwrite'
+      })
+
+      const targetId = this.pendingMissionHandle ? this.pendingMissionProfileId : this.activeProfileId
+      if (!targetId) {
+        alert('Please select a profile first!')
+        return
+      }
+
+      // Persistent Storage for this specific profile
+      await db.set(`profile_${targetId}_${type}_handle`, handle)
+
+      if (type === 'personal') {
+        this.personalSyncFolder = handle
+      } else {
+        this.orchestraSyncFolder = handle
+      }
+
+      this.updateSyncUI()
+      this.showDialog({
+        title: 'Folder Linked',
+        message: `✅ ${type === 'personal' ? 'Personal' : 'Orchestra'} folder linked: "${handle.name}".`,
+        icon: '🔗'
+      })
       await this.renderCommunityHub()
     } catch (err) {
-      console.warn('Cloud Sync connection cancelled or failed:', err)
+      console.warn('Folder connection cancelled:', err)
     }
   }
 
-  async publishWork() {
+  async publishWork(target) {
     const activeProfile = this.profiles.find(p => p.id === this.activeProfileId)
-    // Create the digital interpretation package
+    const folder = target === 'personal' ? this.personalSyncFolder : this.orchestraSyncFolder
+
+    if (!folder) {
+      alert(`Please link a ${target === 'personal' ? 'Personal' : 'Orchestra'} folder first!`)
+      return
+    }
+
     const data = {
       id: 'pub_' + Date.now(),
       author: activeProfile.name,
@@ -1897,67 +2537,72 @@ class ScoreFlow {
       layers: this.layers,
       stamps: this.stamps,
       sources: this.sources,
-      fingerprint: this.pdfFingerprint
+      fingerprint: this.pdfFingerprint,
+      workspaceType: target // Mark the origin
     }
 
-    // 1. Local Cache Implementation
-    const communityData = JSON.parse(localStorage.getItem('scoreflow_community') || '[]')
-    communityData.unshift(data)
-    localStorage.setItem('scoreflow_community', JSON.stringify(communityData.slice(0, 10)))
+    try {
+      // CRITICAL: Verify write permission
+      const hasPermission = await this.verifyPermission(folder, true)
+      if (!hasPermission) throw new Error('Permission denied.')
 
-    // 2. Real Cloud Persistence (if folder connected)
-    if (this.cloudSyncFolder) {
-      try {
-        const fileName = `sf_shared_${activeProfile.name.replace(/\s/g, '_')}_${Date.now()}.json`
-        const fileHandle = await this.cloudSyncFolder.getFileHandle(fileName, { create: true })
-        const writable = await fileHandle.createWritable()
-        await writable.write(JSON.stringify(data, null, 2))
-        await writable.close()
-        console.log(`Cloud Sync: Published to ${fileName}`)
-      } catch (err) {
-        alert('Cloud publishing failed. Please check folder permissions.')
+      const fileName = `sf_${target}_${activeProfile.name.replace(/\s/g, '_')}_${Date.now()}.json`
+      const fileHandle = await folder.getFileHandle(fileName, { create: true })
+      const writable = await fileHandle.createWritable()
+      await writable.write(JSON.stringify(data, null, 2))
+      await writable.close()
+
+      // Flag for Library Sync Indicators
+      if (this.pdfFingerprint) {
+        localStorage.setItem(`scoreflow_published_${target.charAt(0)}_${this.pdfFingerprint}`, 'true')
       }
-    }
 
-    alert(`🚀 Interpretation Published!\n\nYour markings are saved in the shared folder for "${activeProfile.section}". They will now be synchronized by your cloud provider (Google Drive / Dropbox).`)
-    this.renderCommunityHub()
+      alert(`🚀 Successfully saved to ${target === 'personal' ? 'Private Backup' : 'Orchestra Workspace'}!`)
+      await this.renderCommunityHub()
+      this.renderLibrary()
+    } catch (err) {
+      console.error('Publishing error:', err)
+      alert(`❌ Publishing failed: ${err.message}`)
+    }
   }
 
   async renderCommunityHub() {
     if (!this.sharedList) return
+    this.sharedList.innerHTML = '<div class="hub-loading">Scanning workspaces...</div>'
 
-    // 1. Get local persistent community data (Simulation)
-    let communityData = JSON.parse(localStorage.getItem('scoreflow_community') || '[]')
-
-    // 2. Scan for actual Cloud Sync files (Real collaboration)
-    if (this.cloudSyncFolder) {
+    const communityData = []
+    const scanFolder = async (folder, typeLabel) => {
+      if (!folder) return
       try {
-        const cloudFiles = []
-        for await (const [name, handle] of this.cloudSyncFolder.entries()) {
-          if (name.endsWith('.json') && name.startsWith('sf_shared_')) {
+        const hasPermission = await this.verifyPermission(folder, false)
+        if (!hasPermission) return
+
+        for await (const [name, handle] of folder.entries()) {
+          if (name.endsWith('.json') && (name.startsWith('sf_personal_') || name.startsWith('sf_orchestra_') || name.startsWith('sf_shared_'))) {
             const file = await handle.getFile()
             const text = await file.text()
             try {
-              const sharedData = JSON.parse(text)
-              // Only include if it matches our current PDF fingerprint
-              if (sharedData.fingerprint === this.pdfFingerprint) {
-                cloudFiles.push(sharedData)
+              const data = JSON.parse(text)
+              if (data.fingerprint === this.pdfFingerprint && data.stamps && data.stamps.length > 0) {
+                data.location = typeLabel // Add origin label
+                communityData.push(data)
               }
-            } catch (pErr) { console.warn('Corrupt JSON in sync folder:', name) }
+            } catch (e) { console.warn('Corrupt JSON:', name) }
           }
         }
-        // Merge and deduplicate by ID
-        const existingIds = new Set(communityData.map(c => c.id))
-        cloudFiles.forEach(f => {
-          if (!existingIds.has(f.id)) {
-            communityData.unshift(f)
-            existingIds.add(f.id)
-          }
-        })
-      } catch (err) {
-        console.error('Cloud Sync scan failed:', err)
-      }
+      } catch (err) { console.error(`Scan error in ${typeLabel}:`, err) }
     }
+
+    // Scan both potential sources
+    await scanFolder(this.personalSyncFolder, 'Personal Workspace')
+    await scanFolder(this.orchestraSyncFolder, 'Orchestra')
+
+    // Sort by timestamp (newest first)
+    communityData.sort((a, b) => {
+      const timeA = new Date(a.id.split('_')[1] || 0)
+      const timeB = new Date(b.id.split('_')[1] || 0)
+      return b - a
+    })
 
     // Initial Mock Data if absolutely empty
     if (communityData.length === 0) {
@@ -1977,7 +2622,9 @@ class ScoreFlow {
       card.innerHTML = `
         <div class="card-top">
            <div class="card-title">
-             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+             <div class="workspace-badge ${work.location === 'Personal Workspace' ? 'personal' : 'orchestra'}">
+               ${work.location === 'Personal Workspace' ? '🔒 Private' : '👥 Team'}
+             </div>
              ${work.author}
            </div>
            <button class="btn-import-ghost" id="grab-${work.id}">Grab</button>
@@ -2005,21 +2652,24 @@ class ScoreFlow {
     if (!confirm(`Import markings from ${work.author} (${work.section}) as a new Interpretation Style?`)) return
 
     const newSourceId = 'hub_' + Date.now()
-    const newSourceName = `${work.author} (${work.section})`
+    // Use the sender's original style name if available, otherwise fallback
+    const originalStyleName = work.sources && work.sources[0] ? work.sources[0].name : "Shared Markings"
 
-    // 1. Create a new source for this imported interpretation
+    // 1. Create a new source with contributor tracking
     const newSource = {
       id: newSourceId,
-      name: newSourceName,
+      name: originalStyleName,
+      author: work.author,      // Persistent Contributor tracking
+      section: work.section,    // Role identification
       visible: true,
-      opacity: 0.7, // Default to see-through for comparison
+      opacity: 0.7,
       color: '#' + Math.floor(Math.random() * 16777215).toString(16)
     }
     this.sources.push(newSource)
 
     // 2. Clone and link the stamps to the new source
     const importedStamps = (work.stamps || [])
-      .filter(s => s && s.page) // Robust filter for real objects
+      .filter(s => s && s.page)
       .map(s => ({ ...s, sourceId: newSourceId }))
 
     this.stamps = this.stamps.concat(importedStamps)
@@ -2032,7 +2682,7 @@ class ScoreFlow {
         this.redrawStamps(i)
       }
     }
-    alert(`${work.author}'s interpretation imported! You can now toggle its visibility in the menu.`)
+    alert(`${work.author}'s interpretation ("${originalStyleName}") imported!`)
   }
 
   // --- MEMBER PROFILE MANAGEMENT ---
@@ -2044,46 +2694,412 @@ class ScoreFlow {
     }
   }
 
-  renderActiveProfile() {
+  async renderActiveProfile() {
     const active = this.profiles.find(p => p.id === this.activeProfileId) || this.profiles[0]
     if (!active) return
 
     if (this.profileDisplayName) this.profileDisplayName.textContent = active.name
     if (this.profileDisplayOrchestra) this.profileDisplayOrchestra.textContent = active.orchestra
     if (this.profileAvatarInitial) this.profileAvatarInitial.textContent = active.initial || active.name.charAt(0)
+    if (this.welcomeIdentityName) this.welcomeIdentityName.textContent = `Welcome, ${active.name}`
 
     // Update Section Hub title dynamically
     const statusEl = document.querySelector('.hub-status')
     if (statusEl) statusEl.textContent = `Section: ${active.section}`
+
+    // Auto-recover Cloud Folders for this profile
+    const pHandle = await db.get(`profile_${active.id}_personal_handle`)
+    const oHandle = await db.get(`profile_${active.id}_orchestra_handle`)
+    this.personalSyncFolder = pHandle || null
+    this.orchestraSyncFolder = oHandle || null
+    this.updateSyncUI()
+
+    this.renderWelcomeProfiles()
   }
 
-  resetToSystemDefault() {
-    if (confirm('⚠️ WARNING: Reset ALL App Settings?\n\nThis will clear your Profiles, Interpretation Styles, and Global Configurations. Score markings (stamps) for the current session will remain unless cleared separately.')) {
-      const keysToClear = [
-        'scoreflow_profiles',
-        'scoreflow_active_profile',
-        'scoreflow_sources',
-        'scoreflow_active_source',
-        'scoreflow_layers'
+  updateSyncUI() {
+    // 1. Sidebar Status (Existing)
+    if (this.personalStatus) {
+      if (this.personalSyncFolder) {
+        this.personalStatus.innerHTML = `✅ Linked: <strong style="color:var(--primary)">${this.personalSyncFolder.name}</strong>`
+      } else {
+        this.personalStatus.textContent = 'No personal folder linked.'
+      }
+    }
+    if (this.orchestraStatus) {
+      if (this.orchestraSyncFolder) {
+        this.orchestraStatus.innerHTML = `✅ Linked: <strong style="color:var(--primary)">${this.orchestraSyncFolder.name}</strong>`
+      } else {
+        this.orchestraStatus.textContent = 'No group folder linked.'
+      }
+    }
+
+    // 2. Setup Wizard Status (Card-based)
+    if (this.setupStatusScore) {
+      if (this.pendingMissionHandle) {
+        this.setupStatusScore.textContent = this.pendingMissionHandle.name
+        if (this.setupCardScore) this.setupCardScore.classList.add('active')
+      } else {
+        this.setupStatusScore.textContent = 'Required'
+        if (this.setupCardScore) this.setupCardScore.classList.remove('active')
+      }
+    }
+    if (this.setupStatusShared) {
+      if (this.pendingOrchestraHandle) {
+        this.setupStatusShared.textContent = this.pendingOrchestraHandle.name
+        if (this.setupCardShared) this.setupCardShared.classList.add('active')
+      } else {
+        this.setupStatusShared.textContent = 'Optional'
+        if (this.setupCardShared) this.setupCardShared.classList.remove('active')
+      }
+    }
+  }
+
+  async renderWelcomeProfiles() {
+    if (!this.welcomeProfileList) return
+    this.welcomeProfileList.innerHTML = ''
+
+    const isInWizard = !this.identitySelectionView.classList.contains('hidden')
+
+    this.profiles.forEach(p => {
+      const isActive = p.id === (isInWizard ? this.pendingMissionProfileId : this.activeProfileId)
+      const card = document.createElement('div')
+      card.className = `identity-card ${isActive ? 'active' : ''}`
+      card.innerHTML = `
+        <div class="identity-avatar">${p.initial || p.name.charAt(0)}</div>
+        <div class="identity-name">${p.name}</div>
+        <div class="identity-role">${p.section}</div>
+      `
+      card.onclick = async () => {
+        // MISSION SETUP FLOW
+        if (isInWizard) {
+          this.pendingMissionProfileId = p.id
+
+          // Check if this profile ALREADY has cloud folders linked in DB
+          const pHandle = await db.get(`profile_${p.id}_personal_handle`)
+          const oHandle = await db.get(`profile_${p.id}_orchestra_handle`)
+
+          // Pre-fill the wizard handles if they exist
+          this.pendingMissionHandle = pHandle || null
+          this.pendingOrchestraHandle = oHandle || null
+
+          this.updateSyncUI()
+          this.validateMissionStart()
+          this.renderWelcomeProfiles()
+
+          // Transition to Page 2 (Scanned Scores)
+          this.showSetupStage(2)
+        } else {
+          // Normal Identity Change
+          this.activeProfileId = p.id
+          this.saveToStorage()
+          this.renderActiveProfile()
+
+          if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
+          if (this.welcomeInitialView) this.welcomeInitialView.classList.remove('hidden')
+        }
+      }
+      this.welcomeProfileList.appendChild(card)
+    })
+  }
+
+  showSetupStage(n) {
+    const stages = [this.setupStage1, this.setupStage2, this.setupStage3]
+    stages.forEach((stage, i) => {
+      if (!stage) return
+      if (i + 1 === n) {
+        stage.classList.remove('hidden')
+      } else {
+        stage.classList.add('hidden')
+      }
+    })
+  }
+
+  async checkInitialView() {
+    // 1. If we have a PDF already loaded, hide welcome entirely
+    if (this.pdf) {
+      this.hideWelcome()
+      return
+    }
+
+    // 2. Clear stage variables
+    this.pendingMissionHandle = null
+
+    // 3. Show Mission Hub (Stage 1)
+    const screen = document.querySelector('.welcome-screen')
+    if (screen) screen.classList.remove('hidden')
+
+    if (this.missionSelectionView) {
+      this.missionSelectionView.classList.remove('hidden')
+      if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
+      if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
+
+      this.renderRecentMissions()
+    }
+  }
+
+  async renderRecentMissions() {
+    if (!this.recentMissionsContainer) return
+    this.recentMissionsContainer.innerHTML = ''
+
+    const storedMissions = await db.get('scoreflow_missions') || []
+
+    if (storedMissions.length === 0) {
+      this.recentMissionsContainer.innerHTML = '<div class="empty-state text-center p-10 opacity-70">No recent missions started yet.</div>'
+      return
+    }
+
+    storedMissions.forEach(mission => {
+      const card = document.createElement('div')
+      card.className = 'mission-card'
+      card.innerHTML = `
+        <div class="mission-card-icon">📂</div>
+        <div class="mission-card-info">
+          <div class="mission-card-name">${mission.name}</div>
+          <div class="mission-card-role">${mission.profileName || 'No Role Assigned'}</div>
+        </div>
+      `
+      card.onclick = async () => {
+        try {
+          const permission = await mission.handle.requestPermission({ mode: 'read' })
+          if (permission === 'granted') {
+            this.libraryFolderHandle = mission.handle
+            this.activeProfileId = mission.profileId
+            this.saveToStorage()
+            this.libraryFiles = []
+            await this.scanLibrary(this.libraryFolderHandle)
+            this.renderLibrary()
+            // Don't hide welcome yet, show the repertoire to pick a score
+            this.showProjectRepertoire()
+            this.renderActiveProfile()
+          }
+        } catch (e) {
+          console.warn('Mission opening failed:', e)
+        }
+      }
+      this.recentMissionsContainer.appendChild(card)
+    })
+  }
+
+  async startNewMission() {
+    // Show Setup Screen First (Mental Workflow: Who am I? Where are we?)
+    this.pendingMissionHandle = null
+    this.pendingMissionProfileId = null
+
+    if (this.missionSelectionView) this.missionSelectionView.classList.add('hidden')
+    if (this.identitySelectionView) {
+      this.identitySelectionView.classList.remove('hidden')
+      this.showSetupStage(1)
+      const title = document.getElementById('setup-mission-title')
+      if (title) title.textContent = `Setup Performance Mission`
+    }
+
+    if (this.setupScoreStatus) {
+      this.setupScoreStatus.innerHTML = '<span style="color:var(--text-muted)">Project Repertoire Folder Not Selected</span>'
+    }
+
+    if (this.finalStartMissionBtn) this.finalStartMissionBtn.disabled = true
+    this.renderWelcomeProfiles()
+  }
+
+  async selectMissionFolder() {
+    try {
+      const handle = await window.showDirectoryPicker()
+      this.pendingMissionHandle = handle
+
+      if (this.setupCardScore) this.setupCardScore.classList.add('active')
+      if (this.setupStatusScore) {
+        this.setupStatusScore.textContent = handle.name
+      }
+
+      const title = document.getElementById('setup-mission-title')
+      if (title) title.textContent = `Mission: ${handle.name}`
+
+      // Re-validate if we can start
+      this.validateMissionStart()
+
+      // ADVANCE to Stage 3 (Optional Shared Sync)
+      this.showSetupStage(3)
+    } catch (e) {
+      console.warn('Mission folder selection cancelled:', e)
+    }
+  }
+
+  async selectOrchestraFolder() {
+    try {
+      const handle = await window.showDirectoryPicker()
+      this.pendingOrchestraHandle = handle
+
+      if (this.setupCardShared) this.setupCardShared.classList.add('active')
+      if (this.setupStatusShared) {
+        this.setupStatusShared.textContent = handle.name
+      }
+
+      this.validateMissionStart()
+    } catch (e) {
+      console.warn('Orchestra folder selection cancelled:', e)
+    }
+  }
+
+  validateMissionStart() {
+    const hasRole = this.pendingMissionProfileId !== null
+    const hasFolder = this.pendingMissionHandle !== null
+    if (this.finalStartMissionBtn) {
+      this.finalStartMissionBtn.disabled = !(hasRole && hasFolder)
+    }
+  }
+
+  async completeMissionSetup(profile) {
+    if (!this.pendingMissionHandle) {
+      console.error('Mission setup failed: No folder handle found.')
+      return
+    }
+
+    const mission = {
+      id: 'mission_' + Date.now(),
+      name: this.pendingMissionHandle.name,
+      handle: this.pendingMissionHandle,
+      profileId: profile.id,
+      profileName: profile.name,
+      timestamp: Date.now()
+    }
+
+    let missions = await db.get('scoreflow_missions') || []
+    missions = missions.filter(m => m.name !== mission.name)
+    missions.unshift(mission)
+    missions = missions.slice(0, 5)
+    await db.set('scoreflow_missions', missions)
+
+    // Set active folders
+    this.libraryFolderHandle = this.pendingMissionHandle
+    this.personalSyncFolder = this.pendingMissionHandle
+    this.orchestraSyncFolder = this.pendingOrchestraHandle || null
+    this.activeProfileId = profile.id
+
+    // Persist links for this profile
+    await db.set(`profile_${profile.id}_personal_handle`, this.pendingMissionHandle)
+    if (this.pendingOrchestraHandle) {
+      await db.set(`profile_${profile.id}_orchestra_handle`, this.pendingOrchestraHandle)
+    }
+
+    this.saveToStorage()
+
+    this.libraryFiles = []
+    await this.scanLibrary(this.libraryFolderHandle)
+    this.renderLibrary()
+
+    // Clear wizard state
+    this.pendingMissionHandle = null
+    this.pendingOrchestraHandle = null
+    this.pendingMissionProfileId = null
+
+    this.showProjectRepertoire()
+    this.renderActiveProfile()
+  }
+
+  async exitMission() {
+    const choice = await this.showDialog({
+      title: 'Exit Mission',
+      message: 'Choose how you would like to end this mission. Your local markings (L) are saved automatically.',
+      icon: '🚪',
+      actions: [
+        { label: 'Sync to Private 🏠', value: 'personal', type: 'primary' },
+        { label: 'Sync to Orchestra 🎻', value: 'orchestra', type: 'primary' },
+        { label: 'Exit Only', value: 'exit', type: 'outline' },
+        { label: 'Cancel', value: 'cancel', type: 'outline' }
       ]
-      keysToClear.forEach(k => localStorage.removeItem(k))
-      alert('App System has been reset. Reloading...')
-      window.location.reload()
+    })
+
+    if (choice === 'cancel') return
+
+    if (choice === 'personal' || choice === 'orchestra') {
+      await this.publishWork(choice)
+      // Small Delay for UX
+      await new Promise(r => setTimeout(r, 1000))
+    }
+
+    if (choice !== 'cancel') {
+      this.pdf = null
+      this.libraryFiles = []
+      this.libraryFolderHandle = null
+      this.activeScoreName = null
+
+      if (this.container) this.container.innerHTML = ''
+      if (this.layerShelf) this.layerShelf.classList.remove('active')
+      if (this.sidebar) this.sidebar.classList.remove('open')
+
+      this.checkInitialView()
+    }
+  }
+
+  hideWelcome() {
+    const screen = document.querySelector('.welcome-screen')
+    if (screen) screen.classList.add('hidden')
+  }
+
+  showProjectRepertoire() {
+    if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
+    if (this.projectRepertoireView) this.projectRepertoireView.classList.remove('hidden')
+    if (this.projectNameDisplay) this.projectNameDisplay.textContent = `Project: ${this.libraryFolderHandle.name}`
+    this.renderProjectRepertoire()
+  }
+
+  async resetToSystemDefault() {
+    const confirmed = await this.showDialog({
+      title: 'Factory Reset?',
+      message: '🚨 WARNING: This will permanently DELETE all Profiles, Missions, Interpretation Styles, and Cloud Workspaces. This action cannot be undone.',
+      icon: '🔥',
+      type: 'confirm',
+      confirmText: 'Reset Systems Now',
+      cancelText: 'Keep My Data'
+    })
+
+    if (confirmed) {
+      // PROMPT VERIFICATION: Explicitly ask the user to type RESET
+      // This gives the user feedback that the logic is active and requires deliberate action
+      const verify = prompt('To confirm factory reset, please type "RESET" in the box below:', '')
+
+      if (verify === 'RESET') {
+        // 1. Clear Storage
+        localStorage.clear()
+        sessionStorage.clear()
+
+        // 2. Clear IndexedDB (True Clean Slate)
+        try {
+          // IMPORTANT: Close active connection first to unblock deletion
+          db.closeDB()
+
+          const deleteRequest = indexedDB.deleteDatabase('ScoreFlowStorage')
+          deleteRequest.onsuccess = () => {
+            alert('App System has been factory reset. All data is now gone. Reloading...')
+            window.location.reload()
+          }
+          deleteRequest.onerror = () => window.location.reload()
+          deleteRequest.onblocked = () => {
+            console.warn('DB delete blocked, reloading anyway.')
+            window.location.reload()
+          }
+
+          // Fallback timer if DB deletion hangs
+          setTimeout(() => window.location.reload(), 1500)
+        } catch (e) {
+          window.location.reload()
+        }
+      } else {
+        alert('Reset cancelled. Verification text did not match.')
+      }
     }
   }
 
   async selectLibraryFolder() {
     try {
       this.libraryFolderHandle = await window.showDirectoryPicker()
+      await db.set('last_library_handle', this.libraryFolderHandle)
       this.libraryFiles = []
       await this.scanLibrary(this.libraryFolderHandle)
       this.renderLibrary()
 
-      // Switch to Repertoire View on Main Screen
-      if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
-      if (this.projectRepertoireView) this.projectRepertoireView.classList.remove('hidden')
-      if (this.projectNameDisplay) this.projectNameDisplay.textContent = `Project: ${this.libraryFolderHandle.name}`
-      this.renderProjectRepertoire()
+      this.showProjectRepertoire()
 
       // PERSISTENT RECOVERY: Attempt to auto-open last used score from this folder
       const lastScore = localStorage.getItem('scoreflow_last_opened_score')
@@ -2130,6 +3146,7 @@ class ScoreFlow {
           this.activeScoreName = fileHandle.name
           this.renderLibrary()
           this.saveToStorage()
+          this.hideWelcome() // Now we can hide the wizard!
 
           if (!this.isSidebarLocked) {
             this.sidebar.classList.remove('open')
@@ -2175,6 +3192,14 @@ class ScoreFlow {
     filteredFiles.forEach(fileHandle => {
       const isActive = this.activeScoreName === fileHandle.name
       const displayName = fileHandle.name.replace(/\.pdf$/i, '')
+      const fingerprint = this.scoreFingerprintMap[fileHandle.name]
+
+      // Check for annotation presence across 3 storage tiers:
+      const hasLocal = fingerprint && localStorage.getItem(`scoreflow_stamps_${fingerprint}`)
+
+      // We show P and O badges if the folders are linked AND we have recorded a publication for this fingerprint.
+      const hasPersonal = this.personalSyncFolder && fingerprint && localStorage.getItem(`scoreflow_published_p_${fingerprint}`)
+      const hasOrchestra = this.orchestraSyncFolder && fingerprint && localStorage.getItem(`scoreflow_published_o_${fingerprint}`)
 
       const item = document.createElement('div')
       item.className = `score-item ${isActive ? 'active' : ''}`
@@ -2186,9 +3211,24 @@ class ScoreFlow {
           </svg>
         </div>
         <div class="score-name">${displayName}</div>
+        <div class="score-badges">
+          ${hasLocal ? '<span class="score-badge-mini local" title="Local Annotations (Current)">L</span>' : ''}
+          ${hasPersonal ? '<span class="score-badge-mini personal" title="Private Cloud Workspace">P</span>' : ''}
+          ${hasOrchestra ? '<span class="score-badge-mini orchestra" title="Orchestra Shared Workspace">O</span>' : ''}
+        </div>
+        <div class="score-actions">
+          <button class="btn-score-action btn-clear-score" title="Clear All Annotations">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
         ${isActive ? '<div class="active-indicator-dot"></div>' : ''}
       `
-      item.onclick = async () => {
+
+      const openBtn = item.querySelector('.score-name')
+      item.onclick = async (e) => {
+        if (e.target.closest('.score-actions')) return
         try {
           const file = await this.openFileHandle(fileHandle)
           if (!file) return
@@ -2206,11 +3246,44 @@ class ScoreFlow {
           }
         } catch (err) {
           console.error('Failed to open score:', fileHandle.name, err)
-          alert(`Error opening "${fileHandle.name.replace(/\.pdf$/i, '')}":\n\n${err.message || err}\n\nIf this persists, try re-selecting your library folder.`)
         }
       }
+
+      item.querySelector('.btn-clear-score').onclick = (e) => {
+        e.stopPropagation()
+        this.clearScoreAnnotations(fileHandle.name)
+      }
+
       this.libraryList.appendChild(item)
     })
+  }
+
+  async clearScoreAnnotations(scoreName) {
+    const fingerprint = this.scoreFingerprintMap[scoreName]
+    if (!fingerprint) {
+      this.showDialog({ title: 'No Data', message: 'No annotations found for this score.', icon: '❓' })
+      return
+    }
+
+    const confirmed = await this.systemDialog ? await this.showDialog({
+      title: 'Clear Score?',
+      message: `🛑 PERMANENT ACTION: This will delete ALL local markings for "${scoreName.replace(/\.pdf$/i, '')}". Are you sure?`,
+      icon: '🗑️',
+      type: 'confirm',
+      confirmText: 'Delete Forever'
+    }) : confirm(`Clear all markings for ${scoreName}?`)
+
+    if (!confirmed) return
+
+    localStorage.removeItem(`scoreflow_stamps_${fingerprint}`)
+
+    if (this.activeScoreName === scoreName) {
+      this.stamps = []
+      if (this.pdf) await this.renderPDF()
+    }
+
+    this.renderLibrary()
+    this.showDialog({ title: 'Cleared', message: 'All local annotations removed.', icon: '✅' })
   }
 
 
@@ -2264,11 +3337,11 @@ class ScoreFlow {
   }
 
   addNewProfile() {
-    const name = prompt('Enter your display name:', 'Victor Hsu')
+    const name = prompt('Enter your display name:', 'Guest Musician')
     if (!name) return
-    const orch = prompt('Enter Orchestra or Ensemble name:', 'Taipei Symphony Orchestra')
+    const orch = prompt('Enter Orchestra or Ensemble name:', 'Standard Orchestra')
     if (!orch) return
-    const section = prompt('Enter your Section (e.g., First Violins, Principal Cello):', 'First Violins')
+    const section = prompt('Enter your Section/Role (e.g. Conductor, Soloist, First Violins):', 'Section')
     if (!section) return
 
     const id = 'p_' + Date.now()
@@ -2283,7 +3356,66 @@ class ScoreFlow {
     this.saveToStorage()
     this.renderActiveProfile()
     this.renderProfileList()
-    this.renderCommunityHub()
+
+    // Move to Stage 2
+    if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
+    if (this.welcomeInitialView) this.welcomeInitialView.classList.remove('hidden')
+  }
+
+  showDialog({ title, message, icon = '⚠️', type = 'info', confirmText = 'Confirm', cancelText = 'Cancel', actions = null }) {
+    // Safety check: Don't show empty or undefined messages (Ghost Dialog prevention)
+    if (!message || message.trim() === '') return Promise.resolve(false)
+
+    return new Promise((resolve) => {
+      this.dialogTitle.textContent = title
+      this.dialogMessage.textContent = message
+      this.dialogIcon.textContent = icon
+      this.dialogActions.innerHTML = ''
+
+      if (actions && Array.isArray(actions)) {
+        // Use custom action buttons
+        actions.forEach(action => {
+          const btn = document.createElement('button')
+          btn.className = `btn ${action.type === 'primary' ? 'btn-primary' : 'btn-outline'}`
+          btn.textContent = action.label
+          btn.onclick = () => {
+            this.systemDialog.classList.remove('active')
+            resolve(action.value)
+          }
+          this.dialogActions.appendChild(btn)
+        })
+      } else if (type === 'confirm') {
+        const cancelBtn = document.createElement('button')
+        cancelBtn.className = 'btn btn-outline'
+        cancelBtn.textContent = cancelText
+        cancelBtn.onclick = () => {
+          this.systemDialog.classList.remove('active')
+          resolve(false)
+        }
+
+        const confirmBtn = document.createElement('button')
+        confirmBtn.className = 'btn btn-primary'
+        confirmBtn.textContent = confirmText
+        confirmBtn.onclick = () => {
+          this.systemDialog.classList.remove('active')
+          resolve(true)
+        }
+
+        this.dialogActions.appendChild(cancelBtn)
+        this.dialogActions.appendChild(confirmBtn)
+      } else {
+        const okBtn = document.createElement('button')
+        okBtn.className = 'btn btn-primary'
+        okBtn.textContent = 'OK'
+        okBtn.onclick = () => {
+          this.systemDialog.classList.remove('active')
+          resolve(true)
+        }
+        this.dialogActions.appendChild(okBtn)
+      }
+
+      this.systemDialog.classList.add('active')
+    })
   }
 
   updateLayoutState() {
@@ -2291,6 +3423,39 @@ class ScoreFlow {
     if (!app) return
     const isOpen = this.sidebar.classList.contains('open')
     app.classList.toggle('is-sidebar-active', isOpen)
+  }
+  // --- NAVIGATION ACTIONS ---
+  goToHead() {
+    this.currentPageNum = 1
+    this.viewer.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  goToEnd() {
+    if (!this.pdf) return
+    const total = this.pdf.numPages
+    this.currentPageNum = total
+    this.viewer.scrollTo({ top: this.viewer.scrollHeight, behavior: 'smooth' })
+  }
+
+  goToAnchor() {
+    // Find the first stamp of type 'anchor'
+    const anchorStamp = this.stamps.find(s => s.type === 'anchor')
+    if (anchorStamp && anchorStamp.page) {
+      this.currentPageNum = anchorStamp.page
+      const pageElem = document.querySelector(`.page-container[data-page="${anchorStamp.page}"]`)
+      if (pageElem) {
+        const canvas = pageElem.querySelector('.pdf-canvas')
+        const absoluteY = pageElem.offsetTop + (anchorStamp.y * canvas.height)
+        const targetScroll = absoluteY - this.jumpOffsetPx
+        this.viewer.scrollTo({
+          top: Math.max(0, targetScroll),
+          behavior: 'smooth'
+        })
+      }
+    } else {
+      // Fallback if no anchor exists
+      this.goToHead()
+    }
   }
 }
 
