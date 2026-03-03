@@ -197,7 +197,7 @@ class ScoreFlow {
     }
     this.uploader.addEventListener('change', (e) => this.handleUpload(e))
 
-    this.sidebarTrigger.addEventListener('mouseenter', () => {
+    this.sidebarTrigger.addEventListener('click', () => {
       this.sidebar.classList.add('open')
       this.updateLayoutState()
     })
