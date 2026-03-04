@@ -82,7 +82,16 @@
         <div class="doc-bar-divider"></div>
 
         <div class="quick-modes-suite">
-          <button id="btn-mode-select" class="zoom-btn-mini mode-btn active" title="Select (V)">
+          <!-- Hand / View mode -->
+          <button id="btn-mode-hand" class="zoom-btn-mini mode-btn active" title="Pan / View">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+              <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+              <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+              <path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+            </svg>
+          </button>
+          <button id="btn-mode-select" class="zoom-btn-mini mode-btn" title="Select (V)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
               <path d="M13 13l6 6" />
@@ -104,17 +113,6 @@
 
         <div class="doc-bar-divider"></div>
 
-        <!-- Stamp Palette Toggle -->
-        <button id="btn-stamp-palette" class="zoom-btn-mini mode-btn" title="Stamp Tools (T)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-            <line x1="12" y1="22.08" x2="12" y2="12" />
-          </svg>
-        </button>
-
-        <div class="doc-bar-divider"></div>
-
         <div class="zoom-box">
           <button id="zoom-in" class="zoom-btn-mini" title="Zoom In">+</button>
           <span id="zoom-level">150%</span>
@@ -123,7 +121,7 @@
 
         <div class="doc-bar-divider"></div>
 
-        <!-- NEW: Layer Visibility Toggle within Doc Bar -->
+        <!-- Notation Visibility -->
         <div class="layer-control-suite">
           <button id="layer-toggle-fab" class="zoom-btn-mini layer-btn-mini" title="Notation Visibility (Shift+V)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -132,6 +130,17 @@
             </svg>
           </button>
         </div>
+
+        <div class="doc-bar-divider"></div>
+
+        <!-- Stamp Palette Toggle (below notation setting) -->
+        <button id="btn-stamp-palette" class="zoom-btn-mini mode-btn" title="Stamp Tools (T)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+            <line x1="12" y1="22.08" x2="12" y2="12" />
+          </svg>
+        </button>
 
       <!-- Stamp Palette Panel (merged into doc bar) -->
       <div id="active-tools-container" class="floating-stamp-bar">
@@ -584,21 +593,29 @@
       <div class="modal-body text-center">
         <p class="modal-intro mb-10">Current measure to place:</p>
         <div class="mb-15">
-          <div id="measure-display" class="measure-display">1</div>
+          <div id="measure-display" class="measure-display"></div>
         </div>
 
         <div class="measure-keypad mb-10">
+          <!-- Row 1: 7 8 9 ⌫ -->
           <button class="keypad-btn" data-key="7">7</button>
           <button class="keypad-btn" data-key="8">8</button>
           <button class="keypad-btn" data-key="9">9</button>
+          <button class="keypad-btn action-btn" data-key="back">⌫</button>
+          <!-- Row 2: 4 5 6 -->
           <button class="keypad-btn" data-key="4">4</button>
           <button class="keypad-btn" data-key="5">5</button>
           <button class="keypad-btn" data-key="6">6</button>
+          <span class="keypad-spacer"></span>
+          <!-- Row 3: 1 2 3 -->
           <button class="keypad-btn" data-key="1">1</button>
           <button class="keypad-btn" data-key="2">2</button>
           <button class="keypad-btn" data-key="3">3</button>
-          <button class="keypad-btn action-btn" data-key="back">⌫</button>
+          <span class="keypad-spacer"></span>
+          <!-- Row 4: _ 0 _ ✓ -->
+          <span class="keypad-spacer"></span>
           <button class="keypad-btn" data-key="0">0</button>
+          <span class="keypad-spacer"></span>
           <button class="keypad-btn confirm-btn" data-key="confirm">✓</button>
         </div>
 
@@ -610,8 +627,8 @@
             <button id="measure-step-plus" class="btn btn-secondary measure-step-btn">+</button>
           </div>
         </div>
-        <div class="dialog-actions-grid mt-15">
-          <button id="measure-cancel" class="btn btn-text">Cancel (Esc)</button>
+        <div class="mt-10" style="text-align:center;">
+          <button id="measure-cancel" class="keypad-cancel-btn">Cancel (Esc)</button>
         </div>
       </div>
     </div>

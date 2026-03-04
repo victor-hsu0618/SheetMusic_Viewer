@@ -305,12 +305,32 @@ body {
   text-align: center;
   letter-spacing: 2px;
   display: inline-block;
+  user-select: none;
 }
 
 .measure-keypad {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+}
+
+.keypad-spacer {
+  display: block;
+}
+
+.keypad-cancel-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+
+.keypad-cancel-btn:hover {
+  color: var(--text-main);
 }
 
 .keypad-btn {
@@ -1791,6 +1811,8 @@ code {
   background: var(--bg-card);
   width: 480px;
   max-width: 90vw;
+  max-height: 90svh;
+  overflow-y: auto;
   border-radius: 20px;
   border: 1px solid var(--border);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
@@ -2956,6 +2978,10 @@ kbd {
 
 .text-center {
   text-align: center;
+}
+
+.mb-10 {
+  margin-bottom: 10px;
 }
 
 .mb-15 {

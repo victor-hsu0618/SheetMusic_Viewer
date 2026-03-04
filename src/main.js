@@ -38,6 +38,7 @@ class ScoreFlow {
     this.pendingMissionHandle = null
     this.pendingOrchestraHandle = null
 
+    this._svgCache = {}
     this.initToolsets()
     this.initElements()
     this.initEventListeners()
@@ -56,6 +57,21 @@ class ScoreFlow {
     this.initDocBarDraggable()
     this.checkInitialView()
     this.initGDriveWhenReady()
+    this._preloadSvgs()
+  }
+
+  async _preloadSvgs() {
+    const base = import.meta.env.BASE_URL
+    const items = this.toolsets.flatMap(g =>
+      g.tools.map(t => ({ id: t.id, path: `${base}assets/icons/${g.type}/${t.id}.svg` }))
+    )
+    await Promise.allSettled(items.map(async ({ id, path }) => {
+      try {
+        const r = await fetch(path)
+        if (r.ok) this._svgCache[id] = await r.text()
+      } catch {}
+    }))
+    this.updateActiveTools()
   }
 
   initToolsets() {
@@ -163,6 +179,7 @@ class ScoreFlow {
     this.btnModeAnchor = document.getElementById('btn-mode-anchor')
     this.btnModeSelect = document.getElementById('btn-mode-select')
     this.btnModeEraser = document.getElementById('btn-mode-eraser')
+    this.btnModeHand = document.getElementById('btn-mode-hand')
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
 
     this.libraryFiles = [] // Scanned repertoire
@@ -432,6 +449,12 @@ class ScoreFlow {
     if (this.btnModeEraser) {
       this.btnModeEraser.onclick = () => {
         this.activeStampType = this.activeStampType === 'eraser' ? 'view' : 'eraser'
+        this.updateActiveTools()
+      }
+    }
+    if (this.btnModeHand) {
+      this.btnModeHand.onclick = () => {
+        this.activeStampType = 'view'
         this.updateActiveTools()
       }
     }
@@ -1044,7 +1067,6 @@ class ScoreFlow {
             if (data) {
               this.lastMeasureNum = String(data)
               activeObject.data = String(data)
-              activeObject.x = 0.05
               this.stamps.push(activeObject)
               this.updateRulerMarks()
             }
@@ -1054,7 +1076,6 @@ class ScoreFlow {
         }
 
         if (activeObject.type === 'anchor') {
-          this.cleanupAnchors(pageNum)
           this.updateRulerMarks()
         } else if (activeObject.type === 'measure') {
           this.updateRulerMarks()
@@ -1161,9 +1182,6 @@ class ScoreFlow {
       if (!data) return
       this.lastMeasureNum = String(data)
       data = String(data)
-      // For measure stamps, lock them to the leftmost margin visually 
-      // but they are primarily visible on the ruler anyway.
-      x = 0.05
     }
 
     this.stamps.push({
@@ -1177,7 +1195,6 @@ class ScoreFlow {
     })
 
     if (type === 'anchor') {
-      this.cleanupAnchors(page)
       this.updateRulerMarks()
     } else if (type === 'measure') {
       this.updateRulerMarks()
@@ -1373,9 +1390,18 @@ class ScoreFlow {
       }
 
       this.measureStep = this.measureStep || 4
-      let currentStr = String(defVal)
-      display.textContent = currentStr
+      const defClamped = Math.min(999, Math.max(1, defVal))
       stepDisplay.textContent = this.measureStep
+
+      // typed = '' means "use auto-calc (placeholder)", otherwise user's keypad input
+      let typed = ''
+      const showDisplay = () => {
+        display.textContent = typed || String(defClamped)
+        display.style.opacity = typed ? '1' : '0.45'
+      }
+      showDisplay()
+
+      const getValue = () => typed ? parseInt(typed) : defClamped
 
       const updateStep = (delta) => {
         let newStep = this.measureStep + delta
@@ -1386,65 +1412,43 @@ class ScoreFlow {
       }
 
       const confirm = () => {
-        let val = parseInt(currentStr)
-        if (isNaN(val) || val < 1) val = 1
-        if (val > 999) val = 999
         cleanup()
-        resolve(val)
+        resolve(getValue())
       }
+
+      const onKeyDown = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); confirm() }
+        if (e.key === 'Escape') { e.preventDefault(); cleanup(); resolve(null) }
+      }
+      document.addEventListener('keydown', onKeyDown)
 
       const cleanup = () => {
         dialog.classList.remove('active')
+        document.removeEventListener('keydown', onKeyDown)
         dialog.querySelectorAll('.keypad-btn').forEach(btn => { btn.onclick = null })
         if (btnDec) btnDec.onclick = null
         if (btnInc) btnInc.onclick = null
         if (btnCancel) btnCancel.onclick = null
-        document.removeEventListener('keydown', onKeyDown)
       }
 
-      // Keypad button handlers
       dialog.querySelectorAll('.keypad-btn').forEach(btn => {
         btn.onclick = () => {
           const key = btn.dataset.key
+          if (key === 'confirm') { confirm(); return }
           if (key === 'back') {
-            currentStr = currentStr.length > 1 ? currentStr.slice(0, -1) : '1'
-          } else if (key === 'confirm') {
-            confirm()
-            return
+            typed = typed.slice(0, -1)
           } else {
-            const next = currentStr === '1' && key !== '0' ? key : currentStr + key
-            if (parseInt(next) <= 999) currentStr = next
+            if (typed === '' && key === '0') return // 不允許以 0 開頭
+            const next = typed + key
+            if (next.length <= 3) typed = next
           }
-          display.textContent = currentStr
+          showDisplay()
         }
       })
 
       if (btnDec) btnDec.onclick = () => updateStep(-1)
       if (btnInc) btnInc.onclick = () => updateStep(1)
-
-      if (btnCancel) {
-        btnCancel.onclick = () => {
-          cleanup()
-          resolve(null)
-        }
-      }
-
-      const onKeyDown = (e) => {
-        if (e.key >= '0' && e.key <= '9') {
-          const next = currentStr === '1' ? e.key : currentStr + e.key
-          if (parseInt(next) <= 999) currentStr = next
-          display.textContent = currentStr
-        } else if (e.key === 'Backspace') {
-          currentStr = currentStr.length > 1 ? currentStr.slice(0, -1) : '1'
-          display.textContent = currentStr
-        } else if (e.key === 'Enter') {
-          confirm()
-        } else if (e.key === 'Escape') {
-          cleanup()
-          resolve(null)
-        }
-      }
-      document.addEventListener('keydown', onKeyDown)
+      if (btnCancel) btnCancel.onclick = () => { cleanup(); resolve(null) }
 
       dialog.classList.add('active')
     })
@@ -1757,18 +1761,44 @@ class ScoreFlow {
         case 'complex':
           // Legacy support for complex visual logic
           if (d.variant === 'thumb') {
-            ctx.arc(x, y, size * 0.6, 0, Math.PI * 2); ctx.stroke()
-            ctx.moveTo(x, y - size * 0.9); ctx.lineTo(x, y + size * 0.9);
-            ctx.moveTo(x - size * 0.9, y); ctx.lineTo(x + size * 0.9, y); ctx.stroke();
+            // 直立橢圓 (ellipse: cx=x, cy=y-size*0.3, rx=size*0.35, ry=size*0.6)
+            ctx.beginPath()
+            ctx.ellipse(x, y - size * 0.3, size * 0.35, size * 0.6, 0, 0, Math.PI * 2)
+            ctx.stroke()
+            // 瘦短直棒，緊黏橢圓底部
+            ctx.beginPath()
+            ctx.moveTo(x, y + size * 0.3)
+            ctx.lineTo(x, y + size * 0.6)
+            ctx.stroke()
           } else if (d.variant === 'fermata') {
             const fSize = size * 0.45
             ctx.arc(x, y, fSize, Math.PI, 0); ctx.stroke()
             ctx.beginPath(); ctx.arc(x, y - fSize * 0.3, fSize * 0.15, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
           } else if (d.variant === 'anchor') {
             const isDefault = stamp.isDefault
-            ctx.fillStyle = isDefault ? '#3b82f6' : color
-            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - (size * 1.5));
-            ctx.lineTo(x + size, y - (size * 1.1)); ctx.lineTo(x, y - (size * 0.7)); ctx.fill(); ctx.stroke();
+            const aColor = isDefault ? '#3b82f6' : color
+            ctx.fillStyle = aColor
+            ctx.strokeStyle = aColor
+            // 圓點 (頂部)
+            ctx.beginPath()
+            ctx.arc(x, y - size * 1.1, size * 0.18, 0, Math.PI * 2)
+            ctx.fill()
+            // 直棒
+            ctx.beginPath()
+            ctx.lineWidth = size * 0.12
+            ctx.moveTo(x, y - size * 0.9)
+            ctx.lineTo(x, y + size * 0.3)
+            ctx.stroke()
+            // 橫桿
+            ctx.beginPath()
+            ctx.moveTo(x - size * 0.6, y)
+            ctx.lineTo(x + size * 0.6, y)
+            ctx.stroke()
+            // 弧形 (底部)
+            ctx.beginPath()
+            ctx.arc(x, y, size * 0.6, 0, Math.PI, false)
+            ctx.stroke()
+            ctx.lineWidth = 1.8 * (this.scale / 1.5)
           }
           break
       }
@@ -1794,19 +1824,19 @@ class ScoreFlow {
     }
 
     // Sync Mode Buttons in Doc Bar
+    if (this.btnModeHand) this.btnModeHand.classList.toggle('active', this.activeStampType === 'view')
     if (this.btnModeSelect) this.btnModeSelect.classList.toggle('active', this.activeStampType === 'select')
     if (this.btnModeEraser) this.btnModeEraser.classList.toggle('active', this.activeStampType === 'eraser')
     if (this.btnModeAnchor) this.btnModeAnchor.classList.toggle('active', this.activeStampType === 'anchor')
-    if (this.btnStampPalette) this.btnStampPalette.classList.toggle('active', isExpanded)
-
-    // 0. Active Tool FAB (Visible ONLY when collapsed)
-    const fab = document.createElement("div")
-    fab.className = "active-tool-fab"
+    // Sync stamp palette button — show active tool icon when a stamp is selected
     const activeTool = this.toolsets.flatMap(g => g.tools).find(t => t.id === this.activeStampType)
-    if (activeTool) {
-      fab.innerHTML = this.getIcon(activeTool, 32)
+    if (this.btnStampPalette) {
+      this.btnStampPalette.classList.toggle('active', isExpanded || !!activeTool)
+      if (!this._stampBtnDefault) this._stampBtnDefault = this.btnStampPalette.innerHTML
+      this.btnStampPalette.innerHTML = activeTool
+        ? this.getIcon(activeTool, 18)
+        : this._stampBtnDefault
     }
-    this.activeToolsContainer.appendChild(fab)
 
     if (!isExpanded) {
       // Palette is hidden — nothing to render
@@ -1935,27 +1965,14 @@ class ScoreFlow {
   }
 
   getIcon(tool, size = 24) {
-    const group = this.toolsets.find(g => g.tools.some(t => t.id === tool.id))
-    const category = group ? group.type : 'draw'
-    const path = `/assets/icons/${category}/${tool.id}.svg`
-
-    // High Reliability Approach:
-    // 1. SVG from code is shown by default (z-index 1)
-    // 2. We try to load the img (z-index 2)
-    // 3. ONLY if the img loads successfully, we hide the SVG and show the img
-    return `
-      <div class="icon-wrapper" style="width:${size}px; height:${size}px; position:relative; display:flex; align-items:center; justify-content:center;">
-        <svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="currentColor" stroke-width="1.3" fill="none" class="fallback-svg">
-          ${tool.icon}
-        </svg>
-        <img src="${path}" 
-             width="${size}" 
-             height="${size}" 
-             style="position:absolute; top:0; left:0; display:none; object-fit:contain; background:transparent;"
-             onload="this.style.display='block'; this.previousElementSibling.style.display='none';"
-             onerror="this.style.display='none';">
-      </div>
-    `
+    if (this._svgCache?.[tool.id]) {
+      // Strip existing width/height and inject the correct size
+      return this._svgCache[tool.id].replace(/<svg\b([^>]*)>/, (_, attrs) => {
+        const a = attrs.replace(/\s+width="[^"]*"/, '').replace(/\s+height="[^"]*"/, '')
+        return `<svg${a} width="${size}" height="${size}">`
+      })
+    }
+    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="currentColor" stroke-width="1.3" fill="none">${tool.icon}</svg>`
   }
 
   initToolbarResizable() {
@@ -2296,6 +2313,19 @@ class ScoreFlow {
       ...userAnchors
     ].sort((a, b) => a.absoluteY - b.absoluteY)
 
+    // Deduplicate for navigation: skip user anchors within 1/3 page of the previous kept anchor
+    const allCanvases = document.querySelectorAll('.page-container .pdf-canvas')
+    const avgPageH = allCanvases.length
+      ? Array.from(allCanvases).reduce((s, c) => s + c.height, 0) / allCanvases.length
+      : 600
+    const dedupeThreshold = avgPageH * 0.333
+    const navAnchors = allAnchors.reduce((kept, a) => {
+      if (kept.length === 0 || a.absoluteY - kept[kept.length - 1].absoluteY > dedupeThreshold) {
+        kept.push(a)
+      }
+      return kept
+    }, [])
+
     const currentScroll = this.viewer.scrollTop
     const currentFocusY = currentScroll + this.jumpOffsetPx
     const viewportHeight = this.viewer.clientHeight
@@ -2303,7 +2333,7 @@ class ScoreFlow {
     let target = null
 
     if (direction === 1) {
-      target = allAnchors.find(a => a.absoluteY > currentFocusY + 10)
+      target = navAnchors.find(a => a.absoluteY > currentFocusY + 10)
 
       // If no anchor found ahead, create a dynamic one at the bottom of the viewport
       if (!target) {
@@ -2312,7 +2342,7 @@ class ScoreFlow {
         this.showDynamicIndicator(dynamicY)
       }
     } else {
-      target = [...allAnchors].reverse().find(a => a.absoluteY < currentFocusY - 10)
+      target = [...navAnchors].reverse().find(a => a.absoluteY < currentFocusY - 10)
     }
 
     if (target) {
@@ -2405,12 +2435,10 @@ class ScoreFlow {
       // We take ALL stored layers (including custom ones)
       this.layers = storedLayers
 
-      // But we MUST ensure core layers still have their standard IDs if they were somehow lost
-      const coreIds = ['draw', 'fingering', 'articulation', 'performance', 'other', 'bowing']
-      coreIds.forEach(id => {
-        if (!this.layers.find(l => l.id === id)) {
-          // This shouldn't happen normally, but safe fallback
-          console.warn(`Layer ${id} recovered from source.`)
+      // Ensure all core layers exist — restore any that are missing from saved data
+      INITIAL_LAYERS.forEach(coreLayer => {
+        if (!this.layers.find(l => l.id === coreLayer.id)) {
+          this.layers.push({ ...coreLayer })
         }
       })
     }
@@ -2554,7 +2582,7 @@ class ScoreFlow {
         ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
         : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
 
-      const isCore = ['draw', 'fingering', 'articulation', 'performance', 'other'].includes(layer.id)
+      const isCore = ['draw', 'fingering', 'bowing', 'articulation', 'performance', 'other'].includes(layer.id)
 
       item.innerHTML = `
         <div class="layer-info">

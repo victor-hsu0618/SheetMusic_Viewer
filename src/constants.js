@@ -10,7 +10,7 @@ export const INITIAL_LAYERS = [
     { id: 'bowing', name: 'Bowing', color: '#6366f1', visible: true, type: 'articulation' },
     { id: 'articulation', name: 'Articulations', color: '#10b981', visible: true, type: 'articulation' },
     { id: 'performance', name: 'Performance', color: '#f59e0b', visible: true, type: 'performance' },
-    { id: 'other', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'other' }
+    { id: 'other', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'layout' }
 ];
 
 export const TOOLSETS = [
@@ -45,7 +45,7 @@ export const TOOLSETS = [
         name: 'Fingering',
         type: 'fingering',
         tools: [
-            { id: 'thumb', label: 'Thumb', icon: '<circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.5" /><line x1="6" y1="12" x2="18" y2="12" stroke="currentColor" stroke-width="1.5" /><line x1="12" y1="6" x2="12" y2="18" stroke="currentColor" stroke-width="1.5" />', draw: { type: 'complex', variant: 'thumb' } },
+            { id: 'thumb', label: 'Thumb', icon: '<ellipse cx="12" cy="8" rx="3" ry="5" fill="none" stroke="currentColor" stroke-width="2" /><line x1="12" y1="13" x2="12" y2="15" stroke="currentColor" stroke-width="2" />', draw: { type: 'complex', variant: 'thumb' } },
             { id: 'f1', label: '1', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">1</text>', draw: { type: 'text', content: '1', font: '300', size: 18 } },
             { id: 'f2', label: '2', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">2</text>', draw: { type: 'text', content: '2', font: '300', size: 18 } },
             { id: 'f3', label: '3', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">3</text>', draw: { type: 'text', content: '3', font: '300', size: 18 } },
@@ -90,9 +90,9 @@ export const TOOLSETS = [
     },
     {
         name: 'Anchor',
-        type: 'other',
+        type: 'layout',
         tools: [
-            { id: 'anchor', label: 'Anchor', icon: '<path d="M12 2v20M5 12h14" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.3"/>', draw: { type: 'complex', variant: 'anchor' } },
+            { id: 'anchor', label: 'Anchor', icon: '<circle cx="12" cy="3" r="1.5" fill="currentColor" /><rect x="11.25" y="4.5" width="1.5" height="9" fill="currentColor" /><rect x="7.5" y="10.5" width="9" height="1.5" fill="currentColor" /><path d="M6 12 C6 18, 18 18, 18 12 L16.5 12 C16.5 16.5, 7.5 16.5, 7.5 12 Z" fill="currentColor" />', draw: { type: 'complex', variant: 'anchor' } },
             { id: 'measure', label: 'Measure', icon: '<text x="12" y="16.5" font-size="14" font-family="Outfit" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">#</text>', draw: { type: 'special', variant: 'measure' } }
         ]
     }
