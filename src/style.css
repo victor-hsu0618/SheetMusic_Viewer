@@ -76,6 +76,7 @@ body {
   align-items: center;
   gap: 12px;
   cursor: default;
+  overflow: visible;
   transition: width 0.3s, right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
@@ -136,8 +137,7 @@ body {
   }
 
   /* Shift right-anchored floating elements along with the workspace */
-  #app.is-sidebar-active .floating-doc-bar,
-  #app.is-sidebar-active .floating-stamp-bar {
+  #app.is-sidebar-active .floating-doc-bar {
     right: calc(20px + var(--sidebar-width));
   }
 
@@ -413,10 +413,9 @@ body {
 
 /* Independent Stamp Palette Panel - Hidden by default, toggled by button */
 .floating-stamp-bar {
-  position: fixed;
-  right: 80px;
-  /* Offset from Doc Bar */
-  top: 100px;
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 0;
   height: auto;
   min-height: 64px;
   max-width: 85vw;

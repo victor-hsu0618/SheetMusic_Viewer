@@ -1888,6 +1888,7 @@ class ScoreFlow {
 
         const btn = document.createElement("button")
         btn.className = `stamp-tool ${this.activeStampType === tool.id ? "active" : ""}`
+        btn.title = tool.label
         btn.innerHTML = this.getIcon(tool, 26)
         btn.onclick = (e) => {
           e.stopPropagation()
@@ -1977,7 +1978,7 @@ class ScoreFlow {
       if (!isResizing) return
       const currentX = (e.clientX || (e.touches && e.touches[0].clientX))
       const deltaX = currentX - initialX
-      this.toolbarWidth = Math.max(300, initialWidth + deltaX)
+      this.toolbarWidth = Math.max(300, initialWidth - deltaX)
       el.style.width = this.toolbarWidth + "px"
     }
 
