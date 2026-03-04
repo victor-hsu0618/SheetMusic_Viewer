@@ -1797,6 +1797,7 @@ class ScoreFlow {
     if (this.btnModeSelect) this.btnModeSelect.classList.toggle('active', this.activeStampType === 'select')
     if (this.btnModeEraser) this.btnModeEraser.classList.toggle('active', this.activeStampType === 'eraser')
     if (this.btnModeAnchor) this.btnModeAnchor.classList.toggle('active', this.activeStampType === 'anchor')
+    if (this.btnStampPalette) this.btnStampPalette.classList.toggle('active', isExpanded)
 
     // 0. Active Tool FAB (Visible ONLY when collapsed)
     const fab = document.createElement("div")
@@ -1808,11 +1809,8 @@ class ScoreFlow {
     this.activeToolsContainer.appendChild(fab)
 
     if (!isExpanded) {
-      this.activeToolsContainer.style.width = "" // Use CSS default for collapsed
-      this.activeToolsContainer.onclick = () => {
-        this.activeToolsContainer.classList.add("expanded")
-        this.updateActiveTools()
-      }
+      // Palette is hidden — nothing to render
+      this.activeToolsContainer.onclick = null
       return
     }
 
@@ -3454,7 +3452,7 @@ class ScoreFlow {
 
   showMainUI() {
     // Reveal toolbars once a score is loaded
-    const ids = ['sidebar-trigger', 'floating-doc-bar', 'active-tools-container', 'jump-ruler', 'layer-toggle-fab']
+    const ids = ['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab']
     ids.forEach(id => {
       const el = document.getElementById(id)
       if (el) {
@@ -3462,6 +3460,11 @@ class ScoreFlow {
         if (id === 'jump-ruler') el.style.display = 'block'
       }
     })
+    // Show stamp palette expanded on first load
+    if (this.activeToolsContainer) {
+      this.activeToolsContainer.classList.add('expanded')
+      this.updateActiveTools()
+    }
   }
 
   showProjectRepertoire() {
