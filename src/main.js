@@ -163,6 +163,7 @@ class ScoreFlow {
     this.btnModeAnchor = document.getElementById('btn-mode-anchor')
     this.btnModeSelect = document.getElementById('btn-mode-select')
     this.btnModeEraser = document.getElementById('btn-mode-eraser')
+    this.btnStampPalette = document.getElementById('btn-stamp-palette')
 
     this.libraryFiles = [] // Scanned repertoire
     this.libraryFolderHandle = null
@@ -439,6 +440,12 @@ class ScoreFlow {
         this.activeStampType = this.activeStampType === 'anchor' ? 'view' : 'anchor'
         this.updateActiveTools()
       }
+    }
+    if (this.btnStampPalette) {
+      this.btnStampPalette.addEventListener('click', () => {
+        this.activeToolsContainer.classList.toggle('expanded')
+        this.updateActiveTools()
+      })
     }
 
     if (this.finalStartMissionBtn) {
@@ -1354,20 +1361,20 @@ class ScoreFlow {
   async promptMeasureNumber(defVal) {
     return new Promise(resolve => {
       const dialog = document.getElementById('measure-dialog')
-      const input = document.getElementById('measure-input')
+      const display = document.getElementById('measure-display')
       const stepDisplay = document.getElementById('measure-step-display')
       const btnDec = document.getElementById('measure-step-minus')
       const btnInc = document.getElementById('measure-step-plus')
-      const btnOk = document.getElementById('measure-ok')
       const btnCancel = document.getElementById('measure-cancel')
 
-      if (!dialog || !input) {
+      if (!dialog || !display) {
         resolve(prompt('Enter measure number:', defVal))
         return
       }
 
       this.measureStep = this.measureStep || 4
-      input.value = defVal
+      let currentStr = String(defVal)
+      display.textContent = currentStr
       stepDisplay.textContent = this.measureStep
 
       const updateStep = (delta) => {
@@ -1378,39 +1385,68 @@ class ScoreFlow {
         stepDisplay.textContent = this.measureStep
       }
 
-      const cleanup = () => {
-        dialog.classList.remove('active')
-        btnDec.onclick = null
-        btnInc.onclick = null
-        btnOk.onclick = null
-        btnCancel.onclick = null
-        input.onkeydown = null
-      }
-
-      btnDec.onclick = () => updateStep(-1)
-      btnInc.onclick = () => updateStep(1)
-
-      btnCancel.onclick = () => {
-        cleanup()
-        resolve(null)
-      }
-
-      btnOk.onclick = () => {
-        let val = parseInt(input.value)
+      const confirm = () => {
+        let val = parseInt(currentStr)
         if (isNaN(val) || val < 1) val = 1
         if (val > 999) val = 999
         cleanup()
         resolve(val)
       }
 
-      input.onkeydown = (e) => {
-        if (e.key === 'Enter') btnOk.onclick()
-        if (e.key === 'Escape') btnCancel.onclick()
+      const cleanup = () => {
+        dialog.classList.remove('active')
+        dialog.querySelectorAll('.keypad-btn').forEach(btn => { btn.onclick = null })
+        if (btnDec) btnDec.onclick = null
+        if (btnInc) btnInc.onclick = null
+        if (btnCancel) btnCancel.onclick = null
+        document.removeEventListener('keydown', onKeyDown)
       }
 
+      // Keypad button handlers
+      dialog.querySelectorAll('.keypad-btn').forEach(btn => {
+        btn.onclick = () => {
+          const key = btn.dataset.key
+          if (key === 'back') {
+            currentStr = currentStr.length > 1 ? currentStr.slice(0, -1) : '1'
+          } else if (key === 'confirm') {
+            confirm()
+            return
+          } else {
+            const next = currentStr === '1' && key !== '0' ? key : currentStr + key
+            if (parseInt(next) <= 999) currentStr = next
+          }
+          display.textContent = currentStr
+        }
+      })
+
+      if (btnDec) btnDec.onclick = () => updateStep(-1)
+      if (btnInc) btnInc.onclick = () => updateStep(1)
+
+      if (btnCancel) {
+        btnCancel.onclick = () => {
+          cleanup()
+          resolve(null)
+        }
+      }
+
+      const onKeyDown = (e) => {
+        if (e.key >= '0' && e.key <= '9') {
+          const next = currentStr === '1' ? e.key : currentStr + e.key
+          if (parseInt(next) <= 999) currentStr = next
+          display.textContent = currentStr
+        } else if (e.key === 'Backspace') {
+          currentStr = currentStr.length > 1 ? currentStr.slice(0, -1) : '1'
+          display.textContent = currentStr
+        } else if (e.key === 'Enter') {
+          confirm()
+        } else if (e.key === 'Escape') {
+          cleanup()
+          resolve(null)
+        }
+      }
+      document.addEventListener('keydown', onKeyDown)
+
       dialog.classList.add('active')
-      input.focus()
-      input.select()
     })
   }
 
@@ -1761,6 +1797,7 @@ class ScoreFlow {
     if (this.btnModeSelect) this.btnModeSelect.classList.toggle('active', this.activeStampType === 'select')
     if (this.btnModeEraser) this.btnModeEraser.classList.toggle('active', this.activeStampType === 'eraser')
     if (this.btnModeAnchor) this.btnModeAnchor.classList.toggle('active', this.activeStampType === 'anchor')
+    if (this.btnStampPalette) this.btnStampPalette.classList.toggle('active', isExpanded)
 
     // 0. Active Tool FAB (Visible ONLY when collapsed)
     const fab = document.createElement("div")
@@ -1772,11 +1809,8 @@ class ScoreFlow {
     this.activeToolsContainer.appendChild(fab)
 
     if (!isExpanded) {
-      this.activeToolsContainer.style.width = "" // Use CSS default for collapsed
-      this.activeToolsContainer.onclick = () => {
-        this.activeToolsContainer.classList.add("expanded")
-        this.updateActiveTools()
-      }
+      // Palette is hidden — nothing to render
+      this.activeToolsContainer.onclick = null
       return
     }
 
@@ -3418,7 +3452,7 @@ class ScoreFlow {
 
   showMainUI() {
     // Reveal toolbars once a score is loaded
-    const ids = ['sidebar-trigger', 'floating-doc-bar', 'active-tools-container', 'jump-ruler', 'layer-toggle-fab']
+    const ids = ['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab']
     ids.forEach(id => {
       const el = document.getElementById(id)
       if (el) {
@@ -3426,6 +3460,11 @@ class ScoreFlow {
         if (id === 'jump-ruler') el.style.display = 'block'
       }
     })
+    // Show stamp palette expanded on first load
+    if (this.activeToolsContainer) {
+      this.activeToolsContainer.classList.add('expanded')
+      this.updateActiveTools()
+    }
   }
 
   showProjectRepertoire() {
