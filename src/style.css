@@ -292,6 +292,71 @@ body {
   transition: top 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
+/* Numeric Keypad for Measure Dialog */
+.measure-display {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.08);
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  padding: 10px 24px;
+  min-width: 120px;
+  text-align: center;
+  letter-spacing: 2px;
+  display: inline-block;
+}
+
+.measure-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.keypad-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  font-size: 20px;
+  font-weight: 600;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  user-select: none;
+}
+
+.keypad-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.keypad-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.keypad-btn.action-btn {
+  font-size: 16px;
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
+  border-color: rgba(255, 71, 87, 0.2);
+}
+
+.keypad-btn.action-btn:active {
+  background: rgba(255, 71, 87, 0.2);
+}
+
+.keypad-btn.confirm-btn {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary);
+  border-color: rgba(99, 102, 241, 0.3);
+  font-size: 18px;
+}
+
+.keypad-btn.confirm-btn:active {
+  background: rgba(99, 102, 241, 0.25);
+}
+
 /* The Handle on the Ruler (Word-style Arrow Marker) */
 .jump-line-handle {
   position: absolute;
@@ -346,11 +411,12 @@ body {
   opacity: 0.8;
 }
 
-/* Horizontal Smart Tool Palette - Anchored to Left for stability */
+/* Independent Stamp Palette Panel - Hidden by default, toggled by button */
 .floating-stamp-bar {
   position: fixed;
-  right: 20px;
-  bottom: 40px;
+  right: 80px;
+  /* Offset from Doc Bar */
+  top: 100px;
   height: auto;
   min-height: 64px;
   max-width: 85vw;
@@ -358,33 +424,21 @@ body {
   border-radius: 32px;
   border: 1px solid var(--border);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  display: flex;
+  display: none;
+  /* Hidden by default until button clicked */
   flex-direction: column;
   align-items: flex-start;
   padding: 12px 16px;
+  padding-left: 24px;
   z-index: 1000;
-  overflow: hidden;
-  /* Hide scrollbars for a premium look */
-  scrollbar-width: none;
-  /* Firefox */
-  transition: width 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
-    height 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
-    right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
-    border-radius 0.4s ease,
-    box-shadow 0.3s ease;
+  overflow: visible;
+  transition: opacity 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
   -webkit-user-select: none;
   user-select: none;
 }
 
-.floating-stamp-bar::-webkit-scrollbar {
-  display: none;
-  /* Chrome/Safari */
-}
-
 .floating-stamp-bar.expanded {
-  width: auto;
-  /* Allow content to define width */
-  padding-left: 24px;
+  display: flex;
 }
 
 .resize-handle {
@@ -413,33 +467,8 @@ body {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2), 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
-.floating-stamp-bar:not(.expanded) {
-  width: 64px;
-  height: 64px;
-  cursor: pointer;
-  justify-content: center;
-}
-
-.floating-stamp-bar:not(.expanded) .drag-handle,
-.floating-stamp-bar:not(.expanded) .category-switcher,
-.floating-stamp-bar:not(.expanded) .active-tools-grid {
-  display: none;
-}
-
 .active-tool-fab {
   display: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: white;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-}
-
-.floating-stamp-bar:not(.expanded) .active-tool-fab {
-  display: flex;
 }
 
 .palette-header {
