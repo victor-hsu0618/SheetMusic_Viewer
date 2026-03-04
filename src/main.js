@@ -1059,6 +1059,9 @@ class ScoreFlow {
             // Delay adding to stamps until we have the multi-line data
             this.spawnTextEditor(wrapper, pageNum, activeObject)
           } else if (activeObject.type === 'measure') {
+            const measureObj = activeObject
+            isInteracting = false
+            activeObject = null
             let defVal = 1
             if (this.lastMeasureNum) {
               defVal = parseInt(this.lastMeasureNum) + (this.measureStep || 4)
@@ -1066,10 +1069,15 @@ class ScoreFlow {
             const data = await this.promptMeasureNumber(defVal)
             if (data) {
               this.lastMeasureNum = String(data)
-              activeObject.data = String(data)
-              this.stamps.push(activeObject)
+              measureObj.data = String(data)
+              const existingMeasure = this.stamps.find(s => s.type === 'measure' && s.page === pageNum)
+              if (existingMeasure) measureObj.x = existingMeasure.x
+              this.stamps.push(measureObj)
               this.updateRulerMarks()
+              this.saveToStorage()
+              this.redrawStamps(pageNum)
             }
+            return
           } else {
             this.stamps.push(activeObject)
           }
@@ -1182,6 +1190,8 @@ class ScoreFlow {
       if (!data) return
       this.lastMeasureNum = String(data)
       data = String(data)
+      const existingMeasure = this.stamps.find(s => s.type === 'measure' && s.page === page)
+      if (existingMeasure) x = existingMeasure.x
     }
 
     this.stamps.push({
@@ -1417,8 +1427,13 @@ class ScoreFlow {
       }
 
       const onKeyDown = (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); confirm() }
-        if (e.key === 'Escape') { e.preventDefault(); cleanup(); resolve(null) }
+        if (e.key === 'Enter') {
+          // iOS fires a synthetic Enter keydown after tapping a button — ignore it
+          if (e.target?.classList.contains('keypad-btn')) return
+          e.preventDefault(); e.stopPropagation(); confirm(); return
+        }
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cleanup(); resolve(null); return }
+        e.stopPropagation() // block global shortcuts (sidebar, eraser, etc.) while dialog is open
       }
       document.addEventListener('keydown', onKeyDown)
 
@@ -3489,11 +3504,6 @@ class ScoreFlow {
         if (id === 'jump-ruler') el.style.display = 'block'
       }
     })
-    // Show stamp palette expanded on first load
-    if (this.activeToolsContainer) {
-      this.activeToolsContainer.classList.add('expanded')
-      this.updateActiveTools()
-    }
   }
 
   showProjectRepertoire() {
