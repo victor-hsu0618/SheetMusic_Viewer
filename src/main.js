@@ -462,6 +462,69 @@ class ScoreFlow {
       })
     }
 
+    // Draggable Jump Line Indicator
+    const handle = document.querySelector('.jump-line-handle')
+    if (handle) {
+      let isDraggingRuler = false
+      handle.addEventListener('mousedown', (e) => {
+        isDraggingRuler = true
+        e.preventDefault() // prevent text selection
+      })
+      window.addEventListener('mousemove', (e) => {
+        if (!isDraggingRuler) return
+        let newY = e.clientY
+        // Clamp to sane values
+        if (newY < 0) newY = 0
+        if (newY > window.innerHeight - 50) newY = window.innerHeight - 50
+
+        this.jumpOffsetPx = newY
+        this.updateJumpLinePosition()
+
+        // Update input range backwards if it's open
+        if (this.jumpOffsetInput) {
+          const cm = newY / 37.8
+          this.jumpOffsetInput.value = cm
+          if (this.jumpOffsetValue) this.jumpOffsetValue.textContent = `${cm.toFixed(1)}cm`
+        }
+      })
+      window.addEventListener('mouseup', () => {
+        if (isDraggingRuler) {
+          isDraggingRuler = false
+          // Flash the jump line beam to confirm setting
+          const beam = document.querySelector('.jump-line-beam')
+          if (beam) {
+            beam.style.opacity = '1'
+            setTimeout(() => beam.style.opacity = '', 500)
+          }
+        }
+      })
+
+      // Touch support for dragging
+      handle.addEventListener('touchstart', (e) => {
+        isDraggingRuler = true
+        e.stopPropagation(); // prevent page scroll
+      }, { passive: false })
+      window.addEventListener('touchmove', (e) => {
+        if (!isDraggingRuler) return
+        e.preventDefault() // prevent page scroll
+        let newY = e.touches[0].clientY
+        if (newY < 0) newY = 0
+        if (newY > window.innerHeight - 50) newY = window.innerHeight - 50
+
+        this.jumpOffsetPx = newY
+        this.updateJumpLinePosition()
+
+        if (this.jumpOffsetInput) {
+          const cm = newY / 37.8
+          this.jumpOffsetInput.value = cm
+          if (this.jumpOffsetValue) this.jumpOffsetValue.textContent = `${cm.toFixed(1)}cm`
+        }
+      }, { passive: false })
+      window.addEventListener('touchend', () => {
+        isDraggingRuler = false
+      })
+    }
+
     // No static stampTools anymore, they are dynamic
 
     // Keyboard Actions
@@ -531,16 +594,41 @@ class ScoreFlow {
         }
       }
 
-      // Musical Flow (Standardized J/K and Space)
-      if (e.key === ' ' || e.key.toLowerCase() === 'j' || e.key === 'ArrowDown') {
-        e.preventDefault()
-        if (e.shiftKey && e.key === ' ') {
-          this.jump(-1)
-        } else {
-          this.jump(1)
-        }
+      // Page Turner Settings Logic
+      let isForward = false;
+      let isBackward = false;
+      const turnerMode = document.getElementById('turner-mode-select') ? document.getElementById('turner-mode-select').value : 'default';
+
+      switch (turnerMode) {
+        case 'pgupdn':
+          if (e.key === 'PageDown') isForward = true;
+          if (e.key === 'PageUp') isBackward = true;
+          break;
+        case 'arrows':
+          if (e.key === 'ArrowDown' || e.key === 'ArrowRight') isForward = true;
+          if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') isBackward = true;
+          break;
+        case 'default':
+        case 'custom':
+        default:
+          // Musical Flow (Standardized J/K and Space, + Page Turner Support)
+          if (e.key === ' ' || e.key.toLowerCase() === 'j' || e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown') {
+            if (e.shiftKey && e.key === ' ') {
+              isBackward = true;
+            } else {
+              isForward = true;
+            }
+          }
+          if (e.key.toLowerCase() === 'k' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+            isBackward = true;
+          }
+          break;
       }
-      if (e.key.toLowerCase() === 'k' || e.key === 'ArrowUp') {
+
+      if (isForward) {
+        e.preventDefault()
+        this.jump(1)
+      } else if (isBackward) {
         e.preventDefault()
         this.jump(-1)
       }
@@ -586,6 +674,18 @@ class ScoreFlow {
         // Fast (<400ms), mostly vertical, long enough (>60px)
         if (dt < 400 && Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx) * 1.5) {
           dy > 0 ? this.jump(1) : this.jump(-1)
+        }
+      }, { passive: true })
+
+      // Scroll event for dynamic anchor marks on ruler
+      let scrollTicking = false
+      viewer.addEventListener('scroll', () => {
+        if (!scrollTicking) {
+          window.requestAnimationFrame(() => {
+            this.updateRulerMarks()
+            scrollTicking = false
+          })
+          scrollTicking = true
         }
       }, { passive: true })
     }
@@ -674,6 +774,8 @@ class ScoreFlow {
     this.pdf = await loadingTask.promise
     console.log(`PDF loaded successfully. Pages: ${this.pdf.numPages}, Fingerprint: ${newFingerprint.slice(0, 8)}...`)
     await this.renderPDF()
+    this.updateJumpLinePosition()
+    this.updateRulerMarks()
     this.showMainUI()
   }
 
@@ -773,6 +875,11 @@ class ScoreFlow {
 
       // View mode: no editing, let browser handle scroll/touch freely
       if (toolType === 'view') return
+
+      // Allow multi-touch gestures (like 2-finger scroll/zoom) to pass through to the browser
+      if (e.type === 'touchstart' && e.touches && e.touches.length > 1) {
+        return // Let browser handle 2-finger scroll
+      }
 
       if (e.type === 'touchstart') e.preventDefault()
       isInteracting = true
@@ -915,16 +1022,37 @@ class ScoreFlow {
       }
     }
 
-    const endAction = (e) => {
+    const endAction = async (e) => {
       if (isInteracting && activeObject) {
         if (!isMovingExisting) {
           if (activeObject.type === 'text' || activeObject.type === 'tempo-text') {
             // Delay adding to stamps until we have the multi-line data
             this.spawnTextEditor(wrapper, pageNum, activeObject)
+          } else if (activeObject.type === 'measure') {
+            let defVal = 1
+            if (this.lastMeasureNum) {
+              defVal = parseInt(this.lastMeasureNum) + (this.measureStep || 4)
+            }
+            const data = await this.promptMeasureNumber(defVal)
+            if (data) {
+              this.lastMeasureNum = String(data)
+              activeObject.data = String(data)
+              activeObject.x = 0.05
+              this.stamps.push(activeObject)
+              this.updateRulerMarks()
+            }
           } else {
             this.stamps.push(activeObject)
           }
         }
+
+        if (activeObject.type === 'anchor') {
+          this.cleanupAnchors(pageNum)
+          this.updateRulerMarks()
+        } else if (activeObject.type === 'measure') {
+          this.updateRulerMarks()
+        }
+
         this.saveToStorage()
         this.redrawStamps(pageNum)
       }
@@ -994,7 +1122,7 @@ class ScoreFlow {
     // Events now handled by createCaptureOverlay
   }
 
-  addStamp(page, type, x, y) {
+  async addStamp(page, type, x, y) {
     if (type === 'eraser') {
       this.eraseStamp(page, x, y)
       return
@@ -1017,6 +1145,18 @@ class ScoreFlow {
     if (type === 'text' || type === 'tempo-text') {
       data = prompt('Enter text:')
       if (!data) return
+    } else if (type === 'measure') {
+      let defVal = 1
+      if (this.lastMeasureNum) {
+        defVal = parseInt(this.lastMeasureNum) + (this.measureStep || 4)
+      }
+      data = await this.promptMeasureNumber(defVal)
+      if (!data) return
+      this.lastMeasureNum = String(data)
+      data = String(data)
+      // For measure stamps, lock them to the leftmost margin visually 
+      // but they are primarily visible on the ruler anyway.
+      x = 0.05
     }
 
     this.stamps.push({
@@ -1028,6 +1168,14 @@ class ScoreFlow {
       y,
       data
     })
+
+    if (type === 'anchor') {
+      this.cleanupAnchors(page)
+      this.updateRulerMarks()
+    } else if (type === 'measure') {
+      this.updateRulerMarks()
+    }
+
     this.saveToStorage()
     this.updateLayerVisibility()
     this.redrawStamps(page)
@@ -1101,6 +1249,10 @@ class ScoreFlow {
 
     this.stamps.splice(idx, 1)
     console.log(`Eraser: Removed 1 stamp (type: ${stamp.type}) from source: ${this.activeSourceId}`)
+
+    if (stamp.type === 'anchor') {
+      this.updateRulerMarks()
+    }
 
     // Clear hover state
     this.hoveredStamp = null
@@ -1197,6 +1349,69 @@ class ScoreFlow {
       document.addEventListener('mousedown', this._eraseMenuDismiss)
       document.addEventListener('keydown', this._eraseMenuEsc)
     }, 0)
+  }
+
+  async promptMeasureNumber(defVal) {
+    return new Promise(resolve => {
+      const dialog = document.getElementById('measure-dialog')
+      const input = document.getElementById('measure-input')
+      const stepDisplay = document.getElementById('measure-step-display')
+      const btnDec = document.getElementById('measure-step-minus')
+      const btnInc = document.getElementById('measure-step-plus')
+      const btnOk = document.getElementById('measure-ok')
+      const btnCancel = document.getElementById('measure-cancel')
+
+      if (!dialog || !input) {
+        resolve(prompt('Enter measure number:', defVal))
+        return
+      }
+
+      this.measureStep = this.measureStep || 4
+      input.value = defVal
+      stepDisplay.textContent = this.measureStep
+
+      const updateStep = (delta) => {
+        let newStep = this.measureStep + delta
+        if (newStep < 1) newStep = 1
+        if (newStep > 999) newStep = 999
+        this.measureStep = newStep
+        stepDisplay.textContent = this.measureStep
+      }
+
+      const cleanup = () => {
+        dialog.classList.remove('active')
+        btnDec.onclick = null
+        btnInc.onclick = null
+        btnOk.onclick = null
+        btnCancel.onclick = null
+        input.onkeydown = null
+      }
+
+      btnDec.onclick = () => updateStep(-1)
+      btnInc.onclick = () => updateStep(1)
+
+      btnCancel.onclick = () => {
+        cleanup()
+        resolve(null)
+      }
+
+      btnOk.onclick = () => {
+        let val = parseInt(input.value)
+        if (isNaN(val) || val < 1) val = 1
+        if (val > 999) val = 999
+        cleanup()
+        resolve(val)
+      }
+
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') btnOk.onclick()
+        if (e.key === 'Escape') btnCancel.onclick()
+      }
+
+      dialog.classList.add('active')
+      input.focus()
+      input.select()
+    })
   }
 
   closeEraseMenu() {
@@ -1487,6 +1702,19 @@ class ScoreFlow {
             lines.forEach((line, i) => {
               ctx.fillText(line, x, y + (i * lineHeight))
             })
+          } else if (d.variant === 'measure') {
+            ctx.font = `bold ${16 * (this.scale / 1.5)}px Outfit`
+            // Semi-transparent rounded box background
+            ctx.fillStyle = isHovered ? '#1e293b' : '#334155'
+            ctx.beginPath()
+            ctx.roundRect(x - (12 * (this.scale / 1.5)), y - (12 * (this.scale / 1.5)), 24 * (this.scale / 1.5), 24 * (this.scale / 1.5), 4)
+            ctx.fill()
+
+            // Text 
+            ctx.fillStyle = '#f59e0b'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText(stamp.data || '#', x, y)
           }
           break
 
@@ -1928,6 +2156,80 @@ class ScoreFlow {
     }
   }
 
+  cleanupAnchors(page) {
+    const anchors = this.stamps.filter(s => s.page === page && s.type === 'anchor')
+    if (anchors.length <= 1) return false
+
+    // Sort by Y (highest Y is at the bottom of the page)
+    anchors.sort((a, b) => a.y - b.y)
+
+    let stampsToRemove = []
+    let currentCluster = []
+
+    anchors.forEach(stamp => {
+      if (currentCluster.length === 0) {
+        currentCluster.push(stamp)
+      } else {
+        // 1/3 page range merging (0.33)
+        if (stamp.y - currentCluster[0].y <= 0.333) {
+          currentCluster.push(stamp)
+        } else {
+          // Keep the lowest one (max Y)
+          const winner = currentCluster.reduce((max, cur) => cur.y > max.y ? cur : max)
+          currentCluster.forEach(s => {
+            if (s !== winner) stampsToRemove.push(s)
+          })
+          currentCluster = [stamp]
+        }
+      }
+    })
+
+    if (currentCluster.length > 0) {
+      const winner = currentCluster.reduce((max, cur) => cur.y > max.y ? cur : max)
+      currentCluster.forEach(s => {
+        if (s !== winner) stampsToRemove.push(s)
+      })
+    }
+
+    if (stampsToRemove.length > 0) {
+      this.stamps = this.stamps.filter(s => !stampsToRemove.includes(s))
+      return true
+    }
+    return false
+  }
+
+  updateRulerMarks() {
+    const marksContainer = document.getElementById('ruler-marks')
+    if (!marksContainer) return
+
+    const visualMarks = this.stamps.filter(s => s.type === 'anchor' || s.type === 'measure')
+
+    marksContainer.innerHTML = ''
+    const viewportHeight = window.innerHeight
+
+    visualMarks.forEach((stamp) => {
+      const pageWrapper = document.querySelector(`.page-container[data-page="${stamp.page}"]`)
+      if (pageWrapper && this.pdf) {
+        const rect = pageWrapper.getBoundingClientRect()
+        // Determine the absolute Y position relative to the viewport
+        const absY = rect.top + (stamp.y * rect.height)
+
+        // Hide if too far out of viewport for clean rendering
+        if (absY > -200 && absY < viewportHeight + 200) {
+          const mark = document.createElement('div')
+          if (stamp.type === 'anchor') {
+            mark.className = 'ruler-anchor-mark'
+          } else if (stamp.type === 'measure') {
+            mark.className = 'ruler-measure-mark'
+            mark.textContent = stamp.data
+          }
+          mark.style.top = `${absY}px`
+          marksContainer.appendChild(mark)
+        }
+      }
+    })
+  }
+
   jump(direction) {
     const pageEndAnchors = []
     if (this.pdf) {
@@ -1997,9 +2299,10 @@ class ScoreFlow {
   }
 
   updateJumpLinePosition() {
-    if (this.jumpLine) {
-      // The header is gone, so the jump line is relative to the screen top
-      this.jumpLine.style.top = `${this.jumpOffsetPx}px`
+    // The jumpLine actually refers to the indicator handle + beam inside the ruler now
+    const indicator = document.getElementById('jump-line')
+    if (indicator) {
+      indicator.style.top = `${this.jumpOffsetPx}px`
     }
   }
 
@@ -2017,6 +2320,10 @@ class ScoreFlow {
     localStorage.setItem('scoreflow_profiles', JSON.stringify(this.profiles))
     localStorage.setItem('scoreflow_active_profile', this.activeProfileId)
     localStorage.setItem('scoreflow_recent_solo_scores', JSON.stringify(this.recentSoloScores || []))
+
+    const turnerMode = document.getElementById('turner-mode-select') ? document.getElementById('turner-mode-select').value : 'default';
+    localStorage.setItem('scoreflow_turner_mode', turnerMode)
+
     if (this.activeScoreName) {
       localStorage.setItem('scoreflow_last_opened_score', this.activeScoreName)
       // Save mapping of filename to fingerprint
@@ -2037,6 +2344,7 @@ class ScoreFlow {
     const profilesData = localStorage.getItem('scoreflow_profiles')
     const activeProfileData = localStorage.getItem('scoreflow_active_profile')
     const recentSoloData = localStorage.getItem('scoreflow_recent_solo_scores')
+    const turnerModeData = localStorage.getItem('scoreflow_turner_mode')
 
     if (recentSoloData) this.recentSoloScores = JSON.parse(recentSoloData)
 
@@ -2045,6 +2353,12 @@ class ScoreFlow {
     if (fingerprintData) this.pdfFingerprint = fingerprintData
     if (profilesData) this.profiles = JSON.parse(profilesData)
     if (activeProfileData) this.activeProfileId = activeProfileData
+
+    const turnerSelect = document.getElementById('turner-mode-select')
+    if (turnerSelect) {
+      if (turnerModeData) turnerSelect.value = turnerModeData
+      turnerSelect.addEventListener('change', () => this.saveToStorage())
+    }
 
     // Fingerprint Map for Library Indicators
     const mapData = localStorage.getItem('scoreflow_fingerprint_map')
@@ -3104,10 +3418,13 @@ class ScoreFlow {
 
   showMainUI() {
     // Reveal toolbars once a score is loaded
-    const ids = ['sidebar-trigger', 'floating-doc-bar', 'active-tools-container', 'jump-line', 'layer-toggle-fab']
+    const ids = ['sidebar-trigger', 'floating-doc-bar', 'active-tools-container', 'jump-ruler', 'layer-toggle-fab']
     ids.forEach(id => {
       const el = document.getElementById(id)
-      if (el) el.classList.remove('hidden')
+      if (el) {
+        el.classList.remove('hidden')
+        if (id === 'jump-ruler') el.style.display = 'block'
+      }
     })
   }
 

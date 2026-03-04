@@ -59,6 +59,12 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - **SHA-256 Fingerprinting**：上傳 PDF 時自動計算唯一的加密指紋，防止不同版本的樂譜標記混用。
   - **版本稽核 (Version Audit)**：匯入標記時自動比對指紋，若 PDF 版本不符（如 Henle vs Barenreiter）會跳出誤導警告。
 
+- **連續小節數標記 (Continuous Measure Tool)**：
+  - **極速智慧輸入**：專為樂手快速標記段落小節而生。點擊畫面即喚出專屬自訂輸入面板 (Custom UI Modal)，支援設定「自動遞增跨度 (Auto-increment Step)」（預設為 4。最低 1，上限 999）。
+  - **一鍵連續遞增**：設定跨度後，系統會記憶偏好，後續只要「點擊 -> 敲擊 Enter」即可自動完成等差遞增的小節標註，無需重複輸入。
+  - **尺規雙向綁定 (Ruler Docked)**：輸入的小節數字會自動對齊貼齊樂譜最左側邊界 (`x: 0.05`)，並同步在左側垂直尺規上繪製顯眼的琥珀橘色 (`#f59e0b`) 標記。捲動樂譜時，尺規上的小節號碼會隨之連動，提供最直覺的全局定位參考。
+  - **獨立視覺導航**：純視覺輔助設計，小節標記不具備 Anchor 屬性，絕不會干擾翻頁踏板與樂句跳躍 (Anchor Jump) 的既有邏輯。
+
 ### 4. UI/UX 軟體美學 (Minimize Interface, Maximize Content)
 
 - **智慧工作區 (Dynamic Workspace)**：

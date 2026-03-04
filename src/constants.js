@@ -92,7 +92,8 @@ export const TOOLSETS = [
         name: 'Anchor',
         type: 'anchor',
         tools: [
-            { id: 'anchor', label: 'Anchor', icon: '<path d="M12 2v20M5 12h14" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.3"/>', draw: { type: 'complex', variant: 'anchor' } }
+            { id: 'anchor', label: 'Anchor', icon: '<path d="M12 2v20M5 12h14" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.3"/>', draw: { type: 'complex', variant: 'anchor' } },
+            { id: 'measure', label: 'Measure', icon: '<text x="12" y="16.5" font-size="14" font-family="Outfit" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">#</text>', draw: { type: 'special', variant: 'measure' } }
         ]
     }
 ];

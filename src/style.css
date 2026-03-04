@@ -52,6 +52,8 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 20px 0;
+  padding-left: 24px;
+  /* Space for the Jump Ruler */
   scroll-behavior: smooth;
   transition: padding-right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
@@ -60,7 +62,7 @@ body {
 .floating-doc-bar {
   position: fixed;
   top: 100px;
-  left: 20px;
+  right: 20px;
   background: var(--bg-card);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -74,7 +76,7 @@ body {
   align-items: center;
   gap: 12px;
   cursor: default;
-  transition: width 0.3s;
+  transition: width 0.3s, right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 .doc-drag-handle {
@@ -132,6 +134,16 @@ body {
   #app.is-sidebar-active .viewer-container {
     padding-right: var(--sidebar-width);
   }
+
+  /* Shift right-anchored floating elements along with the workspace */
+  #app.is-sidebar-active .floating-doc-bar,
+  #app.is-sidebar-active .floating-stamp-bar {
+    right: calc(20px + var(--sidebar-width));
+  }
+
+  #app.is-sidebar-active .layer-shelf {
+    right: calc(75px + var(--sidebar-width));
+  }
 }
 
 .page-container {
@@ -154,32 +166,190 @@ body {
   z-index: 5;
 }
 
-/* Jump Line Indicator */
-.jump-line {
+/* Jump Line Indicator & Ruler (Word-style) */
+.jump-ruler {
   position: fixed;
   left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: rgba(255, 59, 48, 0.6);
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  z-index: 1000;
+  display: block;
   pointer-events: none;
-  z-index: 100;
-  display: none;
+  /* Let the track be transparent to scroll if necessary, though it's on the edge */
 }
 
-.jump-line::after {
-  content: 'JUMP LINE';
+.jump-ruler.hidden {
+  display: none !important;
+}
+
+/* Simulated millimeter markings for the ruler track */
+.ruler-track {
   position: absolute;
-  right: 10px;
-  top: -20px;
-  font-size: 10px;
-  color: rgba(255, 59, 48, 0.8);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px);
+  background-size: 100% 10px;
+  /* 10px per hash mark */
+  opacity: 0.5;
+}
+
+.ruler-marks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ruler-anchor-mark {
+  position: absolute;
+  left: 4px;
+  /* Slight inset */
+  width: 16px;
+  height: 3px;
+  background-color: #3b82f6;
+  /* Anchor blue */
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transform: translateY(-50%);
+  transition: top 0.1s linear;
+}
+
+.ruler-measure-mark {
+  position: absolute;
+  left: 2px;
+  width: 20px;
+  border-radius: 4px;
+  background-color: var(--bg-card);
+  color: #f59e0b;
+  border: 1px solid #f59e0b;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 12px;
+  padding: 2px 0;
+  transform: translateY(-50%);
+  transition: top 0.1s linear;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  z-index: 5;
+}
+
+.measure-input-large {
+  font-size: 24px;
+  text-align: center;
+  padding: 10px;
+  width: 100px;
+  margin: 0 auto;
+  display: block;
+}
+
+.measure-step-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.measure-step-label {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.measure-step-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.measure-step-btn {
+  padding: 4px 12px;
+}
+
+.measure-step-value {
   font-weight: bold;
+  width: 24px;
+  text-align: center;
+}
+
+/* The Handle + Line Group */
+.jump-line-indicator {
+  position: absolute;
+  left: 0;
+  width: 100vw;
+  height: 0;
+  /* Anchor point */
+  pointer-events: none;
+  /* Let clicks pass through */
+  transition: top 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* The Handle on the Ruler (Word-style Arrow Marker) */
+.jump-line-handle {
+  position: absolute;
+  left: 6px;
+  top: -8px;
+  /* center on the line */
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid var(--primary);
+  /* Right-pointing triangle */
+  filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.3));
+  pointer-events: auto;
+  cursor: ns-resize;
+  /* allow dragging if we ever implement it */
+}
+
+/* Optional: Add a flat back to the triangle for a more solid marker feel */
+.jump-line-handle::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: -8px;
+  width: 4px;
+  height: 16px;
+  background-color: var(--primary);
+  border-radius: 2px 0 0 2px;
+}
+
+/* The Horizontal Beam */
+.jump-line-beam {
+  position: absolute;
+  left: 24px;
+  top: -1px;
+  width: 100%;
+  height: 1px;
+  background-color: rgba(99, 102, 241, 0.6);
+  border-bottom: 1px dashed rgba(99, 102, 241, 0.9);
+}
+
+.jump-line-label {
+  position: absolute;
+  right: 15px;
+  top: -24px;
+  background: var(--primary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.8;
 }
 
 /* Horizontal Smart Tool Palette - Anchored to Left for stability */
 .floating-stamp-bar {
   position: fixed;
-  left: 40px;
+  right: 20px;
   bottom: 40px;
   height: auto;
   min-height: 64px;
@@ -199,6 +369,7 @@ body {
   /* Firefox */
   transition: width 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
     height 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
+    right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
     border-radius 0.4s ease,
     box-shadow 0.3s ease;
   -webkit-user-select: none;
@@ -213,19 +384,19 @@ body {
 .floating-stamp-bar.expanded {
   width: auto;
   /* Allow content to define width */
-  padding-right: 24px;
+  padding-left: 24px;
 }
 
 .resize-handle {
   position: absolute;
-  right: 12px;
+  left: 12px;
   bottom: 12px;
   width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: nwse-resize;
+  cursor: sw-resize;
   color: var(--text-muted);
   opacity: 0.5;
   z-index: 10;
@@ -796,6 +967,36 @@ body {
   width: 100%;
   height: 4px;
   margin: 8px 0;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.mt-5 {
+  margin-top: 5px;
+}
+
+.gap-10 {
+  gap: 10px;
+}
+
+.flex-row-center {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.text-mini {
+  font-size: 12px;
+}
+
+.min-w-40 {
+  min-width: 40px;
 }
 
 .danger-zone-footer {
@@ -2549,7 +2750,7 @@ kbd {
 
 .layer-shelf {
   position: fixed;
-  left: 12px;
+  right: 75px;
   top: 70px;
   width: 280px;
   background: rgba(255, 255, 255, 0.9);
@@ -3222,4 +3423,37 @@ kbd {
   color: var(--primary);
   background: rgba(99, 102, 241, 0.1);
   box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+/* Multi-touch / Scroll Hint for Edit Mode */
+.gesture-hint {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 15, 19, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 1;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.gesture-hint.hidden {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
+
+.gesture-icon {
+  font-size: 18px;
 }

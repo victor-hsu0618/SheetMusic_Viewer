@@ -4,7 +4,12 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0f0f13" />
+
   <title>ScoreFlow | Elite SheetMusic Viewer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +28,8 @@
     #shortcuts-modal:not(.active),
     #quick-load-modal:not(.active),
     #profile-modal:not(.active),
-    #system-dialog:not(.active) {
+    #system-dialog:not(.active),
+    #measure-dialog:not(.active) {
       display: none !important;
     }
 
@@ -117,9 +123,15 @@
 
       </div>
 
-      <!-- Visual Jump Line Indicator -->
-      <div id="jump-line" class="jump-line">
-        <span class="jump-line-label">Jump Target</span>
+      <!-- Visual Jump Line Indicator & Ruler -->
+      <div id="jump-ruler" class="jump-ruler hidden">
+        <div class="ruler-track"></div>
+        <div id="ruler-marks" class="ruler-marks"></div>
+        <div id="jump-line" class="jump-line-indicator">
+          <div class="jump-line-handle"></div>
+          <div class="jump-line-beam"></div>
+          <span class="jump-line-label">Target</span>
+        </div>
       </div>
       <!-- PDF Pages will be rendered here -->
       <div id="pdf-viewer" class="pdf-viewer">
@@ -413,9 +425,25 @@
           </div>
           <div class="tab-divider"></div>
           <div class="tab-section-label">Jump Interaction</div>
-          <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="mini-slider"
-            title="Adjust the vertical offset for anchor jumps">
-          <span id="jump-offset-value">1.0cm</span>
+
+          <div class="setting-item mb-15">
+            <label class="setting-label">Page Turner Mode</label>
+            <select id="turner-mode-select" class="form-select mini-select w-full mt-5" title="Page Turner Mode">
+              <option value="default">Default (Space/Up/Down/L/R)</option>
+              <option value="pgupdn">PageUp / PageDown</option>
+              <option value="arrows">Arrow Keys Only</option>
+              <option value="custom">Custom (Learn from Pedal)...</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <label class="setting-label">Anchor Auto-scroll Offset</label>
+            <div class="flex-row-center gap-10 mt-5">
+              <input type="range" id="jump-offset" min="0" max="10" step="0.5" value="1" class="mini-slider flex-1"
+                title="Adjust the vertical offset for anchor jumps">
+              <span id="jump-offset-value" class="text-mini min-w-40">1.0cm</span>
+            </div>
+          </div>
         </div>
 
       </div> <!-- End Tab Panels -->
@@ -535,6 +563,34 @@
     </div>
   </div>
 
+  <!-- Measure Tool Setup Modal (New) -->
+  <div id="measure-dialog" class="modal-overlay">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h3>Add Measure Number</h3>
+      </div>
+      <div class="modal-body text-center">
+        <p class="modal-intro mb-15">Current measure to place:</p>
+        <div class="mb-20">
+          <input type="number" id="measure-input" class="modern-input measure-input-large" min="1" max="999" value="1">
+        </div>
+
+        <div class="measure-step-container mb-20">
+          <span class="measure-step-label">Auto-increment:</span>
+          <div class="measure-step-controls">
+            <button id="measure-step-minus" class="btn btn-secondary measure-step-btn">-</button>
+            <span id="measure-step-display" class="measure-step-value">4</span>
+            <button id="measure-step-plus" class="btn btn-secondary measure-step-btn">+</button>
+          </div>
+        </div>
+        <div class="dialog-actions-grid mt-20">
+          <button id="measure-cancel" class="btn btn-text">Cancel (Esc)</button>
+          <button id="measure-ok" class="btn btn-primary">Confirm (Enter)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Custom System Dialog (New: Replaces native alert/confirm) -->
   <div id="system-dialog" class="modal-overlay">
     <div class="modal-content small-modal">
@@ -552,6 +608,12 @@
     </div>
   </div>
 
+
+  <!-- Multi-touch / Scroll Hint for Edit Mode -->
+  <div id="gesture-hint" class="gesture-hint hidden">
+    <span class="gesture-icon">✌️</span>
+    <span>Two-finger swipe to scroll page</span>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.5.207/pdf.min.js"></script>
   <script type="module" src="/src/main.js"></script>
