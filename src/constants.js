@@ -16,6 +16,7 @@ export const INITIAL_LAYERS = [
 export const TOOLSETS = [
     {
         name: 'Edit',
+        num: '1', letter: 'E',
         type: 'edit',
         tools: [
             { id: 'select', label: 'Select', icon: '<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="M13 13l6 6" />' },
@@ -24,6 +25,7 @@ export const TOOLSETS = [
     },
     {
         name: 'Pens',
+        num: '2', letter: 'P',
         type: 'draw',
         tools: [
             { id: 'pen', label: 'Pen', icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M 1 0 L -1 0' } },
@@ -33,6 +35,7 @@ export const TOOLSETS = [
     },
     {
         name: 'Bowing',
+        num: '3', letter: 'B',
         type: 'articulation',
         tools: [
             { id: 'down-bow', label: 'Down', icon: '<path d="M7 11h10v5 M7 16v-5 M17 16v-5" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.3 0.2 L -0.3 -0.3 L 0.3 -0.3 L 0.3 0.2' } },
@@ -43,6 +46,7 @@ export const TOOLSETS = [
     },
     {
         name: 'Fingering',
+        num: '4', letter: 'F',
         type: 'fingering',
         tools: [
             { id: 'thumb', label: 'Thumb', icon: '<ellipse cx="12" cy="8" rx="3" ry="5" fill="none" stroke="currentColor" stroke-width="2" /><line x1="12" y1="13" x2="12" y2="15" stroke="currentColor" stroke-width="2" />', draw: { type: 'complex', variant: 'thumb' } },
@@ -61,6 +65,7 @@ export const TOOLSETS = [
     },
     {
         name: 'Articulation',
+        num: '5', letter: 'A',
         type: 'articulation',
         tools: [
             { id: 'accent', label: 'Accent', icon: '<path d="M8 9l8 3-8 3" fill="none" stroke="currentColor" stroke-width="1.5"/>', draw: { type: 'path', data: 'M -0.4 -0.2 L 0.4 0 L -0.4 0.2' } },
@@ -71,6 +76,7 @@ export const TOOLSETS = [
     },
     {
         name: 'Tempo',
+        num: '6', letter: 'T',
         type: 'performance',
         tools: [
             { id: 'tempo-quarter', label: 'q=', icon: '<path d="M10 18a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM11.5 16V4" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'text', content: 'q=', font: '300', size: 20 } },
@@ -81,6 +87,7 @@ export const TOOLSETS = [
     },
     {
         name: 'Dynamic',
+        num: '7', letter: 'D',
         type: 'performance',
         tools: [
             { id: 'forte', label: 'f', icon: '<text x="12" y="20" font-family="serif" font-style="italic" font-weight="300" font-size="20" text-anchor="middle" fill="currentColor" stroke="none">f</text>', draw: { type: 'text', content: 'f', font: 'italic 300', size: 24, fontFace: 'serif' } },
@@ -90,6 +97,8 @@ export const TOOLSETS = [
     },
     {
         name: 'Anchor',
+        displayName: 'Layout',
+        num: '8', letter: 'L',
         type: 'layout',
         tools: [
             { id: 'anchor', label: 'Anchor', icon: '<circle cx="12" cy="3" r="1.5" fill="currentColor" /><rect x="11.25" y="4.5" width="1.5" height="9" fill="currentColor" /><rect x="7.5" y="10.5" width="9" height="1.5" fill="currentColor" /><path d="M6 12 C6 18, 18 18, 18 12 L16.5 12 C16.5 16.5, 7.5 16.5, 7.5 12 Z" fill="currentColor" />', draw: { type: 'complex', variant: 'anchor' } },

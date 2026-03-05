@@ -181,6 +181,7 @@ class ScoreFlow {
     this.btnJumpHead = document.getElementById('btn-jump-head')
     this.btnJumpEnd = document.getElementById('btn-jump-end')
     this.btnRulerToggle = document.getElementById('btn-ruler-toggle')
+    this.btnFullscreen = document.getElementById('btn-fullscreen')
     this.btnModeAnchor = document.getElementById('btn-mode-anchor')
     this.btnModeSelect = document.getElementById('btn-mode-select')
     this.btnModeEraser = document.getElementById('btn-mode-eraser')
@@ -455,6 +456,8 @@ class ScoreFlow {
     if (this.btnJumpHead) this.btnJumpHead.onclick = () => this.goToHead()
     if (this.btnJumpEnd) this.btnJumpEnd.onclick = () => this.goToEnd()
     if (this.btnRulerToggle) this.btnRulerToggle.addEventListener('click', () => this.toggleRuler())
+    if (this.btnFullscreen) this.btnFullscreen.addEventListener('click', () => this.toggleFullscreen())
+    document.addEventListener('fullscreenchange', () => this._onFullscreenChange())
 
     // Quick Mode Actions
     if (this.btnModeSelect) {
@@ -587,6 +590,17 @@ class ScoreFlow {
         }
       }
 
+      // Group shortcuts when stamp palette is open (1-8 and E/P/B/F/A/T/D/L)
+      const paletteOpen = this.activeToolsContainer?.classList.contains('expanded')
+      if (paletteOpen) {
+        const groupByKey = this.toolsets.find(g => g.num === e.key || g.letter === e.key.toUpperCase())
+        if (groupByKey) {
+          e.preventDefault()
+          this.selectGroup(groupByKey.name)
+          return
+        }
+      }
+
       // Help Overlay
       if (e.key === '?' || e.key.toLowerCase() === 'h') {
         this.toggleShortcuts()
@@ -612,6 +626,9 @@ class ScoreFlow {
       }
       if (e.key.toLowerCase() === 'r') {
         this.toggleRuler()
+      }
+      if (e.key.toLowerCase() === 'g') {
+        this.toggleFullscreen()
       }
 
       // Esc: close all + return to view mode
@@ -1186,6 +1203,17 @@ class ScoreFlow {
 
         this.saveToStorage()
         this.redrawStamps(pageNum)
+
+        // Green flash + haptic on placement (not for move or erase)
+        if (!isMovingExisting) {
+          const pageEl = this.container.querySelector(`.page-container[data-page="${pageNum}"]`)
+          if (pageEl) {
+            pageEl.classList.remove('stamp-placed-flash')
+            void pageEl.offsetWidth // force reflow to restart animation
+            pageEl.classList.add('stamp-placed-flash')
+          }
+          if (navigator.vibrate) navigator.vibrate(30)
+        }
       }
       isInteracting = false
       isMovingExisting = false
@@ -1984,15 +2012,36 @@ class ScoreFlow {
       this.updateActiveTools()
     }
 
-    // 2. Category Selection Ribbon (Persistent Pills - forScore Style)
+    // 2a. iPad 3×3 Numeric Group Keypad (touch devices only)
+    const isTouch = window.matchMedia('(pointer: coarse)').matches
+    if (isTouch) {
+      const numpad = document.createElement("div")
+      numpad.className = "group-numpad"
+      this.toolsets.forEach(group => {
+        const isActive = this.activeCategories.includes(group.name) && this.activeCategories.length === 1
+        const btn = document.createElement("button")
+        btn.className = `numpad-group-btn ${isActive ? "active" : ""}`
+        btn.innerHTML = `<span class="ng-num">${group.num}</span><span class="ng-name">${group.displayName || group.name}</span>`
+        btn.onclick = (e) => { e.stopPropagation(); this.selectGroup(group.name) }
+        numpad.appendChild(btn)
+      })
+      // 9th cell placeholder so grid aligns
+      const placeholder = document.createElement("div")
+      numpad.appendChild(placeholder)
+      header.appendChild(numpad)
+    }
+
+    // 2b. Category Selection Ribbon (Persistent Pills - forScore Style)
     const ribbon = document.createElement("div")
     ribbon.className = "category-ribbon"
 
     this.toolsets.forEach(group => {
       const isActive = this.activeCategories.includes(group.name)
+      const displayName = group.displayName || group.name
       const pill = document.createElement("button")
       pill.className = `cat-pill ${isActive ? "active" : ""}`
-      pill.textContent = group.name
+      pill.dataset.tooltip = `${displayName}: ${group.num} / ${group.letter}`
+      pill.innerHTML = `<span class="pill-name">${displayName}</span><span class="pill-shortcut">${group.num} · ${group.letter}</span>`
       pill.onclick = (e) => {
         e.stopPropagation()
         if (isActive) {
@@ -2007,7 +2056,6 @@ class ScoreFlow {
       ribbon.appendChild(pill)
     })
 
-    header.appendChild(handle)
     header.appendChild(ribbon)
     this.activeToolsContainer.appendChild(header)
 
@@ -2077,6 +2125,14 @@ class ScoreFlow {
         this.activeToolsContainer.style.overflowY = "hidden" // Ensure no scrollbars ever show
       }
     }, 0)
+  }
+
+  selectGroup(groupName) {
+    this.activeCategories = [groupName]
+    const group = this.toolsets.find(g => g.name === groupName)
+    const lastTool = this.lastUsedToolPerCategory[groupName] || group?.tools[0]?.id
+    if (lastTool) this.activeStampType = lastTool
+    this.updateActiveTools()
   }
 
   getIcon(tool, size = 24) {
@@ -3690,6 +3746,23 @@ class ScoreFlow {
       ruler.style.display = this.rulerVisible ? 'block' : ''
     }
     if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
+  }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen().catch(() => {})
+    }
+  }
+
+  _onFullscreenChange() {
+    const isFs = !!document.fullscreenElement
+    if (this.btnFullscreen) this.btnFullscreen.classList.toggle('active', isFs)
+    const enterIcon = document.getElementById('icon-fullscreen-enter')
+    const exitIcon = document.getElementById('icon-fullscreen-exit')
+    if (enterIcon) enterIcon.style.display = isFs ? 'none' : ''
+    if (exitIcon) exitIcon.style.display = isFs ? '' : 'none'
   }
 
   showProjectRepertoire() {
