@@ -32,6 +32,8 @@ body {
   color: var(--text-main);
   overflow: hidden;
   line-height: 1.5;
+  /* Prevent iOS Safari pull-to-refresh and overscroll bounce */
+  overscroll-behavior: none;
 }
 
 #app {
@@ -51,11 +53,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 0;
-  padding-left: 24px;
-  /* Space for the Jump Ruler */
+  padding: 0;
   scroll-behavior: smooth;
   transition: padding-right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  overscroll-behavior: contain;
 }
 
 /* Floating Document Control Bar */
@@ -123,6 +124,35 @@ body {
   border-color: var(--primary);
 }
 
+/* CSS Tooltips for doc-bar buttons */
+.zoom-btn-mini[data-tooltip] {
+  position: relative;
+}
+.zoom-btn-mini[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 30, 0.88);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 9999;
+}
+.zoom-btn-mini[data-tooltip]:hover::after {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .zoom-btn-mini[data-tooltip]::after { display: none; }
+}
+
 #zoom-level {
   font-size: 0.85rem;
   font-weight: 700;
@@ -148,9 +178,8 @@ body {
 
 .page-container {
   position: relative;
-  margin-bottom: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   background: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
 }
 
 .pdf-canvas {
@@ -169,16 +198,15 @@ body {
 /* Jump Line Indicator & Ruler (Word-style) */
 .jump-ruler {
   position: fixed;
-  left: 0;
+  left: 0; /* overridden by JS to align with PDF page left edge */
   top: 0;
   bottom: 0;
-  width: 24px;
-  background: var(--bg-card);
-  border-right: 1px solid var(--border);
+  width: 28px;
+  background: white;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
   z-index: 1000;
   display: block;
   pointer-events: none;
-  /* Let the track be transparent to scroll if necessary, though it's on the edge */
 }
 
 .jump-ruler.hidden {
@@ -211,14 +239,32 @@ body {
 .ruler-anchor-mark {
   position: absolute;
   left: 4px;
-  /* Slight inset */
   width: 16px;
   height: 3px;
   background-color: #3b82f6;
-  /* Anchor blue */
   border-radius: 2px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   transform: translateY(-50%);
+  transition: top 0.1s linear;
+}
+
+.ruler-anchor-mark.ruler-next-target {
+  left: 2px;
+  width: 20px;
+  height: 5px;
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+}
+
+.ruler-fallback-mark {
+  position: absolute;
+  left: 2px;
+  width: 20px;
+  height: 3px;
+  background-color: #10b981;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
   transition: top 0.1s linear;
 }
 
@@ -410,9 +456,9 @@ body {
 /* The Horizontal Beam */
 .jump-line-beam {
   position: absolute;
-  left: 24px;
+  left: 28px;
   top: -1px;
-  width: 100%;
+  width: 100vw; /* overridden by JS to match PDF page width */
   height: 1px;
   background-color: rgba(99, 102, 241, 0.6);
   border-bottom: 1px dashed rgba(99, 102, 241, 0.9);
@@ -1923,6 +1969,14 @@ kbd {
 }
 
 /* Interaction Mode Cursors */
+#viewer-container[data-active-tool="view"] .capture-overlay {
+  cursor: grab;
+}
+
+#viewer-container[data-active-tool="view"] .capture-overlay:active {
+  cursor: grabbing;
+}
+
 #viewer-container[data-active-tool="select"] .capture-overlay {
   cursor: default;
 }

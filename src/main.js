@@ -14,6 +14,8 @@ class ScoreFlow {
     // Professional Layer Presets
     this.layers = [...INITIAL_LAYERS]
     this.stamps = []
+    this.nextTargetAnchor = null
+    this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
     this.activeCategories = ['Edit', 'Pens', 'Bowing', 'Fingering', 'Articulation', 'Tempo', 'Dynamic', 'Anchor']
@@ -89,6 +91,8 @@ class ScoreFlow {
     this.zoomInBtn = document.getElementById('zoom-in')
     this.zoomOutBtn = document.getElementById('zoom-out')
     this.zoomLevelDisplay = document.getElementById('zoom-level')
+    this.btnFitWidth = document.getElementById('btn-fit-width')
+    this.btnFitHeight = document.getElementById('btn-fit-height')
     this.clearStampsBtn = document.getElementById('clear-stamps-btn')
     this.lockSidebarBtn = document.getElementById('lock-sidebar')
     this.shortcutsModal = document.getElementById('shortcuts-modal')
@@ -176,6 +180,7 @@ class ScoreFlow {
     // Jump & Mode UI
     this.btnJumpHead = document.getElementById('btn-jump-head')
     this.btnJumpEnd = document.getElementById('btn-jump-end')
+    this.btnRulerToggle = document.getElementById('btn-ruler-toggle')
     this.btnModeAnchor = document.getElementById('btn-mode-anchor')
     this.btnModeSelect = document.getElementById('btn-mode-select')
     this.btnModeEraser = document.getElementById('btn-mode-eraser')
@@ -209,6 +214,11 @@ class ScoreFlow {
     this.dialogIcon = document.getElementById('dialog-icon')
     this.dialogActions = document.getElementById('dialog-actions')
     this.closeDialogBtn = document.getElementById('close-dialog')
+
+    // Wire CSS tooltips from title attributes on all doc-bar buttons
+    document.querySelectorAll('.zoom-btn-mini[title]').forEach(btn => {
+      btn.dataset.tooltip = btn.title
+    })
   }
 
   initEventListeners() {
@@ -367,6 +377,12 @@ class ScoreFlow {
     if (this.zoomOutBtn) {
       this.zoomOutBtn.addEventListener('click', () => this.changeZoom(-0.1))
     }
+    if (this.btnFitWidth) {
+      this.btnFitWidth.addEventListener('click', () => this.fitToWidth())
+    }
+    if (this.btnFitHeight) {
+      this.btnFitHeight.addEventListener('click', () => this.fitToHeight())
+    }
 
     if (this.closeShortcutsBtn) {
       this.closeShortcutsBtn.addEventListener('click', () => this.toggleShortcuts(false))
@@ -438,6 +454,7 @@ class ScoreFlow {
     // Navigation (Jump) Actions
     if (this.btnJumpHead) this.btnJumpHead.onclick = () => this.goToHead()
     if (this.btnJumpEnd) this.btnJumpEnd.onclick = () => this.goToEnd()
+    if (this.btnRulerToggle) this.btnRulerToggle.addEventListener('click', () => this.toggleRuler())
 
     // Quick Mode Actions
     if (this.btnModeSelect) {
@@ -593,6 +610,9 @@ class ScoreFlow {
         this.activeStampType = this.activeStampType === 'anchor' ? 'view' : 'anchor'
         this.updateActiveTools()
       }
+      if (e.key.toLowerCase() === 'r') {
+        this.toggleRuler()
+      }
 
       // Esc: close all + return to view mode
       if (e.key === 'Escape') {
@@ -608,6 +628,12 @@ class ScoreFlow {
       }
       if (e.key === '-') {
         this.changeZoom(-0.1)
+      }
+      if (e.key.toLowerCase() === 'w') {
+        this.fitToWidth()
+      }
+      if (e.key.toLowerCase() === 'f') {
+        this.fitToHeight()
       }
 
       // Delete/Backspace for Focused Stamp
@@ -682,8 +708,8 @@ class ScoreFlow {
 
     // Handle responsiveness/resizing
     window.addEventListener('resize', () => {
-      // Debounced resize would be better but let's keep it simple
       if (this.pdf) this.renderPDF()
+      else this.updateRulerPosition()
     })
 
     // iPad Swipe Gesture: swipe up = next anchor, swipe down = prev anchor
@@ -713,6 +739,20 @@ class ScoreFlow {
         if (!scrollTicking) {
           window.requestAnimationFrame(() => {
             this.updateRulerMarks()
+            this.updateRulerClip()
+            this.computeNextTarget()
+            // Redraw visible pages so anchor colors update in real-time
+            if (this.pdf) {
+              for (let i = 1; i <= this.pdf.numPages; i++) {
+                const pageElem = document.querySelector(`.page-container[data-page="${i}"]`)
+                if (pageElem) {
+                  const rect = pageElem.getBoundingClientRect()
+                  if (rect.bottom > 0 && rect.top < window.innerHeight) {
+                    this.redrawStamps(i)
+                  }
+                }
+              }
+            }
             scrollTicking = false
           })
           scrollTicking = true
@@ -805,6 +845,8 @@ class ScoreFlow {
     console.log(`PDF loaded successfully. Pages: ${this.pdf.numPages}, Fingerprint: ${newFingerprint.slice(0, 8)}...`)
     await this.renderPDF()
     this.updateJumpLinePosition()
+    this.updateRulerPosition()
+    this.updateRulerClip()
     this.updateRulerMarks()
     this.showMainUI()
   }
@@ -839,6 +881,36 @@ class ScoreFlow {
     this.scale = Math.min(Math.max(0.5, this.scale + delta), 4)
     this.updateZoomDisplay()
     if (this.pdf) await this.renderPDF()
+    this.updateRulerPosition()
+    this.computeNextTarget()
+    this.updateRulerMarks()
+  }
+
+  async fitToWidth() {
+    if (!this.pdf) return
+    const page = await this.pdf.getPage(1)
+    const naturalWidth = page.getViewport({ scale: 1 }).width
+    const rulerW = this.rulerVisible ? (parseInt(getComputedStyle(document.getElementById('jump-ruler')).width) || 28) : 0
+    const availW = this.viewer.clientWidth - rulerW - 8 // 8px breathing room
+    this.scale = Math.min(Math.max(0.5, availW / naturalWidth), 4)
+    this.updateZoomDisplay()
+    await this.renderPDF()
+    this.updateRulerPosition()
+    this.computeNextTarget()
+    this.updateRulerMarks()
+  }
+
+  async fitToHeight() {
+    if (!this.pdf) return
+    const page = await this.pdf.getPage(1)
+    const naturalHeight = page.getViewport({ scale: 1 }).height
+    const availH = this.viewer.clientHeight - 16 // 16px breathing room
+    this.scale = Math.min(Math.max(0.5, availH / naturalHeight), 4)
+    this.updateZoomDisplay()
+    await this.renderPDF()
+    this.updateRulerPosition()
+    this.computeNextTarget()
+    this.updateRulerMarks()
   }
 
   updateZoomDisplay() {
@@ -872,7 +944,6 @@ class ScoreFlow {
       this.createAnnotationLayers(pageWrapper, i, viewport.width, viewport.height)
       this.createCaptureOverlay(pageWrapper, i, viewport.width, viewport.height)
       this.redrawStamps(i)
-      this.drawPageEndAnchor(i, viewport.width, viewport.height)
     }
   }
 
@@ -886,6 +957,7 @@ class ScoreFlow {
     let isInteracting = false
     let activeObject = null // Can be a new path or an existing stamp being moved
     let isMovingExisting = false
+    let isPanning = false
     this.hoveredStamp = null
     this.selectHoveredStamp = null // Separate hover state for Select mode
 
@@ -903,8 +975,31 @@ class ScoreFlow {
       const pos = getPos(e)
       const toolType = this.activeStampType
 
-      // View mode: no editing, let browser handle scroll/touch freely
-      if (toolType === 'view') return
+      // View mode: drag-to-pan (mouse only; touch uses native scroll)
+      if (toolType === 'view') {
+        if (e.type !== 'touchstart') {
+          isPanning = true
+          const startX = e.clientX, startY = e.clientY
+          const startScrollTop = this.viewer.scrollTop
+          const startScrollLeft = this.viewer.scrollLeft
+          overlay.style.cursor = 'grabbing'
+          e.preventDefault()
+          const doPan = (ev) => {
+            if (!isPanning) return
+            this.viewer.scrollTop = startScrollTop - (ev.clientY - startY)
+            this.viewer.scrollLeft = startScrollLeft - (ev.clientX - startX)
+          }
+          const stopPan = () => {
+            isPanning = false
+            overlay.style.cursor = ''
+            window.removeEventListener('mousemove', doPan)
+            window.removeEventListener('mouseup', stopPan)
+          }
+          window.addEventListener('mousemove', doPan)
+          window.addEventListener('mouseup', stopPan)
+        }
+        return
+      }
 
       // Allow multi-touch gestures (like 2-finger scroll/zoom) to pass through to the browser
       if (e.type === 'touchstart' && e.touches && e.touches.length > 1) {
@@ -1758,15 +1853,18 @@ class ScoreFlow {
               ctx.fillText(line, x, y + (i * lineHeight))
             })
           } else if (d.variant === 'measure') {
-            ctx.font = `bold ${16 * (this.scale / 1.5)}px Outfit`
-            // Semi-transparent rounded box background
-            ctx.fillStyle = isHovered ? '#1e293b' : '#334155'
+            const s = this.scale / 1.5
+            const bw = 22 * s, bh = 18 * s
+            const bx = x - bw / 2, by = y - bh / 2
+            // Outline-only box (no fill)
+            ctx.strokeStyle = isHovered ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.25)'
+            ctx.lineWidth = 0.8
             ctx.beginPath()
-            ctx.roundRect(x - (12 * (this.scale / 1.5)), y - (12 * (this.scale / 1.5)), 24 * (this.scale / 1.5), 24 * (this.scale / 1.5), 4)
-            ctx.fill()
-
-            // Text 
-            ctx.fillStyle = '#f59e0b'
+            ctx.roundRect(bx, by, bw, bh, 3)
+            ctx.stroke()
+            // Light text
+            ctx.font = `500 ${13 * s}px Outfit`
+            ctx.fillStyle = isHovered ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.35)'
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
             ctx.fillText(stamp.data || '#', x, y)
@@ -1790,8 +1888,9 @@ class ScoreFlow {
             ctx.arc(x, y, fSize, Math.PI, 0); ctx.stroke()
             ctx.beginPath(); ctx.arc(x, y - fSize * 0.3, fSize * 0.15, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
           } else if (d.variant === 'anchor') {
-            const isDefault = stamp.isDefault
-            const aColor = isDefault ? '#3b82f6' : color
+            const isNextTarget = stamp === this.nextTargetAnchor
+            const aColor = isNextTarget ? color : '#94a3b8'
+            if (!isNextTarget) ctx.globalAlpha *= 0.35
             ctx.fillStyle = aColor
             ctx.strokeStyle = aColor
             // 圓點 (頂部)
@@ -1934,6 +2033,7 @@ class ScoreFlow {
         const btn = document.createElement("button")
         btn.className = `stamp-tool ${this.activeStampType === tool.id ? "active" : ""}`
         btn.title = tool.label
+        btn.dataset.tooltip = tool.label
         btn.innerHTML = this.getIcon(tool, 26)
         btn.onclick = (e) => {
           e.stopPropagation()
@@ -2266,6 +2366,7 @@ class ScoreFlow {
   }
 
   updateRulerMarks() {
+    this.computeNextTarget()
     const marksContainer = document.getElementById('ruler-marks')
     if (!marksContainer) return
 
@@ -2285,7 +2386,8 @@ class ScoreFlow {
         if (absY > -200 && absY < viewportHeight + 200) {
           const mark = document.createElement('div')
           if (stamp.type === 'anchor') {
-            mark.className = 'ruler-anchor-mark'
+            const isNextTarget = stamp === this.nextTargetAnchor
+            mark.className = isNextTarget ? 'ruler-anchor-mark ruler-next-target' : 'ruler-anchor-mark'
           } else if (stamp.type === 'measure') {
             mark.className = 'ruler-measure-mark'
             mark.textContent = stamp.data
@@ -2295,78 +2397,99 @@ class ScoreFlow {
         }
       }
     })
+
+    // If no user anchor is the next target, show the system fallback marker
+    if (this.viewer && !this.nextTargetAnchor) {
+      const fallbackY = this.viewer.clientHeight - this.jumpOffsetPx
+      const fallback = document.createElement('div')
+      fallback.className = 'ruler-fallback-mark'
+      fallback.style.top = `${fallbackY}px`
+      marksContainer.appendChild(fallback)
+    }
   }
 
   jump(direction) {
-    const pageEndAnchors = []
-    if (this.pdf) {
-      for (let i = 1; i <= this.pdf.numPages; i++) {
-        const pageElem = document.querySelector(`.page-container[data-page="${i}"]`)
-        if (pageElem) {
-          const canvas = pageElem.querySelector('.pdf-canvas')
-          // Position at the very bottom of the page
-          const absoluteY = pageElem.offsetTop + canvas.height
-          pageEndAnchors.push({ page: i, type: 'anchor', y: 1, absoluteY, isDefault: true })
-        }
-      }
-    }
+    const currentScroll = this.viewer.scrollTop
+    const viewportHeight = this.viewer.clientHeight
+    const viewportCenter = currentScroll + viewportHeight / 2
+    const currentFocusY = currentScroll + this.jumpOffsetPx
 
-    const userAnchors = this.stamps
+    const resolveAnchors = () => this.stamps
       .filter(s => s.type === 'anchor')
       .map(s => {
         const pageElem = document.querySelector(`.page-container[data-page="${s.page}"]`)
         if (!pageElem) return null
         const canvas = pageElem.querySelector('.pdf-canvas')
         const absoluteY = pageElem.offsetTop + (s.y * canvas.height)
-        return { ...s, absoluteY, isDefault: false }
+        return { stamp: s, absoluteY }
       })
       .filter(a => a !== null)
 
-    const allAnchors = [
-      { absoluteY: 0, type: 'anchor', isStart: true },
-      ...pageEndAnchors,
-      ...userAnchors
-    ].sort((a, b) => a.absoluteY - b.absoluteY)
-
-    // Deduplicate for navigation: skip user anchors within 1/3 page of the previous kept anchor
-    const allCanvases = document.querySelectorAll('.page-container .pdf-canvas')
-    const avgPageH = allCanvases.length
-      ? Array.from(allCanvases).reduce((s, c) => s + c.height, 0) / allCanvases.length
-      : 600
-    const dedupeThreshold = avgPageH * 0.333
-    const navAnchors = allAnchors.reduce((kept, a) => {
-      if (kept.length === 0 || a.absoluteY - kept[kept.length - 1].absoluteY > dedupeThreshold) {
-        kept.push(a)
-      }
-      return kept
-    }, [])
-
-    const currentScroll = this.viewer.scrollTop
-    const currentFocusY = currentScroll + this.jumpOffsetPx
-    const viewportHeight = this.viewer.clientHeight
-
-    let target = null
+    let targetY = null
 
     if (direction === 1) {
-      target = navAnchors.find(a => a.absoluteY > currentFocusY + 10)
+      // Forward: pick user anchor closest to viewport center, ahead of focus
+      const candidates = resolveAnchors().filter(a => a.absoluteY > currentFocusY + 10)
 
-      // If no anchor found ahead, create a dynamic one at the bottom of the viewport
-      if (!target) {
-        const dynamicY = currentScroll + viewportHeight - 50 // 50px safety margin
-        target = { absoluteY: dynamicY, type: 'dynamic', isDynamic: true }
-        this.showDynamicIndicator(dynamicY)
+      if (candidates.length > 0) {
+        candidates.sort((a, b) =>
+          Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter)
+        )
+        targetY = candidates[0].absoluteY
+      } else {
+        // Fallback: first unshown content, offset same as target line from bottom
+        targetY = currentScroll + viewportHeight - this.jumpOffsetPx
       }
     } else {
-      target = [...navAnchors].reverse().find(a => a.absoluteY < currentFocusY - 10)
+      // Backward: nearest anchor above the current scroll top (allows re-visiting current anchor)
+      const behind = resolveAnchors()
+        .filter(a => a.absoluteY < currentScroll + 20)
+        .sort((a, b) => b.absoluteY - a.absoluteY)
+      if (behind.length > 0) {
+        targetY = behind[0].absoluteY
+      } else {
+        // Fallback: scroll back by same step as forward (viewportHeight - 2×jumpOffsetPx)
+        // scrollTo.top = targetY - jumpOffsetPx → need targetY = currentScroll - viewportHeight + 3×jumpOffsetPx
+        targetY = Math.max(this.jumpOffsetPx, currentScroll - viewportHeight + 3 * this.jumpOffsetPx)
+      }
     }
 
-    if (target) {
-      const targetScroll = target.absoluteY - this.jumpOffsetPx
+    if (targetY !== null) {
       this.viewer.scrollTo({
-        top: Math.max(0, targetScroll),
+        top: Math.max(0, targetY - this.jumpOffsetPx),
         behavior: 'smooth'
       })
     }
+  }
+
+  computeNextTarget() {
+    if (!this.pdf || !this.viewer) { this.nextTargetAnchor = null; return }
+
+    const currentScroll = this.viewer.scrollTop
+    const viewportHeight = this.viewer.clientHeight
+    const viewportCenter = currentScroll + viewportHeight / 2
+    const currentFocusY = currentScroll + this.jumpOffsetPx
+
+    const candidates = this.stamps
+      .filter(s => s.type === 'anchor')
+      .map(s => {
+        const pageElem = document.querySelector(`.page-container[data-page="${s.page}"]`)
+        if (!pageElem) return null
+        const canvas = pageElem.querySelector('.pdf-canvas')
+        const absoluteY = pageElem.offsetTop + (s.y * canvas.height)
+        return { stamp: s, absoluteY }
+      })
+      .filter(a => a !== null && a.absoluteY > currentFocusY + 10)
+
+    if (candidates.length === 0) {
+      this.nextTargetAnchor = null
+      return
+    }
+
+    candidates.sort((a, b) =>
+      Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter)
+    )
+    this.nextTargetAnchor = candidates[0].stamp
   }
 
   showDynamicIndicator(absoluteY) {
@@ -2379,11 +2502,48 @@ class ScoreFlow {
   }
 
   updateJumpLinePosition() {
-    // The jumpLine actually refers to the indicator handle + beam inside the ruler now
     const indicator = document.getElementById('jump-line')
     if (indicator) {
       indicator.style.top = `${this.jumpOffsetPx}px`
     }
+  }
+
+  updateRulerPosition() {
+    const ruler = document.getElementById('jump-ruler')
+    if (!ruler) return
+    const firstPage = document.querySelector('.page-container')
+    if (!firstPage) return
+    const pageRect = firstPage.getBoundingClientRect()
+    // Use CSS width directly — offsetWidth returns 0 when ruler is hidden (display:none)
+    const rulerW = parseInt(getComputedStyle(ruler).getPropertyValue('width')) || 28
+    // Ruler right edge flush with PDF left edge — sits entirely outside PDF
+    ruler.style.left = `${Math.max(0, pageRect.left - rulerW)}px`
+    // Beam spans the full PDF width from PDF left edge
+    const beam = ruler.querySelector('.jump-line-beam')
+    if (beam) beam.style.width = `${pageRect.width}px`
+    this.updateRulerClip()
+  }
+
+  updateRulerClip() {
+    const ruler = document.getElementById('jump-ruler')
+    if (!ruler || !this.pdf) {
+      if (ruler) { ruler.style.maskImage = ''; ruler.style.webkitMaskImage = '' }
+      return
+    }
+    const vh = window.innerHeight
+    const stops = ['transparent 0px']
+
+    document.querySelectorAll('.page-container').forEach(page => {
+      const rect = page.getBoundingClientRect()
+      if (rect.bottom <= 0 || rect.top >= vh) return
+      const topY = Math.max(0, rect.top)
+      const bottomY = Math.min(vh, rect.bottom)
+      stops.push(`transparent ${topY}px`, `black ${topY}px`, `black ${bottomY}px`, `transparent ${bottomY}px`)
+    })
+
+    const mask = `linear-gradient(to bottom, ${stops.join(', ')})`
+    ruler.style.maskImage = mask
+    ruler.style.webkitMaskImage = mask
   }
 
   saveToStorage() {
@@ -3484,6 +3644,13 @@ class ScoreFlow {
       if (this.container) this.container.innerHTML = ''
       if (this.layerShelf) this.layerShelf.classList.remove('active')
       if (this.sidebar) this.sidebar.classList.remove('open')
+      if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
+
+      // Hide all main-UI elements that showMainUI() revealed
+      ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
+        const el = document.getElementById(id)
+        if (el) el.classList.add('hidden')
+      })
 
       this.checkInitialView()
     }
@@ -3496,14 +3663,33 @@ class ScoreFlow {
 
   showMainUI() {
     // Reveal toolbars once a score is loaded
-    const ids = ['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab']
-    ids.forEach(id => {
+    ;['sidebar-trigger', 'floating-doc-bar', 'layer-toggle-fab'].forEach(id => {
       const el = document.getElementById(id)
-      if (el) {
-        el.classList.remove('hidden')
-        if (id === 'jump-ruler') el.style.display = 'block'
-      }
+      if (el) el.classList.remove('hidden')
     })
+    // Ruler respects the saved toggle state
+    const ruler = document.getElementById('jump-ruler')
+    if (ruler) {
+      if (this.rulerVisible) {
+        ruler.classList.remove('hidden')
+        ruler.style.display = 'block'
+      } else {
+        ruler.classList.add('hidden')
+        ruler.style.display = ''
+      }
+    }
+    if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
+  }
+
+  toggleRuler() {
+    this.rulerVisible = !this.rulerVisible
+    localStorage.setItem('scoreflow_ruler_visible', this.rulerVisible)
+    const ruler = document.getElementById('jump-ruler')
+    if (ruler) {
+      ruler.classList.toggle('hidden', !this.rulerVisible)
+      ruler.style.display = this.rulerVisible ? 'block' : ''
+    }
+    if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
   }
 
   showProjectRepertoire() {
