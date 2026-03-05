@@ -169,24 +169,8 @@
             <line x1="12" y1="22.08" x2="12" y2="12" />
           </svg>
         </button>
-
-      <!-- Stamp Palette Panel (merged into doc bar) -->
-      <div id="active-tools-container" class="floating-stamp-bar">
-        <!-- Dynamically populated by JS -->
       </div>
 
-      </div>
-
-      <!-- Visual Jump Line Indicator & Ruler -->
-      <div id="jump-ruler" class="jump-ruler hidden">
-        <div class="ruler-track"></div>
-        <div id="ruler-marks" class="ruler-marks"></div>
-        <div id="jump-line" class="jump-line-indicator">
-          <div class="jump-line-handle"></div>
-          <div class="jump-line-beam"></div>
-          <span class="jump-line-label">Target</span>
-        </div>
-      </div>
       <!-- PDF Pages will be rendered here -->
       <div id="pdf-viewer" class="pdf-viewer">
         <div class="welcome-screen">
@@ -331,8 +315,24 @@
           </div>
         </div>
       </div>
+    </main>
+
+    <!-- Global Floating UI elements (Highest Level) -->
+    <div id="active-tools-container" class="floating-stamp-bar">
+      <!-- Dynamically populated by JS -->
+    </div>
+
+    <!-- Visual Jump Line Indicator & Ruler -->
+    <div id="jump-ruler" class="jump-ruler hidden">
+      <div class="ruler-track"></div>
+      <div id="ruler-marks" class="ruler-marks"></div>
+      <div id="jump-line" class="jump-line-indicator">
+        <div class="jump-line-handle"></div>
+        <div class="jump-line-beam"></div>
+        <span class="jump-line-label">Target</span>
+      </div>
+    </div>
   </div>
-  </main>
 
   <aside id="sidebar" class="sidebar">
     <div id="sidebar-resizer" class="sidebar-resizer"></div>
@@ -515,25 +515,6 @@
 
           <div class="tab-divider"></div>
           <div class="tab-section-label">Jump Interaction</div>
-
-          <div class="setting-item mb-15">
-            <div class="flex-row-center-between">
-              <label class="setting-label">Enable Navigation Mascot 🐒</label>
-              <label class="switch-mini">
-                <input type="checkbox" id="monkey-enabled" checked>
-                <span class="slider-round"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="setting-item mb-15">
-            <label class="setting-label">Jump Animation Speed</label>
-            <div class="flex-row-center gap-10 mt-5">
-              <input type="range" id="jump-speed" min="100" max="1000" step="50" value="400" class="mini-slider flex-1"
-                title="Adjust how fast the page scrolls during a jump">
-              <span id="jump-speed-value" class="text-mini min-w-40">400ms</span>
-            </div>
-          </div>
 
           <div class="setting-item">
             <label class="setting-label">Anchor Auto-scroll Offset</label>

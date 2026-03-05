@@ -314,19 +314,8 @@ class ScoreFlow {
     this.jumpLine = document.getElementById('jump-line')
     this.jumpOffsetInput = document.getElementById('jump-offset')
     this.jumpOffsetValue = document.getElementById('jump-offset-value')
-    this.monkeyEnabledInput = document.getElementById('monkey-enabled')
-    this.jumpSpeedInput = document.getElementById('jump-speed')
-    this.jumpSpeedValue = document.getElementById('jump-speed-value')
     this.docBar = document.getElementById('floating-doc-bar')
 
-    this.monkeyEnabled = localStorage.getItem('scoreflow_monkey_enabled') !== 'false'
-    this.jumpSpeed = parseInt(localStorage.getItem('scoreflow_jump_speed')) || 400
-
-    if (this.monkeyEnabledInput) this.monkeyEnabledInput.checked = this.monkeyEnabled
-    if (this.jumpSpeedInput) {
-      this.jumpSpeedInput.value = this.jumpSpeed
-      if (this.jumpSpeedValue) this.jumpSpeedValue.textContent = `${this.jumpSpeed}ms`
-    }
     this.exportBtn = document.getElementById('export-btn')
     this.importBtn = document.getElementById('import-btn')
     this.importFileInput = document.getElementById('import-file')
@@ -770,25 +759,6 @@ class ScoreFlow {
       })
     }
 
-    if (this.monkeyEnabledInput) {
-      this.monkeyEnabledInput.addEventListener('change', (e) => {
-        this.monkeyEnabled = e.target.checked
-        localStorage.setItem('scoreflow_monkey_enabled', this.monkeyEnabled)
-        if (!this.monkeyEnabled) {
-          const existing = document.querySelector('.ruler-monkey')
-          if (existing) existing.remove()
-        }
-      })
-    }
-
-    if (this.jumpSpeedInput) {
-      this.jumpSpeedInput.addEventListener('input', (e) => {
-        this.jumpSpeed = parseInt(e.target.value)
-        if (this.jumpSpeedValue) this.jumpSpeedValue.textContent = `${this.jumpSpeed}ms`
-        localStorage.setItem('scoreflow_jump_speed', this.jumpSpeed)
-      })
-    }
-
     // Draggable Jump Line Indicator
     const handle = document.querySelector('.jump-line-handle')
     if (handle) {
@@ -932,11 +902,17 @@ class ScoreFlow {
       if (e.key.toLowerCase() === 'g') {
         this.toggleFullscreen()
       }
+      // Stamp Palette Toggle
+      if (e.key.toLowerCase() === 't') {
+        this.activeToolsContainer.classList.toggle('expanded')
+        this.updateActiveTools()
+      }
 
       // Esc: close all + return to view mode
       if (e.key === 'Escape') {
         this.toggleShortcuts(false)
         this.sidebar.classList.remove('open')
+        this.activeToolsContainer.classList.remove('expanded')
         this.activeStampType = 'view'
         this.updateActiveTools()
       }
@@ -3050,11 +3026,7 @@ class ScoreFlow {
     const dragEnd = () => {
       if (!isDragging) return
       isDragging = false
-      // Only collapse if the user tapped (didn't drag)
-      if (!didMove) {
-        el.classList.remove("expanded")
-        this.updateActiveTools()
-      } else {
+      if (didMove) {
         // Persist panel position across sessions
         localStorage.setItem('scoreflow_stamp_panel_pos', JSON.stringify({ x: xOffset, y: yOffset }))
       }
@@ -3207,30 +3179,6 @@ class ScoreFlow {
     }
   }
 
-  animatedScrollTo(targetTop, duration) {
-    const start = this.viewer.scrollTop
-    const change = targetTop - start
-    const startTime = performance.now()
-
-    const animateScroll = (currentTime) => {
-      const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      
-      // Easing: easeInOutQuad
-      const ease = progress < 0.5 
-        ? 2 * progress * progress 
-        : -1 + (4 - 2 * progress) * progress
-
-      this.viewer.scrollTop = start + change * ease
-
-      if (progress < 1) {
-        requestAnimationFrame(animateScroll)
-      }
-    }
-
-    requestAnimationFrame(animateScroll)
-  }
-
   jump(direction) {
     const currentScroll = this.viewer.scrollTop
     const viewportHeight = this.viewer.clientHeight
@@ -3252,16 +3200,21 @@ class ScoreFlow {
     let targetY = null
 
     if (direction === 1) {
+      // Forward: pick user anchor closest to viewport center, ahead of focus, within range
       const maxForwardRange = currentFocusY + jumpStep + 100
       const candidates = resolveAnchors().filter(a => a.absoluteY > currentFocusY + 10 && a.absoluteY < maxForwardRange)
 
       if (candidates.length > 0) {
-        candidates.sort((a, b) => Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter))
+        candidates.sort((a, b) =>
+          Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter)
+        )
         targetY = candidates[0].absoluteY
       } else {
+        // Fallback: move forward by one standardized jump step
         targetY = currentScroll + viewportHeight - this.jumpOffsetPx
       }
     } else {
+      // Backward: nearest anchor above the current scroll top, within range
       const minBackwardRange = currentScroll - jumpStep - 100
       const behind = resolveAnchors()
         .filter(a => a.absoluteY < currentScroll + 20 && a.absoluteY > minBackwardRange)
@@ -3270,78 +3223,17 @@ class ScoreFlow {
       if (behind.length > 0) {
         targetY = behind[0].absoluteY
       } else {
+        // Fallback: move backward by one standardized jump step
         targetY = Math.max(this.jumpOffsetPx, currentScroll - viewportHeight + 3 * this.jumpOffsetPx)
       }
     }
 
     if (targetY !== null) {
-      if (this.monkeyEnabled) {
-        // Correct visual start and end for the monkey
-        // startY is the anchor's CURRENT visual top
-        // focusLineY is where it will be AFTER the scroll
-        const focusLineY = targetY // This is where the anchor will end up relative to doc top
-        this.animateMonkey(targetY, focusLineY, direction)
-      }
-
-      this.animatedScrollTo(Math.max(0, targetY - this.jumpOffsetPx), this.jumpSpeed)
+      this.viewer.scrollTo({
+        top: Math.max(0, targetY - this.jumpOffsetPx),
+        behavior: 'smooth'
+      })
     }
-  }
-
-  animateMonkey(targetDocY, endDocY, direction) {
-    const ruler = document.getElementById('jump-ruler')
-    if (!ruler || this.rulerVisible === false) return
-
-    // Clear any existing monkey first
-    const existing = document.querySelectorAll('.ruler-monkey')
-    existing.forEach(m => m.remove())
-
-    const monkey = document.createElement('div')
-    monkey.className = 'ruler-monkey'
-    monkey.textContent = '🐒'
-
-    const focusLineViewportY = this.jumpOffsetPx
-    const getVisualY = (docY) => docY - this.viewer.scrollTop
-    
-    let startVisualY, endVisualY
-    const isForward = direction === 1
-
-    if (isForward) {
-      // Forward: Anchor moves from bottom UP to Focus Line
-      startVisualY = getVisualY(targetDocY)
-      endVisualY = focusLineViewportY
-    } else {
-      // Backward: Anchor moves from top DOWN to Focus Line
-      startVisualY = getVisualY(targetDocY)
-      endVisualY = focusLineViewportY
-    }
-
-    // Clip to screen
-    const clampedStart = Math.min(Math.max(0, startVisualY), window.innerHeight)
-    const clampedEnd = Math.min(Math.max(0, endVisualY), window.innerHeight)
-
-    monkey.style.top = `${clampedStart}px`
-    ruler.appendChild(monkey)
-
-    // Trigger transition
-    requestAnimationFrame(() => {
-      monkey.style.transition = `top ${this.jumpSpeed}ms cubic-bezier(0.165, 0.84, 0.44, 1)`
-      monkey.style.animation = isForward ? `monkey-climb ${this.jumpSpeed}ms infinite` : `monkey-jump-down ${this.jumpSpeed}ms ease-out`
-      
-      monkey.offsetHeight // force reflow
-      monkey.style.top = `${clampedEnd}px`
-
-      // On finish: change icon
-      setTimeout(() => {
-        monkey.style.animation = ''
-        if (isForward) {
-          monkey.textContent = '🍌'
-          monkey.classList.add('eating')
-        } else {
-          monkey.textContent = '🥥'
-          monkey.classList.add('holding')
-        }
-      }, this.jumpSpeed)
-    })
   }
 
   computeNextTarget() {
@@ -4060,7 +3952,7 @@ class ScoreFlow {
     if (!this.sharedList) return
     this.sharedList.innerHTML = '<div class="hub-loading">Scanning workspaces...</div>'
 
-    const communityData = []
+    let communityData = []
     const scanFolder = async (folder, typeLabel) => {
       if (!folder) return
       try {
@@ -4089,9 +3981,9 @@ class ScoreFlow {
 
     // Sort by timestamp (newest first)
     communityData.sort((a, b) => {
-      const timeA = new Date(a.id.split('_')[1] || 0)
-      const timeB = new Date(b.id.split('_')[1] || 0)
-      return b - a
+      const timeA = parseInt(a.id.split('_')[1] || 0)
+      const timeB = parseInt(b.id.split('_')[1] || 0)
+      return timeB - timeA
     })
 
     // Initial Mock Data if absolutely empty
@@ -4312,7 +4204,13 @@ class ScoreFlow {
       return
     }
 
-    // 2. Clear stage variables
+    // 2. If we are in a mission (library folder selected) but no score loaded yet
+    if (this.libraryFolderHandle) {
+      this.showProjectRepertoire()
+      return
+    }
+
+    // 3. Clear stage variables
     this.pendingMissionHandle = null
 
     // 3. Show Mission Hub (Stage 1)
@@ -4670,6 +4568,9 @@ class ScoreFlow {
   }
 
   showProjectRepertoire() {
+    const screen = document.querySelector('.welcome-screen')
+    if (screen) screen.classList.remove('hidden')
+
     // Hide all possible prior welcome views
     if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
     if (this.missionSelectionView) this.missionSelectionView.classList.add('hidden')
