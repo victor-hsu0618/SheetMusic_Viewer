@@ -6,7 +6,9 @@
 const CLIENT_ID = '481081864196-tsbrivsjhdtkp4rn9ffgkg19g2sh5r3a.apps.googleusercontent.com'
 const SCOPES = [
     'https://www.googleapis.com/auth/drive.file',      // files created / opened by this app
-    'https://www.googleapis.com/auth/drive.readonly'   // read any file the user selects
+    'https://www.googleapis.com/auth/drive.readonly',  // read any file the user selects
+    'email',                                           // show signed-in email
+    'profile'
 ].join(' ')
 
 let _tokenClient = null
@@ -92,7 +94,10 @@ export async function listPDFs(query = '', pageToken = null) {
     })
     if (pageToken) params.set('pageToken', pageToken)
     const res = await _fetch(`https://www.googleapis.com/drive/v3/files?${params}`)
-    if (!res.ok) throw new Error(`Drive list failed: ${res.status}`)
+    if (!res.ok) {
+        const body = await res.text().catch(() => '')
+        throw new Error(`${res.status} ${body}`)
+    }
     return res.json()
 }
 

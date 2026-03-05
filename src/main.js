@@ -265,7 +265,11 @@ class ScoreFlow {
       })
     } catch (e) {
       console.error('Drive list failed:', e)
-      list.innerHTML = '<div class="empty-state">Failed to load. Check connection.</div>'
+      const msg = e.message || String(e)
+      let hint = msg
+      if (msg.includes('403')) hint = '403 Forbidden — Please enable Google Drive API in Google Cloud Console, then try again.'
+      else if (msg.includes('401')) hint = '401 Unauthorized — Please disconnect and reconnect Google Drive.'
+      list.innerHTML = `<div class="empty-state" style="font-size:0.78rem;padding:16px 0;color:var(--text-muted)">${hint}</div>`
     }
   }
 
