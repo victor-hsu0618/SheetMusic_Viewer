@@ -193,19 +193,31 @@
             <!-- STAGE 1: Performance Mission Hub -->
             <div id="mission-selection-view" class="mission-selection-view">
               <div class="welcome-header">
-                <div class="welcome-icon">🎯</div>
-                <h2>Performance Missions</h2>
-                <p>Start a new ensemble project or resume a recent mission.</p>
+                <div class="welcome-icon">🎼</div>
+                <h2>ScoreFlow</h2>
               </div>
-              <div class="welcome-actions">
-                <button id="start-new-mission-btn" class="btn btn-primary start-btn mb-20">+ Start New Mission</button>
-                <div id="recent-missions-container" class="recent-missions-list mb-20">
-                  <!-- Recent Mission Cards (Folder + Role) -->
-                </div>
-                <div class="text-center mt-20">
-                  <button id="welcome-open-file-alt" class="btn btn-text-muted">Start Solo Session (PDF) →</button>
-                </div>
+              <div class="welcome-grid">
+                <button id="start-new-mission-btn" class="welcome-grid-card">
+                  <span class="wgc-icon">🚀</span>
+                  <span class="wgc-label">Start New Mission</span>
+                </button>
+                <button id="open-existing-mission-btn" class="welcome-grid-card">
+                  <span class="wgc-icon">📂</span>
+                  <span class="wgc-label">Open Existing Performance Mission</span>
+                </button>
+                <button id="welcome-open-file-alt" class="welcome-grid-card">
+                  <span class="wgc-icon">🎵</span>
+                  <span class="wgc-label">Start Solo Session</span>
+                </button>
+                <button id="welcome-demo-btn" class="welcome-grid-card">
+                  <span class="wgc-icon">▶</span>
+                  <span class="wgc-label">Try Demo Score</span>
+                </button>
               </div>
+              <!-- Recent missions shown when "Open Existing" is clicked -->
+              <div id="recent-missions-container" class="recent-missions-list hidden" style="margin-top:16px;width:100%"></div>
+              <!-- Recent solo scores shown when "Start Solo Session" is clicked -->
+              <div id="welcome-solo-panel" class="hidden" style="margin-top:16px;width:100%"></div>
             </div>
 
             <!-- STAGE 2: Mission Setup (Config & Identity) -->
@@ -396,9 +408,7 @@
             <input type="text" id="library-search" placeholder="Search repertoire..."
               title="Search for a score in your library" class="search-input-mini" />
           </div>
-          <button id="quick-load-menu-btn" class="btn btn-secondary btn-full mb-10">
-            🕒 Recent Scores...
-          </button>
+          <div id="recent-scores-inline" style="margin-bottom:10px"></div>
           <input type="file" id="pdf-upload" accept="application/pdf" title="Select a PDF score to open" hidden />
           <div id="library-scores-list" class="library-scores-list">
             <div class="empty-state">No scores in library yet.</div>

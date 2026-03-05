@@ -50,6 +50,7 @@ class ScoreFlow {
     this.renderLayerUI()
     this.updateActiveTools()
     this.loadFromStorage()
+    this.renderInlineRecentScores()
     this.updateZoomDisplay()
     this.updateJumpLinePosition()
     this.renderSourceUI()
@@ -127,6 +128,7 @@ class ScoreFlow {
     this.quickLoadMenuBtn = document.getElementById('quick-load-menu-btn')
     this.closeQuickLoadBtn = document.getElementById('close-quick-load-modal')
     this.recentScoresList = document.getElementById('recent-scores-list')
+    this.recentScoresInline = document.getElementById('recent-scores-inline')
     this.openNewSoloBtn = document.getElementById('open-new-solo-btn')
 
     // Welcome Screen Buttons
@@ -156,8 +158,11 @@ class ScoreFlow {
     this.missionSelectionView = document.getElementById('mission-selection-view')
     this.startMissionBtn = document.getElementById('start-new-mission-btn')
     this.recentMissionsContainer = document.getElementById('recent-missions-container')
+    this.openExistingMissionBtn = document.getElementById('open-existing-mission-btn')
+    this.welcomeSoloPanel = document.getElementById('welcome-solo-panel')
     this.backToMissionsBtn = document.getElementById('back-to-missions-btn')
     this.openSoloAltBtn = document.getElementById('welcome-open-file-alt')
+    this.demoPDFBtn = document.getElementById('welcome-demo-btn')
     this.exitMissionBtn = document.getElementById('exit-mission-btn')
 
     this.identitySelectionView = document.getElementById('identity-selection-view')
@@ -336,16 +341,13 @@ class ScoreFlow {
       }
     })
 
-    if (this.quickLoadMenuBtn) {
-      this.quickLoadMenuBtn.addEventListener('click', () => this.toggleQuickLoadModal(true))
-    }
     if (this.closeQuickLoadBtn) {
       this.closeQuickLoadBtn.addEventListener('click', () => this.toggleQuickLoadModal(false))
     }
     if (this.openNewSoloBtn) {
-      this.openNewSoloBtn.addEventListener('click', () => {
+      this.openNewSoloBtn.addEventListener('click', async () => {
         this.toggleQuickLoadModal(false)
-        this.uploader.click()
+        await this.openSoloPDF()
       })
     }
 
@@ -431,16 +433,48 @@ class ScoreFlow {
         if (this.missionSelectionView) this.missionSelectionView.classList.remove('hidden')
       })
     }
-    if (this.openSoloAltBtn) {
-      this.openSoloAltBtn.addEventListener('click', () => {
-        if (this.uploader) this.uploader.click()
+    if (this.openExistingMissionBtn) {
+      this.openExistingMissionBtn.addEventListener('click', () => {
+        if (!this.recentMissionsContainer) return
+        const isOpen = !this.recentMissionsContainer.classList.contains('hidden')
+        if (isOpen) {
+          this.recentMissionsContainer.classList.add('hidden')
+        } else {
+          this.recentMissionsContainer.classList.remove('hidden')
+          this.renderRecentMissions()
+        }
       })
+    }
+    if (this.openSoloAltBtn) {
+      this.openSoloAltBtn.addEventListener('click', async () => {
+        const hasHistory = this.recentSoloScores && this.recentSoloScores.length > 0
+        if (!hasHistory) {
+          // No history — go straight to file picker
+          await this.openSoloPDF()
+          return
+        }
+        // Toggle the recent-scores panel
+        if (!this.welcomeSoloPanel) return
+        const isOpen = !this.welcomeSoloPanel.classList.contains('hidden')
+        if (isOpen) {
+          this.welcomeSoloPanel.classList.add('hidden')
+        } else {
+          this.welcomeSoloPanel.classList.remove('hidden')
+          this.renderWelcomeSoloPanel()
+        }
+      })
+    }
+    if (this.demoPDFBtn) {
+      this.demoPDFBtn.addEventListener('click', () => this.loadDemoPDF())
     }
     if (this.exitMissionBtn) {
       this.exitMissionBtn.addEventListener('click', () => this.exitMission())
     }
 
     // Mission Setup Card Listeners
+    if (this.setupCardScore) {
+      this.setupCardScore.onclick = () => this.selectMissionFolder()
+    }
     if (this.setupCardShared) {
       this.setupCardShared.onclick = () => this.selectOrchestraFolder()
     }
@@ -829,9 +863,9 @@ class ScoreFlow {
       reader.onload = async (event) => {
         const buffer = event.target.result
         try {
+          await this.addToRecentSoloScores(file.name)
           await this.loadPDF(new Uint8Array(buffer))
           this.activeScoreName = file.name
-          this.addToRecentSoloScores(file.name)
           this.saveToStorage()
           this.renderLibrary()
         } catch (pdfErr) {
@@ -842,6 +876,28 @@ class ScoreFlow {
       reader.readAsArrayBuffer(file)
     } catch (err) {
       console.error('General upload error:', err)
+    }
+  }
+
+  async openSoloPDF() {
+    if ('showOpenFilePicker' in window) {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: 'PDF Files', accept: { 'application/pdf': ['.pdf'] } }],
+          multiple: false
+        })
+        const file = await handle.getFile()
+        const buffer = await file.arrayBuffer()
+        await this.addToRecentSoloScores(file.name, handle)
+        await this.loadPDF(new Uint8Array(buffer))
+        this.activeScoreName = file.name
+        this.saveToStorage()
+        this.renderLibrary()
+      } catch (e) {
+        if (e.name !== 'AbortError') console.error('Failed to open PDF:', e)
+      }
+    } else {
+      if (this.uploader) this.uploader.click()
     }
   }
 
@@ -861,6 +917,30 @@ class ScoreFlow {
       hash = hash >>> 0 // keep as unsigned 32-bit
     }
     return 'fallback_' + hash.toString(16) + '_' + bytes.length
+  }
+
+  async loadDemoPDF() {
+    const base = import.meta.env.BASE_URL || '/SheetMusic_Viewer/'
+    const url = base.replace(/\/$/, '') + '/demo/demo.pdf'
+    if (this.demoPDFBtn) {
+      this.demoPDFBtn.disabled = true
+      this.demoPDFBtn.textContent = 'Loading…'
+    }
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const buffer = await res.arrayBuffer()
+      await this.loadPDF(new Uint8Array(buffer))
+      this.activeScoreName = 'Demo Score'
+    } catch (err) {
+      console.error('Demo PDF load failed:', err)
+      alert('Could not load demo score. Please try uploading your own PDF.')
+    } finally {
+      if (this.demoPDFBtn) {
+        this.demoPDFBtn.disabled = false
+        this.demoPDFBtn.textContent = '▶ Try Demo Score'
+      }
+    }
   }
 
   async loadPDF(data) {
@@ -967,11 +1047,12 @@ class ScoreFlow {
   }
 
   async renderPDF() {
-    // Hide welcome screen BEFORE clearing container DOM
-    const welcomeScreen = document.querySelector('.welcome-screen')
+    // Hide welcome screen but keep it in the DOM (needed when Exit Mission restores it)
+    const welcomeScreen = this.container.querySelector('.welcome-screen')
     if (welcomeScreen) welcomeScreen.classList.add('hidden')
 
-    this.container.innerHTML = ''
+    // Remove only page elements — preserve welcome-screen DOM node
+    this.container.querySelectorAll('.page-container').forEach(el => el.remove())
     this.pages = []
 
     for (let i = 1; i <= this.pdf.numPages; i++) {
@@ -991,6 +1072,16 @@ class ScoreFlow {
       this.createAnnotationLayers(pageWrapper, i, viewport.width, viewport.height)
       this.createCaptureOverlay(pageWrapper, i, viewport.width, viewport.height)
       this.redrawStamps(i)
+
+      // After page 1 is fully rendered: show UI immediately (ruler, toolbar)
+      // Remaining pages continue rendering in the background
+      if (i === 1) {
+        this.updateJumpLinePosition()
+        this.updateRulerPosition()
+        this.updateRulerClip()
+        this.updateRulerMarks()
+        this.showMainUI()
+      }
     }
   }
 
@@ -1019,14 +1110,40 @@ class ScoreFlow {
     const showStampGhost = (clientX, clientY) => {
       const toolType = this.activeStampType
       if (FREEHAND_TYPES.includes(toolType)) { hideStampGhost(); return }
+
+      // Canvas size is 3× the stamp draw size — large enough to contain any symbol type
+      const stampSize = 18 * (this.scale / 1.5)
+      const canvasSize = Math.round(stampSize * 3)
+
       let ghost = wrapper.querySelector('.stamp-ghost')
-      if (!ghost || ghost.dataset.tool !== toolType) {
+      if (!ghost || ghost.dataset.tool !== toolType || ghost.dataset.scaleKey !== String(this.scale)) {
         if (ghost) ghost.remove()
         ghost = document.createElement('div')
         ghost.className = 'stamp-ghost'
         ghost.dataset.tool = toolType
+        ghost.dataset.scaleKey = String(this.scale)
+        ghost.style.width = canvasSize + 'px'
+        ghost.style.height = canvasSize + 'px'
+
         const tool = this.toolsets.flatMap(g => g.tools).find(t => t.id === toolType)
-        if (tool) ghost.innerHTML = this.getIcon(tool, 24)
+        const useCanvasPreview = tool?.draw?.type !== 'special'  // input-text needs user text → use icon fallback
+
+        if (useCanvasPreview) {
+          const group = this.toolsets.find(g => g.tools.some(t => t.id === toolType))
+          const layer = group ? this.layers.find(l => l.type === group.type) : null
+          const color = layer?.color || '#6366f1'
+          const gc = document.createElement('canvas')
+          gc.width = canvasSize
+          gc.height = canvasSize
+          gc.style.width = canvasSize + 'px'
+          gc.style.height = canvasSize + 'px'
+          const fakeStamp = { type: toolType, x: 0.5, y: 0.5, data: null, layerId: layer?.id || 'draw', sourceId: 'self' }
+          this.drawStampOnCanvas(gc.getContext('2d'), gc, fakeStamp, color, false, false, false, true)
+          ghost.appendChild(gc)
+        } else {
+          // Fallback for input-text: show icon at stamp size
+          if (tool) ghost.innerHTML = this.getIcon(tool, Math.round(stampSize))
+        }
         wrapper.appendChild(ghost)
       }
       const rect = overlay.getBoundingClientRect()
@@ -1076,6 +1193,8 @@ class ScoreFlow {
           const startScrollTop = this.viewer.scrollTop
           const startScrollLeft = this.viewer.scrollLeft
           overlay.style.cursor = 'grabbing'
+          // Disable smooth-scroll during drag so scrollTop updates are instant
+          this.viewer.style.scrollBehavior = 'auto'
           e.preventDefault()
           const doPan = (ev) => {
             if (!isPanning) return
@@ -1085,6 +1204,7 @@ class ScoreFlow {
           const stopPan = () => {
             isPanning = false
             overlay.style.cursor = ''
+            this.viewer.style.scrollBehavior = ''
             window.removeEventListener('mousemove', doPan)
             window.removeEventListener('mouseup', stopPan)
           }
@@ -1513,6 +1633,117 @@ class ScoreFlow {
     return this.findNearbyStamps(page, x, y, allSources)[0] || null
   }
 
+  showBatchEraseDialog() {
+    // Build list of layers that actually have stamps
+    const layersWithStamps = this.layers.filter(l =>
+      this.stamps.some(s => s.layerId === l.id)
+    )
+    if (layersWithStamps.length === 0) {
+      this.showDialog({ title: 'Nothing to Clear', message: 'No annotations found on this score.', icon: 'ℹ️', type: 'info' })
+      return
+    }
+
+    const dialog = document.createElement('div')
+    dialog.className = 'batch-erase-dialog'
+    dialog.innerHTML = `
+      <div class="batch-erase-content">
+        <div class="batch-erase-header">
+          <span class="batch-erase-icon">🗑️</span>
+          <span class="batch-erase-title">Clear Annotations by Category</span>
+        </div>
+        <p class="batch-erase-desc">Select which categories to permanently delete:</p>
+        <div class="batch-erase-list" id="batch-erase-list"></div>
+        <div class="batch-erase-footer">
+          <button class="batch-erase-select-all">Select All</button>
+          <div style="flex:1"></div>
+          <button class="batch-erase-cancel">Cancel</button>
+          <button class="batch-erase-confirm" disabled>Delete Selected</button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(dialog)
+
+    const list = dialog.querySelector('#batch-erase-list')
+    const confirmBtn = dialog.querySelector('.batch-erase-confirm')
+    const cancelBtn = dialog.querySelector('.batch-erase-cancel')
+    const selectAllBtn = dialog.querySelector('.batch-erase-select-all')
+
+    const checkboxes = []
+
+    layersWithStamps.forEach(layer => {
+      const count = this.stamps.filter(s => s.layerId === layer.id).length
+      const isLayout = layer.type === 'layout'
+      const row = document.createElement('label')
+      row.className = 'batch-erase-row'
+      const cb = document.createElement('input')
+      cb.type = 'checkbox'
+      cb.value = layer.id
+      cb.addEventListener('change', () => {
+        confirmBtn.disabled = !checkboxes.some(c => c.checked)
+        selectAllBtn.textContent = checkboxes.every(c => c.checked) ? 'Deselect All' : 'Select All'
+        if (isLayout) row.classList.toggle('batch-erase-row--warning', cb.checked)
+      })
+      checkboxes.push(cb)
+      const dot = document.createElement('span')
+      dot.className = 'batch-erase-dot'
+      dot.style.background = layer.color
+      row.appendChild(cb)
+      row.appendChild(dot)
+      const nameSpan = document.createElement('span')
+      nameSpan.textContent = `${layer.name}  (${count})`
+      row.appendChild(nameSpan)
+      if (isLayout) {
+        const warn = document.createElement('span')
+        warn.className = 'batch-erase-layout-warn'
+        warn.textContent = '⚠️ Navigation markers'
+        row.appendChild(warn)
+      }
+      list.appendChild(row)
+    })
+
+    selectAllBtn.addEventListener('click', () => {
+      const allChecked = checkboxes.every(c => c.checked)
+      checkboxes.forEach(c => { c.checked = !allChecked })
+      confirmBtn.disabled = allChecked
+      selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All'
+    })
+
+    cancelBtn.addEventListener('click', () => dialog.remove())
+    dialog.addEventListener('click', e => { if (e.target === dialog) dialog.remove() })
+
+    const doDelete = (selectedIds) => {
+      const before = this.stamps.length
+      this.stamps = this.stamps.filter(s => !selectedIds.has(s.layerId))
+      const deleted = before - this.stamps.length
+      dialog.remove()
+      this.saveToStorage()
+      const allPages = [...Array(this.pdf?.numPages || 0)].map((_, i) => i + 1)
+      allPages.forEach(p => this.redrawStamps(p))
+      this.updateRulerMarks()
+      this.showDialog({ title: 'Done', message: `Deleted ${deleted} annotation${deleted !== 1 ? 's' : ''}.`, icon: '✅', type: 'info' })
+    }
+
+    confirmBtn.addEventListener('click', async () => {
+      const selectedIds = new Set(checkboxes.filter(c => c.checked).map(c => c.value))
+
+      // Special warning if Layout layer (anchors / measure markers) is selected
+      const layoutLayer = this.layers.find(l => l.type === 'layout')
+      if (layoutLayer && selectedIds.has(layoutLayer.id)) {
+        const layoutCount = this.stamps.filter(s => s.layerId === layoutLayer.id).length
+        const confirmed = await this.showDialog({
+          title: '⚠️ Delete Layout Markers?',
+          message: `You are about to delete ${layoutCount} Layout marker${layoutCount !== 1 ? 's' : ''} (Anchors & Measure numbers).\n\nThese control score navigation and page flow. This cannot be undone.`,
+          icon: '⚠️',
+          type: 'confirm',
+          confirmText: 'Yes, Delete Layout Too'
+        })
+        if (!confirmed) return  // user cancelled — leave dialog open
+      }
+
+      doDelete(selectedIds)
+    })
+  }
+
   // Erase exactly one specific stamp object
   eraseStampTarget(stamp) {
     const page = stamp.page
@@ -1915,7 +2146,7 @@ class ScoreFlow {
     ctx.restore()
   }
 
-  drawStampOnCanvas(ctx, canvas, stamp, color, isForeign = false, isHovered = false, isSelectHovered = false) {
+  drawStampOnCanvas(ctx, canvas, stamp, color, isForeign = false, isHovered = false, isSelectHovered = false, isPreview = false) {
     const x = stamp.x * canvas.width
     const y = stamp.y * canvas.height
     const size = 18 * (this.scale / 1.5)
@@ -2039,7 +2270,7 @@ class ScoreFlow {
             ctx.arc(x, y, fSize, Math.PI, 0); ctx.stroke()
             ctx.beginPath(); ctx.arc(x, y - fSize * 0.3, fSize * 0.15, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
           } else if (d.variant === 'anchor') {
-            const isNextTarget = stamp === this.nextTargetAnchor
+            const isNextTarget = isPreview || stamp === this.nextTargetAnchor
             const aColor = isNextTarget ? color : '#94a3b8'
             if (!isNextTarget) ctx.globalAlpha *= 0.35
             ctx.fillStyle = aColor
@@ -2179,8 +2410,8 @@ class ScoreFlow {
         const wrapper = document.createElement("div")
         wrapper.className = "stamp-tool-wrapper"
 
-        // Level-2 shortcut badge: show keyboard number when a single group is active
-        if (this.activeCategories.length === 1) {
+        // Level-2 shortcut badge — hidden for now (TODO: numpad redesign)
+        if (false && this.activeCategories.length === 1) {
           const badge = document.createElement("span")
           badge.className = "tool-num-badge"
           badge.textContent = String(toolIdx + 1)
@@ -2194,6 +2425,10 @@ class ScoreFlow {
         btn.innerHTML = this.getIcon(tool, 26)
         btn.onclick = (e) => {
           e.stopPropagation()
+          if (tool.id === 'erase-all') {
+            this.showBatchEraseDialog()
+            return
+          }
           this.activeStampType = tool.id
           // Remember this tool for its respective category
           this.lastUsedToolPerCategory[catName] = tool.id
@@ -2211,51 +2446,8 @@ class ScoreFlow {
     })
     this.activeToolsContainer.appendChild(grid)
 
-    // 3.5 Group Numpad — bottom of palette (all devices)
-    // Level 1: shows groups (1–8)  |  Level 2 (single group): shows tools (1–N) + back button
-    const numpad = document.createElement("div")
-    numpad.className = "group-numpad"
-    if (this.activeCategories.length === 1) {
-      // ── Level 2: tools of the current group ──
-      const curGroup = this.toolsets.find(g => g.name === this.activeCategories[0])
-      if (curGroup) {
-        curGroup.tools.forEach((tool, idx) => {
-          const isActive = this.activeStampType === tool.id
-          const btn = document.createElement("button")
-          btn.className = `numpad-group-btn ${isActive ? "active" : ""}`
-          btn.innerHTML = `<span class="ng-name">${tool.label}</span><span class="ng-num">${idx + 1}</span>`
-          btn.onclick = (e) => {
-            e.stopPropagation()
-            this.activeStampType = tool.id
-            this.lastUsedToolPerCategory[curGroup.name] = tool.id
-            this.updateActiveTools()
-          }
-          numpad.appendChild(btn)
-        })
-        // Back button → return to level 1
-        const backBtn = document.createElement("button")
-        backBtn.className = "numpad-group-btn numpad-back-btn"
-        backBtn.innerHTML = `<span class="ng-name">Back</span><span class="ng-num">←</span>`
-        backBtn.onclick = (e) => {
-          e.stopPropagation()
-          this.activeCategories = this.toolsets.map(g => g.name)
-          this.updateActiveTools()
-        }
-        numpad.appendChild(backBtn)
-      }
-    } else {
-      // ── Level 1: groups (1–8) ──
-      this.toolsets.forEach(group => {
-        const btn = document.createElement("button")
-        btn.className = "numpad-group-btn"
-        btn.innerHTML = `<span class="ng-name">${group.displayName || group.name}</span><span class="ng-num">${group.num}</span>`
-        btn.onclick = (e) => { e.stopPropagation(); this.selectGroup(group.name) }
-        numpad.appendChild(btn)
-      })
-      const placeholder = document.createElement("div") // 9th cell to keep grid aligned
-      numpad.appendChild(placeholder)
-    }
-    this.activeToolsContainer.appendChild(numpad)
+    // 3.5 Group Numpad — hidden for now (TODO: redesign)
+    // this.activeToolsContainer.appendChild(numpad)
 
     // 3.6 Resize Handle (Professional Custom Control)
     const resizer = document.createElement("div")
@@ -2396,26 +2588,125 @@ class ScoreFlow {
     }
   }
 
-  addToRecentSoloScores(name) {
+  async addToRecentSoloScores(name, handle = null) {
     if (!this.recentSoloScores) this.recentSoloScores = []
-    // Keep only unique names, move newest to front
     this.recentSoloScores = this.recentSoloScores.filter(s => s.name !== name)
     this.recentSoloScores.unshift({ name, date: new Date().toLocaleDateString() })
-    // Limit to 10
     if (this.recentSoloScores.length > 10) this.recentSoloScores.pop()
+    if (handle) {
+      try { await db.set(`solo_handle_${name}`, handle) } catch (e) { console.warn('Could not store file handle:', e) }
+    }
     this.saveToStorage()
+    this.renderInlineRecentScores()
+  }
+
+  renderInlineRecentScores() {
+    const container = this.recentScoresInline
+    if (!container) return
+    container.innerHTML = ''
+
+    const scores = (this.recentSoloScores || []).slice(0, 10)
+
+    // Header: label + Clear button
+    const header = document.createElement('div')
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px'
+    header.innerHTML = `<span style="font-size:0.7rem;font-weight:600;color:var(--text-muted);letter-spacing:.04em">RECENT SCORES</span>`
+    const clearBtn = document.createElement('button')
+    clearBtn.className = 'btn btn-outline btn-smaller'
+    clearBtn.style.cssText = 'font-size:0.68rem;padding:2px 8px'
+    clearBtn.textContent = 'Clear'
+    clearBtn.onclick = () => {
+      this.recentSoloScores = []
+      this.saveToStorage()
+      this.renderInlineRecentScores()
+    }
+    header.appendChild(clearBtn)
+    container.appendChild(header)
+
+    if (scores.length === 0) {
+      const empty = document.createElement('div')
+      empty.className = 'empty-state'
+      empty.style.fontSize = '0.78rem'
+      empty.textContent = 'No recent scores.'
+      container.appendChild(empty)
+      return
+    }
+
+    scores.forEach(score => {
+      const row = document.createElement('div')
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg-app);border:1px solid var(--border);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:border-color .15s'
+      row.innerHTML = `
+        <span style="font-size:1rem;flex-shrink:0">🎼</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${score.name}</div>
+          <div style="font-size:0.66rem;color:var(--text-muted)">${score.date}</div>
+        </div>
+      `
+      row.onmouseenter = () => row.style.borderColor = 'var(--primary)'
+      row.onmouseleave = () => row.style.borderColor = 'var(--border)'
+      row.onclick = async () => {
+        const libraryMatch = this.libraryFiles?.find(f => f.name === score.name)
+        if (libraryMatch) {
+          try {
+            const file = await libraryMatch.getFile()
+            const buf = await file.arrayBuffer()
+            await this.addToRecentSoloScores(score.name)
+            await this.loadPDF(new Uint8Array(buf))
+            this.activeScoreName = score.name
+            this.saveToStorage()
+            // inline list stays visible
+            if (!this.isSidebarLocked) { this.sidebar.classList.remove('open'); this.updateLayoutState() }
+            return
+          } catch (e) { console.warn('Library match failed:', e) }
+        }
+        const handle = await db.get(`solo_handle_${score.name}`)
+        if (handle) {
+          try {
+            const permission = await handle.requestPermission({ mode: 'read' })
+            if (permission === 'granted') {
+              const file = await handle.getFile()
+              const buf = await file.arrayBuffer()
+              await this.addToRecentSoloScores(score.name, handle)
+              await this.loadPDF(new Uint8Array(buf))
+              this.activeScoreName = score.name
+              this.saveToStorage()
+              // inline list stays visible
+              if (!this.isSidebarLocked) { this.sidebar.classList.remove('open'); this.updateLayoutState() }
+              return
+            }
+          } catch (e) { console.warn('Handle reopen failed:', e) }
+        }
+        // inline list stays visible
+        await this.openSoloPDF()
+      }
+      container.appendChild(row)
+    })
   }
 
   renderRecentSoloScores() {
     if (!this.recentScoresList) return
     this.recentScoresList.innerHTML = ''
 
-    if (this.recentSoloScores.length === 0) {
+    const scores = this.recentSoloScores || []
+
+    if (scores.length === 0) {
       this.recentScoresList.innerHTML = '<div class="empty-state">No recent solo scores recorded.</div>'
       return
     }
 
-    this.recentSoloScores.forEach(score => {
+    // Clear History button
+    const clearBtn = document.createElement('button')
+    clearBtn.className = 'btn btn-outline btn-smaller'
+    clearBtn.style.cssText = 'display:block;margin-left:auto;margin-bottom:10px;font-size:0.72rem'
+    clearBtn.textContent = 'Clear History'
+    clearBtn.onclick = () => {
+      this.recentSoloScores = []
+      this.saveToStorage()
+      this.renderRecentSoloScores()
+    }
+    this.recentScoresList.appendChild(clearBtn)
+
+    scores.forEach(score => {
       const card = document.createElement('div')
       card.className = 'recent-score-card'
       card.innerHTML = `
@@ -2425,25 +2716,51 @@ class ScoreFlow {
           <div class="recent-score-date">Last Opened: ${score.date}</div>
         </div>
       `
-      card.onclick = () => {
-        // Since we don't have the file handle, we tell them it's marked as active 
-        // but if it's not in the current session library, we invite them to re-pick.
-        // For now, if it's already in the libraryFiles (project), we can use it!
-        const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
+      card.onclick = async () => {
+        // Try project library first
+        const libraryMatch = this.libraryFiles?.find(f => f.name === score.name)
         if (libraryMatch) {
-          libraryMatch.getFile().then(file => file.arrayBuffer()).then(buf => {
+          try {
+            const file = await libraryMatch.getFile()
+            const buf = await file.arrayBuffer()
+            await this.addToRecentSoloScores(score.name)
+            await this.loadPDF(new Uint8Array(buf))
             this.activeScoreName = score.name
-            this.renderPDF(buf)
+            this.saveToStorage()
             this.toggleQuickLoadModal(false)
-
             if (!this.isSidebarLocked) {
               this.sidebar.classList.remove('open')
               this.updateLayoutState()
             }
-          })
-        } else {
-          alert(`Selected: ${score.name}\n\nNote: For solo scores not in your project folder, please click "+ Open New Solo PDF" to locate the file.`)
+            return
+          } catch (e) { console.warn('Library match failed:', e) }
         }
+
+        // Try stored file handle
+        const handle = await db.get(`solo_handle_${score.name}`)
+        if (handle) {
+          try {
+            const permission = await handle.requestPermission({ mode: 'read' })
+            if (permission === 'granted') {
+              const file = await handle.getFile()
+              const buf = await file.arrayBuffer()
+              await this.addToRecentSoloScores(score.name, handle)
+              await this.loadPDF(new Uint8Array(buf))
+              this.activeScoreName = score.name
+              this.saveToStorage()
+              this.toggleQuickLoadModal(false)
+              if (!this.isSidebarLocked) {
+                this.sidebar.classList.remove('open')
+                this.updateLayoutState()
+              }
+              return
+            }
+          } catch (e) { console.warn('Handle reopen failed:', e) }
+        }
+
+        // Fallback: open picker
+        this.toggleQuickLoadModal(false)
+        await this.openSoloPDF()
       }
       this.recentScoresList.appendChild(card)
     })
@@ -3693,8 +4010,9 @@ class ScoreFlow {
       this.missionSelectionView.classList.remove('hidden')
       if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
       if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
-
-      this.renderRecentMissions()
+      if (this.projectRepertoireView) this.projectRepertoireView.classList.add('hidden')
+      if (this.recentMissionsContainer) this.recentMissionsContainer.classList.add('hidden')
+      if (this.welcomeSoloPanel) this.welcomeSoloPanel.classList.add('hidden')
     }
   }
 
@@ -3738,6 +4056,76 @@ class ScoreFlow {
         }
       }
       this.recentMissionsContainer.appendChild(card)
+    })
+  }
+
+  renderWelcomeSoloPanel() {
+    const panel = this.welcomeSoloPanel
+    if (!panel) return
+    panel.innerHTML = ''
+
+    const scores = this.recentSoloScores || []
+
+    // Header row
+    const header = document.createElement('div')
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'
+    header.innerHTML = `<span style="font-size:0.8rem;font-weight:600;color:var(--text-muted)">RECENT SCORES</span>`
+    const btnGroup = document.createElement('div')
+    btnGroup.style.cssText = 'display:flex;gap:6px'
+    const clearBtn = document.createElement('button')
+    clearBtn.className = 'btn btn-outline btn-smaller'
+    clearBtn.textContent = 'Clear'
+    clearBtn.onclick = () => {
+      this.recentSoloScores = []
+      this.saveToStorage()
+      this.welcomeSoloPanel.classList.add('hidden')
+    }
+    const browseBtn = document.createElement('button')
+    browseBtn.className = 'btn btn-primary btn-smaller'
+    browseBtn.textContent = '+ Open Score…'
+    browseBtn.onclick = () => this.openSoloPDF()
+    btnGroup.appendChild(clearBtn)
+    btnGroup.appendChild(browseBtn)
+    header.appendChild(btnGroup)
+    panel.appendChild(header)
+
+    // Score list
+    scores.forEach(score => {
+      const row = document.createElement('div')
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-app);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer'
+      row.innerHTML = `
+        <span style="font-size:1.2rem">🎼</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${score.name}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted)">${score.date}</div>
+        </div>
+        <span style="font-size:0.72rem;color:var(--text-muted)">Re-open →</span>
+      `
+      row.onmouseenter = () => row.style.borderColor = 'var(--primary)'
+      row.onmouseleave = () => row.style.borderColor = 'var(--border)'
+      row.onclick = async () => {
+        const handle = await db.get(`solo_handle_${score.name}`)
+        if (handle) {
+          try {
+            const permission = await handle.requestPermission({ mode: 'read' })
+            if (permission === 'granted') {
+              const file = await handle.getFile()
+              const buffer = await file.arrayBuffer()
+              await this.loadPDF(new Uint8Array(buffer))
+              this.activeScoreName = score.name
+              await this.addToRecentSoloScores(score.name, handle)
+              this.saveToStorage()
+              this.renderLibrary()
+              return
+            }
+          } catch (e) {
+            console.warn('Failed to reopen from handle:', e)
+          }
+        }
+        // No handle or permission denied — open picker
+        await this.openSoloPDF()
+      }
+      panel.appendChild(row)
     })
   }
 
@@ -3884,7 +4272,7 @@ class ScoreFlow {
       this.libraryFolderHandle = null
       this.activeScoreName = null
 
-      if (this.container) this.container.innerHTML = ''
+      if (this.container) this.container.querySelectorAll('.page-container').forEach(el => el.remove())
       if (this.layerShelf) this.layerShelf.classList.remove('active')
       if (this.sidebar) this.sidebar.classList.remove('open')
       if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
@@ -4272,29 +4660,56 @@ class ScoreFlow {
   }
 
   addNewProfile() {
-    const name = prompt('Enter your display name:', 'Guest Musician')
-    if (!name) return
-    const orch = prompt('Enter Orchestra or Ensemble name:', 'Standard Orchestra')
-    if (!orch) return
-    const section = prompt('Enter your Section/Role (e.g. Conductor, Soloist, First Violins):', 'Section')
-    if (!section) return
+    // Same pattern as showBatchEraseDialog — simple fixed overlay, no CSS transitions
+    const IS = 'padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-app);color:var(--text-main);font-size:0.9rem;width:100%;box-sizing:border-box;margin-bottom:8px'
+    const dialog = document.createElement('div')
+    dialog.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center'
+    dialog.innerHTML = `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:28px;width:90vw;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:18px">🎭 Create New Identity</div>
+        <input class="_pf-name" style="${IS}" placeholder="Display Name" value="Guest Musician" />
+        <input class="_pf-orch" style="${IS}" placeholder="Orchestra / Ensemble" value="Standard Orchestra" />
+        <input class="_pf-sect" style="${IS}margin-bottom:16px" placeholder="Section / Role (e.g. First Violins)" value="Section" />
+        <div style="display:flex;gap:8px">
+          <button class="_pf-cancel btn btn-outline" style="flex:1">Cancel</button>
+          <button class="_pf-ok btn btn-primary" style="flex:1">Create</button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(dialog)
 
-    const id = 'p_' + Date.now()
-    this.profiles.push({
-      id,
-      name,
-      orchestra: orch,
-      section,
-      initial: name.charAt(0)
+    const nameEl = dialog.querySelector('._pf-name')
+    nameEl.focus(); nameEl.select()
+
+    const cleanup = () => { if (dialog.parentNode) document.body.removeChild(dialog) }
+
+    dialog.querySelector('._pf-cancel').onclick = cleanup
+
+    dialog.querySelector('._pf-ok').onclick = () => {
+      const name = nameEl.value.trim()
+      const orch = dialog.querySelector('._pf-orch').value.trim()
+      const section = dialog.querySelector('._pf-sect').value.trim()
+      if (!name) { nameEl.focus(); return }
+      cleanup()
+
+      const id = 'p_' + Date.now()
+      this.profiles.push({ id, name, orchestra: orch || 'Standard Orchestra', section: section || 'Section', initial: name.charAt(0) })
+      this.activeProfileId = id
+      this.saveToStorage()
+      this.renderActiveProfile()
+      this.renderProfileList()
+      this.renderWelcomeProfiles()
+
+      // If in wizard, move to Stage 2
+      if (this.identitySelectionView && !this.identitySelectionView.classList.contains('hidden')) {
+        this.showSetupStage(2)
+      }
+    }
+
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') dialog.querySelector('._pf-ok').click()
+      if (e.key === 'Escape') cleanup()
     })
-    this.activeProfileId = id
-    this.saveToStorage()
-    this.renderActiveProfile()
-    this.renderProfileList()
-
-    // Move to Stage 2
-    if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
-    if (this.welcomeInitialView) this.welcomeInitialView.classList.remove('hidden')
   }
 
   showDialog({ title, message, icon = '⚠️', type = 'info', confirmText = 'Confirm', cancelText = 'Cancel', actions = null }) {

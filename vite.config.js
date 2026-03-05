@@ -26,7 +26,7 @@ export default defineConfig({
                 ]
             },
             workbox: {
-                globPatterns: ['**/*.{js,css,html,mjs,svg}'],
+                globPatterns: ['**/*.{js,css,html,mjs,svg,pdf}'],
                 runtimeCaching: [
                     {
                         urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
@@ -36,6 +36,17 @@ export default defineConfig({
                             expiration: {
                                 maxEntries: 10,
                                 maxAgeSeconds: 60 * 60 * 24 * 365
+                            }
+                        }
+                    },
+                    {
+                        urlPattern: /\/demo\/.*\.pdf$/,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'demo-pdf',
+                            expiration: {
+                                maxEntries: 2,
+                                maxAgeSeconds: 60 * 60 * 24 * 30
                             }
                         }
                     }

@@ -19,7 +19,8 @@ export const TOOLSETS = [
         type: 'edit',
         tools: [
             { id: 'select', label: 'Select', icon: '<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="M13 13l6 6" />' },
-            { id: 'eraser', label: 'Eraser', icon: '<path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" /><path d="M17 17L7 7" />' }
+            { id: 'eraser', label: 'Eraser', icon: '<path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" /><path d="M17 17L7 7" />' },
+            { id: 'erase-all', label: 'Clear All', icon: '<polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />' }
         ]
     },
     {
@@ -42,7 +43,7 @@ export const TOOLSETS = [
             { id: 'up-bow', label: 'Up', icon: '<path d="M7 9l5 8l5-8" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.3 -0.35 L 0 0.35 L 0.3 -0.35' } },
             { id: 'pizz', label: 'pizz.', icon: '<text x="12" y="16.5" font-size="14" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">pizz</text>', draw: { type: 'text', content: 'pizz.', font: 'italic 300', size: 22, fontFace: 'serif' } },
             { id: 'arco', label: 'arco.', icon: '<text x="12" y="16.5" font-size="14" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">arco</text>', draw: { type: 'text', content: 'arco.', font: 'italic 300', size: 22, fontFace: 'serif' } },
-            { id: 'thumb', label: 'Thumb', icon: '<ellipse cx="12" cy="8" rx="3" ry="5" fill="none" stroke="currentColor" stroke-width="2" /><line x1="12" y1="13" x2="12" y2="15" stroke="currentColor" stroke-width="2" />', draw: { type: 'complex', variant: 'thumb' } },
+            { id: 'thumb', label: 'Thumb', icon: '<circle cx="12" cy="10" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5" /><line x1="12" y1="13.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="1.5" />', draw: { type: 'complex', variant: 'thumb' } },
             { id: 'f1', label: '1', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">1</text>', draw: { type: 'text', content: '1', font: '300', size: 18 } },
             { id: 'f2', label: '2', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">2</text>', draw: { type: 'text', content: '2', font: '300', size: 18 } },
             { id: 'f3', label: '3', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">3</text>', draw: { type: 'text', content: '3', font: '300', size: 18 } },
