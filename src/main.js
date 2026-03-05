@@ -100,7 +100,24 @@ class ScoreFlow {
     }
 
     if (browseBtn) {
-      browseBtn.onclick = () => this.showDriveBrowser()
+      browseBtn.onclick = async () => {
+        if (!GDrive.isSignedIn()) {
+          browseBtn.textContent = 'Connecting...'
+          browseBtn.disabled = true
+          try {
+            await GDrive.signIn()
+            this.updateDriveUI()
+          } catch (e) {
+            console.error('Drive sign-in failed:', e)
+            browseBtn.textContent = '☁ Browse Google Drive PDFs...'
+            browseBtn.disabled = false
+            return
+          }
+          browseBtn.textContent = '☁ Browse Google Drive PDFs...'
+          browseBtn.disabled = false
+        }
+        this.showDriveBrowser()
+      }
     }
 
     if (saveBtn) {
@@ -180,7 +197,6 @@ class ScoreFlow {
     if (signinBtn)  signinBtn.style.display  = signedIn ? 'none' : ''
     if (userInfo)   userInfo.style.display    = signedIn ? 'block' : 'none'
     if (statusText) statusText.textContent    = signedIn ? `✅ ${GDrive.getUserEmail()}` : ''
-    if (browseBtn)  browseBtn.style.display   = signedIn ? '' : 'none'
   }
 
   async showDriveBrowser() {
