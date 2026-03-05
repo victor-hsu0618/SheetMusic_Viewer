@@ -63,6 +63,196 @@ class ScoreFlow {
     this._preloadSvgs()
   }
 
+  async initGDriveWhenReady() {
+    try {
+      await GDrive.init()
+    } catch (e) {
+      console.warn('GDrive init failed (GSI not loaded?):', e)
+      return
+    }
+
+    const signinBtn   = document.getElementById('gdrive-signin-btn')
+    const signoutBtn  = document.getElementById('gdrive-signout-btn')
+    const saveBtn     = document.getElementById('gdrive-save-btn')
+    const loadBtn     = document.getElementById('gdrive-load-btn')
+    const browseBtn   = document.getElementById('gdrive-browse-btn')
+    const closeBtn    = document.getElementById('close-gdrive-browser')
+    const searchInput = document.getElementById('gdrive-search')
+    const loadMoreBtn = document.getElementById('gdrive-load-more-btn')
+
+    if (signinBtn) {
+      signinBtn.onclick = async () => {
+        signinBtn.textContent = 'Connecting...'
+        signinBtn.disabled = true
+        try {
+          await GDrive.signIn()
+          this.updateDriveUI()
+        } catch (e) {
+          console.error('Drive sign-in failed:', e)
+          signinBtn.textContent = '☁ Connect Google Drive'
+          signinBtn.disabled = false
+        }
+      }
+    }
+
+    if (signoutBtn) {
+      signoutBtn.onclick = () => { GDrive.signOut(); this.updateDriveUI() }
+    }
+
+    if (browseBtn) {
+      browseBtn.onclick = () => this.showDriveBrowser()
+    }
+
+    if (saveBtn) {
+      saveBtn.onclick = async () => {
+        if (!this.pdfFingerprint) { alert('No score loaded.'); return }
+        const orig = saveBtn.textContent
+        saveBtn.textContent = 'Saving...'
+        saveBtn.disabled = true
+        try {
+          await GDrive.saveAnnotations(this.pdfFingerprint, this.stamps)
+          saveBtn.textContent = '✅ Saved!'
+        } catch (e) {
+          console.error('Drive save failed:', e)
+          saveBtn.textContent = '❌ Failed'
+        }
+        setTimeout(() => { saveBtn.textContent = orig; saveBtn.disabled = false }, 2500)
+      }
+    }
+
+    if (loadBtn) {
+      loadBtn.onclick = async () => {
+        if (!this.pdfFingerprint) { alert('No score loaded.'); return }
+        const orig = loadBtn.textContent
+        loadBtn.textContent = 'Loading...'
+        loadBtn.disabled = true
+        try {
+          const data = await GDrive.loadAnnotations(this.pdfFingerprint)
+          if (!data) {
+            loadBtn.textContent = '(No backup found)'
+            setTimeout(() => { loadBtn.textContent = orig; loadBtn.disabled = false }, 2500)
+            return
+          }
+          this.stamps = data.stamps || []
+          this.saveToStorage()
+          const pages = [...new Set(this.stamps.map(s => s.page))]
+          pages.forEach(p => this.redrawStamps(p))
+          this.updateRulerMarks()
+          loadBtn.textContent = '✅ Loaded!'
+        } catch (e) {
+          console.error('Drive load failed:', e)
+          loadBtn.textContent = '❌ Failed'
+        }
+        setTimeout(() => { loadBtn.textContent = orig; loadBtn.disabled = false }, 2500)
+      }
+    }
+
+    if (closeBtn) {
+      closeBtn.onclick = () => document.getElementById('gdrive-browser-modal')?.classList.remove('active')
+    }
+
+    let _searchTimer
+    if (searchInput) {
+      searchInput.oninput = () => {
+        clearTimeout(_searchTimer)
+        _searchTimer = setTimeout(() => {
+          this._driveNextPage = null
+          this._loadDriveFiles(searchInput.value)
+        }, 400)
+      }
+    }
+
+    if (loadMoreBtn) {
+      loadMoreBtn.onclick = () => {
+        const q = document.getElementById('gdrive-search')?.value || ''
+        this._loadDriveFiles(q, true)
+      }
+    }
+  }
+
+  updateDriveUI() {
+    const signedIn   = GDrive.isSignedIn()
+    const signinBtn  = document.getElementById('gdrive-signin-btn')
+    const userInfo   = document.getElementById('gdrive-user-info')
+    const statusText = document.getElementById('gdrive-status-text')
+    const browseBtn  = document.getElementById('gdrive-browse-btn')
+
+    if (signinBtn)  signinBtn.style.display  = signedIn ? 'none' : ''
+    if (userInfo)   userInfo.style.display    = signedIn ? 'block' : 'none'
+    if (statusText) statusText.textContent    = signedIn ? `✅ ${GDrive.getUserEmail()}` : ''
+    if (browseBtn)  browseBtn.style.display   = signedIn ? '' : 'none'
+  }
+
+  async showDriveBrowser() {
+    const modal = document.getElementById('gdrive-browser-modal')
+    if (!modal) return
+    modal.classList.add('active')
+    this._driveNextPage = null
+    const searchInput = document.getElementById('gdrive-search')
+    if (searchInput) searchInput.value = ''
+    await this._loadDriveFiles('')
+  }
+
+  async _loadDriveFiles(query = '', append = false) {
+    const list    = document.getElementById('gdrive-files-list')
+    const moreBtn = document.getElementById('gdrive-load-more-btn')
+    if (!list) return
+
+    if (!append) {
+      list.innerHTML = '<div class="empty-state" style="padding:20px 0">Loading...</div>'
+      this._driveNextPage = null
+    }
+
+    try {
+      const data = await GDrive.listPDFs(query, append ? this._driveNextPage : null)
+      this._driveNextPage = data.nextPageToken || null
+      if (moreBtn) moreBtn.style.display = this._driveNextPage ? '' : 'none'
+
+      if (!append) list.innerHTML = ''
+
+      if (!data.files?.length) {
+        if (!append) list.innerHTML = '<div class="empty-state" style="padding:20px 0">No PDF files found.</div>'
+        return
+      }
+
+      data.files.forEach(file => {
+        const row = document.createElement('div')
+        row.className = 'gdrive-file-row'
+        const size = file.size ? (file.size / 1024 / 1024).toFixed(1) + ' MB' : ''
+        const date = file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : ''
+        row.innerHTML = `
+          <span style="font-size:1.2rem;flex-shrink:0">📄</span>
+          <div style="flex:1;min-width:0">
+            <div class="gdrive-file-name">${file.name}</div>
+            <div class="gdrive-file-meta">${[date, size].filter(Boolean).join(' · ')}</div>
+          </div>
+        `
+        row.onclick = async () => {
+          row.style.opacity = '0.5'
+          row.style.pointerEvents = 'none'
+          try {
+            const buf = await GDrive.downloadFile(file.id)
+            await this.addToRecentSoloScores(file.name)
+            await this.loadPDF(new Uint8Array(buf))
+            this.activeScoreName = file.name
+            this.saveToStorage()
+            this.renderLibrary()
+            document.getElementById('gdrive-browser-modal')?.classList.remove('active')
+          } catch (e) {
+            console.error('Drive open failed:', e)
+            row.style.opacity = ''
+            row.style.pointerEvents = ''
+            alert('Failed to open from Drive. Please try again.')
+          }
+        }
+        list.appendChild(row)
+      })
+    } catch (e) {
+      console.error('Drive list failed:', e)
+      list.innerHTML = '<div class="empty-state">Failed to load. Check connection.</div>'
+    }
+  }
+
   async _preloadSvgs() {
     const base = import.meta.env.BASE_URL
     const items = this.toolsets.flatMap(g =>
@@ -89,7 +279,6 @@ class ScoreFlow {
     this.sidebar = document.getElementById('sidebar')
     this.sidebarTrigger = document.getElementById('sidebar-trigger')
     this.layerList = document.getElementById('layer-list')
-    this.addLayerBtn = document.getElementById('add-layer-btn')
     this.zoomInBtn = document.getElementById('zoom-in')
     this.zoomOutBtn = document.getElementById('zoom-out')
     this.zoomLevelDisplay = document.getElementById('zoom-level')
@@ -105,7 +294,19 @@ class ScoreFlow {
     this.jumpLine = document.getElementById('jump-line')
     this.jumpOffsetInput = document.getElementById('jump-offset')
     this.jumpOffsetValue = document.getElementById('jump-offset-value')
+    this.monkeyEnabledInput = document.getElementById('monkey-enabled')
+    this.jumpSpeedInput = document.getElementById('jump-speed')
+    this.jumpSpeedValue = document.getElementById('jump-speed-value')
     this.docBar = document.getElementById('floating-doc-bar')
+
+    this.monkeyEnabled = localStorage.getItem('scoreflow_monkey_enabled') !== 'false'
+    this.jumpSpeed = parseInt(localStorage.getItem('scoreflow_jump_speed')) || 400
+
+    if (this.monkeyEnabledInput) this.monkeyEnabledInput.checked = this.monkeyEnabled
+    if (this.jumpSpeedInput) {
+      this.jumpSpeedInput.value = this.jumpSpeed
+      if (this.jumpSpeedValue) this.jumpSpeedValue.textContent = `${this.jumpSpeed}ms`
+    }
     this.exportBtn = document.getElementById('export-btn')
     this.importBtn = document.getElementById('import-btn')
     this.importFileInput = document.getElementById('import-file')
@@ -172,9 +373,10 @@ class ScoreFlow {
 
     this.welcomeProfileList = document.getElementById('welcome-profile-list')
     this.welcomeAddProfileBtn = document.getElementById('welcome-add-profile-btn')
-    this.resetLayersBtn = document.getElementById('reset-layers-btn')
+    this.resetLayersStandardBtn = document.getElementById('reset-layers-standard-btn')
+    this.resetLayersSidebarBtn = document.getElementById('reset-layers-sidebar-btn')
     this.libraryList = document.getElementById('library-scores-list')
-    this.selectLibraryBtn = document.getElementById('select-library-btn')
+    this.openFileBtn = document.getElementById('open-file-btn')
     this.librarySearchInput = document.getElementById('library-search')
     this.resetSystemBtn = document.getElementById('reset-system-btn')
 
@@ -351,8 +553,8 @@ class ScoreFlow {
       })
     }
 
-    if (this.selectLibraryBtn) {
-      this.selectLibraryBtn.addEventListener('click', () => this.selectLibraryFolder())
+    if (this.openFileBtn) {
+      this.openFileBtn.addEventListener('click', () => this.openSoloPDF())
     }
     if (this.librarySearchInput) {
       this.librarySearchInput.addEventListener('input', () => this.renderLibrary())
@@ -401,12 +603,11 @@ class ScoreFlow {
       })
     }
 
-    if (this.addLayerBtn) {
-      this.addLayerBtn.addEventListener('click', () => this.addNewLayer())
+    if (this.resetLayersStandardBtn) {
+      this.resetLayersStandardBtn.addEventListener('click', () => this.resetLayers())
     }
-
-    if (this.resetLayersBtn) {
-      this.resetLayersBtn.addEventListener('click', () => this.resetLayers())
+    if (this.resetLayersSidebarBtn) {
+      this.resetLayersSidebarBtn.addEventListener('click', () => this.resetLayers())
     }
 
     if (this.welcomeAddProfileBtn) {
@@ -544,6 +745,27 @@ class ScoreFlow {
         if (this.jumpOffsetValue) this.jumpOffsetValue.textContent = `${cm.toFixed(1)}cm`
         this.jumpOffsetPx = cm * 37.8
         this.updateJumpLinePosition()
+        localStorage.setItem('scoreflow_jump_offset', cm)
+        this.updateRulerMarks()
+      })
+    }
+
+    if (this.monkeyEnabledInput) {
+      this.monkeyEnabledInput.addEventListener('change', (e) => {
+        this.monkeyEnabled = e.target.checked
+        localStorage.setItem('scoreflow_monkey_enabled', this.monkeyEnabled)
+        if (!this.monkeyEnabled) {
+          const existing = document.querySelector('.ruler-monkey')
+          if (existing) existing.remove()
+        }
+      })
+    }
+
+    if (this.jumpSpeedInput) {
+      this.jumpSpeedInput.addEventListener('input', (e) => {
+        this.jumpSpeed = parseInt(e.target.value)
+        if (this.jumpSpeedValue) this.jumpSpeedValue.textContent = `${this.jumpSpeed}ms`
+        localStorage.setItem('scoreflow_jump_speed', this.jumpSpeed)
       })
     }
 
@@ -2965,11 +3187,36 @@ class ScoreFlow {
     }
   }
 
+  animatedScrollTo(targetTop, duration) {
+    const start = this.viewer.scrollTop
+    const change = targetTop - start
+    const startTime = performance.now()
+
+    const animateScroll = (currentTime) => {
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      
+      // Easing: easeInOutQuad
+      const ease = progress < 0.5 
+        ? 2 * progress * progress 
+        : -1 + (4 - 2 * progress) * progress
+
+      this.viewer.scrollTop = start + change * ease
+
+      if (progress < 1) {
+        requestAnimationFrame(animateScroll)
+      }
+    }
+
+    requestAnimationFrame(animateScroll)
+  }
+
   jump(direction) {
     const currentScroll = this.viewer.scrollTop
     const viewportHeight = this.viewer.clientHeight
     const viewportCenter = currentScroll + viewportHeight / 2
     const currentFocusY = currentScroll + this.jumpOffsetPx
+    const jumpStep = viewportHeight - 2 * this.jumpOffsetPx
 
     const resolveAnchors = () => this.stamps
       .filter(s => s.type === 'anchor')
@@ -2985,38 +3232,96 @@ class ScoreFlow {
     let targetY = null
 
     if (direction === 1) {
-      // Forward: pick user anchor closest to viewport center, ahead of focus
-      const candidates = resolveAnchors().filter(a => a.absoluteY > currentFocusY + 10)
+      const maxForwardRange = currentFocusY + jumpStep + 100
+      const candidates = resolveAnchors().filter(a => a.absoluteY > currentFocusY + 10 && a.absoluteY < maxForwardRange)
 
       if (candidates.length > 0) {
-        candidates.sort((a, b) =>
-          Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter)
-        )
+        candidates.sort((a, b) => Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter))
         targetY = candidates[0].absoluteY
       } else {
-        // Fallback: first unshown content, offset same as target line from bottom
         targetY = currentScroll + viewportHeight - this.jumpOffsetPx
       }
     } else {
-      // Backward: nearest anchor above the current scroll top (allows re-visiting current anchor)
+      const minBackwardRange = currentScroll - jumpStep - 100
       const behind = resolveAnchors()
-        .filter(a => a.absoluteY < currentScroll + 20)
+        .filter(a => a.absoluteY < currentScroll + 20 && a.absoluteY > minBackwardRange)
         .sort((a, b) => b.absoluteY - a.absoluteY)
+
       if (behind.length > 0) {
         targetY = behind[0].absoluteY
       } else {
-        // Fallback: scroll back by same step as forward (viewportHeight - 2×jumpOffsetPx)
-        // scrollTo.top = targetY - jumpOffsetPx → need targetY = currentScroll - viewportHeight + 3×jumpOffsetPx
         targetY = Math.max(this.jumpOffsetPx, currentScroll - viewportHeight + 3 * this.jumpOffsetPx)
       }
     }
 
     if (targetY !== null) {
-      this.viewer.scrollTo({
-        top: Math.max(0, targetY - this.jumpOffsetPx),
-        behavior: 'smooth'
-      })
+      if (this.monkeyEnabled) {
+        // Correct visual start and end for the monkey
+        // startY is the anchor's CURRENT visual top
+        // focusLineY is where it will be AFTER the scroll
+        const focusLineY = targetY // This is where the anchor will end up relative to doc top
+        this.animateMonkey(targetY, focusLineY, direction)
+      }
+
+      this.animatedScrollTo(Math.max(0, targetY - this.jumpOffsetPx), this.jumpSpeed)
     }
+  }
+
+  animateMonkey(targetDocY, endDocY, direction) {
+    const ruler = document.getElementById('jump-ruler')
+    if (!ruler || this.rulerVisible === false) return
+
+    // Clear any existing monkey first
+    const existing = document.querySelectorAll('.ruler-monkey')
+    existing.forEach(m => m.remove())
+
+    const monkey = document.createElement('div')
+    monkey.className = 'ruler-monkey'
+    monkey.textContent = '🐒'
+
+    const focusLineViewportY = this.jumpOffsetPx
+    const getVisualY = (docY) => docY - this.viewer.scrollTop
+    
+    let startVisualY, endVisualY
+    const isForward = direction === 1
+
+    if (isForward) {
+      // Forward: Anchor moves from bottom UP to Focus Line
+      startVisualY = getVisualY(targetDocY)
+      endVisualY = focusLineViewportY
+    } else {
+      // Backward: Anchor moves from top DOWN to Focus Line
+      startVisualY = getVisualY(targetDocY)
+      endVisualY = focusLineViewportY
+    }
+
+    // Clip to screen
+    const clampedStart = Math.min(Math.max(0, startVisualY), window.innerHeight)
+    const clampedEnd = Math.min(Math.max(0, endVisualY), window.innerHeight)
+
+    monkey.style.top = `${clampedStart}px`
+    ruler.appendChild(monkey)
+
+    // Trigger transition
+    requestAnimationFrame(() => {
+      monkey.style.transition = `top ${this.jumpSpeed}ms cubic-bezier(0.165, 0.84, 0.44, 1)`
+      monkey.style.animation = isForward ? `monkey-climb ${this.jumpSpeed}ms infinite` : `monkey-jump-down ${this.jumpSpeed}ms ease-out`
+      
+      monkey.offsetHeight // force reflow
+      monkey.style.top = `${clampedEnd}px`
+
+      // On finish: change icon
+      setTimeout(() => {
+        monkey.style.animation = ''
+        if (isForward) {
+          monkey.textContent = '🍌'
+          monkey.classList.add('eating')
+        } else {
+          monkey.textContent = '🥥'
+          monkey.classList.add('holding')
+        }
+      }, this.jumpSpeed)
+    })
   }
 
   computeNextTarget() {
@@ -3026,6 +3331,8 @@ class ScoreFlow {
     const viewportHeight = this.viewer.clientHeight
     const viewportCenter = currentScroll + viewportHeight / 2
     const currentFocusY = currentScroll + this.jumpOffsetPx
+    const jumpStep = viewportHeight - 2 * this.jumpOffsetPx
+    const maxForwardRange = currentFocusY + jumpStep + 100
 
     const candidates = this.stamps
       .filter(s => s.type === 'anchor')
@@ -3036,7 +3343,7 @@ class ScoreFlow {
         const absoluteY = pageElem.offsetTop + (s.y * canvas.height)
         return { stamp: s, absoluteY }
       })
-      .filter(a => a !== null && a.absoluteY > currentFocusY + 10)
+      .filter(a => a !== null && a.absoluteY > currentFocusY + 10 && a.absoluteY < maxForwardRange)
 
     if (candidates.length === 0) {
       this.nextTargetAnchor = null
@@ -3352,20 +3659,6 @@ class ScoreFlow {
 
       list.appendChild(item)
     })
-
-    // Add Emergency Reset Button at the bottom
-    const resetWrapper = document.createElement('div')
-    resetWrapper.style.padding = '10px 0'
-    resetWrapper.style.borderTop = '1px solid var(--border)'
-    resetWrapper.style.marginTop = '10px'
-    resetWrapper.innerHTML = `
-      <button id="reset-layers-btn" class="btn-text-danger" style="width:100%; text-align:center; font-size:0.75rem;">
-        Reset to Standard Categories
-      </button>
-    `
-    const resetBtn = resetWrapper.querySelector('#reset-layers-btn')
-    resetBtn.addEventListener('click', () => this.resetLayers())
-    list.appendChild(resetWrapper)
   }
 
   spawnTextEditor(wrapper, pageNum, stamp) {
@@ -4198,8 +4491,12 @@ class ScoreFlow {
   }
 
   async completeMissionSetup(profile) {
-    if (!this.pendingMissionHandle) {
-      console.error('Mission setup failed: No folder handle found.')
+    if (!profile) {
+      profile = this.profiles.find(p => p.id === this.pendingMissionProfileId)
+    }
+
+    if (!profile || !this.pendingMissionHandle) {
+      console.error('Mission setup failed: Missing profile or folder handle.')
       return
     }
 
@@ -4246,45 +4543,37 @@ class ScoreFlow {
   }
 
   async exitMission() {
-    const choice = await this.showDialog({
+    const confirmed = await this.showDialog({
       title: 'Exit Mission',
-      message: 'Choose how you would like to end this mission. Your local markings (L) are saved automatically.',
+      message: 'Are you sure you want to end this performance mission and return to the hub? Your local markings are saved automatically.',
       icon: '🚪',
-      actions: [
-        { label: 'Sync to Private 🏠', value: 'personal', type: 'primary' },
-        { label: 'Sync to Orchestra 🎻', value: 'orchestra', type: 'primary' },
-        { label: 'Exit Only', value: 'exit', type: 'outline' },
-        { label: 'Cancel', value: 'cancel', type: 'outline' }
-      ]
+      type: 'confirm',
+      confirmText: 'Exit Mission'
     })
 
-    if (choice === 'cancel') return
+    if (!confirmed) return
 
-    if (choice === 'personal' || choice === 'orchestra') {
-      await this.publishWork(choice)
-      // Small Delay for UX
-      await new Promise(r => setTimeout(r, 1000))
+    this.pdf = null
+    this.libraryFiles = []
+    this.libraryFolderHandle = null
+    this.activeScoreName = null
+
+    if (this.container) this.container.querySelectorAll('.page-container').forEach(el => el.remove())
+    if (this.layerShelf) this.layerShelf.classList.remove('active')
+    if (this.sidebar) this.sidebar.classList.remove('open')
+    if (this.isSidebarLocked) {
+      this.isSidebarLocked = false
+      if (this.lockSidebarBtn) this.lockSidebarBtn.classList.remove('locked')
     }
+    if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
 
-    if (choice !== 'cancel') {
-      this.pdf = null
-      this.libraryFiles = []
-      this.libraryFolderHandle = null
-      this.activeScoreName = null
+    // Hide all main-UI elements that showMainUI() revealed
+    ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
+      const el = document.getElementById(id)
+      if (el) el.classList.add('hidden')
+    })
 
-      if (this.container) this.container.querySelectorAll('.page-container').forEach(el => el.remove())
-      if (this.layerShelf) this.layerShelf.classList.remove('active')
-      if (this.sidebar) this.sidebar.classList.remove('open')
-      if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
-
-      // Hide all main-UI elements that showMainUI() revealed
-      ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
-        const el = document.getElementById(id)
-        if (el) el.classList.add('hidden')
-      })
-
-      this.checkInitialView()
-    }
+    this.checkInitialView()
   }
 
   hideWelcome() {
@@ -4361,7 +4650,11 @@ class ScoreFlow {
   }
 
   showProjectRepertoire() {
+    // Hide all possible prior welcome views
     if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
+    if (this.missionSelectionView) this.missionSelectionView.classList.add('hidden')
+    if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
+
     if (this.projectRepertoireView) this.projectRepertoireView.classList.remove('hidden')
     if (this.projectNameDisplay) this.projectNameDisplay.textContent = `Project: ${this.libraryFolderHandle.name}`
     this.renderProjectRepertoire()

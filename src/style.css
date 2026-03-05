@@ -160,13 +160,14 @@ body {
   text-align: center;
 }
 
-/* Split-View Mode: On Desktop, push the viewer when sidebar is active */
+/* Split-View Mode: Optimized for overlay instead of pushing content */
 @media (min-width: 1024px) {
+  /* We no longer push the viewer, sidebar will just overlay */
   #app.is-sidebar-active .viewer-container {
-    padding-right: var(--sidebar-width);
+    padding-right: 0;
   }
 
-  /* Shift right-anchored floating elements along with the workspace */
+  /* Keep floating elements shifted so they remain accessible when sidebar is open */
   #app.is-sidebar-active .floating-doc-bar {
     right: calc(20px + var(--sidebar-width));
   }
@@ -285,6 +286,59 @@ body {
   transition: top 0.1s linear;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   z-index: 5;
+}
+
+/* 🐒 Monkey Jump Animation on Ruler - High Visibility Version */
+.ruler-monkey {
+  position: absolute;
+  left: 4px;
+  width: 34px;
+  height: 34px;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  pointer-events: none;
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: translateY(-50%);
+  transition: opacity 0.2s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.ruler-monkey.eating {
+  animation: monkey-eat 0.5s ease-in-out infinite alternate;
+  border-color: #f59e0b; /* Banana Yellow */
+}
+
+.ruler-monkey.holding {
+  animation: monkey-catch 0.5s ease-out;
+  border-color: #8b5cf6; /* Coconut/Purple-ish */
+}
+
+@keyframes monkey-climb {
+  0% { transform: translateY(-50%) rotate(-10deg); }
+  50% { transform: translateY(-50%) rotate(10deg) scale(1.1); }
+  100% { transform: translateY(-50%) rotate(-10deg); }
+}
+
+@keyframes monkey-jump-down {
+  0% { transform: translateY(-50%) scale(1); }
+  60% { transform: translateY(-50%) scale(1.2); }
+  100% { transform: translateY(-50%) scale(1); }
+}
+
+@keyframes monkey-eat {
+  0% { transform: translateY(-50%) scale(1.1) rotate(-5deg); }
+  100% { transform: translateY(-50%) scale(1.1) rotate(5deg); }
+}
+
+@keyframes monkey-catch {
+  0% { transform: translateY(-80%) scale(1.3); }
+  40% { transform: translateY(-40%) scale(0.9); }
+  100% { transform: translateY(-50%) scale(1); }
 }
 
 .measure-input-large {
@@ -3799,4 +3853,57 @@ kbd {
 
 .gesture-icon {
   font-size: 18px;
+}
+/* ── Google Drive Browser ─────────────────────────────────────────────────── */
+.gdrive-browser-content {
+  max-width: 520px;
+  width: 92vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.gdrive-browser-content .modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.gdrive-files-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 52vh;
+}
+
+.gdrive-file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.gdrive-file-row:hover {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.gdrive-file-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gdrive-file-meta {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 2px;
 }

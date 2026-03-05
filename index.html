@@ -29,7 +29,8 @@
     #quick-load-modal:not(.active),
     #profile-modal:not(.active),
     #system-dialog:not(.active),
-    #measure-dialog:not(.active) {
+    #measure-dialog:not(.active),
+    #gdrive-browser-modal:not(.active) {
       display: none !important;
     }
 
@@ -350,6 +351,14 @@
           <h3>ScoreFlow <span class="v-tag">v2.0</span></h3>
         </div>
         <div class="sidebar-header-actions">
+          <button id="exit-mission-btn" class="sidebar-lock-btn" title="Exit Performance Mission">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
           <button id="lock-sidebar" class="sidebar-lock-btn" title="Toggle Menu Lock">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round">
@@ -393,22 +402,17 @@
 
         <!-- Tab: Library -->
         <div class="tab-panel active" data-panel="library">
-          <button id="exit-mission-btn" class="exit-mission-btn" title="Close this mission and return to hub">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            Exit Performance Mission
-          </button>
-          <button id="select-library-btn" class="btn btn-outline btn-full mb-10">
-            📁 Change Project Folder...
+          <button id="open-file-btn" class="btn btn-primary btn-full mb-10">
+            📄 Open PDF File...
           </button>
           <div class="library-search-box mb-10">
             <input type="text" id="library-search" placeholder="Search repertoire..."
               title="Search for a score in your library" class="search-input-mini" />
           </div>
           <div id="recent-scores-inline" style="margin-bottom:10px"></div>
+          <button id="gdrive-browse-btn" class="btn btn-secondary btn-full mb-10" style="display:none">
+            ☁ Browse Google Drive PDFs...
+          </button>
           <input type="file" id="pdf-upload" accept="application/pdf" title="Select a PDF score to open" hidden />
           <div id="library-scores-list" class="library-scores-list">
             <div class="empty-state">No scores in library yet.</div>
@@ -472,6 +476,21 @@
             <button id="edit-profile-btn" class="btn-icon">⚙️</button>
           </div>
           <div class="tab-divider"></div>
+          <div class="tab-section-label">Google Drive</div>
+          <div id="gdrive-section" style="margin-bottom:10px">
+            <button id="gdrive-signin-btn" class="btn btn-outline btn-full">
+              ☁ Connect Google Drive
+            </button>
+            <div id="gdrive-user-info" style="display:none">
+              <div id="gdrive-status-text" class="hub-status-mini"></div>
+              <div style="display:flex;gap:6px;margin-top:6px">
+                <button id="gdrive-save-btn" class="btn btn-secondary" style="flex:1;font-size:0.78rem">☁ Save Annotations</button>
+                <button id="gdrive-load-btn" class="btn btn-outline" style="flex:1;font-size:0.78rem">☁ Load Annotations</button>
+              </div>
+              <button id="gdrive-signout-btn" style="font-size:0.7rem;color:var(--text-muted);background:none;border:none;cursor:pointer;margin-top:4px;padding:0">Disconnect</button>
+            </div>
+          </div>
+          <div class="tab-divider"></div>
           <div class="tab-section-label">Data Backup</div>
           <div class="exchange-grid">
             <button id="export-btn" class="btn-outline-sm">Export Data</button>
@@ -482,16 +501,38 @@
             </button>
           </div>
           <div class="tab-divider"></div>
+          <div class="tab-section-label">Notation Categories</div>
+          <div class="setting-item mb-10">
+            <button id="reset-layers-standard-btn" class="btn btn-outline btn-full text-danger btn-smaller">
+              Reset to Standard Categories
+            </button>
+          </div>
+          <div class="setting-item">
+            <button id="reset-layers-sidebar-btn" class="btn btn-outline btn-full text-danger btn-smaller">
+              ↺ Reset Notation Categories
+            </button>
+          </div>
+
+          <div class="tab-divider"></div>
           <div class="tab-section-label">Jump Interaction</div>
 
           <div class="setting-item mb-15">
-            <label class="setting-label">Page Turner Mode</label>
-            <select id="turner-mode-select" class="form-select mini-select w-full mt-5" title="Page Turner Mode">
-              <option value="default">Default (Space/Up/Down/L/R)</option>
-              <option value="pgupdn">PageUp / PageDown</option>
-              <option value="arrows">Arrow Keys Only</option>
-              <option value="custom">Custom (Learn from Pedal)...</option>
-            </select>
+            <div class="flex-row-center-between">
+              <label class="setting-label">Enable Navigation Mascot 🐒</label>
+              <label class="switch-mini">
+                <input type="checkbox" id="monkey-enabled" checked>
+                <span class="slider-round"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-item mb-15">
+            <label class="setting-label">Jump Animation Speed</label>
+            <div class="flex-row-center gap-10 mt-5">
+              <input type="range" id="jump-speed" min="100" max="1000" step="50" value="400" class="mini-slider flex-1"
+                title="Adjust how fast the page scrolls during a jump">
+              <span id="jump-speed-value" class="text-mini min-w-40">400ms</span>
+            </div>
           </div>
 
           <div class="setting-item">
@@ -501,6 +542,19 @@
                 title="Adjust the vertical offset for anchor jumps">
               <span id="jump-offset-value" class="text-mini min-w-40">1.0cm</span>
             </div>
+          </div>
+
+          <div class="tab-divider"></div>
+          <div class="tab-section-label">Integration</div>
+
+          <div class="setting-item mb-15">
+            <label class="setting-label">Page Turner Mode</label>
+            <select id="turner-mode-select" class="form-select mini-select w-full mt-5" title="Page Turner Mode">
+              <option value="default">Default (Space/Up/Down/L/R)</option>
+              <option value="pgupdn">PageUp / PageDown</option>
+              <option value="arrows">Arrow Keys Only</option>
+              <option value="custom">Custom (Learn from Pedal)...</option>
+            </select>
           </div>
         </div>
 
@@ -516,9 +570,6 @@
     </div>
     <div id="external-layer-list" class="layer-list-mini"></div>
     <div class="shelf-footer mt-15 pt-15 border-top">
-      <button id="add-layer-btn" class="btn btn-primary btn-full mb-10">+ Add Category</button>
-      <button id="reset-layers-btn" class="btn btn-outline btn-full text-danger btn-smaller">↺ Reset Notation
-        Categories</button>
     </div>
   </div>
 
@@ -583,6 +634,23 @@
         </div>
       </div>
       <p class="modal-footer">Press any key to close</p>
+    </div>
+  </div>
+
+  <!-- Google Drive PDF Browser Modal -->
+  <div id="gdrive-browser-modal" class="modal-overlay">
+    <div class="modal-content gdrive-browser-content">
+      <div class="modal-header">
+        <h3>☁ Google Drive — PDF Files</h3>
+        <button class="close-modal" id="close-gdrive-browser">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="library-search-box mb-10">
+          <input type="text" id="gdrive-search" placeholder="Search PDFs in Drive..." class="search-input-mini" />
+        </div>
+        <div id="gdrive-files-list" class="gdrive-files-list"></div>
+        <button id="gdrive-load-more-btn" class="btn btn-outline btn-full mt-10" style="display:none">Load More...</button>
+      </div>
     </div>
   </div>
 
