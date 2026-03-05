@@ -18,7 +18,7 @@ class ScoreFlow {
     this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
-    this.activeCategories = ['Edit', 'Pens', 'Bowing', 'Fingering', 'Articulation', 'Tempo', 'Dynamic', 'Anchor']
+    this.activeCategories = null // initialized after initToolsets()
     this.activeCategory = 'Edit'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
     this.scale = 1.5
@@ -78,6 +78,7 @@ class ScoreFlow {
 
   initToolsets() {
     this.toolsets = TOOLSETS
+    this.activeCategories = this.toolsets.map(g => g.name)
   }
 
   initElements() {
@@ -590,14 +591,39 @@ class ScoreFlow {
         }
       }
 
-      // Group shortcuts when stamp palette is open (1-8 and E/P/B/F/A/T/D/L)
+      // Stamp palette shortcuts — two-level navigation
       const paletteOpen = this.activeToolsContainer?.classList.contains('expanded')
       if (paletteOpen) {
-        const groupByKey = this.toolsets.find(g => g.num === e.key || g.letter === e.key.toUpperCase())
-        if (groupByKey) {
-          e.preventDefault()
-          this.selectGroup(groupByKey.name)
-          return
+        const inSingleGroup = this.activeCategories.length === 1
+
+        if (inSingleGroup) {
+          // ── Level 2: numbers select tools, letters still switch/back groups ──
+          const toolIndex = parseInt(e.key) - 1
+          if (!isNaN(toolIndex) && toolIndex >= 0) {
+            const group = this.toolsets.find(g => g.name === this.activeCategories[0])
+            if (group?.tools[toolIndex]) {
+              e.preventDefault()
+              this.activeStampType = group.tools[toolIndex].id
+              this.lastUsedToolPerCategory[group.name] = group.tools[toolIndex].id
+              this.updateActiveTools()
+              return
+            }
+          }
+          // Letters: switch group or back to level 1
+          const groupByLetter = this.toolsets.find(g => g.letter === e.key.toUpperCase())
+          if (groupByLetter) {
+            e.preventDefault()
+            this.selectGroup(groupByLetter.name)
+            return
+          }
+        } else {
+          // ── Level 1: numbers AND letters select group ──
+          const groupByKey = this.toolsets.find(g => g.num === e.key || g.letter === e.key.toUpperCase())
+          if (groupByKey) {
+            e.preventDefault()
+            this.selectGroup(groupByKey.name)
+            return
+          }
         }
       }
 
@@ -896,6 +922,7 @@ class ScoreFlow {
 
   async changeZoom(delta) {
     this.scale = Math.min(Math.max(0.5, this.scale + delta), 4)
+    this.viewer.style.paddingLeft = '0'
     this.updateZoomDisplay()
     if (this.pdf) await this.renderPDF()
     this.updateRulerPosition()
@@ -908,6 +935,8 @@ class ScoreFlow {
     const page = await this.pdf.getPage(1)
     const naturalWidth = page.getViewport({ scale: 1 }).width
     const rulerW = this.rulerVisible ? (parseInt(getComputedStyle(document.getElementById('jump-ruler')).width) || 28) : 0
+    // Shift centering right by rulerW so the gray gap ends up on the left (behind ruler), not the right
+    this.viewer.style.paddingLeft = rulerW > 0 ? `${rulerW}px` : '0'
     const availW = this.viewer.clientWidth - rulerW - 8 // 8px breathing room
     this.scale = Math.min(Math.max(0.5, availW / naturalWidth), 4)
     this.updateZoomDisplay()
@@ -919,6 +948,7 @@ class ScoreFlow {
 
   async fitToHeight() {
     if (!this.pdf) return
+    this.viewer.style.paddingLeft = '0'
     const page = await this.pdf.getPage(1)
     const naturalHeight = page.getViewport({ scale: 1 }).height
     const availH = this.viewer.clientHeight - 16 // 16px breathing room
@@ -978,6 +1008,40 @@ class ScoreFlow {
     this.hoveredStamp = null
     this.selectHoveredStamp = null // Separate hover state for Select mode
 
+    // Offset so the stamp lands above-left of cursor/finger, not under it
+    const STAMP_OFFSET = 62
+    const FREEHAND_TYPES = ['pen', 'highlighter', 'line', 'eraser', 'select', 'view']
+
+    // Normalized position stored at ghost-render time — used for stamp placement so both
+    // always reference the same overlay rect snapshot (avoids scroll-drift between events).
+    let ghostNormPos = null
+
+    const showStampGhost = (clientX, clientY) => {
+      const toolType = this.activeStampType
+      if (FREEHAND_TYPES.includes(toolType)) { hideStampGhost(); return }
+      let ghost = wrapper.querySelector('.stamp-ghost')
+      if (!ghost || ghost.dataset.tool !== toolType) {
+        if (ghost) ghost.remove()
+        ghost = document.createElement('div')
+        ghost.className = 'stamp-ghost'
+        ghost.dataset.tool = toolType
+        const tool = this.toolsets.flatMap(g => g.tools).find(t => t.id === toolType)
+        if (tool) ghost.innerHTML = this.getIcon(tool, 24)
+        wrapper.appendChild(ghost)
+      }
+      const rect = overlay.getBoundingClientRect()
+      const gx = clientX - rect.left - STAMP_OFFSET
+      const gy = clientY - rect.top  - STAMP_OFFSET
+      ghost.style.left = gx + 'px'
+      ghost.style.top  = gy + 'px'
+      // Store normalized position using the SAME rect snapshot — stamp placement reads this directly
+      ghostNormPos = { x: Math.max(0, gx / rect.width), y: Math.max(0, gy / rect.height) }
+    }
+    const hideStampGhost = () => {
+      const ghost = wrapper.querySelector('.stamp-ghost')
+      if (ghost) ghost.remove()
+    }
+
     const getPos = (e) => {
       const rect = overlay.getBoundingClientRect()
       const clientX = e.clientX || (e.touches && e.touches[0].clientX)
@@ -985,6 +1049,18 @@ class ScoreFlow {
       return {
         x: (clientX - rect.left) / rect.width,
         y: (clientY - rect.top) / rect.height
+      }
+    }
+    // Returns position offset upper-left of cursor/finger so the stamp doesn't hide under it.
+    // If _normPos is pre-set (e.g. from ghostNormPos), use it directly to avoid a second getBCR call.
+    const getStampPos = (e) => {
+      if (e._normPos) return e._normPos
+      const rect = overlay.getBoundingClientRect()
+      const clientX = (e.clientX ?? e.touches?.[0]?.clientX) - STAMP_OFFSET
+      const clientY = (e.clientY ?? e.touches?.[0]?.clientY) - STAMP_OFFSET
+      return {
+        x: Math.max(0, (clientX - rect.left) / rect.width),
+        y: Math.max(0, (clientY - rect.top) / rect.height)
       }
     }
 
@@ -1024,6 +1100,7 @@ class ScoreFlow {
       }
 
       if (e.type === 'touchstart') e.preventDefault()
+      hideStampGhost()
       isInteracting = true
 
       const isFreehand = ['pen', 'highlighter', 'line'].includes(toolType)
@@ -1068,7 +1145,8 @@ class ScoreFlow {
         }
         isInteracting = false
       } else {
-        // Precise Placement for Stamps
+        // Precise Placement for Stamps — use ghost offset position
+        const sPos = getStampPos(e)
         let targetLayerId = 'draw'
         const group = this.toolsets.find(g => g.tools.some(t => t.id === toolType))
         if (group) {
@@ -1081,8 +1159,8 @@ class ScoreFlow {
           layerId: targetLayerId,
           sourceId: this.activeSourceId, // Link to current Persona
           type: toolType,
-          x: pos.x,
-          y: pos.y,
+          x: sPos.x,
+          y: sPos.y,
           data: null
         }
         this.lastFocusedStamp = activeObject
@@ -1114,11 +1192,10 @@ class ScoreFlow {
         const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
         if (canvas) this.drawPathOnCanvas(canvas.getContext('2d'), canvas, activeObject)
       } else {
-        // Preview new stamp movement
-        activeObject.x = pos.x
-        activeObject.y = pos.y
-        this.redrawStamps(pageNum) // Redraw with the pending object? 
-        // Better: redraw all + draw the pending one as ghost
+        // Preview new stamp movement — follow ghost offset position
+        const sPos = getStampPos(e)
+        activeObject.x = sPos.x
+        activeObject.y = sPos.y
         const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
         const ctx = canvas.getContext('2d')
         this.redrawStamps(pageNum)
@@ -1219,12 +1296,14 @@ class ScoreFlow {
       isMovingExisting = false
       activeObject = null
       this._dragLastPos = null
+      hideStampGhost()
     }
 
     overlay.addEventListener('mousedown', startAction)
     overlay.addEventListener('mousemove', (e) => {
       moveAction(e)
       hoverAction(e)
+      if (!isInteracting) showStampGhost(e.clientX, e.clientY)
     })
     overlay.addEventListener('mouseleave', () => {
       let needsRedraw = false
@@ -1239,12 +1318,48 @@ class ScoreFlow {
       if (needsRedraw) this.redrawStamps(pageNum)
       const chip = wrapper.querySelector('.erase-hover-chip')
       if (chip) chip.remove()
+      hideStampGhost()
     })
     window.addEventListener('mouseup', endAction)
 
-    overlay.addEventListener('touchstart', startAction, { passive: false })
-    overlay.addEventListener('touchmove', moveAction, { passive: false })
-    overlay.addEventListener('touchend', endAction)
+    // Touch stamp placement: show ghost while finger is held, place on lift
+    // Store raw coords (not the event) — touch lists become stale after the handler returns
+    let pendingTouchCoords = null // { clientX, clientY }
+    const isStampTool = () => !FREEHAND_TYPES.includes(this.activeStampType)
+
+    overlay.addEventListener('touchstart', (e) => {
+      if (e.touches?.length > 1) return
+      if (isStampTool()) {
+        e.preventDefault()
+        pendingTouchCoords = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }
+        showStampGhost(pendingTouchCoords.clientX, pendingTouchCoords.clientY)
+      } else {
+        startAction(e)
+      }
+    }, { passive: false })
+    overlay.addEventListener('touchmove', (e) => {
+      if (pendingTouchCoords && e.touches?.length === 1) {
+        e.preventDefault()
+        pendingTouchCoords = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }
+        showStampGhost(pendingTouchCoords.clientX, pendingTouchCoords.clientY)
+      } else {
+        moveAction(e)
+      }
+    }, { passive: false })
+    overlay.addEventListener('touchend', (e) => {
+      if (pendingTouchCoords) {
+        const normPos = ghostNormPos          // snapshot taken at the same rect as the ghost render
+        hideStampGhost()
+        pendingTouchCoords = null
+        ghostNormPos = null
+        // Pass the pre-computed position so getStampPos doesn't call getBCR again
+        const fakeEvt = { _normPos: normPos, clientX: 0, clientY: 0, preventDefault: () => {} }
+        startAction(fakeEvt)
+        endAction(e)
+      } else {
+        endAction(e)
+      }
+    })
 
     wrapper.appendChild(overlay)
   }
@@ -1589,6 +1704,14 @@ class ScoreFlow {
       if (btnCancel) btnCancel.onclick = () => { cleanup(); resolve(null) }
 
       dialog.classList.add('active')
+      // Briefly highlight the confirm button so users know where to tap
+      const confirmBtn = dialog.querySelector('[data-key="confirm"]')
+      if (confirmBtn) {
+        setTimeout(() => {
+          confirmBtn.classList.add('confirm-btn-pulse')
+          setTimeout(() => confirmBtn.classList.remove('confirm-btn-pulse'), 800)
+        }, 100)
+      }
     })
   }
 
@@ -2006,32 +2129,9 @@ class ScoreFlow {
         <circle cx="15" cy="19" r="1" fill="currentColor"/>
       </svg>
     `
-    handle.onclick = (e) => {
-      e.stopPropagation()
-      this.activeToolsContainer.classList.remove("expanded")
-      this.updateActiveTools()
-    }
+    // Collapse is handled in initDraggable dragEnd (only if no drag occurred)
 
-    // 2a. iPad 3×3 Numeric Group Keypad (touch devices only)
-    const isTouch = window.matchMedia('(pointer: coarse)').matches
-    if (isTouch) {
-      const numpad = document.createElement("div")
-      numpad.className = "group-numpad"
-      this.toolsets.forEach(group => {
-        const isActive = this.activeCategories.includes(group.name) && this.activeCategories.length === 1
-        const btn = document.createElement("button")
-        btn.className = `numpad-group-btn ${isActive ? "active" : ""}`
-        btn.innerHTML = `<span class="ng-num">${group.num}</span><span class="ng-name">${group.displayName || group.name}</span>`
-        btn.onclick = (e) => { e.stopPropagation(); this.selectGroup(group.name) }
-        numpad.appendChild(btn)
-      })
-      // 9th cell placeholder so grid aligns
-      const placeholder = document.createElement("div")
-      numpad.appendChild(placeholder)
-      header.appendChild(numpad)
-    }
-
-    // 2b. Category Selection Ribbon (Persistent Pills - forScore Style)
+    // 2a. Category Selection Ribbon (Persistent Pills - forScore Style)
     const ribbon = document.createElement("div")
     ribbon.className = "category-ribbon"
 
@@ -2056,6 +2156,7 @@ class ScoreFlow {
       ribbon.appendChild(pill)
     })
 
+    header.appendChild(handle)
     header.appendChild(ribbon)
     this.activeToolsContainer.appendChild(header)
 
@@ -2074,9 +2175,17 @@ class ScoreFlow {
         grid.appendChild(divider)
       }
 
-      group.tools.forEach(tool => {
+      group.tools.forEach((tool, toolIdx) => {
         const wrapper = document.createElement("div")
         wrapper.className = "stamp-tool-wrapper"
+
+        // Level-2 shortcut badge: show keyboard number when a single group is active
+        if (this.activeCategories.length === 1) {
+          const badge = document.createElement("span")
+          badge.className = "tool-num-badge"
+          badge.textContent = String(toolIdx + 1)
+          wrapper.appendChild(badge)
+        }
 
         const btn = document.createElement("button")
         btn.className = `stamp-tool ${this.activeStampType === tool.id ? "active" : ""}`
@@ -2102,8 +2211,53 @@ class ScoreFlow {
     })
     this.activeToolsContainer.appendChild(grid)
 
+    // 3.5 Group Numpad — bottom of palette (all devices)
+    // Level 1: shows groups (1–8)  |  Level 2 (single group): shows tools (1–N) + back button
+    const numpad = document.createElement("div")
+    numpad.className = "group-numpad"
+    if (this.activeCategories.length === 1) {
+      // ── Level 2: tools of the current group ──
+      const curGroup = this.toolsets.find(g => g.name === this.activeCategories[0])
+      if (curGroup) {
+        curGroup.tools.forEach((tool, idx) => {
+          const isActive = this.activeStampType === tool.id
+          const btn = document.createElement("button")
+          btn.className = `numpad-group-btn ${isActive ? "active" : ""}`
+          btn.innerHTML = `<span class="ng-name">${tool.label}</span><span class="ng-num">${idx + 1}</span>`
+          btn.onclick = (e) => {
+            e.stopPropagation()
+            this.activeStampType = tool.id
+            this.lastUsedToolPerCategory[curGroup.name] = tool.id
+            this.updateActiveTools()
+          }
+          numpad.appendChild(btn)
+        })
+        // Back button → return to level 1
+        const backBtn = document.createElement("button")
+        backBtn.className = "numpad-group-btn numpad-back-btn"
+        backBtn.innerHTML = `<span class="ng-name">Back</span><span class="ng-num">←</span>`
+        backBtn.onclick = (e) => {
+          e.stopPropagation()
+          this.activeCategories = this.toolsets.map(g => g.name)
+          this.updateActiveTools()
+        }
+        numpad.appendChild(backBtn)
+      }
+    } else {
+      // ── Level 1: groups (1–8) ──
+      this.toolsets.forEach(group => {
+        const btn = document.createElement("button")
+        btn.className = "numpad-group-btn"
+        btn.innerHTML = `<span class="ng-name">${group.displayName || group.name}</span><span class="ng-num">${group.num}</span>`
+        btn.onclick = (e) => { e.stopPropagation(); this.selectGroup(group.name) }
+        numpad.appendChild(btn)
+      })
+      const placeholder = document.createElement("div") // 9th cell to keep grid aligned
+      numpad.appendChild(placeholder)
+    }
+    this.activeToolsContainer.appendChild(numpad)
 
-    // 3.5 Resize Handle (Professional Custom Control)
+    // 3.6 Resize Handle (Professional Custom Control)
     const resizer = document.createElement("div")
     resizer.className = "resize-handle"
     resizer.innerHTML = `
@@ -2114,20 +2268,26 @@ class ScoreFlow {
     this.activeToolsContainer.appendChild(resizer)
 
     // 4. Viewport Safety Check (Dynamic Height Protection for iPad)
+    // Panel grows upward (bottom: 0), so cap when top edge would go off screen
     setTimeout(() => {
       const rect = this.activeToolsContainer.getBoundingClientRect()
       if (rect.top < 20) {
-        // If expanding reaches the top, we cap the height and enable internal scrolling
-        this.activeToolsContainer.style.maxHeight = (window.innerHeight - 80) + "px"
+        this.activeToolsContainer.style.maxHeight = (rect.bottom - 20) + "px"
         this.activeToolsContainer.style.overflowY = "auto"
       } else {
         this.activeToolsContainer.style.maxHeight = "none"
-        this.activeToolsContainer.style.overflowY = "hidden" // Ensure no scrollbars ever show
+        this.activeToolsContainer.style.overflowY = "hidden"
       }
     }, 0)
   }
 
   selectGroup(groupName) {
+    // Same group pressed again → back to level 1 (all groups)
+    if (this.activeCategories.length === 1 && this.activeCategories[0] === groupName) {
+      this.activeCategories = this.toolsets.map(g => g.name)
+      this.updateActiveTools()
+      return
+    }
     this.activeCategories = [groupName]
     const group = this.toolsets.find(g => g.name === groupName)
     const lastTool = this.lastUsedToolPerCategory[groupName] || group?.tools[0]?.id
@@ -2291,41 +2451,65 @@ class ScoreFlow {
 
   initDraggable() {
     let isDragging = false
-    let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0
+    let didMove = false
+    let startClientX, startClientY, xOffset = 0, yOffset = 0
     const el = this.activeToolsContainer
 
+    // Restore saved panel position
+    const savedPos = JSON.parse(localStorage.getItem('scoreflow_stamp_panel_pos') || 'null')
+    if (savedPos) {
+      xOffset = savedPos.x
+      yOffset = savedPos.y
+      el.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0)`
+    }
+
+    const getClient = (e) => e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
+                                       : { x: e.clientX, y: e.clientY }
+
+    const dragStart = (e) => {
+      if (!e.target.closest(".drag-handle") && !e.target.closest(".active-tool-fab")) return
+      const { x, y } = getClient(e)
+      startClientX = x - xOffset
+      startClientY = y - yOffset
+      isDragging = true
+      didMove = false
+      if (e.cancelable) e.preventDefault()
+    }
+
+    const drag = (e) => {
+      if (!isDragging) return
+      if (e.cancelable) e.preventDefault()
+      const { x, y } = getClient(e)
+      const cx = x - startClientX
+      const cy = y - startClientY
+      if (Math.abs(cx - xOffset) > 3 || Math.abs(cy - yOffset) > 3) didMove = true
+      xOffset = cx
+      yOffset = cy
+      el.style.transform = `translate3d(${cx}px, ${cy}px, 0)`
+    }
+
+    const dragEnd = () => {
+      if (!isDragging) return
+      isDragging = false
+      // Only collapse if the user tapped (didn't drag)
+      if (!didMove) {
+        el.classList.remove("expanded")
+        this.updateActiveTools()
+      } else {
+        // Persist panel position across sessions
+        localStorage.setItem('scoreflow_stamp_panel_pos', JSON.stringify({ x: xOffset, y: yOffset }))
+      }
+    }
+
+    // Mouse
     el.addEventListener("mousedown", dragStart)
     document.addEventListener("mousemove", drag)
     document.addEventListener("mouseup", dragEnd)
 
-    function dragStart(e) {
-      if (!e.target.closest(".drag-handle") && !e.target.closest(".active-tool-fab")) return
-      initialX = e.clientX - xOffset
-      initialY = e.clientY - yOffset
-      isDragging = true
-    }
-
-    function drag(e) {
-      if (isDragging) {
-        e.preventDefault()
-        currentX = e.clientX - initialX
-        currentY = e.clientY - initialY
-        xOffset = currentX
-        yOffset = currentY
-        setTranslate(currentX, currentY, el)
-      }
-    }
-
-    function dragEnd(e) {
-      initialX = currentX
-      initialY = currentY
-      isDragging = false
-    }
-
-    function setTranslate(xPos, yPos, el) {
-      // Anchored to left 40px, so we just add the offset
-      el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`
-    }
+    // Touch (iPad)
+    el.addEventListener("touchstart", dragStart, { passive: false })
+    document.addEventListener("touchmove", drag, { passive: false })
+    document.addEventListener("touchend", dragEnd)
   }
 
   initDocBarDraggable() {
@@ -2666,6 +2850,9 @@ class ScoreFlow {
       // We take ALL stored layers (including custom ones)
       this.layers = storedLayers
 
+      // Remove legacy 'fingering' layer (merged into 'bowing')
+      this.layers = this.layers.filter(l => l.id !== 'fingering')
+
       // Ensure all core layers exist — restore any that are missing from saved data
       INITIAL_LAYERS.forEach(coreLayer => {
         if (!this.layers.find(l => l.id === coreLayer.id)) {
@@ -2684,6 +2871,8 @@ class ScoreFlow {
       this.stamps = parsedStamps
       // Cleanup old stamps that might have invalid layerIds from previous versions
       this.stamps.forEach(s => {
+        // Migrate fingering layer (removed, merged into bowing)
+        if (s.layerId === 'fingering') s.layerId = 'bowing'
         if (!this.layers.find(l => l.id === s.layerId)) {
           s.layerId = 'draw'
         }
@@ -2726,7 +2915,7 @@ class ScoreFlow {
   }
 
   async deleteLayer(layerId) {
-    const coreIds = ['draw', 'fingering', 'articulation', 'performance', 'other', 'bowing']
+    const coreIds = INITIAL_LAYERS.map(l => l.id)
     if (coreIds.includes(layerId)) {
       this.showDialog({ title: 'Protected Layer', message: 'Cannot delete core system layers.', icon: '🛡️' })
       return
@@ -2772,17 +2961,15 @@ class ScoreFlow {
 
     if (!confirmed) return
 
-    // 1. Move all stamps to 'draw'
-    this.stamps.forEach(s => s.layerId = 'draw')
+    // 1. Move custom-layer stamps to 'draw', migrate fingering → bowing
+    const standardIds = new Set(INITIAL_LAYERS.map(l => l.id))
+    this.stamps.forEach(s => {
+      if (s.layerId === 'fingering') s.layerId = 'bowing'
+      else if (!standardIds.has(s.layerId)) s.layerId = 'draw'
+    })
 
     // 2. Reset layers array to defaults
-    this.layers = [
-      { id: 'draw', name: 'Draw Objects', color: '#ff4757', visible: true, type: 'draw' },
-      { id: 'fingering', name: 'Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
-      { id: 'articulation', name: 'Articulations', color: '#10b981', visible: true, type: 'articulation' },
-      { id: 'performance', name: 'Performance', color: '#f59e0b', visible: true, type: 'performance' },
-      { id: 'other', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'other' }
-    ]
+    this.layers = [...INITIAL_LAYERS]
 
     this.activeLayerId = 'draw'
     this.saveToStorage()
@@ -2813,7 +3000,7 @@ class ScoreFlow {
         ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
         : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
 
-      const isCore = ['draw', 'fingering', 'bowing', 'articulation', 'performance', 'other'].includes(layer.id)
+      const isCore = INITIAL_LAYERS.some(l => l.id === layer.id)
 
       item.innerHTML = `
         <div class="layer-info">
@@ -3749,6 +3936,26 @@ class ScoreFlow {
   }
 
   toggleFullscreen() {
+    // iOS Safari doesn't support Fullscreen API properly — it shows a
+    // swipe-down gesture bar that blocks all touch input at the top.
+    // True fullscreen on iOS requires PWA standalone mode (Add to Home Screen).
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      navigator.standalone === true
+
+    if (isIOS && !isStandalone) {
+      this.showDialog({
+        title: 'Full Screen on iPad',
+        message: 'Tap Share (□↑) → Add to Home Screen. ScoreFlow will open without the browser bar — true full screen.',
+        icon: '📱',
+        type: 'info',
+        confirmText: 'Got it',
+        actions: [{ label: 'Got it', primary: true }]
+      })
+      return
+    }
+
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {})
     } else {

@@ -423,6 +423,15 @@ body {
   background: rgba(99, 102, 241, 0.25);
 }
 
+@keyframes confirm-pulse {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(99, 102, 241, 0.5); }
+  50%  { transform: scale(1.12); box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(99, 102, 241, 0); }
+}
+.keypad-btn.confirm-btn-pulse {
+  animation: confirm-pulse 0.5s ease-out forwards;
+}
+
 /* The Handle on the Ruler (Word-style Arrow Marker) */
 .jump-line-handle {
   position: absolute;
@@ -479,9 +488,9 @@ body {
 
 /* Independent Stamp Palette Panel - Hidden by default, toggled by button */
 .floating-stamp-bar {
-  position: absolute;
-  right: calc(100% + 12px);
-  top: 0;
+  position: fixed;
+  right: 72px;
+  bottom: 20%;
   height: auto;
   min-height: 64px;
   max-width: 85vw;
@@ -772,7 +781,9 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  margin-bottom: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
   width: 100%;
 }
 
@@ -802,6 +813,11 @@ body {
   border-color: var(--primary);
 }
 
+.numpad-back-btn {
+  opacity: 0.6;
+  font-style: italic;
+}
+
 .ng-num {
   font-size: 1.1rem;
   font-weight: 700;
@@ -814,6 +830,21 @@ body {
   text-align: center;
 }
 
+/* Ghost icon showing where stamp will land (upper-left of cursor/finger) */
+.stamp-ghost {
+  position: absolute;
+  pointer-events: none;
+  z-index: 20;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  color: var(--primary);
+  transform: translate(-50%, -50%); /* center the icon on the exact placement point */
+}
+
 /* Stamp placement flash animation */
 @keyframes stamp-flash {
   0%   { box-shadow: inset 0 0 0 0 rgba(16, 185, 129, 0.5); }
@@ -824,6 +855,20 @@ body {
 .stamp-placed-flash {
   animation: stamp-flash 0.35s ease-out forwards;
 }
+
+/* Level-2 keyboard shortcut badge on each tool */
+.tool-num-badge {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--primary);
+  opacity: 0.7;
+  line-height: 1;
+  pointer-events: none;
+}
+
 
 /* Sidebar - Optimized for stability */
 .sidebar {
