@@ -163,10 +163,10 @@ class ScoreFlow {
     this.personalSyncFolder = null
     this.orchestraSyncFolder = null
 
-    this.missionSelectionView = document.getElementById('mission-selection-view')
+    this.welcomeView = document.getElementById('welcome-view')
     this.openSoloAltBtn = document.getElementById('welcome-open-file-alt')
     this.welcomeRecentList = document.getElementById('welcome-recent-list')
-    this.exitMissionBtn = document.getElementById('exit-mission-btn')
+    this.closeFileBtn = document.getElementById('close-file-btn')
 
     this.resetLayersBtn = document.getElementById('reset-layers-btn')
     this.resetLayersBtn = document.getElementById('reset-layers-btn')
@@ -428,8 +428,8 @@ class ScoreFlow {
     if (this.openSoloAltBtn) {
       this.openSoloAltBtn.addEventListener('click', () => this.openPdfFilePicker())
     }
-    if (this.exitMissionBtn) {
-      this.exitMissionBtn.addEventListener('click', () => this.exitMission())
+    if (this.closeFileBtn) {
+      this.closeFileBtn.addEventListener('click', () => this.closeFile())
     }
 
     // Mission Setup Card Listeners
@@ -3963,15 +3963,15 @@ class ScoreFlow {
     const screen = document.querySelector('.welcome-screen')
     if (screen) screen.classList.remove('hidden')
 
-    if (this.missionSelectionView) {
-      this.missionSelectionView.classList.remove('hidden')
+    if (this.welcomeView) {
+      this.welcomeView.classList.remove('hidden')
       this.renderWelcomeRecentScores()
     }
   }
 
 
 
-  async exitMission() {
+  async closeFile() {
     this.pdf = null
     this.libraryFiles = []
     this.libraryFolderHandle = null
