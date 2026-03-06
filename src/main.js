@@ -32,6 +32,7 @@ class ScoreFlow {
     this.isSidebarLocked = false
     this.pdfFingerprint = null // Professional Score ID
     this.lastUsedToolPerCategory = {}
+    this._lastStampType = null // Remember the last used stamp for restoration
     this.sources = [
       { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
     ]
@@ -1111,7 +1112,7 @@ class ScoreFlow {
       ctx.restore()
     }
 
-    const isStampTool = () => !['view', 'select', 'eraser', 'pen', 'highlighter', 'line', 'recycle-bin'].includes(this.activeStampType)
+    // Moved isStampTool to class method
 
     const startAction = (e) => {
       const pos = getPos(e)
@@ -1314,7 +1315,7 @@ class ScoreFlow {
       }
 
       // ── Stamp tool hover preview (ghost + leader line) ──
-      if (isStampTool() && !isInteracting) {
+      if (this.isStampTool() && !isInteracting) {
         const pos = getPos(e)
         const previewPos = getStampPreviewPos(pos)
         const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
@@ -1385,7 +1386,7 @@ class ScoreFlow {
       let needsRedraw = false
       if (this.hoveredStamp) { this.hoveredStamp = null; needsRedraw = true }
       if (this.selectHoveredStamp) { this.selectHoveredStamp = null; needsRedraw = true }
-      if (needsRedraw || isStampTool()) this.redrawStamps(pageNum)
+      if (needsRedraw || this.isStampTool()) this.redrawStamps(pageNum)
       const chip = wrapper.querySelector('.erase-hover-chip')
       if (chip) chip.remove()
     })
@@ -2333,8 +2334,7 @@ class ScoreFlow {
         this._stampDragMoved = false
         return // was a drag, not a tap — ignore
       }
-      this.activeToolsContainer.classList.remove("expanded")
-      this.updateActiveTools()
+      this.toggleStampPalette()
     })
 
     // iPad: double-tap handle to toggle (collapse/expand)
@@ -2768,9 +2768,30 @@ class ScoreFlow {
     })
   }
 
+  isStampTool() {
+    return !['view', 'select', 'eraser', 'pen', 'highlighter', 'line', 'recycle-bin'].includes(this.activeStampType)
+  }
+
   toggleStampPalette() {
     const el = this.activeToolsContainer
-    el.classList.toggle('expanded')
+    const isExpanding = !el.classList.contains('expanded')
+
+    if (isExpanding) {
+      el.classList.add('expanded')
+      // Restoration strategy: if currently in view/select mode, try to restore the last stamp or drawing tool
+      if (this.activeStampType === 'view' || this.activeStampType === 'select' || this.activeStampType === 'eraser') {
+        this.activeStampType = this._lastStampType || 'view'
+      }
+    } else {
+      el.classList.remove('expanded')
+      // Deactivation strategy: when panel closes, we shift back to view mode to avoid accidental stamps
+      // Includes stamps AND drawing tools (pen, highlighter, etc.) but excludes dedicated modes in doc bar
+      if (this.activeStampType !== 'view' && this.activeStampType !== 'select' && this.activeStampType !== 'eraser' && this.activeStampType !== 'anchor') {
+        this._lastStampType = this.activeStampType
+        this.activeStampType = 'view'
+      }
+    }
+
     this.updateActiveTools()
   }
 
