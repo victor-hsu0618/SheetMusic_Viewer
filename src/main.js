@@ -1021,8 +1021,8 @@ class ScoreFlow {
       }
     }
 
-    // Offset stamp preview above/right of the finger so it's not obscured
-    const STAMP_OFFSET_X_PX = 20
+    // Offset stamp preview above/left of the cursor so it's not obscured
+    const STAMP_OFFSET_X_PX = -20
     const STAMP_OFFSET_Y_PX = -55
     const getStampPreviewPos = (pos) => {
       const rect = overlay.getBoundingClientRect()
