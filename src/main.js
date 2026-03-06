@@ -186,6 +186,8 @@ class ScoreFlow {
     this.btnModeAnchor = document.getElementById('btn-mode-anchor')
     this.btnModeSelect = document.getElementById('btn-mode-select')
     this.btnModeEraser = document.getElementById('btn-mode-eraser')
+    this.btnEraseAll = document.getElementById('btn-erase-all')
+    this.eraseAllModal = document.getElementById('erase-all-modal')
     this.btnModeHand = document.getElementById('btn-mode-hand')
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
 
@@ -469,6 +471,11 @@ class ScoreFlow {
         this.updateActiveTools()
       }
     }
+    if (this.btnEraseAll) {
+      this.btnEraseAll.onclick = () => this.showEraseAllModal()
+    }
+    document.getElementById('close-erase-all-modal')?.addEventListener('click', () => this.closeEraseAllModal())
+    document.getElementById('erase-all-cancel')?.addEventListener('click', () => this.closeEraseAllModal())
     if (this.btnModeHand) {
       this.btnModeHand.onclick = () => {
         this.activeStampType = 'view'
@@ -1662,6 +1669,160 @@ class ScoreFlow {
       const page = this.hoveredStamp.page
       this.hoveredStamp = null
       this.redrawStamps(page)
+    }
+  }
+
+  // ── Erase All by Category ──
+  showEraseAllModal() {
+    if (!this.eraseAllModal) return
+
+    // Build category → stamps map using toolset groups
+    const categoryMap = new Map() // name → { icon, stamps[] }
+
+    const categoryMeta = {
+      'Pens':          { icon: '✏️' },
+      'Bow/Fingering': { icon: '🎻' },
+      'Articulation':  { icon: '🎵' },
+      'Tempo':         { icon: '♩' },
+      'Dynamic':       { icon: 'f' },
+      'Anchor':        { icon: '⚓' },
+    }
+
+    // Initialise all known categories (even if count is 0)
+    for (const [name, meta] of Object.entries(categoryMeta)) {
+      categoryMap.set(name, { icon: meta.icon, stamps: [] })
+    }
+
+    // Bucket each stamp by its toolset group
+    for (const stamp of this.stamps) {
+      const group = this.toolsets.find(g => g.tools.some(t => t.id === stamp.type))
+      if (!group || group.type === 'edit') continue
+      if (!categoryMap.has(group.name)) {
+        categoryMap.set(group.name, { icon: '📌', stamps: [] })
+      }
+      categoryMap.get(group.name).stamps.push(stamp)
+    }
+
+    // Render list
+    const list = document.getElementById('erase-all-category-list')
+    list.innerHTML = ''
+
+    let hasAny = false
+    for (const [name, { icon, stamps }] of categoryMap.entries()) {
+      if (stamps.length === 0) continue
+      hasAny = true
+
+      const row = document.createElement('button')
+      row.className = 'erase-all-cat-row'
+
+      const iconEl = document.createElement('span')
+      iconEl.className = 'erase-all-cat-icon'
+      iconEl.textContent = icon
+
+      const nameEl = document.createElement('span')
+      nameEl.className = 'erase-all-cat-name'
+      nameEl.textContent = name
+
+      const countEl = document.createElement('span')
+      countEl.className = 'erase-all-cat-count'
+      countEl.textContent = stamps.length
+
+      row.appendChild(iconEl)
+      row.appendChild(nameEl)
+      row.appendChild(countEl)
+
+      row.addEventListener('click', () => this._confirmEraseCategory(name, stamps.length))
+      list.appendChild(row)
+    }
+
+    // "All Annotations" row
+    const total = this.stamps.length
+    if (total > 0) {
+      const allRow = document.createElement('button')
+      allRow.className = 'erase-all-cat-row cat-all'
+
+      const iconEl = document.createElement('span')
+      iconEl.className = 'erase-all-cat-icon'
+      iconEl.textContent = '🗑️'
+
+      const nameEl = document.createElement('span')
+      nameEl.className = 'erase-all-cat-name'
+      nameEl.textContent = 'All Annotations'
+
+      const countEl = document.createElement('span')
+      countEl.className = 'erase-all-cat-count'
+      countEl.textContent = total
+
+      allRow.appendChild(iconEl)
+      allRow.appendChild(nameEl)
+      allRow.appendChild(countEl)
+      allRow.addEventListener('click', () => this._confirmEraseCategory('__all__', total))
+      list.appendChild(allRow)
+    }
+
+    if (!hasAny && total === 0) {
+      const empty = document.createElement('p')
+      empty.style.cssText = 'text-align:center;opacity:0.5;font-size:13px;padding:16px 0'
+      empty.textContent = 'No annotations on this score.'
+      list.appendChild(empty)
+    }
+
+    this.eraseAllModal.classList.add('active')
+
+    // Close on Escape
+    this._eraseAllEsc = (e) => { if (e.key === 'Escape') this.closeEraseAllModal() }
+    document.addEventListener('keydown', this._eraseAllEsc)
+  }
+
+  async _confirmEraseCategory(categoryName, count) {
+    this.closeEraseAllModal()
+    const label = categoryName === '__all__' ? 'all annotations' : `all "${categoryName}" annotations`
+    const confirmed = await this.showDialog({
+      title: 'Erase All',
+      message: `Delete ${label} (${count} item${count !== 1 ? 's' : ''})? This cannot be undone.`,
+      icon: '🗑️',
+      type: 'confirm',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    })
+    if (!confirmed) return
+    this.eraseAllByCategory(categoryName)
+  }
+
+  eraseAllByCategory(categoryName) {
+    let removed
+    if (categoryName === '__all__') {
+      removed = this.stamps.length
+      this.stamps = []
+    } else {
+      const before = this.stamps.length
+      this.stamps = this.stamps.filter(stamp => {
+        const group = this.toolsets.find(g => g.tools.some(t => t.id === stamp.type))
+        return group?.name !== categoryName
+      })
+      removed = before - this.stamps.length
+    }
+    if (removed === 0) return
+
+    console.log(`Erase All: Removed ${removed} stamps from category "${categoryName}"`)
+
+    // Update ruler if anchors were among the removed
+    this.updateRulerMarks()
+    this.computeNextTarget()
+
+    // Redraw all rendered pages
+    document.querySelectorAll('.page-container[data-page]').forEach(wrapper => {
+      const page = parseInt(wrapper.dataset.page)
+      this.redrawStamps(page)
+    })
+    this.saveToStorage()
+  }
+
+  closeEraseAllModal() {
+    if (this.eraseAllModal) this.eraseAllModal.classList.remove('active')
+    if (this._eraseAllEsc) {
+      document.removeEventListener('keydown', this._eraseAllEsc)
+      this._eraseAllEsc = null
     }
   }
 

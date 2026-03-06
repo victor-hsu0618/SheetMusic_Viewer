@@ -29,7 +29,8 @@
     #quick-load-modal:not(.active),
     #profile-modal:not(.active),
     #system-dialog:not(.active),
-    #measure-dialog:not(.active) {
+    #measure-dialog:not(.active),
+    #erase-all-modal:not(.active) {
       display: none !important;
     }
 
@@ -110,6 +111,14 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" />
               <path d="M17 17L7 7" />
+            </svg>
+          </button>
+          <button id="btn-erase-all" class="zoom-btn-mini mode-btn" title="Erase All by Category">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14H6L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4h6v2" />
             </svg>
           </button>
           <button id="btn-mode-anchor" class="zoom-btn-mini mode-btn" title="Anchor Tool (A)">
@@ -604,6 +613,23 @@
   </div>
 
   <!-- Measure Tool Setup Modal (New) -->
+  <!-- Erase All by Category Modal -->
+  <div id="erase-all-modal" class="modal-overlay">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h3>Erase All by Category</h3>
+        <button class="close-modal" id="close-erase-all-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro mb-15" style="font-size:13px;opacity:0.7;">Select a category to erase all annotations in it.</p>
+        <div id="erase-all-category-list" class="erase-all-category-list"></div>
+        <div style="text-align:center;margin-top:14px;">
+          <button id="erase-all-cancel" class="keypad-cancel-btn">Cancel (Esc)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="measure-dialog" class="modal-overlay">
     <div class="modal-content small-modal">
       <div class="modal-header">

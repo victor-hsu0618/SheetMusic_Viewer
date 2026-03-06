@@ -2145,6 +2145,71 @@ kbd {
   color: white;
 }
 
+/* Erase All by Category Modal */
+.erase-all-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.erase-all-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-2, rgba(255,255,255,0.05));
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+}
+
+.erase-all-cat-row:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.erase-all-cat-row.cat-all {
+  margin-top: 6px;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.erase-all-cat-row.cat-all:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+.erase-all-cat-icon {
+  font-size: 18px;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.erase-all-cat-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.erase-all-cat-count {
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface-3, rgba(255,255,255,0.1));
+  color: var(--text-muted);
+  border-radius: 10px;
+  padding: 2px 8px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.erase-all-cat-row:hover .erase-all-cat-count {
+  background: rgba(239, 68, 68, 0.25);
+  color: var(--text);
+}
+
 /* Exchange UI Enhancements */
 .exchange-row {
   display: flex;
