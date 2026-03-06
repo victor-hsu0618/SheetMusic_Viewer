@@ -15,6 +15,7 @@ class ScoreFlow {
     this.layers = [...INITIAL_LAYERS]
     this.stamps = []
     this.nextTargetAnchor = null
+    this.jumpHistory = [] // scroll positions before each forward jump
     this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
@@ -851,6 +852,7 @@ class ScoreFlow {
     // 3. Load this score's saved stamps (or start fresh)
     const savedStamps = localStorage.getItem(`scoreflow_stamps_${newFingerprint}`)
     this.stamps = savedStamps ? JSON.parse(savedStamps) : []
+    this.jumpHistory = []
 
     // 4. Load and render the PDF
     const loadingTask = pdfjsLib.getDocument({
@@ -2525,51 +2527,44 @@ class ScoreFlow {
     const viewportCenter = currentScroll + viewportHeight / 2
     const currentFocusY = currentScroll + this.jumpOffsetPx
 
-    const resolveAnchors = () => this.stamps
-      .filter(s => s.type === 'anchor')
-      .map(s => {
-        const pageElem = document.querySelector(`.page-container[data-page="${s.page}"]`)
-        if (!pageElem) return null
-        const canvas = pageElem.querySelector('.pdf-canvas')
-        const absoluteY = pageElem.offsetTop + (s.y * canvas.height)
-        return { stamp: s, absoluteY }
-      })
-      .filter(a => a !== null)
-
-    let targetY = null
-
     if (direction === 1) {
-      // Forward: pick user anchor closest to viewport center, ahead of focus
-      const candidates = resolveAnchors().filter(a => a.absoluteY > currentFocusY + 10)
+      // Forward: push current position to history, then jump to next anchor (or fixed step)
+      this.jumpHistory.push(currentScroll)
 
+      const candidates = this.stamps
+        .filter(s => s.type === 'anchor')
+        .map(s => {
+          const pageElem = document.querySelector(`.page-container[data-page="${s.page}"]`)
+          if (!pageElem) return null
+          const canvas = pageElem.querySelector('.pdf-canvas')
+          const absoluteY = pageElem.offsetTop + (s.y * canvas.height)
+          return { absoluteY }
+        })
+        .filter(a => a !== null && a.absoluteY > currentFocusY + 10)
+
+      let targetScrollTop
       if (candidates.length > 0) {
         candidates.sort((a, b) =>
           Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter)
         )
-        targetY = candidates[0].absoluteY
+        targetScrollTop = Math.max(0, candidates[0].absoluteY - this.jumpOffsetPx)
       } else {
-        // Fallback: first unshown content, offset same as target line from bottom
-        targetY = currentScroll + viewportHeight - this.jumpOffsetPx
+        // Fallback: fixed step forward
+        targetScrollTop = currentScroll + viewportHeight - this.jumpOffsetPx
       }
-    } else {
-      // Backward: nearest anchor above the current scroll top (allows re-visiting current anchor)
-      const behind = resolveAnchors()
-        .filter(a => a.absoluteY < currentScroll + 20)
-        .sort((a, b) => b.absoluteY - a.absoluteY)
-      if (behind.length > 0) {
-        targetY = behind[0].absoluteY
-      } else {
-        // Fallback: scroll back by same step as forward (viewportHeight - 2×jumpOffsetPx)
-        // scrollTo.top = targetY - jumpOffsetPx → need targetY = currentScroll - viewportHeight + 3×jumpOffsetPx
-        targetY = Math.max(this.jumpOffsetPx, currentScroll - viewportHeight + 3 * this.jumpOffsetPx)
-      }
-    }
 
-    if (targetY !== null) {
-      this.viewer.scrollTo({
-        top: Math.max(0, targetY - this.jumpOffsetPx),
-        behavior: 'smooth'
-      })
+      this.viewer.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
+
+    } else {
+      // Backward: pop history to return to exact pre-jump position
+      if (this.jumpHistory.length > 0) {
+        const prevScroll = this.jumpHistory.pop()
+        this.viewer.scrollTo({ top: prevScroll, behavior: 'smooth' })
+      } else {
+        // No history yet — fallback fixed step back
+        const targetScrollTop = Math.max(0, currentScroll - viewportHeight + 2 * this.jumpOffsetPx)
+        this.viewer.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
+      }
     }
   }
 
@@ -4181,12 +4176,14 @@ class ScoreFlow {
   }
   // --- NAVIGATION ACTIONS ---
   goToHead() {
+    this.jumpHistory = []
     this.currentPageNum = 1
     this.viewer.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   goToEnd() {
     if (!this.pdf) return
+    this.jumpHistory = []
     const total = this.pdf.numPages
     this.currentPageNum = total
     this.viewer.scrollTo({ top: this.viewer.scrollHeight, behavior: 'smooth' })
