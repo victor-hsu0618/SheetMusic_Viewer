@@ -148,16 +148,8 @@ class ScoreFlow {
     this.sidebarRecentList = document.getElementById('sidebar-recent-list')
     this.clearRecentBtn = document.getElementById('clear-recent-btn')
 
-    // Welcome Screen Buttons
-    this.welcomeInitialView = document.getElementById('welcome-initial-view')
-    this.projectRepertoireView = document.getElementById('project-repertoire-view')
-    this.projectScoresList = document.getElementById('project-scores-list')
-    this.projectNameDisplay = document.getElementById('current-project-name')
-    this.projectSearchInput = document.getElementById('project-search')
-    this.projectBackBtn = document.getElementById('project-back-btn')
 
-    this.welcomeOpenFileBtn = document.getElementById('welcome-open-file')
-    this.welcomeOpenProjectBtn = document.getElementById('welcome-open-project')
+    // Member Profile Elements
 
     // Member Profile Elements
     this.profileModal = document.getElementById('profile-modal')
@@ -171,30 +163,19 @@ class ScoreFlow {
     this.personalSyncFolder = null
     this.orchestraSyncFolder = null
 
-    // Mission & Welcome Elements
     this.missionSelectionView = document.getElementById('mission-selection-view')
     this.openSoloAltBtn = document.getElementById('welcome-open-file-alt')
     this.welcomeRecentList = document.getElementById('welcome-recent-list')
     this.exitMissionBtn = document.getElementById('exit-mission-btn')
 
-    this.identitySelectionView = document.getElementById('identity-selection-view')
-    this.setupStage1 = document.getElementById('setup-stage-1')
-    this.setupStage2 = document.getElementById('setup-stage-2')
-    this.setupStage3 = document.getElementById('setup-stage-3')
-
-    this.welcomeProfileList = document.getElementById('welcome-profile-list')
-    this.welcomeAddProfileBtn = document.getElementById('welcome-add-profile-btn')
+    this.resetLayersBtn = document.getElementById('reset-layers-btn')
     this.resetLayersBtn = document.getElementById('reset-layers-btn')
     this.libraryList = document.getElementById('library-scores-list')
     this.selectLibraryBtn = document.getElementById('select-library-btn')
     this.librarySearchInput = document.getElementById('library-search')
     this.resetSystemBtn = document.getElementById('reset-system-btn')
 
-    this.setupCardScore = document.getElementById('setup-card-score')
-    this.setupCardShared = document.getElementById('setup-card-shared')
-    this.setupStatusScore = document.getElementById('setup-status-score')
-    this.setupStatusShared = document.getElementById('setup-status-shared')
-    this.finalStartMissionBtn = document.getElementById('final-start-mission')
+    this.resetSystemBtn = document.getElementById('reset-system-btn')
     // Jump & Mode UI
     this.btnJumpHead = document.getElementById('btn-jump-head')
     this.btnJumpEnd = document.getElementById('btn-jump-end')
@@ -397,13 +378,6 @@ class ScoreFlow {
       this.welcomeOpenProjectBtn.addEventListener('click', () => this.selectLibraryFolder())
     }
     if (this.projectBackBtn) {
-      this.projectBackBtn.addEventListener('click', () => {
-        this.welcomeInitialView.classList.remove('hidden')
-        this.projectRepertoireView.classList.add('hidden')
-      })
-    }
-    if (this.projectSearchInput) {
-      this.projectSearchInput.addEventListener('input', () => this.renderProjectRepertoire())
     }
 
     if (this.zoomInBtn) {
@@ -541,17 +515,7 @@ class ScoreFlow {
       })
     }
 
-    if (this.finalStartMissionBtn) {
-      this.finalStartMissionBtn.onclick = () => this.completeMissionSetup()
-    }
 
-    // Generic Setup Stage Navigation (Back/Next)
-    document.querySelectorAll('.setup-back-btn').forEach(btn => {
-      btn.onclick = () => {
-        const to = parseInt(btn.dataset.to)
-        this.showSetupStage(to)
-      }
-    })
 
     if (this.jumpOffsetInput) {
       this.jumpOffsetInput.addEventListener('input', (e) => {
@@ -912,9 +876,14 @@ class ScoreFlow {
     this.pdf = await loadingTask.promise
     console.log(`PDF loaded successfully. Pages: ${this.pdf.numPages}, Fingerprint: ${newFingerprint.slice(0, 8)}...`)
 
-    // Open with 'Fit to Width' by default
+    // Open with 'Fit to Height' by default on PC, 'Fit to Width' on mobile
     this.showMainUI()
-    await this.fitToWidth()
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+    if (isTouch) {
+      await this.fitToWidth()
+    } else {
+      await this.fitToHeight()
+    }
 
     this.updateJumpLinePosition()
     this.updateRulerClip()
@@ -3981,267 +3950,26 @@ class ScoreFlow {
         this.orchestraStatus.textContent = 'No group folder linked.'
       }
     }
-
-    // 2. Setup Wizard Status (Card-based)
-    if (this.setupStatusScore) {
-      if (this.pendingMissionHandle) {
-        this.setupStatusScore.textContent = this.pendingMissionHandle.name
-        if (this.setupCardScore) this.setupCardScore.classList.add('active')
-      } else {
-        this.setupStatusScore.textContent = 'Required'
-        if (this.setupCardScore) this.setupCardScore.classList.remove('active')
-      }
-    }
-    if (this.setupStatusShared) {
-      if (this.pendingOrchestraHandle) {
-        this.setupStatusShared.textContent = this.pendingOrchestraHandle.name
-        if (this.setupCardShared) this.setupCardShared.classList.add('active')
-      } else {
-        this.setupStatusShared.textContent = 'Optional'
-        if (this.setupCardShared) this.setupCardShared.classList.remove('active')
-      }
-    }
   }
 
-  async renderWelcomeProfiles() {
-    if (!this.welcomeProfileList) return
-    this.welcomeProfileList.innerHTML = ''
 
-    const isInWizard = !this.identitySelectionView.classList.contains('hidden')
-
-    this.profiles.forEach(p => {
-      const isActive = p.id === (isInWizard ? this.pendingMissionProfileId : this.activeProfileId)
-      const card = document.createElement('div')
-      card.className = `identity-card ${isActive ? 'active' : ''}`
-      card.innerHTML = `
-        <div class="identity-avatar">${p.initial || p.name.charAt(0)}</div>
-        <div class="identity-name">${p.name}</div>
-        <div class="identity-role">${p.section}</div>
-      `
-      card.onclick = async () => {
-        // MISSION SETUP FLOW
-        if (isInWizard) {
-          this.pendingMissionProfileId = p.id
-
-          // Check if this profile ALREADY has cloud folders linked in DB
-          const pHandle = await db.get(`profile_${p.id}_personal_handle`)
-          const oHandle = await db.get(`profile_${p.id}_orchestra_handle`)
-
-          // Pre-fill the wizard handles if they exist
-          this.pendingMissionHandle = pHandle || null
-          this.pendingOrchestraHandle = oHandle || null
-
-          this.updateSyncUI()
-          this.validateMissionStart()
-          this.renderWelcomeProfiles()
-
-          // Transition to Page 2 (Scanned Scores)
-          this.showSetupStage(2)
-        } else {
-          // Normal Identity Change
-          this.activeProfileId = p.id
-          this.saveToStorage()
-          this.renderActiveProfile()
-
-          if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
-          if (this.welcomeInitialView) this.welcomeInitialView.classList.remove('hidden')
-        }
-      }
-      this.welcomeProfileList.appendChild(card)
-    })
-  }
-
-  showSetupStage(n) {
-    const stages = [this.setupStage1, this.setupStage2, this.setupStage3]
-    stages.forEach((stage, i) => {
-      if (!stage) return
-      if (i + 1 === n) {
-        stage.classList.remove('hidden')
-      } else {
-        stage.classList.add('hidden')
-      }
-    })
-  }
 
   async checkInitialView() {
-    // 1. If we have a PDF already loaded, hide welcome entirely
     if (this.pdf) {
       this.hideWelcome()
       return
     }
 
-    // 2. Clear stage variables
-    this.pendingMissionHandle = null
-
-    // 3. Show Mission Hub (Stage 1)
     const screen = document.querySelector('.welcome-screen')
     if (screen) screen.classList.remove('hidden')
 
     if (this.missionSelectionView) {
       this.missionSelectionView.classList.remove('hidden')
-      if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
       this.renderWelcomeRecentScores()
     }
   }
 
-  async renderRecentMissions() {
-    if (!this.recentMissionsContainer) return
-    this.recentMissionsContainer.innerHTML = ''
 
-    const storedMissions = await db.get('scoreflow_missions') || []
-
-    if (storedMissions.length === 0) {
-      this.recentMissionsContainer.innerHTML = '<div class="empty-state text-center p-10 opacity-70">No recent missions started yet.</div>'
-      return
-    }
-
-    storedMissions.forEach(mission => {
-      const card = document.createElement('div')
-      card.className = 'mission-card'
-      card.innerHTML = `
-        <div class="mission-card-icon">📂</div>
-        <div class="mission-card-info">
-          <div class="mission-card-name">${mission.name}</div>
-          <div class="mission-card-role">${mission.profileName || 'No Role Assigned'}</div>
-        </div>
-      `
-      card.onclick = async () => {
-        try {
-          const permission = await mission.handle.requestPermission({ mode: 'read' })
-          if (permission === 'granted') {
-            this.libraryFolderHandle = mission.handle
-            this.activeProfileId = mission.profileId
-            this.saveToStorage()
-            this.libraryFiles = []
-            await this.scanLibrary(this.libraryFolderHandle)
-            this.renderLibrary()
-            // Don't hide welcome yet, show the repertoire to pick a score
-            this.showProjectRepertoire()
-            this.renderActiveProfile()
-          }
-        } catch (e) {
-          console.warn('Mission opening failed:', e)
-        }
-      }
-      this.recentMissionsContainer.appendChild(card)
-    })
-  }
-
-  async startNewMission() {
-    // Show Setup Screen First (Mental Workflow: Who am I? Where are we?)
-    this.pendingMissionHandle = null
-    this.pendingMissionProfileId = null
-
-    if (this.missionSelectionView) this.missionSelectionView.classList.add('hidden')
-    if (this.identitySelectionView) {
-      this.identitySelectionView.classList.remove('hidden')
-      this.showSetupStage(1)
-      const title = document.getElementById('setup-mission-title')
-      if (title) title.textContent = `Setup Performance Mission`
-    }
-
-    if (this.setupScoreStatus) {
-      this.setupScoreStatus.innerHTML = '<span style="color:var(--text-muted)">Project Repertoire Folder Not Selected</span>'
-    }
-
-    if (this.finalStartMissionBtn) this.finalStartMissionBtn.disabled = true
-    this.renderWelcomeProfiles()
-  }
-
-  async selectMissionFolder() {
-    try {
-      const handle = await window.showDirectoryPicker()
-      this.pendingMissionHandle = handle
-
-      if (this.setupCardScore) this.setupCardScore.classList.add('active')
-      if (this.setupStatusScore) {
-        this.setupStatusScore.textContent = handle.name
-      }
-
-      const title = document.getElementById('setup-mission-title')
-      if (title) title.textContent = `Mission: ${handle.name}`
-
-      // Re-validate if we can start
-      this.validateMissionStart()
-
-      // ADVANCE to Stage 3 (Optional Shared Sync)
-      this.showSetupStage(3)
-    } catch (e) {
-      console.warn('Mission folder selection cancelled:', e)
-    }
-  }
-
-  async selectOrchestraFolder() {
-    try {
-      const handle = await window.showDirectoryPicker()
-      this.pendingOrchestraHandle = handle
-
-      if (this.setupCardShared) this.setupCardShared.classList.add('active')
-      if (this.setupStatusShared) {
-        this.setupStatusShared.textContent = handle.name
-      }
-
-      this.validateMissionStart()
-    } catch (e) {
-      console.warn('Orchestra folder selection cancelled:', e)
-    }
-  }
-
-  validateMissionStart() {
-    const hasRole = this.pendingMissionProfileId !== null
-    const hasFolder = this.pendingMissionHandle !== null
-    if (this.finalStartMissionBtn) {
-      this.finalStartMissionBtn.disabled = !(hasRole && hasFolder)
-    }
-  }
-
-  async completeMissionSetup(profile) {
-    if (!this.pendingMissionHandle) {
-      console.error('Mission setup failed: No folder handle found.')
-      return
-    }
-
-    const mission = {
-      id: 'mission_' + Date.now(),
-      name: this.pendingMissionHandle.name,
-      handle: this.pendingMissionHandle,
-      profileId: profile.id,
-      profileName: profile.name,
-      timestamp: Date.now()
-    }
-
-    let missions = await db.get('scoreflow_missions') || []
-    missions = missions.filter(m => m.name !== mission.name)
-    missions.unshift(mission)
-    missions = missions.slice(0, 5)
-    await db.set('scoreflow_missions', missions)
-
-    // Set active folders
-    this.libraryFolderHandle = this.pendingMissionHandle
-    this.personalSyncFolder = this.pendingMissionHandle
-    this.orchestraSyncFolder = this.pendingOrchestraHandle || null
-    this.activeProfileId = profile.id
-
-    // Persist links for this profile
-    await db.set(`profile_${profile.id}_personal_handle`, this.pendingMissionHandle)
-    if (this.pendingOrchestraHandle) {
-      await db.set(`profile_${profile.id}_orchestra_handle`, this.pendingOrchestraHandle)
-    }
-
-    this.saveToStorage()
-
-    this.libraryFiles = []
-    await this.scanLibrary(this.libraryFolderHandle)
-    this.renderLibrary()
-
-    // Clear wizard state
-    this.pendingMissionHandle = null
-    this.pendingOrchestraHandle = null
-    this.pendingMissionProfileId = null
-
-    this.showProjectRepertoire()
-    this.renderActiveProfile()
-  }
 
   async exitMission() {
     this.pdf = null
@@ -4366,9 +4094,7 @@ class ScoreFlow {
       await this.scanLibrary(this.libraryFolderHandle)
       this.renderLibrary()
 
-      this.showProjectRepertoire()
-
-      // PERSISTENT RECOVERY: Attempt to auto-open last used score from this folder
+      // Auto-open last used score if exists
       const lastScore = localStorage.getItem('scoreflow_last_opened_score')
       if (lastScore) {
         const found = this.libraryFiles.find(f => f.name === lastScore)
@@ -4378,6 +4104,7 @@ class ScoreFlow {
           await this.loadPDF(new Uint8Array(arrayBuffer))
           this.activeScoreName = found.name
           this.renderLibrary()
+          this.hideWelcome()
         }
       }
     } catch (err) {
@@ -4385,48 +4112,7 @@ class ScoreFlow {
     }
   }
 
-  renderProjectRepertoire() {
-    if (!this.projectScoresList) return
-    this.projectScoresList.innerHTML = ''
 
-    const query = this.projectSearchInput ? this.projectSearchInput.value.toLowerCase() : ''
-    const filteredFiles = this.libraryFiles.filter(f => f.name.toLowerCase().includes(query))
-
-    if (filteredFiles.length === 0) {
-      this.projectScoresList.innerHTML = '<div class="empty-state" style="grid-column: 1/-1">No scores found matching your search.</div>'
-      return
-    }
-
-    filteredFiles.forEach(fileHandle => {
-      const card = document.createElement('div')
-      card.className = 'project-score-card'
-      card.innerHTML = `
-        <div class="project-score-icon">🎼</div>
-        <div class="project-score-meta">${fileHandle.name}</div>
-      `
-      card.onclick = async () => {
-        try {
-          const file = await this.openFileHandle(fileHandle)
-          if (!file) return
-          const arrayBuffer = await file.arrayBuffer()
-          await this.loadPDF(new Uint8Array(arrayBuffer))
-          this.activeScoreName = fileHandle.name
-          this.renderLibrary()
-          this.saveToStorage()
-          this.hideWelcome() // Now we can hide the wizard!
-
-          if (!this.isSidebarLocked) {
-            this.sidebar.classList.remove('open')
-            this.updateLayoutState()
-          }
-        } catch (err) {
-          console.error('Error loading project score:', err)
-          alert('Could not open the selected score. Please try again.')
-        }
-      }
-      this.projectScoresList.appendChild(card)
-    })
-  }
 
   async scanLibrary(directoryHandle) {
     for await (const entry of directoryHandle.values()) {

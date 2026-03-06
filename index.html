@@ -189,7 +189,6 @@
       <div id="pdf-viewer" class="pdf-viewer">
         <div class="welcome-screen">
           <div class="welcome-card">
-            <!-- Welcome: Solo Session -->
             <div id="mission-selection-view" class="mission-selection-view">
               <div class="welcome-header">
                 <div class="welcome-icon">🎼</div>
@@ -202,114 +201,6 @@
                 <div id="welcome-recent-list" class="sidebar-recent-list"></div>
               </div>
             </div>
-
-            <!-- STAGE 2: Mission Setup (Config & Identity) -->
-            <div id="identity-selection-view" class="identity-selection-view hidden">
-              <div class="welcome-header">
-                <div class="welcome-icon">⚡</div>
-                <h2 id="setup-mission-title" class="mission-setup-title">
-                  <span class="setup-subtitle">Setup</span>
-                  <span>PERFORMANCE MISSION</span>
-                </h2>
-                <p>Configure your workspace and identity to begin the ensemble session.</p>
-              </div>
-
-              <div class="mission-setup-content">
-                <!-- PAGE 1: Identity Selection -->
-                <div id="setup-stage-1" class="setup-stage">
-                  <div class="setup-section">
-                    <span class="setup-label">
-                      <span class="setup-number">1</span>
-                      Choose your orchestral identity:
-                    </span>
-                    <div id="welcome-profile-list" class="welcome-profile-grid-mini mb-15">
-                      <!-- Populated by JS -->
-                    </div>
-                    <button id="welcome-add-profile-btn" class="btn btn-outline btn-smaller">+ Create New
-                      Identity</button>
-                  </div>
-                </div>
-
-                <!-- PAGE 2: Score Folder (Required) -->
-                <div id="setup-stage-2" class="setup-stage hidden">
-                  <div class="setup-section">
-                    <div class="setup-nav-header">
-                      <span class="setup-label">
-                        <span class="setup-number">2</span>
-                        Repertoire Selection:
-                      </span>
-                      <button class="setup-back-btn btn btn-outline btn-smaller" data-to="1">← Identity Stage</button>
-                    </div>
-
-                    <div id="setup-card-score" class="setup-folder-card highlight-score large-card">
-                      <div class="card-icon">📂</div>
-                      <div class="card-title">Select Score Folder</div>
-                      <div id="setup-status-score" class="status-pill pulse">Required</div>
-                      <p class="card-hint">Point this to the folder containing your music PDFs.</p>
-                    </div>
-
-                    <div class="mission-tip">
-                      💡 ScoreFlow will scan this folder for all sheet music.
-                    </div>
-                  </div>
-                </div>
-
-                <!-- PAGE 3: Shared Folder (Optional) -->
-                <div id="setup-stage-3" class="setup-stage hidden">
-                  <div class="setup-section">
-                    <div class="setup-nav-header">
-                      <span class="setup-label">
-                        <span class="setup-number">3</span>
-                        Ensemble Sync (Optional):
-                      </span>
-                      <button class="setup-back-btn btn btn-outline btn-smaller" data-to="2">← Scores Stage</button>
-                    </div>
-
-                    <div id="setup-card-shared" class="setup-folder-card optional large-card">
-                      <div class="card-icon">🎻</div>
-                      <div class="card-title">Link Shared Folder</div>
-                      <div id="setup-status-shared" class="status-pill blue">Optional</div>
-                      <p class="card-hint">Collaborate with your section in real-time.</p>
-                    </div>
-
-                    <div class="mission-tip">
-                      💡 You can choose to skip this and link it later.
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- Final Action Section -->
-              <div class="welcome-actions full-width-actions mt-40">
-                <button id="final-start-mission" class="btn btn-primary start-btn mb-15" disabled>
-                  Start Mission Now →
-                </button>
-                <div class="text-center">
-                  <button id="back-to-missions-btn" class="btn btn-text-muted">← Back to Mission Hub</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Hide Stage 1/2 Old Views -->
-          <div id="welcome-initial-view" class="hidden"></div>
-
-          <div id="project-repertoire-view" class="hidden">
-            <div class="welcome-header">
-              <div class="welcome-icon">📂</div>
-              <h2 id="current-project-name">Project Repertoire</h2>
-              <p>Select a score to begin your performance.</p>
-            </div>
-
-            <div class="library-search-box mb-20">
-              <input type="text" id="project-search" placeholder="Search project scores..." title="Filter project files"
-                class="search-input-mini" />
-            </div>
-
-            <div id="project-scores-list" class="project-scores-grid">
-              <!-- Dynamically populated -->
-            </div>
-
-            <button id="project-back-btn" class="btn btn-text-primary mt-20">← Switch Project</button>
           </div>
         </div>
       </div>
