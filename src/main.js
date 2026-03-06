@@ -1010,6 +1010,32 @@ class ScoreFlow {
       }
     }
 
+    // Offset stamp preview above/right of the finger so it's not obscured
+    const STAMP_OFFSET_X_PX = 20
+    const STAMP_OFFSET_Y_PX = -55
+    const getStampPreviewPos = (pos) => {
+      const rect = overlay.getBoundingClientRect()
+      return {
+        x: Math.max(0.01, Math.min(0.99, pos.x + STAMP_OFFSET_X_PX / rect.width)),
+        y: Math.max(0.01, Math.min(0.99, pos.y + STAMP_OFFSET_Y_PX / rect.height))
+      }
+    }
+
+    const drawLeaderLine = (ctx, canvas, cursorPos, previewPos) => {
+      const scale = this.scale / 1.5
+      ctx.save()
+      ctx.setLineDash([5 * scale, 4 * scale])
+      ctx.strokeStyle = 'rgba(80, 80, 80, 0.4)'
+      ctx.lineWidth = 1.2 * scale
+      ctx.beginPath()
+      ctx.moveTo(cursorPos.x * canvas.width, cursorPos.y * canvas.height)
+      ctx.lineTo(previewPos.x * canvas.width, previewPos.y * canvas.height)
+      ctx.stroke()
+      ctx.restore()
+    }
+
+    const isStampTool = () => !['view', 'select', 'eraser', 'pen', 'highlighter', 'line'].includes(this.activeStampType)
+
     const startAction = (e) => {
       const pos = getPos(e)
       const toolType = this.activeStampType
@@ -1098,13 +1124,14 @@ class ScoreFlow {
           if (layer) targetLayerId = layer.id
         }
 
+        const previewPos = getStampPreviewPos(pos)
         activeObject = {
           page: pageNum,
           layerId: targetLayerId,
           sourceId: this.activeSourceId, // Link to current Persona
           type: toolType,
-          x: pos.x,
-          y: pos.y,
+          x: previewPos.x,
+          y: previewPos.y,
           data: null
         }
         this.lastFocusedStamp = activeObject
@@ -1136,16 +1163,16 @@ class ScoreFlow {
         const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
         if (canvas) this.drawPathOnCanvas(canvas.getContext('2d'), canvas, activeObject)
       } else {
-        // Preview new stamp movement
-        activeObject.x = pos.x
-        activeObject.y = pos.y
-        this.redrawStamps(pageNum) // Redraw with the pending object? 
-        // Better: redraw all + draw the pending one as ghost
+        // Preview new stamp — follow offset position, not raw cursor
+        const previewPos = getStampPreviewPos(pos)
+        activeObject.x = previewPos.x
+        activeObject.y = previewPos.y
         const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
         const ctx = canvas.getContext('2d')
         this.redrawStamps(pageNum)
         const layer = this.layers.find(l => l.id === activeObject.layerId)
         this.drawStampOnCanvas(ctx, canvas, activeObject, layer ? layer.color : '#000000', true)
+        if (!e.touches) drawLeaderLine(ctx, canvas, pos, previewPos)
       }
     }
 
@@ -1182,6 +1209,22 @@ class ScoreFlow {
         if (found !== this.selectHoveredStamp) {
           this.selectHoveredStamp = found
           this.redrawStamps(pageNum)
+        }
+      }
+
+      // ── Stamp tool hover preview (ghost + leader line) ──
+      if (isStampTool() && !isInteracting) {
+        const pos = getPos(e)
+        const previewPos = getStampPreviewPos(pos)
+        const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
+        if (canvas) {
+          this.redrawStamps(pageNum)
+          const ctx = canvas.getContext('2d')
+          const group = this.toolsets.find(g => g.tools.some(t => t.id === this.activeStampType))
+          const layer = group ? this.layers.find(l => l.type === group.type) : null
+          const color = layer ? layer.color : '#6366f1'
+          this.drawStampOnCanvas(ctx, canvas, { type: this.activeStampType, x: previewPos.x, y: previewPos.y, page: pageNum }, color, true)
+          if (!e.touches) drawLeaderLine(ctx, canvas, pos, previewPos)
         }
       }
     }
@@ -1239,15 +1282,9 @@ class ScoreFlow {
     })
     overlay.addEventListener('mouseleave', () => {
       let needsRedraw = false
-      if (this.hoveredStamp) {
-        this.hoveredStamp = null
-        needsRedraw = true
-      }
-      if (this.selectHoveredStamp) {
-        this.selectHoveredStamp = null
-        needsRedraw = true
-      }
-      if (needsRedraw) this.redrawStamps(pageNum)
+      if (this.hoveredStamp) { this.hoveredStamp = null; needsRedraw = true }
+      if (this.selectHoveredStamp) { this.selectHoveredStamp = null; needsRedraw = true }
+      if (needsRedraw || isStampTool()) this.redrawStamps(pageNum)
       const chip = wrapper.querySelector('.erase-hover-chip')
       if (chip) chip.remove()
     })
