@@ -1052,6 +1052,8 @@ class ScoreFlow {
           const startScrollLeft = this.viewer.scrollLeft
           overlay.style.cursor = 'grabbing'
           e.preventDefault()
+          // Disable smooth scroll during drag so scrollTop changes are instant
+          this.viewer.style.scrollBehavior = 'auto'
           const doPan = (ev) => {
             if (!isPanning) return
             this.viewer.scrollTop = startScrollTop - (ev.clientY - startY)
@@ -1060,6 +1062,7 @@ class ScoreFlow {
           const stopPan = () => {
             isPanning = false
             overlay.style.cursor = ''
+            this.viewer.style.scrollBehavior = ''
             window.removeEventListener('mousemove', doPan)
             window.removeEventListener('mouseup', stopPan)
           }
