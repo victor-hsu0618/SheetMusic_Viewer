@@ -19,7 +19,7 @@ class ScoreFlow {
     this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
-    this.activeCategories = ['Edit', 'Pens', 'Bowing', 'Fingering', 'Articulation', 'Tempo', 'Dynamic', 'Anchor']
+    this.activeCategories = ['Edit', 'Pens', 'Bow/Fingering', 'Articulation', 'Tempo', 'Dynamic', 'Anchor']
     this.activeCategory = 'Edit'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
     this.scale = 1.5
@@ -2823,7 +2823,7 @@ class ScoreFlow {
     // 2. Reset layers array to defaults
     this.layers = [
       { id: 'draw', name: 'Draw Objects', color: '#ff4757', visible: true, type: 'draw' },
-      { id: 'fingering', name: 'Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
+      { id: 'fingering', name: 'Bow/Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
       { id: 'articulation', name: 'Articulations', color: '#10b981', visible: true, type: 'articulation' },
       { id: 'performance', name: 'Performance', color: '#f59e0b', visible: true, type: 'performance' },
       { id: 'other', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'other' }

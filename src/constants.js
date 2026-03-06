@@ -6,8 +6,7 @@
 
 export const INITIAL_LAYERS = [
     { id: 'draw', name: 'Draw Objects', color: '#ff4757', visible: true, type: 'draw' },
-    { id: 'fingering', name: 'Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
-    { id: 'bowing', name: 'Bowing', color: '#6366f1', visible: true, type: 'articulation' },
+    { id: 'fingering', name: 'Bow/Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
     { id: 'articulation', name: 'Articulations', color: '#10b981', visible: true, type: 'articulation' },
     { id: 'performance', name: 'Performance', color: '#f59e0b', visible: true, type: 'performance' },
     { id: 'other', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'layout' }
@@ -32,19 +31,13 @@ export const TOOLSETS = [
         ]
     },
     {
-        name: 'Bowing',
-        type: 'articulation',
+        name: 'Bow/Fingering',
+        type: 'fingering',
         tools: [
             { id: 'down-bow', label: 'Down', icon: '<path d="M7 11h10v5 M7 16v-5 M17 16v-5" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.3 0.2 L -0.3 -0.3 L 0.3 -0.3 L 0.3 0.2' } },
             { id: 'up-bow', label: 'Up', icon: '<path d="M7 9l5 8l5-8" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.3 -0.35 L 0 0.35 L 0.3 -0.35' } },
             { id: 'pizz', label: 'pizz.', icon: '<text x="12" y="16.5" font-size="14" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">pizz</text>', draw: { type: 'text', content: 'pizz.', font: 'italic 300', size: 22, fontFace: 'serif' } },
-            { id: 'arco', label: 'arco.', icon: '<text x="12" y="16.5" font-size="14" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">arco</text>', draw: { type: 'text', content: 'arco.', font: 'italic 300', size: 22, fontFace: 'serif' } }
-        ]
-    },
-    {
-        name: 'Fingering',
-        type: 'fingering',
-        tools: [
+            { id: 'arco', label: 'arco.', icon: '<text x="12" y="16.5" font-size="14" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">arco</text>', draw: { type: 'text', content: 'arco.', font: 'italic 300', size: 22, fontFace: 'serif' } },
             { id: 'thumb', label: 'Thumb', icon: '<ellipse cx="12" cy="8" rx="3" ry="5" fill="none" stroke="currentColor" stroke-width="2" /><line x1="12" y1="13" x2="12" y2="15" stroke="currentColor" stroke-width="2" />', draw: { type: 'complex', variant: 'thumb' } },
             { id: 'f1', label: '1', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">1</text>', draw: { type: 'text', content: '1', font: '300', size: 18 } },
             { id: 'f2', label: '2', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">2</text>', draw: { type: 'text', content: '2', font: '300', size: 18 } },
