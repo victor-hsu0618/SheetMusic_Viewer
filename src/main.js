@@ -8,8 +8,8 @@ import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
 
 // Build constants injected by Vite build process
-const APP_BRANCH = __APP_BRANCH__;
-const BUILD_TIME = __BUILD_TIME__;
+const APP_BRANCH = typeof __APP_BRANCH__ !== 'undefined' ? __APP_BRANCH__ : 'local-dev';
+const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'just-now';
 
 class ScoreFlow {
   constructor() {
