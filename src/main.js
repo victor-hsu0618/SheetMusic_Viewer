@@ -3555,7 +3555,7 @@ class ScoreFlow {
     if (!this.sharedList) return
     this.sharedList.innerHTML = '<div class="hub-loading">Scanning workspaces...</div>'
 
-    const communityData = []
+    let communityData = []
     const scanFolder = async (folder, typeLabel) => {
       if (!folder) return
       try {
