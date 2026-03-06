@@ -129,6 +129,7 @@ class ScoreFlow {
     this.recentScoresList = document.getElementById('recent-scores-list')
     this.openNewSoloBtn = document.getElementById('open-new-solo-btn')
     this.sidebarRecentList = document.getElementById('sidebar-recent-list')
+    this.clearRecentBtn = document.getElementById('clear-recent-btn')
 
     // Welcome Screen Buttons
     this.welcomeInitialView = document.getElementById('welcome-initial-view')
@@ -229,6 +230,19 @@ class ScoreFlow {
     }
     if (this.openPdfBtn) {
       this.openPdfBtn.addEventListener('click', () => this.openPdfFilePicker())
+    }
+    if (this.clearRecentBtn) {
+      this.clearRecentBtn.addEventListener('click', async () => {
+        if (!this.recentSoloScores?.length) return
+        // Remove cached buffers and handles from IDB
+        for (const s of this.recentSoloScores) {
+          await db.set(`recent_buf_${s.name}`, undefined)
+          await db.set(`recent_handle_${s.name}`, undefined)
+        }
+        this.recentSoloScores = []
+        this.saveToStorage()
+        this.renderSidebarRecentScores()
+      })
     }
     this.uploader.addEventListener('change', (e) => this.handleUpload(e))
 
@@ -790,6 +804,7 @@ class ScoreFlow {
         try {
           await this.loadPDF(new Uint8Array(buffer))
           this.activeScoreName = file.name
+          await db.set(`recent_buf_${file.name}`, buffer)
           this.addToRecentSoloScores(file.name)
           this.saveToStorage()
           this.renderLibrary()
@@ -2299,7 +2314,16 @@ class ScoreFlow {
           }
         }
 
-        // 2. Try current project folder
+        // 2. Try cached ArrayBuffer (from <input> / iOS fallback)
+        const cachedBuf = await db.get(`recent_buf_${score.name}`)
+        if (cachedBuf) {
+          this.activeScoreName = score.name
+          await this.loadPDF(new Uint8Array(cachedBuf))
+          closeSidebar()
+          return
+        }
+
+        // 3. Try current project folder
         const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
         if (libraryMatch) {
           const file = await this.openFileHandle(libraryMatch)
@@ -2312,7 +2336,7 @@ class ScoreFlow {
           return
         }
 
-        // 3. Not found — ask user to re-open
+        // 4. Not found — ask user to re-open
         alert(`Cannot reopen "${score.name}".\n\nUse "Open PDF..." to locate the file again.`)
       }
       this.sidebarRecentList.appendChild(item)
@@ -3701,45 +3725,34 @@ class ScoreFlow {
   }
 
   async exitMission() {
-    const choice = await this.showDialog({
-      title: 'Exit Mission',
-      message: 'Choose how you would like to end this mission. Your local markings (L) are saved automatically.',
+    const confirmed = await this.showDialog({
+      title: 'Exit Performance',
+      message: 'Return to the welcome screen? Your annotations are saved automatically.',
       icon: '🚪',
       actions: [
-        { label: 'Sync to Private 🏠', value: 'personal', type: 'primary' },
-        { label: 'Sync to Orchestra 🎻', value: 'orchestra', type: 'primary' },
-        { label: 'Exit Only', value: 'exit', type: 'outline' },
-        { label: 'Cancel', value: 'cancel', type: 'outline' }
+        { label: 'Exit', value: true, type: 'primary' },
+        { label: 'Cancel', value: false, type: 'outline' }
       ]
     })
 
-    if (choice === 'cancel') return
+    if (!confirmed) return
 
-    if (choice === 'personal' || choice === 'orchestra') {
-      await this.publishWork(choice)
-      // Small Delay for UX
-      await new Promise(r => setTimeout(r, 1000))
-    }
+    this.pdf = null
+    this.libraryFiles = []
+    this.libraryFolderHandle = null
+    this.activeScoreName = null
 
-    if (choice !== 'cancel') {
-      this.pdf = null
-      this.libraryFiles = []
-      this.libraryFolderHandle = null
-      this.activeScoreName = null
+    if (this.container) this.container.innerHTML = ''
+    if (this.layerShelf) this.layerShelf.classList.remove('active')
+    if (this.sidebar) this.sidebar.classList.remove('open')
+    if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
 
-      if (this.container) this.container.innerHTML = ''
-      if (this.layerShelf) this.layerShelf.classList.remove('active')
-      if (this.sidebar) this.sidebar.classList.remove('open')
-      if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
+    ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
+      const el = document.getElementById(id)
+      if (el) el.classList.add('hidden')
+    })
 
-      // Hide all main-UI elements that showMainUI() revealed
-      ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
-        const el = document.getElementById(id)
-        if (el) el.classList.add('hidden')
-      })
-
-      this.checkInitialView()
-    }
+    this.checkInitialView()
   }
 
   hideWelcome() {
@@ -3921,7 +3934,7 @@ class ScoreFlow {
     const filteredFiles = this.libraryFiles.filter(f => f.name.toLowerCase().includes(query))
 
     if (this.libraryFiles.length === 0) {
-      this.libraryList.innerHTML = '<div class="empty-state">Select a folder to load your repertoire.</div>'
+      this.libraryList.innerHTML = ''
       return
     }
 
