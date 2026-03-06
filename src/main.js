@@ -329,6 +329,7 @@ class ScoreFlow {
     if (this.layerToggleBtn) {
       this.layerToggleBtn.addEventListener('click', () => {
         this.layerShelf.classList.toggle('active')
+        if (this.layerShelf.classList.contains('active')) this.renderLayerUI()
       })
     }
     if (this.closeLayerShelfBtn) {
@@ -3089,6 +3090,12 @@ class ScoreFlow {
     if (!list) return
     list.innerHTML = ''
 
+    // Count stamps per layerId
+    const countByLayer = {}
+    for (const stamp of this.stamps) {
+      countByLayer[stamp.layerId] = (countByLayer[stamp.layerId] || 0) + 1
+    }
+
     this.layers.forEach(layer => {
       if (layer.visible === undefined) layer.visible = true
 
@@ -3100,12 +3107,16 @@ class ScoreFlow {
         : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
 
       const isCore = ['draw', 'fingering', 'bowing', 'articulation', 'performance', 'other'].includes(layer.id)
+      const count = countByLayer[layer.id] || 0
+      const countBadge = count > 0
+        ? `<span class="layer-count-badge">${count}</span>`
+        : ''
 
       item.innerHTML = `
         <div class="layer-info">
           <div class="color-dot" style="background:${layer.color}"></div>
           <div class="layer-meta">
-            <span class="layer-name">${layer.name}</span>
+            <span class="layer-name">${layer.name}${countBadge}</span>
           </div>
         </div>
         <div class="layer-actions">
