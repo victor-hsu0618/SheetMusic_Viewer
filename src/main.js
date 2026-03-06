@@ -43,11 +43,6 @@ class ScoreFlow {
     ]
     this.activeProfileId = 'p1'
 
-    // Mission State Context
-    this.pendingMissionProfileId = null
-    this.pendingMissionHandle = null
-    this.pendingOrchestraHandle = null
-
     this._svgCache = {}
     this.initToolsets()
     this.initElements()
@@ -164,41 +159,31 @@ class ScoreFlow {
     this.orchestraSyncFolder = null
 
     this.welcomeView = document.getElementById('welcome-view')
-    this.openSoloAltBtn = document.getElementById('welcome-open-file-alt')
+    this.welcomeOpenFileBtn = document.getElementById('welcome-open-file-alt')
     this.welcomeRecentList = document.getElementById('welcome-recent-list')
     this.closeFileBtn = document.getElementById('close-file-btn')
 
-    this.resetLayersBtn = document.getElementById('reset-layers-btn')
-    this.resetLayersBtn = document.getElementById('reset-layers-btn')
     this.libraryList = document.getElementById('library-scores-list')
-    this.selectLibraryBtn = document.getElementById('select-library-btn')
     this.librarySearchInput = document.getElementById('library-search')
+    this.resetLayersBtn = document.getElementById('reset-layers-btn')
     this.resetSystemBtn = document.getElementById('reset-system-btn')
 
-    this.resetSystemBtn = document.getElementById('reset-system-btn')
     // Jump & Mode UI
     this.btnJumpHead = document.getElementById('btn-jump-head')
     this.btnJumpEnd = document.getElementById('btn-jump-end')
     this.btnRulerToggle = document.getElementById('btn-ruler-toggle')
     this.btnModeAnchor = document.getElementById('btn-mode-anchor')
-    this.btnModeSelect = document.getElementById('btn-mode-select')
     this.btnModeEraser = document.getElementById('btn-mode-eraser')
-    this.btnEraseAll = document.getElementById('btn-erase-all')
     this.eraseAllModal = document.getElementById('erase-all-modal')
     this.btnModeHand = document.getElementById('btn-mode-hand')
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
     this.btnDocBarToggle = document.getElementById('btn-doc-bar-toggle')
 
-    this.libraryFiles = [] // Scanned repertoire
+    this.libraryFiles = []
     this.libraryFolderHandle = null
     this.activeScoreName = null
 
     this.jumpOffsetPx = 1 * 37.8
-
-    // Role Selection Elements
-    this.roleModal = document.getElementById('role-selection-modal')
-    this.closeRoleModalBtn = document.getElementById('close-role-modal')
-    this.roleBtns = document.querySelectorAll('.role-btn')
 
     // Resizer
     this.sidebarResizer = document.getElementById('sidebar-resizer')
@@ -414,36 +399,12 @@ class ScoreFlow {
       this.welcomeAddProfileBtn.addEventListener('click', () => this.addNewProfile())
     }
 
-    if (this.welcomeChangeIdentityBtn) {
-      this.welcomeChangeIdentityBtn.addEventListener('click', () => {
-        if (this.identitySelectionView) {
-          this.identitySelectionView.classList.remove('hidden')
-          this.showSetupStage(1)
-        }
-        if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
-      })
-    }
-
-
-    if (this.openSoloAltBtn) {
-      this.openSoloAltBtn.addEventListener('click', () => this.openPdfFilePicker())
+    if (this.welcomeOpenFileBtn) {
+      this.welcomeOpenFileBtn.addEventListener('click', () => this.openPdfFilePicker())
     }
     if (this.closeFileBtn) {
       this.closeFileBtn.addEventListener('click', () => this.closeFile())
     }
-
-    // Mission Setup Card Listeners
-    if (this.setupCardShared) {
-      this.setupCardShared.onclick = () => this.selectOrchestraFolder()
-    }
-
-    // Step Navigation (Three Stages)
-    document.querySelectorAll('.setup-back-btn').forEach(btn => {
-      btn.onclick = () => {
-        const target = parseInt(btn.getAttribute('data-to'))
-        this.showSetupStage(target)
-      }
-    })
 
     // Navigation (Jump) Actions
     if (this.btnJumpHead) this.btnJumpHead.onclick = () => this.goToHead()
@@ -451,12 +412,6 @@ class ScoreFlow {
     if (this.btnRulerToggle) this.btnRulerToggle.addEventListener('click', () => this.toggleRuler())
 
     // Quick Mode Actions
-    if (this.btnModeSelect) {
-      this.btnModeSelect.onclick = () => {
-        this.activeStampType = this.activeStampType === 'select' ? 'view' : 'select'
-        this.updateActiveTools()
-      }
-    }
     if (this.btnModeEraser) {
       this.btnModeEraser.onclick = () => {
         this.activeStampType = this.activeStampType === 'eraser' ? 'view' : 'eraser'
@@ -2621,7 +2576,7 @@ class ScoreFlow {
         </div>
       `
       card.onclick = () => {
-        // Since we don't have the file handle, we tell them it's marked as active 
+        // Since we don't have the file handle, we tell them it's marked as active
         // but if it's not in the current session library, we invite them to re-pick.
         // For now, if it's already in the libraryFiles (project), we can use it!
         const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
@@ -3709,7 +3664,7 @@ class ScoreFlow {
         mode: 'readwrite'
       })
 
-      const targetId = this.pendingMissionHandle ? this.pendingMissionProfileId : this.activeProfileId
+      const targetId = this.activeProfileId
       if (!targetId) {
         alert('Please select a profile first!')
         return
@@ -3920,18 +3875,12 @@ class ScoreFlow {
     if (this.profileAvatarInitial) this.profileAvatarInitial.textContent = active.initial || active.name.charAt(0)
     if (this.welcomeIdentityName) this.welcomeIdentityName.textContent = `Welcome, ${active.name}`
 
-    // Update Section Hub title dynamically
-    const statusEl = document.querySelector('.hub-status')
-    if (statusEl) statusEl.textContent = `Section: ${active.section}`
-
     // Auto-recover Cloud Folders for this profile
     const pHandle = await db.get(`profile_${active.id}_personal_handle`)
     const oHandle = await db.get(`profile_${active.id}_orchestra_handle`)
     this.personalSyncFolder = pHandle || null
     this.orchestraSyncFolder = oHandle || null
     this.updateSyncUI()
-
-    this.renderWelcomeProfiles()
   }
 
   updateSyncUI() {
@@ -4032,59 +3981,6 @@ class ScoreFlow {
     if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
   }
 
-  showProjectRepertoire() {
-    if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
-    if (this.projectRepertoireView) this.projectRepertoireView.classList.remove('hidden')
-    if (this.projectNameDisplay) this.projectNameDisplay.textContent = `Project: ${this.libraryFolderHandle.name}`
-    this.renderProjectRepertoire()
-  }
-
-  async resetToSystemDefault() {
-    const confirmed = await this.showDialog({
-      title: 'Factory Reset?',
-      message: '🚨 WARNING: This will permanently DELETE all Profiles, Missions, Interpretation Styles, and Cloud Workspaces. This action cannot be undone.',
-      icon: '🔥',
-      type: 'confirm',
-      confirmText: 'Reset Systems Now',
-      cancelText: 'Keep My Data'
-    })
-
-    if (confirmed) {
-      // PROMPT VERIFICATION: Explicitly ask the user to type RESET
-      // This gives the user feedback that the logic is active and requires deliberate action
-      const verify = prompt('To confirm factory reset, please type "RESET" in the box below:', '')
-
-      if (verify === 'RESET') {
-        // 1. Clear Storage
-        localStorage.clear()
-        sessionStorage.clear()
-
-        // 2. Clear IndexedDB (True Clean Slate)
-        try {
-          // IMPORTANT: Close active connection first to unblock deletion
-          db.closeDB()
-
-          const deleteRequest = indexedDB.deleteDatabase('ScoreFlowStorage')
-          deleteRequest.onsuccess = () => {
-            alert('App System has been factory reset. All data is now gone. Reloading...')
-            window.location.reload()
-          }
-          deleteRequest.onerror = () => window.location.reload()
-          deleteRequest.onblocked = () => {
-            console.warn('DB delete blocked, reloading anyway.')
-            window.location.reload()
-          }
-
-          // Fallback timer if DB deletion hangs
-          setTimeout(() => window.location.reload(), 1500)
-        } catch (e) {
-          window.location.reload()
-        }
-      } else {
-        alert('Reset cancelled. Verification text did not match.')
-      }
-    }
-  }
 
   async selectLibraryFolder() {
     try {

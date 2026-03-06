@@ -3433,7 +3433,7 @@ kbd {
 }
 
 /* Sidebar Exit Action */
-.exit-mission-btn {
+.close-file-btn {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
@@ -3451,7 +3451,7 @@ kbd {
   transition: all 0.2s;
 }
 
-.exit-mission-btn:hover {
+.close-file-btn:hover {
   background: rgba(255, 71, 87, 0.1);
   border-style: solid;
 }
