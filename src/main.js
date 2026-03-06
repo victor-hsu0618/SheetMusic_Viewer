@@ -56,6 +56,7 @@ class ScoreFlow {
     this.renderCommunityHub()
     this.renderActiveProfile()
     this.renderLibrary()
+    this.renderSidebarRecentScores()
     this.initDocBarDraggable()
     this.checkInitialView()
     this.initGDriveWhenReady()
@@ -84,6 +85,7 @@ class ScoreFlow {
     this.container = document.getElementById('pdf-viewer')
     this.uploader = document.getElementById('pdf-upload')
     this.uploadBtn = document.getElementById('upload-btn')
+    this.openPdfBtn = document.getElementById('open-pdf-btn')
     this.sidebar = document.getElementById('sidebar')
     this.sidebarTrigger = document.getElementById('sidebar-trigger')
     this.layerList = document.getElementById('layer-list')
@@ -123,10 +125,10 @@ class ScoreFlow {
 
     // Quick Load Elements
     this.quickLoadModal = document.getElementById('quick-load-modal')
-    this.quickLoadMenuBtn = document.getElementById('quick-load-menu-btn')
     this.closeQuickLoadBtn = document.getElementById('close-quick-load-modal')
     this.recentScoresList = document.getElementById('recent-scores-list')
     this.openNewSoloBtn = document.getElementById('open-new-solo-btn')
+    this.sidebarRecentList = document.getElementById('sidebar-recent-list')
 
     // Welcome Screen Buttons
     this.welcomeInitialView = document.getElementById('welcome-initial-view')
@@ -224,6 +226,9 @@ class ScoreFlow {
   initEventListeners() {
     if (this.uploadBtn) {
       this.uploadBtn.addEventListener('click', () => this.uploader.click())
+    }
+    if (this.openPdfBtn) {
+      this.openPdfBtn.addEventListener('click', () => this.openPdfFilePicker())
     }
     this.uploader.addEventListener('change', (e) => this.handleUpload(e))
 
@@ -334,9 +339,6 @@ class ScoreFlow {
       }
     })
 
-    if (this.quickLoadMenuBtn) {
-      this.quickLoadMenuBtn.addEventListener('click', () => this.toggleQuickLoadModal(true))
-    }
     if (this.closeQuickLoadBtn) {
       this.closeQuickLoadBtn.addEventListener('click', () => this.toggleQuickLoadModal(false))
     }
@@ -874,6 +876,30 @@ class ScoreFlow {
       console.error('getFile() failed:', err)
       alert(`Could not read "${fileHandle.name}".\n\nThis can happen if the library folder was moved or the browser session expired. Please use "Select Library Folder" to re-link.`)
       return null
+    }
+  }
+
+  async openPdfFilePicker() {
+    if (window.showOpenFilePicker) {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: 'PDF Files', accept: { 'application/pdf': ['.pdf'] } }],
+          multiple: false,
+        })
+        const file = await handle.getFile()
+        const buf = await file.arrayBuffer()
+        await this.loadPDF(new Uint8Array(buf))
+        this.activeScoreName = file.name
+        await db.set(`recent_handle_${file.name}`, handle)
+        this.addToRecentSoloScores(file.name)
+        this.saveToStorage()
+        this.renderLibrary()
+      } catch (e) {
+        if (e.name !== 'AbortError') console.error('openPdfFilePicker:', e)
+      }
+    } else {
+      // iOS Safari fallback — no persistent handle, but file still opens
+      this.uploader.click()
     }
   }
 
@@ -2185,9 +2211,10 @@ class ScoreFlow {
     // Keep only unique names, move newest to front
     this.recentSoloScores = this.recentSoloScores.filter(s => s.name !== name)
     this.recentSoloScores.unshift({ name, date: new Date().toLocaleDateString() })
-    // Limit to 10
-    if (this.recentSoloScores.length > 10) this.recentSoloScores.pop()
+    // Limit to 15
+    if (this.recentSoloScores.length > 15) this.recentSoloScores.pop()
     this.saveToStorage()
+    this.renderSidebarRecentScores()
   }
 
   renderRecentSoloScores() {
@@ -2230,6 +2257,65 @@ class ScoreFlow {
         }
       }
       this.recentScoresList.appendChild(card)
+    })
+  }
+
+  renderSidebarRecentScores() {
+    if (!this.sidebarRecentList) return
+    this.sidebarRecentList.innerHTML = ''
+
+    if (!this.recentSoloScores || this.recentSoloScores.length === 0) {
+      this.sidebarRecentList.innerHTML = '<div class="empty-state">No recent scores yet.</div>'
+      return
+    }
+
+    this.recentSoloScores.forEach(score => {
+      const item = document.createElement('div')
+      item.className = 'sidebar-recent-item'
+      item.title = score.name
+      item.innerHTML = `
+        <span class="sidebar-recent-icon">🎼</span>
+        <span class="sidebar-recent-name">${score.name.replace(/\.pdf$/i, '')}</span>
+        <span class="sidebar-recent-date">${score.date}</span>
+      `
+      item.onclick = async () => {
+        const closeSidebar = () => {
+          if (!this.isSidebarLocked) {
+            this.sidebar.classList.remove('open')
+            this.updateLayoutState()
+          }
+        }
+
+        // 1. Try stored FileSystemFileHandle (from showOpenFilePicker)
+        const storedHandle = await db.get(`recent_handle_${score.name}`)
+        if (storedHandle) {
+          const file = await this.openFileHandle(storedHandle)
+          if (file) {
+            const buf = await file.arrayBuffer()
+            this.activeScoreName = score.name
+            await this.loadPDF(new Uint8Array(buf))
+            closeSidebar()
+            return
+          }
+        }
+
+        // 2. Try current project folder
+        const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
+        if (libraryMatch) {
+          const file = await this.openFileHandle(libraryMatch)
+          if (file) {
+            const buf = await file.arrayBuffer()
+            this.activeScoreName = score.name
+            await this.loadPDF(new Uint8Array(buf))
+            closeSidebar()
+          }
+          return
+        }
+
+        // 3. Not found — ask user to re-open
+        alert(`Cannot reopen "${score.name}".\n\nUse "Open PDF..." to locate the file again.`)
+      }
+      this.sidebarRecentList.appendChild(item)
     })
   }
 

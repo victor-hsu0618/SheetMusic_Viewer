@@ -384,13 +384,20 @@
           <button id="select-library-btn" class="btn btn-outline btn-full mb-10">
             📁 Change Project Folder...
           </button>
+          <button id="open-pdf-btn" class="btn btn-primary btn-full mb-10">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+            Open PDF...
+          </button>
           <div class="library-search-box mb-10">
             <input type="text" id="library-search" placeholder="Search repertoire..."
               title="Search for a score in your library" class="search-input-mini" />
           </div>
-          <button id="quick-load-menu-btn" class="btn btn-secondary btn-full mb-10">
-            🕒 Recent Scores...
-          </button>
+          <div class="tab-section-label">Recent Scores</div>
+          <div id="sidebar-recent-list" class="sidebar-recent-list">
+            <div class="empty-state">No recent scores yet.</div>
+          </div>
           <input type="file" id="pdf-upload" accept="application/pdf" title="Select a PDF score to open" hidden />
           <div id="library-scores-list" class="library-scores-list">
             <div class="empty-state">No scores in library yet.</div>

@@ -2664,6 +2664,50 @@ kbd {
   color: var(--text-muted);
 }
 
+.sidebar-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.sidebar-recent-item {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sidebar-recent-item:hover {
+  background: var(--bg-soft);
+}
+
+.sidebar-recent-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.sidebar-recent-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-recent-date {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 .profile-list {
   display: flex;
   flex-direction: column;
