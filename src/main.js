@@ -513,17 +513,17 @@ class ScoreFlow {
     // Double-tap (touch, iPad) OR dblclick (PC mouse) to toggle stamp palette
     if (this.viewer) {
       // iPad / touch: two taps within 300ms
-      let lastTap = 0
+      let lastTapTime = 0
       this.viewer.addEventListener('touchend', (e) => {
         if (e.target.closest('button, .floating-stamp-bar, .floating-doc-bar')) return
         const now = Date.now()
-        const timeSinceLast = now - lastTap
-        if (timeSinceLast < 300 && timeSinceLast > 0) {
+        const diff = now - lastTapTime
+        if (diff < 300 && diff > 0) {
           e.preventDefault()
           this.toggleStampPalette()
-          lastTap = 0
+          lastTapTime = 0
         } else {
-          lastTap = now
+          lastTapTime = now
         }
       }, { passive: false })
 
@@ -2773,6 +2773,13 @@ class ScoreFlow {
   }
 
   toggleStampPalette() {
+    // 🛡️ Global Debounce for iPad / rapid interaction
+    const now = Date.now()
+    if (this._lastPaletteToggleTime && (now - this._lastPaletteToggleTime < 350)) {
+      return
+    }
+    this._lastPaletteToggleTime = now
+
     const el = this.activeToolsContainer
     const isExpanding = !el.classList.contains('expanded')
 
