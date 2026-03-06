@@ -846,10 +846,19 @@ class ScoreFlow {
     this.jumpHistory = []
 
     // 4. Load and render the PDF
+    const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
+    const pdfjsDir = new URL('pdfjs/', baseUrl).href
+    
     const loadingTask = pdfjsLib.getDocument({
       data: data,
-      cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.5.207/cmaps/',
+      cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
       cMapPacked: true,
+      standardFontDataUrl: new URL('pdfjs/standard_fonts/', baseUrl).href,
+      jbig2WasmUrl: new URL('pdfjs/jbig2.wasm', baseUrl).href,
+      // Generic wasmUrl MUST be a directory with a trailing slash
+      wasmUrl: pdfjsDir,
+      isEvalSupported: false,
+      stopAtErrors: false
     })
 
     this.pdf = await loadingTask.promise
