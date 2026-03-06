@@ -90,7 +90,6 @@ class ScoreFlow {
     this.sidebar = document.getElementById('sidebar')
     this.sidebarTrigger = document.getElementById('sidebar-trigger')
     this.layerList = document.getElementById('layer-list')
-    this.addLayerBtn = document.getElementById('add-layer-btn')
     this.zoomInBtn = document.getElementById('zoom-in')
     this.zoomOutBtn = document.getElementById('zoom-out')
     this.zoomLevelDisplay = document.getElementById('zoom-level')
@@ -412,10 +411,6 @@ class ScoreFlow {
         if (this.lockSidebarBtn) this.lockSidebarBtn.classList.remove('locked')
         this.updateLayoutState()
       })
-    }
-
-    if (this.addLayerBtn) {
-      this.addLayerBtn.addEventListener('click', () => this.addNewLayer())
     }
 
     if (this.resetLayersBtn) {
@@ -2899,19 +2894,6 @@ class ScoreFlow {
       list.appendChild(item)
     })
 
-    // Add Emergency Reset Button at the bottom
-    const resetWrapper = document.createElement('div')
-    resetWrapper.style.padding = '10px 0'
-    resetWrapper.style.borderTop = '1px solid var(--border)'
-    resetWrapper.style.marginTop = '10px'
-    resetWrapper.innerHTML = `
-      <button id="reset-layers-btn" class="btn-text-danger" style="width:100%; text-align:center; font-size:0.75rem;">
-        Reset to Standard Categories
-      </button>
-    `
-    const resetBtn = resetWrapper.querySelector('#reset-layers-btn')
-    resetBtn.addEventListener('click', () => this.resetLayers())
-    list.appendChild(resetWrapper)
   }
 
   spawnTextEditor(wrapper, pageNum, stamp) {
