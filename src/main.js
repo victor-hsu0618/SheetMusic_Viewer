@@ -4022,6 +4022,12 @@ class ScoreFlow {
       }
     }
     if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
+
+    // Show stamp palette expanded on first load (from 6fc7428)
+    if (this.activeToolsContainer) {
+      this.activeToolsContainer.classList.add('expanded')
+      this.updateActiveTools()
+    }
   }
 
   toggleRuler() {
