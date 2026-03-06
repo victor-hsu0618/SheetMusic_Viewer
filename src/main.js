@@ -14,6 +14,7 @@ class ScoreFlow {
     // Professional Layer Presets
     this.layers = [...INITIAL_LAYERS]
     this.stamps = []
+    this.recycleItems = []
     this.nextTargetAnchor = null
     this.jumpHistory = [] // scroll positions before each forward jump
     this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
@@ -1097,7 +1098,7 @@ class ScoreFlow {
       ctx.restore()
     }
 
-    const isStampTool = () => !['view', 'select', 'eraser', 'pen', 'highlighter', 'line'].includes(this.activeStampType)
+    const isStampTool = () => !['view', 'select', 'eraser', 'pen', 'highlighter', 'line', 'recycle-bin'].includes(this.activeStampType)
 
     const startAction = (e) => {
       const pos = getPos(e)
@@ -1142,22 +1143,43 @@ class ScoreFlow {
 
       const isFreehand = ['pen', 'highlighter', 'line'].includes(toolType)
 
-      if (toolType === 'select') {
-        // Use the hover-highlighted stamp as the drag target.
-        // The blue hover glow already shows the user which object they're about to grab,
-        // so no picker menu needed — just confirm the target on mousedown.
+      if (toolType === 'select' || toolType === 'recycle-bin') {
         const target = this.selectHoveredStamp
           || this.findClosestStamp(pageNum, pos.x, pos.y, true)
 
         if (!target) {
           isInteracting = false
         } else {
-          isMovingExisting = true
-          activeObject = target
-          this.lastFocusedStamp = activeObject
-          this._dragLastPos = pos   // initialise delta tracking
-          this.selectHoveredStamp = null // clear highlight while dragging
-          this.redrawStamps(pageNum)
+          if (toolType === 'recycle-bin') {
+            // RECYCLE ACTION: Move from stamps to recycleItems
+            this.stamps = this.stamps.filter(s => s !== target)
+
+            // Find additional metadata for UI preview if possible
+            let toolDef = null
+            for (const set of this.toolsets) {
+              const tool = set.tools.find(t => t.id === target.type)
+              if (tool) { toolDef = tool; break }
+            }
+
+            this.recycleItems.push({
+              ...target,
+              label: toolDef ? toolDef.label : target.type,
+              icon: toolDef ? toolDef.icon : ''
+            })
+
+            this.saveToStorage()
+            this.redrawStamps(pageNum)
+            this.updateActiveTools()
+            isInteracting = false // Action complete
+          } else {
+            // NORMAL SELECT: Start Move
+            isMovingExisting = true
+            activeObject = target
+            this.lastFocusedStamp = activeObject
+            this._dragLastPos = pos
+            this.selectHoveredStamp = null
+            this.redrawStamps(pageNum)
+          }
         }
       } else if (isFreehand) {
         activeObject = {
@@ -1268,8 +1290,8 @@ class ScoreFlow {
         }
       }
 
-      // ── Select hover ──
-      if (this.activeStampType === 'select' && !isInteracting) {
+      // ── Select / Recycle Bin hover ──
+      if ((this.activeStampType === 'select' || this.activeStampType === 'recycle-bin') && !isInteracting) {
         const pos = getPos(e)
         const found = this.findClosestStamp(pageNum, pos.x, pos.y, true)
         if (found !== this.selectHoveredStamp) {
@@ -2350,48 +2372,102 @@ class ScoreFlow {
     header.appendChild(ribbon)
     this.activeToolsContainer.appendChild(header)
 
-    // 3. Active Tools Grid (Supporting Multi-Row Wrap)
-    const grid = document.createElement("div")
-    grid.className = "active-tools-grid"
+    // -- SPECIAL MODE: RECYCLE BIN --
+    if (this.activeStampType === "recycle-bin") {
+      const binContainer = document.createElement("div")
+      binContainer.className = "recycle-bin-view"
 
-    this.activeCategories.forEach((catName, index) => {
-      const group = this.toolsets.find(g => g.name === catName)
-      if (!group) return
+      const binHeader = document.createElement("div")
+      binHeader.className = "bin-header"
+      binHeader.innerHTML = `<h3>Recycle Bin</h3><p>Select stamps on score to move them here.</p>`
 
-      // Add Divider between groups for visual clarity
-      if (index > 0) {
-        const divider = document.createElement("div")
-        divider.className = "tool-group-divider"
-        grid.appendChild(divider)
+      const closeBtn = document.createElement("button")
+      closeBtn.className = "bin-close-btn"
+      closeBtn.textContent = "Back to Tools"
+      closeBtn.onclick = () => { this.activeStampType = "view"; this.updateActiveTools() }
+      binHeader.appendChild(closeBtn)
+      binContainer.appendChild(binHeader)
+
+      if (this.recycleItems.length === 0) {
+        const empty = document.createElement("div")
+        empty.className = "bin-empty"
+        empty.textContent = "Bin is empty."
+        binContainer.appendChild(empty)
+      } else {
+        const binGrid = document.createElement("div")
+        binGrid.className = "bin-grid"
+        this.recycleItems.forEach((item, idx) => {
+          const slot = document.createElement("div")
+          slot.className = "bin-slot"
+
+          // Render a preview of the recycled item
+          const preview = document.createElement("div")
+          preview.className = "bin-item-preview"
+          preview.innerHTML = this.getIcon({ id: item.type, icon: item.icon || "" }, 30)
+
+          slot.onclick = () => {
+            // Pick it back up: Set as active stamp and remove from bin
+            this.activeStampType = item.type
+            this.recycleItems.splice(idx, 1)
+            this.updateActiveTools()
+          }
+
+          const label = document.createElement("span")
+          label.className = "bin-item-label"
+          label.textContent = item.label || item.type
+
+          slot.appendChild(preview)
+          slot.appendChild(label)
+          binGrid.appendChild(slot)
+        })
+        binContainer.appendChild(binGrid)
       }
 
-      group.tools.forEach(tool => {
-        const wrapper = document.createElement("div")
-        wrapper.className = "stamp-tool-wrapper"
+      this.activeToolsContainer.appendChild(binContainer)
+    } else {
+      // 3. Active Tools Grid (Supporting Multi-Row Wrap)
+      const grid = document.createElement("div")
+      grid.className = "active-tools-grid"
 
-        const btn = document.createElement("button")
-        btn.className = `stamp-tool ${this.activeStampType === tool.id ? "active" : ""}`
-        btn.title = tool.label
-        btn.dataset.tooltip = tool.label
-        btn.innerHTML = this.getIcon(tool, 26)
-        btn.onclick = (e) => {
-          e.stopPropagation()
-          this.activeStampType = tool.id
-          // Remember this tool for its respective category
-          this.lastUsedToolPerCategory[catName] = tool.id
-          this.updateActiveTools()
+      this.activeCategories.forEach((catName, index) => {
+        const group = this.toolsets.find(g => g.name === catName)
+        if (!group) return
+
+        // Add Divider between groups for visual clarity
+        if (index > 0) {
+          const divider = document.createElement("div")
+          divider.className = "tool-group-divider"
+          grid.appendChild(divider)
         }
 
-        const label = document.createElement("span")
-        label.className = "stamp-label"
-        label.textContent = tool.label
+        group.tools.forEach(tool => {
+          const wrapper = document.createElement("div")
+          wrapper.className = "stamp-tool-wrapper"
 
-        wrapper.appendChild(btn)
-        wrapper.appendChild(label)
-        grid.appendChild(wrapper)
+          const btn = document.createElement("button")
+          btn.className = `stamp-tool ${this.activeStampType === tool.id ? "active" : ""}`
+          btn.title = tool.label
+          btn.dataset.tooltip = tool.label
+          btn.innerHTML = this.getIcon(tool, 26)
+          btn.onclick = (e) => {
+            e.stopPropagation()
+            this.activeStampType = tool.id
+            // Remember this tool for its respective category
+            this.lastUsedToolPerCategory[catName] = tool.id
+            this.updateActiveTools()
+          }
+
+          const label = document.createElement("span")
+          label.className = "stamp-label"
+          label.textContent = tool.label
+
+          wrapper.appendChild(btn)
+          wrapper.appendChild(label)
+          grid.appendChild(wrapper)
+        })
       })
-    })
-    this.activeToolsContainer.appendChild(grid)
+      this.activeToolsContainer.appendChild(grid)
+    }
 
 
     // 3.5 Resize Handle (Professional Custom Control)

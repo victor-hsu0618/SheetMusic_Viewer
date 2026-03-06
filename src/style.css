@@ -62,8 +62,9 @@ body {
 /* Floating Document Control Bar */
 .floating-doc-bar {
   position: fixed;
-  top: 100px;
-  right: 20px;
+  bottom: 80px;
+  right: 8px;
+  top: auto;
   background: var(--bg-card);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -594,6 +595,117 @@ body {
 
 .drag-handle:active {
   cursor: grabbing;
+}
+
+.recycle-bin-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: slideInUp 0.3s ease-out;
+}
+
+.bin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 8px;
+  border-bottom: 2px dashed var(--border);
+}
+
+.bin-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+.bin-header p {
+  margin: 4px 0 0 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.bin-close-btn {
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.bin-close-btn:active {
+  transform: scale(0.95);
+}
+
+.bin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 8px 4px;
+}
+
+.bin-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  transition: all 0.2s;
+  border: 1.5px solid transparent;
+}
+
+.bin-slot:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.bin-item-preview {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  color: var(--text-main);
+}
+
+.bin-item-label {
+  font-size: 0.7rem;
+  text-align: center;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bin-empty {
+  padding: 32px 0;
+  text-align: center;
+  opacity: 0.5;
+  font-style: italic;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .category-switcher {
