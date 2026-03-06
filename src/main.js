@@ -679,10 +679,10 @@ class ScoreFlow {
       }
 
       // Zoom
-      if (e.key === '=' || e.key === '+') {
+      if (e.key === '=' || e.key === '+' || e.key === 'Add') {
         this.changeZoom(0.1)
       }
-      if (e.key === '-') {
+      if (e.key === '-' || e.key === '_' || e.key === 'Subtract') {
         this.changeZoom(-0.1)
       }
       if (e.key.toLowerCase() === 'w') {
