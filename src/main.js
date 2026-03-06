@@ -24,7 +24,8 @@ class ScoreFlow {
     this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
-    this.activeCategories = ['Edit', 'Pens', 'Bow/Fingering', 'Articulation', 'Tempo', 'Dynamic', 'Anchor']
+    // Default categories: only Edit, Pens, Bow/Fingering
+    this.activeCategories = ['Edit', 'Pens', 'Bow/Fingering']
     this.activeCategory = 'Edit'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
     this.scale = 1.5
@@ -2376,6 +2377,7 @@ class ScoreFlow {
         } else {
           this.activeCategories.push(group.name)
         }
+        this.saveToStorage()
         this.updateActiveTools()
       }
       ribbon.appendChild(pill)
@@ -2805,13 +2807,12 @@ class ScoreFlow {
   initDraggable() {
     let isDragging = false
     let startMouseX, startMouseY, startLeft, startTop
+    let touchStartY = 0
     const el = this.activeToolsContainer
 
     const dragStart = (clientX, clientY, target) => {
       if (!target.closest(".drag-handle") && !target.closest(".active-tool-fab")) return
 
-      // On first drag: materialize the CSS-computed position into explicit left/top
-      // so we can override the default `translateX(-50%)` centering
       if (!el._positionMaterialized) {
         const rect = el.getBoundingClientRect()
         el.style.left = rect.left + 'px'
@@ -2847,19 +2848,49 @@ class ScoreFlow {
     document.addEventListener("mousemove", (e) => { if (isDragging) { e.preventDefault(); drag(e.clientX, e.clientY) } })
     document.addEventListener("mouseup", dragEnd)
 
-    // Touch events for iPad
+    // iPad / Touch - Unified Handler
     el.addEventListener("touchstart", (e) => {
-      if (!e.target.closest(".drag-handle")) return
-      e.preventDefault()
-      dragStart(e.touches[0].clientX, e.touches[0].clientY, e.target)
+      e.stopPropagation() // Always prevent background scroll start
+      if (e.target.closest(".drag-handle")) {
+        dragStart(e.touches[0].clientX, e.touches[0].clientY, e.target)
+        if (isDragging) e.preventDefault()
+      } else {
+        // Prepare for swipe-to-close
+        touchStartY = e.touches[0].clientY
+      }
     }, { passive: false })
+
     document.addEventListener("touchmove", (e) => {
       if (isDragging) {
         e.preventDefault()
+        e.stopPropagation()
         drag(e.touches[0].clientX, e.touches[0].clientY)
+      } else if (el.contains(e.target)) {
+        // In panel but not dragging handle
+        e.stopPropagation()
+        // If not scrolling panel content, block background scroll
+        if (el.style.overflowY !== 'auto') {
+          e.preventDefault()
+        }
       }
     }, { passive: false })
-    document.addEventListener("touchend", dragEnd)
+
+    document.addEventListener("touchend", (e) => {
+      if (isDragging) {
+        dragEnd()
+        e.stopPropagation()
+      } else if (el.contains(e.target)) {
+        e.stopPropagation()
+        // Check for vertical swipe to close
+        if (touchStartY !== 0 && e.changedTouches.length === 1) {
+          const deltaY = e.changedTouches[0].clientY - touchStartY
+          if (Math.abs(deltaY) > 60) {
+            this.toggleStampPalette()
+          }
+        }
+      }
+      touchStartY = 0
+    }, { passive: false })
   }
 
   initDocBarDraggable() {
@@ -3143,6 +3174,7 @@ class ScoreFlow {
     localStorage.setItem('scoreflow_profiles', JSON.stringify(this.profiles))
     localStorage.setItem('scoreflow_active_profile', this.activeProfileId)
     localStorage.setItem('scoreflow_recent_solo_scores', JSON.stringify(this.recentSoloScores || []))
+    localStorage.setItem('scoreflow_active_categories', JSON.stringify(this.activeCategories))
 
     const turnerMode = document.getElementById('turner-mode-select') ? document.getElementById('turner-mode-select').value : 'default';
     localStorage.setItem('scoreflow_turner_mode', turnerMode)
@@ -3168,6 +3200,7 @@ class ScoreFlow {
     const activeProfileData = localStorage.getItem('scoreflow_active_profile')
     const recentSoloData = localStorage.getItem('scoreflow_recent_solo_scores')
     const turnerModeData = localStorage.getItem('scoreflow_turner_mode')
+    const activeCategoriesData = localStorage.getItem('scoreflow_active_categories')
 
     if (recentSoloData) this.recentSoloScores = JSON.parse(recentSoloData)
 
@@ -3176,6 +3209,7 @@ class ScoreFlow {
     if (fingerprintData) this.pdfFingerprint = fingerprintData
     if (profilesData) this.profiles = JSON.parse(profilesData)
     if (activeProfileData) this.activeProfileId = activeProfileData
+    if (activeCategoriesData) this.activeCategories = JSON.parse(activeCategoriesData)
 
     const turnerSelect = document.getElementById('turner-mode-select')
     if (turnerSelect) {
