@@ -959,11 +959,11 @@ class ScoreFlow {
   }
 
   async renderPDF() {
-    // Hide welcome screen BEFORE clearing container DOM
+    // Hide welcome screen and remove only PDF pages — preserve welcome-screen DOM node
     const welcomeScreen = document.querySelector('.welcome-screen')
     if (welcomeScreen) welcomeScreen.classList.add('hidden')
 
-    this.container.innerHTML = ''
+    this.container.querySelectorAll('.page-container').forEach(el => el.remove())
     this.pages = []
 
     for (let i = 1; i <= this.pdf.numPages; i++) {
@@ -3757,7 +3757,7 @@ class ScoreFlow {
     this.libraryFolderHandle = null
     this.activeScoreName = null
 
-    if (this.container) this.container.innerHTML = ''
+    if (this.container) this.container.querySelectorAll('.page-container').forEach(el => el.remove())
     if (this.layerShelf) this.layerShelf.classList.remove('active')
     if (this.sidebar) this.sidebar.classList.remove('open')
     if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
