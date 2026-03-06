@@ -7,6 +7,10 @@ import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
 // Use local worker for total offline reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
 
+// Build constants injected by Vite build process
+const APP_BRANCH = __APP_BRANCH__;
+const BUILD_TIME = __BUILD_TIME__;
+
 class ScoreFlow {
   constructor() {
     this.pdf = null
@@ -70,8 +74,9 @@ class ScoreFlow {
   renderBuildInfo() {
     const branchEl = document.getElementById('build-branch')
     const timeEl = document.getElementById('build-time')
-    if (branchEl) branchEl.textContent = typeof __APP_BRANCH__ !== 'undefined' ? __APP_BRANCH__ : 'unknown'
-    if (timeEl) timeEl.textContent = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'unknown'
+    console.log(`[ScoreFlow] Build Info - Branch: ${APP_BRANCH}, Time: ${BUILD_TIME}`)
+    if (branchEl) branchEl.textContent = APP_BRANCH
+    if (timeEl) timeEl.textContent = BUILD_TIME
   }
 
   async _preloadSvgs() {
