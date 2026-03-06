@@ -971,7 +971,22 @@ class ScoreFlow {
       this.createAnnotationLayers(pageWrapper, i, viewport.width, viewport.height)
       this.createCaptureOverlay(pageWrapper, i, viewport.width, viewport.height)
       this.redrawStamps(i)
+
+      // After first page: show UI and ruler immediately so user doesn't wait for full PDF
+      if (i === 1) {
+        this.showMainUI()
+        this.updateJumpLinePosition()
+        this.updateRulerPosition()
+        this.updateRulerClip()
+        this.computeNextTarget()
+        this.updateRulerMarks()
+      }
     }
+
+    // Final ruler update after all pages are rendered (catches anchors on later pages)
+    this.updateRulerPosition()
+    this.computeNextTarget()
+    this.updateRulerMarks()
   }
 
   createCaptureOverlay(wrapper, pageNum, width, height) {
