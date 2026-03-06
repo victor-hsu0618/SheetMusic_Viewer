@@ -8,7 +8,7 @@ export default defineConfig({
     },
     define: {
         __BUILD_TIME__: JSON.stringify(new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })),
-        __APP_BRANCH__: JSON.stringify(process.env.GITHUB_REF_NAME || 'local-dev')
+        __APP_BRANCH__: JSON.stringify(process.env.GITHUB_REF_NAME || process.env.GITHUB_HEAD_REF || 'local-dev')
     },
     plugins: [
         VitePWA({
