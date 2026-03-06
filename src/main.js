@@ -2,7 +2,7 @@ import './style.css'
 import * as pdfjsLib from 'pdfjs-dist'
 import * as db from './db.js'
 import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
-import * as GDrive from './gdrive.js'
+//import * as GDrive from './gdrive.js'
 
 // Use local worker for total offline reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
@@ -74,7 +74,7 @@ class ScoreFlow {
       try {
         const r = await fetch(path)
         if (r.ok) this._svgCache[id] = await r.text()
-      } catch {}
+      } catch { }
     }))
     this.updateActiveTools()
   }
@@ -491,8 +491,31 @@ class ScoreFlow {
     }
     if (this.btnStampPalette) {
       this.btnStampPalette.addEventListener('click', () => {
-        this.activeToolsContainer.classList.toggle('expanded')
-        this.updateActiveTools()
+        this.toggleStampPalette()
+      })
+    }
+
+    // Double-tap (touch, iPad) OR dblclick (PC mouse) to toggle stamp palette
+    if (this.viewer) {
+      // iPad / touch: two taps within 300ms
+      let lastTap = 0
+      this.viewer.addEventListener('touchend', (e) => {
+        if (e.target.closest('button, .floating-stamp-bar, .floating-doc-bar')) return
+        const now = Date.now()
+        const timeSinceLast = now - lastTap
+        if (timeSinceLast < 300 && timeSinceLast > 0) {
+          e.preventDefault()
+          this.toggleStampPalette()
+          lastTap = 0
+        } else {
+          lastTap = now
+        }
+      }, { passive: false })
+
+      // PC mouse: native dblclick
+      this.viewer.addEventListener('dblclick', (e) => {
+        if (e.target.closest('button, .floating-stamp-bar, .floating-doc-bar')) return
+        this.toggleStampPalette()
       })
     }
 
@@ -848,7 +871,7 @@ class ScoreFlow {
     // 4. Load and render the PDF
     const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
     const pdfjsDir = new URL('pdfjs/', baseUrl).href
-    
+
     const loadingTask = pdfjsLib.getDocument({
       data: data,
       cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
@@ -863,12 +886,13 @@ class ScoreFlow {
 
     this.pdf = await loadingTask.promise
     console.log(`PDF loaded successfully. Pages: ${this.pdf.numPages}, Fingerprint: ${newFingerprint.slice(0, 8)}...`)
-    await this.renderPDF()
-    this.updateJumpLinePosition()
-    this.updateRulerPosition()
-    this.updateRulerClip()
-    this.updateRulerMarks()
+
+    // Open with 'Fit to Width' by default
     this.showMainUI()
+    await this.fitToWidth()
+
+    this.updateJumpLinePosition()
+    this.updateRulerClip()
   }
 
   // Safe file opener: handles File System Access API permission re-requests
@@ -1031,8 +1055,8 @@ class ScoreFlow {
     }
 
     // Dynamic stamp preview offset: default upper-left; flips near right/bottom viewport edges
-    const STAMP_OFFSET_X_PX = 10
-    const STAMP_OFFSET_Y_PX = 20
+    const STAMP_OFFSET_X_PX = 15
+    const STAMP_OFFSET_Y_PX = 30
     const EDGE_THRESHOLD_X = 0.15  // flip X when cursor within 15% of RIGHT edge
     const EDGE_THRESHOLD_Y = 0.12  // flip Y when cursor within 12% of BOTTOM edge
     const getStampPreviewPos = (pos) => {
@@ -1709,12 +1733,12 @@ class ScoreFlow {
     const categoryMap = new Map() // name → { icon, stamps[] }
 
     const categoryMeta = {
-      'Pens':          { icon: '✏️' },
+      'Pens': { icon: '✏️' },
       'Bow/Fingering': { icon: '🎻' },
-      'Articulation':  { icon: '🎵' },
-      'Tempo':         { icon: '♩' },
-      'Dynamic':       { icon: 'f' },
-      'Anchor':        { icon: '⚓' },
+      'Articulation': { icon: '🎵' },
+      'Tempo': { icon: '♩' },
+      'Dynamic': { icon: 'f' },
+      'Anchor': { icon: '⚓' },
     }
 
     // Initialise all known categories (even if count is 0)
@@ -1960,6 +1984,13 @@ class ScoreFlow {
     }
   }
 
+  redrawAllAnnotationLayers() {
+    if (!this.pdf) return
+    for (let i = 1; i <= this.pdf.numPages; i++) {
+      this.redrawStamps(i)
+    }
+  }
+
   redrawStamps(page) {
     const wrapper = document.querySelector(`.page-container[data-page="${page}"]`)
     if (!wrapper) return
@@ -2008,6 +2039,9 @@ class ScoreFlow {
     } else if (isSelectHovered) {
       ctx.shadowBlur = 12
       ctx.shadowColor = '#6366f1'
+    } else if (this.activeStampType === 'select' && !isForeign) {
+      ctx.shadowBlur = 8
+      ctx.shadowColor = '#6366f188' // Subtle interactive glow
     }
 
     if (isForeign) {
@@ -2049,6 +2083,9 @@ class ScoreFlow {
     } else if (isSelectHovered) {
       ctx.shadowBlur = 15
       ctx.shadowColor = '#6366f1'
+    } else if (this.activeStampType === 'select' && !isForeign) {
+      ctx.shadowBlur = 12
+      ctx.shadowColor = '#6366f166' // Subtle interactive glow
     }
 
     if (isForeign) {
@@ -2206,7 +2243,11 @@ class ScoreFlow {
 
     // Always sync the active tool to the viewer so CSS cursors & overlay work
     if (this.viewer) {
-      this.viewer.dataset.activeTool = this.activeStampType
+      if (this.viewer.dataset.activeTool !== this.activeStampType) {
+        this.viewer.dataset.activeTool = this.activeStampType
+        // Redraw all layers to show/hide interactive shadows (e.g. for Select tool)
+        this.redrawAllAnnotationLayers()
+      }
     }
 
     // Sync Mode Buttons in Doc Bar
@@ -2250,11 +2291,37 @@ class ScoreFlow {
         <circle cx="15" cy="19" r="1" fill="currentColor"/>
       </svg>
     `
-    handle.onclick = (e) => {
+    // Only close on click — not if the user dragged (indicated by _dragMoved flag set in initDraggable)
+    handle.addEventListener('click', (e) => {
       e.stopPropagation()
+      if (this._stampDragMoved) {
+        this._stampDragMoved = false
+        return // was a drag, not a tap — ignore
+      }
       this.activeToolsContainer.classList.remove("expanded")
       this.updateActiveTools()
-    }
+    })
+
+    // iPad: double-tap handle to toggle (collapse/expand)
+    let lastGripTap = 0
+    handle.addEventListener('touchend', (e) => {
+      const now = Date.now()
+      const timeSinceLast = now - lastGripTap
+      if (timeSinceLast < 300 && timeSinceLast > 0) {
+        e.preventDefault()
+        e.stopPropagation()
+        this.toggleStampPalette()
+        lastGripTap = 0
+      } else {
+        lastGripTap = now
+      }
+    }, { passive: false })
+
+    // PC: dblclick handle to toggle
+    handle.addEventListener('dblclick', (e) => {
+      e.stopPropagation()
+      this.toggleStampPalette()
+    })
 
     // 2. Category Selection Ribbon (Persistent Pills - forScore Style)
     const ribbon = document.createElement("div")
@@ -2382,7 +2449,8 @@ class ScoreFlow {
       if (!isResizing) return
       const currentX = (e.clientX || (e.touches && e.touches[0].clientX))
       const deltaX = currentX - initialX
-      this.toolbarWidth = Math.max(300, initialWidth - deltaX)
+      // Dragging to the RIGHT (positive deltaX) now INCREASES width
+      this.toolbarWidth = Math.max(300, initialWidth + deltaX)
       el.style.width = this.toolbarWidth + "px"
     }
 
@@ -2611,43 +2679,70 @@ class ScoreFlow {
     })
   }
 
+  toggleStampPalette() {
+    const el = this.activeToolsContainer
+    el.classList.toggle('expanded')
+    this.updateActiveTools()
+  }
+
   initDraggable() {
     let isDragging = false
-    let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0
+    let startMouseX, startMouseY, startLeft, startTop
     const el = this.activeToolsContainer
 
-    el.addEventListener("mousedown", dragStart)
-    document.addEventListener("mousemove", drag)
-    document.addEventListener("mouseup", dragEnd)
+    const dragStart = (clientX, clientY, target) => {
+      if (!target.closest(".drag-handle") && !target.closest(".active-tool-fab")) return
 
-    function dragStart(e) {
-      if (!e.target.closest(".drag-handle") && !e.target.closest(".active-tool-fab")) return
-      initialX = e.clientX - xOffset
-      initialY = e.clientY - yOffset
-      isDragging = true
-    }
-
-    function drag(e) {
-      if (isDragging) {
-        e.preventDefault()
-        currentX = e.clientX - initialX
-        currentY = e.clientY - initialY
-        xOffset = currentX
-        yOffset = currentY
-        setTranslate(currentX, currentY, el)
+      // On first drag: materialize the CSS-computed position into explicit left/top
+      // so we can override the default `translateX(-50%)` centering
+      if (!el._positionMaterialized) {
+        const rect = el.getBoundingClientRect()
+        el.style.left = rect.left + 'px'
+        el.style.top = rect.top + 'px'
+        el.style.bottom = 'auto'
+        el.style.transform = 'none'
+        el._positionMaterialized = true
       }
+
+      startMouseX = clientX
+      startMouseY = clientY
+      startLeft = parseFloat(el.style.left) || 0
+      startTop = parseFloat(el.style.top) || 0
+      isDragging = true
+      this._stampDragMoved = false
     }
 
-    function dragEnd(e) {
-      initialX = currentX
-      initialY = currentY
+    const drag = (clientX, clientY) => {
+      if (!isDragging) return
+      const dx = clientX - startMouseX
+      const dy = clientY - startMouseY
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) this._stampDragMoved = true
+      el.style.left = (startLeft + dx) + 'px'
+      el.style.top = (startTop + dy) + 'px'
+    }
+
+    const dragEnd = () => {
       isDragging = false
     }
 
-    function setTranslate(xPos, yPos, el) {
-      // Anchored to left 40px, so we just add the offset
-      el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`
-    }
+    // Mouse events
+    el.addEventListener("mousedown", (e) => dragStart(e.clientX, e.clientY, e.target))
+    document.addEventListener("mousemove", (e) => { if (isDragging) { e.preventDefault(); drag(e.clientX, e.clientY) } })
+    document.addEventListener("mouseup", dragEnd)
+
+    // Touch events for iPad
+    el.addEventListener("touchstart", (e) => {
+      if (!e.target.closest(".drag-handle")) return
+      e.preventDefault()
+      dragStart(e.touches[0].clientX, e.touches[0].clientY, e.target)
+    }, { passive: false })
+    document.addEventListener("touchmove", (e) => {
+      if (isDragging) {
+        e.preventDefault()
+        drag(e.touches[0].clientX, e.touches[0].clientY)
+      }
+    }, { passive: false })
+    document.addEventListener("touchend", dragEnd)
   }
 
   initDocBarDraggable() {
@@ -3991,10 +4086,10 @@ class ScoreFlow {
     if (this.sidebar) this.sidebar.classList.remove('open')
     if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
 
-    ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
-      const el = document.getElementById(id)
-      if (el) el.classList.add('hidden')
-    })
+      ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
+        const el = document.getElementById(id)
+        if (el) el.classList.add('hidden')
+      })
 
     this.checkInitialView()
   }
@@ -4023,9 +4118,9 @@ class ScoreFlow {
     }
     if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
 
-    // Show stamp palette expanded on first load (from 6fc7428)
+    // Stamp palette starts collapsed — user opens via button or double-tap
     if (this.activeToolsContainer) {
-      this.activeToolsContainer.classList.add('expanded')
+      this.activeToolsContainer.classList.remove('expanded')
       this.updateActiveTools()
     }
   }
