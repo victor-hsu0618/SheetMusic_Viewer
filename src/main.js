@@ -3763,18 +3763,6 @@ class ScoreFlow {
   }
 
   async exitMission() {
-    const confirmed = await this.showDialog({
-      title: 'Exit Performance',
-      message: 'Return to the welcome screen? Your annotations are saved automatically.',
-      icon: '🚪',
-      actions: [
-        { label: 'Exit', value: true, type: 'primary' },
-        { label: 'Cancel', value: false, type: 'outline' }
-      ]
-    })
-
-    if (!confirmed) return
-
     this.pdf = null
     this.libraryFiles = []
     this.libraryFolderHandle = null
