@@ -58,6 +58,7 @@ class ScoreFlow {
     this.renderActiveProfile()
     this.renderLibrary()
     this.renderSidebarRecentScores()
+    this.renderWelcomeRecentScores()
     this.initDocBarDraggable()
     this.checkInitialView()
     this.initGDriveWhenReady()
@@ -156,10 +157,8 @@ class ScoreFlow {
 
     // Mission & Welcome Elements
     this.missionSelectionView = document.getElementById('mission-selection-view')
-    this.startMissionBtn = document.getElementById('start-new-mission-btn')
-    this.recentMissionsContainer = document.getElementById('recent-missions-container')
-    this.backToMissionsBtn = document.getElementById('back-to-missions-btn')
     this.openSoloAltBtn = document.getElementById('welcome-open-file-alt')
+    this.welcomeRecentList = document.getElementById('welcome-recent-list')
     this.exitMissionBtn = document.getElementById('exit-mission-btn')
 
     this.identitySelectionView = document.getElementById('identity-selection-view')
@@ -432,19 +431,8 @@ class ScoreFlow {
     }
 
 
-    if (this.startMissionBtn) {
-      this.startMissionBtn.addEventListener('click', () => this.startNewMission())
-    }
-    if (this.backToMissionsBtn) {
-      this.backToMissionsBtn.addEventListener('click', () => {
-        if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
-        if (this.missionSelectionView) this.missionSelectionView.classList.remove('hidden')
-      })
-    }
     if (this.openSoloAltBtn) {
-      this.openSoloAltBtn.addEventListener('click', () => {
-        if (this.uploader) this.uploader.click()
-      })
+      this.openSoloAltBtn.addEventListener('click', () => this.openPdfFilePicker())
     }
     if (this.exitMissionBtn) {
       this.exitMissionBtn.addEventListener('click', () => this.exitMission())
@@ -2265,6 +2253,7 @@ class ScoreFlow {
     if (this.recentSoloScores.length > 15) this.recentSoloScores.pop()
     this.saveToStorage()
     this.renderSidebarRecentScores()
+    this.renderWelcomeRecentScores()
   }
 
   renderRecentSoloScores() {
@@ -2307,6 +2296,42 @@ class ScoreFlow {
         }
       }
       this.recentScoresList.appendChild(card)
+    })
+  }
+
+  renderWelcomeRecentScores() {
+    if (!this.welcomeRecentList) return
+    this.welcomeRecentList.innerHTML = ''
+    if (!this.recentSoloScores || this.recentSoloScores.length === 0) {
+      this.welcomeRecentList.innerHTML = '<div class="empty-state">No recent scores yet.</div>'
+      return
+    }
+    this.recentSoloScores.forEach(score => {
+      const item = document.createElement('div')
+      item.className = 'sidebar-recent-item'
+      item.title = score.name
+      item.innerHTML = `
+        <span class="sidebar-recent-icon">🎼</span>
+        <span class="sidebar-recent-name">${score.name.replace(/\.pdf$/i, '')}</span>
+        <span class="sidebar-recent-date">${score.date}</span>
+      `
+      item.onclick = async () => {
+        const storedHandle = await db.get(`recent_handle_${score.name}`)
+        if (storedHandle) {
+          const file = await this.openFileHandle(storedHandle)
+          if (file) { await this.loadPDF(new Uint8Array(await file.arrayBuffer())); this.activeScoreName = score.name; return }
+        }
+        const cachedBuf = await db.get(`recent_buf_${score.name}`)
+        if (cachedBuf) { this.activeScoreName = score.name; await this.loadPDF(new Uint8Array(cachedBuf)); return }
+        const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
+        if (libraryMatch) {
+          const file = await this.openFileHandle(libraryMatch)
+          if (file) { this.activeScoreName = score.name; await this.loadPDF(new Uint8Array(await file.arrayBuffer())) }
+          return
+        }
+        alert(`Cannot reopen "${score.name}".\n\nUse "Open PDF..." to locate the file again.`)
+      }
+      this.welcomeRecentList.appendChild(item)
     })
   }
 
@@ -3574,9 +3599,7 @@ class ScoreFlow {
     if (this.missionSelectionView) {
       this.missionSelectionView.classList.remove('hidden')
       if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
-      if (this.welcomeInitialView) this.welcomeInitialView.classList.add('hidden')
-
-      this.renderRecentMissions()
+      this.renderWelcomeRecentScores()
     }
   }
 

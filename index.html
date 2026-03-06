@@ -182,21 +182,17 @@
       <div id="pdf-viewer" class="pdf-viewer">
         <div class="welcome-screen">
           <div class="welcome-card">
-            <!-- STAGE 1: Performance Mission Hub -->
+            <!-- Welcome: Solo Session -->
             <div id="mission-selection-view" class="mission-selection-view">
               <div class="welcome-header">
-                <div class="welcome-icon">🎯</div>
-                <h2>Performance Missions</h2>
-                <p>Start a new ensemble project or resume a recent mission.</p>
+                <div class="welcome-icon">🎼</div>
+                <h2>ScoreFlow</h2>
+                <p>Open a score to begin.</p>
               </div>
               <div class="welcome-actions">
-                <button id="start-new-mission-btn" class="btn btn-primary start-btn mb-20">+ Start New Mission</button>
-                <div id="recent-missions-container" class="recent-missions-list mb-20">
-                  <!-- Recent Mission Cards (Folder + Role) -->
-                </div>
-                <div class="text-center mt-20">
-                  <button id="welcome-open-file-alt" class="btn btn-text-muted">Start Solo Session (PDF) →</button>
-                </div>
+                <button id="welcome-open-file-alt" class="btn btn-primary start-btn mb-20">Open PDF...</button>
+                <div class="tab-section-label" style="text-align:left; margin-bottom:8px;">Recent Scores</div>
+                <div id="welcome-recent-list" class="sidebar-recent-list"></div>
               </div>
             </div>
 
