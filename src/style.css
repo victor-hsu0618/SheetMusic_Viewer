@@ -708,6 +708,24 @@ body {
   }
 }
 
+.build-info-section {
+  padding: 8px 4px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+}
+
+.build-info-item {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+.build-info-item span {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
 .category-switcher {
   display: flex;
   flex-direction: row;

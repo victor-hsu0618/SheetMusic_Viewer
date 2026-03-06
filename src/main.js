@@ -64,6 +64,14 @@ class ScoreFlow {
     this.checkInitialView()
     this.initGDriveWhenReady()
     this._preloadSvgs()
+    this.renderBuildInfo()
+  }
+
+  renderBuildInfo() {
+    const branchEl = document.getElementById('build-branch')
+    const timeEl = document.getElementById('build-time')
+    if (branchEl) branchEl.textContent = typeof __APP_BRANCH__ !== 'undefined' ? __APP_BRANCH__ : 'unknown'
+    if (timeEl) timeEl.textContent = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'unknown'
   }
 
   async _preloadSvgs() {

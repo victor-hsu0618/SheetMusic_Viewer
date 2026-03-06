@@ -6,6 +6,10 @@ export default defineConfig({
     server: {
         host: true
     },
+    define: {
+        __BUILD_TIME__: JSON.stringify(new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })),
+        __APP_BRANCH__: JSON.stringify(process.env.GITHUB_REF_NAME || 'local-dev')
+    },
     plugins: [
         VitePWA({
             registerType: 'autoUpdate',
