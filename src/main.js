@@ -802,9 +802,10 @@ class ScoreFlow {
       reader.onload = async (event) => {
         const buffer = event.target.result
         try {
+          // Store a copy before loadPDF — PDF.js transfers (detaches) the buffer to its worker
+          await db.set(`recent_buf_${file.name}`, buffer.slice(0))
           await this.loadPDF(new Uint8Array(buffer))
           this.activeScoreName = file.name
-          await db.set(`recent_buf_${file.name}`, buffer)
           this.addToRecentSoloScores(file.name)
           this.saveToStorage()
           this.renderLibrary()
