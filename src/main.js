@@ -1021,14 +1021,33 @@ class ScoreFlow {
       }
     }
 
-    // Offset stamp preview above/left of the cursor so it's not obscured
-    const STAMP_OFFSET_X_PX = -20
-    const STAMP_OFFSET_Y_PX = -55
+    // Dynamic stamp preview offset: default upper-left; flips near right/bottom viewport edges
+    const STAMP_OFFSET_X_PX = 10
+    const STAMP_OFFSET_Y_PX = 20
+    const EDGE_THRESHOLD_X = 0.15  // flip X when cursor within 15% of RIGHT edge
+    const EDGE_THRESHOLD_Y = 0.12  // flip Y when cursor within 12% of BOTTOM edge
     const getStampPreviewPos = (pos) => {
       const rect = overlay.getBoundingClientRect()
+      // X: binary flip near right page edge (small offset, jump is tiny)
+      const nearRight = pos.x > 1 - EDGE_THRESHOLD_X
+      const dx = (nearRight ? 1 : -1) * STAMP_OFFSET_X_PX / rect.width
+      // Y: smooth lerp near viewport bottom — no binary jump
+      const cursorScreenY = rect.top + pos.y * rect.height
+      const distFromBottom = window.innerHeight - cursorScreenY
+      const TRANSITION_PX = STAMP_OFFSET_Y_PX * 4  // lerp zone height
+      let dyPx
+      if (distFromBottom >= TRANSITION_PX) {
+        dyPx = -STAMP_OFFSET_Y_PX          // normal: above cursor
+      } else if (distFromBottom <= 0) {
+        dyPx = STAMP_OFFSET_Y_PX           // past viewport bottom: below cursor
+      } else {
+        // Smooth interpolation: -offset → +offset over the transition zone
+        const t = 1 - distFromBottom / TRANSITION_PX
+        dyPx = -STAMP_OFFSET_Y_PX + t * STAMP_OFFSET_Y_PX * 2
+      }
       return {
-        x: Math.max(0.01, Math.min(0.99, pos.x + STAMP_OFFSET_X_PX / rect.width)),
-        y: Math.max(0.01, Math.min(0.99, pos.y + STAMP_OFFSET_Y_PX / rect.height))
+        x: Math.max(0.01, Math.min(0.99, pos.x + dx)),
+        y: Math.max(0.01, Math.min(0.99, pos.y + dyPx / rect.height))
       }
     }
 
