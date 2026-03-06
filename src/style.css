@@ -79,7 +79,41 @@ body {
   gap: 12px;
   cursor: default;
   overflow: visible;
-  transition: width 0.3s, right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: width 0.3s, height 0.3s, border-radius 0.3s, right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.floating-doc-bar.collapsed {
+  padding: 6px;
+  gap: 0;
+  border-radius: 28px;
+  min-height: 44px;
+}
+
+.floating-doc-bar.collapsed>*:not(#btn-doc-bar-toggle) {
+  display: none !important;
+}
+
+.floating-doc-bar #btn-doc-bar-toggle .icon-expand {
+  display: none;
+}
+
+.floating-doc-bar #btn-doc-bar-toggle .icon-collapse {
+  display: block;
+}
+
+.floating-doc-bar.collapsed #btn-doc-bar-toggle .icon-expand {
+  display: block;
+}
+
+.floating-doc-bar.collapsed #btn-doc-bar-toggle .icon-collapse {
+  display: none;
+}
+
+.toggle-bar-btn {
+  background: var(--primary) !important;
+  color: white !important;
+  border-radius: 50% !important;
+  border: none !important;
 }
 
 .doc-drag-handle {

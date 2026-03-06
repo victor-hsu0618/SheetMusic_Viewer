@@ -206,6 +206,7 @@ class ScoreFlow {
     this.eraseAllModal = document.getElementById('erase-all-modal')
     this.btnModeHand = document.getElementById('btn-mode-hand')
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
+    this.btnDocBarToggle = document.getElementById('btn-doc-bar-toggle')
 
     this.libraryFiles = [] // Scanned repertoire
     this.libraryFolderHandle = null
@@ -510,6 +511,11 @@ class ScoreFlow {
         this.toggleStampPalette()
       })
     }
+    if (this.btnDocBarToggle) {
+      this.btnDocBarToggle.onclick = () => {
+        this.toggleDocBar()
+      }
+    }
 
     // Double-tap (touch, iPad) OR dblclick (PC mouse) to toggle stamp palette
     if (this.viewer) {
@@ -648,6 +654,9 @@ class ScoreFlow {
       if (e.key.toLowerCase() === 'v') {
         this.activeStampType = this.activeStampType === 'select' ? 'view' : 'select'
         this.updateActiveTools()
+      }
+      if (e.key.toLowerCase() === 'b') {
+        this.toggleDocBar()
       }
       if (e.key.toLowerCase() === 'e') {
         this.activeStampType = this.activeStampType === 'eraser' ? 'view' : 'eraser'
@@ -2804,6 +2813,12 @@ class ScoreFlow {
     this.updateActiveTools()
   }
 
+  toggleDocBar() {
+    if (!this.docBar) return
+    this.docBar.classList.toggle('collapsed')
+    localStorage.setItem('scoreflow_doc_bar_collapsed', this.docBar.classList.contains('collapsed'))
+  }
+
   initDraggable() {
     let isDragging = false
     let startMouseX, startMouseY, startLeft, startTop
@@ -3201,6 +3216,7 @@ class ScoreFlow {
     const recentSoloData = localStorage.getItem('scoreflow_recent_solo_scores')
     const turnerModeData = localStorage.getItem('scoreflow_turner_mode')
     const activeCategoriesData = localStorage.getItem('scoreflow_active_categories')
+    const docBarCollapsed = localStorage.getItem('scoreflow_doc_bar_collapsed') === 'true'
 
     if (recentSoloData) this.recentSoloScores = JSON.parse(recentSoloData)
 
@@ -3210,6 +3226,7 @@ class ScoreFlow {
     if (profilesData) this.profiles = JSON.parse(profilesData)
     if (activeProfileData) this.activeProfileId = activeProfileData
     if (activeCategoriesData) this.activeCategories = JSON.parse(activeCategoriesData)
+    if (docBarCollapsed && this.docBar) this.docBar.classList.add('collapsed')
 
     const turnerSelect = document.getElementById('turner-mode-select')
     if (turnerSelect) {
