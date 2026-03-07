@@ -76,9 +76,15 @@ class ScoreFlow {
   }
 
   async _preloadSvgs() {
+    const existingSvgs = [
+      'pen', 'highlighter', 'line',
+      'select', 'eraser',
+      'f1', 'f2', 'f3', 'f4', 'f5', 'thumb',
+      'anchor'
+    ]
     const base = import.meta.env.BASE_URL
     const items = this.toolsets.flatMap(g =>
-      g.tools.map(t => ({ id: t.id, path: `${base}assets/icons/${g.type}/${t.id}.svg` }))
+      g.tools.filter(t => existingSvgs.includes(t.id)).map(t => ({ id: t.id, path: `${base}assets/icons/${g.type}/${t.id}.svg` }))
     )
     await Promise.allSettled(items.map(async ({ id, path }) => {
       try {
