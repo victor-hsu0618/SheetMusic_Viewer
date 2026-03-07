@@ -4020,7 +4020,13 @@ class ScoreFlow {
   }
 
   toggleFullscreen() {
-    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    const useCSSFullscreen = isIOS || (isSafari && !document.fullscreenEnabled)
+
+    const appEl = document.getElementById('app')
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || appEl?.classList.contains('css-fullscreen'))
 
     const updateBtn = (nowFs) => {
       if (this.btnFullscreen) {
@@ -4035,19 +4041,31 @@ class ScoreFlow {
       }
     }
 
-    if (!isFs) {
-      // IMPORTANT: must be called synchronously from user gesture (no async/await before this)
-      const p = document.body.requestFullscreen
-        ? document.body.requestFullscreen()
-        : (document.body.webkitRequestFullscreen ? (document.body.webkitRequestFullscreen(), Promise.resolve()) : null)
-      if (p) p.then(() => updateBtn(true)).catch(err => console.warn('[ScoreFlow] Fullscreen failed:', err))
+    if (useCSSFullscreen) {
+      // iOS Safari: CSS fake fullscreen (avoids swipe-to-dismiss conflict with scroll)
+      if (!isFs) {
+        appEl?.classList.add('css-fullscreen')
+        updateBtn(true)
+      } else {
+        appEl?.classList.remove('css-fullscreen')
+        updateBtn(false)
+      }
     } else {
-      const p = document.exitFullscreen
-        ? document.exitFullscreen()
-        : (document.webkitExitFullscreen ? (document.webkitExitFullscreen(), Promise.resolve()) : null)
-      if (p) p.then(() => updateBtn(false)).catch(() => { })
+      // Desktop: use native fullscreen API (must be synchronous from user gesture)
+      if (!isFs) {
+        const p = document.body.requestFullscreen
+          ? document.body.requestFullscreen()
+          : (document.body.webkitRequestFullscreen ? (document.body.webkitRequestFullscreen(), Promise.resolve()) : null)
+        if (p) p.then(() => updateBtn(true)).catch(err => console.warn('[ScoreFlow] Fullscreen failed:', err))
+      } else {
+        const p = document.exitFullscreen
+          ? document.exitFullscreen()
+          : (document.webkitExitFullscreen ? (document.webkitExitFullscreen(), Promise.resolve()) : null)
+        if (p) p.then(() => updateBtn(false)).catch(() => { })
+      }
     }
   }
+
 
 
 

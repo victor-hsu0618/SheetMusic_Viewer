@@ -3525,3 +3525,14 @@ kbd {
 .gesture-icon {
   font-size: 18px;
 }
+/* ── CSS Fullscreen (iOS Safari fallback) ── */
+#app.css-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  overflow: hidden;
+  background: #0f0f13;
+}
