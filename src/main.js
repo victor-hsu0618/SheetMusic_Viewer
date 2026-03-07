@@ -364,7 +364,15 @@ class ScoreFlow {
 
     // Welcome Screen Hooks
     if (this.welcomeOpenFileBtn) {
-      this.welcomeOpenFileBtn.addEventListener('click', () => this.uploader.click())
+      // iOS Safari blocks programmatic .click() inside async functions,
+      // so we must call uploader.click() synchronously on iOS.
+      this.welcomeOpenFileBtn.addEventListener('click', () => {
+        if (window.showOpenFilePicker) {
+          this.openPdfFilePicker()  // Desktop: persistent file handles
+        } else {
+          this.uploader.click()  // iOS: direct synchronous click
+        }
+      })
     }
     if (this.welcomeOpenProjectBtn) {
       this.welcomeOpenProjectBtn.addEventListener('click', () => this.selectLibraryFolder())
@@ -406,18 +414,7 @@ class ScoreFlow {
       this.welcomeAddProfileBtn.addEventListener('click', () => this.addNewProfile())
     }
 
-    if (this.welcomeOpenFileBtn) {
-      // IMPORTANT: iOS Safari blocks programmatic .click() inside async functions.
-      // Use direct synchronous click here to ensure the file picker opens on iPad.
-      this.welcomeOpenFileBtn.addEventListener('click', () => {
-        if (!window.showOpenFilePicker) {
-          // iOS fallback: trigger hidden file input directly (synchronous)
-          this.uploader.click()
-        } else {
-          this.openPdfFilePicker()
-        }
-      })
-    }
+
     if (this.closeFileBtn) {
       this.closeFileBtn.addEventListener('click', () => this.closeFile())
     }
