@@ -79,7 +79,6 @@ class ScoreFlow {
     const existingSvgs = [
       'pen', 'highlighter', 'line',
       'select', 'eraser',
-      'f1', 'f2', 'f3', 'f4', 'f5', 'thumb',
       'anchor'
     ]
     const base = import.meta.env.BASE_URL
