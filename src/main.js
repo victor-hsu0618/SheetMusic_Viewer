@@ -4019,16 +4019,27 @@ class ScoreFlow {
     if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
   }
 
-  toggleFullscreen() {
+  async toggleFullscreen() {
     const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement)
 
-    if (!isFs) {
-      const el = document.documentElement
-      const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen
-      if (req) req.call(el).catch(() => { })
-    } else {
-      const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen
-      if (exit) exit.call(document)
+    try {
+      if (!isFs) {
+        // Try body first (more permissive), then documentElement
+        const el = document.body
+        if (el.requestFullscreen) {
+          await el.requestFullscreen()
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen()
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen()
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen()
+        }
+      }
+    } catch (err) {
+      console.warn('[ScoreFlow] Fullscreen failed:', err)
     }
 
     const updateBtn = () => {
@@ -4047,6 +4058,7 @@ class ScoreFlow {
     document.addEventListener('fullscreenchange', updateBtn, { once: true })
     document.addEventListener('webkitfullscreenchange', updateBtn, { once: true })
   }
+
 
 
   async selectLibraryFolder() {
