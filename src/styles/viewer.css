@@ -1,0 +1,208 @@
+/* Viewer Container */
+.viewer-container {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  background-color: #525659;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  scroll-behavior: smooth;
+  transition: padding-right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  overscroll-behavior: contain;
+}
+
+/* Floating Document Control Bar */
+.floating-doc-bar {
+  position: fixed;
+  bottom: 80px;
+  right: 8px;
+  top: auto;
+  background: var(--bg-card);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 12px 6px;
+  z-index: 2500;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: default;
+  overflow: visible;
+  transition: width 0.3s, height 0.3s, border-radius 0.3s, right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.floating-doc-bar.collapsed {
+  padding: 6px;
+  gap: 0;
+  border-radius: 28px;
+  min-height: 44px;
+}
+
+.floating-doc-bar.collapsed>*:not(#btn-doc-bar-toggle) {
+  display: none !important;
+}
+
+.floating-doc-bar #btn-doc-bar-toggle .icon-expand {
+  display: none;
+}
+
+.floating-doc-bar #btn-doc-bar-toggle .icon-collapse {
+  display: block;
+}
+
+.floating-doc-bar.collapsed #btn-doc-bar-toggle .icon-expand {
+  display: block;
+}
+
+.floating-doc-bar.collapsed #btn-doc-bar-toggle .icon-collapse {
+  display: none;
+}
+
+.toggle-bar-btn {
+  background: var(--primary) !important;
+  color: white !important;
+  border-radius: 50% !important;
+  border: none !important;
+}
+
+.doc-drag-handle {
+  width: 100%;
+  padding: 4px 0;
+  display: flex;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.doc-drag-handle:active {
+  cursor: grabbing;
+}
+
+.zoom-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.zoom-btn-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-app);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text-main);
+  transition: all 0.2s;
+}
+
+.zoom-btn-mini:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* CSS Tooltips for doc-bar buttons */
+.zoom-btn-mini[data-tooltip] {
+  position: relative;
+}
+
+.zoom-btn-mini[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 30, 0.88);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 9999;
+}
+
+.zoom-btn-mini[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .zoom-btn-mini[data-tooltip]::after {
+    display: none;
+  }
+}
+
+#zoom-level {
+  font-size: 0.85rem;
+  font-weight: 700;
+  min-width: 45px;
+  text-align: center;
+}
+
+/* Split-View Mode: Only on very large screens (Desktop), push the viewer when sidebar is active.
+   On iPads and smaller, sidebar is an overlay to keep the score as large as possible. */
+@media (min-width: 1400px) {
+  #app.is-sidebar-active .viewer-container {
+    padding-right: var(--sidebar-width);
+  }
+}
+
+/* Premium Slim Scrollbar for Main Viewer */
+.viewer-container::-webkit-scrollbar {
+  width: 6px;
+  /* Thin vertical scrollbar */
+  height: 6px;
+  /* Thin horizontal scrollbar */
+  display: block;
+}
+
+.viewer-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.viewer-container::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2);
+  /* Primary color with low opacity */
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+.viewer-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+  /* Full primary color on hover */
+}
+
+.page-container {
+  position: relative;
+  background: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.pdf-canvas {
+  display: block;
+}
+
+/* Annotation Layer */
+.annotation-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 5;
+}
