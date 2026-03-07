@@ -2763,16 +2763,11 @@ class ScoreFlow {
 
     if (isExpanding) {
       el.classList.add('expanded')
-      // Restoration strategy: if currently in view/select mode, try to restore the last stamp or drawing tool
-      if (this.activeStampType === 'view' || this.activeStampType === 'select' || this.activeStampType === 'eraser') {
-        this.activeStampType = this._lastStampType || 'view'
-      }
+      // Always open in view mode to prevent accidental drawing on panel open
     } else {
       el.classList.remove('expanded')
-      // Deactivation strategy: when panel closes, we shift back to view mode to avoid accidental stamps
-      // Includes stamps AND drawing tools (pen, highlighter, etc.) but excludes dedicated modes in doc bar
+      // When panel closes, reset to view mode to avoid accidental stamps
       if (this.activeStampType !== 'view' && this.activeStampType !== 'select' && this.activeStampType !== 'eraser' && this.activeStampType !== 'anchor') {
-        this._lastStampType = this.activeStampType
         this.activeStampType = 'view'
       }
     }
