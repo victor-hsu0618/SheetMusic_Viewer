@@ -4019,31 +4019,10 @@ class ScoreFlow {
     if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
   }
 
-  async toggleFullscreen() {
+  toggleFullscreen() {
     const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement)
 
-    try {
-      if (!isFs) {
-        // Try body first (more permissive), then documentElement
-        const el = document.body
-        if (el.requestFullscreen) {
-          await el.requestFullscreen()
-        } else if (el.webkitRequestFullscreen) {
-          el.webkitRequestFullscreen()
-        }
-      } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen()
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen()
-        }
-      }
-    } catch (err) {
-      console.warn('[ScoreFlow] Fullscreen failed:', err)
-    }
-
-    const updateBtn = () => {
-      const nowFs = !!(document.fullscreenElement || document.webkitFullscreenElement)
+    const updateBtn = (nowFs) => {
       if (this.btnFullscreen) {
         this.btnFullscreen.classList.toggle('active', nowFs)
         this.btnFullscreen.innerHTML = nowFs
@@ -4055,9 +4034,21 @@ class ScoreFlow {
              </svg>`
       }
     }
-    document.addEventListener('fullscreenchange', updateBtn, { once: true })
-    document.addEventListener('webkitfullscreenchange', updateBtn, { once: true })
+
+    if (!isFs) {
+      // IMPORTANT: must be called synchronously from user gesture (no async/await before this)
+      const p = document.body.requestFullscreen
+        ? document.body.requestFullscreen()
+        : (document.body.webkitRequestFullscreen ? (document.body.webkitRequestFullscreen(), Promise.resolve()) : null)
+      if (p) p.then(() => updateBtn(true)).catch(err => console.warn('[ScoreFlow] Fullscreen failed:', err))
+    } else {
+      const p = document.exitFullscreen
+        ? document.exitFullscreen()
+        : (document.webkitExitFullscreen ? (document.webkitExitFullscreen(), Promise.resolve()) : null)
+      if (p) p.then(() => updateBtn(false)).catch(() => { })
+    }
   }
+
 
 
 
