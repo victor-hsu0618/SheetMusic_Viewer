@@ -34,11 +34,18 @@ body {
   line-height: 1.5;
   /* Prevent iOS Safari pull-to-refresh and overscroll bounce */
   overscroll-behavior: none;
+  /* iOS safe area: avoid content hiding under notch / browser chrome */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 #app {
   display: flex;
   height: 100vh;
+  height: 100dvh;
+  /* dynamic viewport height — adjusts when iOS browser chrome shows/hides */
   width: 100vw;
   overflow: hidden;
 }
@@ -406,6 +413,7 @@ body {
   text-align: center;
   letter-spacing: 2px;
   display: inline-block;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -444,6 +452,7 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -3524,4 +3533,16 @@ kbd {
 
 .gesture-icon {
   font-size: 18px;
+}
+
+/* ── CSS Fullscreen (iOS Safari fallback) ── */
+#app.css-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  overflow: hidden;
+  background: #0f0f13;
 }

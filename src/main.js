@@ -4019,31 +4019,16 @@ class ScoreFlow {
     if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
   }
 
-  async toggleFullscreen() {
-    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement)
+  toggleFullscreen() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    const useCSSFullscreen = isIOS || (isSafari && !document.fullscreenEnabled)
 
-    try {
-      if (!isFs) {
-        // Try body first (more permissive), then documentElement
-        const el = document.body
-        if (el.requestFullscreen) {
-          await el.requestFullscreen()
-        } else if (el.webkitRequestFullscreen) {
-          el.webkitRequestFullscreen()
-        }
-      } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen()
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen()
-        }
-      }
-    } catch (err) {
-      console.warn('[ScoreFlow] Fullscreen failed:', err)
-    }
+    const appEl = document.getElementById('app')
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || appEl?.classList.contains('css-fullscreen'))
 
-    const updateBtn = () => {
-      const nowFs = !!(document.fullscreenElement || document.webkitFullscreenElement)
+    const updateBtn = (nowFs) => {
       if (this.btnFullscreen) {
         this.btnFullscreen.classList.toggle('active', nowFs)
         this.btnFullscreen.innerHTML = nowFs
@@ -4055,9 +4040,33 @@ class ScoreFlow {
              </svg>`
       }
     }
-    document.addEventListener('fullscreenchange', updateBtn, { once: true })
-    document.addEventListener('webkitfullscreenchange', updateBtn, { once: true })
+
+    if (useCSSFullscreen) {
+      // iOS Safari: CSS fake fullscreen (avoids swipe-to-dismiss conflict with scroll)
+      if (!isFs) {
+        appEl?.classList.add('css-fullscreen')
+        updateBtn(true)
+      } else {
+        appEl?.classList.remove('css-fullscreen')
+        updateBtn(false)
+      }
+    } else {
+      // Desktop: use native fullscreen API (must be synchronous from user gesture)
+      if (!isFs) {
+        const p = document.body.requestFullscreen
+          ? document.body.requestFullscreen()
+          : (document.body.webkitRequestFullscreen ? (document.body.webkitRequestFullscreen(), Promise.resolve()) : null)
+        if (p) p.then(() => updateBtn(true)).catch(err => console.warn('[ScoreFlow] Fullscreen failed:', err))
+      } else {
+        const p = document.exitFullscreen
+          ? document.exitFullscreen()
+          : (document.webkitExitFullscreen ? (document.webkitExitFullscreen(), Promise.resolve()) : null)
+        if (p) p.then(() => updateBtn(false)).catch(() => { })
+      }
+    }
   }
+
+
 
 
 
