@@ -63,7 +63,6 @@ class ScoreFlow {
     this.renderWelcomeRecentScores()
     this.initDocBarDraggable()
     this.checkInitialView()
-    this.initGDriveWhenReady()
     this._preloadSvgs()
     this.renderBuildInfo()
   }
