@@ -756,11 +756,31 @@ class ScoreFlow {
 
     console.log(`Starting upload for: ${file.name}, size: ${file.size} bytes`)
 
+    const loaderId = 'ipad-upload-loader'
+    let loader = document.getElementById(loaderId)
+    if (!loader) {
+      loader = document.createElement('div')
+      loader.id = loaderId
+      loader.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:99999;font-family:Outfit,sans-serif;'
+      document.body.appendChild(loader)
+    }
+    loader.innerHTML = `
+      <div style="border:4px solid rgba(255,255,255,0.2);border-top:4px solid #3b82f6;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin-bottom:20px;"></div>
+      <style>@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>
+      <h2 style="font-weight:400;margin:0;text-align:center;padding:0 20px;">Opening ${file.name}...</h2>
+      <p style="opacity:0.7;margin-top:10px;text-align:center;max-width:80%;">Please wait while the file is processed.</p>
+      <p style="opacity:0.4;font-size:14px;text-align:center;max-width:80%;">If this is an iCloud file, your device may need time to download it.</p>
+    `
+    loader.style.display = 'flex'
+
+    const cleanup = () => { if (loader) loader.style.display = 'none' }
+
     try {
       const reader = new FileReader()
       reader.onerror = (err) => {
         console.error('FileReader error:', err)
-        alert('Error reading the file.')
+        cleanup()
+        alert('Error reading the file from your device.')
       }
 
       reader.onload = async (event) => {
@@ -775,12 +795,18 @@ class ScoreFlow {
           this.renderLibrary()
         } catch (pdfErr) {
           console.error('PDF.js Error:', pdfErr)
-          alert('Failed to load PDF.')
+          alert('Failed to construct PDF. The file might be corrupted.')
+        } finally {
+          cleanup()
         }
       }
       reader.readAsArrayBuffer(file)
     } catch (err) {
       console.error('General upload error:', err)
+      cleanup()
+    } finally {
+      // Clear value so the same file selected next time still fires the change event
+      e.target.value = ''
     }
   }
 
