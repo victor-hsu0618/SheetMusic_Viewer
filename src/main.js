@@ -176,6 +176,7 @@ class ScoreFlow {
     this.btnJumpHead = document.getElementById('btn-jump-head')
     this.btnJumpEnd = document.getElementById('btn-jump-end')
     this.btnRulerToggle = document.getElementById('btn-ruler-toggle')
+    this.btnFullscreen = document.getElementById('btn-fullscreen')
     this.btnModeAnchor = document.getElementById('btn-mode-anchor')
     this.btnModeEraser = document.getElementById('btn-mode-eraser')
     this.eraseAllModal = document.getElementById('erase-all-modal')
@@ -422,6 +423,7 @@ class ScoreFlow {
     if (this.btnJumpHead) this.btnJumpHead.onclick = () => this.goToHead()
     if (this.btnJumpEnd) this.btnJumpEnd.onclick = () => this.goToEnd()
     if (this.btnRulerToggle) this.btnRulerToggle.addEventListener('click', () => this.toggleRuler())
+    if (this.btnFullscreen) this.btnFullscreen.addEventListener('click', () => this.toggleFullscreen())
 
     // Quick Mode Actions
     if (this.btnModeEraser) {
@@ -599,6 +601,9 @@ class ScoreFlow {
       }
       if (e.key.toLowerCase() === 'r') {
         this.toggleRuler()
+      }
+      if (e.key.toLowerCase() === 'g') {
+        this.toggleFullscreen()
       }
 
       // Esc: close all + return to view mode
@@ -2758,16 +2763,11 @@ class ScoreFlow {
 
     if (isExpanding) {
       el.classList.add('expanded')
-      // Restoration strategy: if currently in view/select mode, try to restore the last stamp or drawing tool
-      if (this.activeStampType === 'view' || this.activeStampType === 'select' || this.activeStampType === 'eraser') {
-        this.activeStampType = this._lastStampType || 'view'
-      }
+      // Always open in view mode to prevent accidental drawing on panel open
     } else {
       el.classList.remove('expanded')
-      // Deactivation strategy: when panel closes, we shift back to view mode to avoid accidental stamps
-      // Includes stamps AND drawing tools (pen, highlighter, etc.) but excludes dedicated modes in doc bar
+      // When panel closes, reset to view mode to avoid accidental stamps
       if (this.activeStampType !== 'view' && this.activeStampType !== 'select' && this.activeStampType !== 'eraser' && this.activeStampType !== 'anchor') {
-        this._lastStampType = this.activeStampType
         this.activeStampType = 'view'
       }
     }
@@ -4018,6 +4018,47 @@ class ScoreFlow {
     }
     if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
   }
+
+  async toggleFullscreen() {
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement)
+
+    try {
+      if (!isFs) {
+        // Try body first (more permissive), then documentElement
+        const el = document.body
+        if (el.requestFullscreen) {
+          await el.requestFullscreen()
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen()
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen()
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen()
+        }
+      }
+    } catch (err) {
+      console.warn('[ScoreFlow] Fullscreen failed:', err)
+    }
+
+    const updateBtn = () => {
+      const nowFs = !!(document.fullscreenElement || document.webkitFullscreenElement)
+      if (this.btnFullscreen) {
+        this.btnFullscreen.classList.toggle('active', nowFs)
+        this.btnFullscreen.innerHTML = nowFs
+          ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+               <path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 0 2 2v3M16 21v-3a2 2 0 0 0 2-2h3"/>
+             </svg>`
+          : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+               <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>
+             </svg>`
+      }
+    }
+    document.addEventListener('fullscreenchange', updateBtn, { once: true })
+    document.addEventListener('webkitfullscreenchange', updateBtn, { once: true })
+  }
+
 
 
   async selectLibraryFolder() {

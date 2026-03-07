@@ -4,7 +4,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
     base: '/SheetMusic_Viewer/',
     server: {
-        host: true
+        host: true,
+        headers: {
+            'Permissions-Policy': 'fullscreen=(self)'
+        }
     },
     define: {
         __BUILD_TIME__: JSON.stringify(new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })),
