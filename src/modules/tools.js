@@ -60,8 +60,8 @@ export class ToolManager {
                 el.style.transform = 'none'
 
                 // Estimate dimensions (approximate if not yet rendered)
-                const paletteWidth = el.offsetWidth || 340
-                const paletteHeight = el.offsetHeight || 250
+                const paletteWidth = el.offsetWidth || 240
+                const paletteHeight = el.offsetHeight || 180
                 const margin = 20
                 
                 // Horizontal Strategy:
@@ -263,7 +263,7 @@ export class ToolManager {
             return
         }
 
-        this.app.activeToolsContainer.style.width = typeof this.app.toolbarWidth === "number" ? `${this.app.toolbarWidth}px` : this.app.toolbarWidth
+        this.app.activeToolsContainer.style.width = typeof this.app.toolbarWidth === "number" ? `${this.app.toolbarWidth}px` : (this.app.toolbarWidth || "240px")
 
         // Header
         const header = document.createElement("div")
@@ -281,6 +281,53 @@ export class ToolManager {
             this.toggleStampPalette()
         })
 
+        // Recent Tools Ribbon (Next to handle)
+        const recentRibbon = document.createElement("div")
+        recentRibbon.className = "recent-tools-ribbon"
+        
+        // 1. Permanently Pinned SELECT tool
+        const selectTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === 'select')
+        if (selectTool) {
+            const btn = document.createElement("button")
+            btn.className = `recent-tool-btn pinned ${this.app.activeStampType === 'select' ? "active" : ""}`
+            btn.innerHTML = this.getIcon(selectTool, 18)
+            btn.title = "Select (V)"
+            btn.onclick = (e) => {
+                e.stopPropagation()
+                this.app.activeStampType = 'select'
+                this.updateActiveTools()
+            }
+            recentRibbon.appendChild(btn)
+        }
+
+        // 2. Dynamically tracked recent tools (excluding select and view)
+        this.app.recentTools.forEach(toolId => {
+            if (toolId === 'select') return // Skip since it's pinned
+            const tool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === toolId)
+            if (!tool) return
+            const btn = document.createElement("button")
+            btn.className = `recent-tool-btn ${this.app.activeStampType === toolId ? "active" : ""}`
+            btn.innerHTML = this.getIcon(tool, 18)
+            btn.onclick = (e) => {
+                e.stopPropagation()
+                this.app.activeStampType = toolId
+                this.updateActiveTools()
+            }
+            recentRibbon.appendChild(btn)
+        })
+
+        header.appendChild(handle)
+        header.appendChild(recentRibbon)
+        this.app.activeToolsContainer.appendChild(header)
+
+        // Grid or Recycle Bin
+        if (this.app.activeStampType === "recycle-bin") {
+            this.renderRecycleBin()
+        } else {
+            this.renderToolsGrid()
+        }
+
+        // Category Ribbon (Now at the BOTTOM)
         const ribbon = document.createElement("div")
         ribbon.className = "category-ribbon"
         this.app.toolsets.forEach(group => {
@@ -291,10 +338,15 @@ export class ToolManager {
             pill.onclick = (e) => {
                 e.stopPropagation()
                 if (isActive) {
+                    // Don't allow deselecting if it's the only one
                     if (this.app.activeCategories.length > 1) {
                         this.app.activeCategories = this.app.activeCategories.filter(c => c !== group.name)
                     }
                 } else {
+                    // Limit to 2 categories: Remove oldest (first) and add new one
+                    if (this.app.activeCategories.length >= 2) {
+                        this.app.activeCategories.shift()
+                    }
                     this.app.activeCategories.push(group.name)
                 }
                 this.app.saveToStorage()
@@ -302,17 +354,7 @@ export class ToolManager {
             }
             ribbon.appendChild(pill)
         })
-
-        header.appendChild(handle)
-        header.appendChild(ribbon)
-        this.app.activeToolsContainer.appendChild(header)
-
-        // Grid or Recycle Bin
-        if (this.app.activeStampType === "recycle-bin") {
-            this.renderRecycleBin()
-        } else {
-            this.renderToolsGrid()
-        }
+        this.app.activeToolsContainer.appendChild(ribbon)
 
         // Resize Handle
         const resizer = document.createElement("div")
@@ -369,8 +411,8 @@ export class ToolManager {
     }
 
     renderToolsGrid() {
-        const grid = document.createElement("div")
-        grid.className = "active-tools-grid"
+        const container = document.createElement("div")
+        container.className = "active-tools-rows"
 
         this.app.activeCategories.forEach((catName, index) => {
             const group = this.app.toolsets.find(g => g.name === catName)
@@ -378,9 +420,12 @@ export class ToolManager {
 
             if (index > 0) {
                 const divider = document.createElement("div")
-                divider.className = "tool-group-divider"
-                grid.appendChild(divider)
+                divider.className = "tool-row-divider"
+                container.appendChild(divider)
             }
+
+            const row = document.createElement("div")
+            row.className = "active-tools-row"
 
             group.tools.forEach(tool => {
                 const wrapper = document.createElement("div")
@@ -389,7 +434,7 @@ export class ToolManager {
                 btn.className = `stamp-tool ${this.app.activeStampType === tool.id ? "active" : ""}`
                 btn.title = tool.label
                 btn.dataset.tooltip = tool.label
-                btn.innerHTML = this.getIcon(tool, 26)
+                btn.innerHTML = this.getIcon(tool, 22)
                 btn.onclick = (e) => {
                     e.stopPropagation()
                     if (tool.id === 'erase-all') {
@@ -398,16 +443,19 @@ export class ToolManager {
                     }
                     this.app.activeStampType = tool.id
                     this.app.lastUsedToolPerCategory[catName] = tool.id
+                    
+                    // Update Recent Tools History
+                    if (tool.id !== 'view' && tool.id !== 'select') {
+                        this.app.recentTools = [tool.id, ...this.app.recentTools.filter(id => id !== tool.id)].slice(0, 5)
+                    }
+
                     this.updateActiveTools()
                 }
-                const label = document.createElement("span")
-                label.className = "stamp-label"
-                label.textContent = tool.label
                 wrapper.appendChild(btn)
-                wrapper.appendChild(label)
-                grid.appendChild(wrapper)
+                row.appendChild(wrapper)
             })
+            container.appendChild(row)
         })
-        this.app.activeToolsContainer.appendChild(grid)
+        this.app.activeToolsContainer.appendChild(container)
     }
 }

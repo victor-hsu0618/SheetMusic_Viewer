@@ -100,13 +100,14 @@ class ScoreFlow {
     this.recycleItems = []
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
-    // Default categories: only Edit, Pens, Bow/Fingering
-    this.activeCategories = ['Edit', 'Pens', 'Bow/Fingering']
-    this.activeCategory = 'Edit'
+    // Default categories: only Pens and Bow/Fingering
+    this.activeCategories = ['Pens', 'Bow/Fingering']
+    this.activeCategory = 'Pens'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
     this.toolbarWidth = 600 // High-Performance Default Width
     this._lastStampType = null // Remember the last used stamp for restoration
-    this.lastUsedToolPerCategory = {} // Initialize missing object
+    this.lastUsedToolPerCategory = {} 
+    this.recentTools = [] // Track unique recently used tools
     this.sources = [
       { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
     ]
@@ -149,7 +150,7 @@ class ScoreFlow {
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
 
-    console.log('[ScoreFlow] Version 2.1.4 - Side-Contextual Palette Mode')
+    console.log('[ScoreFlow] Version 2.2.1 - High Contrast Selection Mode')
 
     this.viewerManager.checkInitialView()
     this.toolManager.preloadSvgs()
