@@ -318,16 +318,3 @@
   background-color: rgba(99, 102, 241, 0.6);
   border-bottom: 1px dashed rgba(99, 102, 241, 0.9);
 }
-
-.jump-line-label {
-  position: absolute;
-  right: 15px;
-  top: -24px;
-  background: var(--primary);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  opacity: 0.8;
-}
