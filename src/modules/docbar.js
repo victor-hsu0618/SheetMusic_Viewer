@@ -6,8 +6,9 @@ export class DocBarManager {
     init() {
         this.app.docBar = document.getElementById('floating-doc-bar')
         this.app.docBarToggleBtn = document.getElementById('btn-doc-bar-toggle')
-        this.app.controlSuite = document.getElementById('unified-control-suite')
+
         this.app.zoomLevelDisplay = document.getElementById('zoom-level')
+
 
         this.app.layerShelf = document.getElementById('layer-shelf')
         this.app.layerToggleBtn = document.getElementById('layer-toggle-fab')
@@ -19,11 +20,7 @@ export class DocBarManager {
 
     initEventListeners() {
         // Control Suite Collapsible Toggle
-        if (this.app.zoomLevelDisplay && this.app.controlSuite) {
-            this.app.zoomLevelDisplay.addEventListener('click', () => {
-                this.app.controlSuite.classList.toggle('collapsed')
-            })
-        }
+
 
         // Doc Bar Toggle
         if (this.app.docBarToggleBtn) {

@@ -152,20 +152,12 @@
   }
 }
 
-.control-suite {
+
+
+.zoom-level-display {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.control-suite.collapsed>*:not(#zoom-level) {
-  display: none !important;
-}
-
-.zoom-level-toggle {
-  cursor: pointer;
+  justify-content: center;
   font-size: 0.85rem;
   font-weight: 700;
   min-width: 45px;
@@ -174,15 +166,12 @@
   border-radius: 8px;
   background: var(--bg-soft);
   transition: background 0.2s;
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
   -webkit-touch-callout: none;
 }
 
-.zoom-level-toggle:hover {
-  background: var(--primary-light);
-  color: var(--primary);
-}
+
 
 .suite-divider {
   width: 20px;

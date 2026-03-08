@@ -40,7 +40,7 @@ export class PersistenceManager {
         const recentSoloData = localStorage.getItem('scoreflow_recent_solo_scores')
         const turnerModeData = localStorage.getItem('scoreflow_turner_mode')
         const activeCategoriesData = localStorage.getItem('scoreflow_active_categories')
-        const docBarCollapsed = localStorage.getItem('scoreflow_doc_bar_collapsed') === 'true'
+        const docBarCollapsedStr = localStorage.getItem('scoreflow_doc_bar_collapsed')
         const rulerVisibleData = localStorage.getItem('scoreflow_ruler_visible')
 
         if (recentSoloData) this.app.recentSoloScores = JSON.parse(recentSoloData)
@@ -54,7 +54,11 @@ export class PersistenceManager {
         if (activeSourceData) this.app.activeSourceId = activeSourceData
         if (fingerprintData) this.app.pdfFingerprint = fingerprintData
         if (activeCategoriesData) this.app.activeCategories = JSON.parse(activeCategoriesData)
-        if (docBarCollapsed && this.app.docBar) this.app.docBar.classList.add('collapsed')
+        if (docBarCollapsedStr === 'true' && this.app.docBar) {
+            this.app.docBar.classList.add('collapsed')
+        } else if (docBarCollapsedStr === 'false' && this.app.docBar) {
+            this.app.docBar.classList.remove('collapsed')
+        }
         if (rulerVisibleData !== null) this.app.rulerVisible = JSON.parse(rulerVisibleData)
 
         const turnerSelect = document.getElementById('turner-mode-select')

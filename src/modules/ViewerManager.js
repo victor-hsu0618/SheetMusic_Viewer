@@ -249,6 +249,7 @@ export class ViewerManager {
     async changeZoom(delta) {
         this.scale = Math.min(Math.max(0.5, this.scale + delta), 4)
         this.updateZoomDisplay()
+
         if (this.pdf) await this.renderPDF()
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
@@ -263,6 +264,7 @@ export class ViewerManager {
         const availW = this.app.viewer.clientWidth - rulerW - 8 // 8px breathing room
         this.scale = Math.min(Math.max(0.5, availW / naturalWidth), 4)
         this.updateZoomDisplay()
+
         await this.renderPDF()
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
@@ -276,6 +278,7 @@ export class ViewerManager {
         const availH = this.app.viewer.clientHeight - 16 // 16px breathing room
         this.scale = Math.min(Math.max(0.5, availH / naturalHeight), 4)
         this.updateZoomDisplay()
+
         await this.renderPDF()
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
@@ -287,6 +290,8 @@ export class ViewerManager {
             this.app.zoomLevelDisplay.textContent = `${Math.round(this.scale * 100)}%`
         }
     }
+
+
 
     showMainUI() {
         // Reveal toolbars once a score is loaded

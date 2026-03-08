@@ -40,6 +40,7 @@ class ScoreFlow {
   async renderPDF() { return this.viewerManager.renderPDF() }
   async getFingerprint(buffer) { return this.viewerManager.getFingerprint(buffer) }
   updateZoomDisplay() { return this.viewerManager.updateZoomDisplay() }
+
   async changeZoom(delta) { return this.viewerManager.changeZoom(delta) }
   async fitToWidth() { return this.viewerManager.fitToWidth() }
   async fitToHeight() { return this.viewerManager.fitToHeight() }
@@ -106,7 +107,7 @@ class ScoreFlow {
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
     this.toolbarWidth = 600 // High-Performance Default Width
     this._lastStampType = null // Remember the last used stamp for restoration
-    this.lastUsedToolPerCategory = {} 
+    this.lastUsedToolPerCategory = {}
     this.recentTools = [] // Track unique recently used tools
     this.userTextLibrary = ['dolce', 'espress.', 'marcato', 'tenuto'] // Initial custom suggestions
     this.sources = [
@@ -219,7 +220,7 @@ class ScoreFlow {
     // Support multiple inputs (Welcome screen and Sidebar)
     this.allUploaders = document.querySelectorAll('.native-file-input')
     this.uploader = this.allUploaders[0] // Default for methods expecting single ref
-    
+
     this.allUploaders.forEach(u => {
       u.addEventListener('change', (e) => this.handleUpload(e))
     })
@@ -232,6 +233,7 @@ class ScoreFlow {
     this.zoomInBtn = document.getElementById('zoom-in')
     this.zoomOutBtn = document.getElementById('zoom-out')
     this.zoomLevelDisplay = document.getElementById('zoom-level')
+
     this.btnFitWidth = document.getElementById('btn-fit-width')
     this.btnFitHeight = document.getElementById('btn-fit-height')
     this.clearStampsBtn = document.getElementById('clear-stamps-btn')
@@ -312,11 +314,11 @@ class ScoreFlow {
     if (this.btnWelcomeSkip) {
       this.btnWelcomeSkip.addEventListener('click', () => {
         this.viewerManager.hideWelcome()
-        // Show basic UI bars even if no PDF
-        ;['floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
-          const el = document.getElementById(id)
-          if (el) el.classList.remove('hidden')
-        })
+          // Show basic UI bars even if no PDF
+          ;['floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
+            const el = document.getElementById(id)
+            if (el) el.classList.remove('hidden')
+          })
       })
     }
 
