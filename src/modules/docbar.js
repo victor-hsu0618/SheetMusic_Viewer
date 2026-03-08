@@ -95,30 +95,42 @@ export class DocBarManager {
 
     toggleDocBar() {
         if (!this.app.docBar) return
+        if (this.app.docBar._wasDragging) return
         this.app.docBar.classList.toggle('collapsed')
         localStorage.setItem('scoreflow_doc_bar_collapsed', this.app.docBar.classList.contains('collapsed'))
     }
 
     initDraggable() {
         let isDragging = false
-        let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0
+        let startX, startY, initialX, initialY, xOffset = 0, yOffset = 0
+        let dragDistance = 0
         const el = this.app.docBar
         if (!el) return
 
         const dragStart = (e) => {
-            if (!e.target.closest(".doc-drag-handle")) return
+            // In expanded mode, only drag-handle works. In collapsed mode, the whole bar (the button) works.
+            const isCollapsed = el.classList.contains('collapsed')
+            if (!isCollapsed && !e.target.closest(".doc-drag-handle")) return
+
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
 
+            startX = clientX
+            startY = clientY
             initialX = clientX - xOffset
             initialY = clientY - yOffset
             isDragging = true
+            dragDistance = 0
         }
 
         const drag = (e) => {
             if (isDragging) {
                 const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
                 const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+
+                const dx = clientX - startX
+                const dy = clientY - startY
+                dragDistance = Math.sqrt(dx * dx + dy * dy)
 
                 currentX = clientX - initialX
                 currentY = clientY - initialY
@@ -132,14 +144,22 @@ export class DocBarManager {
             initialX = currentX
             initialY = currentY
             isDragging = false
+            // If we moved more than 5px, consider it a drag and prevent the next click
+            if (dragDistance > 5) {
+                el._wasDragging = true
+                setTimeout(() => { el._wasDragging = false }, 50)
+            }
         }
+
+        let currentX, currentY
 
         el.addEventListener("mousedown", dragStart)
         document.addEventListener("mousemove", drag)
         document.addEventListener("mouseup", dragEnd)
 
         el.addEventListener("touchstart", (e) => {
-            if (!e.target.closest(".doc-drag-handle")) return
+            const isCollapsed = el.classList.contains('collapsed')
+            if (!isCollapsed && !e.target.closest(".doc-drag-handle")) return
             dragStart(e)
         }, { passive: false })
 
