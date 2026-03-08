@@ -10,9 +10,24 @@
     font-weight: 700;
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
     border: none;
     gap: 8px;
+    touch-action: manipulation; /* Disable double-tap-to-zoom delay */
+}
+
+@media (hover: none) {
+    .btn, .zoom-btn-mini, .zoom-btn, label.btn {
+        transition: none !important;
+        transform: none !important;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+    }
+}
+
+.btn:active, .btn.pointer-active, label.btn:active {
+    opacity: 0.6 !important;
+    background: var(--primary-hover) !important;
+    transition: none !important;
 }
 
 .btn-primary {
@@ -21,21 +36,17 @@
     box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
-.btn-primary:hover {
-    background: var(--primary-hover);
-    transform: translateY(-1px);
-}
+@media (hover: hover) {
+    .btn-primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+    }
 
-.btn-outline {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-main);
-}
-
-.btn-outline:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: rgba(99, 102, 241, 0.05);
+    .btn-outline:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.05);
+    }
 }
 
 .zoom-btn-mini {
@@ -50,13 +61,21 @@
     justify-content: center;
     font-weight: 700;
     color: var(--text-main);
-    transition: all 0.2s;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.zoom-btn-mini:hover {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
+@media (hover: none) {
+    .zoom-btn-mini {
+        transition: none !important;
+    }
+}
+
+@media (hover: hover) {
+    .zoom-btn-mini:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
 }
 
 /* Category Navigator \u0026 Dropdown */
@@ -72,7 +91,20 @@
     color: var(--primary);
     font-weight: 700;
     font-size: 0.8rem;
-    transition: all 0.2s;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+@media (hover: none) {
+    .nav-trigger {
+        transition: none !important;
+    }
+}
+
+@media (hover: hover) {
+    .nav-trigger:hover {
+        background: rgba(99, 102, 241, 0.15);
+        border-color: var(--primary);
+    }
 }
 
 .category-dropdown {

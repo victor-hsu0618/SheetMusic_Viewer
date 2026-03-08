@@ -81,6 +81,23 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **沉浸式設計**：採用毛玻璃效果 (Glassmorphism)，並針對 Safari/iOS 進行 `backdrop-filter` 相容性優化。
 - **回應式佈局**：自動適應 Desktop 與 iPad/iPhone 螢幕大小，支援觸控操作。
 
+### 4.1 iPad 手勢效能優化 (iPad Gesture Performance Optimization) - *2026.03.08 更新*
+
+為了提供演奏時最直覺的操控，針對 iPad 觸控進行了專屬手勢映射：
+
+- **智慧點擊跳轉 (Contextual Tapping)**：
+  - **觸發條件**：僅在 **View (Hand) 模式** 下啟用，避免繪圖時誤觸。
+  - **上半部點擊 (Top Half)**：執行 `jump(-1)`，跳轉至上一個錨點或上一頁。
+  - **下半部點擊 (Bottom Half)**：執行 `jump(1)`，跳轉至下一個錨點或下一頁。
+- **水平滑動導航 (Horizontal Swipe)**：
+  - **向左滑動 (Swipe Left)**：執行 `jump(1)`（下一頁），符合電子書閱讀慣例。
+  - **向右滑動 (Swipe Right)**：執行 `jump(-1)`（上一頁）。
+- **進階印章呼喚 (Two-Finger Palette Toggle)**：
+  - **雙指點兩下 (Two-finger Double Tap)**：在螢幕任何位置雙指快速點擊兩下，即可切換 **Stamp Palette (印章工具箱)** 的顯隱。
+  - **設計目的**：解決單指操作時可能產生的繪圖/功能衝突，提供演奏家極速換工具的手段。
+- **衝突預防機制**：
+  - 手勢系統會自動避開 Doc Bar、側邊欄及浮動工具箱區域，確保 UI 互動優先。
+
 ### 5. 樂譜詳情與身份管理 (Score Detail & Identity Management) - *2026.03.08 更新*
 
 - **樂譜詳情儀表板 (Score Detail Panel)**：原 Orchestra 面板重構為「Score Detail」，提供四大核心區塊：

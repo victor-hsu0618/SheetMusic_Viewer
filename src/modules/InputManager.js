@@ -5,6 +5,11 @@ export class InputManager {
         this.swipeStartX = 0
         this.swipeStartTime = 0
         this.scrollTicking = false
+
+        // Gesture state tracking
+        this.lastTapTime = 0
+        this.tapCount = 0
+        this.tapTimer = null
     }
 
     init() {
@@ -96,41 +101,89 @@ export class InputManager {
         const viewer = document.getElementById('viewer-container')
         if (!viewer) return
 
-        viewer.addEventListener('touchstart', (e) => {
-            if (e.touches.length !== 1) return
-            this.swipeStartY = e.touches[0].clientY
-            this.swipeStartX = e.touches[0].clientX
-            this.swipeStartTime = Date.now()
-        }, { passive: true })
+        let lastTwoFingerTapTime = 0
 
-        viewer.addEventListener('touchend', (e) => {
-            if (e.changedTouches.length !== 1) return
-            const dy = this.swipeStartY - e.changedTouches[0].clientY
-            const dx = this.swipeStartX - e.changedTouches[0].clientX
-            const dt = Date.now() - this.swipeStartTime
-            if (dt < 400 && Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx) * 1.5) {
-                dy > 0 ? this.app.jump(1) : this.app.jump(-1)
+        viewer.addEventListener('touchstart', (e) => {
+            if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar')) return
+            if (e.touches.length === 1) {
+                this.swipeStartY = e.touches[0].clientY
+                this.swipeStartX = e.touches[0].clientX
+                this.swipeStartTime = Date.now()
+            } else if (e.touches.length === 2) {
+                const now = Date.now()
+                if (now - lastTwoFingerTapTime < 350) {
+                    // Two-finger double tap detected
+                    this.app.toolManager.toggleStampPalette()
+                    lastTwoFingerTapTime = 0 // Reset
+                } else {
+                    lastTwoFingerTapTime = now
+                }
             }
         }, { passive: true })
 
-        // Double-tap for stamp palette
+        viewer.addEventListener('touchend', (e) => {
+            // Handle Horizontal Swipes
+            if (e.changedTouches.length === 1) {
+                if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar, #sidebar')) return
+                const dy = this.swipeStartY - e.changedTouches[0].clientY
+                const dx = this.swipeStartX - e.changedTouches[0].clientX
+                const dt = Date.now() - this.swipeStartTime
+
+                // Horizontal Swipe detection (Conventional: Swipe Left -> Next, Swipe Right -> Prev)
+                if (dt < 400 && Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    if (dx > 0) {
+                        this.app.jump(1) // Swipe Left (Next)
+                    } else {
+                        this.app.jump(-1) // Swipe Right (Prev)
+                    }
+                    return // Prevent triggering taps if it was a swipe
+                }
+
+                // Vertical Swipe detection (Existing)
+                if (dt < 400 && Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+                    dy > 0 ? this.app.jump(1) : this.app.jump(-1)
+                    return
+                }
+
+                // Handle Single Taps for Page Turns (Only in View Mode)
+                if (dt < 250 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                    if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar, #sidebar')) return
+
+                    if (this.app.activeStampType === 'view') {
+                        const tapY = e.changedTouches[0].clientY
+                        if (tapY < window.innerHeight / 2) {
+                            this.app.jump(-1) // Top half: Previous
+                        } else {
+                            this.app.jump(1) // Bottom half: Next
+                        }
+                    }
+                }
+            }
+        }, { passive: true })
+
+        // Double-tap for stamp palette (Legacy Support for single finger double tap)
         let lastTapTime = 0
         viewer.addEventListener('touchend', (e) => {
-            if (e.target.closest('button, .floating-stamp-bar, .floating-doc-bar')) return
+            if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar')) return
             const now = Date.now()
             const diff = now - lastTapTime
-            if (diff < 300 && diff > 0) {
-                e.preventDefault()
-                this.app.toggleStampPalette()
-                lastTapTime = 0
+            if (diff < 300 && diff > 0 && e.changedTouches.length === 1) {
+                // Ensure it wasn't a swipe
+                const dx = this.swipeStartX - e.changedTouches[0].clientX
+                const dy = this.swipeStartY - e.changedTouches[0].clientY
+                if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                    e.preventDefault()
+                    this.app.toolManager.toggleStampPalette()
+                    lastTapTime = 0
+                }
             } else {
                 lastTapTime = now
             }
         }, { passive: false })
 
         viewer.addEventListener('dblclick', (e) => {
-            if (e.target.closest('button, .floating-stamp-bar, .floating-doc-bar')) return
-            this.app.toggleStampPalette()
+            if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar')) return
+            this.app.toolManager.toggleStampPalette()
         })
     }
 

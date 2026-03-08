@@ -94,13 +94,11 @@
 }
 
 .score-item {
-  padding: 9px 12px;
-  background: transparent;
-  border: none;
+  padding: 10px 14px;
   border-left: 3px solid transparent;
   border-radius: 0 8px 8px 0;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.15s, border-left-color 0.15s;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -108,9 +106,17 @@
   user-select: none;
 }
 
-.score-item:hover {
-  background: rgba(99, 102, 241, 0.06);
-  border-left-color: rgba(99, 102, 241, 0.3);
+@media (hover: none) {
+  .score-item {
+    transition: none !important;
+  }
+}
+
+@media (hover: hover) {
+  .score-item:hover {
+    background: rgba(99, 102, 241, 0.06);
+    border-left-color: rgba(99, 102, 241, 0.3);
+  }
 }
 
 .score-item.active {
@@ -301,8 +307,23 @@
   padding-top: 16px;
 }
 
-.btn-primary:hover {
-  background: var(--primary-hover);
+@media (hover: none) {
+  .btn-primary, .btn-outline, .zoom-btn {
+    transition: transform 0.1s ease, background 0.1s ease !important;
+  }
+}
+
+.btn-primary:active, .btn-outline:active, .zoom-btn:active {
+  transform: scale(0.96) !important;
+  opacity: 0.9;
+}
+
+.btn-primary:active {
+  background: var(--primary-hover) !important;
+}
+
+.btn-outline:active {
+  background: var(--bg-soft) !important;
 }
 
 .btn-icon {
@@ -439,10 +460,12 @@ input[type="range"] {
   transition: all 0.2s ease;
 }
 
-.btn-outline:hover {
-  background: var(--bg-soft);
-  border-color: var(--primary);
-  color: var(--primary);
+@media (hover: hover) {
+  .btn-outline:hover {
+    background: var(--bg-soft);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
 }
 
 .btn-danger-outline {
@@ -581,16 +604,24 @@ input[type="range"] {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.zoom-btn:hover {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+@media (hover: none) {
+  .zoom-btn {
+    transition: none !important;
+  }
+}
+
+@media (hover: hover) {
+  .zoom-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+  }
 }
 
 .zoom-btn:active {
@@ -604,6 +635,9 @@ input[type="range"] {
   align-items: center;
   justify-content: center;
   gap: 0px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 #zoom-level {
@@ -611,6 +645,9 @@ input[type="range"] {
   font-weight: 800;
   color: var(--primary);
   line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .zoom-label {

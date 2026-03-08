@@ -162,11 +162,15 @@ export class DocBarManager {
 
         let currentX, currentY
 
-        el.addEventListener("mousedown", dragStart)
+        el.addEventListener("mousedown", (e) => {
+            e.stopPropagation()
+            dragStart(e)
+        })
         document.addEventListener("mousemove", drag)
         document.addEventListener("mouseup", dragEnd)
 
         el.addEventListener("touchstart", (e) => {
+            e.stopPropagation() // Prevent triggering viewer gestures
             const isCollapsed = el.classList.contains('collapsed')
             if (!isCollapsed && !e.target.closest(".doc-drag-handle")) return
             dragStart(e)
@@ -179,6 +183,9 @@ export class DocBarManager {
             }
         }, { passive: false })
 
-        document.addEventListener("touchend", dragEnd)
+        el.addEventListener("touchend", (e) => {
+            e.stopPropagation()
+            dragEnd()
+        })
     }
 }

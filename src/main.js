@@ -148,6 +148,9 @@ class ScoreFlow {
     this.toolManager.updateActiveTools()
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
+
+    console.log('[ScoreFlow] Version 2.0.7 - Input Overlay Mode')
+
     this.viewerManager.checkInitialView()
     this.toolManager.preloadSvgs()
     this.renderBuildInfo()
@@ -211,7 +214,14 @@ class ScoreFlow {
 
   initElements() {
     this.container = document.getElementById('pdf-viewer')
-    this.uploader = document.getElementById('pdf-upload')
+    // Support multiple inputs (Welcome screen and Sidebar)
+    this.allUploaders = document.querySelectorAll('.native-file-input')
+    this.uploader = this.allUploaders[0] // Default for methods expecting single ref
+    
+    this.allUploaders.forEach(u => {
+      u.addEventListener('change', (e) => this.handleUpload(e))
+    })
+
     this.uploadBtn = document.getElementById('upload-btn')
     this.openPdfBtn = document.getElementById('open-pdf-btn')
     this.sidebar = document.getElementById('sidebar')
@@ -296,14 +306,17 @@ class ScoreFlow {
   }
 
   initEventListeners() {
-    if (this.uploadBtn) {
-      this.uploadBtn.addEventListener('click', () => this.uploader.click())
-    }
+    // In iOS, the user clicks the transparent input overlay. 
+    // On desktop, we still allow showOpenFilePicker to work if supported.
     if (this.openPdfBtn) {
-      // Desktop: use File System Access API for persistent handles
-      // iOS: openPdfFilePicker detects iOS and calls uploader.click() synchronously
-      this.openPdfBtn.addEventListener('click', () => this.openPdfFilePicker())
+      this.openPdfBtn.addEventListener('click', (e) => {
+        if (window.showOpenFilePicker) {
+          e.preventDefault() // Block the input click and use File System Access API
+          this.openPdfFilePicker()
+        }
+      })
     }
+
     if (this.clearRecentBtn) {
       this.clearRecentBtn.addEventListener('click', async () => {
         if (!this.recentSoloScores?.length) return
@@ -361,7 +374,8 @@ class ScoreFlow {
       this.closeQuickLoadBtn.addEventListener('click', () => this.toggleQuickLoadModal(false))
     }
     if (this.openNewSoloBtn) {
-      this.openNewSoloBtn.addEventListener('click', () => {
+      this.openNewSoloBtn.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return
         this.toggleQuickLoadModal(false)
         this.uploader.click()
       })
@@ -371,18 +385,7 @@ class ScoreFlow {
       this.closeFileBtn.addEventListener('click', () => this.viewerManager.closeFile())
     }
 
-    // Welcome Screen Hooks
-    if (this.welcomeOpenFileBtn) {
-      // iOS Safari blocks programmatic .click() inside async functions,
-      // so we must call uploader.click() synchronously on iOS.
-      this.welcomeOpenFileBtn.addEventListener('click', () => {
-        if (window.showOpenFilePicker) {
-          this.openPdfFilePicker()  // Desktop: persistent file handles
-        } else {
-          this.uploader.click()  // iOS: direct synchronous click
-        }
-      })
-    }
+    // No JS for labels on iPad
     if (this.projectBackBtn) {
     }
 

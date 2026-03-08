@@ -73,23 +73,26 @@ export class ViewerManager {
         }
     }
 
-    async openPdfFilePicker() {
+    openPdfFilePicker() {
         if (window.showOpenFilePicker) {
-            try {
-                const [handle] = await window.showOpenFilePicker({
-                    types: [{ description: 'PDF Files', accept: { 'application/pdf': ['.pdf'] } }],
-                    multiple: false,
-                })
-                const file = await handle.getFile()
-                const buf = await file.arrayBuffer()
-                await db.set(`recent_buf_${file.name}`, buf.slice(0))
-                await this.loadPDF(new Uint8Array(buf), file.name)
-                await db.set(`recent_handle_${file.name}`, handle)
-                this.app.addToRecentSoloScores(file.name)
-                this.app.saveToStorage()
-            } catch (e) {
-                if (e.name !== 'AbortError') console.error('openPdfFilePicker:', e)
-            }
+            // We use an internal async function to handle the async file access on desktop
+            (async () => {
+                try {
+                    const [handle] = await window.showOpenFilePicker({
+                        types: [{ description: 'PDF Files', accept: { 'application/pdf': ['.pdf'] } }],
+                        multiple: false,
+                    })
+                    const file = await handle.getFile()
+                    const buf = await file.arrayBuffer()
+                    await db.set(`recent_buf_${file.name}`, buf.slice(0))
+                    await this.loadPDF(new Uint8Array(buf), file.name)
+                    await db.set(`recent_handle_${file.name}`, handle)
+                    this.app.addToRecentSoloScores(file.name)
+                    this.app.saveToStorage()
+                } catch (e) {
+                    if (e.name !== 'AbortError') console.error('openPdfFilePicker:', e)
+                }
+            })()
         } else {
             if (this.app.uploader) this.app.uploader.click()
         }
