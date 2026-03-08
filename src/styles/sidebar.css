@@ -1063,3 +1063,62 @@ code {
 
 /* Ensure locked icon reflects state if we wanted to change SVG path, 
    but color change is usually sufficient. */
+
+.welcome-list-label {
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+/* Compact Score Info */
+.compact-info .setting-item {
+  margin-bottom: 6px !important;
+}
+
+.label-mini {
+  font-size: 0.7rem !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  opacity: 0.6;
+}
+
+.score-meta-text {
+  font-size: 0.68rem;
+  background: var(--bg-soft);
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.meta-row:last-child {
+  margin-bottom: 0;
+}
+
+.meta-label {
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.meta-value {
+  color: var(--text-base);
+  text-align: right;
+  word-break: break-all;
+}
+
+.mono-text {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  letter-spacing: -0.01em;
+  font-size: 0.62rem;
+  opacity: 0.8;
+}
+
+/* Ensure locked icon reflects state if we wanted to change SVG path, 
+   but color change is usually sufficient. */

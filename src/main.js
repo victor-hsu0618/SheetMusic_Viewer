@@ -3,8 +3,9 @@ import * as pdfjsLib from 'pdfjs-dist'
 import * as db from './db.js'
 import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
 import { DocBarManager } from './modules/docbar.js'
-import { CommunityManager } from './modules/CommunityManager.js'
 import { ViewerManager } from './modules/ViewerManager.js'
+import { ProfileManager } from './modules/ProfileManager.js'
+import { ScoreDetailManager } from './modules/ScoreDetailManager.js'
 //import * as GDrive from './gdrive.js'
 
 // Use local worker for total offline reliability
@@ -27,7 +28,7 @@ class ScoreFlow {
   get activeScoreName() { return this.viewerManager.activeScoreName }
   set activeScoreName(val) { this.viewerManager.activeScoreName = val }
 
-  async loadPDF(data) { return this.viewerManager.loadPDF(data) }
+  async loadPDF(data, filename = null) { return this.viewerManager.loadPDF(data, filename) }
   async renderPDF() { return this.viewerManager.renderPDF() }
   async getFingerprint(buffer) { return this.viewerManager.getFingerprint(buffer) }
   updateZoomDisplay() { return this.viewerManager.updateZoomDisplay() }
@@ -64,13 +65,15 @@ class ScoreFlow {
     this.initToolsets()
 
     this.docBarManager = new DocBarManager(this)
-    this.communityManager = new CommunityManager(this)
     this.viewerManager = new ViewerManager(this)
+    this.profileManager = new ProfileManager(this)
+    this.scoreDetailManager = new ScoreDetailManager(this)
 
     this.initElements()
     this.initEventListeners()
     this.docBarManager.init()
-    this.communityManager.init()
+    this.profileManager.init()
+    this.scoreDetailManager.init()
     this.initDraggable()
     this.initToolbarResizable()
     this.initSidebarResizable()
@@ -78,7 +81,6 @@ class ScoreFlow {
     this.renderLayerUI()
     this.renderSourceUI()
     this.updateActiveTools()
-    this.communityManager.renderActiveProfile()
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
     this.viewerManager.checkInitialView()
@@ -141,11 +143,16 @@ class ScoreFlow {
     this.jumpOffsetInput = document.getElementById('jump-offset')
     this.jumpOffsetValue = document.getElementById('jump-offset-value')
     this.docBar = document.getElementById('floating-doc-bar')
-    this.exportBtn = document.getElementById('export-btn')
-    this.importBtn = document.getElementById('import-btn')
-    this.importFileInput = document.getElementById('import-file')
+    this.exportBtn = document.getElementById('export-score-btn')
+    this.importBtn = document.getElementById('import-score-btn')
+    this.importFileInput = document.getElementById('import-score-file')
+    this.globalExportBtn = document.getElementById('export-btn') // Backup reference
+    this.globalImportBtn = document.getElementById('import-btn')
+    this.globalImportFile = document.getElementById('import-file')
     this.sourceList = document.getElementById('source-list')
     this.addSourceBtn = document.getElementById('add-source-btn')
+
+    // Score Detail Elements - Handled by ScoreDetailManager
 
     // Quick Load Elements
     this.quickLoadModal = document.getElementById('quick-load-modal')
@@ -224,6 +231,8 @@ class ScoreFlow {
     }
     this.uploader.addEventListener('change', (e) => this.handleUpload(e))
 
+    // Score Detail Listeners - Handled by ScoreDetailManager
+
     this.sidebarTrigger.addEventListener('click', () => {
       this.sidebar.classList.add('open')
       this.updateLayoutState()
@@ -255,10 +264,15 @@ class ScoreFlow {
       })
     }
 
-    // Exchange Listeners
-    this.exportBtn.addEventListener('click', () => this.exportProject())
-    this.importBtn.addEventListener('click', () => this.importFileInput.click())
-    this.importFileInput.addEventListener('change', (e) => this.handleImport(e))
+    // Exchange Listeners (Score-Specific)
+    if (this.exportBtn) this.exportBtn.addEventListener('click', () => this.exportProject())
+    if (this.importBtn) this.importBtn.addEventListener('click', () => this.importFileInput.click())
+    if (this.importFileInput) this.importFileInput.addEventListener('change', (e) => this.handleImport(e))
+
+    // Global Backup Listeners (Settings Tab)
+    if (this.globalExportBtn) this.globalExportBtn.addEventListener('click', () => this.exportProject(true))
+    if (this.globalImportBtn) this.globalImportBtn.addEventListener('click', () => this.globalImportFile.click())
+    if (this.globalImportFile) this.globalImportFile.addEventListener('change', (e) => this.handleImport(e))
 
     // Dialog Close
     if (this.closeDialogBtn) {
@@ -267,15 +281,6 @@ class ScoreFlow {
       })
     }
 
-    if (this.editProfileBtn) {
-      this.editProfileBtn.addEventListener('click', () => this.communityManager.toggleProfileModal(true))
-    }
-    if (this.closeProfileBtn) {
-      this.closeProfileBtn.addEventListener('click', () => this.toggleProfileModal(false))
-    }
-    if (this.addNewProfileBtn) {
-      this.addNewProfileBtn.addEventListener('click', () => this.addNewProfile())
-    }
 
     if (this.addSourceBtn) {
       this.addSourceBtn.addEventListener('click', () => this.addSource())
@@ -344,9 +349,6 @@ class ScoreFlow {
       this.resetLayersBtn.addEventListener('click', () => this.resetLayers())
     }
 
-    if (this.welcomeAddProfileBtn) {
-      this.welcomeAddProfileBtn.addEventListener('click', () => this.addNewProfile())
-    }
 
 
     if (this.closeFileBtn) {
@@ -624,6 +626,11 @@ class ScoreFlow {
 
         // Update Panels
         panels.forEach(p => p.classList.toggle('active', p.dataset.panel === target))
+
+        // Performance Optimization: Only refresh stats when opening Detail tab
+        if (target === 'orchestra' && this.scoreDetailManager) {
+          this.scoreDetailManager.refreshStats()
+        }
       })
     })
 
@@ -729,8 +736,7 @@ class ScoreFlow {
         try {
           // Store a copy before loadPDF — PDF.js transfers (detaches) the buffer to its worker
           await db.set(`recent_buf_${file.name}`, buffer.slice(0))
-          await this.viewerManager.loadPDF(new Uint8Array(buffer))
-          this.viewerManager.activeScoreName = file.name
+          await this.loadPDF(new Uint8Array(buffer), file.name)
           this.addToRecentSoloScores(file.name)
           this.saveToStorage()
         } catch (pdfErr) {
@@ -760,8 +766,7 @@ class ScoreFlow {
         })
         const file = await handle.getFile()
         const buf = await file.arrayBuffer()
-        await this.viewerManager.loadPDF(new Uint8Array(buf))
-        this.viewerManager.activeScoreName = file.name
+        await this.loadPDF(new Uint8Array(buf), file.name)
         await db.set(`recent_handle_${file.name}`, handle)
         this.addToRecentSoloScores(file.name)
         this.saveToStorage()
@@ -1081,7 +1086,7 @@ class ScoreFlow {
               if (existingMeasure) measureObj.x = existingMeasure.x
               this.stamps.push(measureObj)
               this.updateRulerMarks()
-              this.saveToStorage()
+              this.saveToStorage(true)
               this.redrawStamps(pageNum)
             }
             return
@@ -1096,7 +1101,7 @@ class ScoreFlow {
           this.updateRulerMarks()
         }
 
-        this.saveToStorage()
+        this.saveToStorage(true)
         this.redrawStamps(pageNum)
       }
       isInteracting = false
@@ -1290,7 +1295,7 @@ class ScoreFlow {
       const chip = wrapper.querySelector('.erase-hover-chip')
       if (chip) chip.remove()
     }
-    this.saveToStorage()
+    this.saveToStorage(true)
     this.redrawStamps(page)
   }
 
@@ -1625,7 +1630,7 @@ class ScoreFlow {
       const page = parseInt(wrapper.dataset.page)
       this.redrawStamps(page)
     })
-    this.saveToStorage()
+    this.saveToStorage(true)
   }
 
   closeEraseAllModal() {
@@ -2371,8 +2376,7 @@ class ScoreFlow {
       card.onclick = async () => {
         const cachedBuf = await db.get(`recent_buf_${score.name}`)
         if (cachedBuf) {
-          this.activeScoreName = score.name
-          await this.loadPDF(new Uint8Array(cachedBuf))
+          await this.loadPDF(new Uint8Array(cachedBuf), score.name)
           this.toggleQuickLoadModal(false)
           return
         }
@@ -2412,8 +2416,7 @@ class ScoreFlow {
           const file = await this.openFileHandle(storedHandle)
           if (file) {
             const buf = await file.arrayBuffer()
-            this.activeScoreName = score.name
-            await this.loadPDF(new Uint8Array(buf))
+            await this.loadPDF(new Uint8Array(buf), score.name)
             closeSidebar()
             return
           }
@@ -2422,8 +2425,7 @@ class ScoreFlow {
         // 2. Try cached ArrayBuffer (from <input> / iOS fallback)
         const cachedBuf = await db.get(`recent_buf_${score.name}`)
         if (cachedBuf) {
-          this.activeScoreName = score.name
-          await this.loadPDF(new Uint8Array(cachedBuf))
+          await this.loadPDF(new Uint8Array(cachedBuf), score.name)
           closeSidebar()
           return
         }
@@ -2434,8 +2436,7 @@ class ScoreFlow {
           const file = await this.openFileHandle(libraryMatch)
           if (file) {
             const buf = await file.arrayBuffer()
-            this.activeScoreName = score.name
-            await this.loadPDF(new Uint8Array(buf))
+            await this.loadPDF(new Uint8Array(buf), score.name)
             closeSidebar()
           }
           return
@@ -2480,8 +2481,7 @@ class ScoreFlow {
           const file = await this.openFileHandle(storedHandle)
           if (file) {
             const buf = await file.arrayBuffer()
-            this.activeScoreName = score.name
-            await this.loadPDF(new Uint8Array(buf))
+            await this.loadPDF(new Uint8Array(buf), score.name)
             closeSidebar()
             return
           }
@@ -2490,8 +2490,7 @@ class ScoreFlow {
         // 2. Try cached ArrayBuffer (from <input> / iOS fallback)
         const cachedBuf = await db.get(`recent_buf_${score.name}`)
         if (cachedBuf) {
-          this.activeScoreName = score.name
-          await this.loadPDF(new Uint8Array(cachedBuf))
+          await this.loadPDF(new Uint8Array(cachedBuf), score.name)
           closeSidebar()
           return
         }
@@ -2502,8 +2501,7 @@ class ScoreFlow {
           const file = await this.openFileHandle(libraryMatch)
           if (file) {
             const buf = await file.arrayBuffer()
-            this.activeScoreName = score.name
-            await this.loadPDF(new Uint8Array(buf))
+            await this.loadPDF(new Uint8Array(buf), score.name)
             closeSidebar()
           }
           return
@@ -2849,19 +2847,27 @@ class ScoreFlow {
     ruler.style.webkitMaskImage = mask
   }
 
-  saveToStorage() {
+  updateScoreDetailUI(fingerprint) {
+    if (this.scoreDetailManager) {
+      this.scoreDetailManager.load(fingerprint)
+    }
+  }
+
+  saveToStorage(isScoreChange = false) {
+    if (isScoreChange && this.scoreDetailManager) {
+      this.scoreDetailManager.onModification()
+    }
     localStorage.setItem('scoreflow_layers', JSON.stringify(this.layers))
     // Save stamps under this score's fingerprint key
     if (this.pdfFingerprint) {
       localStorage.setItem(`scoreflow_stamps_${this.pdfFingerprint}`, JSON.stringify(this.stamps))
+      // Score Info - Handled by ScoreDetailManager
     }
     // Also save as current for backward compatibility / startup restore
     localStorage.setItem('scoreflow_stamps', JSON.stringify(this.stamps))
     localStorage.setItem('scoreflow_current_fingerprint', this.pdfFingerprint || '')
     localStorage.setItem('scoreflow_sources', JSON.stringify(this.sources))
     localStorage.setItem('scoreflow_active_source', this.activeSourceId)
-    localStorage.setItem('scoreflow_profiles', JSON.stringify(this.communityManager.profiles))
-    localStorage.setItem('scoreflow_active_profile', this.communityManager.activeProfileId)
     localStorage.setItem('scoreflow_recent_solo_scores', JSON.stringify(this.recentSoloScores || []))
     localStorage.setItem('scoreflow_active_categories', JSON.stringify(this.activeCategories))
 
@@ -2903,8 +2909,6 @@ class ScoreFlow {
     }
     if (activeSourceData) this.activeSourceId = activeSourceData
     if (fingerprintData) this.pdfFingerprint = fingerprintData
-    if (profilesData) this.communityManager.profiles = JSON.parse(profilesData)
-    if (activeProfileData) this.communityManager.activeProfileId = activeProfileData
     if (activeCategoriesData) this.activeCategories = JSON.parse(activeCategoriesData)
     if (docBarCollapsed && this.docBar) this.docBar.classList.add('collapsed')
     if (rulerVisibleData !== null) this.rulerVisible = JSON.parse(rulerVisibleData)
@@ -3016,7 +3020,7 @@ class ScoreFlow {
     // Fallback if we deleted the currently active layer
     if (this.activeLayerId === layerId) this.activeLayerId = 'draw'
 
-    this.saveToStorage()
+    this.saveToStorage(true)
     this.renderLayerUI()
     if (this.pdf) this.renderPDF()
   }
@@ -3045,7 +3049,7 @@ class ScoreFlow {
     ]
 
     this.activeLayerId = 'draw'
-    this.saveToStorage()
+    this.saveToStorage(true)
     this.renderLayerUI()
     if (this.pdf) this.renderPDF()
 
@@ -3148,7 +3152,7 @@ class ScoreFlow {
       if (editor.value.trim()) {
         stamp.data = editor.value
         this.stamps.push(stamp)
-        this.saveToStorage()
+        this.saveToStorage(true)
         this.redrawStamps(pageNum)
       }
       editor.remove()
@@ -3190,23 +3194,50 @@ class ScoreFlow {
     }
   }
 
-  exportProject() {
-    const data = {
-      version: '1.3',
-      timestamp: new Date().toISOString(),
-      fingerprint: this.pdfFingerprint, // Anchors the markings to this specific PDF
-      layers: this.layers,
-      stamps: this.stamps,
-      sources: this.sources,
-      activeSourceId: this.activeSourceId
+  exportProject(isGlobal = false) {
+    try {
+      if (!isGlobal && !this.pdfFingerprint) {
+        alert('Please open a score before exporting markings.')
+        return
+      }
+
+      const data = {
+        version: '1.4',
+        timestamp: new Date().toISOString(),
+        user: {
+          name: this.profileManager.data.userName,
+          email: this.profileManager.data.email
+        },
+        scoreInfo: this.scoreDetailManager.getExportMetadata(),
+        fingerprint: this.pdfFingerprint,
+        layers: this.layers,
+        stamps: this.stamps,
+        sources: this.sources,
+        activeSourceId: this.activeSourceId
+      }
+
+      const json = JSON.stringify(data, null, 2)
+      const blob = new Blob([json], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const filename = this.scoreDetailManager.getExportFilename(isGlobal, this.profileManager.data.userName) || 'ScoreFlow_Export.json'
+
+      console.log('[ScoreFlow] Exporting:', filename)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.style.display = 'none'
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // Removed immediate revocation to prevent Chrome from losing the filename.
+
+    } catch (err) {
+      console.error('[ScoreFlow] Export failed:', err)
+      alert(`Export failed: ${err.message}`)
     }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `ScoreFlow_v1.3_${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
   }
 
   handleImport(e) {
@@ -3217,6 +3248,23 @@ class ScoreFlow {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target.result)
+
+        // --- USER IDENTITY AUDIT ---
+        const user = data.user || {}
+        const currentName = this.profileManager.data.userName
+        const currentEmail = this.profileManager.data.email
+
+        if (user.name && user.email) {
+          if (user.name !== currentName || user.email !== currentEmail) {
+            const title = `Import Marks from ${user.name}`
+            const proceedIdentity = confirm(
+              `These markings belong to:\nName: ${user.name}\nEmail: ${user.email}\n\n` +
+              `You are currently signed in as:\nName: ${currentName}\nEmail: ${currentEmail}\n\n` +
+              `Proceed with importing into your profile?`
+            )
+            if (!proceedIdentity) return
+          }
+        }
 
         // --- SCORE AUDIT ---
         if (data.fingerprint && this.pdfFingerprint && data.fingerprint !== this.pdfFingerprint) {
@@ -3294,11 +3342,13 @@ class ScoreFlow {
     this.sources.forEach(source => {
       const isActive = this.activeSourceId === source.id
 
-      // Force the 'self' source to match the current member name if available
+      // Force the 'self' source to match the current User Profile name
       if (source.id === 'self') {
-        const activeProfile = this.communityManager?.profiles?.find(p => p.id === this.communityManager.activeProfileId)
-        if (activeProfile) {
-          source.name = activeProfile.name
+        const userName = this.profileManager?.data?.userName
+        if (userName) {
+          source.name = userName
+        } else {
+          source.name = 'Primary Interpretation'
         }
       }
 
@@ -3586,13 +3636,11 @@ class ScoreFlow {
 
       // 2. Clear IndexedDB
       try {
-        const keys = await db.keys()
-        for (const key of keys) {
-          await db.del(key)
-        }
+        await db.clear()
+        console.log('[ScoreFlow] IndexedDB cleared successfully.')
       } catch (err) {
-        console.warn('[ScoreFlow] IndexedDB clear failed', err)
-        if (window.indexedDB) window.indexedDB.deleteDatabase('scoreflow-db')
+        console.warn('[ScoreFlow] IndexedDB clear failed, trying fallback delete database', err)
+        if (window.indexedDB) window.indexedDB.deleteDatabase('ScoreFlowStorage')
       }
 
       // 3. Reload

@@ -15,6 +15,22 @@ export class ViewerManager {
         // Any init if needed
     }
 
+    async openFileHandle(handle) {
+        try {
+            // Check for permission if needed
+            const options = { mode: 'read' }
+            if ((await handle.queryPermission(options)) !== 'granted') {
+                if ((await handle.requestPermission(options)) !== 'granted') {
+                    throw new Error('Permission denied')
+                }
+            }
+            return await handle.getFile()
+        } catch (err) {
+            console.error('[ViewerManager] openFileHandle failed:', err)
+            return null
+        }
+    }
+
     async getFingerprint(buffer) {
         // crypto.subtle requires HTTPS — fallback to simple hash for HTTP (local dev / iPad)
         if (window.isSecureContext && crypto.subtle) {
@@ -33,7 +49,8 @@ export class ViewerManager {
         return 'fallback_' + hash.toString(16) + '_' + bytes.length
     }
 
-    async loadPDF(data) {
+    async loadPDF(data, filename = null) {
+        if (filename) this.activeScoreName = filename;
         // 1. Save current score's stamps before switching
         if (this.pdfFingerprint) {
             this.app.saveToStorage()
@@ -48,7 +65,12 @@ export class ViewerManager {
         this.app.stamps = savedStamps ? JSON.parse(savedStamps) : []
         this.app.jumpHistory = []
 
-        // 4. Load and render the PDF
+        // 4. Update Score Detail UI
+        if (this.app.updateScoreDetailUI) {
+            this.app.updateScoreDetailUI(newFingerprint)
+        }
+
+        // 5. Load and render the PDF
         const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
         const pdfjsDir = new URL('pdfjs/', baseUrl).href
 
