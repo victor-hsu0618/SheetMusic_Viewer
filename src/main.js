@@ -7,6 +7,8 @@ import { ViewerManager } from './modules/ViewerManager.js'
 import { ProfileManager } from './modules/ProfileManager.js'
 import { ScoreDetailManager } from './modules/ScoreDetailManager.js'
 import { AnnotationManager } from './modules/annotation/AnnotationManager.js'
+import { ToolManager } from './modules/tools.js'
+import { RulerManager } from './modules/ruler.js'
 //import * as GDrive from './gdrive.js'
 
 // Use local worker for total offline reliability
@@ -67,11 +69,18 @@ class ScoreFlow {
   }
   async addStamp(page, type, x, y) { return this.annotationManager.addStamp(page, type, x, y) }
 
+  // RulerManager Proxies
+  get rulerVisible() { return this.rulerManager.rulerVisible }
+  set rulerVisible(val) { this.rulerManager.rulerVisible = val }
+  get jumpOffsetPx() { return this.rulerManager.jumpOffsetPx }
+  set jumpOffsetPx(val) { this.rulerManager.jumpOffsetPx = val }
+  get nextTargetAnchor() { return this.rulerManager.nextTargetAnchor }
+  set nextTargetAnchor(val) { this.rulerManager.nextTargetAnchor = val }
+  get jumpHistory() { return this.rulerManager.jumpHistory }
+  set jumpHistory(val) { this.rulerManager.jumpHistory = val }
+
   constructor() {
     this.recycleItems = []
-    this.nextTargetAnchor = null
-    this.jumpHistory = [] // scroll positions before each forward jump
-    this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
     // Default categories: only Edit, Pens, Bow/Fingering
@@ -91,6 +100,8 @@ class ScoreFlow {
     this._svgCache = {}
     this.initToolsets()
 
+    this.toolManager = new ToolManager(this)
+    this.rulerManager = new RulerManager(this)
     this.docBarManager = new DocBarManager(this)
     this.viewerManager = new ViewerManager(this)
     this.profileManager = new ProfileManager(this)
@@ -99,20 +110,21 @@ class ScoreFlow {
 
     this.initElements()
     this.initEventListeners()
+    this.rulerManager.init()
     this.docBarManager.init()
     this.profileManager.init()
     this.scoreDetailManager.init()
-    this.initDraggable()
-    this.initToolbarResizable()
+    this.toolManager.initDraggable()
+    this.toolManager.initToolbarResizable()
     this.initSidebarResizable()
     this.loadFromStorage()
     this.renderLayerUI()
     this.renderSourceUI()
-    this.updateActiveTools()
+    this.toolManager.updateActiveTools()
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
     this.viewerManager.checkInitialView()
-    this._preloadSvgs()
+    this.toolManager.preloadSvgs()
     this.renderBuildInfo()
   }
 
@@ -124,24 +136,22 @@ class ScoreFlow {
     if (timeEl) timeEl.textContent = BUILD_TIME
   }
 
-  async _preloadSvgs() {
-    const existingSvgs = [
-      'pen', 'highlighter', 'line',
-      'select', 'eraser',
-      'anchor'
-    ]
-    const base = import.meta.env.BASE_URL
-    const items = this.toolsets.flatMap(g =>
-      g.tools.filter(t => existingSvgs.includes(t.id)).map(t => ({ id: t.id, path: `${base}assets/icons/${g.type}/${t.id}.svg` }))
-    )
-    await Promise.allSettled(items.map(async ({ id, path }) => {
-      try {
-        const r = await fetch(path)
-        if (r.ok) this._svgCache[id] = await r.text()
-      } catch { }
-    }))
-    this.updateActiveTools()
-  }
+  // ToolManager Proxies
+  async _preloadSvgs() { return this.toolManager.preloadSvgs() }
+  getIcon(...args) { return this.toolManager.getIcon(...args) }
+  updateActiveTools(...args) { return this.toolManager.updateActiveTools(...args) }
+  toggleStampPalette() { return this.toolManager.toggleStampPalette() }
+  initToolbarResizable() { return this.toolManager.initToolbarResizable() }
+  initDraggable() { return this.toolManager.initDraggable() }
+
+  // RulerManager Proxies
+  updateJumpLinePosition() { return this.rulerManager.updateJumpLinePosition() }
+  updateRulerPosition() { return this.rulerManager.updateRulerPosition() }
+  updateRulerClip() { return this.rulerManager.updateRulerClip() }
+  updateRulerMarks() { return this.rulerManager.updateRulerMarks() }
+  computeNextTarget() { return this.rulerManager.computeNextTarget() }
+  scrollToNextTarget() { return this.rulerManager.scrollToNextTarget() }
+  toggleRuler() { return this.rulerManager.toggleRuler() }
 
   initToolsets() {
     this.toolsets = TOOLSETS
@@ -806,294 +816,7 @@ class ScoreFlow {
 
   // AddStamp moved to AnnotationManager
 
-  updateActiveTools(forceShowDropdown = false) {
-    this.activeToolsContainer.innerHTML = ""
-
-    // Check if expanded or collapsed
-    const isExpanded = this.activeToolsContainer.classList.contains("expanded")
-
-    // Always sync the active tool to the viewer so CSS cursors & overlay work
-    if (this.viewer) {
-      if (this.viewer.dataset.activeTool !== this.activeStampType) {
-        this.viewer.dataset.activeTool = this.activeStampType
-        // Redraw all layers to show/hide interactive shadows (e.g. for Select tool)
-        this.redrawAllAnnotationLayers()
-      }
-    }
-
-    // Sync Mode Buttons in Doc Bar
-    if (this.btnModeHand) this.btnModeHand.classList.toggle('active', this.activeStampType === 'view')
-    if (this.btnModeSelect) this.btnModeSelect.classList.toggle('active', this.activeStampType === 'select')
-    if (this.btnModeEraser) this.btnModeEraser.classList.toggle('active', this.activeStampType === 'eraser')
-    if (this.btnModeAnchor) this.btnModeAnchor.classList.toggle('active', this.activeStampType === 'anchor')
-    // Sync stamp palette button — show active tool icon when a stamp is selected
-    const activeTool = this.toolsets.flatMap(g => g.tools).find(t => t.id === this.activeStampType)
-    if (this.btnStampPalette) {
-      this.btnStampPalette.classList.toggle('active', isExpanded || !!activeTool)
-      if (!this._stampBtnDefault) this._stampBtnDefault = this.btnStampPalette.innerHTML
-      this.btnStampPalette.innerHTML = activeTool
-        ? this.getIcon(activeTool, 18)
-        : this._stampBtnDefault
-    }
-
-    if (!isExpanded) {
-      // Palette is hidden — nothing to render
-      this.activeToolsContainer.onclick = null
-      return
-    }
-
-    // Apply saved workstation width
-    this.activeToolsContainer.style.width = typeof this.toolbarWidth === "number" ? `${this.toolbarWidth}px` : this.toolbarWidth
-
-    // 1 & 2. Unified Palette Header (Grip + Categories)
-    const header = document.createElement("div")
-    header.className = "palette-header"
-
-    // 1. Drag / Toggle Handle (Professional Grip Pattern)
-    const handle = document.createElement("div")
-    handle.className = "drag-handle"
-    handle.innerHTML = `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="9" cy="5" r="1" fill="currentColor"/>
-        <circle cx="15" cy="5" r="1" fill="currentColor"/>
-        <circle cx="9" cy="12" r="1" fill="currentColor"/>
-        <circle cx="15" cy="12" r="1" fill="currentColor"/>
-        <circle cx="9" cy="19" r="1" fill="currentColor"/>
-        <circle cx="15" cy="19" r="1" fill="currentColor"/>
-      </svg>
-    `
-    // Only close on click — not if the user dragged (indicated by _dragMoved flag set in initDraggable)
-    handle.addEventListener('click', (e) => {
-      e.stopPropagation()
-      if (this._stampDragMoved) {
-        this._stampDragMoved = false
-        return // was a drag, not a tap — ignore
-      }
-      this.toggleStampPalette()
-    })
-
-    // iPad: double-tap handle to toggle (collapse/expand)
-    let lastGripTap = 0
-    handle.addEventListener('touchend', (e) => {
-      const now = Date.now()
-      const timeSinceLast = now - lastGripTap
-      if (timeSinceLast < 300 && timeSinceLast > 0) {
-        e.preventDefault()
-        e.stopPropagation()
-        this.toggleStampPalette()
-        lastGripTap = 0
-      } else {
-        lastGripTap = now
-      }
-    }, { passive: false })
-
-    // PC: dblclick handle to toggle
-    handle.addEventListener('dblclick', (e) => {
-      e.stopPropagation()
-      this.toggleStampPalette()
-    })
-
-    // 2. Category Selection Ribbon (Persistent Pills - forScore Style)
-    const ribbon = document.createElement("div")
-    ribbon.className = "category-ribbon"
-
-    this.toolsets.forEach(group => {
-      const isActive = this.activeCategories.includes(group.name)
-      const pill = document.createElement("button")
-      pill.className = `cat-pill ${isActive ? "active" : ""}`
-      pill.textContent = group.name
-      pill.onclick = (e) => {
-        e.stopPropagation()
-        if (isActive) {
-          if (this.activeCategories.length > 1) {
-            this.activeCategories = this.activeCategories.filter(c => c !== group.name)
-          }
-        } else {
-          this.activeCategories.push(group.name)
-        }
-        this.saveToStorage()
-        this.updateActiveTools()
-      }
-      ribbon.appendChild(pill)
-    })
-
-    header.appendChild(handle)
-    header.appendChild(ribbon)
-    this.activeToolsContainer.appendChild(header)
-
-    // -- SPECIAL MODE: RECYCLE BIN --
-    if (this.activeStampType === "recycle-bin") {
-      const binContainer = document.createElement("div")
-      binContainer.className = "recycle-bin-view"
-
-      const binHeader = document.createElement("div")
-      binHeader.className = "bin-header"
-      binHeader.innerHTML = `<h3>Recycle Bin</h3><p>Select stamps on score to move them here.</p>`
-
-      const closeBtn = document.createElement("button")
-      closeBtn.className = "bin-close-btn"
-      closeBtn.textContent = "Back to Tools"
-      closeBtn.onclick = () => { this.activeStampType = "view"; this.updateActiveTools() }
-      binHeader.appendChild(closeBtn)
-      binContainer.appendChild(binHeader)
-
-      if (this.recycleItems.length === 0) {
-        const empty = document.createElement("div")
-        empty.className = "bin-empty"
-        empty.textContent = "Bin is empty."
-        binContainer.appendChild(empty)
-      } else {
-        const binGrid = document.createElement("div")
-        binGrid.className = "bin-grid"
-        this.recycleItems.forEach((item, idx) => {
-          const slot = document.createElement("div")
-          slot.className = "bin-slot"
-
-          // Render a preview of the recycled item
-          const preview = document.createElement("div")
-          preview.className = "bin-item-preview"
-          preview.innerHTML = this.getIcon({ id: item.type, icon: item.icon || "" }, 30)
-
-          slot.onclick = () => {
-            // Pick it back up: Set as active stamp and remove from bin
-            this.activeStampType = item.type
-            this.recycleItems.splice(idx, 1)
-            this.updateActiveTools()
-          }
-
-          const label = document.createElement("span")
-          label.className = "bin-item-label"
-          label.textContent = item.label || item.type
-
-          slot.appendChild(preview)
-          slot.appendChild(label)
-          binGrid.appendChild(slot)
-        })
-        binContainer.appendChild(binGrid)
-      }
-
-      this.activeToolsContainer.appendChild(binContainer)
-    } else {
-      // 3. Active Tools Grid (Supporting Multi-Row Wrap)
-      const grid = document.createElement("div")
-      grid.className = "active-tools-grid"
-
-      this.activeCategories.forEach((catName, index) => {
-        const group = this.toolsets.find(g => g.name === catName)
-        if (!group) return
-
-        // Add Divider between groups for visual clarity
-        if (index > 0) {
-          const divider = document.createElement("div")
-          divider.className = "tool-group-divider"
-          grid.appendChild(divider)
-        }
-
-        group.tools.forEach(tool => {
-          const wrapper = document.createElement("div")
-          wrapper.className = "stamp-tool-wrapper"
-
-          const btn = document.createElement("button")
-          btn.className = `stamp-tool ${this.activeStampType === tool.id ? "active" : ""}`
-          btn.title = tool.label
-          btn.dataset.tooltip = tool.label
-          btn.innerHTML = this.getIcon(tool, 26)
-          btn.onclick = (e) => {
-            e.stopPropagation()
-            this.activeStampType = tool.id
-            // Remember this tool for its respective category
-            this.lastUsedToolPerCategory[catName] = tool.id
-            this.updateActiveTools()
-          }
-
-          const label = document.createElement("span")
-          label.className = "stamp-label"
-          label.textContent = tool.label
-
-          wrapper.appendChild(btn)
-          wrapper.appendChild(label)
-          grid.appendChild(wrapper)
-        })
-      })
-      this.activeToolsContainer.appendChild(grid)
-    }
-
-
-    // 3.5 Resize Handle (Professional Custom Control)
-    const resizer = document.createElement("div")
-    resizer.className = "resize-handle"
-    resizer.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-        <path d="M21 15L15 21M21 9L9 21M21 3L3 21"/>
-      </svg>
-    `
-    this.activeToolsContainer.appendChild(resizer)
-
-    // 4. Viewport Safety Check (Dynamic Height Protection for iPad)
-    setTimeout(() => {
-      const rect = this.activeToolsContainer.getBoundingClientRect()
-      if (rect.top < 20) {
-        // If expanding reaches the top, we cap the height and enable internal scrolling
-        this.activeToolsContainer.style.maxHeight = (window.innerHeight - 80) + "px"
-        this.activeToolsContainer.style.overflowY = "auto"
-      } else {
-        this.activeToolsContainer.style.maxHeight = "none"
-        this.activeToolsContainer.style.overflowY = "hidden" // Ensure no scrollbars ever show
-      }
-    }, 0)
-  }
-
-  getIcon(tool, size = 24) {
-    if (this._svgCache?.[tool.id]) {
-      // Strip existing width/height and inject the correct size
-      return this._svgCache[tool.id].replace(/<svg\b([^>]*)>/, (_, attrs) => {
-        const a = attrs.replace(/\s+width="[^"]*"/, '').replace(/\s+height="[^"]*"/, '')
-        return `<svg${a} width="${size}" height="${size}">`
-      })
-    }
-    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="currentColor" stroke-width="1.3" fill="none">${tool.icon}</svg>`
-  }
-
-  initToolbarResizable() {
-    let isResizing = false
-    let initialX, initialWidth
-    const el = this.activeToolsContainer
-
-    const handleMouseDown = (e) => {
-      const handle = e.target.closest(".resize-handle")
-      if (!handle) return
-      e.stopPropagation()
-      e.preventDefault()
-      isResizing = true
-      initialX = e.clientX || e.touches[0].clientX
-      initialWidth = el.offsetWidth
-      el.classList.add("resizing")
-    }
-
-    const handleMouseMove = (e) => {
-      if (!isResizing) return
-      const currentX = (e.clientX || (e.touches && e.touches[0].clientX))
-      const deltaX = currentX - initialX
-      // Dragging to the RIGHT (positive deltaX) now INCREASES width
-      this.toolbarWidth = Math.max(300, initialWidth + deltaX)
-      el.style.width = this.toolbarWidth + "px"
-    }
-
-    const handleMouseUp = () => {
-      if (isResizing) {
-        isResizing = false
-        el.classList.remove("resizing")
-        this.updateActiveTools()
-      }
-    }
-
-    el.addEventListener("mousedown", handleMouseDown)
-    el.addEventListener("touchstart", handleMouseDown, { passive: false })
-    document.addEventListener("mousemove", handleMouseMove)
-    document.addEventListener("touchmove", handleMouseMove, { passive: false })
-    document.addEventListener("mouseup", handleMouseUp)
-    document.addEventListener("touchend", handleMouseUp)
-  }
+  // Tools Logic moved to ToolManager
 
   initSidebarResizable() {
     let isResizing = false
@@ -1271,118 +994,9 @@ class ScoreFlow {
 
   // Placeholder for logic moved to AnnotationManager
 
-  toggleStampPalette() {
-    // 🛡️ Global Debounce for iPad / rapid interaction
-    const now = Date.now()
-    if (this._lastPaletteToggleTime && (now - this._lastPaletteToggleTime < 350)) {
-      return
-    }
-    this._lastPaletteToggleTime = now
+  // Placeholder for logic moved to AnnotationManager
 
-    const el = this.activeToolsContainer
-    const isExpanding = !el.classList.contains('expanded')
 
-    if (isExpanding) {
-      el.classList.add('expanded')
-      // Always open in view mode to prevent accidental drawing on panel open
-    } else {
-      el.classList.remove('expanded')
-      // When panel closes, reset to view mode to avoid accidental stamps
-      if (this.activeStampType !== 'view' && this.activeStampType !== 'select' && this.activeStampType !== 'eraser' && this.activeStampType !== 'anchor') {
-        this.activeStampType = 'view'
-      }
-    }
-
-    this.updateActiveTools()
-  }
-
-  initDraggable() {
-    let isDragging = false
-    let startMouseX, startMouseY, startLeft, startTop
-    let touchStartY = 0
-    const el = this.activeToolsContainer
-
-    const dragStart = (clientX, clientY, target) => {
-      if (!target.closest(".drag-handle") && !target.closest(".active-tool-fab")) return
-
-      if (!el._positionMaterialized) {
-        const rect = el.getBoundingClientRect()
-        el.style.left = rect.left + 'px'
-        el.style.top = rect.top + 'px'
-        el.style.bottom = 'auto'
-        el.style.transform = 'none'
-        el._positionMaterialized = true
-      }
-
-      startMouseX = clientX
-      startMouseY = clientY
-      startLeft = parseFloat(el.style.left) || 0
-      startTop = parseFloat(el.style.top) || 0
-      isDragging = true
-      this._stampDragMoved = false
-    }
-
-    const drag = (clientX, clientY) => {
-      if (!isDragging) return
-      const dx = clientX - startMouseX
-      const dy = clientY - startMouseY
-      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) this._stampDragMoved = true
-      el.style.left = (startLeft + dx) + 'px'
-      el.style.top = (startTop + dy) + 'px'
-    }
-
-    const dragEnd = () => {
-      isDragging = false
-    }
-
-    // Mouse events
-    el.addEventListener("mousedown", (e) => dragStart(e.clientX, e.clientY, e.target))
-    document.addEventListener("mousemove", (e) => { if (isDragging) { e.preventDefault(); drag(e.clientX, e.clientY) } })
-    document.addEventListener("mouseup", dragEnd)
-
-    // iPad / Touch - Unified Handler
-    el.addEventListener("touchstart", (e) => {
-      e.stopPropagation() // Always prevent background scroll start
-      if (e.target.closest(".drag-handle")) {
-        dragStart(e.touches[0].clientX, e.touches[0].clientY, e.target)
-        if (isDragging) e.preventDefault()
-      } else {
-        // Prepare for swipe-to-close
-        touchStartY = e.touches[0].clientY
-      }
-    }, { passive: false })
-
-    document.addEventListener("touchmove", (e) => {
-      if (isDragging) {
-        e.preventDefault()
-        e.stopPropagation()
-        drag(e.touches[0].clientX, e.touches[0].clientY)
-      } else if (el.contains(e.target)) {
-        e.stopPropagation()
-        // If not scrolling panel content, block background scroll
-        if (el.style.overflowY !== 'auto') {
-          e.preventDefault()
-        }
-      }
-    }, { passive: false })
-
-    document.addEventListener("touchend", (e) => {
-      if (isDragging) {
-        dragEnd()
-        e.stopPropagation()
-      } else if (el.contains(e.target)) {
-        e.stopPropagation()
-        // Check for vertical swipe to close
-        if (touchStartY !== 0 && e.changedTouches.length === 1) {
-          const deltaY = e.changedTouches[0].clientY - touchStartY
-          if (Math.abs(deltaY) > 60) {
-            this.toggleStampPalette()
-          }
-        }
-      }
-      touchStartY = 0
-    }, { passive: false })
-  }
 
   cleanupAnchors(page) {
     const anchors = this.stamps.filter(s => s.page === page && s.type === 'anchor')
@@ -1426,125 +1040,12 @@ class ScoreFlow {
     return false
   }
 
-  updateRulerMarks() {
-    this.computeNextTarget()
-    const marksContainer = document.getElementById('ruler-marks')
-    if (!marksContainer) return
 
-    const visualMarks = this.stamps.filter(s => s.type === 'anchor' || s.type === 'measure')
 
-    marksContainer.innerHTML = ''
-    const viewportHeight = window.innerHeight
+  // Ruler Logic moved to RulerManager
 
-    visualMarks.forEach((stamp) => {
-      const pageWrapper = document.querySelector(`.page-container[data-page="${stamp.page}"]`)
-      if (pageWrapper && this.pdf) {
-        const rect = pageWrapper.getBoundingClientRect()
-        // Determine the absolute Y position relative to the viewport
-        const absY = rect.top + (stamp.y * rect.height)
 
-        // Hide if too far out of viewport for clean rendering
-        if (absY > -200 && absY < viewportHeight + 200) {
-          const mark = document.createElement('div')
-          if (stamp.type === 'anchor') {
-            const isNextTarget = stamp === this.nextTargetAnchor
-            mark.className = isNextTarget ? 'ruler-anchor-mark ruler-next-target' : 'ruler-anchor-mark'
-          } else if (stamp.type === 'measure') {
-            mark.className = 'ruler-measure-mark'
-            mark.textContent = stamp.data
-          }
-          mark.style.top = `${absY}px`
-          marksContainer.appendChild(mark)
-        }
-      }
-    })
 
-    // If no user anchor is the next target, show the system fallback marker
-    if (this.viewer && !this.nextTargetAnchor) {
-      const fallbackY = this.viewer.clientHeight - this.jumpOffsetPx
-      const fallback = document.createElement('div')
-      fallback.className = 'ruler-fallback-mark'
-      fallback.style.top = `${fallbackY}px`
-      marksContainer.appendChild(fallback)
-    }
-  }
-
-  jump(direction) {
-    const currentScroll = this.viewer.scrollTop
-    const viewportHeight = this.viewer.clientHeight
-    const viewportCenter = currentScroll + viewportHeight / 2
-    const currentFocusY = currentScroll + this.jumpOffsetPx
-
-    if (direction === 1) {
-      // Forward: push current position to history, then jump to next anchor (or fixed step)
-      this.jumpHistory.push(currentScroll)
-
-      const candidates = this.stamps
-        .filter(s => s.type === 'anchor')
-        .map(s => {
-          const pageElem = document.querySelector(`.page-container[data-page="${s.page}"]`)
-          if (!pageElem) return null
-          const canvas = pageElem.querySelector('.pdf-canvas')
-          const absoluteY = pageElem.offsetTop + (s.y * canvas.height)
-          return { absoluteY }
-        })
-        .filter(a => a !== null && a.absoluteY > currentFocusY + 10)
-
-      let targetScrollTop
-      if (candidates.length > 0) {
-        candidates.sort((a, b) =>
-          Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter)
-        )
-        targetScrollTop = Math.max(0, candidates[0].absoluteY - this.jumpOffsetPx)
-      } else {
-        // Fallback: fixed step forward
-        targetScrollTop = currentScroll + viewportHeight - this.jumpOffsetPx
-      }
-
-      this.viewer.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
-
-    } else {
-      // Backward: pop history to return to exact pre-jump position
-      if (this.jumpHistory.length > 0) {
-        const prevScroll = this.jumpHistory.pop()
-        this.viewer.scrollTo({ top: prevScroll, behavior: 'smooth' })
-      } else {
-        // No history yet — fallback fixed step back
-        const targetScrollTop = Math.max(0, currentScroll - viewportHeight + 2 * this.jumpOffsetPx)
-        this.viewer.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
-      }
-    }
-  }
-
-  computeNextTarget() {
-    if (!this.pdf || !this.viewer) { this.nextTargetAnchor = null; return }
-
-    const currentScroll = this.viewer.scrollTop
-    const viewportHeight = this.viewer.clientHeight
-    const viewportCenter = currentScroll + viewportHeight / 2
-    const currentFocusY = currentScroll + this.jumpOffsetPx
-
-    const candidates = this.stamps
-      .filter(s => s.type === 'anchor')
-      .map(s => {
-        const pageElem = document.querySelector(`.page-container[data-page="${s.page}"]`)
-        if (!pageElem) return null
-        const canvas = pageElem.querySelector('.pdf-canvas')
-        const absoluteY = pageElem.offsetTop + (s.y * canvas.height)
-        return { stamp: s, absoluteY }
-      })
-      .filter(a => a !== null && a.absoluteY > currentFocusY + 10)
-
-    if (candidates.length === 0) {
-      this.nextTargetAnchor = null
-      return
-    }
-
-    candidates.sort((a, b) =>
-      Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter)
-    )
-    this.nextTargetAnchor = candidates[0].stamp
-  }
 
   showDynamicIndicator(absoluteY) {
     // Briefly show where we jumped to if it was a dynamic jump
@@ -1555,50 +1056,7 @@ class ScoreFlow {
     setTimeout(() => indicator.remove(), 1000)
   }
 
-  updateJumpLinePosition() {
-    const indicator = document.getElementById('jump-line')
-    if (indicator) {
-      indicator.style.top = `${this.jumpOffsetPx}px`
-    }
-  }
 
-  updateRulerPosition() {
-    const ruler = document.getElementById('jump-ruler')
-    if (!ruler) return
-    const firstPage = document.querySelector('.page-container')
-    if (!firstPage) return
-    const pageRect = firstPage.getBoundingClientRect()
-    // Use CSS width directly — offsetWidth returns 0 when ruler is hidden (display:none)
-    const rulerW = parseInt(getComputedStyle(ruler).getPropertyValue('width')) || 28
-    // Ruler right edge flush with PDF left edge — sits entirely outside PDF
-    ruler.style.left = `${Math.max(0, pageRect.left - rulerW)}px`
-    // Beam spans the full PDF width from PDF left edge
-    const beam = ruler.querySelector('.jump-line-beam')
-    if (beam) beam.style.width = `${pageRect.width}px`
-    this.updateRulerClip()
-  }
-
-  updateRulerClip() {
-    const ruler = document.getElementById('jump-ruler')
-    if (!ruler || !this.pdf) {
-      if (ruler) { ruler.style.maskImage = ''; ruler.style.webkitMaskImage = '' }
-      return
-    }
-    const vh = window.innerHeight
-    const stops = ['transparent 0px']
-
-    document.querySelectorAll('.page-container').forEach(page => {
-      const rect = page.getBoundingClientRect()
-      if (rect.bottom <= 0 || rect.top >= vh) return
-      const topY = Math.max(0, rect.top)
-      const bottomY = Math.min(vh, rect.bottom)
-      stops.push(`transparent ${topY}px`, `black ${topY}px`, `black ${bottomY}px`, `transparent ${bottomY}px`)
-    })
-
-    const mask = `linear-gradient(to bottom, ${stops.join(', ')})`
-    ruler.style.maskImage = mask
-    ruler.style.webkitMaskImage = mask
-  }
 
   updateScoreDetailUI(fingerprint) {
     if (this.scoreDetailManager) {

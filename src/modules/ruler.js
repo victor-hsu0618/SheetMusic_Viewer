@@ -2,19 +2,101 @@ export class RulerManager {
     constructor(app) {
         this.app = app
         this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
-        this.jumpHistory = []
+        this.jumpOffsetPx = 450
         this.nextTargetAnchor = null
-        this.jumpOffsetPx = 1 * 37.8 // 1cm default
+        this.jumpHistory = []
+    }
+
+    init() {
+        this.app.jumpLine = document.getElementById('jump-line')
+        this.app.jumpOffsetInput = document.getElementById('jump-offset')
+        this.app.jumpOffsetValue = document.getElementById('jump-offset-value')
+        this.app.btnJumpHead = document.getElementById('btn-jump-head')
+        this.app.btnJumpEnd = document.getElementById('btn-jump-end')
+        this.app.btnRulerToggle = document.getElementById('btn-ruler-toggle')
+
+        this.initEventListeners()
+        this.updateJumpLinePosition()
+        this.updateRulerPosition()
+    }
+
+    initEventListeners() {
+        if (this.app.jumpOffsetInput) {
+            this.app.jumpOffsetInput.addEventListener('input', (e) => {
+                const cm = parseFloat(e.target.value)
+                if (this.app.jumpOffsetValue) this.app.jumpOffsetValue.textContent = `${cm.toFixed(1)}cm`
+                this.jumpOffsetPx = cm * 37.8
+                this.updateJumpLinePosition()
+            })
+        }
+
+        const handle = document.querySelector('.jump-line-handle')
+        if (handle) {
+            let isDraggingRuler = false
+            handle.addEventListener('mousedown', (e) => {
+                isDraggingRuler = true
+                e.preventDefault()
+            })
+            window.addEventListener('mousemove', (e) => {
+                if (!isDraggingRuler) return
+                let newY = e.clientY
+                if (newY < 0) newY = 0
+                if (newY > window.innerHeight - 50) newY = window.innerHeight - 50
+                this.jumpOffsetPx = newY
+                this.updateJumpLinePosition()
+                if (this.app.jumpOffsetInput) {
+                    const cm = newY / 37.8
+                    this.app.jumpOffsetInput.value = cm
+                    if (this.app.jumpOffsetValue) this.app.jumpOffsetValue.textContent = `${cm.toFixed(1)}cm`
+                }
+            })
+            window.addEventListener('mouseup', () => {
+                if (isDraggingRuler) {
+                    isDraggingRuler = false
+                    const beam = document.querySelector('.jump-line-beam')
+                    if (beam) {
+                        beam.classList.add('pulse')
+                        setTimeout(() => beam.classList.remove('pulse'), 600)
+                    }
+                }
+            })
+        }
+
+        if (this.app.btnRulerToggle) {
+            this.app.btnRulerToggle.addEventListener('click', () => this.toggleRuler())
+        }
+    }
+
+    toggleRuler() {
+        this.rulerVisible = !this.rulerVisible
+        localStorage.setItem('scoreflow_ruler_visible', this.rulerVisible)
+        this.updateRulerPosition()
+        if (this.app.btnRulerToggle) {
+            this.app.btnRulerToggle.classList.toggle('active', this.rulerVisible)
+            const icon = this.app.btnRulerToggle.querySelector('svg')
+            if (icon) icon.style.opacity = this.rulerVisible ? '1' : '0.4'
+        }
+    }
+
+    updateJumpLinePosition() {
+        if (this.app.jumpLine) {
+            this.app.jumpLine.style.top = `${this.jumpOffsetPx}px`
+        }
+        this.updateRulerClip()
+        this.updateRulerMarks()
     }
 
     updateRulerPosition() {
         const ruler = document.getElementById('jump-ruler')
         if (!ruler) return
+        ruler.style.display = this.rulerVisible ? 'block' : 'none'
+
         const firstPage = document.querySelector('.page-container')
         if (!firstPage) return
         const pageRect = firstPage.getBoundingClientRect()
         const rulerW = parseInt(getComputedStyle(ruler).getPropertyValue('width')) || 28
         ruler.style.left = `${Math.max(0, pageRect.left - rulerW)}px`
+
         const beam = ruler.querySelector('.jump-line-beam')
         if (beam) beam.style.width = `${pageRect.width}px`
         this.updateRulerClip()
@@ -44,6 +126,7 @@ export class RulerManager {
 
     computeNextTarget() {
         if (!this.app.pdf || !this.app.viewer) { this.nextTargetAnchor = null; return }
+
         const currentScroll = this.app.viewer.scrollTop
         const viewportHeight = this.app.viewer.clientHeight
         const viewportCenter = currentScroll + viewportHeight / 2
@@ -71,6 +154,30 @@ export class RulerManager {
         this.nextTargetAnchor = candidates[0].stamp
     }
 
+    scrollToNextTarget() {
+        this.computeNextTarget()
+        if (!this.nextTargetAnchor) return
+
+        this.jumpHistory.push(this.app.viewer.scrollTop)
+        if (this.jumpHistory.length > 50) this.jumpHistory.shift()
+
+        const baseline = this.jumpOffsetPx
+        // We need the absolute Y of the anchor again
+        const pageElem = document.querySelector(`.page-container[data-page="${this.nextTargetAnchor.page}"]`)
+        if (!pageElem) return
+        const canvas = pageElem.querySelector('.pdf-canvas')
+        const absoluteY = pageElem.offsetTop + (this.nextTargetAnchor.y * canvas.height)
+
+        const targetScroll = absoluteY - baseline
+        this.app.viewer.scrollTo({ top: targetScroll, behavior: 'smooth' })
+
+        const beam = document.querySelector('.jump-line-beam')
+        if (beam) {
+            beam.classList.add('active')
+            setTimeout(() => beam.classList.remove('active'), 800)
+        }
+    }
+
     updateRulerMarks() {
         this.computeNextTarget()
         const marksContainer = document.getElementById('ruler-marks')
@@ -85,6 +192,7 @@ export class RulerManager {
             if (pageWrapper && this.app.pdf) {
                 const rect = pageWrapper.getBoundingClientRect()
                 const absY = rect.top + (stamp.y * rect.height)
+
                 if (absY > -200 && absY < viewportHeight + 200) {
                     const mark = document.createElement('div')
                     if (stamp.type === 'anchor') {
@@ -107,44 +215,5 @@ export class RulerManager {
             fallback.style.top = `${fallbackY}px`
             marksContainer.appendChild(fallback)
         }
-    }
-
-    toggleRuler() {
-        this.rulerVisible = !this.rulerVisible
-        this.app.rulerVisible = this.rulerVisible
-        localStorage.setItem('scoreflow_ruler_visible', this.rulerVisible)
-        const ruler = document.getElementById('jump-ruler')
-        if (ruler) {
-            ruler.classList.toggle('hidden', !this.rulerVisible)
-            ruler.style.display = this.rulerVisible ? 'block' : ''
-        }
-        if (this.app.btnRulerToggle) this.app.btnRulerToggle.classList.toggle('active', this.rulerVisible)
-    }
-
-    goToHead() {
-        if (this.app.viewer) {
-            this.jumpHistory.push(this.app.viewer.scrollTop)
-            this.app.viewer.scrollTop = 0
-        }
-    }
-
-    goToEnd() {
-        if (this.app.viewer) {
-            this.jumpHistory.push(this.app.viewer.scrollTop)
-            this.app.viewer.scrollTop = this.app.viewer.scrollHeight
-        }
-    }
-
-    updateJumpLinePosition() {
-        if (!this.app.jumpLine) return
-        const firstPage = document.querySelector('.page-container')
-        let xOffset = 0
-        if (firstPage) {
-            const pageRect = firstPage.getBoundingClientRect()
-            const viewerRect = this.app.viewer.getBoundingClientRect()
-            xOffset = pageRect.left - viewerRect.left
-        }
-        this.app.jumpLine.style.left = `${xOffset}px`
-        this.app.jumpLine.style.top = `${this.app.viewer.clientHeight - this.jumpOffsetPx}px`
     }
 }
