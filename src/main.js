@@ -3293,6 +3293,15 @@ class ScoreFlow {
 
     this.sources.forEach(source => {
       const isActive = this.activeSourceId === source.id
+
+      // Force the 'self' source to match the current member name if available
+      if (source.id === 'self') {
+        const activeProfile = this.communityManager?.profiles?.find(p => p.id === this.communityManager.activeProfileId)
+        if (activeProfile) {
+          source.name = activeProfile.name
+        }
+      }
+
       const item = document.createElement('div')
       item.className = `source-item ${isActive ? 'active' : ''}`
 
