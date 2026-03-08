@@ -4,6 +4,11 @@ export class ToolManager {
         this._stampBtnDefault = null
         this._lastPaletteToggleTime = 0
         this._stampDragMoved = false
+        this._isDragging = false
+        this._dragStartX = 0
+        this._dragStartY = 0
+        this._dragInitialLeft = 0
+        this._dragInitialTop = 0
     }
 
     async preloadSvgs() {
@@ -50,8 +55,6 @@ export class ToolManager {
         const isExpanding = !el.classList.contains('expanded')
 
         if (isExpanding) {
-            el.classList.add('expanded')
-
             // Smart Positioning if coordinates provided
             if (x !== null && y !== null) {
                 // Ensure position is materialized for absolute/fixed positioning
@@ -59,49 +62,33 @@ export class ToolManager {
                 el.style.bottom = 'auto'
                 el.style.transform = 'none'
 
-                // Estimate dimensions (approximate if not yet rendered)
-                const paletteWidth = el.offsetWidth || 240
-                const paletteHeight = el.offsetHeight || 180
-                const margin = 20
+                // Estimate dimensions for boundary checks
+                const paletteWidth = el.offsetWidth || 300
+                const paletteHeight = el.offsetHeight || 160
 
-                // Horizontal Strategy:
-                // Try to appear to the RIGHT of the finger (gap of 40px)
-                let left = x + 40
+                // Alignment: Place the drag-handle directly under the finger (剛好不會遮住視線)
+                let left = x - 30
 
-                // Absolute right safety: ensure it never overflows the right edge
+                // Alignment: Shallower Y offset to ensure finger stays on the grip and away from tools.
+                let top = y - 5
+
+                // Bound checks (Window edges)
+                const margin = 12
+                if (left < margin) left = margin
                 if (left + paletteWidth > window.innerWidth - margin) {
-                    // Not enough room on the right, push it back to the left
                     left = window.innerWidth - paletteWidth - margin
                 }
-
-                // Absolute left safety
-                left = Math.max(margin, left)
-
-                // Vertical Strategy:
-                // If tap is in the bottom 1/4 of the screen, show ABOVE finger.
-                // Otherwise (top 3/4), show BELOW finger for better visibility.
-                const isBottomRegion = y > (window.innerHeight * 0.75)
-                const gapY = 60
-
-                let top
-                if (isBottomRegion) {
-                    // Show ABOVE finger
-                    top = y - paletteHeight - gapY
-                } else {
-                    // Show BELOW finger (Default)
-                    top = y + gapY
-                }
-
-                // Absolute bottom safety: ensure it never overflows the bottom edge
+                if (top < margin) top = margin
                 if (top + paletteHeight > window.innerHeight - margin) {
                     top = window.innerHeight - paletteHeight - margin
                 }
-
-                // Absolute top safety: ensure it never goes above the screen
                 top = Math.max(margin, top)
 
                 el.style.left = `${left}px`
                 el.style.top = `${top}px`
+
+                // Seamless Drag: Immediately start the dragging state so the palette follows the finger
+                this._startExternalDrag(x, y, el)
             } else {
                 // Reset to default CSS position if opened via button or no coordinates
                 el.style.left = ''
@@ -110,11 +97,13 @@ export class ToolManager {
                 el.style.transform = ''
                 el._positionMaterialized = false
             }
+            // Finally show it
+            el.classList.add('expanded')
         } else {
             el.classList.remove('expanded')
-            // Reset to view mode on close
+            // Reset to pen mode on close to avoid accidental stamp placement
             if (!['view', 'select', 'eraser', 'anchor'].includes(this.app.activeStampType)) {
-                this.app.activeStampType = 'view'
+                this.app.activeStampType = 'pen'
             }
         }
 
@@ -162,68 +151,74 @@ export class ToolManager {
         el.addEventListener("touchend", handleMouseUp)
     }
 
+    _startExternalDrag(clientX, clientY, el) {
+        if (!el._positionMaterialized) {
+            const rect = el.getBoundingClientRect()
+            el.style.left = rect.left + 'px'
+            el.style.top = rect.top + 'px'
+            el.style.bottom = 'auto'
+            el.style.transform = 'none'
+            el._positionMaterialized = true
+        }
+
+        this._dragStartX = clientX
+        this._dragStartY = clientY
+        this._dragInitialLeft = parseFloat(el.style.left) || 0
+        this._dragInitialTop = parseFloat(el.style.top) || 0
+        this._isDragging = true
+        this._stampDragMoved = false
+    }
+
     initDraggable() {
-        let isDragging = false
-        let startMouseX, startMouseY, startLeft, startTop
-        let touchStartY = 0, touchStartX = 0, touchStartTime = 0
         const el = this.app.activeToolsContainer
         if (!el) return
 
+        let touchStartY = 0, touchStartTime = 0
+
         const dragStart = (clientX, clientY, target) => {
             if (!target.closest(".drag-handle") && !target.closest(".active-tool-fab")) return
-
-            if (!el._positionMaterialized) {
-                const rect = el.getBoundingClientRect()
-                el.style.left = rect.left + 'px'
-                el.style.top = rect.top + 'px'
-                el.style.bottom = 'auto'
-                el.style.transform = 'none'
-                el._positionMaterialized = true
-            }
-
-            startMouseX = clientX
-            startMouseY = clientY
-            startLeft = parseFloat(el.style.left) || 0
-            startTop = parseFloat(el.style.top) || 0
-            isDragging = true
-            this._stampDragMoved = false
+            this._startExternalDrag(clientX, clientY, el)
         }
 
         const drag = (clientX, clientY) => {
-            if (!isDragging) return
-            const dx = clientX - startMouseX
-            const dy = clientY - startMouseY
-            // Increase threshold to 8px for iPad to distinguish from a tap
+            if (!this._isDragging) return
+            const dx = clientX - this._dragStartX
+            const dy = clientY - this._dragStartY
+
+            // iPad drift protection
             if (!this._stampDragMoved && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
                 this._stampDragMoved = true
             }
-            el.style.left = (startLeft + dx) + 'px'
-            el.style.top = (startTop + dy) + 'px'
+            el.style.left = (this._dragInitialLeft + dx) + 'px'
+            el.style.top = (this._dragInitialTop + dy) + 'px'
         }
 
         const dragEnd = () => {
-            isDragging = false
+            this._isDragging = false
         }
 
         el.addEventListener("mousedown", (e) => dragStart(e.clientX, e.clientY, e.target))
-        document.addEventListener("mousemove", (e) => { if (isDragging) { e.preventDefault(); drag(e.clientX, e.clientY) } })
+        document.addEventListener("mousemove", (e) => {
+            if (this._isDragging) {
+                e.preventDefault()
+                drag(e.clientX, e.clientY)
+            }
+        })
         document.addEventListener("mouseup", dragEnd)
 
         el.addEventListener("touchstart", (e) => {
             e.stopPropagation()
-
             touchStartY = e.touches[0].clientY
-            touchStartX = e.touches[0].clientX
             touchStartTime = Date.now()
 
             if (e.target.closest(".drag-handle")) {
                 dragStart(e.touches[0].clientX, e.touches[0].clientY, e.target)
-                if (isDragging) e.preventDefault()
+                if (this._isDragging) e.preventDefault()
             }
         }, { passive: false })
 
         document.addEventListener("touchmove", (e) => {
-            if (isDragging) {
+            if (this._isDragging) {
                 e.preventDefault()
                 e.stopPropagation()
                 drag(e.touches[0].clientX, e.touches[0].clientY)
@@ -234,20 +229,14 @@ export class ToolManager {
         }, { passive: false })
 
         document.addEventListener("touchend", (e) => {
-            const wasJustDragging = isDragging
-            if (isDragging) dragEnd()
+            const wasJustDragging = this._isDragging
+            if (this._isDragging) dragEnd()
 
             if (el.contains(e.target) || wasJustDragging) {
+                if (this._stampDragMoved) return
                 const dy = e.changedTouches[0].clientY - touchStartY
                 const dt = Date.now() - touchStartTime
-
-                // Fast Flick or Large Swipe Downward
-                const isFastFlick = dt < 300 && dy > 60
-                const isLargeSwipe = dy > 120
-
-                if (isFastFlick || isLargeSwipe) {
-                    this.toggleStampPalette()
-                }
+                if (dt < 300 && dy > 60) this.toggleStampPalette()
             }
         })
     }

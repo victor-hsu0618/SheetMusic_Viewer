@@ -47,22 +47,71 @@ export class InputManager {
             if (this.isEventInUI(e)) return
 
             if (e.touches.length === 1) {
+                // Clear any existing long press timer first
+                if (this.longPressTimer) clearTimeout(this.longPressTimer)
+
                 this.swipeStartY = e.touches[0].clientY
                 this.swipeStartX = e.touches[0].clientX
                 this.swipeStartTime = Date.now()
+
+                // Long Press (0.5s) to toggle palette reliably
+                this.isLongPressActive = false
+                if (this.longPressTimer) clearTimeout(this.longPressTimer)
+
+                this.longPressTimer = setTimeout(() => {
+                    this.isLongPressActive = true
+                    // Vibrate for feedback
+                    if (navigator.vibrate) navigator.vibrate(12)
+
+                    // Call toggle with latest coordinates
+                    console.log('[InputManager] Long Press Triggered')
+                    this.app.toolManager.toggleStampPalette(this.swipeStartX, this.swipeStartY)
+                    lastSingleTapTime = 0
+                }, 500)
             } else if (e.touches.length === 2) {
-                const now = Date.now()
-                if (now - lastTwoFingerTapTime < 350) {
-                    this.app.toolManager.toggleStampPalette(e.touches[0].clientX, e.touches[0].clientY)
-                    lastTwoFingerTapTime = 0
-                } else {
-                    lastTwoFingerTapTime = now
+                if (this.longPressTimer) clearTimeout(this.longPressTimer)
+                const x = (e.touches[0].clientX + e.touches[1].clientX) / 2
+                const y = (e.touches[0].clientY + e.touches[1].clientY) / 2
+                this.app.toolManager.toggleStampPalette(x, y)
+                lastSingleTapTime = 0
+            }
+        }, { passive: false })
+
+        // Handle MOVE (to cancel long press if moving too much)
+        viewer.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const dx = e.touches[0].clientX - this.swipeStartX
+                const dy = e.touches[0].clientY - this.swipeStartY
+                // Highly forgiving threshold (45px) for iPad jitter
+                if (Math.abs(dx) > 45 || Math.abs(dy) > 45) {
+                    if (this.longPressTimer) {
+                        clearTimeout(this.longPressTimer)
+                        this.longPressTimer = null
+                    }
+                }
+            } else {
+                if (this.longPressTimer) {
+                    clearTimeout(this.longPressTimer)
+                    this.longPressTimer = null
                 }
             }
-        }, { passive: true })
+        }, { passive: false })
 
         // Unified Handle END (Gesture logic only)
         viewer.addEventListener('touchend', (e) => {
+            if (this.longPressTimer) {
+                clearTimeout(this.longPressTimer)
+                this.longPressTimer = null
+            }
+
+            // If we just handled a long press, stop here to avoid accidental page turn
+            if (this.isLongPressActive) {
+                this.isLongPressActive = false
+                // Prevent ghost taps/turns
+                e.preventDefault()
+                return
+            }
+
             if (this.isEventInUI(e)) return
 
             if (e.changedTouches.length === 1) {
@@ -71,9 +120,9 @@ export class InputManager {
                 const dt = Date.now() - this.swipeStartTime
                 const now = Date.now()
 
-                // 1. Double Tap Detection (Single finger)
+                // 1. Double Tap Detection (Single finger) - Relaxed for iPad (300ms -> 350ms, 10px -> 35px)
                 const doubleTapDiff = now - lastSingleTapTime
-                if (doubleTapDiff < 300 && doubleTapDiff > 0 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                if (doubleTapDiff < 350 && doubleTapDiff > 0 && Math.abs(dx) < 35 && Math.abs(dy) < 35) {
                     e.preventDefault()
                     // Pass coordinates for smart positioning
                     this.app.toolManager.toggleStampPalette(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
