@@ -63,7 +63,9 @@ export class RulerManager {
         }
 
         if (this.app.btnRulerToggle) {
-            this.app.btnRulerToggle.addEventListener('click', () => this.toggleRuler())
+            this.app.btnRulerToggle.addEventListener('click', () => {
+                this.toggleRuler();
+            })
         }
     }
 

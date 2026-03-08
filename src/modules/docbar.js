@@ -28,9 +28,6 @@ export class DocBarManager {
         const btnJumpEnd = document.getElementById('btn-jump-end')
         if (btnJumpEnd) btnJumpEnd.onclick = () => this.app.goToEnd()
 
-        const btnRulerToggle = document.getElementById('btn-ruler-toggle')
-        if (btnRulerToggle) btnRulerToggle.addEventListener('click', () => this.app.toggleRuler())
-
         const btnFullscreen = document.getElementById('btn-fullscreen')
         if (btnFullscreen) btnFullscreen.addEventListener('click', () => this.app.toggleFullscreen())
 
@@ -51,24 +48,11 @@ export class DocBarManager {
             }
         }
 
-        const btnEraseAll = document.getElementById('btn-erase-all')
-        if (btnEraseAll) {
-            btnEraseAll.onclick = () => this.app.annotationManager.showEraseAllModal()
-        }
-
         const closeEraseAll = document.getElementById('close-erase-all-modal')
         if (closeEraseAll) closeEraseAll.addEventListener('click', () => this.app.annotationManager.closeEraseAllModal())
 
         const cancelEraseAll = document.getElementById('erase-all-cancel')
         if (cancelEraseAll) cancelEraseAll.addEventListener('click', () => this.app.annotationManager.closeEraseAllModal())
-
-        const btnModeAnchor = document.getElementById('btn-mode-anchor')
-        if (btnModeAnchor) {
-            btnModeAnchor.onclick = () => {
-                this.app.activeStampType = this.app.activeStampType === 'anchor' ? 'view' : 'anchor'
-                this.app.updateActiveTools()
-            }
-        }
 
         const btnStampPalette = document.getElementById('btn-stamp-palette')
         if (btnStampPalette) {

@@ -194,9 +194,7 @@ export class ToolManager {
 
         // Sync Doc Bar
         if (this.app.btnModeHand) this.app.btnModeHand.classList.toggle('active', this.app.activeStampType === 'view')
-        if (this.app.btnModeSelect) this.app.btnModeSelect.classList.toggle('active', this.app.activeStampType === 'select')
         if (this.app.btnModeEraser) this.app.btnModeEraser.classList.toggle('active', this.app.activeStampType === 'eraser')
-        if (this.app.btnModeAnchor) this.app.btnModeAnchor.classList.toggle('active', this.app.activeStampType === 'anchor')
 
         const activeTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === this.app.activeStampType)
         if (this.app.btnStampPalette) {
@@ -341,6 +339,10 @@ export class ToolManager {
                 btn.innerHTML = this.getIcon(tool, 26)
                 btn.onclick = (e) => {
                     e.stopPropagation()
+                    if (tool.id === 'erase-all') {
+                        this.app.annotationManager.showEraseAllModal()
+                        return
+                    }
                     this.app.activeStampType = tool.id
                     this.app.lastUsedToolPerCategory[catName] = tool.id
                     this.updateActiveTools()
