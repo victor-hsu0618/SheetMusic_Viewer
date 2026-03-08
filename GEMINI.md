@@ -18,15 +18,19 @@ The application follows a modular "Manager" pattern coordinated by a central `Sc
 - **`src/main.js`**: The main entry point that orchestrates all managers and handles global application state.
 
 ### Manager Modules (`src/modules/`)
-- **`AnnotationManager`**: Handles canvas drawing, SHA-256 score fingerprinting, and persistence of stamps/marks.
-- **`ViewerManager`**: Manages PDF rendering, continuous scrolling, and page layout.
-- **`ToolManager`**: Manages the toolbar, toolsets (Pens, Fingering, Bowing, etc.), and active tool state.
-- **`RulerManager`**: Manages the vertical "Jump Ruler" and visual baseline for the smart jump system.
-- **`SidebarManager`**: Handles the score library, recent scores, and workspace layout (Split-View vs. Float-View).
-- **`LibraryManager`**: Handles "Performance Project" folder scanning and score indexing.
-- **`LayerManager`**: Manages professional annotation layers (Performance, Fingering, Bowing, Personal).
-- **`DocBarManager`**: Manages the floating document control bar (Zoom, Visibility, Jump controls).
-- **`CollaborationManager`**: Handles multi-style interpretation engines and data exchange (JSON).
+- **`AnnotationManager`**: Centralizes logic for drawing (pens, stamps), coordinate mapping, erasing, and anchor/measure cleanup logic.
+- **`ViewerManager`**: Manages PDF.js rendering, zoom, fit-to-screen, and file access (including iOS sync upload fixes).
+- **`InputManager`**: Unified event hub for keyboard shortcuts, iPad touch gestures (Swipe Jump), and scroll-linked UI updates.
+- **`ToolManager`**: Manages the toolbar state, dynamic toolsets per layer, and last-used tool persistence.
+- **`RulerManager`**: Manages the vertical Jump Ruler, next-target calculations, and jump history.
+- **`SidebarManager`**: Handles the sidebar UI, tab navigation, and responsive workspace layouts (Split-View/Float-View).
+- **`PersistenceManager`**: Abstraction layer for data storage (LocalStorage/IndexedDB) and state caching.
+- **`LayerManager`**: Orchestrates professional annotation layers (Performance, Fingering, etc.) and visibility state.
+- **`DocBarManager`**: Manages the floating draggable document control bar.
+- **`DocActionManager`**: Handles project import/export, system-wide dialogs, and backup operations.
+- **`CollaborationManager`**: Manages the multi-interpretation style engine and source data routing.
+- **`ProfileManager`**: Manages user identity and profile settings.
+- **`ScoreDetailManager`**: Manages score-specific metadata (Composer, Title) linked to PDF fingerprints.
 
 ### Supporting Files
 - **`index.html`**: Main DOM structure and entry point.

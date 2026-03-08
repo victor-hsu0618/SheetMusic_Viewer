@@ -42,19 +42,19 @@ import { chromium, expect } from '@playwright/test';
         // Manual Action: Click "Select Library Folder" and pick the above path.
         console.log('ℹ️  Note: To test the actual PDF loading for "大稻埕2026", manually select the folder during the dev session.');
 
-        // 4. Test Tab Switching (Score, Orchestra, Settings)
+        // 4. Test Tab Switching (Score Detail, Settings)
         console.log('--- Step 4: Testing Tab Switching ---');
-        const tabs = ['score', 'orchestra', 'settings'];
+        const tabs = ['score-detail', 'settings'];
         for (const tab of tabs) {
             await page.click(`.sidebar-tab[data-tab="${tab}"]`);
             const panel = page.locator(`.tab-panel[data-panel="${tab}"]`);
             await expect(panel).toHaveClass(/active/);
 
-            // Special check for Orchestra tab UI
-            if (tab === 'orchestra') {
-                const cloudBtn = page.locator('#connect-cloud-btn');
-                await expect(cloudBtn).toBeVisible();
-                console.log(`✅ Orchestra tab symbols (Cloud Connect) verified.`);
+            // Special check for Score Detail tab UI
+            if (tab === 'score-detail') {
+                const nameInput = page.locator('#score-name-input');
+                await expect(nameInput).toBeVisible();
+                console.log(`✅ Score Detail tab symbols verified.`);
             }
 
             console.log(`✅ Tab "${tab}" content displayed.`);

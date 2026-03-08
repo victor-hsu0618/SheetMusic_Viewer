@@ -61,7 +61,7 @@ export class ScoreDetailManager {
 
         // If the Detail tab is currently active, refresh UI immediately
         const activeTab = document.querySelector('.sidebar-tab.active');
-        if (activeTab && activeTab.dataset.tab === 'orchestra') {
+        if (activeTab && activeTab.dataset.tab === 'score-detail') {
             this.refreshStats();
         }
     }
