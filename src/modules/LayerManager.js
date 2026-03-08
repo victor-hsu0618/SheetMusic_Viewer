@@ -107,6 +107,9 @@ export class LayerManager {
         </div>
       `
 
+            // iPad fix: Stop touch propagation to prevent double-tap gesture from triggering stamp bar
+            item.ontouchstart = (e) => e.stopPropagation()
+
             item.onclick = (e) => {
                 if (e.target.closest('.layer-actions')) return
                 this.app.activeLayerId = layer.id
@@ -114,7 +117,9 @@ export class LayerManager {
                 this.app.updateActiveTools()
             }
 
-            item.querySelector('.layer-vis-btn').onclick = (e) => {
+            const visBtn = item.querySelector('.layer-vis-btn')
+            visBtn.ontouchstart = (e) => e.stopPropagation()
+            visBtn.onclick = (e) => {
                 e.stopPropagation()
                 layer.visible = !layer.visible
                 this.renderLayerUI()
@@ -125,6 +130,7 @@ export class LayerManager {
 
             const delBtn = item.querySelector('.btn-delete-layer')
             if (delBtn) {
+                delBtn.ontouchstart = (e) => e.stopPropagation()
                 delBtn.onclick = (e) => {
                     e.stopPropagation()
                     this.deleteLayer(layer.id)

@@ -149,7 +149,7 @@ class ScoreFlow {
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
 
-    console.log('[ScoreFlow] Version 2.0.7 - Input Overlay Mode')
+    console.log('[ScoreFlow] Version 2.1.0 - Full UI Shielding Mode')
 
     this.viewerManager.checkInitialView()
     this.toolManager.preloadSvgs()

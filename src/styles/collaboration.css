@@ -415,6 +415,14 @@
   color: var(--primary);
 }
 
+@media (hover: none) {
+  .layer-shelf, .layer-vis-btn, .layer-item, .shelf-header {
+    transition: none !important;
+    transform: none !important;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+  }
+}
+
 .layer-shelf {
   position: fixed;
   left: 50%;
@@ -443,6 +451,12 @@
   opacity: 1;
   visibility: visible;
   transform: translate(-50%, -50%) scale(1);
+}
+
+@media (hover: none) {
+  .layer-shelf.active {
+    transform: translate(-50%, -50%) !important;
+  }
 }
 
 /* Invisible bridge for hover transition */

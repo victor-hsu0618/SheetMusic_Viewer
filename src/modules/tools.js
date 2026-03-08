@@ -171,7 +171,8 @@ export class ToolManager {
         document.addEventListener("touchend", (e) => {
             if (isDragging) {
                 dragEnd()
-            } else {
+            } else if (el.contains(e.target)) {
+                // Only handle the "swipe down to close" gesture if it started on the palette itself
                 const deltaY = e.changedTouches[0].clientY - touchStartY
                 if (deltaY > 150) {
                     this.toggleStampPalette()

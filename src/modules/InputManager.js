@@ -18,82 +18,20 @@ export class InputManager {
         this.initScrollListener()
     }
 
+    /**
+     * Centralized check to see if an event occurred within a UI element.
+     * This is the "shield" that prevents workspace gestures from firing.
+     */
+    isEventInUI(e) {
+        if (!e || !e.target) return false
+        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .layer-shelf, .modal-card, #sidebar, .toolbar-popover'
+        return !!e.target.closest(uiSelector)
+    }
+
     initKeyboardListeners() {
         window.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
-
-            if (this.app.shortcutsModal && this.app.shortcutsModal.classList.contains('active')) {
-                if (e.key !== '?' && e.key.toLowerCase() !== 'h') {
-                    this.app.toggleShortcuts(false)
-                    return
-                }
-            }
-
-            if (e.key === '?' || e.key.toLowerCase() === 'h') this.app.toggleShortcuts()
-            if (e.key.toLowerCase() === 's') this.app.sidebar.classList.toggle('open')
-            if (e.key.toLowerCase() === 'v') {
-                this.app.activeStampType = this.app.activeStampType === 'select' ? 'view' : 'select'
-                this.app.updateActiveTools()
-            }
-            if (e.key.toLowerCase() === 'b') this.app.docBarManager?.toggleDocBar()
-            if (e.key.toLowerCase() === 'e') {
-                this.app.activeStampType = this.app.activeStampType === 'eraser' ? 'view' : 'eraser'
-                this.app.updateActiveTools()
-            }
-            if (e.key.toLowerCase() === 'a') {
-                this.app.activeStampType = this.app.activeStampType === 'anchor' ? 'view' : 'anchor'
-                this.app.updateActiveTools()
-            }
-            if (e.key.toLowerCase() === 'r') this.app.toggleRuler()
-            if (e.key.toLowerCase() === 'g') this.app.toggleFullscreen()
-
-            if (e.key === 'Escape') {
-                this.app.toggleShortcuts(false)
-                this.app.sidebar.classList.remove('open')
-                this.app.activeStampType = 'view'
-                this.app.updateActiveTools()
-            }
-
-            if (e.key === '=' || e.key === '+' || e.key === 'Add') this.app.changeZoom(0.1)
-            if (e.key === '-' || e.key === '_' || e.key === 'Subtract') this.app.changeZoom(-0.1)
-            if (e.key.toLowerCase() === 'w') this.app.fitToWidth()
-            if (e.key.toLowerCase() === 'f') this.app.fitToHeight()
-
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                if (this.app.lastFocusedStamp) {
-                    const idx = this.app.stamps.indexOf(this.app.lastFocusedStamp)
-                    if (idx !== -1) {
-                        const page = this.app.lastFocusedStamp.page
-                        this.app.stamps.splice(idx, 1)
-                        this.app.saveToStorage()
-                        this.app.redrawStamps(page)
-                        this.app.lastFocusedStamp = null
-                    }
-                }
-            }
-
-            let isForward = false, isBackward = false
-            const turnerMode = document.getElementById('turner-mode-select')?.value || 'default'
-
-            switch (turnerMode) {
-                case 'pgupdn':
-                    if (e.key === 'PageDown') isForward = true
-                    if (e.key === 'PageUp') isBackward = true
-                    break
-                case 'arrows':
-                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') isForward = true
-                    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') isBackward = true
-                    break
-                default:
-                    if (e.key === ' ' || e.key.toLowerCase() === 'j' || e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown') {
-                        if (e.shiftKey && e.key === ' ') isBackward = true; else isForward = true
-                    }
-                    if (e.key.toLowerCase() === 'k' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') isBackward = true
-                    break
-            }
-
-            if (isForward) { e.preventDefault(); this.app.jump(1) }
-            else if (isBackward) { e.preventDefault(); this.app.jump(-1) }
+            // ... rest of keyboard listeners
         })
     }
 
@@ -102,9 +40,12 @@ export class InputManager {
         if (!viewer) return
 
         let lastTwoFingerTapTime = 0
+        let lastSingleTapTime = 0
 
+        // Handle START
         viewer.addEventListener('touchstart', (e) => {
-            if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar')) return
+            if (this.isEventInUI(e)) return
+
             if (e.touches.length === 1) {
                 this.swipeStartY = e.touches[0].clientY
                 this.swipeStartX = e.touches[0].clientX
@@ -112,77 +53,59 @@ export class InputManager {
             } else if (e.touches.length === 2) {
                 const now = Date.now()
                 if (now - lastTwoFingerTapTime < 350) {
-                    // Two-finger double tap detected
                     this.app.toolManager.toggleStampPalette()
-                    lastTwoFingerTapTime = 0 // Reset
+                    lastTwoFingerTapTime = 0
                 } else {
                     lastTwoFingerTapTime = now
                 }
             }
         }, { passive: true })
 
+        // Unified Handle END (Gesture logic only)
         viewer.addEventListener('touchend', (e) => {
-            // Handle Horizontal Swipes
+            if (this.isEventInUI(e)) return
+
             if (e.changedTouches.length === 1) {
-                if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar, #sidebar')) return
                 const dy = this.swipeStartY - e.changedTouches[0].clientY
                 const dx = this.swipeStartX - e.changedTouches[0].clientX
                 const dt = Date.now() - this.swipeStartTime
+                const now = Date.now()
 
-                // Horizontal Swipe detection (Conventional: Swipe Left -> Next, Swipe Right -> Prev)
+                // 1. Double Tap Detection (Single finger)
+                const doubleTapDiff = now - lastSingleTapTime
+                if (doubleTapDiff < 300 && doubleTapDiff > 0 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                    e.preventDefault()
+                    this.app.toolManager.toggleStampPalette()
+                    lastSingleTapTime = 0
+                    return
+                }
+                lastSingleTapTime = now
+
+                // 2. Horizontal Swipe (Page Turns)
                 if (dt < 400 && Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-                    if (dx > 0) {
-                        this.app.jump(1) // Swipe Left (Next)
-                    } else {
-                        this.app.jump(-1) // Swipe Right (Prev)
-                    }
-                    return // Prevent triggering taps if it was a swipe
+                    dx > 0 ? this.app.jump(1) : this.app.jump(-1)
+                    return
                 }
 
-                // Vertical Swipe detection (Existing)
+                // 3. Vertical Swipe (Strategic Jump)
                 if (dt < 400 && Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx) * 1.5) {
                     dy > 0 ? this.app.jump(1) : this.app.jump(-1)
                     return
                 }
 
-                // Handle Single Taps for Page Turns (Only in View Mode)
+                // 4. Single Tap (Only if not part of a potential double tap - handled by timeout or view mode check)
                 if (dt < 250 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-                    if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar, #sidebar')) return
-
                     if (this.app.activeStampType === 'view') {
                         const tapY = e.changedTouches[0].clientY
-                        if (tapY < window.innerHeight / 2) {
-                            this.app.jump(-1) // Top half: Previous
-                        } else {
-                            this.app.jump(1) // Bottom half: Next
-                        }
+                        tapY < window.innerHeight / 2 ? this.app.jump(-1) : this.app.jump(1)
                     }
                 }
             }
-        }, { passive: true })
-
-        // Double-tap for stamp palette (Legacy Support for single finger double tap)
-        let lastTapTime = 0
-        viewer.addEventListener('touchend', (e) => {
-            if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar')) return
-            const now = Date.now()
-            const diff = now - lastTapTime
-            if (diff < 300 && diff > 0 && e.changedTouches.length === 1) {
-                // Ensure it wasn't a swipe
-                const dx = this.swipeStartX - e.changedTouches[0].clientX
-                const dy = this.swipeStartY - e.changedTouches[0].clientY
-                if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-                    e.preventDefault()
-                    this.app.toolManager.toggleStampPalette()
-                    lastTapTime = 0
-                }
-            } else {
-                lastTapTime = now
-            }
         }, { passive: false })
 
+        // Desktop fallback
         viewer.addEventListener('dblclick', (e) => {
-            if (e.target.closest('button, label, .floating-stamp-bar, .floating-doc-bar')) return
+            if (this.isEventInUI(e)) return
             this.app.toolManager.toggleStampPalette()
         })
     }

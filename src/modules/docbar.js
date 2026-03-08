@@ -72,6 +72,7 @@ export class DocBarManager {
 
         // Layer Shelf Toggles
         if (this.app.layerToggleBtn) {
+            this.app.layerToggleBtn.addEventListener('touchstart', (e) => e.stopPropagation())
             this.app.layerToggleBtn.addEventListener('click', () => {
                 this.app.layerShelf.classList.toggle('active')
                 if (this.app.layerShelf.classList.contains('active')) this.app.renderLayerUI()
@@ -79,9 +80,14 @@ export class DocBarManager {
         }
 
         if (this.app.closeLayerShelfBtn) {
+            this.app.closeLayerShelfBtn.addEventListener('touchstart', (e) => e.stopPropagation())
             this.app.closeLayerShelfBtn.addEventListener('click', () => {
                 this.app.layerShelf.classList.remove('active')
             })
+        }
+
+        if (this.app.layerShelf) {
+            this.app.layerShelf.addEventListener('touchstart', (e) => e.stopPropagation())
         }
 
         // iPad pointer containment
