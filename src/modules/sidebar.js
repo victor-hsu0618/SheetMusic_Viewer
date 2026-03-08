@@ -74,7 +74,10 @@ export class SidebarManager {
           <div class="recent-score-date">Last Opened: ${score.date}</div>
         </div>
       `
-            card.onclick = () => this.app.openRecentScore(score.name)
+            card.addEventListener('click', (e) => {
+                e.stopPropagation()
+                this.app.openRecentScore(score.name)
+            })
             this.app.recentScoresList.appendChild(card)
         })
     }
@@ -95,7 +98,10 @@ export class SidebarManager {
         <span class="sidebar-recent-name">${score.name.replace(/\.pdf$/i, '')}</span>
         <span class="sidebar-recent-date">${score.date}</span>
       `
-            item.onclick = () => this.app.openRecentScore(score.name)
+            item.addEventListener('click', (e) => {
+                e.stopPropagation()
+                this.app.openRecentScore(score.name)
+            })
             this.app.welcomeRecentList.appendChild(item)
         })
     }

@@ -211,12 +211,15 @@
                 <p>Open a score to begin.</p>
               </div>
               <div class="welcome-actions">
-                <div class="btn btn-primary start-btn mb-20" style="position: relative; overflow: hidden; cursor: pointer;">
+                <div class="btn btn-primary start-btn mb-20" style="position: relative; overflow: hidden; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                   Open PDF...
-                  <input type="file" class="native-file-input" accept="application/pdf" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 100px; z-index: 10;" />
+                  <input type="file" class="native-file-input" accept="application/pdf" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;" />
                 </div>
                 <div class="tab-section-label welcome-list-label">Recent Scores</div>
                 <div id="welcome-recent-list" class="sidebar-recent-list"></div>
+              </div>
+              <div class="welcome-footer-actions" style="margin-top: 30px; display: flex; justify-content: flex-end;">
+                <button id="btn-welcome-skip" class="btn btn-outline" style="font-size: 0.8rem; padding: 6px 16px;">Skip to Workspace</button>
               </div>
             </div>
           </div>
@@ -590,14 +593,13 @@
     <div class="modal-content small-modal">
       <div class="modal-header">
         <h3>Erase All by Category</h3>
-        <button class="close-modal" id="close-erase-all-modal">&times;</button>
+        <button class="close-modal btn-icon-mini" id="close-erase-all-modal" style="font-size: 24px; padding: 10px;">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="modal-intro mb-15 erase-modal-intro">Select a category to erase all annotations in
-          it.</p>
+        <p class="modal-intro mb-15 erase-modal-intro">Select a category to erase all annotations in it.</p>
         <div id="erase-all-category-list" class="erase-all-category-list"></div>
-        <div class="text-center-mt-14">
-          <button id="erase-all-cancel" class="keypad-cancel-btn">Cancel (Esc)</button>
+        <div class="mt-20">
+          <button id="erase-all-cancel" class="btn btn-outline btn-full">Cancel (Esc)</button>
         </div>
       </div>
     </div>

@@ -38,11 +38,7 @@ body {
   height: 100dvh;
   overflow: hidden;
   position: relative;
-  /* Safe area padding moved here to avoid body overflow issues */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  /* Removed padding-top/bottom to allow full-screen immersive experience */
 }
 
 /* UTILS from index.html extraction */

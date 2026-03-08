@@ -564,6 +564,19 @@ export class AnnotationManager {
         if (layer) layer.visible = true
 
         let data = null
+        let draw = group?.tools.find(t => t.id === type)?.draw
+
+        // SPECIAL: Handle User Custom Text Library
+        if (type.startsWith('custom-text-') && this.app._activeCustomText) {
+            draw = {
+                type: 'text',
+                content: this.app._activeCustomText,
+                font: 'italic 300',
+                size: 22,
+                fontFace: 'serif'
+            }
+        }
+
         if (type === 'text' || type === 'tempo-text') {
             data = prompt('Enter text:')
             if (!data) return
@@ -581,13 +594,15 @@ export class AnnotationManager {
         }
 
         this.app.stamps.push({
+            id: 'stamp-' + Date.now(),
             page,
             layerId: targetLayerId,
             sourceId: this.app.activeSourceId,
             type,
             x,
             y,
-            data
+            data,
+            draw
         })
 
         if (type === 'anchor' || type === 'measure') {

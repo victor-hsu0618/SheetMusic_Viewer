@@ -19,7 +19,7 @@ export const TOOLSETS = [
         tools: [
             { id: 'select', label: 'Select', icon: '<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="M13 13l6 6" />' },
             { id: 'eraser', label: 'Eraser', icon: '<path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" /><path d="M17 17L7 7" />' },
-            { id: 'erase-all', label: 'Erase All', icon: '<polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />' },
+            { id: 'erase-all', label: 'Erase All', icon: '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h1" /><path d="M15 18H9" /><path d="M19 18h2a1 1 0 0 0 1-1v-5l-4-5h-3v11" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="18" r="2" /><path d="M2 12h5" /><path d="M2 15h3" />' },
             { id: 'recycle-bin', label: 'Recycle', icon: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />' }
         ]
     },
@@ -38,8 +38,6 @@ export const TOOLSETS = [
         tools: [
             { id: 'down-bow', label: 'Down', icon: '<path d="M7 11h10v5 M7 16v-5 M17 16v-5" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.3 0.2 L -0.3 -0.3 L 0.3 -0.3 L 0.3 0.2' } },
             { id: 'up-bow', label: 'Up', icon: '<path d="M7 9l5 8l5-8" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.3 -0.35 L 0 0.35 L 0.3 -0.35' } },
-            { id: 'pizz', label: 'pizz.', icon: '<text x="12" y="16.5" font-size="14" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">pizz</text>', draw: { type: 'text', content: 'pizz.', font: 'italic 300', size: 22, fontFace: 'serif' } },
-            { id: 'arco', label: 'arco.', icon: '<text x="12" y="16.5" font-size="14" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">arco</text>', draw: { type: 'text', content: 'arco.', font: 'italic 300', size: 22, fontFace: 'serif' } },
             { id: 'thumb', label: 'Thumb', icon: '<ellipse cx="12" cy="8" rx="3" ry="5" fill="none" stroke="currentColor" stroke-width="2" /><line x1="12" y1="13" x2="12" y2="15" stroke="currentColor" stroke-width="2" />', draw: { type: 'complex', variant: 'thumb' } },
             { id: 'f1', label: '1', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">1</text>', draw: { type: 'text', content: '1', font: '300', size: 18 } },
             { id: 'f2', label: '2', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">2</text>', draw: { type: 'text', content: '2', font: '300', size: 18 } },
@@ -65,22 +63,19 @@ export const TOOLSETS = [
         ]
     },
     {
-        name: 'Tempo',
+        name: 'Text',
         type: 'performance',
         tools: [
-            { id: 'tempo-quarter', label: 'q=', icon: '<path d="M10 18a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM11.5 16V4" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'text', content: 'q=', font: '300', size: 20 } },
-            { id: 'tempo-text', label: 'Tempo', icon: '<text x="12" y="16" font-size="10" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">Tempo</text>', draw: { type: 'special', variant: 'input-text' } },
-            { id: 'rit', label: 'rit.', icon: '<text x="12" y="16.5" font-size="14" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">rit.</text>', draw: { type: 'text', content: 'rit.', font: 'italic 300', size: 22, fontFace: 'serif' } },
-            { id: 'accel', label: 'accel.', icon: '<text x="12" y="16.5" font-size="12" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">accel.</text>', draw: { type: 'text', content: 'accel.', font: 'italic 300', size: 22, fontFace: 'serif' } }
-        ]
-    },
-    {
-        name: 'Dynamic',
-        type: 'performance',
-        tools: [
-            { id: 'forte', label: 'f', icon: '<text x="12" y="20" font-family="serif" font-style="italic" font-weight="300" font-size="20" text-anchor="middle" fill="currentColor" stroke="none">f</text>', draw: { type: 'text', content: 'f', font: 'italic 300', size: 24, fontFace: 'serif' } },
-            { id: 'piano', label: 'p', icon: '<text x="12" y="20" font-family="serif" font-style="italic" font-weight="300" font-size="20" text-anchor="middle" fill="currentColor" stroke="none">p</text>', draw: { type: 'text', content: 'p', font: 'italic 300', size: 24, fontFace: 'serif' } },
-            { id: 'text', label: 'Exp.', icon: '<text x="12" y="18" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">T</text>', draw: { type: 'special', variant: 'input-text' } }
+            { id: 'text-pizz', label: 'pizz.', draw: { type: 'text', content: 'pizz.', font: 'italic 300', size: 20, fontFace: 'serif' } },
+            { id: 'text-arco', label: 'arco.', draw: { type: 'text', content: 'arco.', font: 'italic 300', size: 20, fontFace: 'serif' } },
+            { id: 'text-f', label: 'f', draw: { type: 'text', content: 'f', font: 'italic 600', size: 24, fontFace: 'serif' } },
+            { id: 'text-p', label: 'p', draw: { type: 'text', content: 'p', font: 'italic 600', size: 24, fontFace: 'serif' } },
+            { id: 'text-mf', label: 'mf', draw: { type: 'text', content: 'mf', font: 'italic 600', size: 22, fontFace: 'serif' } },
+            { id: 'text-mp', label: 'mp', draw: { type: 'text', content: 'mp', font: 'italic 600', size: 22, fontFace: 'serif' } },
+            { id: 'text-rit', label: 'rit.', draw: { type: 'text', content: 'rit.', font: 'italic 300', size: 20, fontFace: 'serif' } },
+            { id: 'text-accel', label: 'accel.', draw: { type: 'text', content: 'accel.', font: 'italic 300', size: 20, fontFace: 'serif' } },
+            { id: 'text-cresc', label: 'cresc.', draw: { type: 'text', content: 'cresc.', font: 'italic 300', size: 20, fontFace: 'serif' } },
+            { id: 'text-dim', label: 'dim.', draw: { type: 'text', content: 'dim.', font: 'italic 300', size: 20, fontFace: 'serif' } }
         ]
     },
     {

@@ -378,13 +378,18 @@ export class ToolManager {
     renderRecycleBin() {
         const binContainer = document.createElement("div")
         binContainer.className = "recycle-bin-view"
-        binContainer.innerHTML = `<div class="bin-header"><h3>Recycle Bin</h3><p>Select stamps on score to move them here.</p></div>`
+        binContainer.innerHTML = `<div class="bin-header"><h3>Recycle Bin</h3></div>`
 
         const closeBtn = document.createElement("button")
-        closeBtn.className = "bin-close-btn"
-        closeBtn.textContent = "Back to Tools"
+        closeBtn.className = "bin-close-btn btn btn-primary btn-full mt-10"
+        closeBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="icon-mr-6">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Back to Tools
+        `
         closeBtn.onclick = () => { this.app.activeStampType = "view"; this.updateActiveTools() }
-        binContainer.firstChild.appendChild(closeBtn)
+        binContainer.appendChild(closeBtn)
 
         if (this.app.recycleItems.length === 0) {
             const empty = document.createElement("div")
@@ -427,33 +432,108 @@ export class ToolManager {
             const row = document.createElement("div")
             row.className = "active-tools-row"
 
-            group.tools.forEach(tool => {
-                const wrapper = document.createElement("div")
-                wrapper.className = "stamp-tool-wrapper"
-                const btn = document.createElement("button")
-                btn.className = `stamp-tool ${this.app.activeStampType === tool.id ? "active" : ""}`
-                btn.title = tool.label
-                btn.dataset.tooltip = tool.label
-                btn.innerHTML = this.getIcon(tool, 22)
-                btn.onclick = (e) => {
-                    e.stopPropagation()
-                    if (tool.id === 'erase-all') {
-                        this.app.annotationManager.showEraseAllModal()
-                        return
+            // SPECIAL HANDLING: TEXT CATEGORY
+            if (catName === 'Text') {
+                row.classList.add('text-cloud-row')
+                
+                // 1. Render Default Tools (f, p, rit, etc.)
+                group.tools.forEach(tool => {
+                    const pill = document.createElement("button")
+                    pill.className = `text-tool-pill ${this.app.activeStampType === tool.id ? "active" : ""}`
+                    pill.textContent = tool.label
+                    pill.onclick = (e) => {
+                        e.stopPropagation()
+                        this.app.activeStampType = tool.id
+                        this.app.lastUsedToolPerCategory[catName] = tool.id
+                        this.updateActiveTools()
                     }
-                    this.app.activeStampType = tool.id
-                    this.app.lastUsedToolPerCategory[catName] = tool.id
-                    
-                    // Update Recent Tools History
-                    if (tool.id !== 'view' && tool.id !== 'select') {
-                        this.app.recentTools = [tool.id, ...this.app.recentTools.filter(id => id !== tool.id)].slice(0, 5)
-                    }
+                    row.appendChild(pill)
+                })
 
-                    this.updateActiveTools()
+                // 2. Render User Custom Library
+                this.app.userTextLibrary.forEach((text, idx) => {
+                    const pill = document.createElement("button")
+                    const isSelected = this.app.activeStampType === `custom-text-${idx}`
+                    pill.className = `text-tool-pill user-custom ${isSelected ? "active" : ""}`
+                    pill.innerHTML = `${text}<span class="delete-text">&times;</span>`
+                    
+                    pill.onclick = (e) => {
+                        e.stopPropagation()
+                        if (e.target.classList.contains('delete-text')) {
+                            this.app.userTextLibrary.splice(idx, 1)
+                            this.app.saveToStorage()
+                            this.updateActiveTools()
+                            return
+                        }
+                        // Create a temporary tool object for this custom text
+                        this.app.activeStampType = `custom-text-${idx}`
+                        this.app._activeCustomText = text // Internal ref for renderer
+                        this.updateActiveTools()
+                    }
+                    row.appendChild(pill)
+                })
+
+                // 3. Render "Add New" Input
+                const addWrapper = document.createElement("div")
+                addWrapper.className = "add-text-wrapper"
+                addWrapper.innerHTML = `
+                    <input type="text" placeholder="Add term..." class="add-text-input" />
+                    <button class="add-text-btn">+</button>
+                `
+                const input = addWrapper.querySelector('input')
+                const btn = addWrapper.querySelector('button')
+                
+                const commit = () => {
+                    const val = input.value.trim()
+                    if (val) {
+                        const newIdx = this.app.userTextLibrary.length
+                        this.app.userTextLibrary.push(val)
+                        this.app.saveToStorage()
+                        
+                        // Auto-select the new term
+                        this.app.activeStampType = `custom-text-${newIdx}`
+                        this.app._activeCustomText = val
+                        
+                        input.value = ''
+                        this.updateActiveTools()
+                    }
                 }
-                wrapper.appendChild(btn)
-                row.appendChild(wrapper)
-            })
+                
+                btn.onclick = (e) => { e.stopPropagation(); commit() }
+                input.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); commit() } }
+                input.onclick = (e) => e.stopPropagation()
+                
+                row.appendChild(addWrapper)
+            } else {
+                // NORMAL TOOL GRID RENDERING
+                group.tools.forEach(tool => {
+                    const wrapper = document.createElement("div")
+                    wrapper.className = "stamp-tool-wrapper"
+                    const btn = document.createElement("button")
+                    btn.className = `stamp-tool ${this.app.activeStampType === tool.id ? "active" : ""}`
+                    btn.title = tool.label
+                    btn.dataset.tooltip = tool.label
+                    btn.innerHTML = this.getIcon(tool, 22)
+                    btn.onclick = (e) => {
+                        e.stopPropagation()
+                        if (tool.id === 'erase-all') {
+                            this.app.annotationManager.showEraseAllModal()
+                            return
+                        }
+                        this.app.activeStampType = tool.id
+                        this.app.lastUsedToolPerCategory[catName] = tool.id
+                        
+                        // Update Recent Tools History
+                        if (tool.id !== 'view' && tool.id !== 'select') {
+                            this.app.recentTools = [tool.id, ...this.app.recentTools.filter(id => id !== tool.id)].slice(0, 5)
+                        }
+
+                        this.updateActiveTools()
+                    }
+                    wrapper.appendChild(btn)
+                    row.appendChild(wrapper)
+                })
+            }
             container.appendChild(row)
         })
         this.app.activeToolsContainer.appendChild(container)

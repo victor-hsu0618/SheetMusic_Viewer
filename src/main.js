@@ -100,14 +100,15 @@ class ScoreFlow {
     this.recycleItems = []
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
-    // Default categories: only Pens and Bow/Fingering
-    this.activeCategories = ['Pens', 'Bow/Fingering']
+    // Default categories: Pens and Text
+    this.activeCategories = ['Pens', 'Text']
     this.activeCategory = 'Pens'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
     this.toolbarWidth = 600 // High-Performance Default Width
     this._lastStampType = null // Remember the last used stamp for restoration
     this.lastUsedToolPerCategory = {} 
     this.recentTools = [] // Track unique recently used tools
+    this.userTextLibrary = ['dolce', 'espress.', 'marcato', 'tenuto'] // Initial custom suggestions
     this.sources = [
       { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
     ]
@@ -150,7 +151,7 @@ class ScoreFlow {
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
 
-    console.log('[ScoreFlow] Version 2.2.1 - High Contrast Selection Mode')
+    console.log('[ScoreFlow] Version 2.3.5 - Immersive Fullscreen Mode')
 
     this.viewerManager.checkInitialView()
     this.toolManager.preloadSvgs()
@@ -270,6 +271,7 @@ class ScoreFlow {
     this.welcomeView = document.getElementById('welcome-view')
     this.welcomeOpenFileBtn = document.getElementById('welcome-open-file-alt')
     this.welcomeRecentList = document.getElementById('welcome-recent-list')
+    this.btnWelcomeSkip = document.getElementById('btn-welcome-skip')
     this.closeFileBtn = document.getElementById('close-file-btn')
 
     this.resetLayersBtn = document.getElementById('reset-layers-btn')
@@ -307,6 +309,17 @@ class ScoreFlow {
   }
 
   initEventListeners() {
+    if (this.btnWelcomeSkip) {
+      this.btnWelcomeSkip.addEventListener('click', () => {
+        this.viewerManager.hideWelcome()
+        // Show basic UI bars even if no PDF
+        ;['floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
+          const el = document.getElementById(id)
+          if (el) el.classList.remove('hidden')
+        })
+      })
+    }
+
     // In iOS, the user clicks the transparent input overlay. 
     // On desktop, we still allow showOpenFilePicker to work if supported.
     if (this.openPdfBtn) {

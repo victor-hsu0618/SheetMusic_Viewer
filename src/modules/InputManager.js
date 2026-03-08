@@ -24,7 +24,7 @@ export class InputManager {
      */
     isEventInUI(e) {
         if (!e || !e.target) return false
-        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .layer-shelf, .modal-card, #sidebar, .toolbar-popover'
+        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .layer-shelf, .modal-card, #sidebar, .toolbar-popover, .sidebar-recent-item, .recent-score-card'
         return !!e.target.closest(uiSelector)
     }
 
