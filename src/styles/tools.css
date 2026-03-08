@@ -105,6 +105,10 @@
   color: var(--primary);
 }
 
+.cat-pill:active {
+  transform: scale(0.95);
+}
+
 .drag-handle {
   width: 54px;
   /* Wider grip for easier iPad double-tap */
@@ -282,6 +286,11 @@
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 800;
+  transition: all 0.2s;
+}
+
+.cat-btn:active {
+  transform: scale(0.92);
 }
 
 .cat-btn.active {
@@ -329,6 +338,11 @@
 .stamp-tool:focus,
 .stamp-tool:focus-visible {
   outline: none !important;
+}
+
+.stamp-tool:active {
+  transform: scale(0.9);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .stamp-tool.active {
