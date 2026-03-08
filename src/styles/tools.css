@@ -323,6 +323,12 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
+  outline: none !important;
+}
+
+.stamp-tool:focus,
+.stamp-tool:focus-visible {
+  outline: none !important;
 }
 
 .stamp-tool.active {
@@ -366,4 +372,33 @@
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Essential Mode Button Styles (missing from migration) */
+.navigation-btn,
+.mode-btn {
+  color: var(--text-muted);
+  transition: all 0.2s;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.navigation-btn:hover,
+.mode-btn:hover {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.mode-btn.active {
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2);
 }

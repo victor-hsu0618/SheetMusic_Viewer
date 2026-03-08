@@ -1,0 +1,115 @@
+export class DocBarManager {
+    constructor(app) {
+        this.app = app
+    }
+
+    init() {
+        this.app.docBar = document.getElementById('floating-doc-bar')
+        this.app.docBarToggleBtn = document.getElementById('btn-doc-bar-toggle')
+
+        this.app.layerShelf = document.getElementById('layer-shelf')
+        this.app.layerToggleBtn = document.getElementById('layer-toggle-fab')
+        this.app.closeLayerShelfBtn = document.getElementById('close-layer-shelf')
+
+        this.initDraggable()
+        this.initEventListeners()
+    }
+
+    initEventListeners() {
+        // Doc Bar Toggle
+        if (this.app.docBarToggleBtn) {
+            this.app.docBarToggleBtn.addEventListener('click', () => this.toggleDocBar())
+        }
+
+        // Layer Shelf Toggles
+        if (this.app.layerToggleBtn) {
+            this.app.layerToggleBtn.addEventListener('click', () => {
+                this.app.layerShelf.classList.toggle('active')
+                if (this.app.layerShelf.classList.contains('active')) this.app.renderLayerUI()
+            })
+        }
+
+        if (this.app.closeLayerShelfBtn) {
+            this.app.closeLayerShelfBtn.addEventListener('click', () => {
+                this.app.layerShelf.classList.remove('active')
+            })
+        }
+
+        // iPad pointer containment
+        document.addEventListener('touchstart', (e) => {
+            if (this.app.layerShelf &&
+                this.app.layerShelf.classList.contains('active') &&
+                !this.app.layerShelf.contains(e.target) &&
+                !this.app.layerToggleBtn.contains(e.target)) {
+                this.app.layerShelf.classList.remove('active')
+            }
+        }, { passive: true })
+
+        // Keyboard Shortcut for Layers
+        document.addEventListener('keydown', (e) => {
+            if (e.shiftKey && e.key === 'V') {
+                if (this.app.layerShelf) this.app.layerShelf.classList.toggle('active')
+            }
+        })
+    }
+
+    toggleDocBar() {
+        if (!this.app.docBar) return
+        this.app.docBar.classList.toggle('collapsed')
+        localStorage.setItem('scoreflow_doc_bar_collapsed', this.app.docBar.classList.contains('collapsed'))
+    }
+
+    initDraggable() {
+        let isDragging = false
+        let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0
+        const el = this.app.docBar
+        if (!el) return
+
+        const dragStart = (e) => {
+            if (!e.target.closest(".doc-drag-handle")) return
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+
+            initialX = clientX - xOffset
+            initialY = clientY - yOffset
+            isDragging = true
+        }
+
+        const drag = (e) => {
+            if (isDragging) {
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+
+                currentX = clientX - initialX
+                currentY = clientY - initialY
+                xOffset = currentX
+                yOffset = currentY
+                el.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`
+            }
+        }
+
+        const dragEnd = () => {
+            initialX = currentX
+            initialY = currentY
+            isDragging = false
+        }
+
+        el.addEventListener("mousedown", dragStart)
+        document.addEventListener("mousemove", drag)
+        document.addEventListener("mouseup", dragEnd)
+
+        el.addEventListener("touchstart", (e) => {
+            if (!e.target.closest(".doc-drag-handle")) return
+            dragStart(e)
+        }, { passive: false })
+
+        document.addEventListener("touchmove", (e) => {
+            if (isDragging) {
+                e.preventDefault()
+                drag(e)
+            }
+        }, { passive: false })
+
+        document.addEventListener("touchend", dragEnd)
+    }
+}

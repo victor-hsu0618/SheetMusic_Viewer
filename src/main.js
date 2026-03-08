@@ -2,6 +2,7 @@ import './style.css'
 import * as pdfjsLib from 'pdfjs-dist'
 import * as db from './db.js'
 import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
+import { DocBarManager } from './modules/docbar.js'
 //import * as GDrive from './gdrive.js'
 
 // Use local worker for total offline reliability
@@ -45,8 +46,12 @@ class ScoreFlow {
 
     this._svgCache = {}
     this.initToolsets()
+
+    this.docBarManager = new DocBarManager(this)
+
     this.initElements()
     this.initEventListeners()
+    this.docBarManager.init()
     this.initDraggable()
     this.initToolbarResizable()
     this.initSidebarResizable()
@@ -182,7 +187,6 @@ class ScoreFlow {
     this.eraseAllModal = document.getElementById('erase-all-modal')
     this.btnModeHand = document.getElementById('btn-mode-hand')
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
-    this.btnDocBarToggle = document.getElementById('btn-doc-bar-toggle')
 
     this.libraryFiles = []
     this.libraryFolderHandle = null
@@ -192,11 +196,6 @@ class ScoreFlow {
 
     // Resizer
     this.sidebarResizer = document.getElementById('sidebar-resizer')
-
-    // Floating Layer Control
-    this.layerToggleBtn = document.getElementById('layer-toggle-fab')
-    this.layerShelf = document.getElementById('layer-shelf')
-    this.closeLayerShelfBtn = document.getElementById('close-layer-shelf')
     this.externalLayerList = document.getElementById('external-layer-list')
 
     // Dialog Elements
@@ -315,36 +314,6 @@ class ScoreFlow {
       this.resetSystemBtn.addEventListener('click', () => this.resetToSystemDefault())
     }
 
-    // Floating Layer Shelf Listeners
-    if (this.layerToggleBtn) {
-      this.layerToggleBtn.addEventListener('click', () => {
-        this.layerShelf.classList.toggle('active')
-        if (this.layerShelf.classList.contains('active')) this.renderLayerUI()
-      })
-    }
-    if (this.closeLayerShelfBtn) {
-      this.closeLayerShelfBtn.addEventListener('click', () => {
-        this.layerShelf.classList.remove('active')
-      })
-    }
-
-    // iPad: tap outside layer-shelf to close it
-    document.addEventListener('touchstart', (e) => {
-      if (this.layerShelf &&
-        this.layerShelf.classList.contains('active') &&
-        !this.layerShelf.contains(e.target) &&
-        !this.layerToggleBtn.contains(e.target)) {
-        this.layerShelf.classList.remove('active')
-      }
-    }, { passive: true })
-
-    // Keyboard shortcut for toggle visibility (Shift+V)
-    document.addEventListener('keydown', (e) => {
-      if (e.shiftKey && e.key === 'V') {
-        if (this.layerShelf) this.layerShelf.classList.toggle('active')
-      }
-    })
-
     if (this.closeQuickLoadBtn) {
       this.closeQuickLoadBtn.addEventListener('click', () => this.toggleQuickLoadModal(false))
     }
@@ -453,11 +422,6 @@ class ScoreFlow {
       this.btnStampPalette.addEventListener('click', () => {
         this.toggleStampPalette()
       })
-    }
-    if (this.btnDocBarToggle) {
-      this.btnDocBarToggle.onclick = () => {
-        this.toggleDocBar()
-      }
     }
 
     // Double-tap (touch, iPad) OR dblclick (PC mouse) to toggle stamp palette
@@ -2775,12 +2739,6 @@ class ScoreFlow {
     this.updateActiveTools()
   }
 
-  toggleDocBar() {
-    if (!this.docBar) return
-    this.docBar.classList.toggle('collapsed')
-    localStorage.setItem('scoreflow_doc_bar_collapsed', this.docBar.classList.contains('collapsed'))
-  }
-
   initDraggable() {
     let isDragging = false
     let startMouseX, startMouseY, startLeft, startTop
@@ -2868,57 +2826,6 @@ class ScoreFlow {
       }
       touchStartY = 0
     }, { passive: false })
-  }
-
-  initDocBarDraggable() {
-    let isDragging = false
-    let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0
-    const el = this.docBar
-    if (!el) return
-
-    el.addEventListener("mousedown", dragStart)
-    document.addEventListener("mousemove", drag)
-    document.addEventListener("mouseup", dragEnd)
-
-    // Touch support for iPad — must be non-passive to allow preventDefault
-    el.addEventListener("touchstart", (e) => {
-      if (!e.target.closest(".doc-drag-handle")) return
-      dragStart(e.touches[0])
-    }, { passive: false })
-    document.addEventListener("touchmove", (e) => {
-      if (isDragging) {
-        e.preventDefault() // prevent browser scroll while dragging bar
-        drag(e.touches[0])
-      }
-    }, { passive: false })
-    document.addEventListener("touchend", dragEnd)
-
-    function dragStart(e) {
-      if (!e.target.closest(".doc-drag-handle")) return
-      initialX = e.clientX - xOffset
-      initialY = e.clientY - yOffset
-      isDragging = true
-    }
-
-    function drag(e) {
-      if (isDragging) {
-        currentX = e.clientX - initialX
-        currentY = e.clientY - initialY
-        xOffset = currentX
-        yOffset = currentY
-        setTranslate(currentX, currentY, el)
-      }
-    }
-
-    function dragEnd() {
-      initialX = currentX
-      initialY = currentY
-      isDragging = false
-    }
-
-    function setTranslate(xPos, yPos, el) {
-      el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`
-    }
   }
 
   cleanupAnchors(page) {
@@ -3618,9 +3525,12 @@ class ScoreFlow {
             ` : ''}
           </div>
         </div>
+          <div class="source-actions">
+          <label><input type="checkbox" class="source-compare-toggle" ${source.visible ? 'checked' : ''}> Compare</label>
+        </div>
         <div class="source-opacity-box">
-          <label>Compare</label>
-          <input type="range" class="source-opacity-slider modern-slider" min="0" max="1" step="0.1" value="${source.opacity}">
+          <label for="opacity-slider-${source.id}">Opacity</label>
+          <input id="opacity-slider-${source.id}" type="range" class="source-opacity-slider modern-slider" min="0" max="1" step="0.1" value="${source.opacity}">
         </div>
       `;
 
