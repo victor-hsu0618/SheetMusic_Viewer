@@ -107,5 +107,10 @@ export class PersistenceManager {
             date: new Date().toLocaleDateString()
         })
         if (this.app.recentSoloScores.length > 10) this.app.recentSoloScores.pop()
+
+        // 刷新所有相關 UI
+        if (this.app.renderRecentSoloScores) this.app.renderRecentSoloScores()
+        if (this.app.renderWelcomeRecentScores) this.app.renderWelcomeRecentScores()
+        if (this.app.renderSidebarRecentScores) this.app.renderSidebarRecentScores()
     }
 }

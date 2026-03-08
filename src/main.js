@@ -50,6 +50,30 @@ class ScoreFlow {
   async closeFile() { return this.viewerManager.closeFile() }
   async openFileHandle(handle) { return this.viewerManager.openFileHandle(handle) }
 
+  async openRecentScore(name) {
+    if (this.sidebar) this.sidebar.classList.remove('open')
+
+    // 1. Try to get binary buffer from IDB (works for mobile/iPad local files)
+    const buf = await db.get(`recent_buf_${name}`)
+    if (buf) {
+      await this.loadPDF(new Uint8Array(buf), name)
+      return
+    }
+
+    // 2. Desktop fallback: check if we have a persistent FileSystemHandle
+    const handle = await db.get(`recent_handle_${name}`)
+    if (handle) {
+      const file = await this.viewerManager.openFileHandle(handle)
+      if (file) {
+        const b = await file.arrayBuffer()
+        await this.loadPDF(new Uint8Array(b), name)
+        return
+      }
+    }
+
+    alert(`Could not find the original file for "${name}". Please re-upload它。`)
+  }
+
   // AnnotationManager Proxies
   redrawStamps(page) { this.annotationManager.redrawStamps(page) }
   redrawAllAnnotationLayers() { this.annotationManager.redrawAllAnnotationLayers() }

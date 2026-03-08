@@ -55,8 +55,6 @@ export class ViewerManager {
                 try {
                     await db.set(`recent_buf_${file.name}`, buffer.slice(0))
                     await this.loadPDF(new Uint8Array(buffer), file.name)
-                    this.app.addToRecentSoloScores(file.name)
-                    this.app.saveToStorage()
                 } catch (pdfErr) {
                     console.error('PDF.js Error:', pdfErr)
                     alert('Failed to construct PDF. The file might be corrupted.')
@@ -87,8 +85,6 @@ export class ViewerManager {
                     await db.set(`recent_buf_${file.name}`, buf.slice(0))
                     await this.loadPDF(new Uint8Array(buf), file.name)
                     await db.set(`recent_handle_${file.name}`, handle)
-                    this.app.addToRecentSoloScores(file.name)
-                    this.app.saveToStorage()
                 } catch (e) {
                     if (e.name !== 'AbortError') console.error('openPdfFilePicker:', e)
                 }
@@ -136,6 +132,12 @@ export class ViewerManager {
         if (filename) this.activeScoreName = filename;
         // 1. Save current score's stamps before switching
         if (this.pdfFingerprint) {
+            this.app.saveToStorage()
+        }
+
+        // 1.5 Add to Recent Scores
+        if (filename) {
+            this.app.addToRecentSoloScores(filename)
             this.app.saveToStorage()
         }
 
