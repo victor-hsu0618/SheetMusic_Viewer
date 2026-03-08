@@ -155,17 +155,15 @@
   text-align: center;
 }
 
-/* Split-View Mode: Only on very large screens (Desktop), push the viewer when sidebar is active.
-   On iPads and smaller, sidebar is an overlay to keep the score as large as possible. */
-@media (min-width: 1400px) {
-  #app.is-sidebar-active .viewer-container {
-    padding-right: var(--sidebar-width);
-  }
+/* Sidebar Overlay Mode: Sidebar now always overlays without shifting the score or DocBar. */
+#app.is-sidebar-active .viewer-container {
+  /* No shift */
+  padding-right: 0;
 }
 
-/* Also shift fixed elements like doc-bar when sidebar is open */
 #app.is-sidebar-active .floating-doc-bar {
-  right: calc(var(--sidebar-width) + 12px);
+  /* No shift - stay in original position under the sidebar or beside it */
+  right: 8px;
 }
 
 /* Premium Slim Scrollbar for Main Viewer */
