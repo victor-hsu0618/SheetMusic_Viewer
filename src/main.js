@@ -215,7 +215,7 @@ class ScoreFlow {
     this.uploadBtn = document.getElementById('upload-btn')
     this.openPdfBtn = document.getElementById('open-pdf-btn')
     this.sidebar = document.getElementById('sidebar')
-    this.sidebarTrigger = document.getElementById('sidebar-trigger')
+    this.btnSidebarToggle = document.getElementById('btn-sidebar-toggle')
     this.layerList = document.getElementById('layer-list')
     this.zoomInBtn = document.getElementById('zoom-in')
     this.zoomOutBtn = document.getElementById('zoom-out')
@@ -319,11 +319,14 @@ class ScoreFlow {
     }
     this.uploader.addEventListener('change', (e) => this.handleUpload(e))
 
-    // Score Detail Listeners - Handled by ScoreDetailManager
-
-    this.sidebarTrigger.addEventListener('click', () => {
-      this.sidebar.classList.add('open')
-    })
+    // Unified Control Hub Listeners
+    if (this.btnSidebarToggle) {
+      this.btnSidebarToggle.addEventListener('click', () => {
+        // Prevent toggle if we were just dragging the bar
+        if (this.docBar && this.docBar._wasDragging) return
+        this.sidebar.classList.toggle('open')
+      })
+    }
 
     // iPad: tap outside sidebar to close it - Removed for "No auto collapse"
 

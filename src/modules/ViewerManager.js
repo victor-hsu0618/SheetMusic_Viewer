@@ -287,7 +287,7 @@ export class ViewerManager {
 
     showMainUI() {
         // Reveal toolbars once a score is loaded
-        ;['sidebar-trigger', 'floating-doc-bar', 'layer-toggle-fab'].forEach(id => {
+        ;['floating-doc-bar', 'layer-toggle-fab'].forEach(id => {
             const el = document.getElementById(id)
             if (el) el.classList.remove('hidden')
         })
@@ -340,7 +340,7 @@ export class ViewerManager {
         if (this.app.sidebar) this.app.sidebar.classList.remove('open')
         if (this.app.activeToolsContainer) this.app.activeToolsContainer.classList.remove('expanded')
 
-            ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
+            ;['floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
                 const el = document.getElementById(id)
                 if (el) el.classList.add('hidden')
             })
