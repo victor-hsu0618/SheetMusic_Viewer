@@ -71,18 +71,6 @@
           </svg>
         </div>
 
-        <button id="btn-doc-bar-toggle" class="zoom-btn-mini toggle-bar-btn" title="Toggle Control Bar (B)">
-          <svg class="icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          <svg class="icon-collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2">
-            <polyline points="13 17 18 12 13 7" />
-            <polyline points="6 17 11 12 6 7" />
-          </svg>
-        </button>
-
         <div class="jump-control-suite">
           <button id="btn-jump-head" class="zoom-btn-mini navigation-btn" title="Jump to Beginning (Home)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -183,6 +171,20 @@
           </svg>
         </button>
 
+        <div class="doc-bar-divider"></div>
+
+        <button id="btn-doc-bar-toggle" class="zoom-btn-mini toggle-bar-btn" title="Toggle Control Bar (B)">
+          <svg class="icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          <svg class="icon-collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <polyline points="13 17 18 12 13 7" />
+            <polyline points="6 17 11 12 6 7" />
+          </svg>
+        </button>
+
       </div>
 
       <!-- Stamp Palette Panel (free-floating, positioned by JS) -->
@@ -250,7 +252,7 @@
           </svg>
           <span>Library</span>
         </button>
-        <button class="sidebar-tab" data-tab="orchestra" title="Score Detail">
+        <button class="sidebar-tab" data-tab="score-detail" title="Score Detail">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
@@ -303,7 +305,7 @@
 
 
         <!-- Tab: Score Detail -->
-        <div class="tab-panel" data-panel="orchestra">
+        <div class="tab-panel" data-panel="score-detail">
           <!-- Block 0: Score Info -->
           <div class="tab-section-label">Score Information</div>
           <div class="score-info-group compact-info mb-15">

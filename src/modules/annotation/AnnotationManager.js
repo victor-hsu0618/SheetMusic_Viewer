@@ -598,4 +598,55 @@ export class AnnotationManager {
         this.updateLayerVisibility()
         this.redrawStamps(page)
     }
+
+    /**
+     * Draw a default anchor at the bottom of a page to ensure continuous flow.
+     */
+    drawPageEndAnchor(page) {
+        const pageWrapper = document.querySelector(`.page-container[data-page="${page}"]`)
+        if (!pageWrapper) return
+        const activeCanvas = pageWrapper.querySelector(`.annotation-layer[data-layer-id="${this.app.activeLayerId}"]`)
+        if (activeCanvas) {
+            const ctx = activeCanvas.getContext('2d')
+            this.renderer.drawStampOnCanvas(ctx, activeCanvas, { type: 'anchor', x: 0.05, y: 1.0, isDefault: true }, '#3b82f6')
+        }
+    }
+
+    /**
+     * Merge anchors that are too close together to prevent redundant jump targets.
+     */
+    cleanupAnchors(page) {
+        const anchors = this.app.stamps.filter(s => s.page === page && s.type === 'anchor')
+        if (anchors.length <= 1) return false
+
+        anchors.sort((a, b) => a.y - b.y)
+
+        let stampsToRemove = []
+        let currentCluster = []
+
+        anchors.forEach(stamp => {
+            if (currentCluster.length === 0) {
+                currentCluster.push(stamp)
+            } else {
+                if (stamp.y - currentCluster[0].y <= 0.333) {
+                    currentCluster.push(stamp)
+                } else {
+                    const winner = currentCluster.reduce((max, cur) => cur.y > max.y ? cur : max)
+                    currentCluster.forEach(s => { if (s !== winner) stampsToRemove.push(s) })
+                    currentCluster = [stamp]
+                }
+            }
+        })
+
+        if (currentCluster.length > 0) {
+            const winner = currentCluster.reduce((max, cur) => cur.y > max.y ? cur : max)
+            currentCluster.forEach(s => { if (s !== winner) stampsToRemove.push(s) })
+        }
+
+        if (stampsToRemove.length > 0) {
+            this.app.stamps = this.app.stamps.filter(s => !stampsToRemove.includes(s))
+            return true
+        }
+        return false
+    }
 }

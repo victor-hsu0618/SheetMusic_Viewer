@@ -100,6 +100,32 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **雲端同步橋接 (Cloud Sync Bridge)**：
   - **檔案系統連結**：支援對接 Google Drive 或本地同步目錄，實現真正的跨裝置、跨樂手協作。
 
+## 軟體架構與模組設計 (Software Architecture & Module Design) - *2026.03.08 更新*
+
+為了確保軟體的高可維護性與擴展性，ScoreFlow 採用了高度解耦的 **「管理器模式 (Manager Pattern)」** 重構。核心邏輯從 `main.js` 抽離，分散至具備單一職責的模組中：
+
+### 1. 核心指揮系統 (Core Controller)
+- **`ScoreFlow` (Main Class)**：作為整個應用的協調者，僅負責模組初始化與高層級的導航邏輯轉發。
+
+### 2. 功能專屬管理器 (Specialized Managers)
+- **`ViewerManager` (閱讀器引擎)**：負責 PDF.js 的協作渲染、縮放 (Zoom)、適配寬高 (Fit-to-Width/Height) 以及檔案開啟邏輯（特別整合了對 iOS 檔案系統的開啟修正）。
+- **`AnnotationManager` (標記指揮官)**：集中化管理所有筆觸、符號與文字註釋，處理座標轉換、物件擦除、小節自動遞增邏輯，以及關鍵的錨點自動管理 (`cleanupAnchors`)。
+- **`InputManager` (交互中心)**：統一掌管所有輸入事件，包含鍵盤快捷鍵系統 (`keydown`)、iPad 專屬手勢 (Swipe Jump)、滑動監聽及多層級滾動同步。
+- **`PersistenceManager` (數據持久化)**：封裝了對 LocalStorage 與 IndexedDB 的存取，實現了註記數據、系統偏好與最近開啟文件的快速緩存。
+- **`LayerManager` (圖層管理器)**：掌管 Performance/Fingering 等專業圖層的視覺開關、顏色分配與數據隔離。
+- **`SidebarManager` (側邊欄與工作區)**：管理側邊欄的 Tab 切換、響應式佈局狀態（Split-View vs Float-View）及 Workspace 的尺寸計算。
+- **`RulerManager` (智慧跳轉與尺規)**：驅動 Smart Jump 邏輯，管理垂直 Jump Ruler 的渲染、下一目標計算 (`computeNextTarget`) 與跳轉歷史紀錄。
+- **`DocBarManager` (控制列)**：負責螢幕上方漂浮的 Document Bar 交互、顯示切換及拖拉邏輯。
+- **`DocActionManager` (文件行為)**：處理專案 (.json) 的匯入匯出、備份還原模式，以及全局的系統對話框 UI。
+- **`CollaborationManager` (協作與風格)**：管理 Interpretation Styles 引擎來源，處理多重詮釋風格的顯隱與流量路由。
+- **`ProfileManager` & `ScoreDetailManager`**：專司用戶身份識別與單一樂譜元數據（作品、作曲家）的細節管理。
+- **`ToolManager`**：動態工具列狀態機，負責追蹤各圖層「最後使用工具」並實現極速切換。
+
+### 3. 架構優勢
+- **單一職責 (Single Responsibility)**：每個 Manager 僅負責一個邏輯領域，極大降低了代碼耦合。
+- **極速開發 (Developer Efficiency)**：新增功能只需在對應管理器擴充，不影響主程序穩定性。
+- **跨平台一致性**：InputManager 將 macOS 快捷鍵與 iOS 觸控手勢完美統一，提供無縫的跨裝置體驗。
+
 ## 技術架構 (Tech Stack)
 
 - **前端框架**：Vite + Vanilla JS

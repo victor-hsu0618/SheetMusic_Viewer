@@ -12,7 +12,87 @@ export class ViewerManager {
     }
 
     init() {
-        // Any init if needed
+        if (this.app.uploader) {
+            this.app.uploader.addEventListener('change', (e) => this.handleUpload(e))
+        }
+    }
+
+    async handleUpload(e) {
+        const file = e.target.files[0]
+        if (!file) return
+
+        console.log(`Starting upload for: ${file.name}, size: ${file.size} bytes`)
+
+        const loaderId = 'ipad-upload-loader'
+        let loader = document.getElementById(loaderId)
+        if (!loader) {
+            loader = document.createElement('div')
+            loader.id = loaderId
+            loader.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:99999;font-family:Outfit,sans-serif;'
+            document.body.appendChild(loader)
+        }
+        loader.innerHTML = `
+      <div style="border:4px solid rgba(255,255,255,0.2);border-top:4px solid #3b82f6;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin-bottom:20px;"></div>
+      <style>@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>
+      <h2 style="font-weight:400;margin:0;text-align:center;padding:0 20px;">Opening ${file.name}...</h2>
+      <p style="opacity:0.7;margin-top:10px;text-align:center;max-width:80%;">Please wait while the file is processed.</p>
+      <p style="opacity:0.4;font-size:14px;text-align:center;max-width:80%;">If this is an iCloud file, your device may need time to download it.</p>
+    `
+        loader.style.display = 'flex'
+
+        const cleanup = () => { if (loader) loader.style.display = 'none' }
+
+        try {
+            const reader = new FileReader()
+            reader.onerror = (err) => {
+                console.error('FileReader error:', err)
+                cleanup()
+                alert('Error reading the file from your device.')
+            }
+
+            reader.onload = async (event) => {
+                const buffer = event.target.result
+                try {
+                    await db.set(`recent_buf_${file.name}`, buffer.slice(0))
+                    await this.loadPDF(new Uint8Array(buffer), file.name)
+                    this.app.addToRecentSoloScores(file.name)
+                    this.app.saveToStorage()
+                } catch (pdfErr) {
+                    console.error('PDF.js Error:', pdfErr)
+                    alert('Failed to construct PDF. The file might be corrupted.')
+                } finally {
+                    cleanup()
+                }
+            }
+            reader.readAsArrayBuffer(file)
+        } catch (err) {
+            console.error('General upload error:', err)
+            cleanup()
+        } finally {
+            e.target.value = ''
+        }
+    }
+
+    async openPdfFilePicker() {
+        if (window.showOpenFilePicker) {
+            try {
+                const [handle] = await window.showOpenFilePicker({
+                    types: [{ description: 'PDF Files', accept: { 'application/pdf': ['.pdf'] } }],
+                    multiple: false,
+                })
+                const file = await handle.getFile()
+                const buf = await file.arrayBuffer()
+                await db.set(`recent_buf_${file.name}`, buf.slice(0))
+                await this.loadPDF(new Uint8Array(buf), file.name)
+                await db.set(`recent_handle_${file.name}`, handle)
+                this.app.addToRecentSoloScores(file.name)
+                this.app.saveToStorage()
+            } catch (e) {
+                if (e.name !== 'AbortError') console.error('openPdfFilePicker:', e)
+            }
+        } else {
+            if (this.app.uploader) this.app.uploader.click()
+        }
     }
 
     async openFileHandle(handle) {
@@ -152,6 +232,15 @@ export class ViewerManager {
         div.style.width = 'fit-content'
         div.innerHTML = `<canvas class="pdf-canvas"></canvas>`
         return div
+    }
+
+    createAnnotationLayers(wrapper, pageNum, width, height) {
+        const canvas = document.createElement('canvas')
+        canvas.className = 'annotation-layer virtual-canvas'
+        canvas.dataset.page = pageNum
+        canvas.width = width
+        canvas.height = height
+        wrapper.appendChild(canvas)
     }
 
     async changeZoom(delta) {

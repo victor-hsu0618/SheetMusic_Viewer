@@ -21,6 +21,62 @@ export class DocBarManager {
             this.app.docBarToggleBtn.addEventListener('click', () => this.toggleDocBar())
         }
 
+        // Navigation (Jump) Actions
+        const btnJumpHead = document.getElementById('btn-jump-head')
+        if (btnJumpHead) btnJumpHead.onclick = () => this.app.goToHead()
+
+        const btnJumpEnd = document.getElementById('btn-jump-end')
+        if (btnJumpEnd) btnJumpEnd.onclick = () => this.app.goToEnd()
+
+        const btnRulerToggle = document.getElementById('btn-ruler-toggle')
+        if (btnRulerToggle) btnRulerToggle.addEventListener('click', () => this.app.toggleRuler())
+
+        const btnFullscreen = document.getElementById('btn-fullscreen')
+        if (btnFullscreen) btnFullscreen.addEventListener('click', () => this.app.toggleFullscreen())
+
+        // Quick Mode Actions
+        const btnModeHand = document.getElementById('btn-mode-hand')
+        if (btnModeHand) {
+            btnModeHand.onclick = () => {
+                this.app.activeStampType = 'view'
+                this.app.updateActiveTools()
+            }
+        }
+
+        const btnModeEraser = document.getElementById('btn-mode-eraser')
+        if (btnModeEraser) {
+            btnModeEraser.onclick = () => {
+                this.app.activeStampType = this.app.activeStampType === 'eraser' ? 'view' : 'eraser'
+                this.app.updateActiveTools()
+            }
+        }
+
+        const btnEraseAll = document.getElementById('btn-erase-all')
+        if (btnEraseAll) {
+            btnEraseAll.onclick = () => this.app.annotationManager.showEraseAllModal()
+        }
+
+        const closeEraseAll = document.getElementById('close-erase-all-modal')
+        if (closeEraseAll) closeEraseAll.addEventListener('click', () => this.app.annotationManager.closeEraseAllModal())
+
+        const cancelEraseAll = document.getElementById('erase-all-cancel')
+        if (cancelEraseAll) cancelEraseAll.addEventListener('click', () => this.app.annotationManager.closeEraseAllModal())
+
+        const btnModeAnchor = document.getElementById('btn-mode-anchor')
+        if (btnModeAnchor) {
+            btnModeAnchor.onclick = () => {
+                this.app.activeStampType = this.app.activeStampType === 'anchor' ? 'view' : 'anchor'
+                this.app.updateActiveTools()
+            }
+        }
+
+        const btnStampPalette = document.getElementById('btn-stamp-palette')
+        if (btnStampPalette) {
+            btnStampPalette.addEventListener('click', () => {
+                this.app.toolManager.toggleStampPalette()
+            })
+        }
+
         // Layer Shelf Toggles
         if (this.app.layerToggleBtn) {
             this.app.layerToggleBtn.addEventListener('click', () => {

@@ -162,7 +162,6 @@ export class RulerManager {
         if (this.jumpHistory.length > 50) this.jumpHistory.shift()
 
         const baseline = this.jumpOffsetPx
-        // We need the absolute Y of the anchor again
         const pageElem = document.querySelector(`.page-container[data-page="${this.nextTargetAnchor.page}"]`)
         if (!pageElem) return
         const canvas = pageElem.querySelector('.pdf-canvas')
@@ -175,6 +174,17 @@ export class RulerManager {
         if (beam) {
             beam.classList.add('active')
             setTimeout(() => beam.classList.remove('active'), 800)
+        }
+    }
+
+    jump(delta) {
+        if (delta > 0) {
+            this.scrollToNextTarget()
+        } else {
+            if (this.jumpHistory.length > 0) {
+                const last = this.jumpHistory.pop()
+                this.app.viewer.scrollTo({ top: last, behavior: 'smooth' })
+            }
         }
     }
 
