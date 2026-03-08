@@ -153,7 +153,6 @@ export class CommunityManager {
 
             alert(`🚀 Successfully saved to ${target === 'personal' ? 'Private Backup' : 'Orchestra Workspace'}!`)
             await this.renderCommunityHub()
-            this.app.renderLibrary()
         } catch (err) {
             console.error('Publishing error:', err)
             alert(`❌ Publishing failed: ${err.message}`)

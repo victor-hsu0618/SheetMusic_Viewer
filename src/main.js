@@ -33,8 +33,7 @@ class ScoreFlow {
     this.scale = 1.5
     this.toolbarWidth = 600 // High-Performance Default Width
     this.isSidebarLocked = false
-    this.pdfFingerprint = null // Professional Score ID
-    this.lastUsedToolPerCategory = {}
+    this.activeScoreName = null
     this._lastStampType = null // Remember the last used stamp for restoration
     this.sources = [
       { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
@@ -60,9 +59,7 @@ class ScoreFlow {
     this.updateZoomDisplay()
     this.updateJumpLinePosition()
     this.renderSourceUI()
-    this.communityManager.renderCommunityHub()
     this.communityManager.renderActiveProfile()
-    this.renderLibrary()
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
     this.checkInitialView()
@@ -149,8 +146,6 @@ class ScoreFlow {
     this.welcomeRecentList = document.getElementById('welcome-recent-list')
     this.closeFileBtn = document.getElementById('close-file-btn')
 
-    this.libraryList = document.getElementById('library-scores-list')
-    this.librarySearchInput = document.getElementById('library-search')
     this.resetLayersBtn = document.getElementById('reset-layers-btn')
     this.resetSystemBtn = document.getElementById('reset-system-btn')
 
@@ -165,8 +160,6 @@ class ScoreFlow {
     this.btnModeHand = document.getElementById('btn-mode-hand')
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
 
-    this.libraryFiles = []
-    this.libraryFolderHandle = null
     this.activeScoreName = null
 
     this.jumpOffsetPx = 1 * 37.8
@@ -284,12 +277,6 @@ class ScoreFlow {
       })
     }
 
-    if (this.selectLibraryBtn) {
-      this.selectLibraryBtn.addEventListener('click', () => this.selectLibraryFolder())
-    }
-    if (this.librarySearchInput) {
-      this.librarySearchInput.addEventListener('input', () => this.renderLibrary())
-    }
 
     // Welcome Screen Hooks
     if (this.welcomeOpenFileBtn) {
@@ -302,9 +289,6 @@ class ScoreFlow {
           this.uploader.click()  // iOS: direct synchronous click
         }
       })
-    }
-    if (this.welcomeOpenProjectBtn) {
-      this.welcomeOpenProjectBtn.addEventListener('click', () => this.selectLibraryFolder())
     }
     if (this.projectBackBtn) {
     }
@@ -728,7 +712,6 @@ class ScoreFlow {
           this.activeScoreName = file.name
           this.addToRecentSoloScores(file.name)
           this.saveToStorage()
-          this.renderLibrary()
         } catch (pdfErr) {
           console.error('PDF.js Error:', pdfErr)
           alert('Failed to construct PDF. The file might be corrupted.')
@@ -811,32 +794,6 @@ class ScoreFlow {
     this.updateRulerClip()
   }
 
-  // Safe file opener: handles File System Access API permission re-requests
-  async openFileHandle(fileHandle) {
-    // Check current permission state
-    try {
-      let permission = await fileHandle.queryPermission({ mode: 'read' })
-      if (permission !== 'granted') {
-        permission = await fileHandle.requestPermission({ mode: 'read' })
-      }
-      if (permission !== 'granted') {
-        alert(`Access denied to "${fileHandle.name}".\n\nPlease re-select your library folder to restore access.`)
-        return null
-      }
-    } catch (e) {
-      // queryPermission/requestPermission not supported in some environments — try anyway
-      console.warn('Permission API not available, trying direct read:', e)
-    }
-
-    try {
-      return await fileHandle.getFile()
-    } catch (err) {
-      console.error('getFile() failed:', err)
-      alert(`Could not read "${fileHandle.name}".\n\nThis can happen if the library folder was moved or the browser session expired. Please use "Select Library Folder" to re-link.`)
-      return null
-    }
-  }
-
   async openPdfFilePicker() {
     if (window.showOpenFilePicker) {
       try {
@@ -851,7 +808,6 @@ class ScoreFlow {
         await db.set(`recent_handle_${file.name}`, handle)
         this.addToRecentSoloScores(file.name)
         this.saveToStorage()
-        this.renderLibrary()
       } catch (e) {
         if (e.name !== 'AbortError') console.error('openPdfFilePicker:', e)
       }
@@ -2542,25 +2498,15 @@ class ScoreFlow {
           <div class="recent-score-date">Last Opened: ${score.date}</div>
         </div>
       `
-      card.onclick = () => {
-        // Since we don't have the file handle, we tell them it's marked as active
-        // but if it's not in the current session library, we invite them to re-pick.
-        // For now, if it's already in the libraryFiles (project), we can use it!
-        const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
-        if (libraryMatch) {
-          libraryMatch.getFile().then(file => file.arrayBuffer()).then(buf => {
-            this.activeScoreName = score.name
-            this.renderPDF(buf)
-            this.toggleQuickLoadModal(false)
-
-            if (!this.isSidebarLocked) {
-              this.sidebar.classList.remove('open')
-              this.updateLayoutState()
-            }
-          })
-        } else {
-          alert(`Selected: ${score.name}\n\nNote: For solo scores not in your project folder, please click "+ Open New Solo PDF" to locate the file.`)
+      card.onclick = async () => {
+        const cachedBuf = await db.get(`recent_buf_${score.name}`)
+        if (cachedBuf) {
+          this.activeScoreName = score.name
+          await this.loadPDF(new Uint8Array(cachedBuf))
+          this.toggleQuickLoadModal(false)
+          return
         }
+        alert(`Cannot reopen "${score.name}" directly.\n\nPlease use "Open PDF..." to locate the file again.`)
       }
       this.recentScoresList.appendChild(card)
     })
@@ -2583,17 +2529,10 @@ class ScoreFlow {
         <span class="sidebar-recent-date">${score.date}</span>
       `
       item.onclick = async () => {
-        const storedHandle = await db.get(`recent_handle_${score.name}`)
-        if (storedHandle) {
-          const file = await this.openFileHandle(storedHandle)
-          if (file) { await this.loadPDF(new Uint8Array(await file.arrayBuffer())); this.activeScoreName = score.name; return }
-        }
         const cachedBuf = await db.get(`recent_buf_${score.name}`)
-        if (cachedBuf) { this.activeScoreName = score.name; await this.loadPDF(new Uint8Array(cachedBuf)); return }
-        const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
-        if (libraryMatch) {
-          const file = await this.openFileHandle(libraryMatch)
-          if (file) { this.activeScoreName = score.name; await this.loadPDF(new Uint8Array(await file.arrayBuffer())) }
+        if (cachedBuf) {
+          this.activeScoreName = score.name
+          await this.loadPDF(new Uint8Array(cachedBuf))
           return
         }
         alert(`Cannot reopen "${score.name}".\n\nUse "Open PDF..." to locate the file again.`)
@@ -3566,9 +3505,6 @@ class ScoreFlow {
 
 
   async closeFile() {
-    this.pdf = null
-    this.libraryFiles = []
-    this.libraryFolderHandle = null
     this.activeScoreName = null
 
     if (this.container) this.container.querySelectorAll('.page-container').forEach(el => el.remove())
@@ -3677,158 +3613,6 @@ class ScoreFlow {
 
 
 
-  async selectLibraryFolder() {
-    try {
-      this.libraryFolderHandle = await window.showDirectoryPicker()
-      await db.set('last_library_handle', this.libraryFolderHandle)
-      this.libraryFiles = []
-      await this.scanLibrary(this.libraryFolderHandle)
-      this.renderLibrary()
-
-      // Auto-open last used score if exists
-      const lastScore = localStorage.getItem('scoreflow_last_opened_score')
-      if (lastScore) {
-        const found = this.libraryFiles.find(f => f.name === lastScore)
-        if (found) {
-          const file = await found.getFile()
-          const arrayBuffer = await file.arrayBuffer()
-          await this.loadPDF(new Uint8Array(arrayBuffer))
-          this.activeScoreName = found.name
-          this.renderLibrary()
-          this.hideWelcome()
-        }
-      }
-    } catch (err) {
-      console.warn('Library selection cancelled:', err)
-    }
-  }
-
-
-
-  async scanLibrary(directoryHandle) {
-    for await (const entry of directoryHandle.values()) {
-      if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
-        this.libraryFiles.push(entry)
-      } else if (entry.kind === 'directory') {
-        // Flat list approach as requested, but we could recursive if needed
-        await this.scanLibrary(entry)
-      }
-    }
-  }
-
-  renderLibrary() {
-    if (!this.libraryList) return
-    this.libraryList.innerHTML = ''
-
-    const query = this.librarySearchInput ? this.librarySearchInput.value.toLowerCase() : ''
-    const filteredFiles = this.libraryFiles.filter(f => f.name.toLowerCase().includes(query))
-
-    if (this.libraryFiles.length === 0) {
-      this.libraryList.innerHTML = ''
-      return
-    }
-
-    if (filteredFiles.length === 0 && query) {
-      this.libraryList.innerHTML = '<div class="empty-state">No matching scores.</div>'
-      return
-    }
-
-    filteredFiles.forEach(fileHandle => {
-      const isActive = this.activeScoreName === fileHandle.name
-      const displayName = fileHandle.name.replace(/\.pdf$/i, '')
-      const fingerprint = this.scoreFingerprintMap[fileHandle.name]
-
-      // Check for annotation presence across 3 storage tiers:
-      const hasLocal = fingerprint && localStorage.getItem(`scoreflow_stamps_${fingerprint}`)
-
-      // We show P and O badges if the folders are linked AND we have recorded a publication for this fingerprint.
-      const hasPersonal = this.communityManager.personalSyncFolder && fingerprint && localStorage.getItem(`scoreflow_published_p_${fingerprint}`)
-      const hasOrchestra = this.communityManager.orchestraSyncFolder && fingerprint && localStorage.getItem(`scoreflow_published_o_${fingerprint}`)
-
-      const item = document.createElement('div')
-      item.className = `score-item ${isActive ? 'active' : ''}`
-      item.innerHTML = `
-        <div class="score-item-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-        </div>
-        <div class="score-name">${displayName}</div>
-        <div class="score-badges">
-          ${hasLocal ? '<span class="score-badge-mini local" title="Local Annotations (Current)">L</span>' : ''}
-          ${hasPersonal ? '<span class="score-badge-mini personal" title="Private Cloud Workspace">P</span>' : ''}
-          ${hasOrchestra ? '<span class="score-badge-mini orchestra" title="Orchestra Shared Workspace">O</span>' : ''}
-        </div>
-        <div class="score-actions">
-          <button class="btn-score-action btn-clear-score" title="Clear All Annotations">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
-          </button>
-        </div>
-        ${isActive ? '<div class="active-indicator-dot"></div>' : ''}
-      `
-
-      const openBtn = item.querySelector('.score-name')
-      item.onclick = async (e) => {
-        if (e.target.closest('.score-actions')) return
-        try {
-          const file = await this.openFileHandle(fileHandle)
-          if (!file) return
-          const arrayBuffer = await file.arrayBuffer()
-          await this.loadPDF(new Uint8Array(arrayBuffer))
-          this.activeScoreName = fileHandle.name
-          this.saveToStorage()
-          this.renderLibrary()
-          if (this.projectRepertoireView && !this.projectRepertoireView.classList.contains('hidden')) {
-            this.renderProjectRepertoire()
-          }
-          if (!this.isSidebarLocked) {
-            this.sidebar.classList.remove('open')
-            this.updateLayoutState()
-          }
-        } catch (err) {
-          console.error('Failed to open score:', fileHandle.name, err)
-        }
-      }
-
-      item.querySelector('.btn-clear-score').onclick = (e) => {
-        e.stopPropagation()
-        this.clearScoreAnnotations(fileHandle.name)
-      }
-
-      this.libraryList.appendChild(item)
-    })
-  }
-
-  async clearScoreAnnotations(scoreName) {
-    const fingerprint = this.scoreFingerprintMap[scoreName]
-    if (!fingerprint) {
-      this.showDialog({ title: 'No Data', message: 'No annotations found for this score.', icon: '❓' })
-      return
-    }
-
-    const confirmed = await this.systemDialog ? await this.showDialog({
-      title: 'Clear Score?',
-      message: `🛑 PERMANENT ACTION: This will delete ALL local markings for "${scoreName.replace(/\.pdf$/i, '')}". Are you sure?`,
-      icon: '🗑️',
-      type: 'confirm',
-      confirmText: 'Delete Forever'
-    }) : confirm(`Clear all markings for ${scoreName}?`)
-
-    if (!confirmed) return
-
-    localStorage.removeItem(`scoreflow_stamps_${fingerprint}`)
-
-    if (this.activeScoreName === scoreName) {
-      this.stamps = []
-      if (this.pdf) await this.renderPDF()
-    }
-
-    this.renderLibrary()
-    this.showDialog({ title: 'Cleared', message: 'All local annotations removed.', icon: '✅' })
-  }
 
 
   showDialog({ title, message, icon = '⚠️', type = 'info', confirmText = 'Confirm', cancelText = 'Cancel', actions = null }) {
