@@ -52,7 +52,6 @@ class ScoreFlow {
     this.activeCategory = 'Edit'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
     this.toolbarWidth = 600 // High-Performance Default Width
-    this.isSidebarLocked = false
     this._lastStampType = null // Remember the last used stamp for restoration
     this.sources = [
       { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
@@ -133,7 +132,6 @@ class ScoreFlow {
     this.btnFitWidth = document.getElementById('btn-fit-width')
     this.btnFitHeight = document.getElementById('btn-fit-height')
     this.clearStampsBtn = document.getElementById('clear-stamps-btn')
-    this.lockSidebarBtn = document.getElementById('lock-sidebar')
     this.shortcutsModal = document.getElementById('shortcuts-modal')
     this.closeShortcutsBtn = document.getElementById('close-shortcuts')
     this.closeSidebarBtn = document.getElementById('close-sidebar')
@@ -240,13 +238,6 @@ class ScoreFlow {
 
     // iPad: tap outside sidebar to close it - Removed for "No auto collapse"
 
-    if (this.lockSidebarBtn) {
-      this.lockSidebarBtn.addEventListener('click', () => {
-        this.isSidebarLocked = !this.isSidebarLocked
-        this.lockSidebarBtn.classList.toggle('locked', this.isSidebarLocked)
-        this.updateLayoutState()
-      })
-    }
 
     // Exchange Listeners (Score-Specific)
     if (this.exportBtn) this.exportBtn.addEventListener('click', () => this.exportProject())
@@ -323,9 +314,6 @@ class ScoreFlow {
     if (this.closeSidebarBtn) {
       this.closeSidebarBtn.addEventListener('click', () => {
         this.sidebar.classList.remove('open')
-        this.isSidebarLocked = false
-        if (this.lockSidebarBtn) this.lockSidebarBtn.classList.remove('locked')
-        this.updateLayoutState()
       })
     }
 
@@ -3546,12 +3534,6 @@ class ScoreFlow {
     })
   }
 
-  updateLayoutState() {
-    const app = document.getElementById('app')
-    if (!app) return
-    const isOpen = this.sidebar.classList.contains('open')
-    app.classList.toggle('is-sidebar-active', isOpen)
-  }
   // --- NAVIGATION ACTIONS ---
   goToHead() {
     this.jumpHistory = []
