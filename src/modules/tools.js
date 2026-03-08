@@ -37,9 +37,9 @@ export class ToolManager {
     }
 
     toggleStampPalette(x = null, y = null) {
-        // Debounce for iPad
+        // Debounce to prevent multiple fires from ghost clicks (iPad)
         const now = Date.now()
-        if (this._lastPaletteToggleTime && (now - this._lastPaletteToggleTime < 350)) {
+        if (this._lastPaletteToggleTime && (now - this._lastPaletteToggleTime < 250)) {
             return
         }
         this._lastPaletteToggleTime = now
@@ -51,7 +51,7 @@ export class ToolManager {
 
         if (isExpanding) {
             el.classList.add('expanded')
-            
+
             // Smart Positioning if coordinates provided
             if (x !== null && y !== null) {
                 // Ensure position is materialized for absolute/fixed positioning
@@ -63,11 +63,11 @@ export class ToolManager {
                 const paletteWidth = el.offsetWidth || 240
                 const paletteHeight = el.offsetHeight || 180
                 const margin = 20
-                
+
                 // Horizontal Strategy:
                 // Try to appear to the RIGHT of the finger (gap of 40px)
                 let left = x + 40
-                
+
                 // Absolute right safety: ensure it never overflows the right edge
                 if (left + paletteWidth > window.innerWidth - margin) {
                     // Not enough room on the right, push it back to the left
@@ -76,13 +76,13 @@ export class ToolManager {
 
                 // Absolute left safety
                 left = Math.max(margin, left)
-                
+
                 // Vertical Strategy:
                 // If tap is in the bottom 1/4 of the screen, show ABOVE finger.
                 // Otherwise (top 3/4), show BELOW finger for better visibility.
                 const isBottomRegion = y > (window.innerHeight * 0.75)
-                const gapY = 60 
-                
+                const gapY = 60
+
                 let top
                 if (isBottomRegion) {
                     // Show ABOVE finger
@@ -91,7 +91,7 @@ export class ToolManager {
                     // Show BELOW finger (Default)
                     top = y + gapY
                 }
-                
+
                 // Absolute bottom safety: ensure it never overflows the bottom edge
                 if (top + paletteHeight > window.innerHeight - margin) {
                     top = window.innerHeight - paletteHeight - margin
@@ -102,6 +102,13 @@ export class ToolManager {
 
                 el.style.left = `${left}px`
                 el.style.top = `${top}px`
+            } else {
+                // Reset to default CSS position if opened via button or no coordinates
+                el.style.left = ''
+                el.style.top = ''
+                el.style.bottom = ''
+                el.style.transform = ''
+                el._positionMaterialized = false
             }
         } else {
             el.classList.remove('expanded')
@@ -158,7 +165,7 @@ export class ToolManager {
     initDraggable() {
         let isDragging = false
         let startMouseX, startMouseY, startLeft, startTop
-        let touchStartY = 0
+        let touchStartY = 0, touchStartX = 0, touchStartTime = 0
         const el = this.app.activeToolsContainer
         if (!el) return
 
@@ -186,7 +193,10 @@ export class ToolManager {
             if (!isDragging) return
             const dx = clientX - startMouseX
             const dy = clientY - startMouseY
-            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) this._stampDragMoved = true
+            // Increase threshold to 8px for iPad to distinguish from a tap
+            if (!this._stampDragMoved && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+                this._stampDragMoved = true
+            }
             el.style.left = (startLeft + dx) + 'px'
             el.style.top = (startTop + dy) + 'px'
         }
@@ -201,11 +211,14 @@ export class ToolManager {
 
         el.addEventListener("touchstart", (e) => {
             e.stopPropagation()
+
+            touchStartY = e.touches[0].clientY
+            touchStartX = e.touches[0].clientX
+            touchStartTime = Date.now()
+
             if (e.target.closest(".drag-handle")) {
                 dragStart(e.touches[0].clientX, e.touches[0].clientY, e.target)
                 if (isDragging) e.preventDefault()
-            } else {
-                touchStartY = e.touches[0].clientY
             }
         }, { passive: false })
 
@@ -221,12 +234,18 @@ export class ToolManager {
         }, { passive: false })
 
         document.addEventListener("touchend", (e) => {
-            if (isDragging) {
-                dragEnd()
-            } else if (el.contains(e.target)) {
-                // Only handle the "swipe down to close" gesture if it started on the palette itself
-                const deltaY = e.changedTouches[0].clientY - touchStartY
-                if (deltaY > 150) {
+            const wasJustDragging = isDragging
+            if (isDragging) dragEnd()
+
+            if (el.contains(e.target) || wasJustDragging) {
+                const dy = e.changedTouches[0].clientY - touchStartY
+                const dt = Date.now() - touchStartTime
+
+                // Fast Flick or Large Swipe Downward
+                const isFastFlick = dt < 300 && dy > 60
+                const isLargeSwipe = dy > 120
+
+                if (isFastFlick || isLargeSwipe) {
                     this.toggleStampPalette()
                 }
             }
@@ -274,6 +293,7 @@ export class ToolManager {
         handle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="5" r="1" fill="currentColor"/><circle cx="15" cy="5" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="19" r="1" fill="currentColor"/><circle cx="15" cy="19" r="1" fill="currentColor"/></svg>`
         handle.addEventListener('click', (e) => {
             e.stopPropagation()
+            // If we actually moved the palette, don't trigger the toggle (close)
             if (this._stampDragMoved) {
                 this._stampDragMoved = false
                 return
@@ -281,10 +301,20 @@ export class ToolManager {
             this.toggleStampPalette()
         })
 
+        // Handle touch events explicitly for the toggle if click is blocked
+        handle.addEventListener('touchend', (e) => {
+            if (this._stampDragMoved) return // Drag handled it
+
+            // We only trigger toggle on touchend if no drag occurred
+            e.preventDefault()
+            e.stopPropagation()
+            this.toggleStampPalette()
+        }, { passive: false })
+
         // Recent Tools Ribbon (Next to handle)
         const recentRibbon = document.createElement("div")
         recentRibbon.className = "recent-tools-ribbon"
-        
+
         // 1. Permanently Pinned SELECT tool
         const selectTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === 'select')
         if (selectTool) {
@@ -435,7 +465,7 @@ export class ToolManager {
             // SPECIAL HANDLING: TEXT CATEGORY
             if (catName === 'Text') {
                 row.classList.add('text-cloud-row')
-                
+
                 // 1. Render Default Tools (f, p, rit, etc.)
                 group.tools.forEach(tool => {
                     const pill = document.createElement("button")
@@ -456,7 +486,7 @@ export class ToolManager {
                     const isSelected = this.app.activeStampType === `custom-text-${idx}`
                     pill.className = `text-tool-pill user-custom ${isSelected ? "active" : ""}`
                     pill.innerHTML = `${text}<span class="delete-text">&times;</span>`
-                    
+
                     pill.onclick = (e) => {
                         e.stopPropagation()
                         if (e.target.classList.contains('delete-text')) {
@@ -482,27 +512,27 @@ export class ToolManager {
                 `
                 const input = addWrapper.querySelector('input')
                 const btn = addWrapper.querySelector('button')
-                
+
                 const commit = () => {
                     const val = input.value.trim()
                     if (val) {
                         const newIdx = this.app.userTextLibrary.length
                         this.app.userTextLibrary.push(val)
                         this.app.saveToStorage()
-                        
+
                         // Auto-select the new term
                         this.app.activeStampType = `custom-text-${newIdx}`
                         this.app._activeCustomText = val
-                        
+
                         input.value = ''
                         this.updateActiveTools()
                     }
                 }
-                
+
                 btn.onclick = (e) => { e.stopPropagation(); commit() }
                 input.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); commit() } }
                 input.onclick = (e) => e.stopPropagation()
-                
+
                 row.appendChild(addWrapper)
             } else {
                 // NORMAL TOOL GRID RENDERING
@@ -522,7 +552,7 @@ export class ToolManager {
                         }
                         this.app.activeStampType = tool.id
                         this.app.lastUsedToolPerCategory[catName] = tool.id
-                        
+
                         // Update Recent Tools History
                         if (tool.id !== 'view' && tool.id !== 'select') {
                             this.app.recentTools = [tool.id, ...this.app.recentTools.filter(id => id !== tool.id)].slice(0, 5)
