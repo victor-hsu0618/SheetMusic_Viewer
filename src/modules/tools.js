@@ -36,7 +36,7 @@ export class ToolManager {
         return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="currentColor" stroke-width="1.3" fill="none">${tool.icon}</svg>`
     }
 
-    toggleStampPalette() {
+    toggleStampPalette(x = null, y = null) {
         // Debounce for iPad
         const now = Date.now()
         if (this._lastPaletteToggleTime && (now - this._lastPaletteToggleTime < 350)) {
@@ -51,6 +51,58 @@ export class ToolManager {
 
         if (isExpanding) {
             el.classList.add('expanded')
+            
+            // Smart Positioning if coordinates provided
+            if (x !== null && y !== null) {
+                // Ensure position is materialized for absolute/fixed positioning
+                el._positionMaterialized = true
+                el.style.bottom = 'auto'
+                el.style.transform = 'none'
+
+                // Estimate dimensions (approximate if not yet rendered)
+                const paletteWidth = el.offsetWidth || 340
+                const paletteHeight = el.offsetHeight || 250
+                const margin = 20
+                
+                // Horizontal Strategy:
+                // Try to appear to the RIGHT of the finger (gap of 40px)
+                let left = x + 40
+                
+                // Absolute right safety: ensure it never overflows the right edge
+                if (left + paletteWidth > window.innerWidth - margin) {
+                    // Not enough room on the right, push it back to the left
+                    left = window.innerWidth - paletteWidth - margin
+                }
+
+                // Absolute left safety
+                left = Math.max(margin, left)
+                
+                // Vertical Strategy:
+                // If tap is in the bottom 1/4 of the screen, show ABOVE finger.
+                // Otherwise (top 3/4), show BELOW finger for better visibility.
+                const isBottomRegion = y > (window.innerHeight * 0.75)
+                const gapY = 60 
+                
+                let top
+                if (isBottomRegion) {
+                    // Show ABOVE finger
+                    top = y - paletteHeight - gapY
+                } else {
+                    // Show BELOW finger (Default)
+                    top = y + gapY
+                }
+                
+                // Absolute bottom safety: ensure it never overflows the bottom edge
+                if (top + paletteHeight > window.innerHeight - margin) {
+                    top = window.innerHeight - paletteHeight - margin
+                }
+
+                // Absolute top safety: ensure it never goes above the screen
+                top = Math.max(margin, top)
+
+                el.style.left = `${left}px`
+                el.style.top = `${top}px`
+            }
         } else {
             el.classList.remove('expanded')
             // Reset to view mode on close

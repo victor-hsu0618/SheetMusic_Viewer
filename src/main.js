@@ -149,7 +149,7 @@ class ScoreFlow {
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
 
-    console.log('[ScoreFlow] Version 2.1.0 - Full UI Shielding Mode')
+    console.log('[ScoreFlow] Version 2.1.4 - Side-Contextual Palette Mode')
 
     this.viewerManager.checkInitialView()
     this.toolManager.preloadSvgs()
@@ -168,7 +168,7 @@ class ScoreFlow {
   async _preloadSvgs() { return this.toolManager.preloadSvgs() }
   getIcon(...args) { return this.toolManager.getIcon(...args) }
   updateActiveTools(...args) { return this.toolManager.updateActiveTools(...args) }
-  toggleStampPalette() { return this.toolManager.toggleStampPalette() }
+  toggleStampPalette(x = null, y = null) { return this.toolManager.toggleStampPalette(x, y) }
   initToolbarResizable() { return this.toolManager.initToolbarResizable() }
   initDraggable() { return this.toolManager.initDraggable() }
 

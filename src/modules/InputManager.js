@@ -53,7 +53,7 @@ export class InputManager {
             } else if (e.touches.length === 2) {
                 const now = Date.now()
                 if (now - lastTwoFingerTapTime < 350) {
-                    this.app.toolManager.toggleStampPalette()
+                    this.app.toolManager.toggleStampPalette(e.touches[0].clientX, e.touches[0].clientY)
                     lastTwoFingerTapTime = 0
                 } else {
                     lastTwoFingerTapTime = now
@@ -75,7 +75,8 @@ export class InputManager {
                 const doubleTapDiff = now - lastSingleTapTime
                 if (doubleTapDiff < 300 && doubleTapDiff > 0 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
                     e.preventDefault()
-                    this.app.toolManager.toggleStampPalette()
+                    // Pass coordinates for smart positioning
+                    this.app.toolManager.toggleStampPalette(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
                     lastSingleTapTime = 0
                     return
                 }
@@ -106,7 +107,7 @@ export class InputManager {
         // Desktop fallback
         viewer.addEventListener('dblclick', (e) => {
             if (this.isEventInUI(e)) return
-            this.app.toolManager.toggleStampPalette()
+            this.app.toolManager.toggleStampPalette(e.clientX, e.clientY)
         })
     }
 
