@@ -57,6 +57,8 @@ class ScoreFlow {
       { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
     ]
     this.activeSourceId = 'self'
+    this.layers = JSON.parse(JSON.stringify(INITIAL_LAYERS))
+    this.stamps = []
 
     this._svgCache = {}
     this.initToolsets()
@@ -72,9 +74,10 @@ class ScoreFlow {
     this.initDraggable()
     this.initToolbarResizable()
     this.initSidebarResizable()
-    this.renderLayerUI()
-    this.updateActiveTools()
     this.loadFromStorage()
+    this.renderLayerUI()
+    this.renderSourceUI()
+    this.updateActiveTools()
     this.communityManager.renderActiveProfile()
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
@@ -2892,7 +2895,12 @@ class ScoreFlow {
 
     if (recentSoloData) this.recentSoloScores = JSON.parse(recentSoloData)
 
-    if (sourcesData) this.sources = JSON.parse(sourcesData)
+    if (sourcesData) {
+      this.sources = JSON.parse(sourcesData)
+      if (this.sources.length === 0) {
+        this.sources = [{ id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }]
+      }
+    }
     if (activeSourceData) this.activeSourceId = activeSourceData
     if (fingerprintData) this.pdfFingerprint = fingerprintData
     if (profilesData) this.communityManager.profiles = JSON.parse(profilesData)
@@ -3552,6 +3560,34 @@ class ScoreFlow {
     } else {
       // Fallback if no anchor exists
       this.goToHead()
+    }
+  }
+
+  async resetToSystemDefault() {
+    const confirmReset = await this.showDialog({
+      title: 'System Reset',
+      message: 'This will permanently delete all scores, annotations, and profiles. Are you absolutely sure?',
+      type: 'confirm',
+      icon: '⚠️'
+    })
+
+    if (confirmReset) {
+      // 1. Clear LocalStorage
+      localStorage.clear()
+
+      // 2. Clear IndexedDB
+      try {
+        const keys = await db.keys()
+        for (const key of keys) {
+          await db.del(key)
+        }
+      } catch (err) {
+        console.warn('[ScoreFlow] IndexedDB clear failed', err)
+        if (window.indexedDB) window.indexedDB.deleteDatabase('scoreflow-db')
+      }
+
+      // 3. Reload
+      window.location.reload()
     }
   }
 }

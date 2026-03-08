@@ -444,6 +444,11 @@
   transform: translateY(0);
 }
 
+/* Offset left when sidebar is open to prevent overlapping */
+.is-sidebar-active .layer-shelf {
+  right: calc(var(--sidebar-width) + 16px) !important;
+}
+
 /* Invisible bridge for hover transition */
 .layer-control-suite::after {
   content: '';

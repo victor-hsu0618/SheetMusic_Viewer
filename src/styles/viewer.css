@@ -163,6 +163,11 @@
   }
 }
 
+/* Also shift fixed elements like doc-bar when sidebar is open */
+#app.is-sidebar-active .floating-doc-bar {
+  right: calc(var(--sidebar-width) + 12px);
+}
+
 /* Premium Slim Scrollbar for Main Viewer */
 .viewer-container::-webkit-scrollbar {
   width: 6px;
