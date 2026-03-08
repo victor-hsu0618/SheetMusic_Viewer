@@ -39,6 +39,7 @@ class ScoreFlow {
   hideWelcome() { return this.viewerManager.hideWelcome() }
   async checkInitialView() { return this.viewerManager.checkInitialView() }
   async closeFile() { return this.viewerManager.closeFile() }
+  async openFileHandle(handle) { return this.viewerManager.openFileHandle(handle) }
 
   constructor() {
     this.recycleItems = []
@@ -738,6 +739,8 @@ class ScoreFlow {
         })
         const file = await handle.getFile()
         const buf = await file.arrayBuffer()
+        // Cache the buffer too for more reliable reopen without permission prompts
+        await db.set(`recent_buf_${file.name}`, buf.slice(0))
         await this.loadPDF(new Uint8Array(buf), file.name)
         await db.set(`recent_handle_${file.name}`, handle)
         this.addToRecentSoloScores(file.name)
@@ -2326,6 +2329,50 @@ class ScoreFlow {
     this.renderWelcomeRecentScores()
   }
 
+  async openRecentScore(name) {
+    try {
+      // 1. Try stored FileSystemFileHandle (from showOpenFilePicker)
+      const storedHandle = await db.get(`recent_handle_${name}`)
+      if (storedHandle) {
+        const file = await this.openFileHandle(storedHandle)
+        if (file) {
+          const buf = await file.arrayBuffer()
+          await this.loadPDF(new Uint8Array(buf), name)
+          this.toggleQuickLoadModal(false)
+          return true
+        }
+      }
+
+      // 2. Try cached ArrayBuffer (fallback for all)
+      const cachedBuf = await db.get(`recent_buf_${name}`)
+      if (cachedBuf) {
+        await this.loadPDF(new Uint8Array(cachedBuf), name)
+        this.toggleQuickLoadModal(false)
+        return true
+      }
+
+      // 3. Try current project folder (Library)
+      if (this.libraryFiles) {
+        const libraryMatch = this.libraryFiles.find(f => f.name === name)
+        if (libraryMatch) {
+          const file = await this.openFileHandle(libraryMatch)
+          if (file) {
+            const buf = await file.arrayBuffer()
+            await this.loadPDF(new Uint8Array(buf), name)
+            this.toggleQuickLoadModal(false)
+            return true
+          }
+        }
+      }
+
+      alert(`Cannot reopen "${name}" directly.\n\nPlease use "Open PDF..." to locate the file again.`)
+      return false
+    } catch (err) {
+      console.error('Failed to open recent score:', err)
+      return false
+    }
+  }
+
   renderRecentSoloScores() {
     if (!this.recentScoresList) return
     this.recentScoresList.innerHTML = ''
@@ -2345,15 +2392,7 @@ class ScoreFlow {
           <div class="recent-score-date">Last Opened: ${score.date}</div>
         </div>
       `
-      card.onclick = async () => {
-        const cachedBuf = await db.get(`recent_buf_${score.name}`)
-        if (cachedBuf) {
-          await this.loadPDF(new Uint8Array(cachedBuf), score.name)
-          this.toggleQuickLoadModal(false)
-          return
-        }
-        alert(`Cannot reopen "${score.name}" directly.\n\nPlease use "Open PDF..." to locate the file again.`)
-      }
+      card.onclick = () => this.openRecentScore(score.name)
       this.recentScoresList.appendChild(card)
     })
   }
@@ -2374,40 +2413,7 @@ class ScoreFlow {
         <span class="sidebar-recent-name">${score.name.replace(/\.pdf$/i, '')}</span>
         <span class="sidebar-recent-date">${score.date}</span>
       `
-      item.onclick = async () => {
-
-        // 1. Try stored FileSystemFileHandle (from showOpenFilePicker)
-        const storedHandle = await db.get(`recent_handle_${score.name}`)
-        if (storedHandle) {
-          const file = await this.openFileHandle(storedHandle)
-          if (file) {
-            const buf = await file.arrayBuffer()
-            await this.loadPDF(new Uint8Array(buf), score.name)
-            return
-          }
-        }
-
-        // 2. Try cached ArrayBuffer (from <input> / iOS fallback)
-        const cachedBuf = await db.get(`recent_buf_${score.name}`)
-        if (cachedBuf) {
-          await this.loadPDF(new Uint8Array(cachedBuf), score.name)
-          return
-        }
-
-        // 3. Try current project folder
-        const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
-        if (libraryMatch) {
-          const file = await this.openFileHandle(libraryMatch)
-          if (file) {
-            const buf = await file.arrayBuffer()
-            await this.loadPDF(new Uint8Array(buf), score.name)
-          }
-          return
-        }
-
-        // 4. Not found — ask user to re-open
-        alert(`Cannot reopen "${score.name}".\n\nUse "Open PDF..." to locate the file again.`)
-      }
+      item.onclick = () => this.openRecentScore(score.name)
       this.welcomeRecentList.appendChild(item)
     })
   }
@@ -2430,40 +2436,7 @@ class ScoreFlow {
         <span class="sidebar-recent-name">${score.name.replace(/\.pdf$/i, '')}</span>
         <span class="sidebar-recent-date">${score.date}</span>
       `
-      item.onclick = async () => {
-
-        // 1. Try stored FileSystemFileHandle (from showOpenFilePicker)
-        const storedHandle = await db.get(`recent_handle_${score.name}`)
-        if (storedHandle) {
-          const file = await this.openFileHandle(storedHandle)
-          if (file) {
-            const buf = await file.arrayBuffer()
-            await this.loadPDF(new Uint8Array(buf), score.name)
-            return
-          }
-        }
-
-        // 2. Try cached ArrayBuffer (from <input> / iOS fallback)
-        const cachedBuf = await db.get(`recent_buf_${score.name}`)
-        if (cachedBuf) {
-          await this.loadPDF(new Uint8Array(cachedBuf), score.name)
-          return
-        }
-
-        // 3. Try current project folder
-        const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
-        if (libraryMatch) {
-          const file = await this.openFileHandle(libraryMatch)
-          if (file) {
-            const buf = await file.arrayBuffer()
-            await this.loadPDF(new Uint8Array(buf), score.name)
-          }
-          return
-        }
-
-        // 4. Not found — ask user to re-open
-        alert(`Cannot reopen "${score.name}".\n\nUse "Open PDF..." to locate the file again.`)
-      }
+      item.onclick = () => this.openRecentScore(score.name)
       this.sidebarRecentList.appendChild(item)
     })
   }
