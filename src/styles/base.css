@@ -11,8 +11,13 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  position: fixed;
+  /* Lock root to prevent rubber-band on entire body */
   background-color: #0f0f13;
   /* Ensure no white flashes */
+  -webkit-user-select: none;
+  touch-action: none;
+  /* Only allow scrolling on specific elements */
 }
 
 button {
@@ -29,6 +34,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* Prevent iOS Safari pull-to-refresh and overscroll bounce */
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 #app {

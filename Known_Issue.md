@@ -7,7 +7,7 @@ Issues:
   - [Fixed] 使用 @media (pointer: coarse) 自動縮小到 0.82 倍, 只針對觸控裝置
 * [X] iPad 上, 左上放大倍率的文字太大了, 請縮小
 
-* [ ] iPad 上 Open PDF 檔案選擇器點擊第一次無效，需點擊第二次 (已知問題，待研究解決方案)
+* [X] iPad 上 Open PDF 檔案選擇器點擊第一次無效，需點擊第二次 (已知問題，已修復)
 
 * [X] iPad 上/下一頁的手勢要定義, 且寫在 keyboard shortcut help 裡面
 * [ ] iPad Help Panel 要怎麼叫出來？

@@ -181,11 +181,22 @@ export class RulerManager {
 
     jump(delta) {
         if (delta > 0) {
-            this.scrollToNextTarget()
+            this.computeNextTarget()
+            if (this.nextTargetAnchor) {
+                this.scrollToNextTarget()
+            } else {
+                // Fallback: Scroll down by ~80% of viewport height
+                const viewportHeight = this.app.viewer.clientHeight
+                this.app.viewer.scrollBy({ top: viewportHeight * 0.8, behavior: 'smooth' })
+            }
         } else {
             if (this.jumpHistory.length > 0) {
                 const last = this.jumpHistory.pop()
                 this.app.viewer.scrollTo({ top: last, behavior: 'smooth' })
+            } else {
+                // Fallback: Scroll up by ~80% of viewport height
+                const viewportHeight = this.app.viewer.clientHeight
+                this.app.viewer.scrollBy({ top: -viewportHeight * 0.8, behavior: 'smooth' })
             }
         }
     }

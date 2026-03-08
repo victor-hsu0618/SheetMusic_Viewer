@@ -94,13 +94,24 @@ export class InputManager {
                     return
                 }
 
-                // 4. Single Tap (Only if not part of a potential double tap - handled by timeout or view mode check)
-                if (dt < 250 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                // 4. Single Tap (Zone Tapping)
+                if (dt < 300 && Math.abs(dx) < 30 && Math.abs(dy) < 30) {
                     if (this.app.activeStampType === 'view') {
+                        const tapX = e.changedTouches[0].clientX
                         const tapY = e.changedTouches[0].clientY
-                        tapY < window.innerHeight / 2 ? this.app.jump(-1) : this.app.jump(1)
+                        const vw = window.innerWidth
+
+                        // Define Zones: Left 25% (Prev), Right 25% (Next)
+                        if (tapX < vw * 0.25) {
+                            this.app.jump(-1)
+                            this.showZoneIndicator('prev', tapX, tapY)
+                        } else if (tapX > vw * 0.75) {
+                            this.app.jump(1)
+                            this.showZoneIndicator('next', tapX, tapY)
+                        }
                     }
                 }
+                // No more aggressive preventDefault/return here to allow native momentum to finish
             }
         }, { passive: false })
 
@@ -121,21 +132,25 @@ export class InputManager {
                     this.app.updateRulerMarks()
                     this.app.updateRulerClip()
                     this.app.computeNextTarget()
-                    if (this.app.pdf) {
-                        for (let i = 1; i <= this.app.pdf.numPages; i++) {
-                            const pageElem = document.querySelector(`.page-container[data-page="${i}"]`)
-                            if (pageElem) {
-                                const rect = pageElem.getBoundingClientRect()
-                                if (rect.bottom > 0 && rect.top < window.innerHeight) {
-                                    this.app.redrawStamps(i)
-                                }
-                            }
-                        }
-                    }
                     this.scrollTicking = false
                 })
                 this.scrollTicking = true
             }
         }, { passive: true })
+    }
+
+    showZoneIndicator(type, x, y) {
+        const indicator = document.createElement('div')
+        indicator.className = 'tap-zone-indicator'
+        indicator.innerHTML = type === 'next'
+            ? '<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
+            : '<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>'
+
+        indicator.style.left = `${x - 20}px`
+        indicator.style.top = `${y - 20}px`
+        document.body.appendChild(indicator)
+
+        setTimeout(() => indicator.classList.add('fade-out'), 50)
+        setTimeout(() => indicator.remove(), 600)
     }
 }
