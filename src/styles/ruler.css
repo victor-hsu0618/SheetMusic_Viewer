@@ -1,0 +1,320 @@
+/* Jump Line Indicator & Ruler (Word-style) */
+.jump-ruler {
+  position: fixed;
+  left: 0;
+  /* overridden by JS to align with PDF page left edge */
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  background: white;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+  display: block;
+  pointer-events: auto;
+  transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.3s;
+}
+
+.jump-ruler.hidden {
+  opacity: 0.3;
+  pointer-events: auto;
+  transform: translateX(-24px);
+  /* Leaves 4px visible */
+  background: transparent;
+  border-right: 4px solid var(--primary);
+  cursor: pointer;
+}
+
+.jump-ruler.hidden:hover {
+  opacity: 1;
+  transform: translateX(-20px);
+  /* Reveal a bit more on hover */
+}
+
+/* Hide internal elements when hidden to keep it clean */
+.jump-ruler.hidden>*:not(.ruler-internal-toggle) {
+  display: none !important;
+}
+
+.jump-ruler.hidden .ruler-internal-toggle {
+  display: none;
+}
+
+.ruler-internal-toggle {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.ruler-internal-toggle:hover {
+  background: var(--primary-hover);
+  transform: translateX(-50%) scale(1.1);
+}
+
+/* Simulated millimeter markings for the ruler track */
+.ruler-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px);
+  background-size: 100% 10px;
+  /* 10px per hash mark */
+  opacity: 0.5;
+}
+
+.ruler-marks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ruler-anchor-mark {
+  position: absolute;
+  left: 4px;
+  width: 16px;
+  height: 3px;
+  background-color: #3b82f6;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transform: translateY(-50%);
+  transition: top 0.1s linear;
+}
+
+.ruler-anchor-mark.ruler-next-target {
+  left: 2px;
+  width: 20px;
+  height: 5px;
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+}
+
+.ruler-fallback-mark {
+  position: absolute;
+  left: 2px;
+  width: 20px;
+  height: 3px;
+  background-color: #10b981;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  transition: top 0.1s linear;
+}
+
+.ruler-measure-mark {
+  position: absolute;
+  left: 2px;
+  width: 20px;
+  border-radius: 4px;
+  background-color: var(--bg-card);
+  color: #f59e0b;
+  border: 1px solid #f59e0b;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 12px;
+  padding: 2px 0;
+  transform: translateY(-50%);
+  transition: top 0.1s linear;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  z-index: 5;
+}
+
+.measure-input-large {
+  font-size: 24px;
+  text-align: center;
+  padding: 10px;
+  width: 100px;
+  margin: 0 auto;
+  display: block;
+}
+
+.measure-step-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.measure-step-label {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.measure-step-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.measure-step-btn {
+  padding: 4px 12px;
+}
+
+.measure-step-value {
+  font-weight: bold;
+  width: 24px;
+  text-align: center;
+}
+
+/* The Handle + Line Group */
+.jump-line-indicator {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+  /* Anchor point */
+  pointer-events: none;
+  /* Let clicks pass through */
+  transition: top 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* Numeric Keypad for Measure Dialog */
+.measure-display {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.08);
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  padding: 10px 24px;
+  min-width: 120px;
+  text-align: center;
+  letter-spacing: 2px;
+  display: inline-block;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.measure-keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.keypad-spacer {
+  display: block;
+}
+
+.keypad-cancel-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+
+.keypad-cancel-btn:hover {
+  color: var(--text-main);
+}
+
+.keypad-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  font-size: 20px;
+  font-weight: 600;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.keypad-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.keypad-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.keypad-btn.action-btn {
+  font-size: 16px;
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
+  border-color: rgba(255, 71, 87, 0.2);
+}
+
+.keypad-btn.action-btn:active {
+  background: rgba(255, 71, 87, 0.2);
+}
+
+.keypad-btn.confirm-btn {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary);
+  border-color: rgba(99, 102, 241, 0.3);
+  font-size: 18px;
+}
+
+.keypad-btn.confirm-btn:active {
+  background: rgba(99, 102, 241, 0.25);
+}
+
+/* The Handle on the Ruler (Word-style Arrow Marker) */
+.jump-line-handle {
+  position: absolute;
+  left: 6px;
+  top: -8px;
+  /* center on the line */
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid var(--primary);
+  /* Right-pointing triangle */
+  filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.3));
+  pointer-events: auto;
+  cursor: ns-resize;
+  /* allow dragging if we ever implement it */
+}
+
+/* Optional: Add a flat back to the triangle for a more solid marker feel */
+.jump-line-handle::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: -8px;
+  width: 4px;
+  height: 16px;
+  background-color: var(--primary);
+  border-radius: 2px 0 0 2px;
+}
+
+/* The Horizontal Beam */
+.jump-line-beam {
+  position: absolute;
+  left: 28px;
+  top: -1px;
+  width: 100%;
+  /* overridden by JS to match PDF page width */
+  height: 1px;
+  background-color: rgba(99, 102, 241, 0.6);
+  border-bottom: 1px dashed rgba(99, 102, 241, 0.9);
+}

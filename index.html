@@ -189,7 +189,6 @@
         <div id="jump-line" class="jump-line-indicator">
           <div class="jump-line-handle"></div>
           <div class="jump-line-beam"></div>
-          <span class="jump-line-label">Target</span>
         </div>
       </div>
       <!-- PDF Pages will be rendered here -->
@@ -204,7 +203,7 @@
               </div>
               <div class="welcome-actions">
                 <button id="welcome-open-file-alt" class="btn btn-primary start-btn mb-20">Open PDF...</button>
-                <div class="tab-section-label" style="text-align:left; margin-bottom:8px;">Recent Scores</div>
+                <div class="tab-section-label welcome-list-label">Recent Scores</div>
                 <div id="welcome-recent-list" class="sidebar-recent-list"></div>
               </div>
             </div>
@@ -250,14 +249,15 @@
           </svg>
           <span>Library</span>
         </button>
-        <button class="sidebar-tab" data-tab="orchestra" title="Orchestra Master">
+        <button class="sidebar-tab" data-tab="orchestra" title="Score Detail">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="17" cy="21" r="3" />
-            <circle cx="7" cy="21" r="3" />
-            <path d="M7 18V9l10-2V7" />
-            <line x1="7" y1="14" x2="17" y2="12" />
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
-          <span>Orchestra</span>
+          <span>Detail</span>
         </button>
         <button class="sidebar-tab" data-tab="settings" title="App Settings">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -299,82 +299,107 @@
             <div class="empty-state">No recent scores yet.</div>
           </div>
           <input type="file" id="pdf-upload" accept="application/pdf" title="Select a PDF score to open" hidden />
-          <div id="library-scores-list" class="library-scores-list">
-            <div class="empty-state">No scores in library yet.</div>
-          </div>
         </div>
 
 
-        <!-- Tab: Orchestra -->
+        <!-- Tab: Score Detail -->
         <div class="tab-panel" data-panel="orchestra">
-          <div class="tab-section-label">1. Private Workspace (My Backup)</div>
-          <div class="collaboration-setup-box mb-10">
-            <button id="connect-personal-btn" class="btn btn-outline btn-full">
-              📁 Link Personal Cloud Folder...
-            </button>
-            <div id="personal-status" class="hub-status-mini">No personal folder linked.</div>
-          </div>
-
-          <div class="tab-section-label">2. Orchestra Workspace (Shared)</div>
-          <div class="collaboration-setup-box mb-10">
-            <button id="connect-orchestra-btn" class="btn btn-outline btn-full">
-              👥 Link Orchestra Group Folder...
-            </button>
-            <div id="orchestra-status" class="hub-status-mini">No group folder linked.</div>
+          <!-- Block 0: Score Info -->
+          <div class="tab-section-label">Score Information</div>
+          <div class="score-info-group compact-info mb-15">
+            <div class="setting-item mb-5">
+              <label class="setting-label label-mini" for="score-name-input">Score Name</label>
+              <input type="text" id="score-name-input" class="search-input-mini w-full" placeholder="Score Name" />
+            </div>
+            <div class="setting-item mb-5">
+              <label class="setting-label label-mini" for="score-composer-input">Composer</label>
+              <input type="text" id="score-composer-input" class="search-input-mini w-full" placeholder="Composer" />
+            </div>
+            <div class="score-meta-text mt-5">
+              <div class="meta-row">
+                <span class="meta-label">File:</span>
+                <span id="score-filename-display" class="meta-value text-truncate">None</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">SHA-256:</span>
+                <span id="score-fingerprint-display" class="meta-value mono-text">Unknown</span>
+              </div>
+            </div>
           </div>
 
           <div class="tab-divider"></div>
 
-          <div id="community-hub" class="community-hub-mini">
-            <div class="tab-section-label">Collaboration Controls</div>
-            <div class="sync-actions-grid mb-10">
-              <button id="publish-personal-btn" class="btn btn-secondary btn-full"
-                title="Save your current markings to your private folder">
-                💾 Private Backup
-              </button>
-              <button id="publish-orchestra-btn" class="btn btn-primary btn-full"
-                title="Publish your current markings to the orchestra group">
-                📤 Share to Orchestra
-              </button>
-            </div>
-            <button id="sync-all-btn" class="btn btn-outline btn-full mb-10">
-              🔄 Refresh All Workspaces
-            </button>
-            <div id="shared-list" class="shared-list-thin">
-              <div class="empty-state-hub">Link folders to see available markings.</div>
+          <!-- Block 1: User Identity -->
+          <div class="tab-section-label">Active Musician</div>
+          <div id="sidebar-user-name-display" class="profile-card-minimal mb-15">
+            <div class="prof-avatar" id="sidebar-user-avatar">G</div>
+            <div class="prof-text">
+              <div id="sidebar-user-name">Guest Musician</div>
+              <small id="sidebar-user-email">guest@example.com</small>
             </div>
           </div>
+
           <div class="tab-divider"></div>
+
+          <!-- Block 2: Interpretation Styles -->
           <div class="tab-section-label">Interpretation Styles</div>
           <div id="source-list" class="source-list-compact"></div>
           <button id="add-source-btn" class="btn-text-primary">+ Add New Style</button>
+
+          <div class="tab-divider"></div>
+
+          <!-- Block 3: Score Annotation -->
+          <div class="tab-section-label">Score Annotation</div>
+          <p class="text-mini text-muted mb-10">Manage markings for this specific score version.</p>
+          <div class="exchange-grid mb-15">
+            <button id="export-score-btn" class="btn-outline-sm">Export Marks</button>
+            <button id="import-score-btn" class="btn-outline-sm">
+              Import Marks
+              <input type="file" id="import-score-file" accept=".json" hidden />
+            </button>
+          </div>
+
+          <div class="tab-divider"></div>
+
+          <!-- Block 4: Database Detail -->
+          <div class="tab-section-label">Database Statistics</div>
+          <div id="score-stats-container" class="score-meta-text">
+            <div class="meta-row">
+              <span class="meta-label">Total Annotations:</span>
+              <span id="stats-total-count" class="meta-value">0</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Last Modified:</span>
+              <span id="stats-last-edit" class="meta-value">Never</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Author:</span>
+              <span id="stats-author" class="meta-value">None</span>
+            </div>
+          </div>
         </div>
 
         <!-- Tab: Settings -->
         <div class="tab-panel" data-panel="settings">
-          <div id="active-profile-card" class="profile-card-minimal">
-            <div class="prof-avatar" id="profile-avatar-initial">G</div>
+          <div class="tab-section-label">User Profile</div>
+          <div id="user-profile-summary-container" class="profile-card-minimal cursor-pointer mb-15">
+            <div class="prof-avatar" id="user-profile-avatar">G</div>
             <div class="prof-text">
-              <div id="display-name">Guest Musician</div>
-              <small id="display-orchestra">Standard Orchestra</small>
+              <div id="user-profile-display-text">Title / User Name</div>
+              <small id="user-profile-note">User notes will appear here...</small>
             </div>
-            <button id="edit-profile-btn" class="btn-icon">⚙️</button>
-          </div>
-          <div class="tab-divider"></div>
-          <div class="tab-section-label">Data Backup</div>
-          <div class="exchange-grid">
-            <button id="export-btn" class="btn-outline-sm">Export Data</button>
-            <button id="import-btn" class="btn-outline-sm">
-              Import Data
-              <input type="file" id="import-file" accept=".json" title="Select a JSON file to import annotations"
-                hidden />
+            <button id="edit-user-profile-btn" class="btn-icon" title="Edit User Profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
             </button>
           </div>
           <div class="tab-divider"></div>
           <div class="tab-section-label">Integration</div>
 
           <div class="setting-item mb-15">
-            <label class="setting-label">Page Turner Mode</label>
+            <label class="setting-label" for="turner-mode-select">Page Turner Mode</label>
             <select id="turner-mode-select" class="form-select mini-select w-full mt-5" title="Page Turner Mode">
               <option value="default">Default (Space/Up/Down/L/R)</option>
               <option value="pgupdn">PageUp / PageDown</option>
@@ -387,7 +412,7 @@
           <div class="tab-section-label">Jump Interaction</div>
 
           <div class="setting-item">
-            <label class="setting-label">Anchor Auto-scroll Offset</label>
+            <label class="setting-label" for="jump-offset">Anchor Auto-scroll Offset</label>
             <div class="flex-row-center gap-10 mt-5">
               <input type="range" id="jump-offset" min="-100" max="100" step="5" value="0" class="w-full"
                 title="Jump Offset" />
@@ -405,6 +430,8 @@
           <div class="tab-section-label">Notation Info/View</div>
           <button id="reset-layers-btn" class="btn btn-outline btn-full text-danger btn-smaller">↺ Reset to Standard
             Categories</button>
+          <button id="reset-system-btn" class="btn btn-outline btn-full text-danger btn-smaller mt-10">⚠️ Reset Full
+            System</button>
         </div>
 
       </div> <!-- End Tab Panels -->
@@ -508,19 +535,47 @@
     </div>
   </div>
 
-  <!-- Multi-Profile Manager Modal (New) -->
-  <div id="profile-modal" class="modal-overlay">
+
+  <!-- User Profile Modal (New) -->
+  <div id="user-profile-modal" class="modal-overlay">
     <div class="modal-content profile-modal">
       <div class="modal-header">
-        <h3>Musical Identity Manager</h3>
-        <button class="close-modal" id="close-profile-modal">&times;</button>
+        <h3>User Profile Settings</h3>
+        <button class="close-modal" id="close-user-profile-modal">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="modal-intro">Manage your roles across different ensembles and orchestras.</p>
-        <div id="profile-list" class="profile-list">
-          <!-- Profiles populated here -->
+        <p class="modal-intro">Update your personal information displayed in the application.</p>
+
+        <div class="setting-item mb-15">
+          <label class="setting-label" for="user-profile-name-input">User Name <span
+              class="text-danger">*</span></label>
+          <input type="text" id="user-profile-name-input" class="search-input-mini w-full mt-5"
+            placeholder="Enter your name" required />
         </div>
-        <button id="add-new-profile-btn" class="btn btn-outline btn-full mt-20">+ Add New Orchestral Role</button>
+
+        <div class="setting-item mb-15">
+          <label class="setting-label" for="user-profile-title-input">Title / Role</label>
+          <input type="text" id="user-profile-title-input" class="search-input-mini w-full mt-5"
+            placeholder="e.g. Principal Cello" />
+        </div>
+
+        <div class="setting-item mb-15">
+          <label class="setting-label" for="user-profile-email-input">Email Address <span
+              class="text-danger">*</span></label>
+          <input type="email" id="user-profile-email-input" class="search-input-mini w-full mt-5"
+            placeholder="your@email.com" required />
+        </div>
+
+        <div class="setting-item mb-20">
+          <label class="setting-label" for="user-profile-note-input">Personal Notes</label>
+          <textarea id="user-profile-note-input" class="search-input-mini w-full mt-5 form-textarea"
+            placeholder="Add a note..."></textarea>
+        </div>
+
+        <div class="dialog-actions-grid">
+          <button id="cancel-user-profile-btn" class="btn btn-outline">Cancel</button>
+          <button id="save-user-profile-btn" class="btn btn-primary">Save Changes</button>
+        </div>
       </div>
     </div>
   </div>

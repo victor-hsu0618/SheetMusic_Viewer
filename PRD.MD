@@ -81,14 +81,22 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **沉浸式設計**：採用毛玻璃效果 (Glassmorphism)，並針對 Safari/iOS 進行 `backdrop-filter` 相容性優化。
 - **回應式佈局**：自動適應 Desktop 與 iPad/iPhone 螢幕大小，支援觸控操作。
 
-### 5. 樂團協作與社群空間 (Ensemble Collaboration & Shared Space) - *2026.03.03 新增*
+### 5. 樂譜詳情與身份管理 (Score Detail & Identity Management) - *2026.03.08 更新*
 
-- **聲部共享空間 (Section Shared Space)**：
-  - **發佈 (Publishing)**：一鍵分享個人標記至所屬聲部的雲端/本地共享區。
-  - **抓取參考 (Peer Grabbing)**：瀏覽同聲部（如一小組）團員的分享卡片，一鍵抓取並「疊加」為新的 Persona 參考。
+- **樂譜詳情儀表板 (Score Detail Panel)**：原 Orchestra 面板重構為「Score Detail」，提供四大核心區塊：
+  - **1. 樂譜資訊預置 (Score Information)**：支援自定義 **Score Name (曲名)** 與 **Composer (作曲家)**。同時顯示 **FileName (原始檔名)** 與 **SHA-256 Fingerprint (指紋)** 作為鑑定依據。此資訊與 PDF 指紋深度綁定，下次開啟同一份樂譜時會自動搜尋並還原。
+  - **2. 演奏者身分 (Active Musician)**：即時同步 User Profile，顯示當前標記者的姓名與聯繫方式。
+  - **3. 詮釋風格管理 (Interpretation Styles)**：集中管理自建或匯入的演奏詮釋。
+  - **4. 標記交換 (Score Annotation Exchange)**：針對「本樂譜版本」的獨立匯入匯出功能。
+- **身分強綁定機制 (Identity-Linked Exchange)**：
+  - **智慧金鑰 (Key Identifiers)**：匯出 JSON 檔案強制內嵌 User Name 與 Email。
+  - **檔名自動化策略**：匯出標記時，系統自動將檔名優化為 `[ScoreName]_[Composer]_[UserName]_[YYYY-MM-DD].json` 格式，大幅提升檔案管理效率。
+  - **歸屬權稽核 (Ownership Audit)**：匯入時系統會根據 Name/Email 進行身分一致性檢查，若來源不符會啟動安全提示，確保標記來源可追溯。
 - **職業身分管理 (Identity & Profile Manager)**：
-  - **多重職位切換**：支援建立多個身分（如：TSO 第一小提琴、某室內樂團大提琴手），快速切換所屬團體與聲部。
-  - **自動化標籤**：發佈作品時自動帶入當前 Profile 的姓名與團體職稱。
+  - **個人檔案設定 (User Profile)**：支援設定 **User Name (姓名, 必填)**、**Title (職稱)**、**User Email (電子郵件, 必填)** 與 **Note (個人備註)** 四大核心欄位。
+  - **模組化持久化**：採用獨立 `ProfileManager` 與 `ScoreDetailManager` 模組，所有細節變更即時儲存於 IndexedDB / LocalStorage，確保主程式 `main.js` 維持簡潔與高效。
+  - **Settings 整合介面**：在 Settings 頁面頂部開立專屬「User Profile」群組，以 `Title / User Name` 專業格式摘要顯示，點擊可開啟專屬 Modal 進行細節編輯。
+  - **自動化歸屬 (未來預留)**：預留標記歸屬欄位，未來在發佈共享標記時自動附加個人職位與姓名標籤。
 - **雲端同步橋接 (Cloud Sync Bridge)**：
   - **檔案系統連結**：支援對接 Google Drive 或本地同步目錄，實現真正的跨裝置、跨樂手協作。
 
@@ -139,4 +147,4 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 
 ---
 
-*最後更新日期：2026-03-03*
+*最後更新日期：2026-03-08*

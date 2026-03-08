@@ -1,0 +1,186 @@
+/* Keyboard Shortcuts Modal (YouTube Style) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* No changes needed here, consolidating backgrounds into the block above */
+
+.modal-overlay.active .modal-card,
+.modal-overlay.active .modal-content {
+  transform: translateY(0);
+}
+
+.modal-card,
+.modal-content {
+  background: var(--bg-card);
+  width: 480px;
+  max-width: 90vw;
+  max-height: 90svh;
+  overflow-y: auto;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+  padding: 32px;
+  transform: translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.modal-close-btn:hover {
+  color: var(--primary);
+}
+
+.shortcuts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.shortcut-item:last-child {
+  border-bottom: none;
+}
+
+.shortcut-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.keys {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+kbd {
+  display: inline-block;
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--primary);
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 2px 0 var(--border);
+  text-transform: uppercase;
+}
+
+.modal-footer {
+  margin-top: 32px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Selection & Edit Mode Styles */
+.capture-overlay {
+  cursor: crosshair;
+}
+
+.capture-overlay[data-tool="select"] {
+  cursor: default;
+}
+
+.capture-overlay[data-tool="select"] .stamp-tool:hover {
+  filter: drop-shadow(0 0 5px var(--primary));
+}
+
+.selected-indicator {
+  position: absolute;
+  border: 2px dashed var(--primary);
+  pointer-events: none;
+  border-radius: 4px;
+  z-index: 100;
+}
+
+/* Interaction Mode Cursors */
+#viewer-container[data-active-tool="view"] .capture-overlay {
+  cursor: grab;
+}
+
+#viewer-container[data-active-tool="view"] .capture-overlay:active {
+  cursor: grabbing;
+}
+
+#viewer-container[data-active-tool="select"] .capture-overlay {
+  cursor: default;
+}
+
+#viewer-container[data-active-tool="pen"] .capture-overlay,
+#viewer-container[data-active-tool="highlighter"] .capture-overlay {
+  cursor: crosshair;
+}
+
+#viewer-container[data-active-tool="eraser"] .capture-overlay {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="11" stroke="%23ef4444" stroke-width="2" fill="rgba(239,68,68,0.12)"/><line x1="9" y1="14" x2="19" y2="14" stroke="%23ef4444" stroke-width="1.5"/><line x1="14" y1="9" x2="14" y2="19" stroke="%23ef4444" stroke-width="1.5"/></svg>') 14 14, crosshair;
+}
+
+/* Erase hover: floating delete chip above hovered object */
+.erase-hover-chip {
+  position: absolute;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 200;
+  transform: translateX(-50%) translateY(-100%);
+  white-space: nowrap;
+  animation: chip-pop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+

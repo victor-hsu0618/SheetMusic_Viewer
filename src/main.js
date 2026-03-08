@@ -2,6 +2,10 @@ import './style.css'
 import * as pdfjsLib from 'pdfjs-dist'
 import * as db from './db.js'
 import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
+import { DocBarManager } from './modules/docbar.js'
+import { ViewerManager } from './modules/ViewerManager.js'
+import { ProfileManager } from './modules/ProfileManager.js'
+import { ScoreDetailManager } from './modules/ScoreDetailManager.js'
 //import * as GDrive from './gdrive.js'
 
 // Use local worker for total offline reliability
@@ -12,12 +16,31 @@ const APP_BRANCH = typeof __APP_BRANCH__ !== 'undefined' ? __APP_BRANCH__ : 'loc
 const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'just-now';
 
 class ScoreFlow {
+  // ViewerManager Proxies
+  get pdf() { return this.viewerManager.pdf }
+  set pdf(val) { this.viewerManager.pdf = val }
+  get pages() { return this.viewerManager.pages }
+  set pages(val) { this.viewerManager.pages = val }
+  get scale() { return this.viewerManager.scale }
+  set scale(val) { this.viewerManager.scale = val }
+  get pdfFingerprint() { return this.viewerManager.pdfFingerprint }
+  set pdfFingerprint(val) { this.viewerManager.pdfFingerprint = val }
+  get activeScoreName() { return this.viewerManager.activeScoreName }
+  set activeScoreName(val) { this.viewerManager.activeScoreName = val }
+
+  async loadPDF(data, filename = null) { return this.viewerManager.loadPDF(data, filename) }
+  async renderPDF() { return this.viewerManager.renderPDF() }
+  async getFingerprint(buffer) { return this.viewerManager.getFingerprint(buffer) }
+  updateZoomDisplay() { return this.viewerManager.updateZoomDisplay() }
+  async changeZoom(delta) { return this.viewerManager.changeZoom(delta) }
+  async fitToWidth() { return this.viewerManager.fitToWidth() }
+  async fitToHeight() { return this.viewerManager.fitToHeight() }
+  showMainUI() { return this.viewerManager.showMainUI() }
+  hideWelcome() { return this.viewerManager.hideWelcome() }
+  async checkInitialView() { return this.viewerManager.checkInitialView() }
+  async closeFile() { return this.viewerManager.closeFile() }
+
   constructor() {
-    this.pdf = null
-    this.pages = []
-    // Professional Layer Presets
-    this.layers = [...INITIAL_LAYERS]
-    this.stamps = []
     this.recycleItems = []
     this.nextTargetAnchor = null
     this.jumpHistory = [] // scroll positions before each forward jump
@@ -28,41 +51,39 @@ class ScoreFlow {
     this.activeCategories = ['Edit', 'Pens', 'Bow/Fingering']
     this.activeCategory = 'Edit'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
-    this.scale = 1.5
     this.toolbarWidth = 600 // High-Performance Default Width
     this.isSidebarLocked = false
-    this.pdfFingerprint = null // Professional Score ID
-    this.lastUsedToolPerCategory = {}
     this._lastStampType = null // Remember the last used stamp for restoration
     this.sources = [
       { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
     ]
     this.activeSourceId = 'self'
-    this.profiles = [
-      { id: 'p1', name: 'Guest Musician', orchestra: 'Standard Orchestra', section: 'Section', initial: 'G' }
-    ]
-    this.activeProfileId = 'p1'
+    this.layers = JSON.parse(JSON.stringify(INITIAL_LAYERS))
+    this.stamps = []
 
     this._svgCache = {}
     this.initToolsets()
+
+    this.docBarManager = new DocBarManager(this)
+    this.viewerManager = new ViewerManager(this)
+    this.profileManager = new ProfileManager(this)
+    this.scoreDetailManager = new ScoreDetailManager(this)
+
     this.initElements()
     this.initEventListeners()
+    this.docBarManager.init()
+    this.profileManager.init()
+    this.scoreDetailManager.init()
     this.initDraggable()
     this.initToolbarResizable()
     this.initSidebarResizable()
-    this.renderLayerUI()
-    this.updateActiveTools()
     this.loadFromStorage()
-    this.updateZoomDisplay()
-    this.updateJumpLinePosition()
+    this.renderLayerUI()
     this.renderSourceUI()
-    this.renderCommunityHub()
-    this.renderActiveProfile()
-    this.renderLibrary()
+    this.updateActiveTools()
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
-    this.initDocBarDraggable()
-    this.checkInitialView()
+    this.viewerManager.checkInitialView()
     this._preloadSvgs()
     this.renderBuildInfo()
   }
@@ -122,22 +143,16 @@ class ScoreFlow {
     this.jumpOffsetInput = document.getElementById('jump-offset')
     this.jumpOffsetValue = document.getElementById('jump-offset-value')
     this.docBar = document.getElementById('floating-doc-bar')
-    this.exportBtn = document.getElementById('export-btn')
-    this.importBtn = document.getElementById('import-btn')
-    this.importFileInput = document.getElementById('import-file')
+    this.exportBtn = document.getElementById('export-score-btn')
+    this.importBtn = document.getElementById('import-score-btn')
+    this.importFileInput = document.getElementById('import-score-file')
+    this.globalExportBtn = document.getElementById('export-btn') // Backup reference
+    this.globalImportBtn = document.getElementById('import-btn')
+    this.globalImportFile = document.getElementById('import-file')
     this.sourceList = document.getElementById('source-list')
     this.addSourceBtn = document.getElementById('add-source-btn')
-    this.sharedList = document.getElementById('shared-list')
 
-    // Collaboration Buttons & UI
-    this.publishPersonalBtn = document.getElementById('publish-personal-btn')
-    this.publishOrchestraBtn = document.getElementById('publish-orchestra-btn')
-    this.connectPersonalBtn = document.getElementById('connect-personal-btn')
-    this.connectOrchestraBtn = document.getElementById('connect-orchestra-btn')
-    this.syncAllBtn = document.getElementById('sync-all-btn')
-
-    this.personalStatus = document.getElementById('personal-status')
-    this.orchestraStatus = document.getElementById('orchestra-status')
+    // Score Detail Elements - Handled by ScoreDetailManager
 
     // Quick Load Elements
     this.quickLoadModal = document.getElementById('quick-load-modal')
@@ -151,24 +166,12 @@ class ScoreFlow {
     // Member Profile Elements
 
     // Member Profile Elements
-    this.profileModal = document.getElementById('profile-modal')
-    this.editProfileBtn = document.getElementById('edit-profile-btn')
-    this.closeProfileBtn = document.getElementById('close-profile-modal')
-    this.profileList = document.getElementById('profile-list')
-    this.addNewProfileBtn = document.getElementById('add-new-profile-btn')
-    this.profileDisplayName = document.getElementById('display-name')
-    this.profileDisplayOrchestra = document.getElementById('display-orchestra')
-    this.profileAvatarInitial = document.getElementById('profile-avatar-initial')
-    this.personalSyncFolder = null
-    this.orchestraSyncFolder = null
 
     this.welcomeView = document.getElementById('welcome-view')
     this.welcomeOpenFileBtn = document.getElementById('welcome-open-file-alt')
     this.welcomeRecentList = document.getElementById('welcome-recent-list')
     this.closeFileBtn = document.getElementById('close-file-btn')
 
-    this.libraryList = document.getElementById('library-scores-list')
-    this.librarySearchInput = document.getElementById('library-search')
     this.resetLayersBtn = document.getElementById('reset-layers-btn')
     this.resetSystemBtn = document.getElementById('reset-system-btn')
 
@@ -182,21 +185,12 @@ class ScoreFlow {
     this.eraseAllModal = document.getElementById('erase-all-modal')
     this.btnModeHand = document.getElementById('btn-mode-hand')
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
-    this.btnDocBarToggle = document.getElementById('btn-doc-bar-toggle')
 
-    this.libraryFiles = []
-    this.libraryFolderHandle = null
-    this.activeScoreName = null
 
     this.jumpOffsetPx = 1 * 37.8
 
     // Resizer
     this.sidebarResizer = document.getElementById('sidebar-resizer')
-
-    // Floating Layer Control
-    this.layerToggleBtn = document.getElementById('layer-toggle-fab')
-    this.layerShelf = document.getElementById('layer-shelf')
-    this.closeLayerShelfBtn = document.getElementById('close-layer-shelf')
     this.externalLayerList = document.getElementById('external-layer-list')
 
     // Dialog Elements
@@ -237,28 +231,14 @@ class ScoreFlow {
     }
     this.uploader.addEventListener('change', (e) => this.handleUpload(e))
 
+    // Score Detail Listeners - Handled by ScoreDetailManager
+
     this.sidebarTrigger.addEventListener('click', () => {
       this.sidebar.classList.add('open')
       this.updateLayoutState()
     })
 
-    this.sidebar.addEventListener('mouseleave', () => {
-      if (!this.isSidebarLocked) {
-        this.sidebar.classList.remove('open')
-        this.updateLayoutState()
-      }
-    })
-
-    // iPad: tap outside sidebar to close it
-    document.addEventListener('touchstart', (e) => {
-      if (!this.isSidebarLocked &&
-        this.sidebar.classList.contains('open') &&
-        !this.sidebar.contains(e.target) &&
-        !this.sidebarTrigger.contains(e.target)) {
-        this.sidebar.classList.remove('open')
-        this.updateLayoutState()
-      }
-    }, { passive: true })
+    // iPad: tap outside sidebar to close it - Removed for "No auto collapse"
 
     if (this.lockSidebarBtn) {
       this.lockSidebarBtn.addEventListener('click', () => {
@@ -268,10 +248,15 @@ class ScoreFlow {
       })
     }
 
-    // Exchange Listeners
-    this.exportBtn.addEventListener('click', () => this.exportProject())
-    this.importBtn.addEventListener('click', () => this.importFileInput.click())
-    this.importFileInput.addEventListener('change', (e) => this.handleImport(e))
+    // Exchange Listeners (Score-Specific)
+    if (this.exportBtn) this.exportBtn.addEventListener('click', () => this.exportProject())
+    if (this.importBtn) this.importBtn.addEventListener('click', () => this.importFileInput.click())
+    if (this.importFileInput) this.importFileInput.addEventListener('change', (e) => this.handleImport(e))
+
+    // Global Backup Listeners (Settings Tab)
+    if (this.globalExportBtn) this.globalExportBtn.addEventListener('click', () => this.exportProject(true))
+    if (this.globalImportBtn) this.globalImportBtn.addEventListener('click', () => this.globalImportFile.click())
+    if (this.globalImportFile) this.globalImportFile.addEventListener('change', (e) => this.handleImport(e))
 
     // Dialog Close
     if (this.closeDialogBtn) {
@@ -280,32 +265,6 @@ class ScoreFlow {
       })
     }
 
-    // Collaboration Listeners
-    if (this.publishPersonalBtn) {
-      this.publishPersonalBtn.addEventListener('click', () => this.publishWork('personal'))
-    }
-    if (this.publishOrchestraBtn) {
-      this.publishOrchestraBtn.addEventListener('click', () => this.publishWork('orchestra'))
-    }
-    if (this.connectPersonalBtn) {
-      this.connectPersonalBtn.addEventListener('click', () => this.connectSyncFolder('personal'))
-    }
-    if (this.connectOrchestraBtn) {
-      this.connectOrchestraBtn.addEventListener('click', () => this.connectSyncFolder('orchestra'))
-    }
-    if (this.syncAllBtn) {
-      this.syncAllBtn.addEventListener('click', () => this.renderCommunityHub())
-    }
-
-    if (this.editProfileBtn) {
-      this.editProfileBtn.addEventListener('click', () => this.toggleProfileModal(true))
-    }
-    if (this.closeProfileBtn) {
-      this.closeProfileBtn.addEventListener('click', () => this.toggleProfileModal(false))
-    }
-    if (this.addNewProfileBtn) {
-      this.addNewProfileBtn.addEventListener('click', () => this.addNewProfile())
-    }
 
     if (this.addSourceBtn) {
       this.addSourceBtn.addEventListener('click', () => this.addSource())
@@ -314,36 +273,6 @@ class ScoreFlow {
     if (this.resetSystemBtn) {
       this.resetSystemBtn.addEventListener('click', () => this.resetToSystemDefault())
     }
-
-    // Floating Layer Shelf Listeners
-    if (this.layerToggleBtn) {
-      this.layerToggleBtn.addEventListener('click', () => {
-        this.layerShelf.classList.toggle('active')
-        if (this.layerShelf.classList.contains('active')) this.renderLayerUI()
-      })
-    }
-    if (this.closeLayerShelfBtn) {
-      this.closeLayerShelfBtn.addEventListener('click', () => {
-        this.layerShelf.classList.remove('active')
-      })
-    }
-
-    // iPad: tap outside layer-shelf to close it
-    document.addEventListener('touchstart', (e) => {
-      if (this.layerShelf &&
-        this.layerShelf.classList.contains('active') &&
-        !this.layerShelf.contains(e.target) &&
-        !this.layerToggleBtn.contains(e.target)) {
-        this.layerShelf.classList.remove('active')
-      }
-    }, { passive: true })
-
-    // Keyboard shortcut for toggle visibility (Shift+V)
-    document.addEventListener('keydown', (e) => {
-      if (e.shiftKey && e.key === 'V') {
-        if (this.layerShelf) this.layerShelf.classList.toggle('active')
-      }
-    })
 
     if (this.closeQuickLoadBtn) {
       this.closeQuickLoadBtn.addEventListener('click', () => this.toggleQuickLoadModal(false))
@@ -355,11 +284,8 @@ class ScoreFlow {
       })
     }
 
-    if (this.selectLibraryBtn) {
-      this.selectLibraryBtn.addEventListener('click', () => this.selectLibraryFolder())
-    }
-    if (this.librarySearchInput) {
-      this.librarySearchInput.addEventListener('input', () => this.renderLibrary())
+    if (this.closeFileBtn) {
+      this.closeFileBtn.addEventListener('click', () => this.viewerManager.closeFile())
     }
 
     // Welcome Screen Hooks
@@ -374,23 +300,20 @@ class ScoreFlow {
         }
       })
     }
-    if (this.welcomeOpenProjectBtn) {
-      this.welcomeOpenProjectBtn.addEventListener('click', () => this.selectLibraryFolder())
-    }
     if (this.projectBackBtn) {
     }
 
     if (this.zoomInBtn) {
-      this.zoomInBtn.addEventListener('click', () => this.changeZoom(0.1))
+      this.zoomInBtn.addEventListener('click', () => this.viewerManager.changeZoom(0.1))
     }
     if (this.zoomOutBtn) {
-      this.zoomOutBtn.addEventListener('click', () => this.changeZoom(-0.1))
+      this.zoomOutBtn.addEventListener('click', () => this.viewerManager.changeZoom(-0.1))
     }
     if (this.btnFitWidth) {
-      this.btnFitWidth.addEventListener('click', () => this.fitToWidth())
+      this.btnFitWidth.addEventListener('click', () => this.viewerManager.fitToWidth())
     }
     if (this.btnFitHeight) {
-      this.btnFitHeight.addEventListener('click', () => this.fitToHeight())
+      this.btnFitHeight.addEventListener('click', () => this.viewerManager.fitToHeight())
     }
 
     if (this.closeShortcutsBtn) {
@@ -410,9 +333,6 @@ class ScoreFlow {
       this.resetLayersBtn.addEventListener('click', () => this.resetLayers())
     }
 
-    if (this.welcomeAddProfileBtn) {
-      this.welcomeAddProfileBtn.addEventListener('click', () => this.addNewProfile())
-    }
 
 
     if (this.closeFileBtn) {
@@ -453,11 +373,6 @@ class ScoreFlow {
       this.btnStampPalette.addEventListener('click', () => {
         this.toggleStampPalette()
       })
-    }
-    if (this.btnDocBarToggle) {
-      this.btnDocBarToggle.onclick = () => {
-        this.toggleDocBar()
-      }
     }
 
     // Double-tap (touch, iPad) OR dblclick (PC mouse) to toggle stamp palette
@@ -695,6 +610,11 @@ class ScoreFlow {
 
         // Update Panels
         panels.forEach(p => p.classList.toggle('active', p.dataset.panel === target))
+
+        // Performance Optimization: Only refresh stats when opening Detail tab
+        if (target === 'orchestra' && this.scoreDetailManager) {
+          this.scoreDetailManager.refreshStats()
+        }
       })
     })
 
@@ -800,11 +720,9 @@ class ScoreFlow {
         try {
           // Store a copy before loadPDF — PDF.js transfers (detaches) the buffer to its worker
           await db.set(`recent_buf_${file.name}`, buffer.slice(0))
-          await this.loadPDF(new Uint8Array(buffer))
-          this.activeScoreName = file.name
+          await this.loadPDF(new Uint8Array(buffer), file.name)
           this.addToRecentSoloScores(file.name)
           this.saveToStorage()
-          this.renderLibrary()
         } catch (pdfErr) {
           console.error('PDF.js Error:', pdfErr)
           alert('Failed to construct PDF. The file might be corrupted.')
@@ -822,96 +740,6 @@ class ScoreFlow {
     }
   }
 
-  async getFingerprint(buffer) {
-    // crypto.subtle requires HTTPS — fallback to simple hash for HTTP (local dev / iPad)
-    if (window.isSecureContext && crypto.subtle) {
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
-      const hashArray = Array.from(new Uint8Array(hashBuffer))
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-    }
-    // Fallback: fast non-cryptographic hash (djb2) for HTTP environments
-    const bytes = new Uint8Array(buffer)
-    let hash = 5381
-    // Sample every 64 bytes for speed on large PDFs
-    for (let i = 0; i < bytes.length; i += 64) {
-      hash = ((hash << 5) + hash) ^ bytes[i]
-      hash = hash >>> 0 // keep as unsigned 32-bit
-    }
-    return 'fallback_' + hash.toString(16) + '_' + bytes.length
-  }
-
-  async loadPDF(data) {
-    // 1. Save current score's stamps before switching
-    if (this.pdfFingerprint) {
-      this.saveToStorage()
-    }
-
-    // 2. Compute fingerprint of the new PDF
-    const newFingerprint = await this.getFingerprint(data.buffer || data)
-    this.pdfFingerprint = newFingerprint
-
-    // 3. Load this score's saved stamps (or start fresh)
-    const savedStamps = localStorage.getItem(`scoreflow_stamps_${newFingerprint}`)
-    this.stamps = savedStamps ? JSON.parse(savedStamps) : []
-    this.jumpHistory = []
-
-    // 4. Load and render the PDF
-    const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
-    const pdfjsDir = new URL('pdfjs/', baseUrl).href
-
-    const loadingTask = pdfjsLib.getDocument({
-      data: data,
-      cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
-      cMapPacked: true,
-      standardFontDataUrl: new URL('pdfjs/standard_fonts/', baseUrl).href,
-      jbig2WasmUrl: new URL('pdfjs/jbig2.wasm', baseUrl).href,
-      // Generic wasmUrl MUST be a directory with a trailing slash
-      wasmUrl: pdfjsDir,
-      isEvalSupported: false,
-      stopAtErrors: false
-    })
-
-    this.pdf = await loadingTask.promise
-    console.log(`PDF loaded successfully. Pages: ${this.pdf.numPages}, Fingerprint: ${newFingerprint.slice(0, 8)}...`)
-
-    // Open with 'Fit to Height' by default on PC, 'Fit to Width' on mobile
-    this.showMainUI()
-    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
-    if (isTouch) {
-      await this.fitToWidth()
-    } else {
-      await this.fitToHeight()
-    }
-
-    this.updateJumpLinePosition()
-    this.updateRulerClip()
-  }
-
-  // Safe file opener: handles File System Access API permission re-requests
-  async openFileHandle(fileHandle) {
-    // Check current permission state
-    try {
-      let permission = await fileHandle.queryPermission({ mode: 'read' })
-      if (permission !== 'granted') {
-        permission = await fileHandle.requestPermission({ mode: 'read' })
-      }
-      if (permission !== 'granted') {
-        alert(`Access denied to "${fileHandle.name}".\n\nPlease re-select your library folder to restore access.`)
-        return null
-      }
-    } catch (e) {
-      // queryPermission/requestPermission not supported in some environments — try anyway
-      console.warn('Permission API not available, trying direct read:', e)
-    }
-
-    try {
-      return await fileHandle.getFile()
-    } catch (err) {
-      console.error('getFile() failed:', err)
-      alert(`Could not read "${fileHandle.name}".\n\nThis can happen if the library folder was moved or the browser session expired. Please use "Select Library Folder" to re-link.`)
-      return null
-    }
-  }
 
   async openPdfFilePicker() {
     if (window.showOpenFilePicker) {
@@ -922,12 +750,10 @@ class ScoreFlow {
         })
         const file = await handle.getFile()
         const buf = await file.arrayBuffer()
-        await this.loadPDF(new Uint8Array(buf))
-        this.activeScoreName = file.name
+        await this.loadPDF(new Uint8Array(buf), file.name)
         await db.set(`recent_handle_${file.name}`, handle)
         this.addToRecentSoloScores(file.name)
         this.saveToStorage()
-        this.renderLibrary()
       } catch (e) {
         if (e.name !== 'AbortError') console.error('openPdfFilePicker:', e)
       }
@@ -937,90 +763,6 @@ class ScoreFlow {
     }
   }
 
-  async changeZoom(delta) {
-    this.scale = Math.min(Math.max(0.5, this.scale + delta), 4)
-    this.updateZoomDisplay()
-    if (this.pdf) await this.renderPDF()
-    this.updateRulerPosition()
-    this.computeNextTarget()
-    this.updateRulerMarks()
-  }
-
-  async fitToWidth() {
-    if (!this.pdf) return
-    const page = await this.pdf.getPage(1)
-    const naturalWidth = page.getViewport({ scale: 1 }).width
-    const rulerW = this.rulerVisible ? (parseInt(getComputedStyle(document.getElementById('jump-ruler')).width) || 28) : 0
-    const availW = this.viewer.clientWidth - rulerW - 8 // 8px breathing room
-    this.scale = Math.min(Math.max(0.5, availW / naturalWidth), 4)
-    this.updateZoomDisplay()
-    await this.renderPDF()
-    this.updateRulerPosition()
-    this.computeNextTarget()
-    this.updateRulerMarks()
-  }
-
-  async fitToHeight() {
-    if (!this.pdf) return
-    const page = await this.pdf.getPage(1)
-    const naturalHeight = page.getViewport({ scale: 1 }).height
-    const availH = this.viewer.clientHeight - 16 // 16px breathing room
-    this.scale = Math.min(Math.max(0.5, availH / naturalHeight), 4)
-    this.updateZoomDisplay()
-    await this.renderPDF()
-    this.updateRulerPosition()
-    this.computeNextTarget()
-    this.updateRulerMarks()
-  }
-
-  updateZoomDisplay() {
-    if (this.zoomLevelDisplay) {
-      this.zoomLevelDisplay.textContent = `${Math.round(this.scale * 100)}%`
-    }
-  }
-
-  async renderPDF() {
-    // Hide welcome screen and remove only PDF pages — preserve welcome-screen DOM node
-    const welcomeScreen = document.querySelector('.welcome-screen')
-    if (welcomeScreen) welcomeScreen.classList.add('hidden')
-
-    this.container.querySelectorAll('.page-container').forEach(el => el.remove())
-    this.pages = []
-
-    for (let i = 1; i <= this.pdf.numPages; i++) {
-      const page = await this.pdf.getPage(i)
-      const pageWrapper = this.createPageElement(i)
-      this.container.appendChild(pageWrapper)
-
-      const canvas = pageWrapper.querySelector('.pdf-canvas')
-      const context = canvas.getContext('2d')
-
-      const viewport = page.getViewport({ scale: this.scale })
-      canvas.height = viewport.height
-      canvas.width = viewport.width
-
-      await page.render({ canvasContext: context, viewport }).promise
-
-      this.createAnnotationLayers(pageWrapper, i, viewport.width, viewport.height)
-      this.createCaptureOverlay(pageWrapper, i, viewport.width, viewport.height)
-      this.redrawStamps(i)
-
-      // After first page: show UI and ruler immediately so user doesn't wait for full PDF
-      if (i === 1) {
-        this.showMainUI()
-        this.updateJumpLinePosition()
-        this.updateRulerPosition()
-        this.updateRulerClip()
-        this.computeNextTarget()
-        this.updateRulerMarks()
-      }
-    }
-
-    // Final ruler update after all pages are rendered (catches anchors on later pages)
-    this.updateRulerPosition()
-    this.computeNextTarget()
-    this.updateRulerMarks()
-  }
 
   createCaptureOverlay(wrapper, pageNum, width, height) {
     const overlay = document.createElement('div')
@@ -1088,8 +830,6 @@ class ScoreFlow {
       ctx.stroke()
       ctx.restore()
     }
-
-    // Moved isStampTool to class method
 
     const startAction = (e) => {
       const pos = getPos(e)
@@ -1330,7 +1070,7 @@ class ScoreFlow {
               if (existingMeasure) measureObj.x = existingMeasure.x
               this.stamps.push(measureObj)
               this.updateRulerMarks()
-              this.saveToStorage()
+              this.saveToStorage(true)
               this.redrawStamps(pageNum)
             }
             return
@@ -1345,7 +1085,7 @@ class ScoreFlow {
           this.updateRulerMarks()
         }
 
-        this.saveToStorage()
+        this.saveToStorage(true)
         this.redrawStamps(pageNum)
       }
       isInteracting = false
@@ -1386,14 +1126,6 @@ class ScoreFlow {
     }
   }
 
-  createPageElement(pageNum) {
-    const div = document.createElement('div')
-    div.className = 'page-container'
-    div.dataset.page = pageNum
-    div.style.width = 'fit-content'
-    div.innerHTML = `<canvas class="pdf-canvas"></canvas>`
-    return div
-  }
 
   createAnnotationLayers(wrapper, pageNum, width, height) {
     const canvas = document.createElement('canvas')
@@ -1404,9 +1136,10 @@ class ScoreFlow {
     wrapper.appendChild(canvas)
   }
 
-  attachCanvasListeners(canvas, pageNum, layerId) {
-    // Events now handled by createCaptureOverlay
-  }
+  // Redundant: attachCanvasListeners is no longer used as events are handled by createCaptureOverlay
+  // attachCanvasListeners(canvas, pageNum, layerId) {
+  //   // Events now handled by createCaptureOverlay
+  // }
 
   async addStamp(page, type, x, y) {
     if (type === 'eraser') {
@@ -1546,7 +1279,7 @@ class ScoreFlow {
       const chip = wrapper.querySelector('.erase-hover-chip')
       if (chip) chip.remove()
     }
-    this.saveToStorage()
+    this.saveToStorage(true)
     this.redrawStamps(page)
   }
 
@@ -1881,7 +1614,7 @@ class ScoreFlow {
       const page = parseInt(wrapper.dataset.page)
       this.redrawStamps(page)
     })
-    this.saveToStorage()
+    this.saveToStorage(true)
   }
 
   closeEraseAllModal() {
@@ -1889,6 +1622,12 @@ class ScoreFlow {
     if (this._eraseAllEsc) {
       document.removeEventListener('keydown', this._eraseAllEsc)
       this._eraseAllEsc = null
+    }
+    // Clear any hover from menu navigation
+    if (this.hoveredStamp) {
+      const page = this.hoveredStamp.page
+      this.hoveredStamp = null
+      this.redrawStamps(page)
     }
   }
 
@@ -2618,25 +2357,14 @@ class ScoreFlow {
           <div class="recent-score-date">Last Opened: ${score.date}</div>
         </div>
       `
-      card.onclick = () => {
-        // Since we don't have the file handle, we tell them it's marked as active
-        // but if it's not in the current session library, we invite them to re-pick.
-        // For now, if it's already in the libraryFiles (project), we can use it!
-        const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
-        if (libraryMatch) {
-          libraryMatch.getFile().then(file => file.arrayBuffer()).then(buf => {
-            this.activeScoreName = score.name
-            this.renderPDF(buf)
-            this.toggleQuickLoadModal(false)
-
-            if (!this.isSidebarLocked) {
-              this.sidebar.classList.remove('open')
-              this.updateLayoutState()
-            }
-          })
-        } else {
-          alert(`Selected: ${score.name}\n\nNote: For solo scores not in your project folder, please click "+ Open New Solo PDF" to locate the file.`)
+      card.onclick = async () => {
+        const cachedBuf = await db.get(`recent_buf_${score.name}`)
+        if (cachedBuf) {
+          await this.loadPDF(new Uint8Array(cachedBuf), score.name)
+          this.toggleQuickLoadModal(false)
+          return
         }
+        alert(`Cannot reopen "${score.name}" directly.\n\nPlease use "Open PDF..." to locate the file again.`)
       }
       this.recentScoresList.appendChild(card)
     })
@@ -2659,19 +2387,37 @@ class ScoreFlow {
         <span class="sidebar-recent-date">${score.date}</span>
       `
       item.onclick = async () => {
+
+        // 1. Try stored FileSystemFileHandle (from showOpenFilePicker)
         const storedHandle = await db.get(`recent_handle_${score.name}`)
         if (storedHandle) {
           const file = await this.openFileHandle(storedHandle)
-          if (file) { await this.loadPDF(new Uint8Array(await file.arrayBuffer())); this.activeScoreName = score.name; return }
+          if (file) {
+            const buf = await file.arrayBuffer()
+            await this.loadPDF(new Uint8Array(buf), score.name)
+            return
+          }
         }
+
+        // 2. Try cached ArrayBuffer (from <input> / iOS fallback)
         const cachedBuf = await db.get(`recent_buf_${score.name}`)
-        if (cachedBuf) { this.activeScoreName = score.name; await this.loadPDF(new Uint8Array(cachedBuf)); return }
+        if (cachedBuf) {
+          await this.loadPDF(new Uint8Array(cachedBuf), score.name)
+          return
+        }
+
+        // 3. Try current project folder
         const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
         if (libraryMatch) {
           const file = await this.openFileHandle(libraryMatch)
-          if (file) { this.activeScoreName = score.name; await this.loadPDF(new Uint8Array(await file.arrayBuffer())) }
+          if (file) {
+            const buf = await file.arrayBuffer()
+            await this.loadPDF(new Uint8Array(buf), score.name)
+          }
           return
         }
+
+        // 4. Not found — ask user to re-open
         alert(`Cannot reopen "${score.name}".\n\nUse "Open PDF..." to locate the file again.`)
       }
       this.welcomeRecentList.appendChild(item)
@@ -2697,12 +2443,6 @@ class ScoreFlow {
         <span class="sidebar-recent-date">${score.date}</span>
       `
       item.onclick = async () => {
-        const closeSidebar = () => {
-          if (!this.isSidebarLocked) {
-            this.sidebar.classList.remove('open')
-            this.updateLayoutState()
-          }
-        }
 
         // 1. Try stored FileSystemFileHandle (from showOpenFilePicker)
         const storedHandle = await db.get(`recent_handle_${score.name}`)
@@ -2710,9 +2450,7 @@ class ScoreFlow {
           const file = await this.openFileHandle(storedHandle)
           if (file) {
             const buf = await file.arrayBuffer()
-            this.activeScoreName = score.name
-            await this.loadPDF(new Uint8Array(buf))
-            closeSidebar()
+            await this.loadPDF(new Uint8Array(buf), score.name)
             return
           }
         }
@@ -2720,9 +2458,7 @@ class ScoreFlow {
         // 2. Try cached ArrayBuffer (from <input> / iOS fallback)
         const cachedBuf = await db.get(`recent_buf_${score.name}`)
         if (cachedBuf) {
-          this.activeScoreName = score.name
-          await this.loadPDF(new Uint8Array(cachedBuf))
-          closeSidebar()
+          await this.loadPDF(new Uint8Array(cachedBuf), score.name)
           return
         }
 
@@ -2732,9 +2468,7 @@ class ScoreFlow {
           const file = await this.openFileHandle(libraryMatch)
           if (file) {
             const buf = await file.arrayBuffer()
-            this.activeScoreName = score.name
-            await this.loadPDF(new Uint8Array(buf))
-            closeSidebar()
+            await this.loadPDF(new Uint8Array(buf), score.name)
           }
           return
         }
@@ -2773,12 +2507,6 @@ class ScoreFlow {
     }
 
     this.updateActiveTools()
-  }
-
-  toggleDocBar() {
-    if (!this.docBar) return
-    this.docBar.classList.toggle('collapsed')
-    localStorage.setItem('scoreflow_doc_bar_collapsed', this.docBar.classList.contains('collapsed'))
   }
 
   initDraggable() {
@@ -2843,7 +2571,6 @@ class ScoreFlow {
         e.stopPropagation()
         drag(e.touches[0].clientX, e.touches[0].clientY)
       } else if (el.contains(e.target)) {
-        // In panel but not dragging handle
         e.stopPropagation()
         // If not scrolling panel content, block background scroll
         if (el.style.overflowY !== 'auto') {
@@ -2868,57 +2595,6 @@ class ScoreFlow {
       }
       touchStartY = 0
     }, { passive: false })
-  }
-
-  initDocBarDraggable() {
-    let isDragging = false
-    let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0
-    const el = this.docBar
-    if (!el) return
-
-    el.addEventListener("mousedown", dragStart)
-    document.addEventListener("mousemove", drag)
-    document.addEventListener("mouseup", dragEnd)
-
-    // Touch support for iPad — must be non-passive to allow preventDefault
-    el.addEventListener("touchstart", (e) => {
-      if (!e.target.closest(".doc-drag-handle")) return
-      dragStart(e.touches[0])
-    }, { passive: false })
-    document.addEventListener("touchmove", (e) => {
-      if (isDragging) {
-        e.preventDefault() // prevent browser scroll while dragging bar
-        drag(e.touches[0])
-      }
-    }, { passive: false })
-    document.addEventListener("touchend", dragEnd)
-
-    function dragStart(e) {
-      if (!e.target.closest(".doc-drag-handle")) return
-      initialX = e.clientX - xOffset
-      initialY = e.clientY - yOffset
-      isDragging = true
-    }
-
-    function drag(e) {
-      if (isDragging) {
-        currentX = e.clientX - initialX
-        currentY = e.clientY - initialY
-        xOffset = currentX
-        yOffset = currentY
-        setTranslate(currentX, currentY, el)
-      }
-    }
-
-    function dragEnd() {
-      initialX = currentX
-      initialY = currentY
-      isDragging = false
-    }
-
-    function setTranslate(xPos, yPos, el) {
-      el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`
-    }
   }
 
   cleanupAnchors(page) {
@@ -3137,19 +2813,27 @@ class ScoreFlow {
     ruler.style.webkitMaskImage = mask
   }
 
-  saveToStorage() {
+  updateScoreDetailUI(fingerprint) {
+    if (this.scoreDetailManager) {
+      this.scoreDetailManager.load(fingerprint)
+    }
+  }
+
+  saveToStorage(isScoreChange = false) {
+    if (isScoreChange && this.scoreDetailManager) {
+      this.scoreDetailManager.onModification()
+    }
     localStorage.setItem('scoreflow_layers', JSON.stringify(this.layers))
     // Save stamps under this score's fingerprint key
     if (this.pdfFingerprint) {
       localStorage.setItem(`scoreflow_stamps_${this.pdfFingerprint}`, JSON.stringify(this.stamps))
+      // Score Info - Handled by ScoreDetailManager
     }
     // Also save as current for backward compatibility / startup restore
     localStorage.setItem('scoreflow_stamps', JSON.stringify(this.stamps))
     localStorage.setItem('scoreflow_current_fingerprint', this.pdfFingerprint || '')
     localStorage.setItem('scoreflow_sources', JSON.stringify(this.sources))
     localStorage.setItem('scoreflow_active_source', this.activeSourceId)
-    localStorage.setItem('scoreflow_profiles', JSON.stringify(this.profiles))
-    localStorage.setItem('scoreflow_active_profile', this.activeProfileId)
     localStorage.setItem('scoreflow_recent_solo_scores', JSON.stringify(this.recentSoloScores || []))
     localStorage.setItem('scoreflow_active_categories', JSON.stringify(this.activeCategories))
 
@@ -3179,16 +2863,22 @@ class ScoreFlow {
     const turnerModeData = localStorage.getItem('scoreflow_turner_mode')
     const activeCategoriesData = localStorage.getItem('scoreflow_active_categories')
     const docBarCollapsed = localStorage.getItem('scoreflow_doc_bar_collapsed') === 'true'
+    const rulerVisibleData = localStorage.getItem('scoreflow_ruler_visible')
 
     if (recentSoloData) this.recentSoloScores = JSON.parse(recentSoloData)
 
-    if (sourcesData) this.sources = JSON.parse(sourcesData)
+    if (sourcesData) {
+      this.sources = JSON.parse(sourcesData)
+      if (this.sources.length === 0) {
+        this.sources = [{ id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }]
+      }
+    }
     if (activeSourceData) this.activeSourceId = activeSourceData
     if (fingerprintData) this.pdfFingerprint = fingerprintData
-    if (profilesData) this.profiles = JSON.parse(profilesData)
-    if (activeProfileData) this.activeProfileId = activeProfileData
     if (activeCategoriesData) this.activeCategories = JSON.parse(activeCategoriesData)
     if (docBarCollapsed && this.docBar) this.docBar.classList.add('collapsed')
+    if (rulerVisibleData !== null) this.rulerVisible = JSON.parse(rulerVisibleData)
+
 
     const turnerSelect = document.getElementById('turner-mode-select')
     if (turnerSelect) {
@@ -3296,7 +2986,7 @@ class ScoreFlow {
     // Fallback if we deleted the currently active layer
     if (this.activeLayerId === layerId) this.activeLayerId = 'draw'
 
-    this.saveToStorage()
+    this.saveToStorage(true)
     this.renderLayerUI()
     if (this.pdf) this.renderPDF()
   }
@@ -3325,7 +3015,7 @@ class ScoreFlow {
     ]
 
     this.activeLayerId = 'draw'
-    this.saveToStorage()
+    this.saveToStorage(true)
     this.renderLayerUI()
     if (this.pdf) this.renderPDF()
 
@@ -3428,7 +3118,7 @@ class ScoreFlow {
       if (editor.value.trim()) {
         stamp.data = editor.value
         this.stamps.push(stamp)
-        this.saveToStorage()
+        this.saveToStorage(true)
         this.redrawStamps(pageNum)
       }
       editor.remove()
@@ -3470,23 +3160,50 @@ class ScoreFlow {
     }
   }
 
-  exportProject() {
-    const data = {
-      version: '1.3',
-      timestamp: new Date().toISOString(),
-      fingerprint: this.pdfFingerprint, // Anchors the markings to this specific PDF
-      layers: this.layers,
-      stamps: this.stamps,
-      sources: this.sources,
-      activeSourceId: this.activeSourceId
+  exportProject(isGlobal = false) {
+    try {
+      if (!isGlobal && !this.pdfFingerprint) {
+        alert('Please open a score before exporting markings.')
+        return
+      }
+
+      const data = {
+        version: '1.4',
+        timestamp: new Date().toISOString(),
+        user: {
+          name: this.profileManager.data.userName,
+          email: this.profileManager.data.email
+        },
+        scoreInfo: this.scoreDetailManager.getExportMetadata(),
+        fingerprint: this.pdfFingerprint,
+        layers: this.layers,
+        stamps: this.stamps,
+        sources: this.sources,
+        activeSourceId: this.activeSourceId
+      }
+
+      const json = JSON.stringify(data, null, 2)
+      const blob = new Blob([json], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const filename = this.scoreDetailManager.getExportFilename(isGlobal, this.profileManager.data.userName) || 'ScoreFlow_Export.json'
+
+      console.log('[ScoreFlow] Exporting:', filename)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.style.display = 'none'
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // Removed immediate revocation to prevent Chrome from losing the filename.
+
+    } catch (err) {
+      console.error('[ScoreFlow] Export failed:', err)
+      alert(`Export failed: ${err.message}`)
     }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `ScoreFlow_v1.3_${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
   }
 
   handleImport(e) {
@@ -3497,6 +3214,23 @@ class ScoreFlow {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target.result)
+
+        // --- USER IDENTITY AUDIT ---
+        const user = data.user || {}
+        const currentName = this.profileManager.data.userName
+        const currentEmail = this.profileManager.data.email
+
+        if (user.name && user.email) {
+          if (user.name !== currentName || user.email !== currentEmail) {
+            const title = `Import Marks from ${user.name}`
+            const proceedIdentity = confirm(
+              `These markings belong to:\nName: ${user.name}\nEmail: ${user.email}\n\n` +
+              `You are currently signed in as:\nName: ${currentName}\nEmail: ${currentEmail}\n\n` +
+              `Proceed with importing into your profile?`
+            )
+            if (!proceedIdentity) return
+          }
+        }
 
         // --- SCORE AUDIT ---
         if (data.fingerprint && this.pdfFingerprint && data.fingerprint !== this.pdfFingerprint) {
@@ -3573,6 +3307,17 @@ class ScoreFlow {
 
     this.sources.forEach(source => {
       const isActive = this.activeSourceId === source.id
+
+      // Force the 'self' source to match the current User Profile name
+      if (source.id === 'self') {
+        const userName = this.profileManager?.data?.userName
+        if (userName) {
+          source.name = userName
+        } else {
+          source.name = 'Primary Interpretation'
+        }
+      }
+
       const item = document.createElement('div')
       item.className = `source-item ${isActive ? 'active' : ''}`
 
@@ -3618,9 +3363,12 @@ class ScoreFlow {
             ` : ''}
           </div>
         </div>
+          <div class="source-actions">
+          <label><input type="checkbox" class="source-compare-toggle" ${source.visible ? 'checked' : ''}> Compare</label>
+        </div>
         <div class="source-opacity-box">
-          <label>Compare</label>
-          <input type="range" class="source-opacity-slider modern-slider" min="0" max="1" step="0.1" value="${source.opacity}">
+          <label for="opacity-slider-${source.id}">Opacity</label>
+          <input id="opacity-slider-${source.id}" type="range" class="source-opacity-slider modern-slider" min="0" max="1" step="0.1" value="${source.opacity}">
         </div>
       `;
 
@@ -3677,336 +3425,6 @@ class ScoreFlow {
     })
   }
 
-
-  // --- NEW COMMUNITY FEATURES ---
-
-  async verifyPermission(fileHandle, readWrite) {
-    const options = {}
-    if (readWrite) {
-      options.mode = 'readwrite'
-    }
-    // Check if permission was already granted.
-    if ((await fileHandle.queryPermission(options)) === 'granted') {
-      return true
-    }
-    // Request permission.
-    if ((await fileHandle.requestPermission(options)) === 'granted') {
-      return true
-    }
-    return false
-  }
-
-  async connectSyncFolder(type) {
-    try {
-      const handle = await window.showDirectoryPicker({
-        mode: 'readwrite'
-      })
-
-      const targetId = this.activeProfileId
-      if (!targetId) {
-        alert('Please select a profile first!')
-        return
-      }
-
-      // Persistent Storage for this specific profile
-      await db.set(`profile_${targetId}_${type}_handle`, handle)
-
-      if (type === 'personal') {
-        this.personalSyncFolder = handle
-      } else {
-        this.orchestraSyncFolder = handle
-      }
-
-      this.updateSyncUI()
-      this.showDialog({
-        title: 'Folder Linked',
-        message: `✅ ${type === 'personal' ? 'Personal' : 'Orchestra'} folder linked: "${handle.name}".`,
-        icon: '🔗'
-      })
-      await this.renderCommunityHub()
-    } catch (err) {
-      console.warn('Folder connection cancelled:', err)
-    }
-  }
-
-  async publishWork(target) {
-    const activeProfile = this.profiles.find(p => p.id === this.activeProfileId)
-    const folder = target === 'personal' ? this.personalSyncFolder : this.orchestraSyncFolder
-
-    if (!folder) {
-      alert(`Please link a ${target === 'personal' ? 'Personal' : 'Orchestra'} folder first!`)
-      return
-    }
-
-    const data = {
-      id: 'pub_' + Date.now(),
-      author: activeProfile.name,
-      section: activeProfile.section,
-      orchestra: activeProfile.orchestra,
-      timestamp: new Date().toLocaleTimeString(),
-      layers: this.layers,
-      stamps: this.stamps,
-      sources: this.sources,
-      fingerprint: this.pdfFingerprint,
-      workspaceType: target // Mark the origin
-    }
-
-    try {
-      // CRITICAL: Verify write permission
-      const hasPermission = await this.verifyPermission(folder, true)
-      if (!hasPermission) throw new Error('Permission denied.')
-
-      const fileName = `sf_${target}_${activeProfile.name.replace(/\s/g, '_')}_${Date.now()}.json`
-      const fileHandle = await folder.getFileHandle(fileName, { create: true })
-      const writable = await fileHandle.createWritable()
-      await writable.write(JSON.stringify(data, null, 2))
-      await writable.close()
-
-      // Flag for Library Sync Indicators
-      if (this.pdfFingerprint) {
-        localStorage.setItem(`scoreflow_published_${target.charAt(0)}_${this.pdfFingerprint}`, 'true')
-      }
-
-      alert(`🚀 Successfully saved to ${target === 'personal' ? 'Private Backup' : 'Orchestra Workspace'}!`)
-      await this.renderCommunityHub()
-      this.renderLibrary()
-    } catch (err) {
-      console.error('Publishing error:', err)
-      alert(`❌ Publishing failed: ${err.message}`)
-    }
-  }
-
-  async renderCommunityHub() {
-    if (!this.sharedList) return
-    this.sharedList.innerHTML = '<div class="hub-loading">Scanning workspaces...</div>'
-
-    let communityData = []
-    const scanFolder = async (folder, typeLabel) => {
-      if (!folder) return
-      try {
-        const hasPermission = await this.verifyPermission(folder, false)
-        if (!hasPermission) return
-
-        for await (const [name, handle] of folder.entries()) {
-          if (name.endsWith('.json') && (name.startsWith('sf_personal_') || name.startsWith('sf_orchestra_') || name.startsWith('sf_shared_'))) {
-            const file = await handle.getFile()
-            const text = await file.text()
-            try {
-              const data = JSON.parse(text)
-              if (data.fingerprint === this.pdfFingerprint && data.stamps && data.stamps.length > 0) {
-                data.location = typeLabel // Add origin label
-                communityData.push(data)
-              }
-            } catch (e) { console.warn('Corrupt JSON:', name) }
-          }
-        }
-      } catch (err) { console.error(`Scan error in ${typeLabel}:`, err) }
-    }
-
-    // Scan both potential sources
-    await scanFolder(this.personalSyncFolder, 'Personal Workspace')
-    await scanFolder(this.orchestraSyncFolder, 'Orchestra')
-
-    // Sort by timestamp (newest first)
-    communityData.sort((a, b) => {
-      const timeA = new Date(a.id.split('_')[1] || 0)
-      const timeB = new Date(b.id.split('_')[1] || 0)
-      return b - a
-    })
-
-    // Initial Mock Data if absolutely empty
-    if (communityData.length === 0) {
-      communityData = [
-        {
-          id: 'mock_1', author: 'Maestro Hsu', section: 'First Violins',
-          timestamp: 'Yesterday', stamps: new Array(14),
-          layers: [], sources: [{ name: 'Conductor' }]
-        }
-      ]
-    }
-
-    this.sharedList.innerHTML = ''
-    communityData.forEach(work => {
-      const card = document.createElement('div')
-      card.className = 'shared-card'
-      card.innerHTML = `
-        <div class="card-top">
-           <div class="card-title">
-             <div class="workspace-badge ${work.location === 'Personal Workspace' ? 'personal' : 'orchestra'}">
-               ${work.location === 'Personal Workspace' ? '🔒 Private' : '👥 Team'}
-             </div>
-             ${work.author}
-           </div>
-           <button class="btn-import-ghost" id="grab-${work.id}">Grab</button>
-        </div>
-        <div class="card-meta">${work.timestamp} • ${work.section}</div>
-        <div class="card-tags">
-           <span class="tag">${work.stamps ? work.stamps.length : 0} Annotations</span>
-           <span class="tag">Studio: ${work.sources ? work.sources[0].name : 'Primary'}</span>
-        </div>
-      `
-
-      const grabBtn = card.querySelector(`#grab-${work.id}`)
-      if (grabBtn) {
-        grabBtn.onclick = (e) => {
-          e.stopPropagation()
-          this.importSharedWork(work)
-        }
-      }
-
-      this.sharedList.appendChild(card)
-    })
-  }
-
-  importSharedWork(work) {
-    if (!confirm(`Import markings from ${work.author} (${work.section}) as a new Interpretation Style?`)) return
-
-    const newSourceId = 'hub_' + Date.now()
-    // Use the sender's original style name if available, otherwise fallback
-    const originalStyleName = work.sources && work.sources[0] ? work.sources[0].name : "Shared Markings"
-
-    // 1. Create a new source with contributor tracking
-    const newSource = {
-      id: newSourceId,
-      name: originalStyleName,
-      author: work.author,      // Persistent Contributor tracking
-      section: work.section,    // Role identification
-      visible: true,
-      opacity: 0.7,
-      color: '#' + Math.floor(Math.random() * 16777215).toString(16)
-    }
-    this.sources.push(newSource)
-
-    // 2. Clone and link the stamps to the new source
-    const importedStamps = (work.stamps || [])
-      .filter(s => s && s.page)
-      .map(s => ({ ...s, sourceId: newSourceId }))
-
-    this.stamps = this.stamps.concat(importedStamps)
-    this.saveToStorage()
-
-    // 3. Update UI immediately
-    this.renderSourceUI()
-    if (this.pdf) {
-      for (let i = 1; i <= this.pdf.numPages; i++) {
-        this.redrawStamps(i)
-      }
-    }
-    alert(`${work.author}'s interpretation ("${originalStyleName}") imported!`)
-  }
-
-  // --- MEMBER PROFILE MANAGEMENT ---
-
-  toggleProfileModal(show) {
-    if (this.profileModal) {
-      this.profileModal.classList.toggle('active', show)
-      if (show) this.renderProfileList()
-    }
-  }
-
-  async renderActiveProfile() {
-    const active = this.profiles.find(p => p.id === this.activeProfileId) || this.profiles[0]
-    if (!active) return
-
-    if (this.profileDisplayName) this.profileDisplayName.textContent = active.name
-    if (this.profileDisplayOrchestra) this.profileDisplayOrchestra.textContent = active.orchestra
-    if (this.profileAvatarInitial) this.profileAvatarInitial.textContent = active.initial || active.name.charAt(0)
-    if (this.welcomeIdentityName) this.welcomeIdentityName.textContent = `Welcome, ${active.name}`
-
-    // Auto-recover Cloud Folders for this profile
-    const pHandle = await db.get(`profile_${active.id}_personal_handle`)
-    const oHandle = await db.get(`profile_${active.id}_orchestra_handle`)
-    this.personalSyncFolder = pHandle || null
-    this.orchestraSyncFolder = oHandle || null
-    this.updateSyncUI()
-  }
-
-  updateSyncUI() {
-    // 1. Sidebar Status (Existing)
-    if (this.personalStatus) {
-      if (this.personalSyncFolder) {
-        this.personalStatus.innerHTML = `✅ Linked: <strong style="color:var(--primary)">${this.personalSyncFolder.name}</strong>`
-      } else {
-        this.personalStatus.textContent = 'No personal folder linked.'
-      }
-    }
-    if (this.orchestraStatus) {
-      if (this.orchestraSyncFolder) {
-        this.orchestraStatus.innerHTML = `✅ Linked: <strong style="color:var(--primary)">${this.orchestraSyncFolder.name}</strong>`
-      } else {
-        this.orchestraStatus.textContent = 'No group folder linked.'
-      }
-    }
-  }
-
-
-
-  async checkInitialView() {
-    if (this.pdf) {
-      this.hideWelcome()
-      return
-    }
-
-    const screen = document.querySelector('.welcome-screen')
-    if (screen) screen.classList.remove('hidden')
-
-    if (this.welcomeView) {
-      this.welcomeView.classList.remove('hidden')
-      this.renderWelcomeRecentScores()
-    }
-  }
-
-
-
-  async closeFile() {
-    this.pdf = null
-    this.libraryFiles = []
-    this.libraryFolderHandle = null
-    this.activeScoreName = null
-
-    if (this.container) this.container.querySelectorAll('.page-container').forEach(el => el.remove())
-    if (this.layerShelf) this.layerShelf.classList.remove('active')
-    if (this.sidebar) this.sidebar.classList.remove('open')
-    if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
-
-      ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
-        const el = document.getElementById(id)
-        if (el) el.classList.add('hidden')
-      })
-
-    this.checkInitialView()
-  }
-
-  hideWelcome() {
-    const screen = document.querySelector('.welcome-screen')
-    if (screen) screen.classList.add('hidden')
-  }
-
-  showMainUI() {
-    // Reveal toolbars once a score is loaded
-    ;['sidebar-trigger', 'floating-doc-bar', 'layer-toggle-fab'].forEach(id => {
-      const el = document.getElementById(id)
-      if (el) el.classList.remove('hidden')
-    })
-    // Ruler respects the saved toggle state
-    const ruler = document.getElementById('jump-ruler')
-    if (ruler) {
-      if (this.rulerVisible) {
-        ruler.classList.remove('hidden')
-        ruler.style.display = 'block'
-      } else {
-        ruler.classList.add('hidden')
-        ruler.style.display = ''
-      }
-    }
-    if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
-
-    // Stamp palette starts collapsed — user opens via button or double-tap
-    if (this.activeToolsContainer) {
-      this.activeToolsContainer.classList.remove('expanded')
-      this.updateActiveTools()
-    }
-  }
 
   toggleRuler() {
     this.rulerVisible = !this.rulerVisible
@@ -4070,234 +3488,7 @@ class ScoreFlow {
 
 
 
-  async selectLibraryFolder() {
-    try {
-      this.libraryFolderHandle = await window.showDirectoryPicker()
-      await db.set('last_library_handle', this.libraryFolderHandle)
-      this.libraryFiles = []
-      await this.scanLibrary(this.libraryFolderHandle)
-      this.renderLibrary()
 
-      // Auto-open last used score if exists
-      const lastScore = localStorage.getItem('scoreflow_last_opened_score')
-      if (lastScore) {
-        const found = this.libraryFiles.find(f => f.name === lastScore)
-        if (found) {
-          const file = await found.getFile()
-          const arrayBuffer = await file.arrayBuffer()
-          await this.loadPDF(new Uint8Array(arrayBuffer))
-          this.activeScoreName = found.name
-          this.renderLibrary()
-          this.hideWelcome()
-        }
-      }
-    } catch (err) {
-      console.warn('Library selection cancelled:', err)
-    }
-  }
-
-
-
-  async scanLibrary(directoryHandle) {
-    for await (const entry of directoryHandle.values()) {
-      if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
-        this.libraryFiles.push(entry)
-      } else if (entry.kind === 'directory') {
-        // Flat list approach as requested, but we could recursive if needed
-        await this.scanLibrary(entry)
-      }
-    }
-  }
-
-  renderLibrary() {
-    if (!this.libraryList) return
-    this.libraryList.innerHTML = ''
-
-    const query = this.librarySearchInput ? this.librarySearchInput.value.toLowerCase() : ''
-    const filteredFiles = this.libraryFiles.filter(f => f.name.toLowerCase().includes(query))
-
-    if (this.libraryFiles.length === 0) {
-      this.libraryList.innerHTML = ''
-      return
-    }
-
-    if (filteredFiles.length === 0 && query) {
-      this.libraryList.innerHTML = '<div class="empty-state">No matching scores.</div>'
-      return
-    }
-
-    filteredFiles.forEach(fileHandle => {
-      const isActive = this.activeScoreName === fileHandle.name
-      const displayName = fileHandle.name.replace(/\.pdf$/i, '')
-      const fingerprint = this.scoreFingerprintMap[fileHandle.name]
-
-      // Check for annotation presence across 3 storage tiers:
-      const hasLocal = fingerprint && localStorage.getItem(`scoreflow_stamps_${fingerprint}`)
-
-      // We show P and O badges if the folders are linked AND we have recorded a publication for this fingerprint.
-      const hasPersonal = this.personalSyncFolder && fingerprint && localStorage.getItem(`scoreflow_published_p_${fingerprint}`)
-      const hasOrchestra = this.orchestraSyncFolder && fingerprint && localStorage.getItem(`scoreflow_published_o_${fingerprint}`)
-
-      const item = document.createElement('div')
-      item.className = `score-item ${isActive ? 'active' : ''}`
-      item.innerHTML = `
-        <div class="score-item-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-        </div>
-        <div class="score-name">${displayName}</div>
-        <div class="score-badges">
-          ${hasLocal ? '<span class="score-badge-mini local" title="Local Annotations (Current)">L</span>' : ''}
-          ${hasPersonal ? '<span class="score-badge-mini personal" title="Private Cloud Workspace">P</span>' : ''}
-          ${hasOrchestra ? '<span class="score-badge-mini orchestra" title="Orchestra Shared Workspace">O</span>' : ''}
-        </div>
-        <div class="score-actions">
-          <button class="btn-score-action btn-clear-score" title="Clear All Annotations">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
-          </button>
-        </div>
-        ${isActive ? '<div class="active-indicator-dot"></div>' : ''}
-      `
-
-      const openBtn = item.querySelector('.score-name')
-      item.onclick = async (e) => {
-        if (e.target.closest('.score-actions')) return
-        try {
-          const file = await this.openFileHandle(fileHandle)
-          if (!file) return
-          const arrayBuffer = await file.arrayBuffer()
-          await this.loadPDF(new Uint8Array(arrayBuffer))
-          this.activeScoreName = fileHandle.name
-          this.saveToStorage()
-          this.renderLibrary()
-          if (this.projectRepertoireView && !this.projectRepertoireView.classList.contains('hidden')) {
-            this.renderProjectRepertoire()
-          }
-          if (!this.isSidebarLocked) {
-            this.sidebar.classList.remove('open')
-            this.updateLayoutState()
-          }
-        } catch (err) {
-          console.error('Failed to open score:', fileHandle.name, err)
-        }
-      }
-
-      item.querySelector('.btn-clear-score').onclick = (e) => {
-        e.stopPropagation()
-        this.clearScoreAnnotations(fileHandle.name)
-      }
-
-      this.libraryList.appendChild(item)
-    })
-  }
-
-  async clearScoreAnnotations(scoreName) {
-    const fingerprint = this.scoreFingerprintMap[scoreName]
-    if (!fingerprint) {
-      this.showDialog({ title: 'No Data', message: 'No annotations found for this score.', icon: '❓' })
-      return
-    }
-
-    const confirmed = await this.systemDialog ? await this.showDialog({
-      title: 'Clear Score?',
-      message: `🛑 PERMANENT ACTION: This will delete ALL local markings for "${scoreName.replace(/\.pdf$/i, '')}". Are you sure?`,
-      icon: '🗑️',
-      type: 'confirm',
-      confirmText: 'Delete Forever'
-    }) : confirm(`Clear all markings for ${scoreName}?`)
-
-    if (!confirmed) return
-
-    localStorage.removeItem(`scoreflow_stamps_${fingerprint}`)
-
-    if (this.activeScoreName === scoreName) {
-      this.stamps = []
-      if (this.pdf) await this.renderPDF()
-    }
-
-    this.renderLibrary()
-    this.showDialog({ title: 'Cleared', message: 'All local annotations removed.', icon: '✅' })
-  }
-
-
-  renderProfileList() {
-    if (!this.profileList) return
-    this.profileList.innerHTML = ''
-
-    this.profiles.forEach(p => {
-      const isActive = p.id === this.activeProfileId
-      const item = document.createElement('div')
-      item.className = `profile-selection-item ${isActive ? 'active' : ''}`
-      item.innerHTML = `
-        <div class="profile-avatar">${p.initial || p.name.charAt(0)}</div>
-        <div class="profile-details">
-          <div class="profile-name">${p.name}</div>
-          <div class="profile-meta">${p.orchestra} • ${p.section}</div>
-        </div>
-        ${isActive ? '<div class="active-indicator-dot"></div>' : ''}
-        ${this.profiles.length > 1 ? `
-          <button class="btn-remove-profile" title="Remove Profile">
-             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
-        ` : ''}
-      `
-
-      item.onclick = (e) => {
-        if (e.target.closest('.btn-remove-profile')) return
-        this.activeProfileId = p.id
-        this.saveToStorage()
-        this.renderActiveProfile()
-        this.renderProfileList()
-        this.renderCommunityHub() // Refresh community listings for context
-      }
-
-      const delBtn = item.querySelector('.btn-remove-profile')
-      if (delBtn) {
-        delBtn.onclick = (e) => {
-          e.stopPropagation()
-          if (confirm(`Delete the profile for ${p.orchestra}?`)) {
-            this.profiles = this.profiles.filter(prof => prof.id !== p.id)
-            if (this.activeProfileId === p.id) this.activeProfileId = this.profiles[0].id
-            this.saveToStorage()
-            this.renderActiveProfile()
-            this.renderProfileList()
-          }
-        }
-      }
-
-      this.profileList.appendChild(item)
-    })
-  }
-
-  addNewProfile() {
-    const name = prompt('Enter your display name:', 'Guest Musician')
-    if (!name) return
-    const orch = prompt('Enter Orchestra or Ensemble name:', 'Standard Orchestra')
-    if (!orch) return
-    const section = prompt('Enter your Section/Role (e.g. Conductor, Soloist, First Violins):', 'Section')
-    if (!section) return
-
-    const id = 'p_' + Date.now()
-    this.profiles.push({
-      id,
-      name,
-      orchestra: orch,
-      section,
-      initial: name.charAt(0)
-    })
-    this.activeProfileId = id
-    this.saveToStorage()
-    this.renderActiveProfile()
-    this.renderProfileList()
-
-    // Move to Stage 2
-    if (this.identitySelectionView) this.identitySelectionView.classList.add('hidden')
-    if (this.welcomeInitialView) this.welcomeInitialView.classList.remove('hidden')
-  }
 
   showDialog({ title, message, icon = '⚠️', type = 'info', confirmText = 'Confirm', cancelText = 'Cancel', actions = null }) {
     // Safety check: Don't show empty or undefined messages (Ghost Dialog prevention)
@@ -4394,6 +3585,32 @@ class ScoreFlow {
     } else {
       // Fallback if no anchor exists
       this.goToHead()
+    }
+  }
+
+  async resetToSystemDefault() {
+    const confirmReset = await this.showDialog({
+      title: 'System Reset',
+      message: 'This will permanently delete all scores, annotations, and profiles. Are you absolutely sure?',
+      type: 'confirm',
+      icon: '⚠️'
+    })
+
+    if (confirmReset) {
+      // 1. Clear LocalStorage
+      localStorage.clear()
+
+      // 2. Clear IndexedDB
+      try {
+        await db.clear()
+        console.log('[ScoreFlow] IndexedDB cleared successfully.')
+      } catch (err) {
+        console.warn('[ScoreFlow] IndexedDB clear failed, trying fallback delete database', err)
+        if (window.indexedDB) window.indexedDB.deleteDatabase('ScoreFlowStorage')
+      }
+
+      // 3. Reload
+      window.location.reload()
     }
   }
 }
