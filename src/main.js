@@ -238,23 +238,7 @@ class ScoreFlow {
       this.updateLayoutState()
     })
 
-    this.sidebar.addEventListener('mouseleave', () => {
-      if (!this.isSidebarLocked) {
-        this.sidebar.classList.remove('open')
-        this.updateLayoutState()
-      }
-    })
-
-    // iPad: tap outside sidebar to close it
-    document.addEventListener('touchstart', (e) => {
-      if (!this.isSidebarLocked &&
-        this.sidebar.classList.contains('open') &&
-        !this.sidebar.contains(e.target) &&
-        !this.sidebarTrigger.contains(e.target)) {
-        this.sidebar.classList.remove('open')
-        this.updateLayoutState()
-      }
-    }, { passive: true })
+    // iPad: tap outside sidebar to close it - Removed for "No auto collapse"
 
     if (this.lockSidebarBtn) {
       this.lockSidebarBtn.addEventListener('click', () => {
@@ -2403,12 +2387,6 @@ class ScoreFlow {
         <span class="sidebar-recent-date">${score.date}</span>
       `
       item.onclick = async () => {
-        const closeSidebar = () => {
-          if (!this.isSidebarLocked) {
-            this.sidebar.classList.remove('open')
-            this.updateLayoutState()
-          }
-        }
 
         // 1. Try stored FileSystemFileHandle (from showOpenFilePicker)
         const storedHandle = await db.get(`recent_handle_${score.name}`)
@@ -2417,7 +2395,6 @@ class ScoreFlow {
           if (file) {
             const buf = await file.arrayBuffer()
             await this.loadPDF(new Uint8Array(buf), score.name)
-            closeSidebar()
             return
           }
         }
@@ -2426,7 +2403,6 @@ class ScoreFlow {
         const cachedBuf = await db.get(`recent_buf_${score.name}`)
         if (cachedBuf) {
           await this.loadPDF(new Uint8Array(cachedBuf), score.name)
-          closeSidebar()
           return
         }
 
@@ -2437,7 +2413,6 @@ class ScoreFlow {
           if (file) {
             const buf = await file.arrayBuffer()
             await this.loadPDF(new Uint8Array(buf), score.name)
-            closeSidebar()
           }
           return
         }
@@ -2468,12 +2443,6 @@ class ScoreFlow {
         <span class="sidebar-recent-date">${score.date}</span>
       `
       item.onclick = async () => {
-        const closeSidebar = () => {
-          if (!this.isSidebarLocked) {
-            this.sidebar.classList.remove('open')
-            this.updateLayoutState()
-          }
-        }
 
         // 1. Try stored FileSystemFileHandle (from showOpenFilePicker)
         const storedHandle = await db.get(`recent_handle_${score.name}`)
@@ -2482,7 +2451,6 @@ class ScoreFlow {
           if (file) {
             const buf = await file.arrayBuffer()
             await this.loadPDF(new Uint8Array(buf), score.name)
-            closeSidebar()
             return
           }
         }
@@ -2491,7 +2459,6 @@ class ScoreFlow {
         const cachedBuf = await db.get(`recent_buf_${score.name}`)
         if (cachedBuf) {
           await this.loadPDF(new Uint8Array(cachedBuf), score.name)
-          closeSidebar()
           return
         }
 
@@ -2502,7 +2469,6 @@ class ScoreFlow {
           if (file) {
             const buf = await file.arrayBuffer()
             await this.loadPDF(new Uint8Array(buf), score.name)
-            closeSidebar()
           }
           return
         }
