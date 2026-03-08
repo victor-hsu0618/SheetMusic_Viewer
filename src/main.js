@@ -4,6 +4,7 @@ import * as db from './db.js'
 import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
 import { DocBarManager } from './modules/docbar.js'
 import { CommunityManager } from './modules/CommunityManager.js'
+import { ViewerManager } from './modules/ViewerManager.js'
 //import * as GDrive from './gdrive.js'
 
 // Use local worker for total offline reliability
@@ -14,12 +15,31 @@ const APP_BRANCH = typeof __APP_BRANCH__ !== 'undefined' ? __APP_BRANCH__ : 'loc
 const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'just-now';
 
 class ScoreFlow {
+  // ViewerManager Proxies
+  get pdf() { return this.viewerManager.pdf }
+  set pdf(val) { this.viewerManager.pdf = val }
+  get pages() { return this.viewerManager.pages }
+  set pages(val) { this.viewerManager.pages = val }
+  get scale() { return this.viewerManager.scale }
+  set scale(val) { this.viewerManager.scale = val }
+  get pdfFingerprint() { return this.viewerManager.pdfFingerprint }
+  set pdfFingerprint(val) { this.viewerManager.pdfFingerprint = val }
+  get activeScoreName() { return this.viewerManager.activeScoreName }
+  set activeScoreName(val) { this.viewerManager.activeScoreName = val }
+
+  async loadPDF(data) { return this.viewerManager.loadPDF(data) }
+  async renderPDF() { return this.viewerManager.renderPDF() }
+  async getFingerprint(buffer) { return this.viewerManager.getFingerprint(buffer) }
+  updateZoomDisplay() { return this.viewerManager.updateZoomDisplay() }
+  async changeZoom(delta) { return this.viewerManager.changeZoom(delta) }
+  async fitToWidth() { return this.viewerManager.fitToWidth() }
+  async fitToHeight() { return this.viewerManager.fitToHeight() }
+  showMainUI() { return this.viewerManager.showMainUI() }
+  hideWelcome() { return this.viewerManager.hideWelcome() }
+  async checkInitialView() { return this.viewerManager.checkInitialView() }
+  async closeFile() { return this.viewerManager.closeFile() }
+
   constructor() {
-    this.pdf = null
-    this.pages = []
-    // Professional Layer Presets
-    this.layers = [...INITIAL_LAYERS]
-    this.stamps = []
     this.recycleItems = []
     this.nextTargetAnchor = null
     this.jumpHistory = [] // scroll positions before each forward jump
@@ -30,10 +50,8 @@ class ScoreFlow {
     this.activeCategories = ['Edit', 'Pens', 'Bow/Fingering']
     this.activeCategory = 'Edit'
     this.isMultiSelectMode = true // Default to High-Density mode for pro musicians
-    this.scale = 1.5
     this.toolbarWidth = 600 // High-Performance Default Width
     this.isSidebarLocked = false
-    this.activeScoreName = null
     this._lastStampType = null // Remember the last used stamp for restoration
     this.sources = [
       { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
@@ -45,6 +63,7 @@ class ScoreFlow {
 
     this.docBarManager = new DocBarManager(this)
     this.communityManager = new CommunityManager(this)
+    this.viewerManager = new ViewerManager(this)
 
     this.initElements()
     this.initEventListeners()
@@ -56,13 +75,10 @@ class ScoreFlow {
     this.renderLayerUI()
     this.updateActiveTools()
     this.loadFromStorage()
-    this.updateZoomDisplay()
-    this.updateJumpLinePosition()
-    this.renderSourceUI()
     this.communityManager.renderActiveProfile()
     this.renderSidebarRecentScores()
     this.renderWelcomeRecentScores()
-    this.checkInitialView()
+    this.viewerManager.checkInitialView()
     this._preloadSvgs()
     this.renderBuildInfo()
   }
@@ -160,7 +176,6 @@ class ScoreFlow {
     this.btnModeHand = document.getElementById('btn-mode-hand')
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
 
-    this.activeScoreName = null
 
     this.jumpOffsetPx = 1 * 37.8
 
@@ -277,6 +292,9 @@ class ScoreFlow {
       })
     }
 
+    if (this.closeFileBtn) {
+      this.closeFileBtn.addEventListener('click', () => this.viewerManager.closeFile())
+    }
 
     // Welcome Screen Hooks
     if (this.welcomeOpenFileBtn) {
@@ -294,16 +312,16 @@ class ScoreFlow {
     }
 
     if (this.zoomInBtn) {
-      this.zoomInBtn.addEventListener('click', () => this.changeZoom(0.1))
+      this.zoomInBtn.addEventListener('click', () => this.viewerManager.changeZoom(0.1))
     }
     if (this.zoomOutBtn) {
-      this.zoomOutBtn.addEventListener('click', () => this.changeZoom(-0.1))
+      this.zoomOutBtn.addEventListener('click', () => this.viewerManager.changeZoom(-0.1))
     }
     if (this.btnFitWidth) {
-      this.btnFitWidth.addEventListener('click', () => this.fitToWidth())
+      this.btnFitWidth.addEventListener('click', () => this.viewerManager.fitToWidth())
     }
     if (this.btnFitHeight) {
-      this.btnFitHeight.addEventListener('click', () => this.fitToHeight())
+      this.btnFitHeight.addEventListener('click', () => this.viewerManager.fitToHeight())
     }
 
     if (this.closeShortcutsBtn) {
@@ -708,8 +726,8 @@ class ScoreFlow {
         try {
           // Store a copy before loadPDF — PDF.js transfers (detaches) the buffer to its worker
           await db.set(`recent_buf_${file.name}`, buffer.slice(0))
-          await this.loadPDF(new Uint8Array(buffer))
-          this.activeScoreName = file.name
+          await this.viewerManager.loadPDF(new Uint8Array(buffer))
+          this.viewerManager.activeScoreName = file.name
           this.addToRecentSoloScores(file.name)
           this.saveToStorage()
         } catch (pdfErr) {
@@ -729,70 +747,6 @@ class ScoreFlow {
     }
   }
 
-  async getFingerprint(buffer) {
-    // crypto.subtle requires HTTPS — fallback to simple hash for HTTP (local dev / iPad)
-    if (window.isSecureContext && crypto.subtle) {
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
-      const hashArray = Array.from(new Uint8Array(hashBuffer))
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-    }
-    // Fallback: fast non-cryptographic hash (djb2) for HTTP environments
-    const bytes = new Uint8Array(buffer)
-    let hash = 5381
-    // Sample every 64 bytes for speed on large PDFs
-    for (let i = 0; i < bytes.length; i += 64) {
-      hash = ((hash << 5) + hash) ^ bytes[i]
-      hash = hash >>> 0 // keep as unsigned 32-bit
-    }
-    return 'fallback_' + hash.toString(16) + '_' + bytes.length
-  }
-
-  async loadPDF(data) {
-    // 1. Save current score's stamps before switching
-    if (this.pdfFingerprint) {
-      this.saveToStorage()
-    }
-
-    // 2. Compute fingerprint of the new PDF
-    const newFingerprint = await this.getFingerprint(data.buffer || data)
-    this.pdfFingerprint = newFingerprint
-
-    // 3. Load this score's saved stamps (or start fresh)
-    const savedStamps = localStorage.getItem(`scoreflow_stamps_${newFingerprint}`)
-    this.stamps = savedStamps ? JSON.parse(savedStamps) : []
-    this.jumpHistory = []
-
-    // 4. Load and render the PDF
-    const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
-    const pdfjsDir = new URL('pdfjs/', baseUrl).href
-
-    const loadingTask = pdfjsLib.getDocument({
-      data: data,
-      cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
-      cMapPacked: true,
-      standardFontDataUrl: new URL('pdfjs/standard_fonts/', baseUrl).href,
-      jbig2WasmUrl: new URL('pdfjs/jbig2.wasm', baseUrl).href,
-      // Generic wasmUrl MUST be a directory with a trailing slash
-      wasmUrl: pdfjsDir,
-      isEvalSupported: false,
-      stopAtErrors: false
-    })
-
-    this.pdf = await loadingTask.promise
-    console.log(`PDF loaded successfully. Pages: ${this.pdf.numPages}, Fingerprint: ${newFingerprint.slice(0, 8)}...`)
-
-    // Open with 'Fit to Height' by default on PC, 'Fit to Width' on mobile
-    this.showMainUI()
-    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
-    if (isTouch) {
-      await this.fitToWidth()
-    } else {
-      await this.fitToHeight()
-    }
-
-    this.updateJumpLinePosition()
-    this.updateRulerClip()
-  }
 
   async openPdfFilePicker() {
     if (window.showOpenFilePicker) {
@@ -803,8 +757,8 @@ class ScoreFlow {
         })
         const file = await handle.getFile()
         const buf = await file.arrayBuffer()
-        await this.loadPDF(new Uint8Array(buf))
-        this.activeScoreName = file.name
+        await this.viewerManager.loadPDF(new Uint8Array(buf))
+        this.viewerManager.activeScoreName = file.name
         await db.set(`recent_handle_${file.name}`, handle)
         this.addToRecentSoloScores(file.name)
         this.saveToStorage()
@@ -817,90 +771,6 @@ class ScoreFlow {
     }
   }
 
-  async changeZoom(delta) {
-    this.scale = Math.min(Math.max(0.5, this.scale + delta), 4)
-    this.updateZoomDisplay()
-    if (this.pdf) await this.renderPDF()
-    this.updateRulerPosition()
-    this.computeNextTarget()
-    this.updateRulerMarks()
-  }
-
-  async fitToWidth() {
-    if (!this.pdf) return
-    const page = await this.pdf.getPage(1)
-    const naturalWidth = page.getViewport({ scale: 1 }).width
-    const rulerW = this.rulerVisible ? (parseInt(getComputedStyle(document.getElementById('jump-ruler')).width) || 28) : 0
-    const availW = this.viewer.clientWidth - rulerW - 8 // 8px breathing room
-    this.scale = Math.min(Math.max(0.5, availW / naturalWidth), 4)
-    this.updateZoomDisplay()
-    await this.renderPDF()
-    this.updateRulerPosition()
-    this.computeNextTarget()
-    this.updateRulerMarks()
-  }
-
-  async fitToHeight() {
-    if (!this.pdf) return
-    const page = await this.pdf.getPage(1)
-    const naturalHeight = page.getViewport({ scale: 1 }).height
-    const availH = this.viewer.clientHeight - 16 // 16px breathing room
-    this.scale = Math.min(Math.max(0.5, availH / naturalHeight), 4)
-    this.updateZoomDisplay()
-    await this.renderPDF()
-    this.updateRulerPosition()
-    this.computeNextTarget()
-    this.updateRulerMarks()
-  }
-
-  updateZoomDisplay() {
-    if (this.zoomLevelDisplay) {
-      this.zoomLevelDisplay.textContent = `${Math.round(this.scale * 100)}%`
-    }
-  }
-
-  async renderPDF() {
-    // Hide welcome screen and remove only PDF pages — preserve welcome-screen DOM node
-    const welcomeScreen = document.querySelector('.welcome-screen')
-    if (welcomeScreen) welcomeScreen.classList.add('hidden')
-
-    this.container.querySelectorAll('.page-container').forEach(el => el.remove())
-    this.pages = []
-
-    for (let i = 1; i <= this.pdf.numPages; i++) {
-      const page = await this.pdf.getPage(i)
-      const pageWrapper = this.createPageElement(i)
-      this.container.appendChild(pageWrapper)
-
-      const canvas = pageWrapper.querySelector('.pdf-canvas')
-      const context = canvas.getContext('2d')
-
-      const viewport = page.getViewport({ scale: this.scale })
-      canvas.height = viewport.height
-      canvas.width = viewport.width
-
-      await page.render({ canvasContext: context, viewport }).promise
-
-      this.createAnnotationLayers(pageWrapper, i, viewport.width, viewport.height)
-      this.createCaptureOverlay(pageWrapper, i, viewport.width, viewport.height)
-      this.redrawStamps(i)
-
-      // After first page: show UI and ruler immediately so user doesn't wait for full PDF
-      if (i === 1) {
-        this.showMainUI()
-        this.updateJumpLinePosition()
-        this.updateRulerPosition()
-        this.updateRulerClip()
-        this.computeNextTarget()
-        this.updateRulerMarks()
-      }
-    }
-
-    // Final ruler update after all pages are rendered (catches anchors on later pages)
-    this.updateRulerPosition()
-    this.computeNextTarget()
-    this.updateRulerMarks()
-  }
 
   createCaptureOverlay(wrapper, pageNum, width, height) {
     const overlay = document.createElement('div')
@@ -968,8 +838,6 @@ class ScoreFlow {
       ctx.stroke()
       ctx.restore()
     }
-
-    // Moved isStampTool to class method
 
     const startAction = (e) => {
       const pos = getPos(e)
@@ -1266,14 +1134,6 @@ class ScoreFlow {
     }
   }
 
-  createPageElement(pageNum) {
-    const div = document.createElement('div')
-    div.className = 'page-container'
-    div.dataset.page = pageNum
-    div.style.width = 'fit-content'
-    div.innerHTML = `<canvas class="pdf-canvas"></canvas>`
-    return div
-  }
 
   createAnnotationLayers(wrapper, pageNum, width, height) {
     const canvas = document.createElement('canvas')
@@ -1284,9 +1144,10 @@ class ScoreFlow {
     wrapper.appendChild(canvas)
   }
 
-  attachCanvasListeners(canvas, pageNum, layerId) {
-    // Events now handled by createCaptureOverlay
-  }
+  // Redundant: attachCanvasListeners is no longer used as events are handled by createCaptureOverlay
+  // attachCanvasListeners(canvas, pageNum, layerId) {
+  //   // Events now handled by createCaptureOverlay
+  // }
 
   async addStamp(page, type, x, y) {
     if (type === 'eraser') {
@@ -1769,6 +1630,12 @@ class ScoreFlow {
     if (this._eraseAllEsc) {
       document.removeEventListener('keydown', this._eraseAllEsc)
       this._eraseAllEsc = null
+    }
+    // Clear any hover from menu navigation
+    if (this.hoveredStamp) {
+      const page = this.hoveredStamp.page
+      this.hoveredStamp = null
+      this.redrawStamps(page)
     }
   }
 
@@ -2529,12 +2396,49 @@ class ScoreFlow {
         <span class="sidebar-recent-date">${score.date}</span>
       `
       item.onclick = async () => {
+        const closeSidebar = () => {
+          if (!this.isSidebarLocked) {
+            this.sidebar.classList.remove('open')
+            this.updateLayoutState()
+          }
+        }
+
+        // 1. Try stored FileSystemFileHandle (from showOpenFilePicker)
+        const storedHandle = await db.get(`recent_handle_${score.name}`)
+        if (storedHandle) {
+          const file = await this.openFileHandle(storedHandle)
+          if (file) {
+            const buf = await file.arrayBuffer()
+            this.activeScoreName = score.name
+            await this.loadPDF(new Uint8Array(buf))
+            closeSidebar()
+            return
+          }
+        }
+
+        // 2. Try cached ArrayBuffer (from <input> / iOS fallback)
         const cachedBuf = await db.get(`recent_buf_${score.name}`)
         if (cachedBuf) {
           this.activeScoreName = score.name
           await this.loadPDF(new Uint8Array(cachedBuf))
+          closeSidebar()
           return
         }
+
+        // 3. Try current project folder
+        const libraryMatch = this.libraryFiles.find(f => f.name === score.name)
+        if (libraryMatch) {
+          const file = await this.openFileHandle(libraryMatch)
+          if (file) {
+            const buf = await file.arrayBuffer()
+            this.activeScoreName = score.name
+            await this.loadPDF(new Uint8Array(buf))
+            closeSidebar()
+          }
+          return
+        }
+
+        // 4. Not found — ask user to re-open
         alert(`Cannot reopen "${score.name}".\n\nUse "Open PDF..." to locate the file again.`)
       }
       this.welcomeRecentList.appendChild(item)
@@ -2700,7 +2604,6 @@ class ScoreFlow {
         e.stopPropagation()
         drag(e.touches[0].clientX, e.touches[0].clientY)
       } else if (el.contains(e.target)) {
-        // In panel but not dragging handle
         e.stopPropagation()
         // If not scrolling panel content, block background scroll
         if (el.style.overflowY !== 'auto') {
@@ -2985,6 +2888,7 @@ class ScoreFlow {
     const turnerModeData = localStorage.getItem('scoreflow_turner_mode')
     const activeCategoriesData = localStorage.getItem('scoreflow_active_categories')
     const docBarCollapsed = localStorage.getItem('scoreflow_doc_bar_collapsed') === 'true'
+    const rulerVisibleData = localStorage.getItem('scoreflow_ruler_visible')
 
     if (recentSoloData) this.recentSoloScores = JSON.parse(recentSoloData)
 
@@ -2995,6 +2899,8 @@ class ScoreFlow {
     if (activeProfileData) this.communityManager.activeProfileId = activeProfileData
     if (activeCategoriesData) this.activeCategories = JSON.parse(activeCategoriesData)
     if (docBarCollapsed && this.docBar) this.docBar.classList.add('collapsed')
+    if (rulerVisibleData !== null) this.rulerVisible = JSON.parse(rulerVisibleData)
+
 
     const turnerSelect = document.getElementById('turner-mode-select')
     if (turnerSelect) {
@@ -3486,70 +3392,6 @@ class ScoreFlow {
     })
   }
 
-
-  async checkInitialView() {
-    if (this.pdf) {
-      this.hideWelcome()
-      return
-    }
-
-    const screen = document.querySelector('.welcome-screen')
-    if (screen) screen.classList.remove('hidden')
-
-    if (this.welcomeView) {
-      this.welcomeView.classList.remove('hidden')
-      this.renderWelcomeRecentScores()
-    }
-  }
-
-
-
-  async closeFile() {
-    this.activeScoreName = null
-
-    if (this.container) this.container.querySelectorAll('.page-container').forEach(el => el.remove())
-    if (this.layerShelf) this.layerShelf.classList.remove('active')
-    if (this.sidebar) this.sidebar.classList.remove('open')
-    if (this.activeToolsContainer) this.activeToolsContainer.classList.remove('expanded')
-
-      ;['sidebar-trigger', 'floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
-        const el = document.getElementById(id)
-        if (el) el.classList.add('hidden')
-      })
-
-    this.checkInitialView()
-  }
-
-  hideWelcome() {
-    const screen = document.querySelector('.welcome-screen')
-    if (screen) screen.classList.add('hidden')
-  }
-
-  showMainUI() {
-    // Reveal toolbars once a score is loaded
-    ;['sidebar-trigger', 'floating-doc-bar', 'layer-toggle-fab'].forEach(id => {
-      const el = document.getElementById(id)
-      if (el) el.classList.remove('hidden')
-    })
-    // Ruler respects the saved toggle state
-    const ruler = document.getElementById('jump-ruler')
-    if (ruler) {
-      if (this.rulerVisible) {
-        ruler.classList.remove('hidden')
-        ruler.style.display = 'block'
-      } else {
-        ruler.classList.add('hidden')
-        ruler.style.display = ''
-      }
-    }
-    if (this.btnRulerToggle) this.btnRulerToggle.classList.toggle('active', this.rulerVisible)
-
-    // Stamp palette starts collapsed — user opens via button or double-tap
-    if (this.activeToolsContainer) {
-      this.activeToolsContainer.classList.remove('expanded')
-      this.updateActiveTools()
-    }
-  }
 
   toggleRuler() {
     this.rulerVisible = !this.rulerVisible
