@@ -33,30 +33,41 @@ export class InputManager {
             const isInput = ['INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable
             if (isInput) return
 
-            // 1. Zoom Control (Meta+ / Meta-)
+            // 1. Zoom Control (Meta+ / Meta- / Ctrl+ / Ctrl-)
             if (e.metaKey || e.ctrlKey) {
-                if (e.key === '=' || e.key === '+') { e.preventDefault(); this.app.changeZoom(0.1); return; }
-                if (e.key === '-') { e.preventDefault(); this.app.changeZoom(-0.1); return; }
+                const k = e.key.toLowerCase()
+                if (k === '=' || k === '+' || e.code === 'Equal') {
+                    e.preventDefault();
+                    this.app.changeZoom(0.1);
+                    return;
+                }
+                if (k === '-' || e.code === 'Minus') {
+                    e.preventDefault();
+                    this.app.changeZoom(-0.1);
+                    return;
+                }
             }
 
             // 2. Navigation
-            if (e.key === ' ' || e.key === 'j' || e.key === 'ArrowDown') {
+            const navKey = e.key.toLowerCase()
+            if (navKey === ' ' || navKey === 'j' || e.code === 'ArrowDown') {
                 e.preventDefault()
                 this.app.jump(1)
-            } else if (e.key === 'k' || e.key === 'ArrowUp') {
+            } else if (navKey === 'k' || e.code === 'ArrowUp') {
                 e.preventDefault()
                 this.app.jump(-1)
             }
 
             // 3. UI Toggles
-            switch (e.key.toLowerCase()) {
+            const key = e.key.toLowerCase()
+            switch (key) {
                 case 's': // Sidebar
                     e.preventDefault()
                     this.app.toggleSidebar()
                     break
                 case 'b': // Bookmarks (Jump Panel)
                     e.preventDefault()
-                    this.app.jumpManager?.togglePanel()
+                    if (this.app.jumpManager) this.app.jumpManager.togglePanel()
                     break
                 case 't': // Toolbar (Doc Bar)
                     e.preventDefault()
@@ -66,19 +77,15 @@ export class InputManager {
                     e.preventDefault()
                     this.app.toggleFullscreen()
                     break
-                case 'r': // Ruler Toggle (Shift+R)
-                    if (e.shiftKey) {
-                        e.preventDefault()
-                        this.app.toggleRuler()
-                    }
+                case 'r': // Ruler Toggle (R or Shift+R)
+                    e.preventDefault()
+                    this.app.toggleRuler()
                     break
-                case 'v': // Layer Shelf (Shift+V)
-                    if (e.shiftKey) {
-                        e.preventDefault()
-                        if (this.app.layerShelf) {
-                            this.app.layerShelf.classList.toggle('active')
-                            if (this.app.layerShelf.classList.contains('active')) this.app.renderLayerUI()
-                        }
+                case 'v': // Layer Shelf (V or Shift+V)
+                    e.preventDefault()
+                    if (this.app.layerShelf) {
+                        this.app.layerShelf.classList.toggle('active')
+                        if (this.app.layerShelf.classList.contains('active')) this.app.renderLayerUI()
                     }
                     break
             }
