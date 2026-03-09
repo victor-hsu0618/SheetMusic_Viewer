@@ -20,6 +20,7 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_recent_solo_scores', JSON.stringify(this.app.recentSoloScores || []))
         localStorage.setItem('scoreflow_active_categories', JSON.stringify(this.app.activeCategories))
         localStorage.setItem('scoreflow_layers', JSON.stringify(this.app.layers))
+        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary))
 
         const turnerMode = document.getElementById('turner-mode-select') ? document.getElementById('turner-mode-select').value : 'default';
         localStorage.setItem('scoreflow_turner_mode', turnerMode)
@@ -45,6 +46,7 @@ export class PersistenceManager {
         const activeCategoriesData = localStorage.getItem('scoreflow_active_categories')
         const docBarCollapsedStr = localStorage.getItem('scoreflow_doc_bar_collapsed')
         const rulerVisibleData = localStorage.getItem('scoreflow_ruler_visible')
+        const userTextLibraryData = localStorage.getItem('scoreflow_user_text_library')
 
         if (recentSoloData) this.app.recentSoloScores = JSON.parse(recentSoloData)
 
@@ -63,6 +65,9 @@ export class PersistenceManager {
             this.app.docBar.classList.remove('collapsed')
         }
         if (rulerVisibleData !== null) this.app.rulerVisible = JSON.parse(rulerVisibleData)
+        if (userTextLibraryData) {
+            this.app.userTextLibrary = JSON.parse(userTextLibraryData)
+        }
 
         const turnerSelect = document.getElementById('turner-mode-select')
         if (turnerSelect) {

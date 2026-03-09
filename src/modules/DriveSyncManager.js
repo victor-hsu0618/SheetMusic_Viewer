@@ -494,9 +494,27 @@ export class DriveSyncManager {
                     if (remoteProfile && (remoteProfile.updatedAt || 0) > (localData.updatedAt || 0)) {
                         console.log('[DriveSync] Merging newer remote profile over local...');
                         Object.assign(this.app.profileManager.data, remoteProfile);
+
+                        // Merge Custom Text Library (Set Union)
+                        if (Array.isArray(remoteData.userTextLibrary)) {
+                            const localSet = new Set(this.app.userTextLibrary);
+                            let hasNewText = false;
+                            remoteData.userTextLibrary.forEach(text => {
+                                if (!localSet.has(text)) {
+                                    this.app.userTextLibrary.push(text);
+                                    localSet.add(text);
+                                    hasNewText = true;
+                                }
+                            });
+                            if (hasNewText) {
+                                this.app.saveToStorage();
+                                if (this.app.toolManager) this.app.toolManager.updateActiveTools();
+                            }
+                        }
+
                         this.app.profileManager.save();
                         this.app.profileManager.render();
-                        this.addLog('已更新個人檔案 (雲端較新)', 'info');
+                        this.addLog('已更新個人檔案與術語庫 (雲端較新)', 'info');
                     } else if (remoteProfile && (localData.updatedAt || 0) > (remoteProfile.updatedAt || 0)) {
                         // Local is newer, we should push
                         shouldPush = true;
@@ -511,6 +529,7 @@ export class DriveSyncManager {
                 if (shouldPush || !this.lastProfileSyncTime) {
                     const payload = {
                         profile: localData,
+                        userTextLibrary: this.app.userTextLibrary,
                         version: Date.now()
                     };
                     await this.updateFile(fileId, payload);
@@ -521,6 +540,7 @@ export class DriveSyncManager {
                 // First time upload
                 const payload = {
                     profile: localData,
+                    userTextLibrary: this.app.userTextLibrary,
                     version: Date.now()
                 };
                 await this.createFile(fileName, payload);
