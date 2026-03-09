@@ -84,7 +84,7 @@ export class InputManager {
 
             // 4. UI Toggles
             switch (key) {
-                case 'g': // Page Jump (Calculator)
+                case 'g': // Go To (Calculator)
                     e.preventDefault()
                     if (this.app.jumpManager) this.app.jumpManager.togglePanel()
                     break
