@@ -33,15 +33,6 @@ export class DocBarManager {
         const btnQuickOpen = document.getElementById('btn-quick-open')
         if (btnQuickOpen) btnQuickOpen.onclick = () => this.app.openPdfFilePicker()
 
-        // Mode Actions
-        const btnModeHand = document.getElementById('btn-mode-hand')
-        if (btnModeHand) {
-            btnModeHand.onclick = () => {
-                this.app.activeStampType = 'view'
-                this.app.updateActiveTools()
-            }
-        }
-
         const btnModeEraser = document.getElementById('btn-mode-eraser')
         if (btnModeEraser) {
             btnModeEraser.onclick = () => {

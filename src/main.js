@@ -322,7 +322,6 @@ class ScoreFlow {
     this.btnFullscreen = document.getElementById('btn-fullscreen')
     this.btnModeEraser = document.getElementById('btn-mode-eraser')
     this.eraseAllModal = document.getElementById('erase-all-modal')
-    this.btnModeHand = document.getElementById('btn-mode-hand')
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
 
 
