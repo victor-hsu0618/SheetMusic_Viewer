@@ -207,7 +207,8 @@ export class JumpManager {
         const bookmark = {
             id: 'bm-' + Date.now(),
             page: this.currentPage,
-            label: label
+            label: label,
+            updatedAt: Date.now()
         }
 
         this.bookmarks.push(bookmark)

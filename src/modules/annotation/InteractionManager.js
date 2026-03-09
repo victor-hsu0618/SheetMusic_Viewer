@@ -129,7 +129,6 @@ export class InteractionManager {
                 } else {
                     if (toolType === 'recycle-bin') {
                         // RECYCLE ACTION: Move to bin
-                        this.app.stamps = this.app.stamps.filter(s => s !== target)
                         let toolDef = null
                         for (const set of this.app.toolsets) {
                             const tool = set.tools.find(t => t.id === target.type)
@@ -140,7 +139,10 @@ export class InteractionManager {
                             label: toolDef ? toolDef.label : target.type,
                             icon: toolDef ? toolDef.icon : ''
                         })
+                        target.deleted = true
+                        target.updatedAt = Date.now()
                         this.app.saveToStorage()
+                        if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
                         this.app.redrawStamps(pageNum)
                         this.app.updateActiveTools()
                         isInteracting = false
@@ -161,7 +163,9 @@ export class InteractionManager {
                     layerId: 'draw',
                     sourceId: this.app.activeSourceId,
                     points: [pos],
-                    color: this.app.layers.find(l => l.id === 'draw').color
+                    color: this.app.layers.find(l => l.id === 'draw').color,
+                    id: crypto.randomUUID(),
+                    updatedAt: Date.now()
                 }
             } else if (toolType === 'eraser') {
                 const nearby = this.app.findNearbyStamps(pageNum, pos.x, pos.y)
@@ -190,7 +194,9 @@ export class InteractionManager {
                     type: toolType,
                     x: previewPos.x,
                     y: previewPos.y,
-                    data: null
+                    data: null,
+                    id: crypto.randomUUID(),
+                    updatedAt: Date.now()
                 }
                 this.app.lastFocusedStamp = activeObject
             }
@@ -303,6 +309,8 @@ export class InteractionManager {
                             measureObj.data = String(data)
                             const existingMeasure = this.app.stamps.find(s => s.type === 'measure' && s.page === pageNum)
                             if (existingMeasure) measureObj.x = existingMeasure.x
+                            measureObj.id = crypto.randomUUID()
+                            measureObj.updatedAt = Date.now()
                             this.app.stamps.push(measureObj)
                             this.app.updateRulerMarks()
                             this.app.saveToStorage(true)
@@ -321,6 +329,7 @@ export class InteractionManager {
                 }
 
                 this.app.saveToStorage(true)
+                if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
                 this.app.redrawStamps(pageNum)
             }
             isInteracting = false

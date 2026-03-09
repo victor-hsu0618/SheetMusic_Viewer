@@ -24,7 +24,7 @@ export class AnnotationRenderer {
             ctx.globalAlpha = source.opacity || 1
             const isForeign = source.id !== 'self'
 
-            const sourceStamps = this.app.stamps.filter(s => s.page === page && s.sourceId === source.id)
+            const sourceStamps = this.app.stamps.filter(s => s.page === page && s.sourceId === source.id && !s.deleted)
             sourceStamps.forEach(stamp => {
                 const layer = this.app.layers.find(l => l.id === stamp.layerId)
                 if (!layer || !layer.visible) return
@@ -107,7 +107,10 @@ export class AnnotationRenderer {
     drawStampOnCanvas(ctx, canvas, stamp, color, isForeign = false, isHovered = false, isSelectHovered = false, fingerPos = null) {
         const x = stamp.x * canvas.width
         const y = stamp.y * canvas.height
-        const size = 18 * (this.app.scale / 1.5)
+        const isBow = stamp.type === 'up-bow' || stamp.type === 'down-bow'
+        const baseSize = 26 * (this.app.scale / 1.5)
+        const size = isBow ? baseSize * 0.85 : baseSize
+        const textScale = size / 21 // Relative to the original baseline
 
         ctx.save()
 
@@ -144,7 +147,7 @@ export class AnnotationRenderer {
 
         ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : color
         ctx.fillStyle = isHovered ? '#ef444433' : isSelectHovered ? '#6366f133' : `${color}33`
-        ctx.lineWidth = 1.8 * (this.app.scale / 1.5)
+        ctx.lineWidth = 2.2 * (this.app.scale / 1.5)
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
@@ -164,7 +167,7 @@ export class AnnotationRenderer {
 
             switch (d.type) {
                 case 'text':
-                    ctx.font = `${d.font || ''} ${d.size * (this.app.scale / 1.5)}px ${d.fontFace || 'Outfit'}`
+                    ctx.font = `${d.font || ''} ${d.size * textScale * (this.app.scale / 1.5)}px ${d.fontFace || 'Outfit'}`
                     ctx.fillStyle = color
                     ctx.textAlign = 'center'
                     ctx.textBaseline = 'middle'
@@ -211,7 +214,7 @@ export class AnnotationRenderer {
                         })
                     } else if (d.variant === 'measure') {
                         const s = this.app.scale / 1.5
-                        const bw = 22 * s, bh = 18 * s
+                        const bw = 22 * textScale * s, bh = 18 * textScale * s
                         const bx = x - bw / 2, by = y - bh / 2
                         // Outline-only box (no fill)
                         ctx.strokeStyle = isHovered ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.25)'
@@ -220,7 +223,7 @@ export class AnnotationRenderer {
                         ctx.roundRect(bx, by, bw, bh, 3)
                         ctx.stroke()
                         // Light text
-                        ctx.font = `500 ${13 * s}px Outfit`
+                        ctx.font = `500 ${13 * textScale * s}px Outfit`
                         ctx.fillStyle = isHovered ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.35)'
                         ctx.textAlign = 'center'
                         ctx.textBaseline = 'middle'
@@ -271,7 +274,7 @@ export class AnnotationRenderer {
                         ctx.beginPath()
                         ctx.arc(x, y, size * 0.6, 0, Math.PI, false)
                         ctx.stroke()
-                        ctx.lineWidth = 1.8 * (this.app.scale / 1.5)
+                        ctx.lineWidth = 2.2 * (this.app.scale / 1.5)
                     }
                     break
             }

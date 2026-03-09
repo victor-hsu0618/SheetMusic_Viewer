@@ -9,6 +9,9 @@ export class PersistenceManager {
     saveToStorage() {
         if (this.app.pdfFingerprint) {
             localStorage.setItem(`scoreflow_stamps_${this.app.pdfFingerprint}`, JSON.stringify(this.app.stamps))
+            if (this.app.scoreDetailManager) {
+                this.app.scoreDetailManager.save(this.app.pdfFingerprint)
+            }
         }
         localStorage.setItem('scoreflow_stamps', JSON.stringify(this.app.stamps))
         localStorage.setItem('scoreflow_current_fingerprint', this.app.pdfFingerprint || '')

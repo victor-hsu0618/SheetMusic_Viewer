@@ -6,7 +6,8 @@ export default defineConfig({
     server: {
         host: true,
         headers: {
-            'Permissions-Policy': 'fullscreen=(self)'
+            'Permissions-Policy': 'fullscreen=(self)',
+            'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
         }
     },
     define: {

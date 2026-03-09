@@ -556,7 +556,30 @@
             </button>
           </div>
           <div class="tab-divider"></div>
-          <div class="tab-section-label">Integration</div>
+          <div class="tab-section-label">同步與雲端 (Sync & Cloud)</div>
+
+          <div class="setting-item mb-15">
+            <div class="flex-row-center flex-space-between w-full">
+              <label class="setting-label">Google Drive 同步</label>
+              <div id="drive-sync-status-badge" class="badge badge-error">已中斷</div>
+            </div>
+            <div class="flex-row-center gap-10 mt-10">
+              <button id="btn-drive-signin" class="btn btn-primary btn-mini-sidebar w-full">連接儲存空間</button>
+              <button id="btn-drive-signout" class="btn btn-outline-sm btn-mini-sidebar w-full hidden">斷開連接</button>
+            </div>
+
+            <div id="drive-sync-info" class="mt-10 hidden">
+              <div class="flex-row-center flex-space-between w-full text-tiny opacity-70">
+                <span>上次同步:</span>
+                <span id="drive-last-sync-time">從未</span>
+              </div>
+              <div class="sync-log-container mt-5">
+                <div id="drive-sync-log" class="sync-log">
+                  <div class="log-entry system">等待連線...</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div class="setting-item mb-15">
             <label class="setting-label" for="turner-mode-select">Page Turner Mode</label>

@@ -78,7 +78,7 @@ export class AnnotationManager {
         const threshold = 0.06
         const results = []
         this.app.stamps.forEach(s => {
-            if (s.page !== page) return
+            if (s.page !== page || s.deleted) return
             if (!allSources && s.sourceId !== this.app.activeSourceId) return
             let dist
             if (s.points && s.points.length > 0) {
@@ -114,7 +114,10 @@ export class AnnotationManager {
             const chip = wrapper.querySelector('.erase-hover-chip')
             if (chip) chip.remove()
         }
+        stamp.deleted = true
+        stamp.updatedAt = Date.now()
         this.app.saveToStorage(true)
+        if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
         this.redrawStamps(page)
     }
 
@@ -289,17 +292,26 @@ export class AnnotationManager {
     }
 
     eraseAllByCategory(categoryName) {
-        let removed
+        let removed = 0
         if (categoryName === '__all__') {
-            removed = this.app.stamps.length
-            this.app.stamps = []
-        } else {
-            const before = this.app.stamps.length
-            this.app.stamps = this.app.stamps.filter(stamp => {
-                const group = this.app.toolsets.find(g => g.tools.some(t => t.id === stamp.type))
-                return group?.name !== categoryName
+            this.app.stamps.forEach(s => {
+                if (!s.deleted) {
+                    s.deleted = true
+                    s.updatedAt = Date.now()
+                    removed++
+                }
             })
-            removed = before - this.app.stamps.length
+        } else {
+            this.app.stamps.forEach(s => {
+                if (!s.deleted) {
+                    const group = this.app.toolsets.find(g => g.tools.some(t => t.id === s.type))
+                    if (group?.name === categoryName) {
+                        s.deleted = true
+                        s.updatedAt = Date.now()
+                        removed++
+                    }
+                }
+            })
         }
         if (removed === 0) return
         this.app.updateRulerMarks()
@@ -309,6 +321,7 @@ export class AnnotationManager {
             this.redrawStamps(page)
         })
         this.app.saveToStorage(true)
+        if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
     }
 
     closeEraseAllModal() {
@@ -610,6 +623,7 @@ export class AnnotationManager {
         }
 
         this.app.saveToStorage(true)
+        if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
         this.updateLayerVisibility()
         this.redrawStamps(page)
     }

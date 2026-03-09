@@ -7,7 +7,8 @@ export class ProfileManager {
             userName: 'Guest Musician',
             title: 'Principal',
             email: '',
-            note: 'Always focus on the beat.'
+            note: 'Always focus on the beat.',
+            updatedAt: 0
         }
     }
 
@@ -104,6 +105,7 @@ export class ProfileManager {
         this.data.title = this.inputTitle.value.trim() || 'Musician'
         this.data.email = email
         this.data.note = this.inputNote.value.trim()
+        this.data.updatedAt = Date.now()
 
         await this.save()
         this.render()

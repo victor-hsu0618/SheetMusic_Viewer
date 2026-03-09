@@ -57,7 +57,7 @@ export class ViewerManager {
                     await this.loadPDF(new Uint8Array(buffer), file.name)
                 } catch (pdfErr) {
                     console.error('PDF.js Error:', pdfErr)
-                    alert('Failed to construct PDF. The file might be corrupted.')
+                    alert(`Failed to construct PDF: ${pdfErr.message || pdfErr}\n\nThe file might be corrupted or Safari is restricting access.`)
                 } finally {
                     cleanup()
                 }
@@ -165,9 +165,9 @@ export class ViewerManager {
             cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
             cMapPacked: true,
             standardFontDataUrl: new URL('pdfjs/standard_fonts/', baseUrl).href,
-            jbig2WasmUrl: new URL('pdfjs/jbig2.wasm', baseUrl).href,
+            jbig2WasmUrl: new URL('pdfjs/wasm/jbig2.wasm', baseUrl).href,
             // Generic wasmUrl MUST be a directory with a trailing slash
-            wasmUrl: pdfjsDir,
+            wasmUrl: new URL('pdfjs/wasm/', baseUrl).href,
             isEvalSupported: false,
             stopAtErrors: false
         })

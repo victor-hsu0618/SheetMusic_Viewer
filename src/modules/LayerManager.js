@@ -113,7 +113,8 @@ export class LayerManager {
             name,
             color,
             visible: true,
-            type: 'custom'
+            type: 'custom',
+            updatedAt: Date.now()
         })
 
         this.app.activeLayerId = id
@@ -219,6 +220,7 @@ export class LayerManager {
             visBtn.onclick = (e) => {
                 e.stopPropagation()
                 layer.visible = !layer.visible
+                layer.updatedAt = Date.now()
                 this.renderLayerUI()
                 if (this.app.pdf) {
                     for (let p = 1; p <= this.app.pdf.numPages; p++) this.app.redrawStamps(p)

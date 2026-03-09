@@ -72,7 +72,8 @@ export class ScoreDetailManager {
 
         this.mediaUrlInput.value = ''
         this.mediaLabelInput.value = ''
-        this.save(this.app.pdfFingerprint)
+
+        this.onModification() // Ensure lastEdit is updated for sync
         this.render(this.app.pdfFingerprint)
 
         // If it's the first one, load it automatically
@@ -123,7 +124,7 @@ export class ScoreDetailManager {
         if (this.currentInfo.activeMediaId === id) {
             this.currentInfo.activeMediaId = this.currentInfo.mediaList[0]?.id || null
         }
-        this.save(this.app.pdfFingerprint)
+        this.onModification() // Update timestamp for sync
         this.render(this.app.pdfFingerprint)
     }
 
@@ -173,8 +174,7 @@ export class ScoreDetailManager {
         this.currentInfo.name = this.scoreNameInput.value.trim()
         this.currentInfo.composer = this.scoreComposerInput.value.trim()
 
-        // Save to storage
-        this.save(this.app.pdfFingerprint)
+        this.onModification() // Update timestamp for sync
     }
 
     async load(fingerprint) {
@@ -275,7 +275,8 @@ export class ScoreDetailManager {
     getExportMetadata() {
         return {
             name: this.currentInfo.name,
-            composer: this.currentInfo.composer
+            composer: this.currentInfo.composer,
+            fingerprint: this.app.pdfFingerprint
         }
     }
 

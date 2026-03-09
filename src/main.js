@@ -18,9 +18,11 @@ import { InputManager } from './modules/InputManager.js'
 import { PlaybackManager } from './modules/PlaybackManager.js'
 import { JumpManager } from './modules/JumpManager.js'
 import { ViewPanelManager } from './modules/ViewPanelManager.js'
+import { DriveSyncManager } from './modules/DriveSyncManager.js'
 
 // Use local worker for total offline reliability
-pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
+const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs/pdf.worker.min.mjs', baseUrl).href
 
 // Build constants injected by Vite build process
 const APP_BRANCH = typeof __APP_BRANCH__ !== 'undefined' ? __APP_BRANCH__ : 'local-dev';
@@ -164,6 +166,7 @@ class ScoreFlow {
     this.collaborationManager = new CollaborationManager(this)
     this.playbackManager = new PlaybackManager(this)
     this.inputManager = new InputManager(this)
+    this.driveSyncManager = new DriveSyncManager(this)
 
     this.initElements()
     this.jumpManager = new JumpManager(this)
@@ -178,6 +181,7 @@ class ScoreFlow {
     this.inputManager.init()
     this.profileManager.init()
     this.scoreDetailManager.init()
+    this.driveSyncManager.init()
     this.playbackManager.init()
     this.toolManager.initDraggable()
     this.toolManager.initToolbarResizable()
@@ -477,6 +481,21 @@ class ScoreFlow {
     // Tab & Resize Handled by SidebarManager
     // Tab & Resize Handled by SidebarManager
     // Input Handled by InputManager
+
+    // Drive Sync UI Listeners
+    const btnSignIn = document.getElementById('btn-drive-signin')
+    const btnSignOut = document.getElementById('btn-drive-signout')
+    if (btnSignIn) btnSignIn.onclick = () => this.driveSyncManager.signIn()
+    if (btnSignOut) btnSignOut.onclick = () => this.driveSyncManager.signOut()
+  }
+
+  /**
+   * Hook for annotation changes to trigger cloud sync.
+   */
+  onAnnotationChanged() {
+    if (this.driveSyncManager && this.driveSyncManager.isEnabled) {
+      this.driveSyncManager.push()
+    }
   }
 
   showDynamicIndicator(absoluteY) {
