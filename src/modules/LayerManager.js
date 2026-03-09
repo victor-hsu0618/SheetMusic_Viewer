@@ -36,17 +36,6 @@ export class LayerManager {
             }
         }, { passive: true })
 
-        // Keyboard Shortcut for Layers
-        document.addEventListener('keydown', (e) => {
-            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
-            if (isInput) return
-
-            if (e.shiftKey && e.key === 'V') {
-                if (this.app.layerShelf) this.app.layerShelf.classList.toggle('active')
-                if (this.app.layerShelf.classList.contains('active')) this.renderLayerUI()
-            }
-        })
-
         this.initDraggable()
     }
 

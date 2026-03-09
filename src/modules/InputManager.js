@@ -30,8 +30,58 @@ export class InputManager {
 
     initKeyboardListeners() {
         window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
-            // ... rest of keyboard listeners
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable
+            if (isInput) return
+
+            // 1. Zoom Control (Meta+ / Meta-)
+            if (e.metaKey || e.ctrlKey) {
+                if (e.key === '=' || e.key === '+') { e.preventDefault(); this.app.changeZoom(0.1); return; }
+                if (e.key === '-') { e.preventDefault(); this.app.changeZoom(-0.1); return; }
+            }
+
+            // 2. Navigation
+            if (e.key === ' ' || e.key === 'j' || e.key === 'ArrowDown') {
+                e.preventDefault()
+                this.app.jump(1)
+            } else if (e.key === 'k' || e.key === 'ArrowUp') {
+                e.preventDefault()
+                this.app.jump(-1)
+            }
+
+            // 3. UI Toggles
+            switch (e.key.toLowerCase()) {
+                case 's': // Sidebar
+                    e.preventDefault()
+                    this.app.toggleSidebar()
+                    break
+                case 'b': // Bookmarks (Jump Panel)
+                    e.preventDefault()
+                    this.app.jumpManager?.togglePanel()
+                    break
+                case 't': // Toolbar (Doc Bar)
+                    e.preventDefault()
+                    this.app.toggleDocBar()
+                    break
+                case 'f': // Fullscreen
+                    e.preventDefault()
+                    this.app.toggleFullscreen()
+                    break
+                case 'r': // Ruler Toggle (Shift+R)
+                    if (e.shiftKey) {
+                        e.preventDefault()
+                        this.app.toggleRuler()
+                    }
+                    break
+                case 'v': // Layer Shelf (Shift+V)
+                    if (e.shiftKey) {
+                        e.preventDefault()
+                        if (this.app.layerShelf) {
+                            this.app.layerShelf.classList.toggle('active')
+                            if (this.app.layerShelf.classList.contains('active')) this.app.renderLayerUI()
+                        }
+                    }
+                    break
+            }
         })
     }
 

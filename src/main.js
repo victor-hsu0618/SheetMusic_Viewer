@@ -249,6 +249,14 @@ class ScoreFlow {
   renderWelcomeRecentScores() { this.sidebarManager.renderWelcomeRecentScores() }
   renderSidebarRecentScores() { this.sidebarManager.renderSidebarRecentScores() }
 
+  toggleSidebar() {
+    if (this.sidebar) this.sidebar.classList.toggle('open')
+  }
+
+  toggleDocBar() {
+    if (this.docBarManager) this.docBarManager.toggleDocBar()
+  }
+
   // CollaborationManager Proxies
   renderSourceUI() { this.collaborationManager.renderSourceUI() }
   addSource() { this.collaborationManager.addSource() }
