@@ -233,14 +233,14 @@ export class AnnotationRenderer {
                     if (d.variant === 'thumb') {
                         ctx.strokeStyle = color
                         ctx.lineWidth = 0.8 * (this.app.scale / 1.5)
-                        // Smaller Hollow Vertical Ellipse
+                        // Extra Small Hollow Vertical Ellipse
                         ctx.beginPath()
-                        ctx.ellipse(x, y - size * 0.15, size * 0.2, size * 0.35, 0, 0, Math.PI * 2)
+                        ctx.ellipse(x, y - size * 0.12, size * 0.16, size * 0.28, 0, 0, Math.PI * 2)
                         ctx.stroke()
-                        // Smaller Stem Line
+                        // Extra Small Stem Line
                         ctx.beginPath()
-                        ctx.moveTo(x, y + size * 0.2)
-                        ctx.lineTo(x, y + size * 0.55)
+                        ctx.moveTo(x, y + size * 0.16)
+                        ctx.lineTo(x, y + size * 0.44)
                         ctx.stroke()
                     } else if (d.variant === 'fermata') {
                         const fSize = size * 0.45
