@@ -205,6 +205,12 @@ export class ViewerManager {
             const context = canvas.getContext('2d')
 
             const viewport = page.getViewport({ scale: this.scale })
+
+            // Smart Sizing: Compute base factor relative to standard A4 (595pt width)
+            const naturalViewport = page.getViewport({ scale: 1.0 })
+            const pageBaseFactor = naturalViewport.width / 595.0
+            this.app.pageScales[i] = pageBaseFactor
+
             canvas.height = viewport.height
             canvas.width = viewport.width
 

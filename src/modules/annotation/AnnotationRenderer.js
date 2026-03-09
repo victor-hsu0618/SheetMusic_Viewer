@@ -79,12 +79,13 @@ export class AnnotationRenderer {
             ctx.setLineDash([8 * (this.app.scale / 1.5), 6 * (this.app.scale / 1.5)])
         }
 
+        const pageFactor = this.app.pageScales[path.page] || 1.0
         if (path.type === 'highlighter') {
             ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : '#fde04788')
-            ctx.lineWidth = 14 * (this.app.scale / 1.5)
+            ctx.lineWidth = 14 * (this.app.scale / 1.5) * pageFactor
         } else {
             ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
-            ctx.lineWidth = (path.type === 'line' ? 2 : 3) * (this.app.scale / 1.5)
+            ctx.lineWidth = (path.type === 'line' ? 2 : 3) * (this.app.scale / 1.5) * pageFactor
         }
 
         ctx.beginPath()
@@ -108,7 +109,12 @@ export class AnnotationRenderer {
         const x = stamp.x * canvas.width
         const y = stamp.y * canvas.height
         const isBow = stamp.type === 'up-bow' || stamp.type === 'down-bow'
-        const baseSize = 26 * (this.app.scale / 1.5)
+
+        // Smart Sizing: baseSize * PageFactor * UserMultiplier * ZoomScale
+        const pageFactor = this.app.pageScales[stamp.page] || 1.0
+        const userMultiplier = this.app.stampSizeMultiplier || 1.0
+        const baseSize = 26 * (this.app.scale / 1.5) * pageFactor * userMultiplier
+
         const size = isBow ? baseSize * 0.85 : baseSize
         const textScale = size / 21 // Relative to the original baseline
 
@@ -147,7 +153,7 @@ export class AnnotationRenderer {
 
         ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : color
         ctx.fillStyle = isHovered ? '#ef444433' : isSelectHovered ? '#6366f133' : `${color}33`
-        ctx.lineWidth = 2.2 * (this.app.scale / 1.5)
+        ctx.lineWidth = 2.2 * (this.app.scale / 1.5) * pageFactor * userMultiplier
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
@@ -167,7 +173,7 @@ export class AnnotationRenderer {
 
             switch (d.type) {
                 case 'text':
-                    ctx.font = `${d.font || ''} ${d.size * textScale * (this.app.scale / 1.5)}px ${d.fontFace || 'Outfit'}`
+                    ctx.font = `${d.font || ''} ${d.size * textScale * (this.app.scale / 1.5) * pageFactor * userMultiplier}px ${d.fontFace || 'Outfit'}`
                     ctx.fillStyle = color
                     ctx.textAlign = 'center'
                     ctx.textBaseline = 'middle'
@@ -189,7 +195,7 @@ export class AnnotationRenderer {
                     ctx.translate(x, y)
                     ctx.scale(size, size)
                     // Adjust line width to be consistent despite scaling
-                    ctx.lineWidth = (2.5 * (this.app.scale / 1.5)) / size
+                    ctx.lineWidth = (2.5 * (this.app.scale / 1.5) * pageFactor * userMultiplier) / size
                     ctx.lineCap = 'round'
                     ctx.lineJoin = 'round'
 
@@ -205,10 +211,10 @@ export class AnnotationRenderer {
 
                 case 'special':
                     if (d.variant === 'input-text') {
-                        ctx.font = `bold ${22 * (this.app.scale / 1.5)}px Outfit`
+                        ctx.font = `bold ${22 * (this.app.scale / 1.5) * pageFactor * userMultiplier}px Outfit`
                         ctx.fillStyle = color
                         const lines = (stamp.data || '').split('\n')
-                        const lineHeight = 26 * (this.app.scale / 1.5)
+                        const lineHeight = 26 * (this.app.scale / 1.5) * pageFactor * userMultiplier
                         lines.forEach((line, i) => {
                             ctx.fillText(line, x, y + (i * lineHeight))
                         })
@@ -235,7 +241,7 @@ export class AnnotationRenderer {
                     // Legacy support for complex visual logic
                     if (d.variant === 'thumb') {
                         ctx.strokeStyle = color
-                        ctx.lineWidth = 0.8 * (this.app.scale / 1.5)
+                        ctx.lineWidth = 0.8 * (this.app.scale / 1.5) * pageFactor * userMultiplier
                         // Extra Small Hollow Vertical Ellipse
                         ctx.beginPath()
                         ctx.ellipse(x, y - size * 0.12, size * 0.16, size * 0.28, 0, 0, Math.PI * 2)
@@ -274,7 +280,7 @@ export class AnnotationRenderer {
                         ctx.beginPath()
                         ctx.arc(x, y, size * 0.6, 0, Math.PI, false)
                         ctx.stroke()
-                        ctx.lineWidth = 2.2 * (this.app.scale / 1.5)
+                        ctx.lineWidth = 2.2 * (this.app.scale / 1.5) * pageFactor * userMultiplier
                     }
                     break
             }

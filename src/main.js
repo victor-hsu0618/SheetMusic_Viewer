@@ -142,6 +142,8 @@ class ScoreFlow {
     this.lastUsedToolPerCategory = {}
     this.recentTools = [] // Track unique recently used tools
     this.userTextLibrary = ['dolce', 'espress.', 'marcato', 'tenuto'] // Initial custom suggestions
+    this.stampSizeMultiplier = 1.0 // User-defined stamp size (0.5x to 2.0x)
+    this.pageScales = {} // Map of pageNum -> base scaling factor based on PDF dimensions
     this.sources = [
       { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
     ]
@@ -293,6 +295,8 @@ class ScoreFlow {
     this.jumpOffsetValue = document.getElementById('view-jump-offset-value')
     this.settingsJumpOffsetInput = document.getElementById('settings-jump-offset')
     this.settingsJumpOffsetValue = document.getElementById('settings-jump-offset-value')
+    this.settingsStampSizeInput = document.getElementById('settings-stamp-size')
+    this.settingsStampSizeValue = document.getElementById('settings-stamp-size-value')
     this.zoomLevelDisplay = document.getElementById('view-panel-zoom-level')
     this.docBar = document.getElementById('floating-doc-bar')
     this.exportBtn = document.getElementById('export-score-btn')
@@ -442,6 +446,12 @@ class ScoreFlow {
         if (e.button !== 0) return
         this.toggleQuickLoadModal(false)
         this.uploader.click()
+      })
+    }
+
+    if (this.settingsStampSizeInput) {
+      this.settingsStampSizeInput.addEventListener('input', (e) => {
+        this.updateStampSize(e.target.value)
       })
     }
 
@@ -614,6 +624,16 @@ class ScoreFlow {
       this.settingsJumpOffsetInput.value = val
       if (this.settingsJumpOffsetValue) this.settingsJumpOffsetValue.textContent = `${val}px`
     }
+  }
+
+  updateStampSize(val) {
+    this.stampSizeMultiplier = parseFloat(val)
+    if (this.settingsStampSizeInput) {
+      this.settingsStampSizeInput.value = val
+      if (this.settingsStampSizeValue) this.settingsStampSizeValue.textContent = `${this.stampSizeMultiplier.toFixed(1)}x`
+    }
+    this.redrawAllAnnotationLayers()
+    this.saveToStorage()
   }
 }
 

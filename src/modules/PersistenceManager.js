@@ -21,6 +21,7 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_active_categories', JSON.stringify(this.app.activeCategories))
         localStorage.setItem('scoreflow_layers', JSON.stringify(this.app.layers))
         localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary))
+        localStorage.setItem('scoreflow_stamp_size_multiplier', this.app.stampSizeMultiplier)
 
         const turnerMode = document.getElementById('turner-mode-select') ? document.getElementById('turner-mode-select').value : 'default';
         localStorage.setItem('scoreflow_turner_mode', turnerMode)
@@ -47,6 +48,7 @@ export class PersistenceManager {
         const docBarCollapsedStr = localStorage.getItem('scoreflow_doc_bar_collapsed')
         const rulerVisibleData = localStorage.getItem('scoreflow_ruler_visible')
         const userTextLibraryData = localStorage.getItem('scoreflow_user_text_library')
+        const stampSizeMultiplierData = localStorage.getItem('scoreflow_stamp_size_multiplier')
 
         if (recentSoloData) this.app.recentSoloScores = JSON.parse(recentSoloData)
 
@@ -67,6 +69,15 @@ export class PersistenceManager {
         if (rulerVisibleData !== null) this.app.rulerVisible = JSON.parse(rulerVisibleData)
         if (userTextLibraryData) {
             this.app.userTextLibrary = JSON.parse(userTextLibraryData)
+        }
+        if (stampSizeMultiplierData) {
+            this.app.stampSizeMultiplier = parseFloat(stampSizeMultiplierData)
+            if (this.app.settingsStampSizeInput) {
+                this.app.settingsStampSizeInput.value = this.app.stampSizeMultiplier
+                if (this.app.settingsStampSizeValue) {
+                    this.app.settingsStampSizeValue.textContent = `${this.app.stampSizeMultiplier.toFixed(1)}x`
+                }
+            }
         }
 
         const turnerSelect = document.getElementById('turner-mode-select')

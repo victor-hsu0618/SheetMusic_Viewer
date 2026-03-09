@@ -1190,3 +1190,14 @@ code {
 
 /* Ensure locked icon reflects state if we wanted to change SVG path, 
    but color change is usually sufficient. */
+/* Smart Stamp Sizing Utilities */
+.badge-outline {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.min-w-40 {
+  min-width: 40px;
+  text-align: center;
+}
