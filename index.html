@@ -199,16 +199,19 @@
 
   </div>
 
-  <!-- View Control Sub-Panel (Modular Inspector) -->
-  <div id="view-control-panel" class="view-control-panel">
+  <!-- View Control Sub-Panel (Modular Inspector - Calculator Aesthetic) -->
+  <div id="view-control-panel" class="jump-sub-panel calculator-style">
+    <div class="jump-drag-handle">
+      <div class="drag-bar"></div>
+    </div>
     <div class="jump-header">
-      <div class="jump-drag-handle">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M4 7h16M4 12h16M4 17h16"></path>
+      <span class="jump-title">View Inspector</span>
+      <button id="btn-close-view-panel" class="btn-close-mini" title="Close Panel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
-        <span>View Inspector</span>
-      </div>
-      <button id="btn-close-view-panel" class="btn-close-mini" title="Close Panel">✕</button>
+      </button>
     </div>
 
     <div class="view-panel-grid">
@@ -217,7 +220,7 @@
         <div class="view-action-row">
           <div class="view-btn-group">
             <button id="view-zoom-out" class="view-btn" title="Zoom Out">-</button>
-            <div id="view-panel-zoom-level" class="view-zoom-readout">150%</div>
+            <div id="view-panel-zoom-level" class="view-zoom-readout">100%</div>
             <button id="view-zoom-in" class="view-btn" title="Zoom In">+</button>
           </div>
         </div>
@@ -249,13 +252,11 @@
               <path
                 d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
             </svg>
-            Screen
+            Full
           </button>
           <button id="view-ruler-toggle" class="view-btn" title="Toggle Ruler">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="9" y1="3" x2="9" y2="21" />
-              <line x1="9" y1="6" x2="13" y2="6" stroke-width="1.5" />
-              <line x1="9" y1="18" x2="15" y2="18" stroke-width="1.5" />
+              <path d="M5 12h14" />
             </svg>
             Ruler
           </button>
@@ -263,14 +264,14 @@
       </div>
 
       <div class="view-section">
-        <div class="view-section-title">Baseline Offset (尺規基準位)</div>
+        <div class="view-section-title">Ruler Precision</div>
         <div class="view-precision-control">
           <div class="range-label">
-            <span>Alignment Height</span>
-            <span id="view-jump-offset-value">40px</span>
+            <span>Scroll Offset</span>
+            <span id="view-jump-offset-value">450px</span>
           </div>
-          <input type="range" id="view-jump-offset" class="view-range-slider" min="0" max="250" value="40"
-            title="Adjust Jump Alignment Height">
+          <input type="range" id="view-jump-offset" class="view-range-slider" min="0" max="800" value="450"
+            title="Adjust the baseline position (top: 0, bottom: viewport height)">
         </div>
       </div>
     </div>
@@ -583,11 +584,11 @@
           <div class="tab-section-label">Jump Interaction</div>
 
           <div class="setting-item">
-            <label class="setting-label" for="jump-offset">Anchor Auto-scroll Offset</label>
+            <label class="setting-label" for="settings-jump-offset">Anchor Auto-scroll Offset</label>
             <div class="flex-row-center gap-10 mt-5">
-              <input type="range" id="jump-offset" min="-100" max="100" step="5" value="0" class="w-full"
+              <input type="range" id="settings-jump-offset" min="0" max="800" step="5" value="450" class="w-full"
                 title="Jump Offset" />
-              <span id="jump-offset-value" class="badge">0px</span>
+              <span id="settings-jump-offset-value" class="badge">450px</span>
             </div>
           </div>
 

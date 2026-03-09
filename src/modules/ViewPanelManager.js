@@ -37,12 +37,7 @@ export class ViewPanelManager {
         // Precision Controls
         if (this.offsetSlider) {
             this.offsetSlider.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value)
-                if (this.offsetValue) this.offsetValue.textContent = `${val}px`
-                if (this.app.rulerManager) {
-                    this.app.rulerManager.jumpOffsetPx = val
-                    this.app.rulerManager.updateJumpLinePosition()
-                }
+                this.app.updateJumpOffset(parseInt(e.target.value))
             })
         }
 

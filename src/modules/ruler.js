@@ -29,33 +29,29 @@ export class RulerManager {
     initEventListeners() {
         if (this.app.jumpOffsetInput) {
             this.app.jumpOffsetInput.addEventListener('input', (e) => {
-                const px = parseInt(e.target.value)
-                if (this.app.jumpOffsetValue) this.app.jumpOffsetValue.textContent = `${px}px`
-                this.jumpOffsetPx = px
-                this.updateJumpLinePosition()
+                this.app.updateJumpOffset(parseInt(e.target.value))
             })
         }
 
         const handle = document.querySelector('.jump-line-handle')
         if (handle) {
             let isDraggingRuler = false
-            handle.addEventListener('mousedown', (e) => {
+
+            const startDragging = (e) => {
                 isDraggingRuler = true
-                e.preventDefault()
-            })
-            window.addEventListener('mousemove', (e) => {
+                if (e.cancelable) e.preventDefault()
+            }
+
+            const moveDragging = (e) => {
                 if (!isDraggingRuler) return
-                let newY = e.clientY
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY
+                let newY = clientY
                 if (newY < 0) newY = 0
                 if (newY > window.innerHeight - 50) newY = window.innerHeight - 50
-                this.jumpOffsetPx = newY
-                this.updateJumpLinePosition()
-                if (this.app.jumpOffsetInput) {
-                    this.app.jumpOffsetInput.value = newY
-                    if (this.app.jumpOffsetValue) this.app.jumpOffsetValue.textContent = `${Math.round(newY)}px`
-                }
-            })
-            window.addEventListener('mouseup', () => {
+                this.app.updateJumpOffset(newY)
+            }
+
+            const stopDragging = () => {
                 if (isDraggingRuler) {
                     isDraggingRuler = false
                     const beam = document.querySelector('.jump-line-beam')
@@ -64,7 +60,16 @@ export class RulerManager {
                         setTimeout(() => beam.classList.remove('pulse'), 600)
                     }
                 }
-            })
+            }
+
+            handle.addEventListener('mousedown', startDragging)
+            handle.addEventListener('touchstart', startDragging, { passive: false })
+
+            window.addEventListener('mousemove', moveDragging)
+            window.addEventListener('touchmove', moveDragging, { passive: false })
+
+            window.addEventListener('mouseup', stopDragging)
+            window.addEventListener('touchend', stopDragging)
         }
 
     }

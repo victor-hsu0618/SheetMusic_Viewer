@@ -278,6 +278,8 @@ class ScoreFlow {
     this.jumpLine = document.getElementById('jump-line')
     this.jumpOffsetInput = document.getElementById('view-jump-offset')
     this.jumpOffsetValue = document.getElementById('view-jump-offset-value')
+    this.settingsJumpOffsetInput = document.getElementById('settings-jump-offset')
+    this.settingsJumpOffsetValue = document.getElementById('settings-jump-offset-value')
     this.zoomLevelDisplay = document.getElementById('view-panel-zoom-level')
     this.docBar = document.getElementById('floating-doc-bar')
     this.exportBtn = document.getElementById('export-score-btn')
@@ -454,6 +456,12 @@ class ScoreFlow {
       this.closeSidebarBtn.addEventListener('click', () => {
         this.sidebar.classList.remove('open')
       })
+      // Jump Offset Sync (Sidebar)
+      if (this.settingsJumpOffsetInput) {
+        this.settingsJumpOffsetInput.addEventListener('input', (e) => {
+          this.updateJumpOffset(parseInt(e.target.value))
+        })
+      }
     }
 
     if (this.resetLayersBtn) {
@@ -546,6 +554,28 @@ class ScoreFlow {
       localStorage.clear()
       try { await db.clear() } catch (err) { if (window.indexedDB) window.indexedDB.deleteDatabase('ScoreFlowStorage') }
       window.location.reload()
+    }
+  }
+
+  /**
+   * Synchronize the jump offset across all UI components and logic.
+   */
+  updateJumpOffset(val) {
+    if (this.rulerManager) {
+      this.rulerManager.jumpOffsetPx = val
+      this.rulerManager.updateJumpLinePosition()
+    }
+
+    // Sync Slider 1: View Panel
+    if (this.jumpOffsetInput) {
+      this.jumpOffsetInput.value = val
+      if (this.jumpOffsetValue) this.jumpOffsetValue.textContent = `${val}px`
+    }
+
+    // Sync Slider 2: Sidebar Settings
+    if (this.settingsJumpOffsetInput) {
+      this.settingsJumpOffsetInput.value = val
+      if (this.settingsJumpOffsetValue) this.settingsJumpOffsetValue.textContent = `${val}px`
     }
   }
 }
