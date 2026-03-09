@@ -15,6 +15,7 @@ import { DocActionManager } from './modules/DocActionManager.js'
 import { SidebarManager } from './modules/sidebar.js'
 import { CollaborationManager } from './modules/collaboration.js'
 import { InputManager } from './modules/InputManager.js'
+import { PlaybackManager } from './modules/PlaybackManager.js'
 
 // Use local worker for total offline reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
@@ -156,6 +157,7 @@ class ScoreFlow {
     this.docActionManager = new DocActionManager(this)
     this.sidebarManager = new SidebarManager(this)
     this.collaborationManager = new CollaborationManager(this)
+    this.playbackManager = new PlaybackManager(this)
     this.inputManager = new InputManager(this)
 
     this.initElements()
@@ -165,6 +167,7 @@ class ScoreFlow {
     this.inputManager.init()
     this.profileManager.init()
     this.scoreDetailManager.init()
+    this.playbackManager.init()
     this.toolManager.initDraggable()
     this.toolManager.initToolbarResizable()
     this.initSidebarResizable()

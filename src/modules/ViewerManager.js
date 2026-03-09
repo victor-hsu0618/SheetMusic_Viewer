@@ -262,7 +262,8 @@ export class ViewerManager {
         if (!this.pdf) return
         const page = await this.pdf.getPage(1)
         const naturalWidth = page.getViewport({ scale: 1 }).width
-        const rulerW = this.app.rulerVisible ? (parseInt(getComputedStyle(document.getElementById('jump-ruler')).width) || 28) : 0
+        // Ruler is now an overlay, so we don't reserve side space for it.
+        const rulerW = 0
         const availW = this.app.viewer.clientWidth - rulerW - 8 // 8px breathing room
         this.scale = Math.min(Math.max(0.5, availW / naturalWidth), 4)
         this.updateZoomDisplay()

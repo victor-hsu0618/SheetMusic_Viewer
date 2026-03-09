@@ -1,7 +1,7 @@
 Issues:
 
 * [X] iPad 無法Page 無法往上捲, 手勢沒作用, 會變成 Browser 的scrolling
-* [ ] iPad tool bar 無法移動
+* [X] iPad tool bar 無法移動 (Fixed)
 
 * [X] iPad 上, 左上功能 Bar 太粗, 蓋到樂譜, 希望可以縮小甚至 縮小到單一 icon 化
   - [Fixed] 使用 @media (pointer: coarse) 自動縮小到 0.82 倍, 只針對觸控裝置
@@ -27,7 +27,7 @@ Enhancement:
 7. [ ] 登出後, 沒有回到主畫面登入的畫面
 8. [ ] 登入後, 選擇 Folder 出現的 score list 應該要是新的頁面, 而不是放在 原來Start a new Mission 頁面的下面或右邊
 9. [ ] Create New Identity, 應該要放在 既有 Identity 選擇畫面的右邊..而不是下面
-10. [ ] 主畫面的 Select Score Folder 不會出來畫面...
+10. [X] [Removed] 主畫面的 Select Score Folder 不會出來畫面...
 11. [ ] Setting 畫面的 Change project folder 跟 search 太接近了 , Search 應該是跟底下 score list 一起才對
 12. [ ] Setting 畫面的 Change Project Folder 不夠專業跟美觀, 另外這邊如果選擇了, 這個專案就變成新的目錄, 蓋掉原來 Main UI startup 選擇的
 13. [ ] Private backup 應該只顯示最新的一份, 而不是一直疊加, 舊的可以 backup 在folder裡, 最多三個, 超過刪除
@@ -37,3 +37,4 @@ Enhancement:
 17. [X] Stamp Palette 改為由按鈕 toggle 顯示/隱藏 (不再自動展開)
 18. [ ] 增加打包給老師 review 的功能
 19. [ ] 樂團功能
+20. [ ] Music Anchor / Playback Panel 強化 (多重媒體清單 UI 優化、Anchor 吸附邏輯精細化)

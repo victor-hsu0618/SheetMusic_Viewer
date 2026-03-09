@@ -539,6 +539,10 @@ export class ToolManager {
                             this.app.annotationManager.showEraseAllModal()
                             return
                         }
+                        if (tool.id === 'music-anchor') {
+                            this.app.playbackManager.toggle()
+                            return
+                        }
                         this.app.activeStampType = tool.id
                         this.app.lastUsedToolPerCategory[catName] = tool.id
 

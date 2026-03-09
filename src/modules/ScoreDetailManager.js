@@ -7,7 +7,9 @@ export class ScoreDetailManager {
             name: '',
             composer: '',
             lastEdit: null,
-            lastAuthor: null
+            lastAuthor: null,
+            mediaList: [], // [{ id, label, type, source }]
+            activeMediaId: null
         }
     }
 
@@ -18,12 +20,111 @@ export class ScoreDetailManager {
         this.scoreFilenameDisplay = document.getElementById('score-filename-display')
         this.scoreFingerprintDisplay = document.getElementById('score-fingerprint-display')
 
+        // Media UI
+        this.mediaLabelInput = document.getElementById('sidebar-media-label')
+        this.mediaUrlInput = document.getElementById('sidebar-media-url')
+        this.mediaListContainer = document.getElementById('sidebar-media-list')
+        this.btnAddYoutube = document.getElementById('sidebar-add-youtube')
+        this.btnAddLocal = document.getElementById('sidebar-add-local')
+        this.localFileInput = document.getElementById('sidebar-local-input')
+
         // Stats Elements
         this.statsTotalCount = document.getElementById('stats-total-count')
         this.statsLastEdit = document.getElementById('stats-last-edit')
         this.statsAuthor = document.getElementById('stats-author')
 
         this.initEventListeners()
+    }
+
+    initEventListeners() {
+        if (this.scoreNameInput) {
+            this.scoreNameInput.addEventListener('input', () => this.handleInputChange())
+        }
+        if (this.scoreComposerInput) {
+            this.scoreComposerInput.addEventListener('input', () => this.handleInputChange())
+        }
+
+        if (this.btnAddYoutube) {
+            this.btnAddYoutube.addEventListener('click', () => this.handleAddYoutube())
+        }
+        if (this.btnAddLocal) {
+            this.btnAddLocal.addEventListener('click', () => this.localFileInput.click())
+        }
+        if (this.localFileInput) {
+            this.localFileInput.addEventListener('change', (e) => this.handleLocalFile(e))
+        }
+    }
+
+    handleAddYoutube() {
+        const url = this.mediaUrlInput.value.trim()
+        const label = this.mediaLabelInput.value.trim() || 'YouTube Video'
+        if (!url) return
+
+        const mediaObj = {
+            id: 'media-' + Date.now(),
+            label,
+            type: 'youtube',
+            source: url
+        }
+
+        this.currentInfo.mediaList.push(mediaObj)
+        if (!this.currentInfo.activeMediaId) this.currentInfo.activeMediaId = mediaObj.id
+
+        this.mediaUrlInput.value = ''
+        this.mediaLabelInput.value = ''
+        this.save(this.app.pdfFingerprint)
+        this.render(this.app.pdfFingerprint)
+
+        // If it's the first one, load it automatically
+        if (this.currentInfo.activeMediaId === mediaObj.id) {
+            this.app.playbackManager?.loadMedia(mediaObj)
+        }
+    }
+
+    handleLocalFile(e) {
+        const file = e.target.files[0]
+        if (!file) return
+
+        const label = this.mediaLabelInput.value.trim() || file.name
+        const mediaObj = {
+            id: 'media-' + Date.now(),
+            label,
+            type: 'local',
+            source: file // Note: File object, will need special handling for persistence if desired, 
+            // but for now we follow the existing pattern
+        }
+
+        this.currentInfo.mediaList.push(mediaObj)
+        if (!this.currentInfo.activeMediaId) this.currentInfo.activeMediaId = mediaObj.id
+
+        this.mediaLabelInput.value = ''
+        this.save(this.app.pdfFingerprint)
+        this.render(this.app.pdfFingerprint)
+
+        if (this.currentInfo.activeMediaId === mediaObj.id) {
+            this.app.playbackManager?.loadMedia(mediaObj)
+        }
+        e.target.value = ''
+    }
+
+    selectMedia(id) {
+        this.currentInfo.activeMediaId = id
+        this.save(this.app.pdfFingerprint)
+        this.render(this.app.pdfFingerprint)
+
+        const media = this.currentInfo.mediaList.find(m => m.id === id)
+        if (media) {
+            this.app.playbackManager?.loadMedia(media)
+        }
+    }
+
+    deleteMedia(id) {
+        this.currentInfo.mediaList = this.currentInfo.mediaList.filter(m => m.id !== id)
+        if (this.currentInfo.activeMediaId === id) {
+            this.currentInfo.activeMediaId = this.currentInfo.mediaList[0]?.id || null
+        }
+        this.save(this.app.pdfFingerprint)
+        this.render(this.app.pdfFingerprint)
     }
 
     refreshStats() {
@@ -66,15 +167,6 @@ export class ScoreDetailManager {
         }
     }
 
-    initEventListeners() {
-        if (this.scoreNameInput) {
-            this.scoreNameInput.addEventListener('input', () => this.handleInputChange())
-        }
-        if (this.scoreComposerInput) {
-            this.scoreComposerInput.addEventListener('input', () => this.handleInputChange())
-        }
-    }
-
     handleInputChange() {
         if (!this.app.pdfFingerprint) return
 
@@ -96,26 +188,40 @@ export class ScoreDetailManager {
                     name: info.name || '',
                     composer: info.composer || '',
                     lastEdit: info.lastEdit || null,
-                    lastAuthor: info.lastAuthor || null
+                    lastAuthor: info.lastAuthor || null,
+                    mediaList: info.mediaList || (info.media ? [{ id: 'legacy', label: 'Default Video', ...info.media }] : []),
+                    activeMediaId: info.activeMediaId || (info.media ? 'legacy' : null)
                 }
             } catch (err) {
                 console.error('[ScoreDetailManager] Failed to parse score detail data:', err)
-                this.currentInfo = { name: '', composer: '' }
+                this.currentInfo = { name: '', composer: '', mediaList: [], activeMediaId: null }
             }
         } else {
             // New score defaults
             this.currentInfo = {
                 name: this.app.activeScoreName ? this.app.activeScoreName.replace(/\.pdf$/i, '') : '',
-                composer: ''
+                composer: '',
+                mediaList: [],
+                activeMediaId: null
             }
         }
 
         this.render(fingerprint)
+
+        // Load active media if sidebar is loaded
+        if (this.currentInfo.activeMediaId) {
+            const activeMedia = this.currentInfo.mediaList.find(m => m.id === this.currentInfo.activeMediaId)
+            if (activeMedia) this.app.playbackManager?.loadMedia(activeMedia)
+        }
     }
 
     save(fingerprint) {
         if (!fingerprint) return
-        localStorage.setItem(`scoreflow_detail_${fingerprint}`, JSON.stringify(this.currentInfo))
+        // We don't save File objects to localStorage, so filter them out or handle specifically
+        // Existing patterns in this app seem to prioritize ephemeral local file access
+        const saveData = { ...this.currentInfo }
+        saveData.mediaList = saveData.mediaList.map(m => m.type === 'local' ? { ...m, source: null } : m)
+        localStorage.setItem(`scoreflow_detail_${fingerprint}`, JSON.stringify(saveData))
     }
 
     render(fingerprint) {
@@ -131,6 +237,38 @@ export class ScoreDetailManager {
         }
         if (this.scoreFingerprintDisplay) {
             this.scoreFingerprintDisplay.textContent = fingerprint ? (fingerprint.slice(0, 16) + '...') : 'Unknown'
+        }
+
+        // Render Media List
+        if (this.mediaListContainer) {
+            this.mediaListContainer.innerHTML = ''
+            this.currentInfo.mediaList.forEach(media => {
+                const isActive = media.id === this.currentInfo.activeMediaId
+                const row = document.createElement('div')
+                row.className = `media-item-row ${isActive ? 'active' : ''}`
+                row.innerHTML = `
+                    <div class="media-item-info">
+                        <span class="media-item-label">${media.label}</span>
+                        <span class="media-item-type">${media.type}</span>
+                    </div>
+                    <div class="flex-row-center gap-5">
+                        <button class="btn-icon-mini media-select-btn" title="Set Active">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                        </button>
+                        <button class="btn-icon-mini media-delete-btn text-danger" title="Delete">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `
+                row.querySelector('.media-select-btn').onclick = () => this.selectMedia(media.id)
+                row.querySelector('.media-delete-btn').onclick = () => this.deleteMedia(media.id)
+                this.mediaListContainer.appendChild(row)
+            })
         }
     }
 

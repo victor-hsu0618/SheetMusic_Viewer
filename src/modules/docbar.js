@@ -34,10 +34,11 @@ export class DocBarManager {
         const btnJumpEnd = document.getElementById('btn-jump-end')
         if (btnJumpEnd) btnJumpEnd.onclick = () => this.app.goToEnd()
 
-        const btnFullscreen = document.getElementById('btn-fullscreen')
-        if (btnFullscreen) btnFullscreen.addEventListener('click', () => this.app.toggleFullscreen())
+        // Mode / Action Toggles
+        const btnQuickOpen = document.getElementById('btn-quick-open')
+        if (btnQuickOpen) btnQuickOpen.onclick = () => this.app.openPdfFilePicker()
 
-        // Quick Mode Actions
+        // Mode Actions
         const btnModeHand = document.getElementById('btn-mode-hand')
         if (btnModeHand) {
             btnModeHand.onclick = () => {
@@ -97,10 +98,16 @@ export class DocBarManager {
             }
         }, { passive: true })
 
-        // Keyboard Shortcut for Layers
+        // Keyboard Shortcut for Layers & Quick Open
         document.addEventListener('keydown', (e) => {
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
+            if (isInput) return
+
             if (e.shiftKey && e.key === 'V') {
                 if (this.app.layerShelf) this.app.layerShelf.classList.toggle('active')
+            }
+            if (e.key.toLowerCase() === 'o') {
+                this.app.openPdfFilePicker()
             }
         })
     }

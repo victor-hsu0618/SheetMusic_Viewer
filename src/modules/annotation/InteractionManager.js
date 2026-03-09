@@ -42,56 +42,21 @@ export class InteractionManager {
         }
 
         // --- STAMP PREVIEW CONFIGURE ---
-        const STAMP_OFFSET_X_PX = 15
-        const STAMP_OFFSET_Y_PX = 30
-        const EDGE_THRESHOLD_X = 0.15  // flip X when cursor within 15% of RIGHT edge
-        const EDGE_THRESHOLD_Y = 0.12  // flip Y when cursor within 12% of BOTTOM edge
+        const STAMP_OFFSET_X_PX = 0
+        const STAMP_OFFSET_Y_PX = 0
+        const EDGE_THRESHOLD_X = 0.15
+        const EDGE_THRESHOLD_Y = 0.12
 
         /**
-         * Compute preview position for stamps (offset from cursor).
-         * Includes boundary compensation for right and bottom edges.
+         * Compute preview position for stamps (exact cursor pos).
          */
         const getStampPreviewPos = (pos) => {
-            const rect = overlay.getBoundingClientRect()
-            // X: binary flip near right page edge
-            const nearRight = pos.x > 1 - EDGE_THRESHOLD_X
-            const dx = (nearRight ? 1 : -1) * STAMP_OFFSET_X_PX / rect.width
-
-            // Y: smooth lerp near viewport bottom
-            const cursorScreenY = rect.top + pos.y * rect.height
-            const distFromBottom = window.innerHeight - cursorScreenY
-            const TRANSITION_PX = STAMP_OFFSET_Y_PX * 4  // lerp zone height
-            let dyPx
-            if (distFromBottom >= TRANSITION_PX) {
-                dyPx = -STAMP_OFFSET_Y_PX          // normal: above cursor
-            } else if (distFromBottom <= 0) {
-                dyPx = STAMP_OFFSET_Y_PX           // past viewport bottom: below cursor
-            } else {
-                // Smooth interpolation
-                const t = 1 - distFromBottom / TRANSITION_PX
-                dyPx = -STAMP_OFFSET_Y_PX + t * STAMP_OFFSET_Y_PX * 2
-            }
             return {
-                x: Math.max(0.01, Math.min(0.99, pos.x + dx)),
-                y: Math.max(0.01, Math.min(0.99, pos.y + dyPx / rect.height))
+                x: Math.max(0.001, Math.min(0.999, pos.x)),
+                y: Math.max(0.001, Math.min(0.999, pos.y))
             }
         }
 
-        /**
-         * Draw a dashed leader line between cursor and offset preview.
-         */
-        const drawLeaderLine = (ctx, canvas, cursorPos, previewPos) => {
-            const scale = this.app.scale / 1.5
-            ctx.save()
-            ctx.setLineDash([5 * scale, 4 * scale])
-            ctx.strokeStyle = 'rgba(80, 80, 80, 0.4)'
-            ctx.lineWidth = 1.2 * scale
-            ctx.beginPath()
-            ctx.moveTo(cursorPos.x * canvas.width, cursorPos.y * canvas.height)
-            ctx.lineTo(previewPos.x * canvas.width, previewPos.y * canvas.height)
-            ctx.stroke()
-            ctx.restore()
-        }
 
         // --- ACTION HANDLERS ---
 
@@ -247,7 +212,6 @@ export class InteractionManager {
                 this.app.redrawStamps(pageNum)
                 const layer = this.app.layers.find(l => l.id === activeObject.layerId)
                 this.app.drawStampOnCanvas(ctx, canvas, activeObject, layer ? layer.color : '#000000', true)
-                if (!e.touches) drawLeaderLine(ctx, canvas, pos, previewPos)
             }
         }
 
@@ -299,7 +263,6 @@ export class InteractionManager {
                     const layer = group ? this.app.layers.find(l => l.type === group.type) : null
                     const color = layer ? layer.color : '#6366f1'
                     this.app.drawStampOnCanvas(ctx, canvas, { type: this.app.activeStampType, x: previewPos.x, y: previewPos.y, page: pageNum }, color, true)
-                    if (!e.touches) drawLeaderLine(ctx, canvas, pos, previewPos)
                 }
             }
         }

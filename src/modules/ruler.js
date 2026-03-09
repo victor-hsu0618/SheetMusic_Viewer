@@ -96,11 +96,31 @@ export class RulerManager {
         const firstPage = document.querySelector('.page-container')
         if (!firstPage) return
         const pageRect = firstPage.getBoundingClientRect()
-        const rulerW = parseInt(getComputedStyle(ruler).getPropertyValue('width')) || 28
-        ruler.style.left = `${Math.max(0, pageRect.left - rulerW)}px`
+        const rulerLeft = Math.floor(pageRect.left)
+
+        // Position internal parts within the full-width transparent overlay
+        const track = ruler.querySelector('.ruler-track')
+        const marksContainer = document.getElementById('ruler-marks')
+
+        if (track) track.style.left = `${rulerLeft}px`
+        if (marksContainer) marksContainer.style.left = `${rulerLeft}px`
 
         const beam = ruler.querySelector('.jump-line-beam')
-        if (beam) beam.style.width = `${pageRect.width}px`
+        const indicator = ruler.querySelector('.jump-line-indicator')
+
+        if (beam) {
+            // Beam starts exactly where page starts
+            beam.style.left = `${rulerLeft}px`
+            // Ensure width doesn't spill past viewport right edge
+            const safeWidth = Math.min(pageRect.width, window.innerWidth - pageRect.left - 1)
+            beam.style.width = `${Math.floor(safeWidth)}px`
+        }
+
+        // Ensure the handle stays with the track
+        if (indicator) {
+            indicator.style.left = `${rulerLeft}px`
+        }
+
         this.updateRulerClip()
     }
 

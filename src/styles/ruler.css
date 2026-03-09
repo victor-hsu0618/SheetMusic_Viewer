@@ -1,27 +1,20 @@
 /* Jump Line Indicator & Ruler (Word-style) */
 .jump-ruler {
-  position: fixed;
+  position: absolute;
   left: 0;
-  /* overridden by JS to align with PDF page left edge */
   top: 0;
-  bottom: 0;
-  width: 28px;
-  background: white;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  width: 100%;
+  height: 100%;
   z-index: 1000;
   display: block;
-  pointer-events: auto;
-  transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.3s;
+  pointer-events: none;
+  /* Let clicks pass to PDF unless on track/handle */
+  transition: opacity 0.3s;
 }
 
 .jump-ruler.hidden {
   opacity: 0.3;
-  pointer-events: auto;
-  transform: translateX(-24px);
-  /* Leaves 4px visible */
-  background: transparent;
-  border-right: 4px solid var(--primary);
-  cursor: pointer;
+  pointer-events: none;
 }
 
 .jump-ruler.hidden:hover {
@@ -70,22 +63,43 @@
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
+  /* Positioned by JS */
   bottom: 0;
+  width: 28px;
   background-image: linear-gradient(var(--border) 1px, transparent 1px);
   background-size: 100% 10px;
   /* 10px per hash mark */
-  opacity: 0.5;
+  opacity: 0.8;
+  background-color: rgba(255, 255, 255, 0.3);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  pointer-events: auto;
+  transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.jump-ruler.hidden .ruler-track {
+  transform: translateX(-24px);
+  background-color: transparent;
+  border-right: 4px solid var(--primary);
+  cursor: pointer;
 }
 
 .ruler-marks {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  /* Positioned by JS */
+  width: 28px;
   height: 100%;
   overflow: hidden;
   pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.jump-ruler.hidden .ruler-marks {
+  transform: translateX(-24px);
+  opacity: 0;
 }
 
 .ruler-anchor-mark {
@@ -182,12 +196,18 @@
 .jump-line-indicator {
   position: absolute;
   left: 0;
-  width: 100%;
+  /* Positioned by JS */
+  width: 28px;
   height: 0;
   /* Anchor point */
   pointer-events: none;
   /* Let clicks pass through */
-  transition: top 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: top 0.2s cubic-bezier(0.165, 0.84, 0.44, 1), transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.jump-ruler.hidden .jump-line-indicator {
+  transform: translateX(-24px);
+  opacity: 0;
 }
 
 /* Numeric Keypad for Measure Dialog */
@@ -310,7 +330,7 @@
 /* The Horizontal Beam */
 .jump-line-beam {
   position: absolute;
-  left: 28px;
+  left: 0;
   top: -1px;
   width: 100%;
   /* overridden by JS to match PDF page width */

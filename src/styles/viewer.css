@@ -9,8 +9,6 @@
   flex-direction: column;
   align-items: center;
   padding: 0;
-  /* scroll-behavior: smooth; */
-  transition: padding-right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   overscroll-behavior-y: none;
   /* CRITICAL: Snaps top/bottom tightly */
   touch-action: pan-y;
