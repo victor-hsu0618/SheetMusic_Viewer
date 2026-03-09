@@ -65,137 +65,6 @@
 <body ontouchstart="" style="touch-action: manipulation;">
   <div id="app">
     <main class="viewer-container full-height" id="viewer-container">
-      <!-- Floating Document Control Bar (Unified Control Hub) -->
-      <div id="floating-doc-bar" class="floating-doc-bar collapsed">
-        <div class="doc-drag-handle">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="9" cy="5" r="1.5" />
-            <circle cx="9" cy="12" r="1.5" />
-            <circle cx="9" cy="19" r="1.5" />
-            <circle cx="15" cy="5" r="1.5" />
-            <circle cx="15" cy="12" r="1.5" />
-            <circle cx="15" cy="19" r="1.5" />
-          </svg>
-        </div>
-
-        <!-- Unified Core Triggers: Sidebar & Doc Bar Expansion -->
-        <div class="core-trigger-suite">
-          <button id="btn-sidebar-toggle" class="zoom-btn-mini navigation-btn" title="Toggle Sidebar (S)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <line x1="9" y1="3" x2="9" y2="21" />
-            </svg>
-          </button>
-          <button id="btn-quick-open" class="zoom-btn-mini navigation-btn" title="Quick Open PDF (O)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-              <line x1="12" y1="11" x2="12" y2="17"></line>
-              <line x1="9" y1="14" x2="15" y2="14"></line>
-            </svg>
-          </button>
-        </div>
-
-        <div class="doc-bar-divider"></div>
-
-        <!-- Quick Mode Actions -->
-        <button id="btn-mode-hand" class="zoom-btn-mini mode-btn active" title="Pan / View">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
-            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
-            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
-            <path
-              d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
-          </svg>
-        </button>
-
-        <div class="suite-divider"></div>
-
-        <!-- Navigation -->
-        <button id="btn-jump-head" class="zoom-btn-mini navigation-btn" title="Jump to Beginning (Home)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 20L9 12l10-8v16zM5 19V5" />
-          </svg>
-        </button>
-        <button id="btn-jump-end" class="zoom-btn-mini navigation-btn" title="Jump to End (End)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 4l10 8-10 8V4zM19 5v14" />
-          </svg>
-        </button>
-
-        <div class="suite-divider"></div>
-
-        <!-- Zoom & Core Toggle -->
-        <button id="zoom-in" class="zoom-btn-mini" title="Zoom In">+</button>
-        <span id="zoom-level" class="zoom-level-display" title="Zoom Level">150%</span>
-        <button id="zoom-out" class="zoom-btn-mini" title="Zoom Out">-</button>
-
-        <div class="suite-divider"></div>
-
-        <!-- Fit & View Tools -->
-        <button id="btn-fit-width" class="zoom-btn-mini" title="Fit to Width (W)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12H3M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4" />
-          </svg>
-        </button>
-        <button id="btn-fit-height" class="zoom-btn-mini" title="Fit to Height (F)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4" />
-          </svg>
-        </button>
-        <button id="btn-fullscreen" class="zoom-btn-mini mode-btn" title="Toggle Fullscreen (G)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
-          </svg>
-        </button>
-        <button id="btn-ruler-toggle" class="zoom-btn-mini mode-btn active" title="Toggle Ruler (R)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="9" y1="3" x2="9" y2="21" />
-            <line x1="9" y1="6" x2="13" y2="6" stroke-width="1.5" />
-            <line x1="9" y1="10" x2="15" y2="10" stroke-width="1.5" />
-            <line x1="9" y1="14" x2="13" y2="14" stroke-width="1.5" />
-            <line x1="9" y1="18" x2="15" y2="18" stroke-width="1.5" />
-          </svg>
-        </button>
-
-        <div class="suite-divider"></div>
-
-        <!-- Annotation & Visibility -->
-        <button id="layer-toggle-fab" class="zoom-btn-mini layer-btn-mini" title="Notation Visibility (Shift+V)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </button>
-
-        <button id="btn-stamp-palette" class="zoom-btn-mini mode-btn" title="Stamp Tools (T)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path
-              d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-            <line x1="12" y1="22.08" x2="12" y2="12" />
-          </svg>
-        </button>
-
-        <div class="doc-bar-divider"></div>
-
-        <button id="btn-doc-bar-toggle" class="zoom-btn-mini toggle-bar-btn" title="Toggle Tool Set (B)">
-          <svg class="icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          <svg class="icon-collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2">
-            <polyline points="13 17 18 12 13 7" />
-            <polyline points="6 17 11 12 6 7" />
-          </svg>
-        </button>
-
-      </div>
-
-      <!-- Stamp Palette Panel (free-floating, positioned by JS) -->
-      <div id="active-tools-container" class="floating-stamp-bar">
-        <!-- Dynamically populated by JS -->
-      </div>
 
       <!-- PDF Pages will be rendered here -->
       <div id="pdf-viewer" class="pdf-viewer">
@@ -228,562 +97,757 @@
     </main>
 
     <!-- Visual Jump Line Indicator & Ruler (Moved outside main to stabilize iPad layout) -->
-    <div id="jump-ruler" class="jump-ruler hidden">
-      <div class="ruler-track"></div>
-      <div id="ruler-marks" class="ruler-marks"></div>
-      <div id="jump-line" class="jump-line-indicator">
-        <div class="jump-line-handle"></div>
-        <div class="jump-line-beam"></div>
+  </div>
+
+  <!-- Floating Document Control Bar (Unified Control Hub - Moved outside for stable layering) -->
+  <div id="floating-doc-bar" class="floating-doc-bar collapsed">
+    <div class="doc-drag-handle">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="9" cy="5" r="1.5" />
+        <circle cx="9" cy="12" r="1.5" />
+        <circle cx="9" cy="19" r="1.5" />
+        <circle cx="15" cy="5" r="1.5" />
+        <circle cx="15" cy="12" r="1.5" />
+        <circle cx="15" cy="19" r="1.5" />
+      </svg>
+    </div>
+
+    <!-- Unified Core Triggers: Sidebar & Doc Bar Expansion -->
+    <div class="core-trigger-suite">
+      <button id="btn-sidebar-toggle" class="zoom-btn-mini navigation-btn" title="Toggle Sidebar (S)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <line x1="9" y1="3" x2="9" y2="21" />
+        </svg>
+      </button>
+      <button id="btn-quick-open" class="zoom-btn-mini navigation-btn" title="Quick Open PDF (O)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          <line x1="12" y1="11" x2="12" y2="17"></line>
+          <line x1="9" y1="14" x2="15" y2="14"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="doc-bar-divider"></div>
+
+    <!-- Quick Mode Actions -->
+    <button id="btn-mode-hand" class="zoom-btn-mini mode-btn active" title="Pan / View">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+        <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+        <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+        <path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+      </svg>
+    </button>
+
+    <div class="suite-divider"></div>
+
+    <div class="suite-divider"></div>
+
+    <!-- Navigation & Jump -->
+    <button id="btn-jump-panel-toggle" class="zoom-btn-mini navigation-btn" title="Page Jump (J)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22V12"></path>
+        <path d="M12 12l-4 4"></path>
+        <path d="M12 12l4 4"></path>
+        <path d="M2 7l10-5 10 5-10 5z"></path>
+        <path d="M2 17l10-5 10 5-10 5z"></path>
+      </svg>
+    </button>
+
+    <!-- Zoom & Core Toggle -->
+    <button id="zoom-in" class="zoom-btn-mini" title="Zoom In">+</button>
+    <span id="zoom-level" class="zoom-level-display" title="Zoom Level">150%</span>
+    <button id="zoom-out" class="zoom-btn-mini" title="Zoom Out">-</button>
+
+    <div class="suite-divider"></div>
+
+    <!-- Fit & View Tools -->
+    <button id="btn-fit-width" class="zoom-btn-mini" title="Fit to Width (W)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12H3M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4" />
+      </svg>
+    </button>
+    <button id="btn-fit-height" class="zoom-btn-mini" title="Fit to Height (F)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4" />
+      </svg>
+    </button>
+    <button id="btn-fullscreen" class="zoom-btn-mini mode-btn" title="Toggle Fullscreen (G)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
+      </svg>
+    </button>
+    <button id="btn-ruler-toggle" class="zoom-btn-mini mode-btn active" title="Toggle Ruler (R)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="9" y1="3" x2="9" y2="21" />
+        <line x1="9" y1="6" x2="13" y2="6" stroke-width="1.5" />
+        <line x1="9" y1="10" x2="15" y2="10" stroke-width="1.5" />
+        <line x1="9" y1="14" x2="13" y2="14" stroke-width="1.5" />
+        <line x1="9" y1="18" x2="15" y2="18" stroke-width="1.5" />
+      </svg>
+    </button>
+
+    <div class="suite-divider"></div>
+
+    <!-- Annotation & Visibility -->
+    <button id="layer-toggle-fab" class="zoom-btn-mini layer-btn-mini" title="Notation Visibility (Shift+V)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    </button>
+
+    <button id="btn-stamp-palette" class="zoom-btn-mini mode-btn" title="Stamp Tools (T)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path
+          d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
+    </button>
+
+    <div class="doc-bar-divider"></div>
+
+    <button id="btn-doc-bar-toggle" class="zoom-btn-mini toggle-bar-btn" title="Toggle Tool Set (B)">
+      <svg class="icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+      <svg class="icon-collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2">
+        <polyline points="13 17 18 12 13 7" />
+        <polyline points="6 17 11 12 6 7" />
+      </svg>
+    </button>
+
+  </div>
+
+  <!-- Stamp Palette Panel (free-floating, positioned by JS) -->
+  <div id="active-tools-container" class="floating-stamp-bar">
+    <!-- Dynamically populated by JS -->
+  </div>
+
+  <!-- Page Jump Calculator Panel -->
+  <div id="jump-panel" class="jump-sub-panel calculator-style">
+    <div class="jump-drag-handle">
+      <div class="drag-bar"></div>
+    </div>
+    <div class="jump-header">
+      <span class="jump-title">Jump to Page</span>
+      <button id="btn-close-jump-panel" class="btn-close-mini" title="Close (Esc)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="calculator-display">
+      <div id="jump-page-display" class="calc-info">Page 1 of 1</div>
+      <div id="calc-value" class="calc-current-input">1</div>
+    </div>
+
+    <div class="calculator-grid">
+      <!-- Row 1: Nav -->
+      <button class="calc-btn nav-btn" id="btn-calc-head" title="Go to Beginning">|&lt;</button>
+      <button class="calc-btn nav-btn" id="btn-calc-prev" title="Previous Page">&lt;</button>
+      <button class="calc-btn nav-btn" id="btn-calc-next" title="Next Page">&gt;</button>
+      <button class="calc-btn nav-btn" id="btn-calc-end" title="Go to End">&gt;|</button>
+
+      <!-- Row 2-4: Keypad -->
+      <button class="calc-btn num-btn" data-key="7">7</button>
+      <button class="calc-btn num-btn" data-key="8">8</button>
+      <button class="calc-btn num-btn" data-key="9">9</button>
+      <button class="calc-btn action-btn clear" id="btn-calc-clear">C</button>
+
+      <button class="calc-btn num-btn" data-key="4">4</button>
+      <button class="calc-btn num-btn" data-key="5">5</button>
+      <button class="calc-btn num-btn" data-key="6">6</button>
+      <button class="calc-btn action-btn go" id="btn-calc-go">GO</button>
+
+      <button class="calc-btn num-btn" data-key="1">1</button>
+      <button class="calc-btn num-btn" data-key="2">2</button>
+      <button class="calc-btn num-btn" data-key="3">3</button>
+      <button class="calc-btn num-btn zero-btn" data-key="0">0</button>
+
+      <!-- Row 5: Bookmark Toggle -->
+      <button class="calc-btn action-btn bookmark" id="btn-calc-bookmark" title="Add Bookmark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Bookmark List Section -->
+    <div id="bookmark-section" class="bookmark-section">
+      <div class="section-title">Bookmarks</div>
+      <div id="bookmark-list" class="bookmark-list">
+        <!-- Dynamically populated -->
+        <div class="empty-state">No bookmarks yet</div>
       </div>
     </div>
 
-    <aside id="sidebar" class="sidebar">
-      <div id="sidebar-resizer" class="sidebar-resizer"></div>
-      <div class="sidebar-content">
-        <!-- Header -->
-        <div class="sidebar-header">
-          <div class="logo">
-            <span class="logo-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round">
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-            </span>
-            <h3>ScoreFlow <span class="v-tag">v2.0</span></h3>
-          </div>
-          <div class="sidebar-header-actions">
-            <button id="close-sidebar" class="sidebar-close-btn">✕</button>
-          </div>
-        </div> <!-- End Sidebar Header -->
-
-        <!-- Tab Navigation -->
-        <nav class="sidebar-tabs">
-          <button class="sidebar-tab active" data-tab="library" title="Score Library">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    <!-- Bookmark Edit Overlay (Hidden by default) -->
+    <div id="bookmark-overlay" class="bookmark-overlay hidden">
+      <div class="overlay-content">
+        <h4>Save Bookmark</h4>
+        <input type="text" id="bookmark-label-input" placeholder="e.g. Solo, Chorus..." maxlength="20">
+        <div class="overlay-actions">
+          <button id="btn-bookmark-cancel">Cancel</button>
+          <button id="btn-bookmark-save" class="primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside id="sidebar" class="sidebar">
+    <div id="sidebar-resizer" class="sidebar-resizer"></div>
+    <div class="sidebar-content">
+      <!-- Header -->
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round">
+              <path d="M9 18V5l12-2v13" />
+              <circle cx="6" cy="18" r="3" />
+              <circle cx="18" cy="16" r="3" />
             </svg>
-            <span>Library</span>
-          </button>
-          <button class="sidebar-tab" data-tab="score-detail" title="Score Detail">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <span>Detail</span>
-          </button>
-          <button class="sidebar-tab" data-tab="settings" title="App Settings">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3" />
-              <path
-                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-            <span>Settings</span>
-          </button>
-        </nav>
-
-        <!-- Tab Panels -->
-        <div class="sidebar-tab-panels">
-
-          <!-- Tab: Library -->
-          <div class="tab-panel active" data-panel="library">
-            <button id="close-file-btn" class="close-file-btn" title="Close this file and return to welcome screen">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-              Close File
-            </button>
-            <div id="open-pdf-btn" class="btn btn-primary btn-full mb-10"
-              style="position: relative; overflow: hidden; cursor: pointer;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round" class="icon-mr-6">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-              Open PDF...
-              <input type="file" class="native-file-input" accept="application/pdf"
-                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 100px; z-index: 10;" />
-            </div>
-            <div class="tab-section-label flex-space-between">
-              Recent Scores
-              <button id="clear-recent-btn" class="clear-recent-btn">Clear</button>
-            </div>
-            <div id="sidebar-recent-list" class="sidebar-recent-list">
-              <div class="empty-state">No recent scores yet.</div>
-            </div>
-          </div>
-
-
-          <!-- Tab: Score Detail -->
-          <div class="tab-panel" data-panel="score-detail">
-            <!-- Block 0: Score Info -->
-            <div class="tab-section-label">Score Information</div>
-            <div class="score-info-group compact-info mb-15">
-              <div class="setting-item mb-5">
-                <label class="setting-label label-mini" for="score-name-input">Score Name</label>
-                <input type="text" id="score-name-input" class="search-input-mini w-full" placeholder="Score Name" />
-              </div>
-              <div class="setting-item mb-5">
-                <label class="setting-label label-mini" for="score-composer-input">Composer</label>
-                <input type="text" id="score-composer-input" class="search-input-mini w-full" placeholder="Composer" />
-              </div>
-              <div class="score-meta-text mt-5">
-                <div class="meta-row">
-                  <span class="meta-label">File:</span>
-                  <span id="score-filename-display" class="meta-value text-truncate">None</span>
-                </div>
-                <div class="meta-row">
-                  <span class="meta-label">SHA-256:</span>
-                  <span id="score-fingerprint-display" class="meta-value mono-text">Unknown</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="tab-divider"></div>
-
-            <!-- Block 1: Media Connection -->
-            <div class="tab-section-label">Media Connection</div>
-            <div class="score-info-group compact-info mb-15">
-              <div class="setting-item mb-5">
-                <label class="setting-label label-mini" for="sidebar-media-label">Media Label</label>
-                <input type="text" id="sidebar-media-label" class="search-input-mini w-full"
-                  placeholder="e.g. London Phil / Rehearsal" />
-              </div>
-              <div class="setting-item mb-5">
-                <label class="setting-label label-mini" for="sidebar-media-url">YouTube URL</label>
-                <input type="text" id="sidebar-media-url" class="search-input-mini w-full"
-                  placeholder="https://youtube.com/..." />
-              </div>
-              <div class="flex-row-center gap-5 mt-5">
-                <button id="sidebar-add-youtube" class="btn btn-outline-sm btn-full btn-mini-sidebar">+ Add
-                  YouTube</button>
-                <button id="sidebar-add-local" class="btn btn-outline-sm btn-full btn-mini-sidebar">+ Add Local</button>
-                <input type="file" id="sidebar-local-input" accept="video/*,audio/*" hidden />
-              </div>
-
-              <div id="sidebar-media-list" class="media-list-compact mt-10">
-                <!-- Media items will be injected here -->
-              </div>
-            </div>
-
-            <!-- Block 1: User Identity -->
-            <div class="tab-section-label">Active Musician</div>
-            <div id="sidebar-user-name-display" class="profile-card-minimal mb-15">
-              <div class="prof-avatar" id="sidebar-user-avatar">G</div>
-              <div class="prof-text">
-                <div id="sidebar-user-name">Guest Musician</div>
-                <small id="sidebar-user-email">guest@example.com</small>
-              </div>
-            </div>
-
-            <div class="tab-divider"></div>
-
-            <!-- Block 2: Interpretation Styles -->
-            <div class="tab-section-label">Interpretation Styles</div>
-            <div id="source-list" class="source-list-compact"></div>
-            <button id="add-source-btn" class="btn-text-primary">+ Add New Style</button>
-
-            <div class="tab-divider"></div>
-
-            <!-- Block 3: Score Annotation -->
-            <div class="tab-section-label">Score Annotation</div>
-            <p class="text-mini text-muted mb-10">Manage markings for this specific score version.</p>
-            <div class="exchange-grid mb-15">
-              <button id="export-score-btn" class="btn-outline-sm">Export Marks</button>
-              <button id="import-score-btn" class="btn-outline-sm">
-                Import Marks
-                <input type="file" id="import-score-file" accept=".json" hidden />
-              </button>
-            </div>
-
-            <div class="tab-divider"></div>
-
-            <!-- Block 4: Database Detail -->
-            <div class="tab-section-label">Database Statistics</div>
-            <div id="score-stats-container" class="score-meta-text">
-              <div class="meta-row">
-                <span class="meta-label">Total Annotations:</span>
-                <span id="stats-total-count" class="meta-value">0</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Last Modified:</span>
-                <span id="stats-last-edit" class="meta-value">Never</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Author:</span>
-                <span id="stats-author" class="meta-value">None</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tab: Settings -->
-          <div class="tab-panel" data-panel="settings">
-            <div class="tab-section-label">User Profile</div>
-            <div id="user-profile-summary-container" class="profile-card-minimal cursor-pointer mb-15">
-              <div class="prof-avatar" id="user-profile-avatar">G</div>
-              <div class="prof-text">
-                <div id="user-profile-display-text">Title / User Name</div>
-                <small id="user-profile-note">User notes will appear here...</small>
-              </div>
-              <button id="edit-user-profile-btn" class="btn-icon" title="Edit User Profile">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-              </button>
-            </div>
-            <div class="tab-divider"></div>
-            <div class="tab-section-label">Integration</div>
-
-            <div class="setting-item mb-15">
-              <label class="setting-label" for="turner-mode-select">Page Turner Mode</label>
-              <select id="turner-mode-select" class="form-select mini-select w-full mt-5" title="Page Turner Mode">
-                <option value="default">Default (Space/Up/Down/L/R)</option>
-                <option value="pgupdn">PageUp / PageDown</option>
-                <option value="arrows">Arrow Keys Only</option>
-                <option value="custom">Custom (Learn from Pedal)...</option>
-              </select>
-            </div>
-
-            <div class="tab-divider"></div>
-            <div class="tab-section-label">Jump Interaction</div>
-
-            <div class="setting-item">
-              <label class="setting-label" for="jump-offset">Anchor Auto-scroll Offset</label>
-              <div class="flex-row-center gap-10 mt-5">
-                <input type="range" id="jump-offset" min="-100" max="100" step="5" value="0" class="w-full"
-                  title="Jump Offset" />
-                <span id="jump-offset-value" class="badge">0px</span>
-              </div>
-            </div>
-
-            <div class="tab-divider"></div>
-            <div class="build-info-section">
-              <div class="tab-section-label">System Info</div>
-              <div class="build-info-item">Branch: <span id="build-branch">---</span></div>
-              <div class="build-info-item">Build: <span id="build-time">---</span></div>
-            </div>
-            <div class="tab-divider"></div>
-            <div class="tab-section-label">Notation Info/View</div>
-            <button id="reset-layers-btn" class="btn btn-outline btn-full text-danger btn-smaller">↺ Reset to Standard
-              Categories</button>
-            <button id="reset-system-btn" class="btn btn-outline btn-full text-danger btn-smaller mt-10">⚠️ Reset Full
-              System</button>
-          </div>
-
-        </div> <!-- End Tab Panels -->
-      </div> <!-- End Sidebar Content -->
-    </aside>
-
-    <!-- Notation Settings Panel (outside transform context) -->
-    <div id="layer-shelf" class="layer-shelf toolbar-popover">
-      <div class="shelf-header">
-        <h4>Notation Settings</h4>
-        <button id="close-layer-shelf" class="btn-icon-mini">✕</button>
-      </div>
-      <div id="external-layer-list" class="layer-list-mini"></div>
-    </div>
-
-
-    <!-- Mobile Toolbar Removed -->
-
-    <!-- YouTube-style Keyboard Shortcuts Overlay -->
-    <div id="shortcuts-modal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>Keyboard Shortcuts</h3>
-          <button id="close-shortcuts" class="modal-close-btn">✕</button>
+          </span>
+          <h3>ScoreFlow <span class="v-tag">v2.0</span></h3>
         </div>
-        <div class="shortcuts-grid">
-          <div class="shortcut-item">
-            <span class="shortcut-label">Jump Next Anchor</span>
-            <div class="keys">
-              <kbd>Space</kbd> <kbd>J</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Jump Prev Anchor</span>
-            <div class="keys">
-              <kbd>Shift</kbd> + <kbd>Space</kbd> <kbd>K</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Zoom In / Out</span>
-            <div class="keys">
-              <kbd>+</kbd> <kbd>-</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Toggle Settings Sidebar</span>
-            <div class="keys">
-              <kbd>S</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Show / Hide This Help</span>
-            <div class="keys">
-              <kbd>?</kbd> <kbd>H</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Close Menus / Overlays</span>
-            <div class="keys">
-              <kbd>Esc</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">iPad: Next Anchor</span>
-            <div class="keys">
-              <kbd>Swipe Up ↑</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Toggle iPad: Prev Anchor</span>
-            <div class="keys">
-              <kbd>Swipe Down ↓</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Toggle Doc Control Bar</span>
-            <div class="keys">
-              <kbd>B</kbd>
-            </div>
-          </div>
-          <div class="shortcut-item">
-            <span class="shortcut-label">Quick Open PDF</span>
-            <div class="keys">
-              <kbd>O</kbd>
-            </div>
-          </div>
+        <div class="sidebar-header-actions">
+          <button id="close-sidebar" class="sidebar-close-btn">✕</button>
         </div>
-        <p class="modal-footer">Press any key to close</p>
-      </div>
-    </div>
+      </div> <!-- End Sidebar Header -->
 
-    <!-- Quick Load Repertoire Modal (New) -->
-    <div id="quick-load-modal" class="modal-overlay">
-      <div class="modal-content recent-scores-modal">
-        <div class="modal-header">
-          <h3>Quick Load: Recent Repertoire</h3>
-          <button class="close-modal" id="close-quick-load-modal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p class="modal-intro">Quickly access your recently opened solo scores.</p>
-          <div id="recent-scores-list" class="recent-scores-list">
-            <!-- Populated from localStorage -->
-            <div class="empty-state">No recent solo scores recorded.</div>
-          </div>
-          <button id="open-new-solo-btn" class="btn btn-primary btn-full mt-20">+ Open New Solo PDF</button>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- User Profile Modal (New) -->
-    <div id="user-profile-modal" class="modal-overlay">
-      <div class="modal-content profile-modal">
-        <div class="modal-header">
-          <h3>User Profile Settings</h3>
-          <button class="close-modal" id="close-user-profile-modal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p class="modal-intro">Update your personal information displayed in the application.</p>
-
-          <div class="setting-item mb-15">
-            <label class="setting-label" for="user-profile-name-input">User Name <span
-                class="text-danger">*</span></label>
-            <input type="text" id="user-profile-name-input" class="search-input-mini w-full mt-5"
-              placeholder="Enter your name" required />
-          </div>
-
-          <div class="setting-item mb-15">
-            <label class="setting-label" for="user-profile-title-input">Title / Role</label>
-            <input type="text" id="user-profile-title-input" class="search-input-mini w-full mt-5"
-              placeholder="e.g. Principal Cello" />
-          </div>
-
-          <div class="setting-item mb-15">
-            <label class="setting-label" for="user-profile-email-input">Email Address <span
-                class="text-danger">*</span></label>
-            <input type="email" id="user-profile-email-input" class="search-input-mini w-full mt-5"
-              placeholder="your@email.com" required />
-          </div>
-
-          <div class="setting-item mb-20">
-            <label class="setting-label" for="user-profile-note-input">Personal Notes</label>
-            <textarea id="user-profile-note-input" class="search-input-mini w-full mt-5 form-textarea"
-              placeholder="Add a note..."></textarea>
-          </div>
-
-          <div class="dialog-actions-grid">
-            <button id="cancel-user-profile-btn" class="btn btn-outline">Cancel</button>
-            <button id="save-user-profile-btn" class="btn btn-primary">Save Changes</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Measure Tool Setup Modal (New) -->
-    <!-- Erase All by Category Modal -->
-    <div id="erase-all-modal" class="modal-overlay">
-      <div class="modal-content small-modal">
-        <div class="modal-header">
-          <h3>Erase All by Category</h3>
-          <button class="close-modal btn-icon-mini" id="close-erase-all-modal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p class="modal-intro mb-15 erase-modal-intro">Select a category to erase all annotations in it.</p>
-          <div id="erase-all-category-list" class="erase-all-category-list"></div>
-          <div class="mt-20">
-            <button id="erase-all-cancel" class="btn btn-outline btn-full">Cancel (Esc)</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="measure-dialog" class="modal-overlay">
-      <div class="modal-content small-modal">
-        <div class="modal-header">
-          <h3>Add Measure Number</h3>
-        </div>
-        <div class="modal-body text-center">
-          <p class="modal-intro mb-10">Current measure to place:</p>
-          <div class="mb-15">
-            <div id="measure-display" class="measure-display"></div>
-          </div>
-
-          <div class="measure-keypad mb-10">
-            <!-- Row 1: 7 8 9 ⌫ -->
-            <button class="keypad-btn" data-key="7">7</button>
-            <button class="keypad-btn" data-key="8">8</button>
-            <button class="keypad-btn" data-key="9">9</button>
-            <button class="keypad-btn action-btn" data-key="back">⌫</button>
-            <!-- Row 2: 4 5 6 -->
-            <button class="keypad-btn" data-key="4">4</button>
-            <button class="keypad-btn" data-key="5">5</button>
-            <button class="keypad-btn" data-key="6">6</button>
-            <span class="keypad-spacer"></span>
-            <!-- Row 3: 1 2 3 -->
-            <button class="keypad-btn" data-key="1">1</button>
-            <button class="keypad-btn" data-key="2">2</button>
-            <button class="keypad-btn" data-key="3">3</button>
-            <span class="keypad-spacer"></span>
-            <!-- Row 4: _ 0 _ ✓ -->
-            <span class="keypad-spacer"></span>
-            <button class="keypad-btn" data-key="0">0</button>
-            <span class="keypad-spacer"></span>
-            <button class="keypad-btn confirm-btn" data-key="confirm">✓</button>
-          </div>
-
-          <div class="measure-step-container mb-10">
-            <span class="measure-step-label">Auto-increment:</span>
-            <div class="measure-step-controls">
-              <button id="measure-step-minus" class="btn btn-secondary measure-step-btn">-</button>
-              <span id="measure-step-display" class="measure-step-value">4</span>
-              <button id="measure-step-plus" class="btn btn-secondary measure-step-btn">+</button>
-            </div>
-          </div>
-          <div class="text-center-mt-10">
-            <button id="measure-cancel" class="keypad-cancel-btn">Cancel (Esc)</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Custom System Dialog (New: Replaces native alert/confirm) -->
-    <div id="system-dialog" class="modal-overlay">
-      <div class="modal-content small-modal">
-        <div class="modal-header">
-          <h3 id="dialog-title">System Message</h3>
-          <button class="close-modal" id="close-dialog">&times;</button>
-        </div>
-        <div class="modal-body text-center">
-          <div id="dialog-icon" class="dialog-icon mb-15">⚠️</div>
-          <p id="dialog-message" class="modal-intro"></p>
-          <div id="dialog-actions" class="dialog-actions-grid mt-20">
-            <!-- Dynamically populated buttons -->
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- Multi-touch / Scroll Hint for Edit Mode -->
-    <div id="gesture-hint" class="gesture-hint hidden">
-      <span class="gesture-icon">✌️</span>
-      <span>Two-finger swipe to scroll page</span>
-    </div>
-
-    <!-- Music Anchor (Media Playback Panel) -->
-    <div id="playback-panel" class="playback-panel">
-      <div class="playback-header">
-        <h3>
+      <!-- Tab Navigation -->
+      <nav class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="library" title="Score Library">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 18V5l12-2v13" />
-            <circle cx="6" cy="18" r="3" />
-            <circle cx="18" cy="16" r="3" />
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
           </svg>
-          Music Anchor
-        </h3>
-        <button class="close-playback" title="Close Panel">✕</button>
-      </div>
-      <div class="playback-body">
-        <div class="media-viewport">
-          <!-- Media (YouTube or Local) injected here -->
-          <div class="media-placeholder">
-            Set media in Sidebar -> Detail to begin
+          <span>Library</span>
+        </button>
+        <button class="sidebar-tab" data-tab="score-detail" title="Score Detail">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span>Detail</span>
+        </button>
+        <button class="sidebar-tab" data-tab="settings" title="App Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <!-- Tab Panels -->
+      <div class="sidebar-tab-panels">
+
+        <!-- Tab: Library -->
+        <div class="tab-panel active" data-panel="library">
+          <button id="close-file-btn" class="close-file-btn" title="Close this file and return to welcome screen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Close File
+          </button>
+          <div id="open-pdf-btn" class="btn btn-primary btn-full mb-10"
+            style="position: relative; overflow: hidden; cursor: pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" class="icon-mr-6">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            Open PDF...
+            <input type="file" class="native-file-input" accept="application/pdf"
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 100px; z-index: 10;" />
+          </div>
+          <div class="tab-section-label flex-space-between">
+            Recent Scores
+            <button id="clear-recent-btn" class="clear-recent-btn">Clear</button>
+          </div>
+          <div id="sidebar-recent-list" class="sidebar-recent-list">
+            <div class="empty-state">No recent scores yet.</div>
           </div>
         </div>
 
-        <div class="playback-controls">
-          <div class="main-controls">
-            <button class="control-btn stop-media" title="Stop">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 6h12v12H6z" />
+
+        <!-- Tab: Score Detail -->
+        <div class="tab-panel" data-panel="score-detail">
+          <!-- Block 0: Score Info -->
+          <div class="tab-section-label">Score Information</div>
+          <div class="score-info-group compact-info mb-15">
+            <div class="setting-item mb-5">
+              <label class="setting-label label-mini" for="score-name-input">Score Name</label>
+              <input type="text" id="score-name-input" class="search-input-mini w-full" placeholder="Score Name" />
+            </div>
+            <div class="setting-item mb-5">
+              <label class="setting-label label-mini" for="score-composer-input">Composer</label>
+              <input type="text" id="score-composer-input" class="search-input-mini w-full" placeholder="Composer" />
+            </div>
+            <div class="score-meta-text mt-5">
+              <div class="meta-row">
+                <span class="meta-label">File:</span>
+                <span id="score-filename-display" class="meta-value text-truncate">None</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">SHA-256:</span>
+                <span id="score-fingerprint-display" class="meta-value mono-text">Unknown</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-divider"></div>
+
+          <!-- Block 1: Media Connection -->
+          <div class="tab-section-label">Media Connection</div>
+          <div class="score-info-group compact-info mb-15">
+            <div class="setting-item mb-5">
+              <label class="setting-label label-mini" for="sidebar-media-label">Media Label</label>
+              <input type="text" id="sidebar-media-label" class="search-input-mini w-full"
+                placeholder="e.g. London Phil / Rehearsal" />
+            </div>
+            <div class="setting-item mb-5">
+              <label class="setting-label label-mini" for="sidebar-media-url">YouTube URL</label>
+              <input type="text" id="sidebar-media-url" class="search-input-mini w-full"
+                placeholder="https://youtube.com/..." />
+            </div>
+            <div class="flex-row-center gap-5 mt-5">
+              <button id="sidebar-add-youtube" class="btn btn-outline-sm btn-full btn-mini-sidebar">+ Add
+                YouTube</button>
+              <button id="sidebar-add-local" class="btn btn-outline-sm btn-full btn-mini-sidebar">+ Add Local</button>
+              <input type="file" id="sidebar-local-input" accept="video/*,audio/*" hidden />
+            </div>
+
+            <div id="sidebar-media-list" class="media-list-compact mt-10">
+              <!-- Media items will be injected here -->
+            </div>
+          </div>
+
+          <!-- Block 1: User Identity -->
+          <div class="tab-section-label">Active Musician</div>
+          <div id="sidebar-user-name-display" class="profile-card-minimal mb-15">
+            <div class="prof-avatar" id="sidebar-user-avatar">G</div>
+            <div class="prof-text">
+              <div id="sidebar-user-name">Guest Musician</div>
+              <small id="sidebar-user-email">guest@example.com</small>
+            </div>
+          </div>
+
+          <div class="tab-divider"></div>
+
+          <!-- Block 2: Interpretation Styles -->
+          <div class="tab-section-label">Interpretation Styles</div>
+          <div id="source-list" class="source-list-compact"></div>
+          <button id="add-source-btn" class="btn-text-primary">+ Add New Style</button>
+
+          <div class="tab-divider"></div>
+
+          <!-- Block 3: Score Annotation -->
+          <div class="tab-section-label">Score Annotation</div>
+          <p class="text-mini text-muted mb-10">Manage markings for this specific score version.</p>
+          <div class="exchange-grid mb-15">
+            <button id="export-score-btn" class="btn-outline-sm">Export Marks</button>
+            <button id="import-score-btn" class="btn-outline-sm">
+              Import Marks
+              <input type="file" id="import-score-file" accept=".json" hidden />
+            </button>
+          </div>
+
+          <div class="tab-divider"></div>
+
+          <!-- Block 4: Database Detail -->
+          <div class="tab-section-label">Database Statistics</div>
+          <div id="score-stats-container" class="score-meta-text">
+            <div class="meta-row">
+              <span class="meta-label">Total Annotations:</span>
+              <span id="stats-total-count" class="meta-value">0</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Last Modified:</span>
+              <span id="stats-last-edit" class="meta-value">Never</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Author:</span>
+              <span id="stats-author" class="meta-value">None</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Settings -->
+        <div class="tab-panel" data-panel="settings">
+          <div class="tab-section-label">User Profile</div>
+          <div id="user-profile-summary-container" class="profile-card-minimal cursor-pointer mb-15">
+            <div class="prof-avatar" id="user-profile-avatar">G</div>
+            <div class="prof-text">
+              <div id="user-profile-display-text">Title / User Name</div>
+              <small id="user-profile-note">User notes will appear here...</small>
+            </div>
+            <button id="edit-user-profile-btn" class="btn-icon" title="Edit User Profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
             </button>
-            <button class="control-btn play-pause" title="Play/Pause">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </button>
-            <select class="playback-speed" title="Playback Speed">
-              <option value="0.25">0.25x</option>
-              <option value="0.5">0.5x</option>
-              <option value="0.75">0.75x</option>
-              <option value="1" selected>1.0x</option>
-              <option value="1.25">1.25x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2">2.0x</option>
+          </div>
+          <div class="tab-divider"></div>
+          <div class="tab-section-label">Integration</div>
+
+          <div class="setting-item mb-15">
+            <label class="setting-label" for="turner-mode-select">Page Turner Mode</label>
+            <select id="turner-mode-select" class="form-select mini-select w-full mt-5" title="Page Turner Mode">
+              <option value="default">Default (Space/Up/Down/L/R)</option>
+              <option value="pgupdn">PageUp / PageDown</option>
+              <option value="arrows">Arrow Keys Only</option>
+              <option value="custom">Custom (Learn from Pedal)...</option>
             </select>
           </div>
 
-          <div class="loop-controls">
-            <div class="loop-point">
-              <span>START A</span>
-              <button class="set-btn set-a a-time">--:--</button>
+          <div class="tab-divider"></div>
+          <div class="tab-section-label">Jump Interaction</div>
+
+          <div class="setting-item">
+            <label class="setting-label" for="jump-offset">Anchor Auto-scroll Offset</label>
+            <div class="flex-row-center gap-10 mt-5">
+              <input type="range" id="jump-offset" min="-100" max="100" step="5" value="0" class="w-full"
+                title="Jump Offset" />
+              <span id="jump-offset-value" class="badge">0px</span>
             </div>
-            <button class="toggle-loop" title="Toggle A-B Loop">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 2.1l4 4-4 4" />
-                <path d="M3 12.2v-2a4 4 0 0 1 4-4h14M7 21.9l-4-4 4-4" />
-                <path d="M21 11.8v2a4 4 0 0 1-4 4H3" />
-              </svg>
-            </button>
-            <div class="loop-point">
-              <span>END B</span>
-              <button class="set-btn set-b b-time">--:--</button>
-            </div>
+          </div>
+
+          <div class="tab-divider"></div>
+          <div class="build-info-section">
+            <div class="tab-section-label">System Info</div>
+            <div class="build-info-item">Branch: <span id="build-branch">---</span></div>
+            <div class="build-info-item">Build: <span id="build-time">---</span></div>
+          </div>
+          <div class="tab-divider"></div>
+          <div class="tab-section-label">Notation Info/View</div>
+          <button id="reset-layers-btn" class="btn btn-outline btn-full text-danger btn-smaller">↺ Reset to Standard
+            Categories</button>
+          <button id="reset-system-btn" class="btn btn-outline btn-full text-danger btn-smaller mt-10">⚠️ Reset Full
+            System</button>
+        </div>
+
+      </div> <!-- End Tab Panels -->
+    </div> <!-- End Sidebar Content -->
+  </aside>
+
+  <!-- Notation Settings Panel (outside transform context) -->
+  <div id="layer-shelf" class="layer-shelf toolbar-popover">
+    <div class="shelf-header">
+      <h4>Notation Settings</h4>
+      <button id="close-layer-shelf" class="btn-icon-mini">✕</button>
+    </div>
+    <div id="external-layer-list" class="layer-list-mini"></div>
+  </div>
+
+
+  <!-- Mobile Toolbar Removed -->
+
+  <!-- YouTube-style Keyboard Shortcuts Overlay -->
+  <div id="shortcuts-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Keyboard Shortcuts</h3>
+        <button id="close-shortcuts" class="modal-close-btn">✕</button>
+      </div>
+      <div class="shortcuts-grid">
+        <div class="shortcut-item">
+          <span class="shortcut-label">Jump Next Anchor</span>
+          <div class="keys">
+            <kbd>Space</kbd> <kbd>J</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Jump Prev Anchor</span>
+          <div class="keys">
+            <kbd>Shift</kbd> + <kbd>Space</kbd> <kbd>K</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Zoom In / Out</span>
+          <div class="keys">
+            <kbd>+</kbd> <kbd>-</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Toggle Settings Sidebar</span>
+          <div class="keys">
+            <kbd>S</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Show / Hide This Help</span>
+          <div class="keys">
+            <kbd>?</kbd> <kbd>H</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Close Menus / Overlays</span>
+          <div class="keys">
+            <kbd>Esc</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">iPad: Next Anchor</span>
+          <div class="keys">
+            <kbd>Swipe Up ↑</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Toggle iPad: Prev Anchor</span>
+          <div class="keys">
+            <kbd>Swipe Down ↓</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Toggle Doc Control Bar</span>
+          <div class="keys">
+            <kbd>B</kbd>
+          </div>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-label">Quick Open PDF</span>
+          <div class="keys">
+            <kbd>O</kbd>
+          </div>
+        </div>
+      </div>
+      <p class="modal-footer">Press any key to close</p>
+    </div>
+  </div>
+
+  <!-- Quick Load Repertoire Modal (New) -->
+  <div id="quick-load-modal" class="modal-overlay">
+    <div class="modal-content recent-scores-modal">
+      <div class="modal-header">
+        <h3>Quick Load: Recent Repertoire</h3>
+        <button class="close-modal" id="close-quick-load-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">Quickly access your recently opened solo scores.</p>
+        <div id="recent-scores-list" class="recent-scores-list">
+          <!-- Populated from localStorage -->
+          <div class="empty-state">No recent solo scores recorded.</div>
+        </div>
+        <button id="open-new-solo-btn" class="btn btn-primary btn-full mt-20">+ Open New Solo PDF</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- User Profile Modal (New) -->
+  <div id="user-profile-modal" class="modal-overlay">
+    <div class="modal-content profile-modal">
+      <div class="modal-header">
+        <h3>User Profile Settings</h3>
+        <button class="close-modal" id="close-user-profile-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">Update your personal information displayed in the application.</p>
+
+        <div class="setting-item mb-15">
+          <label class="setting-label" for="user-profile-name-input">User Name <span
+              class="text-danger">*</span></label>
+          <input type="text" id="user-profile-name-input" class="search-input-mini w-full mt-5"
+            placeholder="Enter your name" required />
+        </div>
+
+        <div class="setting-item mb-15">
+          <label class="setting-label" for="user-profile-title-input">Title / Role</label>
+          <input type="text" id="user-profile-title-input" class="search-input-mini w-full mt-5"
+            placeholder="e.g. Principal Cello" />
+        </div>
+
+        <div class="setting-item mb-15">
+          <label class="setting-label" for="user-profile-email-input">Email Address <span
+              class="text-danger">*</span></label>
+          <input type="email" id="user-profile-email-input" class="search-input-mini w-full mt-5"
+            placeholder="your@email.com" required />
+        </div>
+
+        <div class="setting-item mb-20">
+          <label class="setting-label" for="user-profile-note-input">Personal Notes</label>
+          <textarea id="user-profile-note-input" class="search-input-mini w-full mt-5 form-textarea"
+            placeholder="Add a note..."></textarea>
+        </div>
+
+        <div class="dialog-actions-grid">
+          <button id="cancel-user-profile-btn" class="btn btn-outline">Cancel</button>
+          <button id="save-user-profile-btn" class="btn btn-primary">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Measure Tool Setup Modal (New) -->
+  <!-- Erase All by Category Modal -->
+  <div id="erase-all-modal" class="modal-overlay">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h3>Erase All by Category</h3>
+        <button class="close-modal btn-icon-mini" id="close-erase-all-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro mb-15 erase-modal-intro">Select a category to erase all annotations in it.</p>
+        <div id="erase-all-category-list" class="erase-all-category-list"></div>
+        <div class="mt-20">
+          <button id="erase-all-cancel" class="btn btn-outline btn-full">Cancel (Esc)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="measure-dialog" class="modal-overlay">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h3>Add Measure Number</h3>
+      </div>
+      <div class="modal-body text-center">
+        <p class="modal-intro mb-10">Current measure to place:</p>
+        <div class="mb-15">
+          <div id="measure-display" class="measure-display"></div>
+        </div>
+
+        <div class="measure-keypad mb-10">
+          <!-- Row 1: 7 8 9 ⌫ -->
+          <button class="keypad-btn" data-key="7">7</button>
+          <button class="keypad-btn" data-key="8">8</button>
+          <button class="keypad-btn" data-key="9">9</button>
+          <button class="keypad-btn action-btn" data-key="back">⌫</button>
+          <!-- Row 2: 4 5 6 -->
+          <button class="keypad-btn" data-key="4">4</button>
+          <button class="keypad-btn" data-key="5">5</button>
+          <button class="keypad-btn" data-key="6">6</button>
+          <span class="keypad-spacer"></span>
+          <!-- Row 3: 1 2 3 -->
+          <button class="keypad-btn" data-key="1">1</button>
+          <button class="keypad-btn" data-key="2">2</button>
+          <button class="keypad-btn" data-key="3">3</button>
+          <span class="keypad-spacer"></span>
+          <!-- Row 4: _ 0 _ ✓ -->
+          <span class="keypad-spacer"></span>
+          <button class="keypad-btn" data-key="0">0</button>
+          <span class="keypad-spacer"></span>
+          <button class="keypad-btn confirm-btn" data-key="confirm">✓</button>
+        </div>
+
+        <div class="measure-step-container mb-10">
+          <span class="measure-step-label">Auto-increment:</span>
+          <div class="measure-step-controls">
+            <button id="measure-step-minus" class="btn btn-secondary measure-step-btn">-</button>
+            <span id="measure-step-display" class="measure-step-value">4</span>
+            <button id="measure-step-plus" class="btn btn-secondary measure-step-btn">+</button>
+          </div>
+        </div>
+        <div class="text-center-mt-10">
+          <button id="measure-cancel" class="keypad-cancel-btn">Cancel (Esc)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom System Dialog (New: Replaces native alert/confirm) -->
+  <div id="system-dialog" class="modal-overlay">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h3 id="dialog-title">System Message</h3>
+        <button class="close-modal" id="close-dialog">&times;</button>
+      </div>
+      <div class="modal-body text-center">
+        <div id="dialog-icon" class="dialog-icon mb-15">⚠️</div>
+        <p id="dialog-message" class="modal-intro"></p>
+        <div id="dialog-actions" class="dialog-actions-grid mt-20">
+          <!-- Dynamically populated buttons -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Multi-touch / Scroll Hint for Edit Mode -->
+  <div id="gesture-hint" class="gesture-hint hidden">
+    <span class="gesture-icon">✌️</span>
+    <span>Two-finger swipe to scroll page</span>
+  </div>
+
+  <!-- Music Anchor (Media Playback Panel) -->
+  <div id="playback-panel" class="playback-panel">
+    <div class="playback-header">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </svg>
+        Music Anchor
+      </h3>
+      <button class="close-playback" title="Close Panel">✕</button>
+    </div>
+    <div class="playback-body">
+      <div class="media-viewport">
+        <!-- Media (YouTube or Local) injected here -->
+        <div class="media-placeholder">
+          Set media in Sidebar -> Detail to begin
+        </div>
+      </div>
+
+      <div class="playback-controls">
+        <div class="main-controls">
+          <button class="control-btn stop-media" title="Stop">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 6h12v12H6z" />
+            </svg>
+          </button>
+          <button class="control-btn play-pause" title="Play/Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </button>
+          <select class="playback-speed" title="Playback Speed">
+            <option value="0.25">0.25x</option>
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1" selected>1.0x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2.0x</option>
+          </select>
+        </div>
+
+        <div class="loop-controls">
+          <div class="loop-point">
+            <span>START A</span>
+            <button class="set-btn set-a a-time">--:--</button>
+          </div>
+          <button class="toggle-loop" title="Toggle A-B Loop">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 2.1l4 4-4 4" />
+              <path d="M3 12.2v-2a4 4 0 0 1 4-4h14M7 21.9l-4-4 4-4" />
+              <path d="M21 11.8v2a4 4 0 0 1-4 4H3" />
+            </svg>
+          </button>
+          <div class="loop-point">
+            <span>END B</span>
+            <button class="set-btn set-b b-time">--:--</button>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
   </div>
 

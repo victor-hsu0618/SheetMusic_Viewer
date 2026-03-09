@@ -181,6 +181,7 @@ export class InputManager {
                     this.app.updateRulerMarks()
                     this.app.updateRulerClip()
                     this.app.computeNextTarget()
+                    if (this.app.jumpManager) this.app.jumpManager.updateDisplay()
                     this.scrollTicking = false
                 })
                 this.scrollTicking = true

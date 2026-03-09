@@ -16,6 +16,7 @@ import { SidebarManager } from './modules/sidebar.js'
 import { CollaborationManager } from './modules/collaboration.js'
 import { InputManager } from './modules/InputManager.js'
 import { PlaybackManager } from './modules/PlaybackManager.js'
+import { JumpManager } from './modules/JumpManager.js'
 
 // Use local worker for total offline reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
@@ -161,6 +162,9 @@ class ScoreFlow {
     this.inputManager = new InputManager(this)
 
     this.initElements()
+    this.jumpManager = new JumpManager(this)
+    this.jumpManager.init()
+
     this.initEventListeners()
     this.rulerManager.init()
     this.docBarManager.init()
@@ -513,14 +517,11 @@ class ScoreFlow {
   }
 
   goToHead() {
-    this.jumpHistory = []
-    this.viewer.scrollTo({ top: 0, behavior: 'smooth' })
+    this.jumpManager.goToHead()
   }
 
   goToEnd() {
-    if (!this.pdf) return
-    this.jumpHistory = []
-    this.viewer.scrollTo({ top: this.viewer.scrollHeight, behavior: 'smooth' })
+    this.jumpManager.goToEnd()
   }
 
   goToAnchor() {

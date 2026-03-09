@@ -27,12 +27,7 @@ export class DocBarManager {
             this.app.docBarToggleBtn.addEventListener('click', () => this.toggleDocBar())
         }
 
-        // Navigation (Jump) Actions
-        const btnJumpHead = document.getElementById('btn-jump-head')
-        if (btnJumpHead) btnJumpHead.onclick = () => this.app.goToHead()
-
-        const btnJumpEnd = document.getElementById('btn-jump-end')
-        if (btnJumpEnd) btnJumpEnd.onclick = () => this.app.goToEnd()
+        // Navigation (Jump) Actions moved to JumpManager
 
         // Mode / Action Toggles
         const btnQuickOpen = document.getElementById('btn-quick-open')

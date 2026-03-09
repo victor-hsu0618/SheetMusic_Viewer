@@ -144,6 +144,7 @@ export class ViewerManager {
         // 2. Compute fingerprint of the new PDF
         const newFingerprint = await this.getFingerprint(data.buffer || data)
         this.pdfFingerprint = newFingerprint
+        this.app.jumpManager?.loadBookmarks()
 
         // 3. Load this score's saved stamps (or start fresh)
         const savedStamps = localStorage.getItem(`scoreflow_stamps_${newFingerprint}`)
