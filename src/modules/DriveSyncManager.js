@@ -60,10 +60,11 @@ export class DriveSyncManager {
             },
         });
 
-        // Restore state from local storage
+        // Restore state from local storage - DO NOT trigger popup on load
         if (localStorage.getItem('scoreflow_drive_sync_enabled') === 'true') {
-            console.log('[DriveSync] Restoring previous session...');
-            this.signIn(true); // Attempt silent sign-in
+            console.log('[DriveSync] Sync was previously enabled. Waiting for user interaction or auto-sync.');
+            this.isEnabled = true;
+            this.startAutoSync();
         }
         this.refreshUI();
     }
