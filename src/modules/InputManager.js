@@ -30,7 +30,7 @@ export class InputManager {
 
     initKeyboardListeners() {
         window.addEventListener('keydown', (e) => {
-            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable
+            const isInput = ['INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable
             if (isInput) return
 
             // 1. Zoom Control (Meta+ / Meta-)
