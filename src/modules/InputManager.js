@@ -33,60 +33,100 @@ export class InputManager {
             const isInput = ['INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable
             if (isInput) return
 
-            // 1. Zoom Control (Meta+ / Meta- / Ctrl+ / Ctrl-)
+            const key = e.key.toLowerCase()
+            const code = e.code
+
+            // 1. Zoom Control (Meta+ / Ctrl+ / +/-)
             if (e.metaKey || e.ctrlKey) {
-                const k = e.key.toLowerCase()
-                if (k === '=' || k === '+' || e.code === 'Equal') {
-                    e.preventDefault();
-                    this.app.changeZoom(0.1);
-                    return;
+                if (key === '=' || key === '+' || code === 'Equal' || code === 'NumpadAdd') {
+                    e.preventDefault()
+                    this.app.changeZoom(0.1)
+                    return
                 }
-                if (k === '-' || e.code === 'Minus') {
-                    e.preventDefault();
-                    this.app.changeZoom(-0.1);
-                    return;
+                if (key === '-' || code === 'Minus' || code === 'NumpadSubtract') {
+                    e.preventDefault()
+                    this.app.changeZoom(-0.1)
+                    return
                 }
+                // Prevent trigger UI toggles when Cmd/Ctrl is held (e.g., Cmd+S)
+                if (['s', 'b', 't', 'v', 'o', 'f', 'r'].includes(key)) return
             }
 
             // 2. Navigation
-            const navKey = e.key.toLowerCase()
-            if (navKey === ' ' || navKey === 'j' || e.code === 'ArrowDown') {
+            if (key === ' ' || key === 'j' || code === 'ArrowDown' || code === 'PageDown') {
                 e.preventDefault()
                 this.app.jump(1)
-            } else if (navKey === 'k' || e.code === 'ArrowUp') {
+                return
+            }
+            if (key === 'k' || (e.shiftKey && key === ' ') || code === 'ArrowUp' || code === 'PageUp') {
                 e.preventDefault()
                 this.app.jump(-1)
+                return
             }
 
-            // 3. UI Toggles
-            const key = e.key.toLowerCase()
+            // 3. Global Esc Handling (Cascading Close)
+            if (key === 'escape' || code === 'Escape') {
+                e.preventDefault()
+                // Order: Shortcuts -> View Panel -> Jump Panel -> Layer Shelf -> Sidebar
+                if (this.app.shortcutsModal && this.app.shortcutsModal.classList.contains('active')) {
+                    this.app.toggleShortcuts(false)
+                } else if (this.app.viewPanelManager && this.app.viewPanelManager.panel.classList.contains('active')) {
+                    this.app.viewPanelManager.togglePanel(false)
+                } else if (this.app.jumpManager && this.app.jumpManager.panel.classList.contains('active')) {
+                    this.app.jumpManager.togglePanel(false)
+                } else if (this.app.layerShelf && this.app.layerShelf.classList.contains('active')) {
+                    this.app.layerShelf.classList.remove('active')
+                } else if (this.app.sidebar && this.app.sidebar.classList.contains('open')) {
+                    this.app.sidebar.classList.remove('open')
+                }
+                return
+            }
+
+            // 4. UI Toggles
             switch (key) {
+                case 'g': // Page Jump (Calculator)
+                    e.preventDefault()
+                    if (this.app.jumpManager) this.app.jumpManager.togglePanel()
+                    break
                 case 's': // Sidebar
                     e.preventDefault()
                     this.app.toggleSidebar()
                     break
-                case 'b': // Bookmarks (Jump Panel)
-                    e.preventDefault()
-                    if (this.app.jumpManager) this.app.jumpManager.togglePanel()
-                    break
-                case 't': // Toolbar (Doc Bar)
+                case 'b': // Dock Expansion
                     e.preventDefault()
                     this.app.toggleDocBar()
+                    break
+                case 't': // Stamp Palette
+                    e.preventDefault()
+                    this.app.toolManager.toggleStampPalette()
+                    break
+                case 'v': // View Inspector (V) vs Notation Layers (Shift+V)
+                    e.preventDefault()
+                    if (e.shiftKey) {
+                        if (this.app.layerShelf) {
+                            this.app.layerShelf.classList.toggle('active')
+                            if (this.app.layerShelf.classList.contains('active')) this.app.renderLayerUI()
+                        }
+                    } else {
+                        if (this.app.viewPanelManager) this.app.viewPanelManager.togglePanel()
+                    }
+                    break
+                case 'r': // Ruler
+                    e.preventDefault()
+                    this.app.toggleRuler()
+                    break
+                case 'o': // Open PDF
+                    e.preventDefault()
+                    this.app.openPdfFilePicker()
                     break
                 case 'f': // Fullscreen
                     e.preventDefault()
                     this.app.toggleFullscreen()
                     break
-                case 'r': // Ruler Toggle (R or Shift+R)
+                case 'h':
+                case '?': // Help
                     e.preventDefault()
-                    this.app.toggleRuler()
-                    break
-                case 'v': // Layer Shelf (V or Shift+V)
-                    e.preventDefault()
-                    if (this.app.layerShelf) {
-                        this.app.layerShelf.classList.toggle('active')
-                        if (this.app.layerShelf.classList.contains('active')) this.app.renderLayerUI()
-                    }
+                    this.app.toggleShortcuts()
                     break
             }
         })
