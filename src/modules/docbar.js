@@ -54,48 +54,7 @@ export class DocBarManager {
             })
         }
 
-        // Layer Shelf Toggles
-        if (this.app.layerToggleBtn) {
-            this.app.layerToggleBtn.addEventListener('touchstart', (e) => e.stopPropagation())
-            this.app.layerToggleBtn.addEventListener('click', () => {
-                this.app.layerShelf.classList.toggle('active')
-                if (this.app.layerShelf.classList.contains('active')) this.app.renderLayerUI()
-            })
-        }
-
-        if (this.app.closeLayerShelfBtn) {
-            this.app.closeLayerShelfBtn.addEventListener('touchstart', (e) => e.stopPropagation())
-            this.app.closeLayerShelfBtn.addEventListener('click', () => {
-                this.app.layerShelf.classList.remove('active')
-            })
-        }
-
-        if (this.app.layerShelf) {
-            this.app.layerShelf.addEventListener('touchstart', (e) => e.stopPropagation())
-        }
-
-        // iPad pointer containment
-        document.addEventListener('touchstart', (e) => {
-            if (this.app.layerShelf &&
-                this.app.layerShelf.classList.contains('active') &&
-                !this.app.layerShelf.contains(e.target) &&
-                !this.app.layerToggleBtn.contains(e.target)) {
-                this.app.layerShelf.classList.remove('active')
-            }
-        }, { passive: true })
-
-        // Keyboard Shortcut for Layers & Quick Open
-        document.addEventListener('keydown', (e) => {
-            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
-            if (isInput) return
-
-            if (e.shiftKey && e.key === 'V') {
-                if (this.app.layerShelf) this.app.layerShelf.classList.toggle('active')
-            }
-            if (e.key.toLowerCase() === 'o') {
-                this.app.openPdfFilePicker()
-            }
-        })
+        // iPad pointer containment for Layer Shelf handled by LayerManager during init
     }
 
     toggleDocBar() {

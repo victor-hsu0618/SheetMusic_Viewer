@@ -3,6 +3,103 @@ export class LayerManager {
         this.app = app
     }
 
+    init() {
+        this.app.layerShelf = document.getElementById('layer-shelf')
+        this.app.layerToggleBtn = document.getElementById('layer-toggle-fab')
+        this.app.closeLayerShelfBtn = document.getElementById('close-layer-shelf')
+        this.app.externalLayerList = document.getElementById('external-layer-list')
+
+        if (this.app.layerToggleBtn) {
+            this.app.layerToggleBtn.addEventListener('click', () => {
+                this.app.layerShelf.classList.toggle('active')
+                if (this.app.layerShelf.classList.contains('active')) this.renderLayerUI()
+            })
+        }
+
+        if (this.app.closeLayerShelfBtn) {
+            this.app.closeLayerShelfBtn.addEventListener('click', () => {
+                this.app.layerShelf.classList.remove('active')
+            })
+        }
+
+        if (this.app.layerShelf) {
+            this.app.layerShelf.addEventListener('touchstart', (e) => e.stopPropagation())
+        }
+
+        // iPad pointer containment
+        document.addEventListener('touchstart', (e) => {
+            if (this.app.layerShelf &&
+                this.app.layerShelf.classList.contains('active') &&
+                !this.app.layerShelf.contains(e.target) &&
+                !this.app.layerToggleBtn.contains(e.target)) {
+                this.app.layerShelf.classList.remove('active')
+            }
+        }, { passive: true })
+
+        // Keyboard Shortcut for Layers
+        document.addEventListener('keydown', (e) => {
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
+            if (isInput) return
+
+            if (e.shiftKey && e.key === 'V') {
+                if (this.app.layerShelf) this.app.layerShelf.classList.toggle('active')
+                if (this.app.layerShelf.classList.contains('active')) this.renderLayerUI()
+            }
+        })
+
+        this.initDraggable()
+    }
+
+    initDraggable() {
+        let isDragging = false
+        let startX, startY, initialX = 0, initialY = 0
+        const el = this.app.layerShelf
+        if (!el) return
+        const handle = el.querySelector('.jump-drag-handle')
+
+        const start = (e) => {
+            if (e.target.closest('button') || e.target.closest('input')) return
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+
+            const style = window.getComputedStyle(el)
+            const matrix = new WebKitCSSMatrix(style.transform)
+            initialX = matrix.m41
+            initialY = matrix.m42
+
+            startX = clientX
+            startY = clientY
+            isDragging = true
+            el.style.transition = 'none'
+        }
+
+        const move = (e) => {
+            if (!isDragging) return
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+
+            const dx = clientX - startX
+            const dy = clientY - startY
+
+            el.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px)`
+        }
+
+        const end = () => {
+            isDragging = false
+            el.style.transition = ''
+        }
+
+        if (handle) {
+            handle.addEventListener('mousedown', start)
+            document.addEventListener('mousemove', move)
+            document.addEventListener('mouseup', end)
+
+            handle.addEventListener('touchstart', (e) => start(e), { passive: false })
+            document.addEventListener('touchmove', move, { passive: false })
+            document.addEventListener('touchend', end)
+        }
+    }
+
     addNewLayer() {
         const name = prompt('Notation Category Name (e.g., Bowing, Vibrato):')
         if (!name) return
@@ -96,7 +193,7 @@ export class LayerManager {
         <div class="layer-info">
           <div class="color-dot" style="background:${layer.color}"></div>
           <div class="layer-meta">
-            <span class="layer-name">${countBadge} ${layer.name}</span>
+            <span class="layer-name">${layer.name} ${countBadge}</span>
           </div>
         </div>
         <div class="layer-actions">

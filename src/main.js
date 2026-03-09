@@ -170,6 +170,7 @@ class ScoreFlow {
     this.viewPanelManager = new ViewPanelManager(this)
     this.jumpManager.init()
     this.viewPanelManager.init()
+    this.layerManager.init()
 
     this.initEventListeners()
     this.rulerManager.init()

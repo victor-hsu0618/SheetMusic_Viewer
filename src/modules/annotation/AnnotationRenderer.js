@@ -231,14 +231,16 @@ export class AnnotationRenderer {
                 case 'complex':
                     // Legacy support for complex visual logic
                     if (d.variant === 'thumb') {
-                        // 直立橢圓
+                        ctx.strokeStyle = color
+                        ctx.lineWidth = 0.8 * (this.app.scale / 1.5)
+                        // Smaller Hollow Vertical Ellipse
                         ctx.beginPath()
-                        ctx.ellipse(x, y - size * 0.3, size * 0.35, size * 0.6, 0, 0, Math.PI * 2)
+                        ctx.ellipse(x, y - size * 0.15, size * 0.2, size * 0.35, 0, 0, Math.PI * 2)
                         ctx.stroke()
-                        // 直棒
+                        // Smaller Stem Line
                         ctx.beginPath()
-                        ctx.moveTo(x, y + size * 0.3)
-                        ctx.lineTo(x, y + size * 0.6)
+                        ctx.moveTo(x, y + size * 0.2)
+                        ctx.lineTo(x, y + size * 0.55)
                         ctx.stroke()
                     } else if (d.variant === 'fermata') {
                         const fSize = size * 0.45
