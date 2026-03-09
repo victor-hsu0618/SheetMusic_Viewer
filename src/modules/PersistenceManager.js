@@ -116,6 +116,11 @@ export class PersistenceManager {
                 }
             })
         }
+
+        // Load score details for the current fingerprint
+        if (fingerprintData && this.app.scoreDetailManager) {
+            this.app.scoreDetailManager.load(fingerprintData)
+        }
     }
 
     addToRecentSoloScores(name) {

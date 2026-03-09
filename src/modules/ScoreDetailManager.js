@@ -11,6 +11,7 @@ export class ScoreDetailManager {
             mediaList: [], // [{ id, label, type, source }]
             activeMediaId: null
         }
+        this.isLoading = false
     }
 
     init() {
@@ -169,16 +170,26 @@ export class ScoreDetailManager {
     }
 
     handleInputChange() {
-        if (!this.app.pdfFingerprint) return
+        if (!this.app.pdfFingerprint || this.isLoading) return
 
-        this.currentInfo.name = this.scoreNameInput.value.trim()
-        this.currentInfo.composer = this.scoreComposerInput.value.trim()
+        const newName = this.scoreNameInput.value.trim()
+        const newComposer = this.scoreComposerInput.value.trim()
+
+        // Defensive check: Only modify if data actually changed
+        // Prevents browser auto-fill from triggering a sync on unchanged/empty data
+        if (newName === this.currentInfo.name && newComposer === this.currentInfo.composer) {
+            return
+        }
+
+        this.currentInfo.name = newName
+        this.currentInfo.composer = newComposer
 
         this.onModification() // Update timestamp for sync
     }
 
     async load(fingerprint) {
         if (!fingerprint) return
+        this.isLoading = true
 
         const detailData = localStorage.getItem(`scoreflow_detail_${fingerprint}`)
         if (detailData) {
@@ -187,26 +198,28 @@ export class ScoreDetailManager {
                 this.currentInfo = {
                     name: info.name || '',
                     composer: info.composer || '',
-                    lastEdit: info.lastEdit || null,
+                    lastEdit: info.lastEdit || 0, // Ensure numeric 0 for sync LWW
                     lastAuthor: info.lastAuthor || null,
                     mediaList: info.mediaList || (info.media ? [{ id: 'legacy', label: 'Default Video', ...info.media }] : []),
                     activeMediaId: info.activeMediaId || (info.media ? 'legacy' : null)
                 }
             } catch (err) {
                 console.error('[ScoreDetailManager] Failed to parse score detail data:', err)
-                this.currentInfo = { name: '', composer: '', mediaList: [], activeMediaId: null }
+                this.currentInfo = { name: '', composer: '', lastEdit: 0, mediaList: [], activeMediaId: null }
             }
         } else {
             // New score defaults
             this.currentInfo = {
                 name: this.app.activeScoreName ? this.app.activeScoreName.replace(/\.pdf$/i, '') : '',
                 composer: '',
+                lastEdit: 0, // NEW FILE: 0 timestamp means remote will always win
                 mediaList: [],
                 activeMediaId: null
             }
         }
 
         this.render(fingerprint)
+        this.isLoading = false
 
         // Load active media if sidebar is loaded
         if (this.currentInfo.activeMediaId) {
