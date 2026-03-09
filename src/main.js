@@ -493,8 +493,18 @@ class ScoreFlow {
     // Drive Sync UI Listeners
     const btnSignIn = document.getElementById('btn-drive-signin')
     const btnSignOut = document.getElementById('btn-drive-signout')
-    if (btnSignIn) btnSignIn.onclick = () => this.driveSyncManager.signIn()
-    if (btnSignOut) btnSignOut.onclick = () => this.driveSyncManager.signOut()
+    if (btnSignIn) {
+      btnSignIn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.driveSyncManager.signIn();
+      });
+    }
+    if (btnSignOut) {
+      btnSignOut.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.driveSyncManager.signOut();
+      });
+    }
   }
 
   /**

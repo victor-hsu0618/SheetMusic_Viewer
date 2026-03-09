@@ -185,21 +185,25 @@ export class DriveSyncManager {
      * Request access token.
      */
     signIn(isSilent = false) {
-        if (!this.tokenClient) return;
+        if (!this.tokenClient) {
+            this.addLog('正在嘗試重新初始化 Google 服務...', 'system');
+            this.init();
+        }
+        if (!this.tokenClient) {
+            this.addLog('Google 授權組件尚未就緒，請稍後再試', 'error');
+            return;
+        }
 
         try {
             this.addLog(isSilent ? '正在背景連線...' : '正在請求授權...', 'system');
 
-            // For Safari: silent sign-in (prompt: '') often gets blocked on page load.
-            // We need to catch this or inform the user.
-            if (isSilent) {
-                this.tokenClient.requestAccessToken({
-                    prompt: '',
-                    hint: localStorage.getItem('scoreflow_drive_user_hint') || ''
-                });
-            } else {
-                this.tokenClient.requestAccessToken({ prompt: 'select_account' });
-            }
+            // Safari Popup Handling: ensure call is triggered from user interaction
+            const options = isSilent ? {
+                prompt: '',
+                hint: localStorage.getItem('scoreflow_drive_user_hint') || ''
+            } : { prompt: 'select_account' };
+
+            this.tokenClient.requestAccessToken(options);
         } catch (err) {
             console.error('[DriveSync] Sign-in request failed:', err);
             if (isSilent) {
