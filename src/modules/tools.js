@@ -101,10 +101,8 @@ export class ToolManager {
             el.classList.add('expanded')
         } else {
             el.classList.remove('expanded')
-            // Reset to pen mode on close to avoid accidental stamp placement
-            if (!['view', 'select', 'eraser', 'anchor'].includes(this.app.activeStampType)) {
-                this.app.activeStampType = 'pen'
-            }
+            // Reset to pan/view mode on close to avoid accidental stamp placement
+            this.app.activeStampType = 'view'
         }
 
         this.updateActiveTools()

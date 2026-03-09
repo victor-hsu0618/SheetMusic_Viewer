@@ -104,12 +104,26 @@ export class AnnotationRenderer {
     /**
      * Render a specific stamp (symbol) on the canvas.
      */
-    drawStampOnCanvas(ctx, canvas, stamp, color, isForeign = false, isHovered = false, isSelectHovered = false) {
+    drawStampOnCanvas(ctx, canvas, stamp, color, isForeign = false, isHovered = false, isSelectHovered = false, fingerPos = null) {
         const x = stamp.x * canvas.width
         const y = stamp.y * canvas.height
         const size = 18 * (this.app.scale / 1.5)
 
         ctx.save()
+
+        // Ghosting: Draw dashed connector line if finger position is provided
+        if (fingerPos) {
+            ctx.save()
+            ctx.beginPath()
+            ctx.setLineDash([5, 5])
+            ctx.strokeStyle = color
+            ctx.globalAlpha = 0.4
+            ctx.lineWidth = 1.5 * (this.app.scale / 1.5)
+            ctx.moveTo(fingerPos.x * canvas.width, fingerPos.y * canvas.height)
+            ctx.lineTo(x, y)
+            ctx.stroke()
+            ctx.restore()
+        }
 
         // Glow effects
         if (isHovered) {

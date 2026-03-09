@@ -9,23 +9,29 @@ export class RulerManager {
 
     init() {
         this.app.jumpLine = document.getElementById('jump-line')
-        this.app.jumpOffsetInput = document.getElementById('jump-offset')
-        this.app.jumpOffsetValue = document.getElementById('jump-offset-value')
+        this.app.jumpOffsetInput = document.getElementById('view-jump-offset')
+        this.app.jumpOffsetValue = document.getElementById('view-jump-offset-value')
         this.app.btnJumpHead = document.getElementById('btn-jump-head')
         this.app.btnJumpEnd = document.getElementById('btn-jump-end')
-        this.app.btnRulerToggle = document.getElementById('btn-ruler-toggle')
+        this.app.btnRulerToggle = document.getElementById('view-ruler-toggle')
 
         this.initEventListeners()
         this.updateJumpLinePosition()
         this.updateRulerPosition()
+
+        // Sync ruler position when window is resized (score shifts to center)
+        window.addEventListener('resize', () => {
+            this.updateRulerPosition()
+            this.updateRulerMarks()
+        })
     }
 
     initEventListeners() {
         if (this.app.jumpOffsetInput) {
             this.app.jumpOffsetInput.addEventListener('input', (e) => {
-                const cm = parseFloat(e.target.value)
-                if (this.app.jumpOffsetValue) this.app.jumpOffsetValue.textContent = `${cm.toFixed(1)}cm`
-                this.jumpOffsetPx = cm * 37.8
+                const px = parseInt(e.target.value)
+                if (this.app.jumpOffsetValue) this.app.jumpOffsetValue.textContent = `${px}px`
+                this.jumpOffsetPx = px
                 this.updateJumpLinePosition()
             })
         }
@@ -45,9 +51,8 @@ export class RulerManager {
                 this.jumpOffsetPx = newY
                 this.updateJumpLinePosition()
                 if (this.app.jumpOffsetInput) {
-                    const cm = newY / 37.8
-                    this.app.jumpOffsetInput.value = cm
-                    if (this.app.jumpOffsetValue) this.app.jumpOffsetValue.textContent = `${cm.toFixed(1)}cm`
+                    this.app.jumpOffsetInput.value = newY
+                    if (this.app.jumpOffsetValue) this.app.jumpOffsetValue.textContent = `${Math.round(newY)}px`
                 }
             })
             window.addEventListener('mouseup', () => {
@@ -62,11 +67,6 @@ export class RulerManager {
             })
         }
 
-        if (this.app.btnRulerToggle) {
-            this.app.btnRulerToggle.addEventListener('click', () => {
-                this.toggleRuler();
-            })
-        }
     }
 
     toggleRuler() {
@@ -96,7 +96,11 @@ export class RulerManager {
         const firstPage = document.querySelector('.page-container')
         if (!firstPage) return
         const pageRect = firstPage.getBoundingClientRect()
-        const rulerLeft = Math.floor(pageRect.left)
+        // If layout isn't ready yet, we might get 0. Try to fallback to center calculation.
+        let rulerLeft = Math.floor(pageRect.left)
+        if (rulerLeft === 0 && window.innerWidth > pageRect.width) {
+            rulerLeft = Math.floor((window.innerWidth - pageRect.width) / 2)
+        }
 
         // Position internal parts within the full-width transparent overlay
         const track = ruler.querySelector('.ruler-track')

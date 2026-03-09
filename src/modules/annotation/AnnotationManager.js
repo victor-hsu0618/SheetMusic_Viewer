@@ -17,8 +17,8 @@ export class AnnotationManager {
     drawPathOnCanvas(ctx, canvas, path, isForeign, isHovered, isSelectHovered) {
         this.renderer.drawPathOnCanvas(ctx, canvas, path, isForeign, isHovered, isSelectHovered);
     }
-    drawStampOnCanvas(ctx, canvas, stamp, color, isForeign, isHovered, isSelectHovered) {
-        this.renderer.drawStampOnCanvas(ctx, canvas, stamp, color, isForeign, isHovered, isSelectHovered);
+    drawStampOnCanvas(ctx, canvas, stamp, color, isForeign, isHovered, isSelectHovered, fingerPos) {
+        this.renderer.drawStampOnCanvas(ctx, canvas, stamp, color, isForeign, isHovered, isSelectHovered, fingerPos);
     }
     redrawAllAnnotationLayers() { this.renderer.redrawAllAnnotationLayers(); }
 

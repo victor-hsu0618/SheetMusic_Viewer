@@ -43,17 +43,34 @@ export class InteractionManager {
 
         // --- STAMP PREVIEW CONFIGURE ---
         const STAMP_OFFSET_X_PX = 0
-        const STAMP_OFFSET_Y_PX = 0
+        const STAMP_OFFSET_Y_PX = -60 // Default: Position preview ABOVE finger to avoid occlusion
         const EDGE_THRESHOLD_X = 0.15
         const EDGE_THRESHOLD_Y = 0.12
 
         /**
-         * Compute preview position for stamps (exact cursor pos).
+         * Compute preview position for stamps with smart offset to prevent finger obscuring.
          */
         const getStampPreviewPos = (pos) => {
+            // Base normalized position (0.0 to 1.0)
+            let nx = pos.x
+            let ny = pos.y
+
+            // Convert pixel offsets to normalized coordinates based on active overlay size
+            const offX = STAMP_OFFSET_X_PX / overlay.offsetWidth
+            const offY = STAMP_OFFSET_Y_PX / overlay.offsetHeight
+
+            // 1. Vertical Smart Positioning:
+            // Always use the offset (no flipping)
+            let finalOffY = offY
+
+            // 2. Horizontal Smart Positioning: 
+            // If near leftmost edge, nudge the preview slightly right if needed.
+            let finalOffX = offX
+            if (nx < 0.05) finalOffX = Math.max(offX, 0.02)
+
             return {
-                x: Math.max(0.001, Math.min(0.999, pos.x)),
-                y: Math.max(0.001, Math.min(0.999, pos.y))
+                x: Math.max(0.001, Math.min(0.999, nx + finalOffX)),
+                y: Math.max(0.001, Math.min(0.999, ny + finalOffY))
             }
         }
 
@@ -211,7 +228,7 @@ export class InteractionManager {
                 const ctx = canvas.getContext('2d')
                 this.app.redrawStamps(pageNum)
                 const layer = this.app.layers.find(l => l.id === activeObject.layerId)
-                this.app.drawStampOnCanvas(ctx, canvas, activeObject, layer ? layer.color : '#000000', true)
+                this.app.drawStampOnCanvas(ctx, canvas, activeObject, layer ? layer.color : '#000000', true, false, false, pos)
             }
         }
 
@@ -262,7 +279,7 @@ export class InteractionManager {
                     const group = this.app.toolsets.find(g => g.tools.some(t => t.id === this.app.activeStampType))
                     const layer = group ? this.app.layers.find(l => l.type === group.type) : null
                     const color = layer ? layer.color : '#6366f1'
-                    this.app.drawStampOnCanvas(ctx, canvas, { type: this.app.activeStampType, x: previewPos.x, y: previewPos.y, page: pageNum }, color, true)
+                    this.app.drawStampOnCanvas(ctx, canvas, { type: this.app.activeStampType, x: previewPos.x, y: previewPos.y, page: pageNum }, color, true, false, false, pos)
                 }
             }
         }

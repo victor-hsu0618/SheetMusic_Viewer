@@ -17,6 +17,7 @@ import { CollaborationManager } from './modules/collaboration.js'
 import { InputManager } from './modules/InputManager.js'
 import { PlaybackManager } from './modules/PlaybackManager.js'
 import { JumpManager } from './modules/JumpManager.js'
+import { ViewPanelManager } from './modules/ViewPanelManager.js'
 
 // Use local worker for total offline reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.mjs'
@@ -41,7 +42,10 @@ class ScoreFlow {
   async loadPDF(data, filename = null) { return this.viewerManager.loadPDF(data, filename) }
   async renderPDF() { return this.viewerManager.renderPDF() }
   async getFingerprint(buffer) { return this.viewerManager.getFingerprint(buffer) }
-  updateZoomDisplay() { return this.viewerManager.updateZoomDisplay() }
+  updateZoomDisplay() {
+    this.viewerManager.updateZoomDisplay()
+    this.viewPanelManager?.updateZoomDisplay()
+  }
 
   async changeZoom(delta) { return this.viewerManager.changeZoom(delta) }
   async fitToWidth() { return this.viewerManager.fitToWidth() }
@@ -163,7 +167,9 @@ class ScoreFlow {
 
     this.initElements()
     this.jumpManager = new JumpManager(this)
+    this.viewPanelManager = new ViewPanelManager(this)
     this.jumpManager.init()
+    this.viewPanelManager.init()
 
     this.initEventListeners()
     this.rulerManager.init()
@@ -261,12 +267,8 @@ class ScoreFlow {
     this.sidebar = document.getElementById('sidebar')
     this.btnSidebarToggle = document.getElementById('btn-sidebar-toggle')
     this.layerList = document.getElementById('layer-list')
-    this.zoomInBtn = document.getElementById('zoom-in')
-    this.zoomOutBtn = document.getElementById('zoom-out')
-    this.zoomLevelDisplay = document.getElementById('zoom-level')
-
-    this.btnFitWidth = document.getElementById('btn-fit-width')
-    this.btnFitHeight = document.getElementById('btn-fit-height')
+    this.btnFitWidth = document.getElementById('view-fit-width')
+    this.btnFitHeight = document.getElementById('view-fit-height')
     this.clearStampsBtn = document.getElementById('clear-stamps-btn')
     this.shortcutsModal = document.getElementById('shortcuts-modal')
     this.closeShortcutsBtn = document.getElementById('close-shortcuts')
@@ -274,8 +276,9 @@ class ScoreFlow {
     this.viewer = document.getElementById('viewer-container')
     this.activeToolsContainer = document.getElementById('active-tools-container')
     this.jumpLine = document.getElementById('jump-line')
-    this.jumpOffsetInput = document.getElementById('jump-offset')
-    this.jumpOffsetValue = document.getElementById('jump-offset-value')
+    this.jumpOffsetInput = document.getElementById('view-jump-offset')
+    this.jumpOffsetValue = document.getElementById('view-jump-offset-value')
+    this.zoomLevelDisplay = document.getElementById('view-panel-zoom-level')
     this.docBar = document.getElementById('floating-doc-bar')
     this.exportBtn = document.getElementById('export-score-btn')
     this.importBtn = document.getElementById('import-score-btn')
@@ -436,12 +439,6 @@ class ScoreFlow {
     if (this.projectBackBtn) {
     }
 
-    if (this.zoomInBtn) {
-      this.zoomInBtn.addEventListener('click', () => this.viewerManager.changeZoom(0.1))
-    }
-    if (this.zoomOutBtn) {
-      this.zoomOutBtn.addEventListener('click', () => this.viewerManager.changeZoom(-0.1))
-    }
     if (this.btnFitWidth) {
       this.btnFitWidth.addEventListener('click', () => this.viewerManager.fitToWidth())
     }
