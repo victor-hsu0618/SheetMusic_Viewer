@@ -438,11 +438,18 @@ export class AnnotationManager {
             editor.style.height = editor.scrollHeight + 'px'
         }, 10)
         const finalize = () => {
-            if (editor.value.trim()) {
-                stamp.data = editor.value
+            const val = editor.value.trim()
+            if (val) {
+                stamp.data = val
+                // Auto-save to library if it's new
+                if (!this.app.userTextLibrary.includes(val)) {
+                    this.app.userTextLibrary.push(val)
+                    if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
+                }
                 this.app.stamps.push(stamp)
                 this.app.saveToStorage(true)
                 this.redrawStamps(pageNum)
+                if (this.app.toolManager) this.app.toolManager.updateActiveTools()
             }
             editor.remove()
         }
@@ -600,17 +607,23 @@ export class AnnotationManager {
         }
 
         if (type === 'text' || type === 'tempo-text') {
-            data = prompt('Enter text:')
-            if (!data) return
+            const inputText = prompt('Enter text:')
+            if (!inputText || !inputText.trim()) return
+            data = inputText.trim()
+            // Auto-save to library
+            if (!this.app.userTextLibrary.includes(data)) {
+                this.app.userTextLibrary.push(data)
+                if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
+            }
         } else if (type === 'measure') {
             let defVal = 1
             if (this.app.lastMeasureNum) {
                 defVal = parseInt(this.app.lastMeasureNum) + (this.app.measureStep || 4)
             }
-            data = await this.promptMeasureNumber(defVal)
-            if (!data) return
-            this.app.lastMeasureNum = String(data)
-            data = String(data)
+            const measureInput = await this.promptMeasureNumber(defVal)
+            if (!measureInput) return
+            this.app.lastMeasureNum = String(measureInput)
+            data = String(measureInput)
             const existingMeasure = this.app.stamps.find(s => s.type === 'measure' && s.page === page)
             if (existingMeasure) x = existingMeasure.x
         }

@@ -503,12 +503,15 @@ export class ToolManager {
                 const commit = () => {
                     const val = input.value.trim()
                     if (val) {
-                        const newIdx = this.app.userTextLibrary.length
-                        this.app.userTextLibrary.push(val)
-                        this.app.saveToStorage()
+                        if (!this.app.userTextLibrary.includes(val)) {
+                            this.app.userTextLibrary.push(val)
+                            if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
+                            this.app.saveToStorage()
+                        }
 
-                        // Auto-select the new term
-                        this.app.activeStampType = `custom-text-${newIdx}`
+                        // Select the term (either existing or newly added)
+                        const idx = this.app.userTextLibrary.indexOf(val)
+                        this.app.activeStampType = `custom-text-${idx}`
                         this.app._activeCustomText = val
 
                         input.value = ''

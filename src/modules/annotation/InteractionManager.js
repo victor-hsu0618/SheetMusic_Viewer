@@ -187,17 +187,32 @@ export class InteractionManager {
                 }
 
                 const previewPos = getStampPreviewPos(pos)
+                let stampDraw = null
+                if (toolType.startsWith('custom-text-') && this.app._activeCustomText) {
+                    stampDraw = {
+                        type: 'text',
+                        content: this.app._activeCustomText,
+                        font: 'italic 300',
+                        size: 22,
+                        fontFace: 'serif'
+                    }
+                }
+
                 activeObject = {
                     page: pageNum,
                     layerId: targetLayerId,
                     sourceId: this.app.activeSourceId,
                     type: toolType,
-                    x: previewPos.x,
-                    y: previewPos.y,
+                    x: pos.x, // Use pos.x instead of undefined nx
+                    y: pos.y, // Use pos.y instead of undefined ny
                     data: null,
+                    draw: stampDraw, // Critical: Attach drawing metadata for non-default tools
                     id: crypto.randomUUID(),
                     updatedAt: Date.now()
                 }
+                const previewPosFinal = getStampPreviewPos(pos)
+                activeObject.x = previewPosFinal.x
+                activeObject.y = previewPosFinal.y
                 this.app.lastFocusedStamp = activeObject
             }
         }
@@ -285,7 +300,24 @@ export class InteractionManager {
                     const group = this.app.toolsets.find(g => g.tools.some(t => t.id === this.app.activeStampType))
                     const layer = group ? this.app.layers.find(l => l.type === group.type) : null
                     const color = layer ? layer.color : '#6366f1'
-                    this.app.drawStampOnCanvas(ctx, canvas, { type: this.app.activeStampType, x: previewPos.x, y: previewPos.y, page: pageNum }, color, true, false, false, pos)
+
+                    let previewDraw = null
+                    if (this.app.activeStampType.startsWith('custom-text-') && this.app._activeCustomText) {
+                        previewDraw = {
+                            type: 'text',
+                            content: this.app._activeCustomText,
+                            font: 'italic 300',
+                            size: 22,
+                            fontFace: 'serif'
+                        }
+                    }
+                    this.app.drawStampOnCanvas(ctx, canvas, {
+                        type: this.app.activeStampType,
+                        x: previewPos.x,
+                        y: previewPos.y,
+                        page: pageNum,
+                        draw: previewDraw
+                    }, color, true, false, false, pos)
                 }
             }
         }
