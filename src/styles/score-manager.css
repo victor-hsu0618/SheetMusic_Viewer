@@ -147,6 +147,30 @@
     opacity: 1;
 }
 
+.cloud-sync-status {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    margin-right: -2px;
+}
+
+.cloud-sync-status.not-synced {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.cloud-sync-status.synced {
+    color: #10b981;
+    /* Green for success/synced */
+    opacity: 0.8;
+}
+
+.score-card:hover .cloud-sync-status.synced {
+    opacity: 1;
+}
+
 .btn-delete-score {
     display: none;
     /* Removed in favor of batch delete */

@@ -16,6 +16,7 @@ export class DriveSyncManager {
         this.lastProfileSyncTime = 0;
         this.syncInterval = 30000; // 30 seconds polling
         this.syncTimer = null;
+        this.hasScanned = false;
     }
 
     /**
@@ -57,6 +58,9 @@ export class DriveSyncManager {
 
                 this.refreshUI(); // Refresh UI to show sync status
                 this.startAutoSync();
+
+                // One-time scan for library sync status
+                this.scanRemoteSyncFiles();
             },
         });
 
@@ -255,6 +259,12 @@ export class DriveSyncManager {
             }
             if (!this.folderId) throw new Error('Could not resolve sync folder');
 
+            // Trigger library scan if not done yet
+            if (!this.hasScanned) {
+                this.hasScanned = true;
+                this.scanRemoteSyncFiles();
+            }
+
             // 0. Sync Profile first (it's global)
             await this.syncProfile();
 
@@ -313,6 +323,9 @@ export class DriveSyncManager {
         const logMsg = `已上傳: ${stampsCount} 劃記, ${bookmarksCount} 書籤, ${sourcesCount} 詮釋`;
         this.addLog(logMsg, 'success');
         this.lastSyncTime = data.version;
+
+        // Update Library UI
+        this.app.scoreManager?.updateSyncStatus(fingerprint, true);
     }
 
     /**
@@ -468,6 +481,7 @@ export class DriveSyncManager {
             }
 
             this.lastSyncTime = remoteVer;
+            this.app.scoreManager?.updateSyncStatus(fingerprint, true);
             return remoteVer;
         } catch (err) {
             console.error('[DriveSync] Pull failed:', err);
@@ -619,5 +633,54 @@ export class DriveSyncManager {
     async getFileContent(fileId) {
         const response = await this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
         return await response.json();
+    }
+
+    /**
+     * Scans the sync folder for files matching the fingerprint pattern
+     * and updates the ScoreManager registry.
+     */
+    async scanRemoteSyncFiles() {
+        if (!this.folderId || !this.app.scoreManager) return;
+
+        try {
+            this.addLog('正在掃描雲端備份...', 'system');
+
+            // Fetch all sync_*.json files in the sync folder
+            const response = await this.gdriveFetch(
+                `https://www.googleapis.com/drive/v3/files?q='${this.folderId}' in parents and name contains 'sync_' and trashed=false&fields=files(id,name)`
+            );
+            const data = await response.json();
+
+            if (data.files && data.files.length > 0) {
+                const remoteFPs = new Set();
+                data.files.forEach(f => {
+                    // Extract fingerprint from sync_{fp}.json
+                    const match = f.name.match(/^sync_(.+)\.json$/);
+                    if (match) remoteFPs.add(match[1]);
+                });
+
+                let foundCount = 0;
+                for (const score of this.app.scoreManager.registry) {
+                    const isSynced = remoteFPs.has(score.fingerprint);
+                    if (score.isSynced !== isSynced) {
+                        score.isSynced = isSynced;
+                        foundCount++;
+                    }
+                }
+
+                if (foundCount > 0) {
+                    await this.app.scoreManager.saveRegistry();
+                    this.app.scoreManager.render();
+                    this.addLog(`掃描完成: 發現 ${remoteFPs.size} 個雲端備份`, 'success');
+                } else {
+                    this.addLog('掃描完成: 本地資料庫與雲端同步', 'info');
+                }
+            } else {
+                this.addLog('掃描完成: 雲端尚無備份', 'info');
+            }
+        } catch (err) {
+            console.error('[DriveSync] Scan failed:', err);
+            this.addLog('雲端掃描失敗', 'error');
+        }
     }
 }

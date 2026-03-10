@@ -284,6 +284,15 @@ export class ScoreManager {
                             </svg>
                         </div>
 
+                        <!-- Cloud Sync Status Icon -->
+                        <div class="cloud-sync-status ${score.isSynced ? 'synced' : 'not-synced'}" 
+                             title="${score.isSynced ? '已備份至雲端' : '已匯入本地 (尚未同步或雲端無備份)'}">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+                                ${score.isSynced ? '' : '<line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.5" opacity="0.5" />'}
+                            </svg>
+                        </div>
+
                         <!-- Info Button (Score Details) -->
                         <button class="btn-icon-mini btn-score-info" title="Score Details" data-fp="${score.fingerprint}">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -478,6 +487,45 @@ export class ScoreManager {
             this.app.loadPDF(new Uint8Array(buffer), score.fileName);
         } else {
             this.app.showMessage('Score content missing. Please re-import.', 'error');
+        }
+    }
+
+    /**
+     * Update sync status for a specific score.
+     */
+    async updateSyncStatus(fingerprint, isSynced) {
+        const score = this.registry.find(s => s.fingerprint === fingerprint);
+        if (score && score.isSynced !== isSynced) {
+            score.isSynced = isSynced;
+            await this.saveRegistry();
+            if (this.overlay && this.overlay.classList.contains('active')) {
+                this.render();
+            }
+        }
+    }
+
+    /**
+     * Update metadata (title/composer) for a specific score in registry.
+     */
+    async updateMetadata(fingerprint, metadata) {
+        const score = this.registry.find(s => s.fingerprint === fingerprint);
+        if (score) {
+            let changed = false;
+            if (metadata.title !== undefined && score.title !== metadata.title) {
+                score.title = metadata.title;
+                changed = true;
+            }
+            if (metadata.composer !== undefined && score.composer !== metadata.composer) {
+                score.composer = metadata.composer;
+                changed = true;
+            }
+
+            if (changed) {
+                await this.saveRegistry();
+                if (this.overlay && this.overlay.classList.contains('active')) {
+                    this.render();
+                }
+            }
         }
     }
 }

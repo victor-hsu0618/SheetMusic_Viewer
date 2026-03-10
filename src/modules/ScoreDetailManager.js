@@ -24,6 +24,7 @@ export class ScoreDetailManager {
         this.scoreComposerInput = document.getElementById('score-composer-input')
         this.scoreFilenameDisplay = document.getElementById('score-filename-display')
         this.scoreFingerprintDisplay = document.getElementById('score-fingerprint-display')
+        this.btnSave = document.getElementById('btn-save-score-detail')
 
         // Media UI
         this.mediaLabelInput = document.getElementById('sidebar-media-label')
@@ -37,8 +38,11 @@ export class ScoreDetailManager {
         this.statsTotalCount = document.getElementById('stats-total-count')
         this.statsLastEdit = document.getElementById('stats-last-edit')
         this.statsAuthor = document.getElementById('stats-author')
+        this.resizeHandle = this.panel.querySelector('.panel-resize-handle')
 
         this.initEventListeners()
+        this.initDraggable()
+        this.initResizable()
     }
 
     initEventListeners() {
@@ -61,6 +65,129 @@ export class ScoreDetailManager {
         }
         if (this.localFileInput) {
             this.localFileInput.addEventListener('change', (e) => this.handleLocalFile(e))
+        }
+        if (this.btnSave) {
+            this.btnSave.addEventListener('click', () => this.handleSave())
+        }
+
+        // Tab Switching Logic
+        const tabBtns = this.panel.querySelectorAll('.segment-btn')
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.tab
+                this.switchTab(tabId)
+            })
+        })
+    }
+
+    initDraggable() {
+        let isDragging = false
+        let startX, startY, initialX = 0, initialY = 0
+        const el = this.panel
+        const handle = el.querySelector('.jump-drag-handle')
+
+        const start = (e) => {
+            if (e.target.closest('button') || e.target.closest('input')) return
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+
+            // Get current transform matrix
+            const style = window.getComputedStyle(el)
+            const matrix = new WebKitCSSMatrix(style.transform)
+            initialX = matrix.m41
+            initialY = matrix.m42
+
+            startX = clientX
+            startY = clientY
+            isDragging = true
+            el.style.transition = 'none'
+        }
+
+        const move = (e) => {
+            if (!isDragging) return
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+
+            const dx = clientX - startX
+            const dy = clientY - startY
+
+            el.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px)`
+        }
+
+        const end = () => {
+            isDragging = false
+            el.style.transition = ''
+        }
+
+        handle.addEventListener('mousedown', start)
+        document.addEventListener('mousemove', move)
+        document.addEventListener('mouseup', end)
+
+        handle.addEventListener('touchstart', start, { passive: false })
+        document.addEventListener('touchmove', move, { passive: false })
+        document.addEventListener('touchend', end)
+    }
+
+    initResizable() {
+        if (!this.resizeHandle) return
+        let isResizing = false
+        let startX, startY, startWidth, startHeight
+        const el = this.panel
+
+        const start = (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            isResizing = true
+
+            startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
+            startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+            startWidth = el.offsetWidth
+            startHeight = el.offsetHeight
+            el.style.transition = 'none'
+        }
+
+        const move = (e) => {
+            if (!isResizing) return
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
+
+            const width = startWidth + (clientX - startX)
+            const height = startHeight + (clientY - startY)
+
+            if (width > 300) el.style.width = width + 'px'
+            if (height > 200) el.style.height = height + 'px'
+        }
+
+        const end = () => {
+            isResizing = false
+            el.style.transition = ''
+        }
+
+        this.resizeHandle.addEventListener('mousedown', start)
+        document.addEventListener('mousemove', move)
+        document.addEventListener('mouseup', end)
+
+        this.resizeHandle.addEventListener('touchstart', start, { passive: false })
+        document.addEventListener('touchmove', move, { passive: false })
+        document.addEventListener('touchend', end)
+    }
+
+    switchTab(tabId) {
+        // Update Button states
+        const tabBtns = this.panel.querySelectorAll('.segment-btn')
+        tabBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId)
+        })
+
+        // Update Pane visibility
+        const panes = this.panel.querySelectorAll('.detail-tab-pane')
+        panes.forEach(pane => {
+            pane.classList.toggle('active', pane.id === `pane-${tabId}`)
+        })
+
+        // Special render for Collaboration styles if switching to styles tab
+        if (tabId === 'styles') {
+            this.app.renderSourceUI()
         }
     }
 
@@ -183,16 +310,45 @@ export class ScoreDetailManager {
         const newName = this.scoreNameInput.value.trim()
         const newComposer = this.scoreComposerInput.value.trim()
 
-        // Defensive check: Only modify if data actually changed
-        // Prevents browser auto-fill from triggering a sync on unchanged/empty data
-        if (newName === this.currentInfo.name && newComposer === this.currentInfo.composer) {
-            return
+        if (newName !== this.currentInfo.name || newComposer !== this.currentInfo.composer) {
+            this.btnSave?.classList.add('btn-primary-highlight')
+        } else {
+            this.btnSave?.classList.remove('btn-primary-highlight')
         }
+    }
+
+    async handleSave() {
+        if (!this.app.pdfFingerprint || this.isLoading) return
+
+        const newName = this.scoreNameInput.value.trim()
+        const newComposer = this.scoreComposerInput.value.trim()
 
         this.currentInfo.name = newName
         this.currentInfo.composer = newComposer
 
-        this.onModification() // Update timestamp for sync
+        this.onModification() // Update timestamp and save to localStorage
+
+        // Sync with Library Registry
+        await this.app.scoreManager?.updateMetadata(this.app.pdfFingerprint, {
+            title: newName,
+            composer: newComposer
+        })
+
+        this.btnSave?.classList.remove('btn-primary-highlight')
+
+        // Visual feedback
+        const oldText = this.btnSave.textContent
+        this.btnSave.textContent = '✓ Saved!'
+        this.btnSave.classList.add('btn-success')
+
+        setTimeout(() => {
+            if (this.btnSave) {
+                this.btnSave.textContent = oldText
+                this.btnSave.classList.remove('btn-success')
+            }
+        }, 2000)
+
+        this.app.showMessage('Score info saved.', 'success')
     }
 
     toggle(force) {

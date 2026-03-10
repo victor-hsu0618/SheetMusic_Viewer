@@ -108,17 +108,23 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **衝突預防機制**：
   - 手勢系統會自動避開 Doc Bar、側邊欄及浮動工具箱區域，確保 UI 互動優先。
 
-### 5. 樂譜詳情與身份管理 (Score Detail & Identity Management) - *2026.03.08 更新*
+### 5. 樂譜詳情與身份管理 (Score Detail & Identity Management) - *2026.03.10 更新*
 
-- **樂譜詳情儀表板 (Score Detail Panel)**：原 Orchestra 面板重構為「Score Detail」，提供四大核心區塊：
-  - **1. 樂譜資訊預置 (Score Information)**：支援自定義 **Score Name (曲名)** 與 **Composer (作曲家)**。同時顯示 **FileName (原始檔名)** 與 **SHA-256 Fingerprint (指紋)** 作為鑑定依據。此資訊與 PDF 指紋深度綁定，下次開啟同一份樂譜時會自動搜尋並還原。
-  - **2. 演奏者身分 (Active Musician)**：即時同步 User Profile，顯示當前標記者的姓名與聯繫方式。
-  - **3. 詮釋風格管理 (Interpretation Styles)**：集中管理自建或匯入的演奏詮釋。
-  - **4. 標記交換 (Score Annotation Exchange)**：針對「本樂譜版本」的獨立匯入匯出功能。
+- **樂譜詳情分頁儀表板 (Tabbed Score Detail Panel)**：為了解決功能增加導致面板過長的問題，重新設計為**分頁式佈局 (Tabbed UI)**，包含四大核心類別：
+  - **1. General (一般)**：包含樂譜的基本元數據（曲名、作曲家、指紋）以及演奏者身分 (Active Musician) 摘要。
+  - **2. Styles (風格)**：集中管理 Interpretation Styles 詮釋引擎的來源清單與顯隱控制。
+  - **3. Media (媒體)**：管理與本樂譜關聯的 YouTube 或本地影音資源。
+  - **4. System (系統)**：包含數據統計 (Stats)、樂譜標記交換 (Export/Import) 及詳細檔案路徑。
+- **高級互動性 (Panel Interactivity)**：
+  - **自由拖拽 (Draggable)**：可透過頂部標題列自由移動面板位置。
+  - **自由縮放 (Resizable)**：右下角備有調整手柄，可手動拉伸面板的寬高以適應不同內容（如長清單）。
+  - **佈局穩定性**：面板頂部固定座標，切換分頁時標題列保持不動，消除內容高度變化導致的跳動感。
+- **DocBar 工具群組化 (DocBar Grouping)**：
+  - 將 **Score Library (書庫)** 與 **Score Info (詳情)** 整合至同一個功能 Suite 中，符合「樂譜級操作」的直覺邏輯。
 - **身分強綁定機制 (Identity-Linked Exchange)**：
   - **智慧金鑰 (Key Identifiers)**：匯出 JSON 檔案強制內嵌 User Name 與 Email。
-  - **檔名自動化策略**：匯出標記時，系統自動將檔名優化為 `[ScoreName]_[Composer]_[UserName]_[YYYY-MM-DD].json` 格式，大幅提升檔案管理效率。
-  - **歸屬權稽核 (Ownership Audit)**：匯入時系統會根據 Name/Email 進行身分一致性檢查，若來源不符會啟動安全提示，確保標記來源可追溯。
+  - **檔名自動化策略**：匯出標記時，系統自動將檔名優化為 `[ScoreName]_[Composer]_[UserName]_[YYYY-MM-DD].json` 格式。
+  - **歸屬權稽核 (Ownership Audit)**：匯入時系統會根據 Name/Email 進行身分一致性檢查。
 - **職業身分管理 (Identity & Profile Manager)**：
   - **個人檔案設定 (User Profile)**：支援設定 **User Name (姓名, 必填)**、**Title (職稱)**、**User Email (電子郵件, 必填)** 與 **Note (個人備註)** 四大核心欄位。
   - **模組化持久化**：採用獨立 `ProfileManager` 與 `ScoreDetailManager` 模組，所有細節變更即時儲存於 IndexedDB / LocalStorage，確保主程式 `main.js` 維持簡潔與高效。

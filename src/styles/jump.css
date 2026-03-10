@@ -29,6 +29,31 @@
     pointer-events: auto;
 }
 
+/* Specific Refinement for Score Detail (Wider and Stable Top) */
+#score-detail-panel {
+    width: 50%;
+    min-width: 600px;
+    max-width: 900px;
+    top: 80px;
+    transform: translate(-50%, 0) scale(0.9);
+}
+
+#score-detail-panel.active {
+    transform: translate(-50%, 0) scale(1);
+}
+
+.panel-resize-handle {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.1) 75%, transparent 75%);
+    background-size: 8px 8px;
+    border-radius: 0 0 20px 0;
+}
+
 .jump-drag-handle {
     height: 24px;
     width: 100%;

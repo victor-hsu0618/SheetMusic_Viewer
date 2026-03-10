@@ -117,7 +117,7 @@
       </svg>
     </div>
 
-    <!-- Unified Core Triggers: Settings & Library -->
+    <!-- Unified Core Triggers: Settings & Score Tools -->
     <div class="core-trigger-suite">
       <button id="btn-settings-toggle" class="zoom-btn-mini navigation-btn" title="Global Settings (S)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -126,6 +126,11 @@
             d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       </button>
+    </div>
+
+    <div class="suite-divider"></div>
+
+    <div class="score-trigger-suite">
       <button id="btn-library-toggle" class="zoom-btn-mini navigation-btn" title="Score Library (O)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -133,9 +138,14 @@
           <line x1="9" y1="14" x2="15" y2="14"></line>
         </svg>
       </button>
+      <button id="btn-score-detail-toggle" class="zoom-btn-mini navigation-btn" title="Score Info (I)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+      </button>
     </div>
-
-    <div class="doc-bar-divider"></div>
 
     <!-- Navigation & Jump -->
     <button id="btn-jump-panel-toggle" class="zoom-btn-mini navigation-btn" title="Go To (G)">
@@ -156,24 +166,11 @@
       </svg>
     </button>
 
-    <div class="suite-divider"></div>
-
-    <!-- Score Details -->
-    <button id="btn-score-detail-toggle" class="zoom-btn-mini navigation-btn" title="Score Info (I)">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="16" x2="12" y2="12"></line>
-        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-      </svg>
-    </button>
-
-    <div class="suite-divider"></div>
-
     <!-- Annotation & Visibility -->
     <button id="btn-stamp-palette" class="zoom-btn-mini mode-btn" title="Stamp Palette (T)">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path
-          d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4A2 2 0 0 0 12 22l7-4A2 2 0 0 0 21 16z" />
         <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
         <line x1="12" y1="22.08" x2="12" y2="12" />
       </svg>
@@ -837,63 +834,111 @@
     </div>
 
     <div class="settings-scroll-area">
-      <div class="tab-section-label">General Information</div>
-      <div class="setting-item mb-15">
-        <label class="setting-label" for="score-name-input">Piece Title</label>
-        <input type="text" id="score-name-input" class="search-input-mini w-full mt-5"
-          placeholder="e.g. Cello Suite No.1" />
-      </div>
-      <div class="setting-item mb-15">
-        <label class="setting-label" for="score-composer-input">Composer</label>
-        <input type="text" id="score-composer-input" class="search-input-mini w-full mt-5"
-          placeholder="e.g. J.S. Bach" />
+      <!-- Tab Control (Segmented Control) -->
+      <div class="segmented-control mb-15">
+        <button class="segment-btn active" data-tab="general">General</button>
+        <button class="segment-btn" data-tab="styles">Styles</button>
+        <button class="segment-btn" data-tab="media">Media</button>
+        <button class="segment-btn" data-tab="system">System</button>
       </div>
 
-      <div class="tab-divider"></div>
-      <div class="tab-section-label">Media & Interpretation</div>
-      <div class="setting-item mb-15">
-        <div class="flex-row-center gap-10">
-          <input type="text" id="sidebar-media-label" class="search-input-mini w-full" placeholder="Media Label" />
-          <input type="text" id="sidebar-media-url" class="search-input-mini w-full" placeholder="YouTube URL" />
+      <!-- Tab: General -->
+      <div class="detail-tab-pane active" id="pane-general">
+        <div class="tab-section-label">Active Musician</div>
+        <div class="profile-card-minimal mb-15">
+          <div class="prof-avatar" id="sidebar-user-avatar">?</div>
+          <div class="prof-text">
+            <div id="sidebar-user-name">Loading...</div>
+            <small id="sidebar-user-email">No Email</small>
+          </div>
         </div>
-        <div class="flex-row-center gap-10 mt-10">
-          <button id="sidebar-add-youtube" class="btn btn-primary btn-mini-sidebar w-full">Add YouTube</button>
-          <button id="sidebar-add-local" class="btn btn-outline-sm btn-mini-sidebar w-full">Local File</button>
-          <input type="file" id="sidebar-local-input" class="hidden" accept="audio/*,video/*"
-            title="Select Local Media File" aria-label="Select Local Media File" />
+
+        <div class="tab-divider"></div>
+        <div class="tab-section-label">General Information</div>
+        <div class="setting-item mb-15">
+          <label class="setting-label" for="score-name-input">Piece Title</label>
+          <input type="text" id="score-name-input" class="search-input-mini w-full mt-5"
+            placeholder="e.g. Cello Suite No.1" />
         </div>
-      </div>
-      <div id="sidebar-media-list" class="media-list-minimal mt-10">
-        <!-- Populated via ScoreDetailManager -->
+        <div class="setting-item mb-15">
+          <label class="setting-label" for="score-composer-input">Composer</label>
+          <input type="text" id="score-composer-input" class="search-input-mini w-full mt-5"
+            placeholder="e.g. J.S. Bach" />
+        </div>
+        <button id="btn-save-score-detail" class="btn btn-primary btn-full mt-5 mb-10">Save Changes</button>
       </div>
 
-      <div class="tab-divider"></div>
-      <div class="tab-section-label">Statistics</div>
-      <div class="stats-grid-compact">
-        <div class="stats-item">
-          <small>Annotatons</small>
-          <div id="stats-total-count">0</div>
+      <!-- Tab: Styles -->
+      <div class="detail-tab-pane" id="pane-styles">
+        <div class="tab-section-label">Interpretation Styles</div>
+        <div id="source-list" class="source-list">
+          <!-- Populated via CollaborationManager -->
         </div>
-        <div class="stats-item">
-          <small>Author</small>
-          <div id="stats-author">-</div>
-        </div>
-      </div>
-      <div class="stats-full-width mt-10">
-        <small>Last Optimized Sync</small>
-        <div id="stats-last-edit" class="text-mini opacity-70">Never</div>
+        <button id="add-source-btn" class="btn btn-outline btn-full mt-10">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add New Style
+        </button>
       </div>
 
-      <div class="tab-divider"></div>
-      <div class="tab-section-label">File Integrity</div>
-      <div class="file-meta-minimal">
-        <div class="meta-row">
-          <span>File:</span>
-          <span id="score-filename-display" class="text-truncate">Unknown</span>
+      <!-- Tab: Media -->
+      <div class="detail-tab-pane" id="pane-media">
+        <div class="tab-section-label">Media & Interpretation</div>
+        <div class="setting-item mb-15">
+          <div class="flex-row-center gap-10">
+            <input type="text" id="sidebar-media-label" class="search-input-mini w-full" placeholder="Media Label" />
+            <input type="text" id="sidebar-media-url" class="search-input-mini w-full" placeholder="YouTube URL" />
+          </div>
+          <div class="flex-row-center gap-10 mt-10">
+            <button id="sidebar-add-youtube" class="btn btn-primary btn-mini-sidebar w-full">Add YouTube</button>
+            <button id="sidebar-add-local" class="btn btn-outline-sm btn-mini-sidebar w-full">Local File</button>
+            <input type="file" id="sidebar-local-input" class="hidden" accept="audio/*,video/*"
+              title="Select Local Media File" aria-label="Select Local Media File" />
+          </div>
         </div>
-        <div class="meta-row">
-          <span>SHA-256:</span>
-          <code id="score-fingerprint-display">Unknown</code>
+        <div id="sidebar-media-list" class="media-list-minimal mt-10">
+          <!-- Populated via ScoreDetailManager -->
+        </div>
+      </div>
+
+      <!-- Tab: System -->
+      <div class="detail-tab-pane" id="pane-system">
+        <div class="tab-section-label">Score Annotation Exchange</div>
+        <div class="flex-row-center gap-10 mb-15">
+          <button id="export-score-btn" class="btn btn-outline-sm w-full">Export Data</button>
+          <button id="import-score-btn" class="btn btn-outline-sm w-full">Import Data</button>
+          <input type="file" id="import-score-file" class="hidden" accept=".json" title="Import JSON" />
+        </div>
+
+        <div class="tab-divider"></div>
+        <div class="tab-section-label">Statistics</div>
+        <div class="stats-grid-compact">
+          <div class="stats-item">
+            <small>Annotatons</small>
+            <div id="stats-total-count">0</div>
+          </div>
+          <div class="stats-item">
+            <small>Author</small>
+            <div id="stats-author">-</div>
+          </div>
+        </div>
+        <div class="stats-full-width mt-10">
+          <small>Last Optimized Sync</small>
+          <div id="stats-last-edit" class="text-mini opacity-70">Never</div>
+        </div>
+
+        <div class="tab-divider"></div>
+        <div class="tab-section-label">File Integrity</div>
+        <div class="file-meta-minimal">
+          <div class="meta-row">
+            <span>File:</span>
+            <span id="score-filename-display" class="text-truncate">Unknown</span>
+          </div>
+          <div class="meta-row">
+            <span>SHA-256:</span>
+            <code id="score-fingerprint-display">Unknown</code>
+          </div>
         </div>
       </div>
     </div>

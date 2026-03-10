@@ -56,6 +56,18 @@ label.btn:active {
     }
 }
 
+.btn-primary-highlight {
+    background: #4f46e5;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    transform: scale(1.02);
+}
+
+.btn-success {
+    background: #10b981 !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+}
+
 .zoom-btn-mini {
     width: 28px;
     height: 28px;

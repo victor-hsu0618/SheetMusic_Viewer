@@ -510,16 +510,11 @@
   /* Already there but being explicit */
 }
 
-/* Flash effect */
+/* flash effect */
 .nav-zone-divider.active {
   opacity: 1;
   transition: opacity 0.1s ease-out;
   /* Show instantly */
-}
-
-/* User setting control: only allow flash if shown-nav-dividers is enabled on body */
-.show-nav-dividers .nav-zone-divider {
-  /* Implicitly handled by active class, keeping this for consistency */
 }
 
 .nav-zone-divider-h {
@@ -552,4 +547,57 @@
 
 .tap-zone-indicator.right svg {
   transform: rotate(0deg);
+}
+
+/* ─── Segmented Control (Tabs) ─── */
+.segmented-control {
+  display: flex;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px;
+  border-radius: 12px;
+  gap: 4px;
+}
+
+.segment-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 4px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+  text-align: center;
+}
+
+.segment-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.segment-btn.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.detail-tab-pane {
+  display: none;
+  animation: tabAppear 0.3s ease-out forwards;
+}
+
+.detail-tab-pane.active {
+  display: block;
+}
+
+@keyframes tabAppear {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
