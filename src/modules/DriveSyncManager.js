@@ -175,15 +175,23 @@ export class DriveSyncManager {
      * Update the elements in the Cloud Stats section.
      */
     updateCloudStatsUI() {
-        const totalEl = document.getElementById('cloud-stats-total-scores');
+        const statsAnnos = document.getElementById('cloud-stats-total-annotations');
+        const statsPdfs = document.getElementById('cloud-stats-total-pdfs');
         const folderEl = document.getElementById('cloud-stats-folder-status');
 
-        if (totalEl) {
+        if (statsAnnos) {
             if (this.isEnabled && this.accessToken) {
-                // If we have scanned, show count, otherwise show '...'
-                totalEl.textContent = this.cloudStats?.totalSyncedScores ?? '...';
+                statsAnnos.textContent = this.cloudStats?.totalAnnotations ?? '...';
             } else {
-                totalEl.textContent = '-';
+                statsAnnos.textContent = '-';
+            }
+        }
+
+        if (statsPdfs) {
+            if (this.isEnabled && this.accessToken) {
+                statsPdfs.textContent = this.cloudStats?.totalPDFs ?? '...';
+            } else {
+                statsPdfs.textContent = '-';
             }
         }
 
@@ -191,9 +199,11 @@ export class DriveSyncManager {
             if (this.isEnabled && this.accessToken) {
                 folderEl.textContent = this.folderId ? '已對接' : '初始化中...';
                 folderEl.className = 'stats-value-mini text-success';
+                folderEl.style.color = '#10b981';
             } else {
                 folderEl.textContent = '未連結';
                 folderEl.className = 'stats-value-mini';
+                folderEl.style.color = 'inherit';
             }
         }
     }
@@ -353,8 +363,11 @@ export class DriveSyncManager {
             fingerprint: fingerprint
         };
 
-        const fileName = `sync_${fingerprint}.json`;
-        const fileId = await this.findSyncFile(fileName);
+        // Build human-readable filename: [ScoreTitle]_sync_[fingerprint].json
+        const scoreEntry = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
+        const prefix = this.safeTitle(scoreEntry?.title);
+        const fileName = `${prefix}sync_${fingerprint}.json`;
+        const fileId = await this.findSyncFile(fingerprint, 'sync');
 
         if (fileId) {
             await this.updateFile(fileId, data);
@@ -377,8 +390,7 @@ export class DriveSyncManager {
     async pull() {
         if (!this.folderId) return 0;
         const fingerprint = this.app.pdfFingerprint;
-        const fileName = `sync_${fingerprint}.json`;
-        const fileId = await this.findSyncFile(fileName);
+        const fileId = await this.findSyncFile(fingerprint, 'sync');
 
         if (!fileId) {
             this.addLog('雲端尚無同步檔案', 'system');
@@ -636,10 +648,26 @@ export class DriveSyncManager {
         return folder.id;
     }
 
-    async findSyncFile(name) {
+    /**
+     * Returns a filesystem-safe version of the score title for file naming.
+     */
+    safeTitle(title) {
+        if (!title || title.trim() === '' || title === 'Unknown') return '';
+        // Remove characters that are invalid in Google Drive filenames
+        const safe = title.replace(/[/\\?*:|"<>]/g, '_').trim().slice(0, 40);
+        return safe ? safe + '_' : '';
+    }
+
+    /**
+     * Finds a file in the sync folder by fingerprint (partial name match).
+     * Supports both old format (sync_FP.json) and new format (Title_sync_FP.json).
+     */
+    async findSyncFile(fingerprint, type = 'sync') {
         if (!this.folderId) return null;
+        // Search by fingerprint and type keyword for backward compatibility
+        const keyword = type === 'pdf' ? `pdf_${fingerprint}` : `sync_${fingerprint}`;
         const response = await this.gdriveFetch(
-            `https://www.googleapis.com/drive/v3/files?q=name='${name}' and '${this.folderId}' in parents and trashed=false&fields=files(id,name)`
+            `https://www.googleapis.com/drive/v3/files?q=name contains '${keyword}' and '${this.folderId}' in parents and trashed=false&fields=files(id,name)&orderBy=createdTime desc`
         );
         const data = await response.json();
         return data.files && data.files.length > 0 ? data.files[0].id : null;
@@ -687,37 +715,86 @@ export class DriveSyncManager {
         try {
             this.addLog('正在掃描雲端備份...', 'system');
 
-            // Fetch all sync_*.json files in the sync folder
+            // Fetch all sync_*.json and pdf_*.pdf files in the sync folder
             const response = await this.gdriveFetch(
-                `https://www.googleapis.com/drive/v3/files?q='${this.folderId}' in parents and name contains 'sync_' and trashed=false&fields=files(id,name)`
+                `https://www.googleapis.com/drive/v3/files?q='${this.folderId}' in parents and (name contains 'sync_' or name contains 'pdf_') and trashed=false&fields=files(id,name)`
             );
             const data = await response.json();
 
             if (data.files && data.files.length > 0) {
-                const remoteFPs = new Set();
+                const remoteJSONMap = new Map();
+                let pdfCount = 0;
+
                 data.files.forEach(f => {
-                    // Extract fingerprint from sync_{fp}.json
-                    const match = f.name.match(/^sync_(.+)\.json$/);
-                    if (match) remoteFPs.add(match[1]);
+                    // Support both formats:
+                    //   Old: sync_{fp}.json
+                    //   New: {Title}_sync_{fp}.json
+                    const syncMatch = f.name.match(/(?:^|_)sync_([^_].+)\.json$/);
+                    if (syncMatch) {
+                        remoteJSONMap.set(syncMatch[1], f.id);
+                        // Support both: pdf_{fp}.pdf  OR  {Title}_pdf_{fp}.pdf
+                    } else if (f.name.match(/(?:^|_)pdf_[^_].+\.pdf$/)) {
+                        pdfCount++;
+                    }
                 });
 
                 // Update Cloud Stats
-                this.cloudStats.totalSyncedScores = remoteFPs.size;
+                this.cloudStats.totalAnnotations = remoteJSONMap.size;
+                this.cloudStats.totalPDFs = pdfCount;
                 this.updateCloudStatsUI();
 
+                let registryChanged = false;
                 let foundCount = 0;
+                let newCloudOnlyCount = 0;
+
                 for (const score of this.app.scoreManager.registry) {
-                    const isSynced = remoteFPs.has(score.fingerprint);
+                    const isSynced = remoteJSONMap.has(score.fingerprint);
                     if (score.isSynced !== isSynced) {
                         score.isSynced = isSynced;
+                        registryChanged = true;
                         foundCount++;
+                    }
+                    if (score.isCloudOnly && isSynced && !score.title.includes('讀取中')) {
+                        // Already exists as cloud-only and fetched
                     }
                 }
 
-                if (foundCount > 0) {
+                // Add placeholder for cloud-only scores
+                for (const [fp, fileId] of remoteJSONMap.entries()) {
+                    const exists = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
+                    if (!exists) {
+                        console.log(`[DriveSync] Found cloud-only score: ${fp}`);
+                        const placeholder = {
+                            fingerprint: fp,
+                            title: '雲端備份 (讀取中...)',
+                            fileName: '', // Empty fileName denotes it's not downloaded
+                            composer: 'Unknown',
+                            thumbnail: null,
+                            dateImported: Date.now(),
+                            lastAccessed: Date.now(),
+                            tags: [],
+                            isSynced: true,
+                            isCloudOnly: true
+                        };
+                        this.app.scoreManager.registry.push(placeholder);
+                        registryChanged = true;
+                        newCloudOnlyCount++;
+
+                        // Async fetch the real title
+                        this.fetchCloudScoreDetails(fileId, fp);
+                    }
+                }
+
+                if (registryChanged) {
                     await this.app.scoreManager.saveRegistry();
                     this.app.scoreManager.render();
-                    this.addLog(`掃描完成: 發現 ${remoteFPs.size} 個雲端備份`, 'success');
+                    if (newCloudOnlyCount > 0) {
+                        this.addLog(`掃描完成: 發現 ${newCloudOnlyCount} 份未下載的雲端樂譜`, 'success');
+                    } else if (foundCount > 0) {
+                        this.addLog(`掃描完成: 已更新 ${foundCount} 筆雲端同步狀態`, 'success');
+                    } else {
+                        this.addLog(`掃描完成: 發現 ${remoteJSONMap.size} 個 JSON 備份 / ${pdfCount} 個 PDF`, 'success');
+                    }
                 } else {
                     this.addLog('掃描完成: 本地資料庫與雲端同步', 'info');
                 }
@@ -728,5 +805,110 @@ export class DriveSyncManager {
             console.error('[DriveSync] Scan failed:', err);
             this.addLog('雲端掃描失敗', 'error');
         }
+    }
+
+    async fetchCloudScoreDetails(fileId, fingerprint) {
+        try {
+            const data = await this.getFileContent(fileId);
+            const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
+            if (score && score.isCloudOnly) {
+                let changed = false;
+                if (data && data.scoreDetail && data.scoreDetail.name) {
+                    score.title = data.scoreDetail.name;
+                    score.composer = data.scoreDetail.composer || 'Unknown';
+                    // We can also make a fake filename based on the title
+                    score.fileName = data.scoreDetail.name + '.pdf';
+                    changed = true;
+                } else if (data && data.score && data.score.title) {
+                    score.title = data.score.title;
+                    score.composer = data.score.composer || 'Unknown';
+                    score.fileName = data.score.title + '.pdf';
+                    changed = true;
+                }
+
+                if (changed) {
+                    await this.app.scoreManager.saveRegistry();
+                    this.app.scoreManager.render();
+                }
+            }
+        } catch (err) {
+            console.error(`[DriveSync] Failed to fetch details for ${fingerprint}:`, err);
+        }
+    }
+
+    /**
+     * Upload a PDF file to Google Drive.
+     */
+    async uploadPDF(fingerprint, buffer, originalFileName) {
+        if (!this.folderId) return;
+
+        const fileId = await this.findSyncFile(fingerprint, 'pdf');
+
+        if (fileId) {
+            console.log(`[DriveSync] PDF for ${fingerprint} already exists on Drive.`);
+            return;
+        }
+
+        // Build human-readable filename: [ScoreTitle]_pdf_[fingerprint].pdf
+        const scoreEntry = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
+        const prefix = this.safeTitle(scoreEntry?.title || originalFileName?.replace(/\.pdf$/i, ''));
+        const fileName = `${prefix}pdf_${fingerprint}.pdf`;
+
+        console.log(`[DriveSync] Uploading PDF ${fileName} to Drive...`);
+        this.addLog(`備份二進位樂譜檔案: ${originalFileName}...`, 'system');
+
+        const metadata = {
+            name: fileName,
+            parents: [this.folderId]
+        };
+
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', new Blob([buffer], { type: 'application/pdf' }));
+
+        try {
+            await this.gdriveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                body: form
+            });
+            this.addLog(`樂譜檔案 ${originalFileName} 備份成功`, 'success');
+
+            // Update Library UI to show the synced status
+            if (this.app.scoreManager) {
+                this.app.scoreManager.updateSyncStatus(fingerprint, true);
+            }
+        } catch (err) {
+            console.error('[DriveSync] PDF upload failed:', err);
+            this.addLog(`樂譜二進位檔案備份失敗`, 'error');
+        }
+    }
+
+    /**
+     * Download a PDF file from Google Drive.
+     */
+    async downloadPDF(fingerprint) {
+        if (!this.folderId) throw new Error('Google Drive 尚未連線');
+
+        const fileId = await this.findSyncFile(fingerprint, 'pdf');
+
+        if (!fileId) {
+            throw new Error(`雲端找不到該樂譜的 PDF 檔案 (fingerprint: ${fingerprint})`);
+        }
+
+        console.log(`[DriveSync] Downloading PDF for ${fingerprint} (ID: ${fileId})...`);
+        this.addLog(`開始從雲端下載樂譜...`, 'system');
+        const response = await this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+
+        if (!response.ok) {
+            throw new Error(`下載失敗: HTTP ${response.status}`);
+        }
+
+        const buffer = await response.arrayBuffer();
+        if (!buffer || buffer.byteLength === 0) {
+            throw new Error('下載的 PDF 檔案為空');
+        }
+
+        this.addLog(`樂譜下載完成`, 'success');
+        return buffer;
     }
 }

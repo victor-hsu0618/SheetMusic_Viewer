@@ -130,8 +130,10 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - **模組化持久化**：採用獨立 `ProfileManager` 與 `ScoreDetailManager` 模組，所有細節變更即時儲存於 IndexedDB / LocalStorage，確保主程式 `main.js` 維持簡潔與高效。
   - **Settings 整合介面**：在 Settings 頁面頂部開立專屬「User Profile」群組，以 `Title / User Name` 專業格式摘要顯示，點擊可開啟專屬 Modal 進行細節編輯。
   - **自動化歸屬 (未來預留)**：預留標記歸屬欄位，未來在發佈共享標記時自動附加個人職位與姓名標籤。
-- **雲端同步橋接 (Cloud Sync Bridge)**：
-  - **檔案系統連結**：支援對接 Google Drive 或本地同步目錄，實現真正的跨裝置、跨樂手協作。
+- **雲端同步橋接 (Cloud Sync Bridge) - *2026.03.10 更新***：
+  - **檔案系統連結**：支援對接 Google Drive 或本地同步目錄。
+  - **二進位全備份 (Binary Full Sync)**：除了極速同步 JSON 標記外，系統支援將 PDF 原檔上傳至雲端。
+  - **智慧下載 (Smart Download)**：在未快取 PDF 的裝置上開啟 Library，會顯示「雲端樂譜」的佔位符，點擊後觸發背景下載，實現完整的無縫跨裝置體驗。
 
 ## 軟體架構與模組設計 (Software Architecture & Module Design) - *2026.03.08 更新*
 

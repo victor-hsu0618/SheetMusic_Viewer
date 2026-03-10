@@ -143,6 +143,11 @@ export class ScoreManager {
             await db.set(`score_buf_${fingerprint}`, buffer);
             console.log('[ScoreManager] Buffer saved');
 
+            // Trigger Drive Upload
+            if (this.app.driveSyncManager && this.app.driveSyncManager.isEnabled) {
+                this.app.driveSyncManager.uploadPDF(fingerprint, buffer.slice(0), file.name).catch(e => console.error(e));
+            }
+
             this.render();
             return newEntry;
         } catch (err) {
@@ -272,42 +277,53 @@ export class ScoreManager {
                 }
             }
 
+            // Determine the display title (Fallback to fileName if title is empty or 'Unknown')
+            let displayTitle = score.title;
+            if (!displayTitle || displayTitle.trim() === '' || displayTitle === 'Unknown') {
+                displayTitle = score.fileName || '未命名樂譜';
+            }
+            // Remove .pdf extension for cleaner display if it's a fallback filename
+            if (displayTitle.toLowerCase().endsWith('.pdf')) {
+                displayTitle = displayTitle.slice(0, -4);
+            }
+
+            const thumbContent = score.isCloudOnly ? '<div style="font-size: 3rem; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;" title="雲端樂譜 (需下載)">☁️⬇️</div>' :
+                (score.thumbnail ? `<img src="${score.thumbnail}" alt="${score.title}">` : '🎼');
+
             card.innerHTML = `
                 <div class="score-thumb">
-                    ${score.thumbnail ? `<img src="${score.thumbnail}" alt="${score.title}">` : '🎼'}
-                </div>
-                <div class="score-info">
-                    <div class="flex-row-center flex-space-between w-full">
-                        <div class="score-title text-truncate" title="${score.title}">${score.title}</div>
-                        
-                        <!-- Selection Indicator (Album Style) -->
-                        <div class="selection-indicator">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                        </div>
-
-                        <!-- Cloud Sync Status Icon -->
-                        <div class="cloud-sync-status ${score.isSynced ? 'synced' : 'not-synced'}" 
-                             title="${score.isSynced ? '已備份至雲端' : '已匯入本地 (尚未同步或雲端無備份)'}">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-                                ${score.isSynced ? '' : '<line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.5" opacity="0.5" />'}
-                            </svg>
-                        </div>
-
-                        <!-- Info Button (Score Details) -->
-                        <button class="btn-icon-mini btn-score-info" title="Score Details" data-fp="${score.fingerprint}">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <path d="M9 17V12l4-1v5.5"></path>
-                                <circle cx="8" cy="17" r="1.5"></circle>
-                                <circle cx="12" cy="16" r="1.5"></circle>
-                            </svg>
-                        </button>
+                    ${thumbContent}
+                    
+                    <!-- Selection Indicator (Album Style) - absolute over thumbnail -->
+                    <div class="selection-indicator">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
                     </div>
-                    <div class="score-composer">${score.composer}</div>
+
+                    <!-- Cloud Sync Status Icon -->
+                    <div class="cloud-sync-status ${score.isSynced ? 'synced' : 'not-synced'}" 
+                         title="${score.isSynced ? '已同步至雲端' : '已匯入本地 (尚未同步)'}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+                            ${score.isSynced ? '' : '<line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.5" opacity="0.5" />'}
+                        </svg>
+                    </div>
+
+                    <!-- Score Title Panel - absolute overlay at bottom of thumbnail -->
+                    <div class="score-info">
+                        <div class="score-title" title="${displayTitle}">${displayTitle}</div>
+                        <div class="score-composer">${score.composer || ''}</div>
+                    </div>
+
+                    <!-- Info Button - bottom right, outside the gradient -->
+                    <button class="btn-icon-mini btn-score-info score-info-btn" title="Score Details" data-fp="${score.fingerprint}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    </button>
                 </div>
             `;
 
@@ -488,6 +504,35 @@ export class ScoreManager {
         }
 
         this.toggleOverlay(false);
+
+        if (score.isCloudOnly) {
+            this.app.showMessage('正在從雲端下載樂譜 PDF...', 'system');
+            try {
+                if (this.app.driveSyncManager) {
+                    const downloadBuffer = await this.app.driveSyncManager.downloadPDF(fingerprint);
+
+                    // Save to local DB
+                    await db.set(`score_buf_${fingerprint}`, downloadBuffer);
+
+                    // Generate Thumbnail
+                    const thumbnail = await this.generateThumbnail(downloadBuffer.slice(0));
+
+                    score.isCloudOnly = false;
+                    score.thumbnail = thumbnail;
+                    if (!score.fileName) score.fileName = score.title + '.pdf';
+                    score.lastAccessed = Date.now();
+
+                    await this.saveRegistry();
+                    this.render();
+                    this.app.showMessage('樂譜下載完成', 'success');
+                } else {
+                    throw new Error('Sync Manager 不可用');
+                }
+            } catch (err) {
+                this.app.showMessage(`下載失敗: ${err.message}`, 'error');
+                return;
+            }
+        }
 
         // 1. Try Primary Buffer (score_buf_FP)
         let buffer = await db.get(`score_buf_${fingerprint}`);

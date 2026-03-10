@@ -98,7 +98,6 @@
     font-size: 40px;
     overflow: hidden;
     position: relative;
-    /* Added to anchor delete button */
 }
 
 .score-thumb img {
@@ -132,6 +131,7 @@
 .score-card.selected .selection-indicator {
     background: #6366f1;
     border-color: #6366f1;
+    opacity: 1;
 }
 
 .selection-indicator svg {
@@ -148,26 +148,59 @@
 }
 
 .cloud-sync-status {
-    width: 20px;
-    height: 20px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
-    margin-right: -2px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .cloud-sync-status.not-synced {
-    color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.3);
 }
 
 .cloud-sync-status.synced {
-    color: #10b981;
-    /* Green for success/synced */
-    opacity: 0.8;
+    background: linear-gradient(135deg, var(--primary), #8b5cf6);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .score-card:hover .cloud-sync-status.synced {
+    opacity: 1;
+}
+
+/* Info button (ⓘ) positioned in thumbnail bottom-right */
+.score-info-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 6;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: auto;
+}
+
+.score-card:hover .score-info-btn {
     opacity: 1;
 }
 
@@ -176,22 +209,36 @@
     /* Removed in favor of batch delete */
 }
 
+/* Score info panel: absolute overlay at bottom of thumbnail */
 .score-info {
-    padding: 12px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 10px 10px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.6) 60%, transparent 100%);
+    z-index: 5;
+    pointer-events: none;
 }
 
 .score-title {
-    font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 4px;
+    font-weight: 700;
+    font-size: 13px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: 0.01em;
+    color: #ffffff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    margin-bottom: 2px;
 }
 
 .score-composer {
-    font-size: 12px;
-    opacity: 0.6;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.65);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .btn-close-overlay {
