@@ -214,18 +214,42 @@ export class RulerManager {
             if (this.nextTargetAnchor) {
                 this.scrollToNextTarget()
             } else {
-                // Fallback: Scroll down by ~80% of viewport height
-                const viewportHeight = this.app.viewer.clientHeight
-                this.app.viewer.scrollBy({ top: viewportHeight * 0.8, behavior: 'smooth' })
+                // Fallback: Check for Fit to Height mode
+                if (this.app.viewerManager.isFitToHeight) {
+                    // Find current top page and jump to next
+                    const currentScroll = this.app.viewer.scrollTop
+                    const pages = Array.from(document.querySelectorAll('.page-container'))
+                    const nextPage = pages.find(p => p.offsetTop > currentScroll + 10)
+                    if (nextPage) {
+                        this.jumpHistory.push(currentScroll)
+                        if (this.jumpHistory.length > 50) this.jumpHistory.shift()
+                        this.app.viewer.scrollTo({ top: nextPage.offsetTop, behavior: 'smooth' })
+                    }
+                } else {
+                    // Fallback: Scroll down by exactly ONE viewport height (as requested: 跳到下個未顯示的畫面)
+                    const viewportHeight = this.app.viewer.clientHeight
+                    this.jumpHistory.push(this.app.viewer.scrollTop)
+                    if (this.jumpHistory.length > 50) this.jumpHistory.shift()
+                    this.app.viewer.scrollBy({ top: viewportHeight, behavior: 'smooth' })
+                }
             }
         } else {
             if (this.jumpHistory.length > 0) {
                 const last = this.jumpHistory.pop()
                 this.app.viewer.scrollTo({ top: last, behavior: 'smooth' })
             } else {
-                // Fallback: Scroll up by ~80% of viewport height
-                const viewportHeight = this.app.viewer.clientHeight
-                this.app.viewer.scrollBy({ top: -viewportHeight * 0.8, behavior: 'smooth' })
+                // Fallback for backward jump
+                if (this.app.viewerManager.isFitToHeight) {
+                    const currentScroll = this.app.viewer.scrollTop
+                    const pages = Array.from(document.querySelectorAll('.page-container')).reverse()
+                    const prevPage = pages.find(p => p.offsetTop < currentScroll - 10)
+                    if (prevPage) {
+                        this.app.viewer.scrollTo({ top: prevPage.offsetTop, behavior: 'smooth' })
+                    }
+                } else {
+                    const viewportHeight = this.app.viewer.clientHeight
+                    this.app.viewer.scrollBy({ top: -viewportHeight, behavior: 'smooth' })
+                }
             }
         }
     }

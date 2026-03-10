@@ -11,6 +11,7 @@ export class ViewerManager {
         this.activeScoreName = null
         this.observer = null
         this._pageViewports = {} // Cache viewports for placeholder sizing
+        this.isFitToHeight = false
     }
 
     init() {
@@ -153,6 +154,7 @@ export class ViewerManager {
 
     async loadPDF(data, filename = null) {
         if (filename) this.activeScoreName = filename;
+        this.isFitToHeight = false; // Reset on new PDF
         // 1. Save current score's stamps before switching
         if (this.pdfFingerprint) {
             this.app.saveToStorage()
@@ -339,6 +341,7 @@ export class ViewerManager {
 
     async changeZoom(delta) {
         this.scale = Math.min(Math.max(0.2, this.scale + delta), 4)
+        this.isFitToHeight = false
         this.updateZoomDisplay()
 
         if (this.pdf) await this.renderPDF()
@@ -355,6 +358,7 @@ export class ViewerManager {
         // Accurate width calculation: Subtract padding/margins from the viewer container
         const availW = this.app.viewer.clientWidth - 16 // 16px safety margin
         this.scale = Math.min(Math.max(0.2, availW / naturalWidth), 4)
+        this.isFitToHeight = false
         this.updateZoomDisplay()
 
         await this.renderPDF()
@@ -369,6 +373,7 @@ export class ViewerManager {
         const naturalHeight = page.getViewport({ scale: 1 }).height
         const availH = this.app.viewer.clientHeight - 20 // 20px safety margin
         this.scale = Math.min(Math.max(0.2, availH / naturalHeight), 4)
+        this.isFitToHeight = true
         this.updateZoomDisplay()
 
         await this.renderPDF()
