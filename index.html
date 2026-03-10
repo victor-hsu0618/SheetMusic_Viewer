@@ -829,35 +829,31 @@
         <h3>Add Measure Number</h3>
       </div>
       <div class="modal-body text-center">
-        <p class="modal-intro mb-10">Current measure to place:</p>
-        <div class="mb-15">
+        <p class="modal-intro mb-5">Current measure to place:</p>
+        <div class="mb-10">
           <div id="measure-display" class="measure-display"></div>
         </div>
 
-        <div class="measure-keypad mb-10">
-          <!-- Row 1: 7 8 9 ⌫ -->
+        <div class="measure-keypad mb-5">
+          <!-- Row 1: 7 8 9 -->
           <button class="keypad-btn" data-key="7">7</button>
           <button class="keypad-btn" data-key="8">8</button>
           <button class="keypad-btn" data-key="9">9</button>
-          <button class="keypad-btn action-btn" data-key="back">⌫</button>
           <!-- Row 2: 4 5 6 -->
           <button class="keypad-btn" data-key="4">4</button>
           <button class="keypad-btn" data-key="5">5</button>
           <button class="keypad-btn" data-key="6">6</button>
-          <span class="keypad-spacer"></span>
           <!-- Row 3: 1 2 3 -->
           <button class="keypad-btn" data-key="1">1</button>
           <button class="keypad-btn" data-key="2">2</button>
           <button class="keypad-btn" data-key="3">3</button>
-          <span class="keypad-spacer"></span>
-          <!-- Row 4: _ 0 _ ✓ -->
-          <span class="keypad-spacer"></span>
+          <!-- Row 4: ⌫ 0 ✓ -->
+          <button class="keypad-btn action-btn" data-key="back">⌫</button>
           <button class="keypad-btn" data-key="0">0</button>
-          <span class="keypad-spacer"></span>
           <button class="keypad-btn confirm-btn" data-key="confirm">✓</button>
         </div>
 
-        <div class="measure-step-container mb-10">
+        <div class="measure-step-container mb-5">
           <span class="measure-step-label">Current Increment:</span>
           <div class="measure-step-controls">
             <button id="measure-step-minus" class="btn btn-secondary measure-step-btn">-</button>
@@ -865,7 +861,7 @@
             <button id="measure-step-plus" class="btn btn-secondary measure-step-btn">+</button>
           </div>
         </div>
-        <div class="text-center-mt-10">
+        <div class="text-center">
           <button id="measure-cancel" class="keypad-cancel-btn">Cancel (Esc)</button>
         </div>
       </div>
