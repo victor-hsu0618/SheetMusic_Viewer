@@ -154,7 +154,7 @@ export class AnnotationRenderer {
 
         ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : color
         ctx.fillStyle = isHovered ? '#ef444433' : isSelectHovered ? '#6366f133' : `${color}33`
-        ctx.lineWidth = 2.2 * (this.app.scale / 1.5) * pageFactor * userMultiplier
+        ctx.lineWidth = 2.2 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
@@ -176,7 +176,7 @@ export class AnnotationRenderer {
 
             switch (d.type) {
                 case 'text':
-                    ctx.font = `${d.font || ''} ${d.size * textScale * (this.app.scale / 1.5) * pageFactor * userMultiplier}px ${d.fontFace || 'Outfit'}`
+                    ctx.font = `${d.font || ''} ${d.size * textScale}px ${d.fontFace || 'Outfit'}`
                     ctx.fillStyle = color
                     ctx.textAlign = 'center'
                     ctx.textBaseline = 'middle'
@@ -198,7 +198,7 @@ export class AnnotationRenderer {
                     ctx.translate(x, y)
                     ctx.scale(size, size)
                     // Adjust line width to be consistent despite scaling
-                    ctx.lineWidth = (2.5 * (this.app.scale / 1.5) * pageFactor * userMultiplier) / size
+                    ctx.lineWidth = 2.5 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier / size
                     ctx.lineCap = 'round'
                     ctx.lineJoin = 'round'
 
@@ -214,25 +214,24 @@ export class AnnotationRenderer {
 
                 case 'special':
                     if (d.variant === 'input-text') {
-                        ctx.font = `bold ${22 * (this.app.scale / 1.5) * pageFactor * userMultiplier}px Outfit`
+                        ctx.font = `bold ${22 * textScale}px Outfit`
                         ctx.fillStyle = color
                         const lines = (stamp.data || '').split('\n')
-                        const lineHeight = 26 * (this.app.scale / 1.5) * pageFactor * userMultiplier
+                        const lineHeight = 26 * textScale
                         lines.forEach((line, i) => {
                             ctx.fillText(line, x, y + (i * lineHeight))
                         })
                     } else if (d.variant === 'measure') {
-                        const s = this.app.scale / 1.5
-                        const bw = 22 * textScale * s, bh = 18 * textScale * s
+                        const bw = 22 * textScale, bh = 18 * textScale
                         const bx = x - bw / 2, by = y - bh / 2
                         // Outline-only box (no fill)
                         ctx.strokeStyle = isHovered ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.25)'
-                        ctx.lineWidth = 0.8
+                        ctx.lineWidth = 0.8 * textScale
                         ctx.beginPath()
-                        ctx.roundRect(bx, by, bw, bh, 3)
+                        ctx.roundRect(bx, by, bw, bh, 3 * textScale)
                         ctx.stroke()
                         // Light text
-                        ctx.font = `500 ${13 * textScale * s}px Outfit`
+                        ctx.font = `500 ${13 * textScale}px Outfit`
                         ctx.fillStyle = isHovered ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.35)'
                         ctx.textAlign = 'center'
                         ctx.textBaseline = 'middle'
@@ -244,7 +243,7 @@ export class AnnotationRenderer {
                     // Legacy support for complex visual logic
                     if (d.variant === 'thumb') {
                         ctx.strokeStyle = color
-                        ctx.lineWidth = 0.8 * (this.app.scale / 1.5) * pageFactor * userMultiplier
+                        ctx.lineWidth = 0.8 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
                         // Extra Small Hollow Vertical Ellipse
                         ctx.beginPath()
                         ctx.ellipse(x, y - size * 0.12, size * 0.16, size * 0.28, 0, 0, Math.PI * 2)
@@ -283,7 +282,7 @@ export class AnnotationRenderer {
                         ctx.beginPath()
                         ctx.arc(x, y, size * 0.6, 0, Math.PI, false)
                         ctx.stroke()
-                        ctx.lineWidth = 2.2 * (this.app.scale / 1.5) * pageFactor * userMultiplier
+                        ctx.lineWidth = 2.2 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
                     }
                     break
             }
