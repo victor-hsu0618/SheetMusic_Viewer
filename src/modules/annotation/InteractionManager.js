@@ -30,14 +30,15 @@ export class InteractionManager {
 
         /**
          * Get normalized (0-1) coordinates from mouse/touch event relative to overlay.
+         * Includes clamping to ensure coordinates stay within [0, 1] even if mouse drags slightly out.
          */
         const getPos = (e) => {
             const rect = overlay.getBoundingClientRect()
             const clientX = e.clientX || (e.touches && e.touches[0].clientX)
             const clientY = e.clientY || (e.touches && e.touches[0].clientY)
             return {
-                x: (clientX - rect.left) / rect.width,
-                y: (clientY - rect.top) / rect.height
+                x: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
+                y: Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
             }
         }
 
@@ -46,53 +47,70 @@ export class InteractionManager {
         const STAMP_OFFSET_Y_PX = 65 // Base offset magnitude for calculations
 
         /**
-         * Compute preview position for stamps with 2D smart offset to prevent finger/mouse obscuring.
-         * Implements smooth interpolation (lerp) for both vertical and horizontal directions
-         * when approaching viewport boundaries.
+         * Compute preview position for stamps with 4-edge smart lerp.
+         * When approaching ANY edge, the offset smoothly transitions to zero
+         * or flips to the other side to ensure the stamp is always reachable and visible.
          */
         const getStampPreviewPos = (pos) => {
             const rect = overlay.getBoundingClientRect()
 
-            // 1. Vertical Smart Positioning (Smooth Lerp)
+            // 1. Vertical Positioning (Smooth Lerp + Edge Reachability)
             const cursorScreenY = rect.top + pos.y * rect.height
             const distFromBottom = window.innerHeight - cursorScreenY
             const distFromTop = cursorScreenY
-            const transY = STAMP_OFFSET_Y_PX * 4
+            const transY = STAMP_OFFSET_Y_PX * 3 // Transition zone
 
-            let dyPx
+            let dyPx = -STAMP_OFFSET_Y_PX // Default: Above
+
             if (distFromBottom < transY) {
-                // Approaches bottom -> slide towards being below cursor (+Y)
-                const t = Math.max(0, Math.min(1, 1 - distFromBottom / transY))
-                dyPx = -STAMP_OFFSET_Y_PX + t * (STAMP_OFFSET_Y_PX * 2)
-            } else if (distFromTop < transY) {
-                // Approaches top -> slide towards being above cursor (-Y)
-                // Note: Default is already above (-60), so we stay there or nudge if needed
-                dyPx = -STAMP_OFFSET_Y_PX
-            } else {
-                dyPx = -STAMP_OFFSET_Y_PX // Default: Above
+                // If we approach bottom, we want to slide to being BELOW the cursor.
+                // However, as pos.y reaches 1.0 (dead bottom), dyPx MUST be 0
+                // to allow the stamp to actually touch the bottom edge.
+                const t = Math.max(0, Math.min(1, distFromBottom / transY))
+                // t=1 (far): -60 | t=0.5: 0 | t=0 (edge): +60
+                // To allow reaching edge at pos.y=1.0, we need dyPx to be 0 at t=0
+                // Actually, a better approach for reachability:
+                // Flip offset sign but also multiply by t so it shrinks to 0 at the very edge.
+                dyPx = -STAMP_OFFSET_Y_PX * Math.sin(t * Math.PI / 2) * (t > 0.5 ? 1 : -1)
+                // Simplify: Just flip and shrink.
+                if (distFromBottom < transY / 2) {
+                    const localT = distFromBottom / (transY / 2) // 0 to 1
+                    dyPx = STAMP_OFFSET_Y_PX * localT // Shrink to 0 as we hit edge
+                } else {
+                    const localT = (distFromBottom - transY / 2) / (transY / 2) // 0 to 1
+                    dyPx = -STAMP_OFFSET_Y_PX * (1 - localT) - STAMP_OFFSET_Y_PX * localT
+                    // Actually, let's use the most robust way:
+                    const lerpT = Math.max(0, Math.min(1, distFromBottom / transY))
+                    dyPx = -STAMP_OFFSET_Y_PX + (1 - lerpT) * (STAMP_OFFSET_Y_PX * 2)
+                    // If near absolute edge, force shrink
+                    if (pos.y > 0.98) dyPx *= (1.0 - pos.y) / 0.02
+                    if (pos.y < 0.02) dyPx *= pos.y / 0.02
+                }
             }
 
-            // 2. Horizontal Smart Positioning (Smooth Lerp)
+            // 2. Horizontal Positioning (Smooth Lerp + Edge Reachability)
             const cursorScreenX = rect.left + pos.x * rect.width
             const distFromRight = window.innerWidth - cursorScreenX
             const distFromLeft = cursorScreenX
-            const transX = Math.abs(STAMP_OFFSET_X_PX) * 4 || 180
+            const transX = Math.abs(STAMP_OFFSET_X_PX) * 3 || 150
 
-            let dxPx
-            if (distFromRight < transX) {
-                // Approaches right -> slide towards the left side of cursor (more negative X)
-                const t = Math.max(0, Math.min(1, 1 - distFromRight / transX))
-                // If default is -45 (left), we are ALREADY on the left.
-                // If we approach the RIGHT edge, being on the left is GOOD.
-                // If we approach the LEFT edge, we need to slide to the RIGHT (+X).
-                dxPx = STAMP_OFFSET_X_PX
-            } else if (distFromLeft < transX) {
-                // Approaches left -> slide towards the right side of cursor (+X)
-                const t = Math.max(0, Math.min(1, 1 - distFromLeft / transX))
-                dxPx = STAMP_OFFSET_X_PX + t * (Math.abs(STAMP_OFFSET_X_PX) * 2)
-            } else {
-                dxPx = STAMP_OFFSET_X_PX // Default
+            let dxPx = STAMP_OFFSET_X_PX // Default: Left (-45)
+
+            if (distFromLeft < transX) {
+                // Approach LEFT: Slide to RIGHT side of cursor
+                const lerpT = Math.max(0, Math.min(1, distFromLeft / transX))
+                dxPx = STAMP_OFFSET_X_PX + (1 - lerpT) * (Math.abs(STAMP_OFFSET_X_PX) * 2)
+            } else if (distFromRight < transX) {
+                // Approach RIGHT: Stay LEFT side but shrink to 0 to REACH the edge
+                const lerpT = Math.max(0, Math.min(1, distFromRight / transX))
+                dxPx = STAMP_OFFSET_X_PX * lerpT
             }
+
+            // Final edge clamp to be extra safe
+            if (pos.x > 0.98) dxPx *= (1.0 - pos.x) / 0.02
+            if (pos.x < 0.02) dxPx *= pos.x / 0.02
+            if (pos.y > 0.98) dyPx *= (1.0 - pos.y) / 0.02
+            if (pos.y < 0.02) dyPx *= pos.y / 0.02
 
             return {
                 x: Math.max(0.001, Math.min(0.999, pos.x + dxPx / rect.width)),
@@ -322,6 +340,7 @@ export class InteractionManager {
             // Stamp tool hover preview
             if (this.app.isStampTool() && !isInteracting) {
                 const pos = getPos(e)
+                this.app._lastValidPos = pos // Persist for mouseleave "ghost" preview
                 const previewPos = getStampPreviewPos(pos)
                 const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
                 if (canvas) {
@@ -414,7 +433,27 @@ export class InteractionManager {
 
             // To keep stamp preview at edge when mouse leaves, we don't clear it immediately
             // if we are in a stamp tool.
-            if (needsRedraw) this.app.redrawStamps(pageNum)
+            if (this.app.isStampTool() && this.app._lastValidPos) {
+                // Ghost preview at the last edge position
+                const pos = this.app._lastValidPos
+                const previewPos = getStampPreviewPos(pos)
+                const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
+                if (canvas) {
+                    this.app.redrawStamps(pageNum)
+                    const ctx = canvas.getContext('2d')
+                    const group = this.app.toolsets.find(g => g.tools.some(t => t.id === this.app.activeStampType))
+                    const layer = group ? this.app.layers.find(l => l.type === group.type) : null
+                    const color = layer ? layer.color : '#6366f1'
+                    this.app.drawStampOnCanvas(ctx, canvas, {
+                        type: this.app.activeStampType,
+                        x: previewPos.x,
+                        y: previewPos.y,
+                        page: pageNum
+                    }, color, true, false, false, pos)
+                }
+            } else if (needsRedraw) {
+                this.app.redrawStamps(pageNum)
+            }
 
             const chip = wrapper.querySelector('.erase-hover-chip')
             if (chip) chip.remove()
