@@ -29,7 +29,10 @@ export class SettingsPanelManager {
             closeBtn.addEventListener('click', () => this.toggle(false))
         }
 
+        this.resizeHandle = this.panel?.querySelector('.panel-resize-handle')
         this.initSettings()
+        this.initResizable()
+        this.initTabs()
     }
 
     initDraggable() {
@@ -37,6 +40,7 @@ export class SettingsPanelManager {
         let startX, startY
 
         const onMouseDown = (e) => {
+            if (e.target.closest('button')) return
             isDragging = true
             startX = e.clientX - this.posX
             startY = e.clientY - this.posY
@@ -63,6 +67,109 @@ export class SettingsPanelManager {
         }
 
         this.dragHandle.addEventListener('mousedown', onMouseDown)
+
+        // Touch support
+        const onTouchStart = (e) => {
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return
+            isDragging = true
+            startX = e.touches[0].clientX - this.posX
+            startY = e.touches[0].clientY - this.posY
+            document.addEventListener('touchmove', onTouchMove, { passive: false })
+            document.addEventListener('touchend', onTouchEnd)
+        }
+        const onTouchMove = (e) => {
+            if (!isDragging) return
+            e.preventDefault()
+            this.posX = e.touches[0].clientX - startX
+            this.posY = e.touches[0].clientY - startY
+            this.updatePosition()
+        }
+        const onTouchEnd = () => {
+            isDragging = false
+            document.removeEventListener('touchmove', onTouchMove)
+            document.removeEventListener('touchend', onTouchEnd)
+        }
+        this.dragHandle.addEventListener('touchstart', onTouchStart, { passive: false })
+    }
+
+    initResizable() {
+        if (!this.resizeHandle) return
+        let isResizing = false
+        let startWidth, startHeight, startX, startY
+
+        const onMouseDown = (e) => {
+            isResizing = true
+            startWidth = this.panel.offsetWidth
+            startHeight = this.panel.offsetHeight
+            startX = e.clientX
+            startY = e.clientY
+            document.addEventListener('mousemove', onMouseMove)
+            document.addEventListener('mouseup', onMouseUp)
+        }
+
+        const onMouseMove = (e) => {
+            if (!isResizing) return
+            const newWidth = startWidth + (e.clientX - startX)
+            const newHeight = startHeight + (e.clientY - startY)
+            if (newWidth > 320) this.panel.style.width = `${newWidth}px`
+            if (newHeight > 300) this.panel.style.height = `${newHeight}px`
+        }
+
+        const onMouseUp = () => {
+            isResizing = false
+            document.removeEventListener('mousemove', onMouseMove)
+            document.removeEventListener('mouseup', onMouseUp)
+        }
+
+        this.resizeHandle.addEventListener('mousedown', onMouseDown)
+
+        // Touch support
+        const onTouchStart = (e) => {
+            isResizing = true
+            startWidth = this.panel.offsetWidth
+            startHeight = this.panel.offsetHeight
+            startX = e.touches[0].clientX
+            startY = e.touches[0].clientY
+            document.addEventListener('touchmove', onTouchMove, { passive: false })
+            document.addEventListener('touchend', onTouchEnd)
+        }
+        const onTouchMove = (e) => {
+            if (!isResizing) return
+            e.preventDefault()
+            const newWidth = startWidth + (e.touches[0].clientX - startX)
+            const newHeight = startHeight + (e.touches[0].clientY - startY)
+            if (newWidth > 320) this.panel.style.width = `${newWidth}px`
+            if (newHeight > 300) this.panel.style.height = `${newHeight}px`
+        }
+        const onTouchEnd = () => {
+            isResizing = false
+            document.removeEventListener('touchmove', onTouchMove)
+            document.removeEventListener('touchend', onTouchEnd)
+        }
+        this.resizeHandle.addEventListener('touchstart', onTouchStart, { passive: false })
+    }
+
+    initTabs() {
+        const tabBtns = this.panel.querySelectorAll('.settings-tabs .segment-btn')
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.tab
+                this.switchTab(tabId)
+            })
+        })
+    }
+
+    switchTab(tabId) {
+        const tabBtns = this.panel.querySelectorAll('.settings-tabs .segment-btn')
+        const tabPanes = this.panel.querySelectorAll('.settings-tab-pane')
+
+        tabBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId)
+        })
+
+        tabPanes.forEach(pane => {
+            pane.classList.toggle('active', pane.id === `settings-pane-${tabId}`)
+        })
     }
 
     updatePosition() {
@@ -161,6 +268,16 @@ export class SettingsPanelManager {
             const stored = localStorage.getItem('scoreflow_turner_mode')
             if (stored) turnerSelect.value = stored
             turnerSelect.addEventListener('change', () => this.app.saveToStorage())
+        }
+
+        // Refresh Cloud Stats button
+        const refreshStatsBtn = document.getElementById('btn-refresh-cloud-stats')
+        if (refreshStatsBtn) {
+            refreshStatsBtn.addEventListener('click', () => {
+                if (this.app.driveSyncManager) {
+                    this.app.driveSyncManager.refreshCloudStats()
+                }
+            })
         }
     }
 }

@@ -123,6 +123,38 @@
 }
 
 /* CSS Tooltips for doc-bar buttons */
+/* Hero Button Styling (Score Library) */
+.hero-btn {
+  background: var(--primary) !important;
+  color: #fff !important;
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(var(--primary-rgb, 126, 87, 194), 0.4);
+  animation: heroPulse 2s infinite ease-in-out;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.hero-btn:hover {
+  transform: scale(1.2) !important;
+  background: var(--primary-dark) !important;
+}
+
+@keyframes heroPulse {
+  0% {
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(var(--primary-rgb, 126, 87, 194), 0.3);
+  }
+
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 6px 20px rgba(var(--primary-rgb, 126, 87, 194), 0.5);
+  }
+
+  100% {
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(var(--primary-rgb, 126, 87, 194), 0.3);
+  }
+}
+
 .zoom-btn-mini[data-tooltip] {
   position: relative;
 }
@@ -190,12 +222,12 @@
 }
 
 /* Sidebar Overlay Mode: Sidebar now always overlays without shifting the score or DocBar. */
-#app.is-sidebar-active .viewer-container {
+#app-root.is-sidebar-active .viewer-container {
   /* No shift */
   padding-right: 0;
 }
 
-#app.is-sidebar-active .floating-doc-bar {
+#app-root.is-sidebar-active .floating-doc-bar {
   /* No shift - stay in original position under the sidebar or beside it */
   right: 8px;
 }

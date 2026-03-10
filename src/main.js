@@ -132,6 +132,7 @@ class ScoreFlow {
 
   constructor() {
     this.recycleItems = []
+    window.app = this // Explicit global for debug & legacy support
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
     // Default categories: Pens and Text
@@ -592,8 +593,7 @@ class ScoreFlow {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
     const useCSSFullscreen = isIOS || (isSafari && !document.fullscreenEnabled)
-    const appEl = document.getElementById('app')
-    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || appEl?.classList.contains('css-fullscreen'))
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.getElementById('app-root')?.classList.contains('css-fullscreen'))
 
     const updateBtn = (nowFs) => {
       if (this.btnFullscreen) {
@@ -605,8 +605,9 @@ class ScoreFlow {
     }
 
     if (useCSSFullscreen) {
-      if (!isFs) { appEl?.classList.add('css-fullscreen'); updateBtn(true) }
-      else { appEl?.classList.remove('css-fullscreen'); updateBtn(false) }
+      const appRoot = document.getElementById('app-root')
+      if (!isFs) { appRoot?.classList.add('css-fullscreen'); updateBtn(true) }
+      else { appRoot?.classList.remove('css-fullscreen'); updateBtn(false) }
     } else {
       if (!isFs) {
         const p = document.body.requestFullscreen ? document.body.requestFullscreen() : (document.body.webkitRequestFullscreen ? (document.body.webkitRequestFullscreen(), Promise.resolve()) : null)

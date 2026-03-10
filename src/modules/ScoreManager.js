@@ -296,9 +296,11 @@ export class ScoreManager {
                         <!-- Info Button (Score Details) -->
                         <button class="btn-icon-mini btn-score-info" title="Score Details" data-fp="${score.fingerprint}">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="16" x2="12" y2="12"></line>
-                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M9 17V12l4-1v5.5"></path>
+                                <circle cx="8" cy="17" r="1.5"></circle>
+                                <circle cx="12" cy="16" r="1.5"></circle>
                             </svg>
                         </button>
                     </div>
@@ -475,18 +477,44 @@ export class ScoreManager {
     }
 
     async loadScore(fingerprint) {
+        console.log(`[ScoreManager] Attempting to load score: ${fingerprint.slice(0, 8)}...`);
         const score = this.registry.find(s => s.fingerprint === fingerprint);
-        if (!score) return;
+        if (!score) {
+            console.error('[ScoreManager] Score not found in registry:', fingerprint);
+            return;
+        }
 
         this.toggleOverlay(false);
 
-        const buffer = await db.get(`score_buf_${fingerprint}`);
+        // 1. Try Primary Buffer (score_buf_FP)
+        let buffer = await db.get(`score_buf_${fingerprint}`);
+
+        // 2. Fallback: Check if it's in legacy Recent Store (recent_buf_NAME)
+        if (!buffer && score.fileName) {
+            console.warn(`[ScoreManager] Primary buffer missing for ${score.fileName}, checking legacy storage...`);
+            const legacyBuf = await db.get(`recent_buf_${score.fileName}`);
+            if (legacyBuf) {
+                console.log(`[ScoreManager] Found legacy buffer for ${score.fileName}, recovering...`);
+                // Auto-migrate it back to primary storage for future speed
+                await db.set(`score_buf_${fingerprint}`, legacyBuf);
+                buffer = legacyBuf;
+            }
+        }
+
         if (buffer) {
+            console.log(`[ScoreManager] Success: Buffer found (${buffer.byteLength} bytes). Calling app.loadPDF...`);
             score.lastAccessed = Date.now();
             await this.saveRegistry();
-            this.app.loadPDF(new Uint8Array(buffer), score.fileName);
+            try {
+                await this.app.loadPDF(new Uint8Array(buffer), score.fileName);
+                console.log('[ScoreManager] loadPDF call initiated.');
+            } catch (err) {
+                console.error('[ScoreManager] Error during loadPDF:', err);
+                this.app.showMessage('Failed to render PDF.', 'error');
+            }
         } else {
-            this.app.showMessage('Score content missing. Please re-import.', 'error');
+            console.error(`[ScoreManager] Failed: No binary content found for ${score.fileName}.`);
+            this.app.showMessage('樂譜數據缺失，請嘗試重新匯入或從 Google Drive 下載即可恢復。', 'error');
         }
     }
 

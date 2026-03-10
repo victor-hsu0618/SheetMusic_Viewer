@@ -71,12 +71,25 @@ export class ViewerManager {
 
             reader.onload = async (event) => {
                 const buffer = event.target.result
+                if (!buffer || buffer.byteLength === 0) {
+                    console.error('[ViewerManager] Empty buffer from FileReader');
+                    cleanup();
+                    alert('讀取文件失敗：數據長度為 0。');
+                    return;
+                }
                 try {
+                    // Pass a slice to db.set to avoid detaching the main buffer
                     await db.set(`recent_buf_${file.name}`, buffer.slice(0))
+                    // Ensure we pass a clean Uint8Array to loadPDF
                     await this.loadPDF(new Uint8Array(buffer), file.name)
                 } catch (pdfErr) {
-                    console.error('PDF.js Error:', pdfErr)
-                    alert(`Failed to construct PDF: ${pdfErr.message || pdfErr}\n\nThe file might be corrupted or Safari is restricting access.`)
+                    console.error('[ViewerManager] handleUpload failed:', pdfErr)
+                    let msg = pdfErr.message || pdfErr.toString()
+                    if (msg.includes('InvalidPDFException')) {
+                        alert(`解析 PDF 失敗：此檔案似乎不是有效的 PDF 或已損毀。\n(${file.name})`)
+                    } else {
+                        alert(`無法開啟樂譜：${msg}`)
+                    }
                 } finally {
                     cleanup()
                 }
@@ -135,14 +148,17 @@ export class ViewerManager {
     }
 
     async getFingerprint(buffer) {
+        // Ensure we are hashing the actual bytes, not a potentially larger shared buffer
+        const bytes = (buffer instanceof ArrayBuffer) ? new Uint8Array(buffer) : buffer
+        const bufferToHash = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+
         // crypto.subtle requires HTTPS — fallback to simple hash for HTTP (local dev / iPad)
         if (window.isSecureContext && crypto.subtle) {
-            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+            const hashBuffer = await crypto.subtle.digest('SHA-256', bufferToHash)
             const hashArray = Array.from(new Uint8Array(hashBuffer))
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
         }
         // Fallback: fast non-cryptographic hash (djb2) for HTTP environments
-        const bytes = new Uint8Array(buffer)
         let hash = 5381
         // Sample every 64 bytes for speed on large PDFs
         for (let i = 0; i < bytes.length; i += 64) {
@@ -153,6 +169,7 @@ export class ViewerManager {
     }
 
     async loadPDF(data, filename = null) {
+        console.log(`[ViewerManager] loadPDF started for: ${filename || 'unknown'}`);
         if (filename) this.activeScoreName = filename;
         this.isFitToHeight = false; // Reset on new PDF
         // 1. Save current score's stamps before switching
@@ -167,7 +184,22 @@ export class ViewerManager {
         }
 
         // 2. Compute fingerprint of the new PDF
-        const newFingerprint = await this.getFingerprint(data.buffer || data)
+        // Robust conversion to Uint8Array/ArrayBuffer
+        let uint8Data;
+        if (data instanceof Uint8Array) {
+            uint8Data = data;
+        } else if (data instanceof ArrayBuffer) {
+            uint8Data = new Uint8Array(data);
+        } else if (data instanceof Blob) {
+            uint8Data = new Uint8Array(await data.arrayBuffer());
+        } else {
+            console.error('[ViewerManager] Unsupported data type for loadPDF:', typeof data);
+            throw new Error('Unsupported data type');
+        }
+
+        console.log(`[ViewerManager] Computing fingerprint for ${uint8Data.byteLength} bytes...`);
+        const newFingerprint = await this.getFingerprint(uint8Data)
+        console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
         this.pdfFingerprint = newFingerprint
         this.app.jumpManager?.loadBookmarks()
 
@@ -186,19 +218,27 @@ export class ViewerManager {
         const pdfjsDir = new URL('pdfjs/', baseUrl).href
 
         const loadingTask = pdfjsLib.getDocument({
-            data: data,
+            data: uint8Data,
             cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
             cMapPacked: true,
             standardFontDataUrl: new URL('pdfjs/standard_fonts/', baseUrl).href,
             jbig2WasmUrl: new URL('pdfjs/wasm/jbig2.wasm', baseUrl).href,
-            // Generic wasmUrl MUST be a directory with a trailing slash
             wasmUrl: new URL('pdfjs/wasm/', baseUrl).href,
             isEvalSupported: false,
             stopAtErrors: false
         })
 
-        this.pdf = await loadingTask.promise
-        console.log(`PDF loaded successfully. Pages: ${this.pdf.numPages}, Fingerprint: ${newFingerprint.slice(0, 8)}...`)
+        try {
+            this.pdf = await loadingTask.promise
+            console.log(`[ViewerManager] PDF.js success. Pages: ${this.pdf.numPages}`);
+        } catch (err) {
+            console.error('[ViewerManager] PDF.js failed to load document:', err);
+            // Re-throw with more context if it's a known PDF.js error
+            if (err.name === 'InvalidPDFException') {
+                throw new Error('InvalidPDFException: 樂譜檔案格式損毀或無效 (Invalid PDF structure)');
+            }
+            throw err;
+        }
 
         // Open with 'Fit to Height' by default on PC, 'Fit to Width' on mobile
         this.showMainUI()
@@ -214,6 +254,7 @@ export class ViewerManager {
     }
 
     async renderPDF() {
+        console.log(`[ViewerManager] renderPDF started. PDF defined: ${!!this.pdf}`);
         if (!this.pdf) return
 
         // Hide welcome screen and remove only PDF pages — preserve welcome-screen DOM node

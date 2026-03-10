@@ -583,13 +583,52 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.detail-tab-pane {
+.detail-tab-pane,
+.settings-tab-pane {
   display: none;
   animation: tabAppear 0.3s ease-out forwards;
 }
 
-.detail-tab-pane.active {
+.detail-tab-pane.active,
+.settings-tab-pane.active {
   display: block;
+}
+
+.settings-tab-container {
+  padding: 0 20px;
+  margin-bottom: 5px;
+}
+
+.stats-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.stats-item-mini {
+  background: var(--bg-shade);
+  padding: 10px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.stats-label-mini {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.stats-value-mini {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.stats-value-mini.text-success {
+  color: var(--success);
 }
 
 @keyframes tabAppear {

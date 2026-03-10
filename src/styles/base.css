@@ -37,7 +37,7 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-#app {
+#app-root {
   display: flex;
   width: 100%;
   height: 100%;

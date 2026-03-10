@@ -15,8 +15,8 @@ export class ProfileManager {
     async init() {
         // Elements in Settings Tab
         this.summaryContainer = document.getElementById('user-profile-summary-container')
-        this.displayText = document.getElementById('user-profile-display-text')
-        this.noteText = document.getElementById('user-profile-note')
+        this.displayText = document.getElementById('user-profile-name')
+        this.noteText = document.getElementById('user-profile-email')
         this.editBtn = document.getElementById('edit-user-profile-btn')
         this.avatar = document.getElementById('user-profile-avatar')
 
@@ -123,7 +123,7 @@ export class ProfileManager {
             this.displayText.textContent = `${this.data.title} / ${this.data.userName}`
         }
         if (this.noteText) {
-            this.noteText.textContent = this.data.note || 'Click to edit profile...'
+            this.noteText.textContent = this.data.email || 'No email provided'
         }
         if (this.avatar) {
             this.avatar.textContent = this.data.userName.charAt(0).toUpperCase()

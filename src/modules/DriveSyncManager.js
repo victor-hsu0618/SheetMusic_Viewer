@@ -17,6 +17,9 @@ export class DriveSyncManager {
         this.syncInterval = 30000; // 30 seconds polling
         this.syncTimer = null;
         this.hasScanned = false;
+        this.cloudStats = {
+            totalSyncedScores: 0
+        };
     }
 
     /**
@@ -163,6 +166,45 @@ export class DriveSyncManager {
                 timeEl.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             }
         }
+
+        // Update Cloud Stats UI
+        this.updateCloudStatsUI();
+    }
+
+    /**
+     * Update the elements in the Cloud Stats section.
+     */
+    updateCloudStatsUI() {
+        const totalEl = document.getElementById('cloud-stats-total-scores');
+        const folderEl = document.getElementById('cloud-stats-folder-status');
+
+        if (totalEl) {
+            if (this.isEnabled && this.accessToken) {
+                // If we have scanned, show count, otherwise show '...'
+                totalEl.textContent = this.cloudStats?.totalSyncedScores ?? '...';
+            } else {
+                totalEl.textContent = '-';
+            }
+        }
+
+        if (folderEl) {
+            if (this.isEnabled && this.accessToken) {
+                folderEl.textContent = this.folderId ? '已對接' : '初始化中...';
+                folderEl.className = 'stats-value-mini text-success';
+            } else {
+                folderEl.textContent = '未連結';
+                folderEl.className = 'stats-value-mini';
+            }
+        }
+    }
+
+    /**
+     * Re-scans the cloud folder specifically to update statistics.
+     */
+    async refreshCloudStats() {
+        if (!this.isEnabled || !this.accessToken) return;
+        await this.scanRemoteSyncFiles();
+        this.updateCloudStatsUI();
     }
 
     /**
@@ -658,6 +700,10 @@ export class DriveSyncManager {
                     const match = f.name.match(/^sync_(.+)\.json$/);
                     if (match) remoteFPs.add(match[1]);
                 });
+
+                // Update Cloud Stats
+                this.cloudStats.totalSyncedScores = remoteFPs.size;
+                this.updateCloudStatsUI();
 
                 let foundCount = 0;
                 for (const score of this.app.scoreManager.registry) {
