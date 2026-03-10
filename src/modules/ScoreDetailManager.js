@@ -9,7 +9,8 @@ export class ScoreDetailManager {
             lastEdit: null,
             lastAuthor: null,
             mediaList: [], // [{ id, label, type, source }]
-            activeMediaId: null
+            activeMediaId: null,
+            stampScale: 1.0
         }
         this.isLoading = false
     }
@@ -201,8 +202,10 @@ export class ScoreDetailManager {
                     lastEdit: info.lastEdit || 0, // Ensure numeric 0 for sync LWW
                     lastAuthor: info.lastAuthor || null,
                     mediaList: info.mediaList || (info.media ? [{ id: 'legacy', label: 'Default Video', ...info.media }] : []),
-                    activeMediaId: info.activeMediaId || (info.media ? 'legacy' : null)
+                    activeMediaId: info.activeMediaId || (info.media ? 'legacy' : null),
+                    stampScale: info.stampScale || 1.0
                 }
+                this.app.scoreStampScale = this.currentInfo.stampScale
             } catch (err) {
                 console.error('[ScoreDetailManager] Failed to parse score detail data:', err)
                 this.currentInfo = { name: '', composer: '', lastEdit: 0, mediaList: [], activeMediaId: null }
@@ -214,8 +217,10 @@ export class ScoreDetailManager {
                 composer: '',
                 lastEdit: 0, // NEW FILE: 0 timestamp means remote will always win
                 mediaList: [],
-                activeMediaId: null
+                activeMediaId: null,
+                stampScale: 1.0
             }
+            this.app.scoreStampScale = 1.0
         }
 
         this.render(fingerprint)

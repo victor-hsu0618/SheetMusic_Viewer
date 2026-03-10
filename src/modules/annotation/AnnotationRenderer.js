@@ -110,10 +110,11 @@ export class AnnotationRenderer {
         const y = stamp.y * canvas.height
         const isBow = stamp.type === 'up-bow' || stamp.type === 'down-bow'
 
-        // Smart Sizing: baseSize * PageFactor * UserMultiplier * ZoomScale
+        // Smart Sizing: baseSize * PageFactor * UserMultiplier * ScoreMultiplier * ZoomScale
         const pageFactor = this.app.pageScales[stamp.page] || 1.0
         const userMultiplier = this.app.stampSizeMultiplier || 1.0
-        const baseSize = 26 * (this.app.scale / 1.5) * pageFactor * userMultiplier
+        const scoreMultiplier = this.app.scoreStampScale || 1.0
+        const baseSize = 26 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
 
         const size = isBow ? baseSize * 0.85 : baseSize
         const textScale = size / 21 // Relative to the original baseline

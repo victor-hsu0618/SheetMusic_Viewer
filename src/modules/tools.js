@@ -222,7 +222,10 @@ export class ToolManager {
                 drag(e.touches[0].clientX, e.touches[0].clientY)
             } else if (el.contains(e.target)) {
                 e.stopPropagation()
-                if (el.style.overflowY !== 'auto') e.preventDefault()
+                // Do NOT preventDefault if we are touching an input (like range sliders)
+                if (e.target.tagName !== 'INPUT' && el.style.overflowY !== 'auto') {
+                    e.preventDefault()
+                }
             }
         }, { passive: false })
 
@@ -337,9 +340,11 @@ export class ToolManager {
         header.appendChild(recentRibbon)
         this.app.activeToolsContainer.appendChild(header)
 
-        // Grid or Recycle Bin
+        // Grid, Recycle Bin or Settings
         if (this.app.activeStampType === "recycle-bin") {
             this.renderRecycleBin()
+        } else if (this.app.activeStampType === "settings") {
+            this.renderSettingsPanel()
         } else {
             this.renderToolsGrid()
         }
@@ -371,6 +376,20 @@ export class ToolManager {
             }
             ribbon.appendChild(pill)
         })
+
+        // Settings Tab Button
+        const settingsBtn = document.createElement("button")
+        const isSettings = this.app.activeStampType === "settings"
+        settingsBtn.className = `cat-pill cat-settings ${isSettings ? "active" : ""}`
+        settingsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
+        settingsBtn.title = "Stamp Settings"
+        settingsBtn.onclick = (e) => {
+            e.stopPropagation()
+            this.app.activeStampType = isSettings ? "view" : "settings"
+            this.updateActiveTools()
+        }
+        ribbon.appendChild(settingsBtn)
+
         this.app.activeToolsContainer.appendChild(ribbon)
 
         // Resize Handle
@@ -561,5 +580,50 @@ export class ToolManager {
             container.appendChild(row)
         })
         this.app.activeToolsContainer.appendChild(container)
+    }
+
+    renderSettingsPanel() {
+        const panel = document.createElement("div")
+        panel.className = "palette-settings-panel"
+        panel.innerHTML = `
+            <div class="settings-header">
+                <h3>Stamp Settings</h3>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Score Scale (Current)</span>
+                        <span class="setting-value" id="val-score-scale">${(this.app.scoreStampScale || 1.0).toFixed(1)}x</span>
+                    </div>
+                    <input type="range" class="setting-slider" id="slider-score-scale" min="0.5" max="3.0" step="0.1" value="${this.app.scoreStampScale || 1.0}" />
+                    <p class="setting-hint">Applies only to this specific score.</p>
+                </div>
+
+                <button class="btn btn-primary btn-full mt-10" id="btn-settings-back">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="icon-mr-6">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    Back to Tools
+                </button>
+            </div>
+        `
+
+        const sliderScore = panel.querySelector('#slider-score-scale')
+        const valScore = panel.querySelector('#val-score-scale')
+        const btnBack = panel.querySelector('#btn-settings-back')
+
+        sliderScore.oninput = (e) => {
+            const val = e.target.value
+            valScore.textContent = `${parseFloat(val).toFixed(1)}x`
+            this.app.updateScoreStampScale(val)
+        }
+
+        btnBack.onclick = (e) => {
+            e.stopPropagation()
+            this.app.activeStampType = "view"
+            this.updateActiveTools()
+        }
+
+        this.app.activeToolsContainer.appendChild(panel)
     }
 }

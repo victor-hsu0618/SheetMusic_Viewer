@@ -170,6 +170,9 @@ class ScoreFlow {
     this.inputManager = new InputManager(this)
     this.driveSyncManager = new DriveSyncManager(this)
 
+    // Stamp Scaling (Global is in app.stampSizeMultiplier, Score-specific here)
+    this.scoreStampScale = 1.0
+
     this.initElements()
     this.jumpManager = new JumpManager(this)
     this.viewPanelManager = new ViewPanelManager(this)
@@ -628,14 +631,31 @@ class ScoreFlow {
     }
   }
 
+  redrawAllAnnotationLayersDebounced() {
+    if (this._redrawTimer) cancelAnimationFrame(this._redrawTimer)
+    this._redrawTimer = requestAnimationFrame(() => {
+      this.redrawAllAnnotationLayers()
+      this._redrawTimer = null
+    })
+  }
+
   updateStampSize(val) {
     this.stampSizeMultiplier = parseFloat(val)
     if (this.settingsStampSizeInput) {
       this.settingsStampSizeInput.value = val
       if (this.settingsStampSizeValue) this.settingsStampSizeValue.textContent = `${this.stampSizeMultiplier.toFixed(1)}x`
     }
-    this.redrawAllAnnotationLayers()
+    this.redrawAllAnnotationLayersDebounced()
     this.saveToStorage()
+  }
+
+  updateScoreStampScale(val) {
+    this.scoreStampScale = parseFloat(val) || 1.0
+    if (this.scoreDetailManager) {
+      this.scoreDetailManager.currentInfo.stampScale = this.scoreStampScale
+      this.scoreDetailManager.save(this.pdfFingerprint)
+    }
+    this.redrawAllAnnotationLayersDebounced()
   }
 }
 
