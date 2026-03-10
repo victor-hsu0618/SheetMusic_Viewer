@@ -47,74 +47,53 @@ export class InteractionManager {
         const STAMP_OFFSET_Y_PX = 65 // Base offset magnitude for calculations
 
         /**
-         * Compute preview position for stamps with 4-edge smart lerp.
-         * When approaching ANY edge, the offset smoothly transitions to zero
-         * or flips to the other side to ensure the stamp is always reachable and visible.
+         * Compute preview position for stamps with smooth 2D lerp (Shrink & Flip).
+         * Ensures position is continuous and always reachable even at corners.
+         */
+        /**
+         * Compute preview position for stamps with smooth 2D lerp (Shrink & Flip).
+         * Uses local rect coordinates instead of window coordinates to avoid layout offsets.
          */
         const getStampPreviewPos = (pos) => {
             const rect = overlay.getBoundingClientRect()
 
-            // 1. Vertical Positioning (Smooth Lerp + Edge Reachability)
-            const cursorScreenY = rect.top + pos.y * rect.height
-            const distFromBottom = window.innerHeight - cursorScreenY
-            const distFromTop = cursorScreenY
-            const transY = STAMP_OFFSET_Y_PX * 3 // Transition zone
+            // 1. Vertical Positioning (Smooth Shrink at Top/Bottom)
+            const transY = STAMP_OFFSET_Y_PX * 3 // Transition zone pixels
+            const distFromBottomPx = (1.0 - pos.y) * rect.height
+            const distFromTopPx = pos.y * rect.height
 
             let dyPx = -STAMP_OFFSET_Y_PX // Default: Above
 
-            if (distFromBottom < transY) {
-                // If we approach bottom, we want to slide to being BELOW the cursor.
-                // However, as pos.y reaches 1.0 (dead bottom), dyPx MUST be 0
-                // to allow the stamp to actually touch the bottom edge.
-                const t = Math.max(0, Math.min(1, distFromBottom / transY))
-                // t=1 (far): -60 | t=0.5: 0 | t=0 (edge): +60
-                // To allow reaching edge at pos.y=1.0, we need dyPx to be 0 at t=0
-                // Actually, a better approach for reachability:
-                // Flip offset sign but also multiply by t so it shrinks to 0 at the very edge.
-                dyPx = -STAMP_OFFSET_Y_PX * Math.sin(t * Math.PI / 2) * (t > 0.5 ? 1 : -1)
-                // Simplify: Just flip and shrink.
-                if (distFromBottom < transY / 2) {
-                    const localT = distFromBottom / (transY / 2) // 0 to 1
-                    dyPx = STAMP_OFFSET_Y_PX * localT // Shrink to 0 as we hit edge
-                } else {
-                    const localT = (distFromBottom - transY / 2) / (transY / 2) // 0 to 1
-                    dyPx = -STAMP_OFFSET_Y_PX * (1 - localT) - STAMP_OFFSET_Y_PX * localT
-                    // Actually, let's use the most robust way:
-                    const lerpT = Math.max(0, Math.min(1, distFromBottom / transY))
-                    dyPx = -STAMP_OFFSET_Y_PX + (1 - lerpT) * (STAMP_OFFSET_Y_PX * 2)
-                    // If near absolute edge, force shrink
-                    if (pos.y > 0.98) dyPx *= (1.0 - pos.y) / 0.02
-                    if (pos.y < 0.02) dyPx *= pos.y / 0.02
-                }
+            if (distFromBottomPx < transY) {
+                // Approaches bottom -> smoothly shrink offset to 0
+                const t = Math.max(0, Math.min(1, distFromBottomPx / transY))
+                dyPx = -STAMP_OFFSET_Y_PX * t
+            } else if (distFromTopPx < transY) {
+                // Approaches top -> smoothly shrink offset to 0
+                const t = Math.max(0, Math.min(1, distFromTopPx / transY))
+                dyPx = -STAMP_OFFSET_Y_PX * t
             }
 
-            // 2. Horizontal Positioning (Smooth Lerp + Edge Reachability)
-            const cursorScreenX = rect.left + pos.x * rect.width
-            const distFromRight = window.innerWidth - cursorScreenX
-            const distFromLeft = cursorScreenX
+            // 2. Horizontal Positioning (Smooth Flip at Left, Shrink at Right)
             const transX = Math.abs(STAMP_OFFSET_X_PX) * 3 || 150
+            const distFromRightPx = (1.0 - pos.x) * rect.width
+            const distFromLeftPx = pos.x * rect.width
 
             let dxPx = STAMP_OFFSET_X_PX // Default: Left (-45)
 
-            if (distFromLeft < transX) {
-                // Approach LEFT: Slide to RIGHT side of cursor
-                const lerpT = Math.max(0, Math.min(1, distFromLeft / transX))
-                dxPx = STAMP_OFFSET_X_PX + (1 - lerpT) * (Math.abs(STAMP_OFFSET_X_PX) * 2)
-            } else if (distFromRight < transX) {
-                // Approach RIGHT: Stay LEFT side but shrink to 0 to REACH the edge
-                const lerpT = Math.max(0, Math.min(1, distFromRight / transX))
-                dxPx = STAMP_OFFSET_X_PX * lerpT
+            if (distFromLeftPx < transX) {
+                // Approaches left -> smoothly SHRINK to 0 to reach edge
+                const t = Math.max(0, Math.min(1, distFromLeftPx / transX))
+                dxPx = STAMP_OFFSET_X_PX * t
+            } else if (distFromRightPx < transX) {
+                // Approaches right -> smoothly SHRINK to 0 to reach edge
+                const t = Math.max(0, Math.min(1, distFromRightPx / transX))
+                dxPx = STAMP_OFFSET_X_PX * t
             }
 
-            // Final edge clamp to be extra safe
-            if (pos.x > 0.98) dxPx *= (1.0 - pos.x) / 0.02
-            if (pos.x < 0.02) dxPx *= pos.x / 0.02
-            if (pos.y > 0.98) dyPx *= (1.0 - pos.y) / 0.02
-            if (pos.y < 0.02) dyPx *= pos.y / 0.02
-
             return {
-                x: Math.max(0.001, Math.min(0.999, pos.x + dxPx / rect.width)),
-                y: Math.max(0.001, Math.min(0.999, pos.y + dyPx / rect.height))
+                x: Math.max(0.0001, Math.min(0.9999, pos.x + dxPx / rect.width)),
+                y: Math.max(0.0001, Math.min(0.9999, pos.y + dyPx / rect.height))
             }
         }
 
@@ -246,21 +225,19 @@ export class InteractionManager {
                     }
                 }
 
+                const finalPos = getStampPreviewPos(pos)
                 activeObject = {
                     page: pageNum,
                     layerId: targetLayerId,
                     sourceId: this.app.activeSourceId,
                     type: toolType,
-                    x: pos.x, // Use pos.x instead of undefined nx
-                    y: pos.y, // Use pos.y instead of undefined ny
+                    x: finalPos.x,
+                    y: finalPos.y,
                     data: null,
                     draw: stampDraw, // Critical: Attach drawing metadata for non-default tools
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
                     updatedAt: Date.now()
                 }
-                const previewPosFinal = getStampPreviewPos(pos)
-                activeObject.x = previewPosFinal.x
-                activeObject.y = previewPosFinal.y
                 this.app.lastFocusedStamp = activeObject
             }
         }
@@ -421,38 +398,44 @@ export class InteractionManager {
 
         // --- ATTACH LISTENERS ---
 
+        let windowMoveHandler = null
+
         overlay.addEventListener('mousedown', startAction)
+
+        const attachWindowMove = () => {
+            if (!windowMoveHandler) {
+                windowMoveHandler = (e) => {
+                    if (this.app.isStampTool() || isInteracting) {
+                        moveAction(e)
+                        hoverAction(e)
+                    }
+                }
+                window.addEventListener('mousemove', windowMoveHandler)
+            }
+        }
+
+        overlay.addEventListener('mouseenter', attachWindowMove)
+
         overlay.addEventListener('mousemove', (e) => {
-            moveAction(e)
-            hoverAction(e)
+            if (!isInteracting && !this.app.isStampTool()) {
+                moveAction(e)
+                hoverAction(e)
+            } else if (this.app.isStampTool()) {
+                attachWindowMove()
+            }
         })
+
         overlay.addEventListener('mouseleave', () => {
             let needsRedraw = false
             if (this.app.hoveredStamp) { this.app.hoveredStamp = null; needsRedraw = true }
             if (this.app.selectHoveredStamp) { this.app.selectHoveredStamp = null; needsRedraw = true }
 
-            // To keep stamp preview at edge when mouse leaves, we don't clear it immediately
-            // if we are in a stamp tool.
-            if (this.app.isStampTool() && this.app._lastValidPos) {
-                // Ghost preview at the last edge position
-                const pos = this.app._lastValidPos
-                const previewPos = getStampPreviewPos(pos)
-                const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
-                if (canvas) {
-                    this.app.redrawStamps(pageNum)
-                    const ctx = canvas.getContext('2d')
-                    const group = this.app.toolsets.find(g => g.tools.some(t => t.id === this.app.activeStampType))
-                    const layer = group ? this.app.layers.find(l => l.type === group.type) : null
-                    const color = layer ? layer.color : '#6366f1'
-                    this.app.drawStampOnCanvas(ctx, canvas, {
-                        type: this.app.activeStampType,
-                        x: previewPos.x,
-                        y: previewPos.y,
-                        page: pageNum
-                    }, color, true, false, false, pos)
+            if (!this.app.isStampTool()) {
+                if (windowMoveHandler) {
+                    window.removeEventListener('mousemove', windowMoveHandler)
+                    windowMoveHandler = null
                 }
-            } else if (needsRedraw) {
-                this.app.redrawStamps(pageNum)
+                if (needsRedraw) this.app.redrawStamps(pageNum)
             }
 
             const chip = wrapper.querySelector('.erase-hover-chip')
