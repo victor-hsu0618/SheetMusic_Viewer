@@ -272,15 +272,19 @@ export class ScoreManager {
             card.innerHTML = `
                 <div class="score-thumb">
                     ${score.thumbnail ? `<img src="${score.thumbnail}" alt="${score.title}">` : '🎼'}
-                    <div class="selection-indicator">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                    </div>
                 </div>
                 <div class="score-info">
                     <div class="flex-row-center flex-space-between w-full">
                         <div class="score-title text-truncate" title="${score.title}">${score.title}</div>
+                        
+                        <!-- Selection Indicator (Album Style) -->
+                        <div class="selection-indicator">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+
+                        <!-- Info Button (Score Details) -->
                         <button class="btn-icon-mini btn-score-info" title="Score Details" data-fp="${score.fingerprint}">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <circle cx="12" cy="12" r="10"></circle>
