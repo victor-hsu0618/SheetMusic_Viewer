@@ -40,7 +40,7 @@ export class InputManager {
      */
     isEventInUI(e) {
         if (!e || !e.target) return false
-        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .layer-shelf, .modal-card, #sidebar, .toolbar-popover, .sidebar-recent-item, .recent-score-card'
+        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, #sidebar, .toolbar-popover, .sidebar-recent-item, .recent-score-card'
         return !!e.target.closest(uiSelector)
     }
 
@@ -90,8 +90,6 @@ export class InputManager {
                     this.app.viewPanelManager.togglePanel(false)
                 } else if (this.app.jumpManager && this.app.jumpManager.panel.classList.contains('active')) {
                     this.app.jumpManager.togglePanel(false)
-                } else if (this.app.layerShelf && this.app.layerShelf.classList.contains('active')) {
-                    this.app.layerShelf.classList.remove('active')
                 } else if (this.app.sidebar && this.app.sidebar.classList.contains('open')) {
                     this.app.sidebar.classList.remove('open')
                 }
@@ -116,17 +114,10 @@ export class InputManager {
                     e.preventDefault()
                     this.app.toolManager.toggleStampPalette()
                     break
-                case 'v': // View Inspector (V) vs Notation Layers (Shift+V)
+                case 'v': // View Inspector
                     e.preventDefault()
-                    if (e.shiftKey) {
-                        if (this.app.layerShelf) {
-                            this.app.layerShelf.classList.toggle('active')
-                            if (this.app.layerShelf.classList.contains('active')) this.app.renderLayerUI()
-                        }
-                    } else {
-                        if (this.app.viewPanelManager) this.app.viewPanelManager.togglePanel()
-                    }
-                    break
+                    if (this.app.viewPanelManager) this.app.viewPanelManager.togglePanel()
+                    break;
                 case 'r': // Ruler
                     e.preventDefault()
                     this.app.toggleRuler()

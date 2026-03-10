@@ -10,9 +10,7 @@ export class DocBarManager {
         this.app.zoomLevelDisplay = document.getElementById('zoom-level')
 
 
-        this.app.layerShelf = document.getElementById('layer-shelf')
-        this.app.layerToggleBtn = document.getElementById('layer-toggle-fab')
-        this.app.closeLayerShelfBtn = document.getElementById('close-layer-shelf')
+        this.app.zoomLevelDisplay = document.getElementById('zoom-level')
 
         this.initDraggable()
         this.initEventListeners()

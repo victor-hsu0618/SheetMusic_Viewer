@@ -1,51 +1,49 @@
-# 圖章工具面板設定與樂譜特定縮放實作計畫
+# 將 Notation Settings 移至 Stamp Panel
 
-本計畫旨在圖章工具面板（Stamp Palette）中新增一個「面板設定」子分頁，讓使用者能快速調整全域圖章大小比例，並新增「針對目前樂譜」的專屬縮放比例設定，以應對不同出版商樂譜中音符大小差異的問題。
+此計畫旨在透過將「Notation Settings」（圖層管理）從獨立的浮動面板（由 doc bar 觸發）移至「Stamp Panel」內的設定視圖，來集中管理與標記相關的設定。
 
-## 已知機制
-- **全域比例 (`stampSizeMultiplier`)**：使用者自定義的全域偏好。
-- **頁面智慧比例 (`pageScales`)**：系統根據 PDF 原始尺寸（A4/A3 等）自動計算的補償值。
-- **目前公式**：`基礎大小 * 頁面比例 * 全域比例 * 縮放等級`。
+## 變更摘要
 
-## 擬議變更
+### [核心/UI]
 
-### 1. [ScoreFlow] 核心邏輯 (`src/main.js`)
-- 初始化 `this.scoreStampScale = 1.0`。
-- 新增 `updateScoreStampScale(val)` 方法，用於更新數值、存檔並重繪註解層。
+#### [修改] [index.html](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/index.html)
+- 從 `#floating-doc-bar` 中移除 `layer-toggle-fab` 按鈕。
+- 移除 `#layer-shelf` 容器。
+- 確保 `#active-tools-container` 能夠容納新的圖層列表設定。
 
-### 2. [ScoreDetailManager] 樂譜詳細資料管理 (`src/modules/ScoreDetailManager.js`)
-- 在 `currentInfo` 結構中新增 `stampScale` 欄位。
-- 更新 `load()` 與 `save()` 方法，確保該數值與 PDF Fingerprint 綁定並持久化於 `localStorage`。
+#### [修改] [src/modules/tools.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/tools.js)
+- 更新 `renderSettingsPanel()` 以包含「Notation Categories」區段。
+- 此區段將託管原本在 layer shelf 中的圖層列表。
+- 在此設定視圖中新增「Add New Category」按鈕。
 
-### 3. [ToolManager] 圖章面板 UI 優化 (`src/modules/tools.js`)
-- **新增分頁**：在 `category-ribbon` 末尾新增一個具有「設定圖示 (Gear Icon)」的切換按鈕。
-- **實作設定面板**：
-    - 新增 `renderSettingsPanel()` 方法。
-    - 面板包含兩個拖桿 (Range Sliders) 及數值顯示：
-        1. **全域大小 (Global Scale)**：同步調整 `this.app.stampSizeMultiplier`。
-        2. **譜面縮放 (Score Scale)**：調整針對此樂譜的 `this.app.scoreStampScale`。
-- **動態更新**：確保調整拖桿時能即時觸發 `redrawAllAnnotationLayers()`。
+#### [修改] [src/modules/LayerManager.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/LayerManager.js)
+- 更新 `renderLayerUI()` 以渲染到 Stamp Settings 面板內的新容器中。
+- 移除對 `layerShelf` 和 `layerToggleBtn` 的引用。
+- 更新事件監聽器以在 Stamp Panel 上下文中運作。
 
-### 4. [AnnotationRenderer] 渲染引擎更新 (`src/modules/annotation/AnnotationRenderer.js`)
-- 更新 `drawStampOnCanvas` 中的 `baseSize` 運算：
-    ```javascript
-    const scoreMultiplier = this.app.scoreStampScale || 1.0;
-    const baseSize = 26 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier;
-    ```
-- 確保文字類圖章與圖形類圖章皆套用此新比例。
+#### [修改] [src/modules/docbar.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/docbar.js)
+- 移除 `layerShelf` 和 `layerToggleBtn` 的初始化邏輯。
+
+#### [修改] [src/modules/InputManager.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/InputManager.js)
+- 移除原本用於開啟圖層面板的 `Shift+V` 快捷鍵邏輯。
+
+#### [修改] [index.html](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/index.html)
+- 在快捷鍵說明清單中移除 `Shift+V` (Notation Layers) 的項目。
 
 ## 驗證計畫
 
 ### 自動化測試
-- 目前無直接相關的 E2E 測試，將進行手動驗證。
+- 執行現有的 e2e 測試，確保工具切換或 PDF 渲染沒有退化。
+```bash
+npm run test:e2e
+```
 
-### 手動驗證流程
-1. **面板功能**：點擊圖章面板下方的新分頁圖示，確認設定面板正確開啟。
-2. **全域調整**：調整「全域大小」拖桿，確認所有頁面的圖章同步縮放。
-3. **特定縮放**：調整「譜面縮放」拖桿，確認僅目前樂譜受影響。
-4. **持久化**：
-    - 關閉並重新開啟同一份 PDF，確認比例設定被正確讀取。
-    - 切換至另一份不同的 PDF，確認「譜面縮放」回到該 PDF 專屬的值（預設 1.0）。
-
----
-**請檢閱此計畫。若確認無誤，請告訴我 "engage"。**
+### 手動驗證
+1. 打開 Stamp Palette (T)。
+2. 點擊底部的「設定」圖示（齒輪）。
+3. 確認「Notation Categories」已列出。
+4. 測試切換類別的可見性（眼睛圖示）。
+5. 測試新增新類別。
+6. 測試刪除自定義類別。
+7. 確認 Doc Bar 不再包含「Notation Settings」按鈕。
+8. 確認 `Shift+V` 會開啟 Stamp Settings 面板。

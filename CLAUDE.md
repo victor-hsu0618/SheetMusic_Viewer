@@ -41,7 +41,7 @@ npm run test:e2e     # Run Playwright E2E tests
 
 **Persistence flow:** User annotates → canvas drawings stored in IndexedDB (keyed by score fingerprint) → switching scores saves/restores from IndexedDB → export produces a `.json` bundle.
 
-**Exit Mission flow:** Settings > Exit Mission hides all main UI elements (floating-doc-bar, ruler, sidebar-trigger, layer-toggle-fab) and returns to the startup wizard (Mission Hub) unless the user cancels the dialog.
+**Exit Mission flow:** Settings > Exit Mission hides all main UI elements (floating-doc-bar, ruler, sidebar-trigger) and returns to the startup wizard (Mission Hub) unless the user cancels the dialog.
 
 ### Floating Document Control Bar (`#floating-doc-bar`)
 
@@ -52,7 +52,6 @@ The right-side docked toolbar contains these button groups:
 | Jump Controls | Jump to Head, Jump to End, Toggle Ruler | Home, End, R |
 | Quick Modes | Pan/View, Select, Eraser, Anchor | (click), V, E, A |
 | Zoom | Zoom In, Zoom Out, Fit to Width, Fit to Height | +/=, -, W, F |
-| Visibility | Notation Visibility toggle | Shift+V |
 | Stamp Palette | Toggle stamp tool panel | T |
 
 **CSS Tooltips:** All `.zoom-btn-mini` buttons have `data-tooltip` auto-wired from their `title` attribute in `initElements()`. CSS `::after` pseudo-element shows a styled dark tooltip on hover (hidden on touch devices via `@media (pointer: coarse)`).
@@ -111,7 +110,7 @@ E2E tests use Playwright (`tests/automation-check.js`). Test PDFs are stored loc
 | - | Zoom out |
 | S | Toggle sidebar |
 | H / ? | Help / Shortcuts overlay |
-| Shift+V | Toggle notation visibility |
+
 | T | Toggle stamp palette |
 | Esc | Close all panels, return to View mode |
 | Delete / Backspace | Delete focused stamp |

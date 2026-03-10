@@ -599,7 +599,17 @@ export class ToolManager {
                     <p class="setting-hint">Applies only to this specific score.</p>
                 </div>
 
-                <button class="btn btn-primary btn-full mt-10" id="btn-settings-back">
+                <div class="setting-divider"></div>
+
+                <div class="setting-item">
+                    <div class="setting-label flex-space-between">
+                        <span>Notation Categories</span>
+                        <button id="btn-add-layer-mini" class="btn-text-primary">+ Add</button>
+                    </div>
+                    <div id="settings-layer-list" class="layer-list-mini mt-10"></div>
+                </div>
+
+                <button class="btn btn-primary btn-full mt-20" id="btn-settings-back">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="icon-mr-6">
                         <polyline points="15 18 9 12 15 6"></polyline>
                     </svg>
@@ -611,11 +621,17 @@ export class ToolManager {
         const sliderScore = panel.querySelector('#slider-score-scale')
         const valScore = panel.querySelector('#val-score-scale')
         const btnBack = panel.querySelector('#btn-settings-back')
+        const btnAddLayer = panel.querySelector('#btn-add-layer-mini')
 
         sliderScore.oninput = (e) => {
             const val = e.target.value
             valScore.textContent = `${parseFloat(val).toFixed(1)}x`
             this.app.updateScoreStampScale(val)
+        }
+
+        btnAddLayer.onclick = (e) => {
+            e.stopPropagation()
+            this.app.layerManager.addNewLayer()
         }
 
         btnBack.onclick = (e) => {
@@ -625,5 +641,9 @@ export class ToolManager {
         }
 
         this.app.activeToolsContainer.appendChild(panel)
+
+        // Render the layer list into the new container
+        this.app.externalLayerList = panel.querySelector('#settings-layer-list')
+        if (this.app.layerManager) this.app.layerManager.renderLayerUI()
     }
 }
