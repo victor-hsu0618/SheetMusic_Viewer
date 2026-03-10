@@ -348,7 +348,7 @@ class ScoreFlow {
     this.btnStampPalette = document.getElementById('btn-stamp-palette')
 
 
-    this.jumpOffsetPx = 1 * 37.8
+    this.jumpOffsetPx = 40 // Default scroll baseline at 40px from top
 
     // Resizer
     this.sidebarResizer = document.getElementById('sidebar-resizer')

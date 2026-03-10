@@ -2,7 +2,7 @@ export class RulerManager {
     constructor(app) {
         this.app = app
         this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
-        this.jumpOffsetPx = 450
+        this.jumpOffsetPx = 40
         this.nextTargetAnchor = null
         this.jumpHistory = []
     }

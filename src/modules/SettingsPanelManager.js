@@ -251,7 +251,7 @@ export class SettingsPanelManager {
         if (jumpOffsetInput) {
             // Convert px to cm if needed? Currently app uses px for this storage?
             // Existing app uses this.app.jumpOffsetPx
-            jumpOffsetInput.value = this.app.jumpOffsetPx || 450
+            jumpOffsetInput.value = this.app.jumpOffsetPx || 40
             if (jumpOffsetValue) jumpOffsetValue.textContent = `${jumpOffsetInput.value}px`
 
             jumpOffsetInput.addEventListener('input', (e) => {
@@ -276,6 +276,16 @@ export class SettingsPanelManager {
             refreshStatsBtn.addEventListener('click', () => {
                 if (this.app.driveSyncManager) {
                     this.app.driveSyncManager.refreshCloudStats()
+                }
+            })
+        }
+
+        // Reset Cloud Index button
+        const resetCloudBtn = document.getElementById('btn-reset-cloud-index')
+        if (resetCloudBtn) {
+            resetCloudBtn.addEventListener('click', () => {
+                if (this.app.driveSyncManager) {
+                    this.app.driveSyncManager.resetCloudIndex()
                 }
             })
         }

@@ -509,37 +509,77 @@ export class ScoreManager {
         const score = this.registry.find(s => s.fingerprint === fingerprint);
         if (!score) return;
 
+        let removeFromCloud = false;
+
         if (!skipConfirm) {
-            const confirmed = await this.app.showDialog({
-                title: 'Delete Score',
-                message: `Are you sure you want to delete "${score.title}"? This will also remove its annotations.`,
+            // Check if it's a cloud-related item
+            const isSynced = score.isSynced || score.isCloudOnly;
+            const isBroken = score.isCloudOnly && !score.isPdfAvailable;
+
+            const actions = [
+                { id: 'local', label: '僅刪除本地', class: 'btn-outline' },
+                { id: 'all', label: '本地與雲端一併刪除', class: 'btn-primary text-danger' },
+                { id: 'cancel', label: '取消', class: 'btn-ghost' }
+            ];
+
+            // If it's a broken sync item, emphasize clearing cloud record
+            const message = isBroken ?
+                `此樂譜為「Broken Sync」狀態 (雲端遺失檔案)。\n您要僅從本地列表移除，還是同時清除雲端索引記錄？` :
+                `確定要刪除 "${score.title}" 嗎？\n(本地數據將在刪除前匯出備份)`;
+
+            const result = isSynced ? await this.app.showDialog({
+                title: '刪除樂譜',
+                message: message,
+                type: 'actions',
+                icon: '🗑️',
+                actions: actions
+            }) : await this.app.showDialog({
+                title: '刪除樂譜',
+                message: `確定要刪除 "${score.title}" 嗎？`,
                 type: 'confirm',
                 icon: '🗑️'
             });
-            if (!confirmed) return;
+
+            if (result === 'cancel' || result === false) return;
+            if (result === 'all') removeFromCloud = true;
         }
 
-        // 0. Backup before deletion
+        // 0. Backup before deletion (Only if local buffer exists)
         try {
-            console.log(`[ScoreManager] Backing up data for ${fingerprint} before deletion...`);
-            const backupData = await this.exportScoreData(fingerprint);
-            const safeName = (score.title || 'backup').replace(/[^a-z0-9]/gi, '_');
-            this.triggerDownload(`ScoreFlow_Backup_${safeName}_${fingerprint.slice(0, 8)}.json`, backupData);
+            const buffer = await db.get(`score_buf_${fingerprint}`);
+            if (buffer) {
+                console.log(`[ScoreManager] Backing up data for ${fingerprint} before deletion...`);
+                const backupData = await this.exportScoreData(fingerprint);
+                const safeName = (score.title || 'backup').replace(/[^a-z0-9]/gi, '_');
+                this.triggerDownload(`ScoreFlow_Backup_${safeName}_${fingerprint.slice(0, 8)}.json`, backupData);
+            }
         } catch (err) {
             console.error('[ScoreManager] Backup failed, proceeding anyway:', err);
         }
 
-        // 1. Remove from registry
+        // 1. Cloud Cleanup
+        if (removeFromCloud && this.app.driveSyncManager) {
+            // Remove from manifest (Always do this)
+            await this.app.driveSyncManager.deleteManifestEntry(fingerprint);
+
+            // Optionally delete raw files from Drive if it wasn't a broken sync
+            if (!score.isCloudOnly || score.isPdfAvailable) {
+                // Background delete
+                this.app.driveSyncManager.deleteSyncFiles(fingerprint).catch(e => console.error(e));
+            }
+        }
+
+        // 2. Remove from registry
         this.registry = this.registry.filter(s => s.fingerprint !== fingerprint);
         await this.saveRegistry();
 
-        // 2. Purge Binary Buffer from IndexedDB
+        // 3. Purge Binary Buffer from IndexedDB
         await db.remove(`score_buf_${fingerprint}`);
 
-        // 3. Purge Annotations from localStorage
+        // 4. Purge Annotations from localStorage
         localStorage.removeItem(`scoreflow_stamps_${fingerprint}`);
 
-        // 4. If current score, close it
+        // 5. If current score, close it
         if (this.app.pdfFingerprint === fingerprint) {
             await this.app.closeFile();
         }

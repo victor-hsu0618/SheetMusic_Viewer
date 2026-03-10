@@ -1112,6 +1112,82 @@ export class DriveSyncManager {
     }
 
     /**
+     * Delete a score entry from the cloud manifest.
+     */
+    async deleteManifestEntry(fingerprint) {
+        if (!this.manifest || !this.manifest[fingerprint]) return;
+        delete this.manifest[fingerprint];
+        await this.saveManifest();
+        console.log(`[DriveSync] Entry ${fingerprint} deleted from manifest.`);
+    }
+
+    /**
+     * Delete both PDF and Sync JSON files for a specific fingerprint from Drive.
+     */
+    async deleteSyncFiles(fingerprint) {
+        if (!this.folderId) return;
+
+        try {
+            const pdfId = await this.findSyncFile(fingerprint, 'pdf');
+            const syncId = await this.findSyncFile(fingerprint, 'sync');
+
+            if (pdfId) {
+                await this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${pdfId}`, { method: 'DELETE' });
+                console.log(`[DriveSync] Cloud PDF ${pdfId} deleted.`);
+            }
+            if (syncId) {
+                await this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${syncId}`, { method: 'DELETE' });
+                console.log(`[DriveSync] Cloud Sync JSON ${syncId} deleted.`);
+            }
+        } catch (err) {
+            console.error(`[DriveSync] Failed to delete cloud files for ${fingerprint}:`, err);
+        }
+    }
+
+    /**
+     * Forces a full rebuild of the manifest by deleting the old one and scanning.
+     */
+    async resetCloudIndex() {
+        if (!this.isEnabled || !this.accessToken) return;
+
+        const confirmed = await this.app.showDialog({
+            title: '重置雲端索引',
+            message: '這將刪除雲端索引檔並重新掃描資料夾中的 PDF 與劃記檔案。這通常用於修復「Broken Sync」問題。確定要繼續嗎？',
+            type: 'confirm',
+            icon: '🔄'
+        });
+
+        if (!confirmed) return;
+
+        try {
+            this.addLog('正在執行雲端索引重置...', 'system');
+
+            // Delete manifest file from Drive
+            if (!this.manifestFileId) {
+                this.manifestFileId = await this.findFileByName('cloud_manifest.json');
+            }
+
+            if (this.manifestFileId) {
+                await this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${this.manifestFileId}`, { method: 'DELETE' });
+                this.manifestFileId = null;
+            }
+
+            // Clear local manifest
+            this.manifest = {};
+            this.hasScanned = false; // Force re-scan
+
+            // Re-scan
+            await this.scanRemoteSyncFiles();
+
+            this.addLog('雲端索引重置完成', 'success');
+            if (this.app.showMessage) this.app.showMessage('雲端索引已重置並完成掃描', 'success');
+        } catch (err) {
+            console.error('[DriveSync] Index reset failed:', err);
+            this.addLog('索引重置失敗: ' + err.message, 'error');
+        }
+    }
+
+    /**
      * Scans the sync folder for files matching the fingerprint pattern
      * and updates the ScoreManager registry.
      */
