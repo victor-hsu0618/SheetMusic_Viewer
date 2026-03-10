@@ -193,21 +193,101 @@ export class ScoreManager {
                     </button>
                 </div>
                 <div class="score-info">
-                    <div class="score-title">${score.title}</div>
+                    <div class="flex-row-center flex-space-between w-full">
+                        <div class="score-title text-truncate" title="${score.title}">${score.title}</div>
+                        <button class="btn-icon-mini btn-score-info" title="Score Details" data-fp="${score.fingerprint}">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </button>
+                    </div>
                     <div class="score-composer">${score.composer}</div>
                 </div>
             `;
 
-            card.onclick = (e) => {
-                if (e.target.closest('.btn-delete-score')) {
+            // Explicit Actions
+            const btnDelete = card.querySelector('.btn-delete-score');
+            const btnInfo = card.querySelector('.btn-score-info');
+            const thumbArea = card.querySelector('.score-thumb');
+            const titleArea = card.querySelector('.score-title');
+
+            if (btnDelete) {
+                btnDelete.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this.deleteScore(score.fingerprint);
-                    return;
-                }
-                this.loadScore(score.fingerprint);
-            };
+                });
+            }
+
+            if (btnInfo) {
+                btnInfo.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.app.scoreDetailManager.showPanel(score.fingerprint);
+                });
+            }
+
+            // Clicking the thumb or title opens the score
+            if (thumbArea) {
+                thumbArea.addEventListener('click', (e) => {
+                    // Only open if we didn't click the delete button inside it
+                    if (!e.target.closest('.btn-delete-score')) {
+                        this.loadScore(score.fingerprint);
+                    }
+                });
+            }
+            if (titleArea) {
+                titleArea.addEventListener('click', () => this.loadScore(score.fingerprint));
+            }
+
             this.grid.appendChild(card);
         });
+    }
+
+    /**
+     * Aggregates all data for a specific score for backup/export.
+     */
+    async exportScoreData(fingerprint) {
+        // 1. Get registry info
+        const score = this.registry.find(s => s.fingerprint === fingerprint);
+
+        // 2. Get stamps (annotations)
+        let stamps = [];
+        try {
+            const stored = localStorage.getItem(`scoreflow_stamps_${fingerprint}`);
+            if (stored) stamps = JSON.parse(stored);
+        } catch (e) { }
+
+        // 3. Get score detail (metadata/media)
+        let details = null;
+        try {
+            const stored = localStorage.getItem(`scoreflow_detail_${fingerprint}`);
+            if (stored) details = JSON.parse(stored);
+        } catch (e) { }
+
+        // 4. Get bookmarks (if any are stored globally, though currently they are filtered per score in sync)
+        // Note: For now we bundle registry, stamps, and details.
+        return {
+            fingerprint,
+            exportedAt: Date.now(),
+            app: 'ScoreFlow',
+            version: '2.1',
+            score: score || { title: 'Unknown' },
+            annotations: stamps,
+            metadata: details
+        };
+    }
+
+    triggerDownload(filename, data) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     async deleteScore(fingerprint) {
@@ -222,6 +302,16 @@ export class ScoreManager {
         });
 
         if (!confirmed) return;
+
+        // 0. Backup before deletion
+        try {
+            console.log(`[ScoreManager] Backing up data for ${fingerprint} before deletion...`);
+            const backupData = await this.exportScoreData(fingerprint);
+            const safeName = (score.title || 'backup').replace(/[^a-z0-9]/gi, '_');
+            this.triggerDownload(`ScoreFlow_Backup_${safeName}_${fingerprint.slice(0, 8)}.json`, backupData);
+        } catch (err) {
+            console.error('[ScoreManager] Backup failed, proceeding anyway:', err);
+        }
 
         // 1. Remove from registry
         this.registry = this.registry.filter(s => s.fingerprint !== fingerprint);
