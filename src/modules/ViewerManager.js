@@ -9,12 +9,33 @@ export class ViewerManager {
         this.scale = 1.5
         this.pdfFingerprint = null
         this.activeScoreName = null
+        this.observer = null
+        this._pageViewports = {} // Cache viewports for placeholder sizing
     }
 
     init() {
         if (this.app.uploader) {
             this.app.uploader.addEventListener('change', (e) => this.handleUpload(e))
         }
+
+        // Initialize IntersectionObserver for Lazy Rendering
+        this.observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const pageNum = parseInt(entry.target.dataset.page)
+                    if (entry.target.dataset.rendered === 'false') {
+                        this.renderPage(pageNum, entry.target)
+                    }
+                } else {
+                    // Memory Cleanup: If page is far away, we could potentially clear the canvas
+                    // But for sheet music, we usually keep them unless memory is extremely tight.
+                    // For now, let's keep it simple and just focus on "Render on demand".
+                }
+            })
+        }, {
+            rootMargin: '400px 0px', // Pre-render pages 400px before they appear
+            threshold: 0.01
+        })
     }
 
     async handleUpload(e) {
@@ -189,38 +210,58 @@ export class ViewerManager {
     }
 
     async renderPDF() {
+        if (!this.pdf) return
+
         // Hide welcome screen and remove only PDF pages — preserve welcome-screen DOM node
         const welcomeScreen = document.querySelector('.welcome-screen')
         if (welcomeScreen) welcomeScreen.classList.add('hidden')
 
-        this.app.container.querySelectorAll('.page-container').forEach(el => el.remove())
+        // 0. Safety Check for Observer
+        if (!this.observer) {
+            console.warn('[ViewerManager] Observer not initialized, calling init()...')
+            this.init()
+        }
+
+        this.app.container.querySelectorAll('.page-container').forEach(el => {
+            if (this.observer) this.observer.unobserve(el)
+            el.remove()
+        })
         this.pages = []
+        this._pageViewports = {}
 
-        for (let i = 1; i <= this.pdf.numPages; i++) {
-            const page = await this.pdf.getPage(i)
+        // 1. Pre-fetch all page objects in parallel to get viewports quickly
+        const pageIndices = Array.from({ length: this.pdf.numPages }, (_, i) => i + 1)
+
+        // 2. Map indices to Page Containers and Page Promises
+        const containers = pageIndices.map(i => {
             const pageWrapper = this.createPageElement(i)
+            pageWrapper.dataset.rendered = 'false'
             this.app.container.appendChild(pageWrapper)
+            return pageWrapper
+        })
 
-            const canvas = pageWrapper.querySelector('.pdf-canvas')
-            const context = canvas.getContext('2d')
+        // Fetch viewports in chunks or all at once (all at once is fine for metadata)
+        const pageObjects = await Promise.all(pageIndices.map(i => this.pdf.getPage(i)))
 
+        pageObjects.forEach((page, idx) => {
+            const i = idx + 1
+            const pageWrapper = containers[idx]
             const viewport = page.getViewport({ scale: this.scale })
+            this._pageViewports[i] = viewport
 
-            // Smart Sizing: Compute base factor relative to standard A4 (595pt width)
+            // Reservation: Set height immediately so scrollbar and observer work correctly
+            pageWrapper.style.minHeight = `${viewport.height}px`
+            pageWrapper.style.width = `${viewport.width}px`
+
+            // Smart Sizing
             const naturalViewport = page.getViewport({ scale: 1.0 })
             const pageBaseFactor = naturalViewport.width / 595.0
             this.app.pageScales[i] = pageBaseFactor
 
-            canvas.height = viewport.height
-            canvas.width = viewport.width
+            // Start observing
+            this.observer.observe(pageWrapper)
 
-            await page.render({ canvasContext: context, viewport }).promise
-
-            this.app.createAnnotationLayers(pageWrapper, i, viewport.width, viewport.height)
-            this.app.createCaptureOverlay(pageWrapper, i, viewport.width, viewport.height)
-            this.app.redrawStamps(i)
-
-            // After first page: show UI and ruler immediately so user doesn't wait for full PDF
+            // After first page: show UI early
             if (i === 1) {
                 this.showMainUI()
                 this.app.updateJumpLinePosition()
@@ -229,35 +270,73 @@ export class ViewerManager {
                 this.app.computeNextTarget()
                 this.app.updateRulerMarks()
             }
-        }
+        })
 
-        // Final ruler update after all pages are rendered (catches anchors on later pages)
+        // Final ruler update
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()
         if (this.app.inputManager) this.app.inputManager.updateDividerPositions()
     }
 
+    /**
+     * The actual rendering logic called by IntersectionObserver
+     */
+    async renderPage(pageNum, wrapper) {
+        if (!this.pdf || wrapper.dataset.rendered === 'true') return
+        wrapper.dataset.rendered = 'true'
+
+        try {
+            const page = await this.pdf.getPage(pageNum)
+            const canvas = wrapper.querySelector('.pdf-canvas')
+            const context = canvas.getContext('2d')
+            const viewport = page.getViewport({ scale: this.scale })
+
+            canvas.height = viewport.height
+            canvas.width = viewport.width
+
+            await page.render({ canvasContext: context, viewport }).promise
+
+            // Attach annotation layers once the real canvas is ready
+            this.app.createAnnotationLayers(wrapper, pageNum, viewport.width, viewport.height)
+            this.app.createCaptureOverlay(wrapper, pageNum, viewport.width, viewport.height)
+            this.app.redrawStamps(pageNum)
+
+            console.log(`[ViewerManager] Page ${pageNum} rendered lazily.`)
+        } catch (err) {
+            console.error(`[ViewerManager] Lazy render failed for page ${pageNum}:`, err)
+            wrapper.dataset.rendered = 'false' // Allow retry
+        }
+    }
+
     createPageElement(pageNum) {
         const div = document.createElement('div')
         div.className = 'page-container'
         div.dataset.page = pageNum
-        div.style.width = 'fit-content'
+        // Ensure centering and full width availability for Fit to Width
+        div.style.display = 'flex'
+        div.style.justifyContent = 'center'
+        div.style.width = '100%'
+
         div.innerHTML = `<canvas class="pdf-canvas"></canvas>`
         return div
     }
 
     createAnnotationLayers(wrapper, pageNum, width, height) {
-        const canvas = document.createElement('canvas')
-        canvas.className = 'annotation-layer virtual-canvas'
-        canvas.dataset.page = pageNum
+        // Find or create annotation layer
+        let canvas = wrapper.querySelector('.annotation-layer')
+        if (!canvas) {
+            canvas = document.createElement('canvas')
+            canvas.className = 'annotation-layer virtual-canvas'
+            canvas.dataset.page = pageNum
+            wrapper.appendChild(canvas)
+        }
         canvas.width = width
         canvas.height = height
-        wrapper.appendChild(canvas)
     }
 
     async changeZoom(delta) {
-        this.scale = Math.min(Math.max(0.5, this.scale + delta), 4)
+        this.scale = Math.min(Math.max(0.2, this.scale + delta), 4)
         this.updateZoomDisplay()
 
         if (this.pdf) await this.renderPDF()
@@ -270,10 +349,10 @@ export class ViewerManager {
         if (!this.pdf) return
         const page = await this.pdf.getPage(1)
         const naturalWidth = page.getViewport({ scale: 1 }).width
-        // Ruler is now an overlay, so we don't reserve side space for it.
-        const rulerW = 0
-        const availW = this.app.viewer.clientWidth - rulerW - 8 // 8px breathing room
-        this.scale = Math.min(Math.max(0.5, availW / naturalWidth), 4)
+
+        // Accurate width calculation: Subtract padding/margins from the viewer container
+        const availW = this.app.viewer.clientWidth - 16 // 16px safety margin
+        this.scale = Math.min(Math.max(0.2, availW / naturalWidth), 4)
         this.updateZoomDisplay()
 
         await this.renderPDF()
@@ -286,8 +365,8 @@ export class ViewerManager {
         if (!this.pdf) return
         const page = await this.pdf.getPage(1)
         const naturalHeight = page.getViewport({ scale: 1 }).height
-        const availH = this.app.viewer.clientHeight - 16 // 16px breathing room
-        this.scale = Math.min(Math.max(0.5, availH / naturalHeight), 4)
+        const availH = this.app.viewer.clientHeight - 20 // 20px safety margin
+        this.scale = Math.min(Math.max(0.2, availH / naturalHeight), 4)
         this.updateZoomDisplay()
 
         await this.renderPDF()
@@ -301,8 +380,6 @@ export class ViewerManager {
             this.app.zoomLevelDisplay.textContent = `${Math.round(this.scale * 100)}%`
         }
     }
-
-
 
     showMainUI() {
         // Reveal toolbars once a score is loaded
@@ -354,7 +431,12 @@ export class ViewerManager {
         this.activeScoreName = null
         this.pdf = null
 
-        if (this.app.container) this.app.container.querySelectorAll('.page-container').forEach(el => el.remove())
+        if (this.app.container) {
+            this.app.container.querySelectorAll('.page-container').forEach(el => {
+                if (this.observer) this.observer.unobserve(el)
+                el.remove()
+            })
+        }
         if (this.app.layerShelf) this.app.layerShelf.classList.remove('active')
         if (this.app.sidebar) this.app.sidebar.classList.remove('open')
         if (this.app.activeToolsContainer) this.app.activeToolsContainer.classList.remove('expanded')

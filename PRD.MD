@@ -10,7 +10,9 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 
 - **瀏覽模式**：採用垂直連續捲動 (Vertical Continuous Scroll)，取代傳統的一頁一頁跳轉。
 - **PDF 渲染**：整合 PDF.js，支援高解析度樂譜預覽。
-- **流暢度優化**：針對觸控 (Touch) 與滑鼠滾動進行平滑化處理。
+- **流暢度與記憶體優化 (2026.03.10 更新)**：
+  - **延遲渲染 (Lazy Rendering)**：採用 `IntersectionObserver` 技術，僅在頁面進入可視區域時才進行繪製。
+  - **分段載入**：初步僅建立佔位容器以計算正確捲動高度，大幅降低 iPad 等行動裝置的一次性記憶體負擔 (解決 OOM Crash)。
 - **全離線支援**：具備 PWA (Progressive Web App) 技術，可在無網路環境（如音樂廳）下正常運作。
 
 ### 2. 專業分層註記 (Structured Layered Annotations)

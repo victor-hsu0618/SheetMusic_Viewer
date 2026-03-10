@@ -178,6 +178,7 @@ class ScoreFlow {
     this.layerManager.init()
 
     this.initEventListeners()
+    this.viewerManager.init()
     this.rulerManager.init()
     this.docBarManager.init()
     this.inputManager.init()
