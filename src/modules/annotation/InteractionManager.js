@@ -42,42 +42,60 @@ export class InteractionManager {
         }
 
         // --- STAMP PREVIEW CONFIGURE ---
-        const STAMP_OFFSET_X_PX = 0
-        const STAMP_OFFSET_Y_PX = -60 // Default: Position preview ABOVE finger to avoid occlusion
-        const EDGE_THRESHOLD_X = 0.15
-        const EDGE_THRESHOLD_Y = 0.12
+        const STAMP_OFFSET_X_PX = -45
+        const STAMP_OFFSET_Y_PX = 65 // Base offset magnitude for calculations
 
         /**
-         * Compute preview position for stamps with smart offset to prevent finger obscuring.
+         * Compute preview position for stamps with 2D smart offset to prevent finger/mouse obscuring.
+         * Implements smooth interpolation (lerp) for both vertical and horizontal directions
+         * when approaching viewport boundaries.
          */
         const getStampPreviewPos = (pos) => {
             const rect = overlay.getBoundingClientRect()
+
+            // 1. Vertical Smart Positioning (Smooth Lerp)
             const cursorScreenY = rect.top + pos.y * rect.height
             const distFromBottom = window.innerHeight - cursorScreenY
-
-            // Base normalized position (0.0 to 1.0)
-            let nx = pos.x
-            const offsetMag = Math.abs(STAMP_OFFSET_Y_PX)
-            const TRANSITION_PX = offsetMag * 4 // lerp zone height
+            const distFromTop = cursorScreenY
+            const transY = STAMP_OFFSET_Y_PX * 4
 
             let dyPx
-            if (distFromBottom >= TRANSITION_PX) {
-                dyPx = STAMP_OFFSET_Y_PX          // normal: above cursor (-60)
-            } else if (distFromBottom <= 0) {
-                dyPx = offsetMag                  // past viewport bottom: below cursor (+60)
+            if (distFromBottom < transY) {
+                // Approaches bottom -> slide towards being below cursor (+Y)
+                const t = Math.max(0, Math.min(1, 1 - distFromBottom / transY))
+                dyPx = -STAMP_OFFSET_Y_PX + t * (STAMP_OFFSET_Y_PX * 2)
+            } else if (distFromTop < transY) {
+                // Approaches top -> slide towards being above cursor (-Y)
+                // Note: Default is already above (-60), so we stay there or nudge if needed
+                dyPx = -STAMP_OFFSET_Y_PX
             } else {
-                // Smooth interpolation: -offset → +offset over the transition zone
-                const t = 1 - distFromBottom / TRANSITION_PX
-                dyPx = STAMP_OFFSET_Y_PX + t * (offsetMag * 2)
+                dyPx = -STAMP_OFFSET_Y_PX // Default: Above
             }
 
-            // Horizontal Smart Positioning: 
-            // If near leftmost edge, nudge the preview slightly right if needed.
-            let finalOffX = STAMP_OFFSET_X_PX
-            if (nx < 0.05) finalOffX = Math.max(STAMP_OFFSET_X_PX, 2) // Shift by a few pixels if at edge
+            // 2. Horizontal Smart Positioning (Smooth Lerp)
+            const cursorScreenX = rect.left + pos.x * rect.width
+            const distFromRight = window.innerWidth - cursorScreenX
+            const distFromLeft = cursorScreenX
+            const transX = Math.abs(STAMP_OFFSET_X_PX) * 4 || 180
+
+            let dxPx
+            if (distFromRight < transX) {
+                // Approaches right -> slide towards the left side of cursor (more negative X)
+                const t = Math.max(0, Math.min(1, 1 - distFromRight / transX))
+                // If default is -45 (left), we are ALREADY on the left.
+                // If we approach the RIGHT edge, being on the left is GOOD.
+                // If we approach the LEFT edge, we need to slide to the RIGHT (+X).
+                dxPx = STAMP_OFFSET_X_PX
+            } else if (distFromLeft < transX) {
+                // Approaches left -> slide towards the right side of cursor (+X)
+                const t = Math.max(0, Math.min(1, 1 - distFromLeft / transX))
+                dxPx = STAMP_OFFSET_X_PX + t * (Math.abs(STAMP_OFFSET_X_PX) * 2)
+            } else {
+                dxPx = STAMP_OFFSET_X_PX // Default
+            }
 
             return {
-                x: Math.max(0.001, Math.min(0.999, nx + finalOffX / rect.width)),
+                x: Math.max(0.001, Math.min(0.999, pos.x + dxPx / rect.width)),
                 y: Math.max(0.001, Math.min(0.999, pos.y + dyPx / rect.height))
             }
         }
@@ -393,7 +411,11 @@ export class InteractionManager {
             let needsRedraw = false
             if (this.app.hoveredStamp) { this.app.hoveredStamp = null; needsRedraw = true }
             if (this.app.selectHoveredStamp) { this.app.selectHoveredStamp = null; needsRedraw = true }
-            if (needsRedraw || this.app.isStampTool()) this.app.redrawStamps(pageNum)
+
+            // To keep stamp preview at edge when mouse leaves, we don't clear it immediately
+            // if we are in a stamp tool.
+            if (needsRedraw) this.app.redrawStamps(pageNum)
+
             const chip = wrapper.querySelector('.erase-hover-chip')
             if (chip) chip.remove()
         })
