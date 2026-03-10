@@ -574,7 +574,7 @@ class ScoreFlow {
    */
   onAnnotationChanged() {
     if (this.driveSyncManager && this.driveSyncManager.isEnabled) {
-      this.driveSyncManager.push()
+      this.driveSyncManager.pushDebounce()
     }
   }
 

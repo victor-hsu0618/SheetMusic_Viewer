@@ -1,3 +1,5 @@
+import * as db from '../db.js';
+
 /**
  * DriveSyncManager handles all interactions with Google Drive API.
  * It follows a "clean module" design and can be enabled/disabled at runtime.
@@ -20,6 +22,16 @@ export class DriveSyncManager {
         this.cloudStats = { totalAnnotations: 0, totalPDFs: 0 };
         this.manifest = {}; // fingerprint -> { pdfId, syncId, name, updated }
         this.manifestFileId = null;
+        this.uploadStatus = {
+            json: { active: false },
+            pdf: { active: false, loaded: 0, total: 0, fileName: '' }
+        };
+        this.isManifestSaving = false;
+        this.authTimeout = null;
+        this.isAuthenticating = false;
+        this.lastSilentAttempt = 0;
+        this.silentAttemptCount = 0;
+        this.pushDebounceTimer = null;
     }
 
     /**
@@ -35,11 +47,32 @@ export class DriveSyncManager {
             client_id: this.clientId,
             scope: this.scopes,
             callback: async (response) => {
+                // Clear any pending auth timeout and status
+                this.isAuthenticating = false;
+                if (this.authTimeout) {
+                    clearTimeout(this.authTimeout);
+                    this.authTimeout = null;
+                }
+
                 if (response.error !== undefined) {
+                    this.silentAttemptCount++;
+                    console.error('[DriveSync] Auth error:', response.error);
+
+                    // Silent failures are quite common if session expired, show hint
+                    if (response.error === 'immediate_failed') {
+                        this.addLog('背景連線過期，請點擊「連接」重新授權', 'warn');
+                    } else {
+                        this.addLog(`授權發生錯誤: ${response.error}`, 'error');
+                    }
+
                     this.isEnabled = false;
                     localStorage.setItem('scoreflow_drive_sync_enabled', 'false');
-                    throw (response);
+                    this.refreshUI();
+                    return;
                 }
+
+                // Success!
+                this.silentAttemptCount = 0;
                 this.accessToken = response.access_token;
                 this.isEnabled = true;
                 localStorage.setItem('scoreflow_drive_sync_enabled', 'true');
@@ -61,17 +94,19 @@ export class DriveSyncManager {
 
                 this.refreshUI(); // Refresh UI to show sync status
                 this.startAutoSync();
-
-                // One-time scan for library sync status
-                this.scanRemoteSyncFiles();
             },
         });
 
-        // Restore state from local storage - DO NOT trigger popup on load
+        // Restore state from local storage - Attempt silent reconnect if enabled
         if (localStorage.getItem('scoreflow_drive_sync_enabled') === 'true') {
-            console.log('[DriveSync] Sync was previously enabled. Waiting for user interaction or auto-sync.');
+            const hasHint = !!localStorage.getItem('scoreflow_drive_user_hint');
+            console.log('[DriveSync] Sync was previously enabled. Attempting silent reconnect...');
             this.isEnabled = true;
-            this.startAutoSync();
+            if (hasHint) {
+                this.signIn(true); // Silent reconnect
+            } else {
+                this.startAutoSync(); // At least start timer, it will trigger guard later
+            }
         }
         this.refreshUI();
     }
@@ -177,26 +212,57 @@ export class DriveSyncManager {
     updateCloudStatsUI() {
         const statsAnnos = document.getElementById('cloud-stats-total-annotations');
         const statsPdfs = document.getElementById('cloud-stats-total-pdfs');
+        const statsPendingJson = document.getElementById('local-stats-pending-json');
+        const statsPendingPdf = document.getElementById('local-stats-pending-pdf');
+        const statsProgressJson = document.getElementById('local-stats-json-progress');
+        const statsProgressPdf = document.getElementById('local-stats-pdf-progress');
+        const statsFilenamePdf = document.getElementById('local-stats-pdf-filename');
         const folderEl = document.getElementById('cloud-stats-folder-status');
 
-        if (statsAnnos) {
-            if (this.isEnabled && this.accessToken) {
-                statsAnnos.textContent = this.cloudStats?.totalAnnotations ?? '...';
-            } else {
-                statsAnnos.textContent = '-';
-            }
-        }
+        const isCloudReady = this.isEnabled && this.accessToken;
 
-        if (statsPdfs) {
-            if (this.isEnabled && this.accessToken) {
-                statsPdfs.textContent = this.cloudStats?.totalPDFs ?? '...';
-            } else {
-                statsPdfs.textContent = '-';
+        if (statsAnnos) statsAnnos.textContent = isCloudReady ? (this.cloudStats?.totalAnnotations ?? '...') : '-';
+        if (statsPdfs) statsPdfs.textContent = isCloudReady ? (this.cloudStats?.totalPDFs ?? '...') : '-';
+
+        if (isCloudReady) {
+            const pending = this.calculateLocalPendingSync();
+            if (statsPendingJson) statsPendingJson.textContent = pending.json;
+            if (statsPendingPdf) statsPendingPdf.textContent = pending.pdf;
+
+            // Update Progress UI
+            if (statsProgressJson) {
+                statsProgressJson.classList.toggle('hidden', !this.uploadStatus.json.active);
             }
+            if (statsProgressPdf) {
+                if (this.uploadStatus.pdf.active) {
+                    statsProgressPdf.classList.remove('hidden');
+                    if (statsFilenamePdf) {
+                        statsFilenamePdf.classList.remove('hidden');
+                        statsFilenamePdf.textContent = `正在上傳: ${this.uploadStatus.pdf.fileName || '...'}`;
+                    }
+                    if (this.uploadStatus.pdf.total > 0) {
+                        const pct = Math.round((this.uploadStatus.pdf.loaded / this.uploadStatus.pdf.total) * 100);
+                        const mbLoaded = (this.uploadStatus.pdf.loaded / 1024 / 1024).toFixed(1);
+                        const mbTotal = (this.uploadStatus.pdf.total / 1024 / 1024).toFixed(1);
+                        statsProgressPdf.textContent = `${pct}% (${mbLoaded}/${mbTotal}MB)`;
+                    } else {
+                        statsProgressPdf.textContent = '準備中...';
+                    }
+                } else {
+                    statsProgressPdf.classList.add('hidden');
+                    if (statsFilenamePdf) statsFilenamePdf.classList.add('hidden');
+                }
+            }
+        } else {
+            if (statsPendingJson) statsPendingJson.textContent = '-';
+            if (statsPendingPdf) statsPendingPdf.textContent = '-';
+            if (statsProgressJson) statsProgressJson.classList.add('hidden');
+            if (statsProgressPdf) statsProgressPdf.classList.add('hidden');
+            if (statsFilenamePdf) statsFilenamePdf.classList.add('hidden');
         }
 
         if (folderEl) {
-            if (this.isEnabled && this.accessToken) {
+            if (isCloudReady) {
                 folderEl.textContent = this.folderId ? '已對接' : '初始化中...';
                 folderEl.className = 'stats-value-mini text-success';
                 folderEl.style.color = '#10b981';
@@ -206,6 +272,35 @@ export class DriveSyncManager {
                 folderEl.style.color = 'inherit';
             }
         }
+    }
+
+    /**
+     * Calculate how many local items need to be uploaded.
+     */
+    calculateLocalPendingSync() {
+        if (!this.app.scoreManager) return { json: 0, pdf: 0 };
+
+        let pendingJson = 0;
+        let pendingPdf = 0;
+
+        this.app.scoreManager.registry.forEach(score => {
+            if (score.isCloudOnly) return; // Not local
+
+            const entry = this.manifest[score.fingerprint];
+
+            // PDF Pending: If no entry in manifest OR no pdfId in entry
+            if (!entry || !entry.pdfId) {
+                pendingPdf++;
+            }
+
+            // JSON Pending: Based on registry status
+            // Note: score.isSynced is true only after successful uploadSyncData
+            if (!score.isSynced) {
+                pendingJson++;
+            }
+        });
+
+        return { json: pendingJson, pdf: pendingPdf };
     }
 
     /**
@@ -250,8 +345,43 @@ export class DriveSyncManager {
             return;
         }
 
+        // Prevention: don't overlap auth requests
+        if (this.isAuthenticating) {
+            console.log('[DriveSync] Auth already in progress, skipping.');
+            return;
+        }
+
+        // Throttling for silent reconnects to avoid loops
+        if (isSilent) {
+            const now = Date.now();
+            // If failed too many times, wait 5 minutes
+            if (this.silentAttemptCount >= 3 && (now - this.lastSilentAttempt) < 300000) {
+                console.warn('[DriveSync] Too many silent auth failures, cooling down.');
+                return;
+            }
+            this.lastSilentAttempt = now;
+        }
+
+        this.isAuthenticating = true;
         try {
-            this.addLog(isSilent ? '正在背景連線...' : '正在請求授權...', 'system');
+            // Only log if not too frequent or if manual
+            const shouldLog = !isSilent || this.silentAttemptCount === 0 || (Date.now() - this.lastSilentAttempt > 60000);
+            if (shouldLog) {
+                this.addLog(isSilent ? '正在背景連線...' : '正在請求授權...', 'system');
+            }
+
+            // Clear any existing timeout
+            if (this.authTimeout) clearTimeout(this.authTimeout);
+
+            // Set a timeout to notify user if popup doesn't return
+            this.authTimeout = setTimeout(() => {
+                if (this.authTimeout) {
+                    this.addLog(isSilent ? '背景連線超時，請點擊「連接」手動登入' : '授權請求無回應，請檢查是否有彈出式視窗被瀏覽器封鎖', 'warn');
+                    this.authTimeout = null;
+                    this.isAuthenticating = false;
+                    if (isSilent) this.silentAttemptCount++;
+                }
+            }, 20000); // 20 seconds timeout
 
             // Safari Popup Handling: ensure call is triggered from user interaction
             const options = isSilent ? {
@@ -261,6 +391,13 @@ export class DriveSyncManager {
 
             this.tokenClient.requestAccessToken(options);
         } catch (err) {
+            this.isAuthenticating = false;
+            if (isSilent) this.silentAttemptCount++;
+
+            if (this.authTimeout) {
+                clearTimeout(this.authTimeout);
+                this.authTimeout = null;
+            }
             console.error('[DriveSync] Sign-in request failed:', err);
             if (isSilent) {
                 this.addLog('背景連線被瀏覽器攔截，請手動點擊「連接」', 'warn');
@@ -299,11 +436,18 @@ export class DriveSyncManager {
     }
 
     async sync() {
-        if (!this.isEnabled || !this.accessToken || !this.app.pdfFingerprint || this.isSyncing) return;
+        if (!this.isEnabled || this.isSyncing) return;
+        this.isSyncing = true; // Guard immediately
 
-        this.isSyncing = true;
-        this.addLog('同步中: 正在檢查雲端...', 'system');
-        console.log('[DriveSync] Syncing started (Pull-then-Push)...');
+        // Sync Guard: If enabled but no token, try a silent reconnect once
+        if (!this.accessToken) {
+            console.log('[DriveSync] Enabled but no access token. Attempting silent reconnect...');
+            this.signIn(true);
+            this.isSyncing = false;
+            return;
+        }
+
+        console.log('[DriveSync] Syncing cycle started...');
 
         try {
             if (!this.folderId) {
@@ -314,25 +458,170 @@ export class DriveSyncManager {
             // Trigger library scan if not done yet
             if (!this.hasScanned) {
                 this.hasScanned = true;
-                this.scanRemoteSyncFiles();
+                await this.scanRemoteSyncFiles();
             }
 
             // 0. Sync Profile first (it's global)
             await this.syncProfile();
 
-            // 1. ALWAYS PULL FIRST to merge remote changes
-            const remoteVersion = await this.pull();
+            // 1. Sync the active score (Prioritized)
+            if (this.app.pdfFingerprint) {
+                const fingerprint = this.app.pdfFingerprint;
+                const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
+                const title = score ? score.title : 'Unknown';
+                console.log(`[DriveSync] Prioritizing active score: ${title} (${fingerprint})`);
 
-            // 2. ONLY PUSH if we are up to date or have local changes
-            // Implicitly, pull() updates this.lastSyncTime
-            await this.push(remoteVersion);
+                const entry = this.manifest[fingerprint];
+                const needsPDF = !entry || !entry.pdfId;
+
+                // Sync PDF if missing
+                if (needsPDF) {
+                    const pdfKey = `score_buf_${fingerprint}`;
+                    const pdfData = await db.get(pdfKey);
+                    if (pdfData) {
+                        await this.uploadPDF(fingerprint, pdfData, title);
+                    }
+                }
+
+                // Sync JSON/Annotations
+                const remoteVersion = await this.pull();
+                await this.push(remoteVersion);
+            }
+
+            // 2. Perform library-wide batch sync for other scores
+            await this.syncBatch();
 
         } catch (err) {
             console.error('[DriveSync] Sync failed:', err);
-            this.addLog('同步失敗: ' + (err.message || '網路異常'), 'error');
+            this.addLog('同步異常: ' + (err.message || '網路問題'), 'error');
         } finally {
             this.isSyncing = false;
+            this.updateCloudStatsUI();
+            this.refreshUI();
         }
+    }
+
+    /**
+     * Iterates through the entire registry to backup unsynced scores.
+     */
+    async syncBatch() {
+        if (!this.app.scoreManager?.registry) return;
+
+        const pending = this.calculateLocalPendingSync();
+        if (pending.json === 0 && pending.pdf === 0) {
+            // Quiet heartbeat
+            return;
+        }
+
+        let workDone = false;
+        console.log(`[Sync] Starting batch backup (${pending.json} JSON, ${pending.pdf} PDF remaining)...`);
+
+        // Find items that need sync
+        for (const score of this.app.scoreManager.registry) {
+            if (score.isCloudOnly) continue;
+
+            // Skip the current active score as it was already handled in sync()
+            if (score.fingerprint === this.app.pdfFingerprint) continue;
+
+            const entry = this.manifest[score.fingerprint];
+            const needsPDF = !entry || !entry.pdfId;
+            const needsJSON = !score.isSynced;
+
+            if (needsPDF || needsJSON) {
+                workDone = true;
+                console.log(`[Sync] Processing background score: ${score.title || 'Untitled'}`);
+                await this.syncScore(score.fingerprint, needsPDF, needsJSON);
+
+                // Yield to main thread briefly between files
+                await new Promise(r => setTimeout(r, 500));
+            }
+        }
+
+        if (workDone) {
+            console.log('[Sync] Batch sync completed.');
+        }
+    }
+
+    /**
+     * Synchronizes a specific score (PDF and/or JSON data).
+     */
+    async syncScore(fingerprint, needsPDF, needsJSON) {
+        try {
+            const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
+            if (!score) return;
+
+            // 1. Handle PDF if missing from Drive
+            if (needsPDF) {
+                const pdfKey = `score_buf_${fingerprint}`;
+                const pdfData = await db.get(pdfKey);
+                if (pdfData) {
+                    console.log(`[Sync] -> ${score.title}: PDF missing on Drive. Starting background upload...`);
+                    await this.uploadPDF(fingerprint, pdfData, score.title || 'Unknown');
+                } else {
+                    // Graceful skip if PDF is missing locally to avoid log spam
+                    console.warn(`[Sync] -> ${score.title}: Local PDF buffer (key: ${pdfKey}) not found. Skipping background backup.`);
+                }
+            }
+
+            // 2. Handle JSON (Annotations) if unsynced
+            if (needsJSON) {
+                console.log(`[Sync] -> ${score.title}: Pushing annotations...`);
+
+                const data = await this.gatherLocalData(fingerprint);
+                const prefix = this.safeTitle(score.title);
+                const fileName = `${prefix}sync_${fingerprint}.json`;
+                const fileId = await this.findSyncFile(fingerprint, 'sync');
+
+                if (fileId) {
+                    await this.updateFile(fileId, data);
+                } else {
+                    await this.createFile(fileName, data);
+                    const newId = await this.findSyncFile(fingerprint, 'sync');
+                    if (newId) {
+                        await this.updateManifestEntry(fingerprint, { syncId: newId, name: prefix.replace(/_$/, '') });
+                    }
+                }
+                score.isSynced = true;
+                console.log(`[Sync] -> ${score.title}: Annotations pushed.`);
+            }
+
+            this.updateCloudStatsUI();
+
+        } catch (err) {
+            console.error(`[Sync] Failed to sync score ${fingerprint}:`, err);
+        }
+    }
+
+    /**
+     * Robustly gathers all data for a score from various storage locations.
+     */
+    async gatherLocalData(fp) {
+        // 1. Stamps (LocalStorage)
+        let stamps = [];
+        try {
+            const stampsRaw = localStorage.getItem(`scoreflow_stamps_${fp}`);
+            stamps = stampsRaw ? JSON.parse(stampsRaw) : [];
+        } catch (e) { console.error('Failed to parse stamps for sync', e); }
+
+        // 2. Bookmarks (IndexedDB)
+        const bookmarks = await db.get(`bookmarks_${fp}`) || [];
+
+        // 3. Score Detail (LocalStorage)
+        let scoreDetail = null;
+        try {
+            const detailRaw = localStorage.getItem(`scoreflow_detail_${fp}`);
+            scoreDetail = detailRaw ? JSON.parse(detailRaw) : null;
+        } catch (e) { console.error('Failed to parse detail for sync', e); }
+
+        return {
+            stamps: stamps,
+            bookmarks: bookmarks,
+            sources: this.app.sources || [],
+            layers: this.app.layers || [],
+            scoreDetail: scoreDetail,
+            version: Date.now(),
+            fingerprint: fp
+        };
     }
 
     /**
@@ -341,54 +630,87 @@ export class DriveSyncManager {
      */
     async push(remoteVersion = 0) {
         if (!this.folderId) return;
-        const fingerprint = this.app.pdfFingerprint;
 
-        // Optimistic Locking: If remote is newer than what we just pulled (race condition), skip push
-        if (remoteVersion > (this.lastSyncTime || 0)) {
-            console.warn('[DriveSync] Push skipped: Remote is newer than local lastSyncTime.');
-            return;
+        this.uploadStatus.json.active = true;
+        this.updateCloudStatsUI();
+
+        try {
+            const fingerprint = this.app.pdfFingerprint;
+            if (!fingerprint) return;
+
+            const score = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
+            if (score && score.isSynced && remoteVersion <= (this.lastSyncTime || 0)) {
+                // Heartbeat log only in console
+                console.log(`[DriveSync] Score ${score.title} is already synced. Skipping push.`);
+                return;
+            }
+
+            // Show UI log ONLY if we are actually pushing
+            this.addLog(`正在同步當前樂譜: ${score.title}`, 'system');
+
+            // Optimistic Locking: If remote is newer than what we just pulled (race condition), skip push
+            if (remoteVersion > (this.lastSyncTime || 0)) {
+                console.warn('[DriveSync] Push skipped: Remote is newer than local lastSyncTime.');
+                return;
+            }
+
+            const stampsCount = this.app.stamps.length;
+            const bookmarksCount = this.app.jumpManager?.bookmarks?.length || 0;
+            const sourcesCount = this.app.sources?.length || 0;
+
+            const data = {
+                stamps: this.app.stamps,
+                bookmarks: this.app.jumpManager?.bookmarks || [],
+                sources: this.app.sources || [],
+                layers: this.app.layers || [],
+                scoreDetail: this.app.scoreDetailManager?.currentInfo || null,
+                version: Date.now(),
+                fingerprint: fingerprint
+            };
+
+            // Build human-readable filename: [ScoreTitle]_sync_[fingerprint].json
+            const scoreEntry = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
+            const prefix = this.safeTitle(scoreEntry?.title);
+            const fileName = `${prefix}sync_${fingerprint}.json`;
+            const fileId = await this.findSyncFile(fingerprint, 'sync');
+
+            let activeSyncId = fileId;
+            if (activeSyncId) {
+                await this.updateFile(activeSyncId, data);
+            } else {
+                await this.createFile(fileName, data);
+                activeSyncId = await this.findSyncFile(fingerprint, 'sync');
+            }
+
+            // Update Manifest
+            await this.updateManifestEntry(fingerprint, {
+                syncId: activeSyncId,
+                name: prefix.replace(/_$/, '')
+            });
+
+            const logMsg = `已上傳: ${stampsCount} 劃記, ${bookmarksCount} 書籤, ${sourcesCount} 詮釋`;
+            this.addLog(logMsg, 'success');
+            this.lastSyncTime = data.version;
+
+            // Update Library UI
+            this.app.scoreManager?.updateSyncStatus(fingerprint, true);
+        } catch (err) {
+            console.error('[DriveSync] Push failed:', err);
+            this.addLog('上傳資料失敗: ' + err.message, 'error');
+        } finally {
+            this.uploadStatus.json.active = false;
+            this.updateCloudStatsUI();
         }
+    }
 
-        const stampsCount = this.app.stamps.length;
-        const bookmarksCount = this.app.jumpManager?.bookmarks?.length || 0;
-        const sourcesCount = this.app.sources?.length || 0;
-
-        const data = {
-            stamps: this.app.stamps,
-            bookmarks: this.app.jumpManager?.bookmarks || [],
-            sources: this.app.sources || [],
-            layers: this.app.layers || [],
-            scoreDetail: this.app.scoreDetailManager?.currentInfo || null,
-            version: Date.now(),
-            fingerprint: fingerprint
-        };
-
-        // Build human-readable filename: [ScoreTitle]_sync_[fingerprint].json
-        const scoreEntry = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
-        const prefix = this.safeTitle(scoreEntry?.title);
-        const fileName = `${prefix}sync_${fingerprint}.json`;
-        const fileId = await this.findSyncFile(fingerprint, 'sync');
-
-        let activeSyncId = fileId;
-        if (activeSyncId) {
-            await this.updateFile(activeSyncId, data);
-        } else {
-            await this.createFile(fileName, data);
-            activeSyncId = await this.findSyncFile(fingerprint, 'sync');
-        }
-
-        // Update Manifest
-        await this.updateManifestEntry(fingerprint, {
-            syncId: activeSyncId,
-            name: prefix.replace(/_$/, '')
-        });
-
-        const logMsg = `已上傳: ${stampsCount} 劃記, ${bookmarksCount} 書籤, ${sourcesCount} 詮釋`;
-        this.addLog(logMsg, 'success');
-        this.lastSyncTime = data.version;
-
-        // Update Library UI
-        this.app.scoreManager?.updateSyncStatus(fingerprint, true);
+    /**
+     * Debounced push for rapid fire changes (like drawing).
+     */
+    pushDebounce(remoteVersion = 0) {
+        if (this.pushDebounceTimer) clearTimeout(this.pushDebounceTimer);
+        this.pushDebounceTimer = setTimeout(() => {
+            this.push(remoteVersion);
+        }, 2000); // 2 second delay
     }
 
     /**
@@ -683,9 +1005,22 @@ export class DriveSyncManager {
     async findSyncFile(fingerprint, type = 'sync') {
         if (!this.folderId) return null;
         // Search by fingerprint and type keyword for backward compatibility
+        // Use name = '...' for exact match if possible, but since we have prefix, we use contains or prefix search
         const keyword = type === 'pdf' ? `pdf_${fingerprint}` : `sync_${fingerprint}`;
         const response = await this.gdriveFetch(
             `https://www.googleapis.com/drive/v3/files?q=name contains '${keyword}' and '${this.folderId}' in parents and trashed=false&fields=files(id,name)&orderBy=createdTime desc`
+        );
+        const data = await response.json();
+        return data.files && data.files.length > 0 ? data.files[0].id : null;
+    }
+
+    /**
+     * Finds a file by its exact name in the sync folder.
+     */
+    async findFileByName(fileName) {
+        if (!this.folderId) return null;
+        const response = await this.gdriveFetch(
+            `https://www.googleapis.com/drive/v3/files?q=name = '${fileName}' and '${this.folderId}' in parents and trashed=false&fields=files(id,name)`
         );
         const data = await response.json();
         return data.files && data.files.length > 0 ? data.files[0].id : null;
@@ -727,7 +1062,7 @@ export class DriveSyncManager {
         if (!this.folderId) return;
         try {
             const fileName = 'cloud_manifest.json';
-            const fileId = await this.findSyncFile(fileName);
+            const fileId = await this.findFileByName(fileName);
             if (fileId) {
                 this.manifestFileId = fileId;
                 this.manifest = await this.getFileContent(fileId);
@@ -741,19 +1076,28 @@ export class DriveSyncManager {
     }
 
     async saveManifest() {
-        if (!this.folderId) return;
+        if (!this.folderId || this.isManifestSaving) return;
+        this.isManifestSaving = true;
         try {
             const fileName = 'cloud_manifest.json';
             const content = this.manifest;
+
+            // Double check fileId or existence before creating
+            if (!this.manifestFileId) {
+                this.manifestFileId = await this.findFileByName(fileName);
+            }
+
             if (this.manifestFileId) {
                 await this.updateFile(this.manifestFileId, content);
             } else {
                 await this.createFile(fileName, content);
-                // Re-find to get ID
-                this.manifestFileId = await this.findSyncFile(fileName);
+                // Re-find to get ID for next time
+                this.manifestFileId = await this.findFileByName(fileName);
             }
         } catch (err) {
             console.error('[DriveSync] Failed to save manifest:', err);
+        } finally {
+            this.isManifestSaving = false;
         }
     }
 
@@ -931,7 +1275,10 @@ export class DriveSyncManager {
 
         const fileId = await this.findSyncFile(fingerprint, 'pdf');
         if (fileId) {
-            console.log(`[DriveSync] PDF for ${fingerprint} already exists on Drive.`);
+            console.log(`[DriveSync] PDF for ${fingerprint} already exists on Drive. Updating manifest.`);
+            if (!this.manifest[fingerprint]) this.manifest[fingerprint] = {};
+            this.manifest[fingerprint].pdfId = fileId;
+            await this.saveManifest();
             return;
         }
 
@@ -961,6 +1308,15 @@ export class DriveSyncManager {
             });
 
             if (!initiateResp.ok) {
+                if (initiateResp.status === 409) {
+                    console.warn('[DriveSync] Conflict 409: PDF already exists on Drive. Recovering file ID...');
+                    const recoveredId = await this.findSyncFile(fingerprint, 'pdf');
+                    if (recoveredId) {
+                        await this.updateManifestEntry(fingerprint, { pdfId: recoveredId, name: prefix });
+                        this.addLog(`檢測到衝突: PDF 已在雲端，索引已同步。`, 'success');
+                        return;
+                    }
+                }
                 const errText = await initiateResp.text();
                 throw new Error(`Failed to initiate upload: ${initiateResp.status} ${errText}`);
             }
@@ -972,29 +1328,55 @@ export class DriveSyncManager {
             // STEP 2: Upload the actual data
             this.addLog(`正在傳送二進位數據 (${(buffer.byteLength / 1024 / 1024).toFixed(2)} MB)...`, 'system');
 
-            const uploadResp = await fetch(location, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/pdf',
-                    'Content-Length': buffer.byteLength
-                },
-                body: buffer
+            this.uploadStatus.pdf.active = true;
+            this.uploadStatus.pdf.loaded = 0;
+            this.uploadStatus.pdf.total = buffer.byteLength;
+            this.uploadStatus.pdf.fileName = originalFileName;
+            this.updateCloudStatsUI();
+
+            const uploadPromise = new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', location, true);
+                xhr.setRequestHeader('Content-Type', 'application/pdf');
+
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        this.uploadStatus.pdf.loaded = e.loaded;
+                        this.uploadStatus.pdf.total = e.total;
+                        this.updateCloudStatsUI();
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve();
+                    } else {
+                        reject(new Error(`Upload failed: ${xhr.status} ${xhr.responseText}`));
+                    }
+                };
+
+                xhr.timeout = 60000; // 60s timeout for large PDF uploads
+                xhr.ontimeout = () => reject(new Error('PDF upload timed out (60s limit).'));
+                xhr.onerror = () => reject(new Error('Network error during upload'));
+                xhr.send(buffer);
             });
 
-            if (!uploadResp.ok) {
-                const errText = await uploadResp.text();
-                throw new Error(`Upload failed: ${uploadResp.status} ${errText}`);
-            }
+            await uploadPromise;
 
             // Update Manifest
             const prefix = this.safeTitle(originalFileName).replace(/_$/, '');
+            const finalPdfId = await this.findSyncFile(fingerprint, 'pdf');
+
             await this.updateManifestEntry(fingerprint, {
-                pdfId: uploadResp.status === 200 || uploadResp.status === 201 ? (await this.findSyncFile(fingerprint, 'pdf')) : null,
+                pdfId: finalPdfId,
                 name: prefix
             });
 
             this.addLog(`樂譜檔案 ${originalFileName} 備份成功`, 'success');
             if (this.app.showMessage) this.app.showMessage(`雲端備份成功: ${originalFileName}`, 'success');
+
+            // Update local stats UI immediately so pending count decreases
+            this.updateCloudStatsUI();
 
             // Update Library UI to show the synced status
             if (this.app.scoreManager) {
@@ -1004,6 +1386,9 @@ export class DriveSyncManager {
             console.error('[DriveSync] Resumable PDF upload failed:', err);
             this.addLog(`樂譜二進位檔案備份失敗: ${err.message}`, 'error');
             if (this.app.showMessage) this.app.showMessage('雲端備份失敗', 'error');
+        } finally {
+            this.uploadStatus.pdf.active = false;
+            this.updateCloudStatsUI();
         }
     }
 

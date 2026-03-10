@@ -297,6 +297,11 @@ export class ScoreDetailManager {
 
         this.save(this.app.pdfFingerprint);
 
+        // Mark as unsynced
+        if (this.app.scoreManager) {
+            this.app.scoreManager.updateSyncStatus(this.app.pdfFingerprint, false);
+        }
+
         // Also update registry to keep them in sync for immediate UI updates (e.g. library thumbnails)
         if (this.app.scoreManager && this.currentInfo.name) {
             this.app.scoreManager.updateMetadata(this.app.pdfFingerprint, {

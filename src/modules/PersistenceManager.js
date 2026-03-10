@@ -12,6 +12,9 @@ export class PersistenceManager {
             if (this.app.scoreDetailManager) {
                 this.app.scoreDetailManager.save(this.app.pdfFingerprint)
             }
+            if (this.app.scoreManager) {
+                this.app.scoreManager.updateSyncStatus(this.app.pdfFingerprint, false);
+            }
         }
         localStorage.setItem('scoreflow_stamps', JSON.stringify(this.app.stamps))
         localStorage.setItem('scoreflow_current_fingerprint', this.app.pdfFingerprint || '')
