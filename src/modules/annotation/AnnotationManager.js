@@ -476,24 +476,33 @@ export class AnnotationManager {
             }
 
             this.app.measureStep = this.app.measureStep || 4
-            const defClamped = Math.min(999, Math.max(1, defVal))
+            const lastVal = parseInt(this.app.lastMeasureNum || 0)
+
+            // "Current" anticipated value based on last + increment
+            let currentDefVal = Math.min(999, Math.max(1, lastVal + this.app.measureStep))
             stepDisplay.textContent = this.app.measureStep
 
             let typed = ''
             const showDisplay = () => {
-                display.textContent = typed || String(defClamped)
+                // If user typed something, show it directly; otherwise show the computed "Current" val
+                display.textContent = typed || String(currentDefVal)
                 display.style.opacity = typed ? '1' : '0.45'
+                stepDisplay.textContent = this.app.measureStep
             }
             showDisplay()
 
-            const getValue = () => typed ? parseInt(typed) : defClamped
+            const getValue = () => typed ? parseInt(typed) : currentDefVal
 
-            const updateStep = (delta) => {
+            const updateIncrement = (delta) => {
+                // Adjustment logic: Update the increment AND the resulting "Current" value
                 let newStep = this.app.measureStep + delta
-                if (newStep < 1) newStep = 1
+                if (newStep < -100) newStep = -100 // Allow some back-counting if needed
                 if (newStep > 999) newStep = 999
                 this.app.measureStep = newStep
-                stepDisplay.textContent = this.app.measureStep
+
+                // Recalculate what we are placing "This Time"
+                currentDefVal = Math.min(999, Math.max(1, lastVal + this.app.measureStep))
+                showDisplay()
             }
 
             const confirm = () => {
@@ -535,8 +544,8 @@ export class AnnotationManager {
                 }
             })
 
-            if (btnDec) btnDec.onclick = () => updateStep(-1)
-            if (btnInc) btnInc.onclick = () => updateStep(1)
+            if (btnDec) btnDec.onclick = () => updateIncrement(-1)
+            if (btnInc) btnInc.onclick = () => updateIncrement(1)
             if (btnCancel) btnCancel.onclick = () => { cleanup(); resolve(null) }
 
             dialog.classList.add('active')
