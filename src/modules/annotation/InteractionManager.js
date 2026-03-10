@@ -51,26 +51,34 @@ export class InteractionManager {
          * Compute preview position for stamps with smart offset to prevent finger obscuring.
          */
         const getStampPreviewPos = (pos) => {
+            const rect = overlay.getBoundingClientRect()
+            const cursorScreenY = rect.top + pos.y * rect.height
+            const distFromBottom = window.innerHeight - cursorScreenY
+
             // Base normalized position (0.0 to 1.0)
             let nx = pos.x
-            let ny = pos.y
+            const offsetMag = Math.abs(STAMP_OFFSET_Y_PX)
+            const TRANSITION_PX = offsetMag * 4 // lerp zone height
 
-            // Convert pixel offsets to normalized coordinates based on active overlay size
-            const offX = STAMP_OFFSET_X_PX / overlay.offsetWidth
-            const offY = STAMP_OFFSET_Y_PX / overlay.offsetHeight
+            let dyPx
+            if (distFromBottom >= TRANSITION_PX) {
+                dyPx = STAMP_OFFSET_Y_PX          // normal: above cursor (-60)
+            } else if (distFromBottom <= 0) {
+                dyPx = offsetMag                  // past viewport bottom: below cursor (+60)
+            } else {
+                // Smooth interpolation: -offset → +offset over the transition zone
+                const t = 1 - distFromBottom / TRANSITION_PX
+                dyPx = STAMP_OFFSET_Y_PX + t * (offsetMag * 2)
+            }
 
-            // 1. Vertical Smart Positioning:
-            // Always use the offset (no flipping)
-            let finalOffY = offY
-
-            // 2. Horizontal Smart Positioning: 
+            // Horizontal Smart Positioning: 
             // If near leftmost edge, nudge the preview slightly right if needed.
-            let finalOffX = offX
-            if (nx < 0.05) finalOffX = Math.max(offX, 0.02)
+            let finalOffX = STAMP_OFFSET_X_PX
+            if (nx < 0.05) finalOffX = Math.max(STAMP_OFFSET_X_PX, 2) // Shift by a few pixels if at edge
 
             return {
-                x: Math.max(0.001, Math.min(0.999, nx + finalOffX)),
-                y: Math.max(0.001, Math.min(0.999, ny + finalOffY))
+                x: Math.max(0.001, Math.min(0.999, nx + finalOffX / rect.width)),
+                y: Math.max(0.001, Math.min(0.999, pos.y + dyPx / rect.height))
             }
         }
 
