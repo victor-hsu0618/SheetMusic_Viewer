@@ -267,13 +267,16 @@ export class InputManager {
                         if (tapY < vh * 0.35) {
                             this.app.jump(-1)
                             this.showZoneIndicator('up', tapX, tapY)
+                            this.flashDividers()
                         } else {
                             if (relX < pWidth * 0.40) {
                                 this.app.jump(-1)
                                 this.showZoneIndicator('left', tapX, tapY)
+                                this.flashDividers()
                             } else {
                                 this.app.jump(1)
                                 this.showZoneIndicator('right', tapX, tapY)
+                                this.flashDividers()
                             }
                         }
                     } else {
@@ -382,13 +385,16 @@ export class InputManager {
                 if (tapY < vh * 0.35) {
                     this.app.jump(-1)
                     this.showZoneIndicator('up', tapX, tapY)
+                    this.flashDividers()
                 } else {
                     if (relX < pWidth * 0.40) {
                         this.app.jump(-1)
                         this.showZoneIndicator('left', tapX, tapY)
+                        this.flashDividers()
                     } else {
                         this.app.jump(1)
                         this.showZoneIndicator('right', tapX, tapY)
+                        this.flashDividers()
                     }
                 }
             } else {
@@ -438,26 +444,55 @@ export class InputManager {
         if (firstPage) {
             const rect = firstPage.getBoundingClientRect()
             const vh = window.innerHeight
+            const pWidth = rect.width
 
-            // H Divider: 35% of viewport height, aligned to PDF width
-            hDivider.style.top = `${vh * 0.35}px`
-            hDivider.style.left = `${rect.left}px`
-            hDivider.style.width = `${rect.width}px`
+            // T-Shape intersection: y = 35% vh, x = rect.left + 40% pWidth
+            const intersectY = vh * 0.35
+            const intersectX = rect.left + pWidth * 0.40
 
-            // V Divider: Starts from 35% height down to viewport bottom, at 40% of PDF width
-            vDivider.style.top = `${vh * 0.35}px`
-            vDivider.style.height = `${vh * 0.65}px`
-            vDivider.style.left = `${rect.left + rect.width * 0.40}px`
+            // H Divider: 1/5 (20%) of PDF width, centered at intersectX
+            const hWidth = pWidth * 0.20
+            hDivider.style.top = `${intersectY}px`
+            hDivider.style.left = `${intersectX - hWidth / 2}px`
+            hDivider.style.width = `${hWidth}px`
+
+            // V Divider: T-Shape (Vertical DOWN only)
+            // Length is 1/5 (20%) of screen height
+            const vHeight = vh * 0.20
+            vDivider.style.top = `${intersectY}px` // Start from intersectY
+            vDivider.style.left = `${intersectX}px`
+            vDivider.style.height = `${vHeight}px`
         } else {
-            // Fallback: full width
+            // Fallback: T-Shape
             hDivider.style.top = '35%'
-            hDivider.style.left = '0'
-            hDivider.style.width = '100%'
+            hDivider.style.left = '30%'
+            hDivider.style.width = '20%'
 
-            vDivider.style.top = '35%'
-            vDivider.style.height = '65%'
+            vDivider.style.top = '35%' // Start from 35%
             vDivider.style.left = '40%'
+            vDivider.style.height = '20%'
         }
+    }
+
+    flashDividers() {
+        // Only flash if setting is enabled via body class
+        if (!document.body.classList.contains('show-nav-dividers')) return
+
+        const hDivider = document.getElementById('nav-divider-h')
+        const vDivider = document.getElementById('nav-divider-v')
+        if (!hDivider || !vDivider) return
+
+        // Cancel previous sequence if any
+        if (this._flashTimeout) clearTimeout(this._flashTimeout)
+
+        hDivider.classList.add('active')
+        vDivider.classList.add('active')
+
+        this._flashTimeout = setTimeout(() => {
+            hDivider.classList.remove('active')
+            vDivider.classList.remove('active')
+            this._flashTimeout = null
+        }, 500)
     }
 
     showZoneIndicator(type, x, y) {
