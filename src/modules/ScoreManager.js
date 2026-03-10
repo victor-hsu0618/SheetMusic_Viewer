@@ -190,21 +190,24 @@ export class ScoreManager {
      * Uses Web Crypto API if available, falls back to a simple fast hash for non-secure contexts (iPad/LAN).
      */
     async calculateFingerprint(buffer) {
+        // Ensure we are hashing the actual bytes, not a potentially larger shared buffer
+        const bytes = (buffer instanceof ArrayBuffer) ? new Uint8Array(buffer) : buffer
+        const bufferToHash = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+
         if (window.crypto && window.crypto.subtle) {
-            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', bufferToHash);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
         // Fallback: Simple fast hash (Murmur-like) for non-HTTPS LAN access (iPad)
         console.warn('[ScoreManager] crypto.subtle unavailable. Using fallback fast-hash.');
-        let hash = 0;
-        const view = new Uint8Array(buffer);
-        for (let i = 0; i < view.length; i++) {
-            hash = ((hash << 5) - hash) + view[i];
-            hash |= 0; // Convert to 32bit integer
+        let hash = 5381
+        for (let i = 0; i < bytes.length; i += 64) {
+            hash = ((hash << 5) + hash) ^ bytes[i]
+            hash = hash >>> 0 // keep as unsigned 32-bit
         }
-        return 'fallback_' + Math.abs(hash).toString(16) + '_' + view.length;
+        return 'fallback_' + hash.toString(16) + '_' + bytes.length;
     }
 
     /**
@@ -510,7 +513,12 @@ export class ScoreManager {
                 console.log('[ScoreManager] loadPDF call initiated.');
             } catch (err) {
                 console.error('[ScoreManager] Error during loadPDF:', err);
-                this.app.showMessage('Failed to render PDF.', 'error');
+                let msg = err.message || err.toString();
+                if (msg.includes('InvalidPDFException')) {
+                    this.app.showMessage('樂譜檔案格式損毀或無效 (Invalid PDF)', 'error');
+                } else {
+                    this.app.showMessage('Failed to render PDF.', 'error');
+                }
             }
         } else {
             console.error(`[ScoreManager] Failed: No binary content found for ${score.fileName}.`);
