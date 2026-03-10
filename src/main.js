@@ -251,6 +251,7 @@ class ScoreFlow {
   // UI Proxies
   toggleSettings(force) { this.settingsPanelManager.toggle(force) }
   toggleLibrary(force) { this.scoreManager.toggleOverlay(force) }
+  toggleScoreDetail(force) { this.scoreDetailManager.toggle(force) }
 
   toggleDocBar() {
     if (this.docBarManager) this.docBarManager.toggleDocBar()
@@ -284,6 +285,7 @@ class ScoreFlow {
     this.openPdfBtn = document.getElementById('open-pdf-btn')
     this.btnSettingsToggle = document.getElementById('btn-settings-toggle')
     this.btnLibraryToggle = document.getElementById('btn-library-toggle')
+    this.btnScoreDetailToggle = document.getElementById('btn-score-detail-toggle')
     this.layerList = document.getElementById('layer-list')
     this.btnFitWidth = document.getElementById('view-fit-width')
     this.btnFitHeight = document.getElementById('view-fit-height')
@@ -408,6 +410,15 @@ class ScoreFlow {
     }
     if (this.btnLibraryToggle) {
       this.btnLibraryToggle.addEventListener('click', () => this.toggleLibrary())
+    }
+    if (this.btnScoreDetailToggle) {
+      this.btnScoreDetailToggle.addEventListener('click', () => {
+        if (!this.pdfFingerprint) {
+          this.showMessage('Please open a score first.', 'info');
+          return;
+        }
+        this.toggleScoreDetail();
+      })
     }
 
     const libraryCloseBtn = document.getElementById('btn-close-library')

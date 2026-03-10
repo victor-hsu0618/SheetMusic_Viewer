@@ -12,6 +12,11 @@ export class ScoreManager {
         this.overlay = null;
         this.grid = null;
         this.isLoaded = false;
+
+        // Selection Mode
+        this.isSelectionMode = false;
+        this.selectedFingerprints = new Set();
+        this.showHidden = false; // Toggle to view hidden files
     }
 
     async init() {
@@ -28,6 +33,72 @@ export class ScoreManager {
 
         // 3. Migrate legacy data if needed
         await this.migrateLegacyData();
+
+        this.initLibraryHeader();
+        this.initBatchBar();
+    }
+
+    initLibraryHeader() {
+        const btnSelect = document.getElementById('btn-library-select');
+        if (btnSelect) {
+            btnSelect.addEventListener('click', () => this.toggleSelectionMode());
+        }
+    }
+
+    initBatchBar() {
+        this.batchBar = document.getElementById('library-batch-bar');
+        const btnCancel = document.getElementById('batch-cancel-btn');
+        const btnDelete = document.getElementById('batch-delete-btn');
+        const btnBackup = document.getElementById('batch-backup-btn');
+        const btnHide = document.getElementById('batch-hide-btn');
+
+        if (btnCancel) btnCancel.onclick = () => this.toggleSelectionMode(false);
+        if (btnDelete) btnDelete.onclick = () => this.batchDelete();
+        if (btnBackup) btnBackup.onclick = () => this.batchBackup();
+        if (btnHide) btnHide.onclick = () => this.batchHide();
+    }
+
+    toggleSelectionMode(force) {
+        this.isSelectionMode = force !== undefined ? force : !this.isSelectionMode;
+        if (!this.isSelectionMode) {
+            this.selectedFingerprints.clear();
+        }
+
+        if (this.overlay) {
+            this.overlay.classList.toggle('selection-mode', this.isSelectionMode);
+        }
+
+        const btnSelect = document.getElementById('btn-library-select');
+        if (btnSelect) {
+            btnSelect.textContent = this.isSelectionMode ? 'Done' : 'Select';
+            btnSelect.classList.toggle('btn-primary', this.isSelectionMode);
+        }
+
+        this.updateBatchBar();
+        this.render();
+    }
+
+    updateBatchBar() {
+        if (!this.batchBar) return;
+        const count = this.selectedFingerprints.size;
+        const active = this.isSelectionMode && count > 0;
+
+        this.batchBar.classList.toggle('hidden', !active);
+
+        const countDisplay = this.batchBar.querySelector('.batch-count');
+        if (countDisplay) {
+            countDisplay.textContent = `${count} item${count !== 1 ? 's' : ''} selected`;
+        }
+    }
+
+    toggleSelectScore(fingerprint) {
+        if (this.selectedFingerprints.has(fingerprint)) {
+            this.selectedFingerprints.delete(fingerprint);
+        } else {
+            this.selectedFingerprints.add(fingerprint);
+        }
+        this.updateBatchBar();
+        this.render();
     }
 
     /**
@@ -177,20 +248,35 @@ export class ScoreManager {
             return;
         }
 
-        // Sort by last accessed
-        const sorted = [...this.registry].sort((a, b) => b.lastAccessed - a.lastAccessed);
+        // Sort by last accessed and filter hidden
+        let sorted = [...this.registry]
+            .filter(s => this.showHidden || !s.hidden)
+            .sort((a, b) => b.lastAccessed - a.lastAccessed);
+
+        if (sorted.length === 0 && this.registry.length > 0) {
+            this.grid.innerHTML = '<div class="library-empty">No items match current filters.</div>';
+            return;
+        }
 
         sorted.forEach(score => {
             const card = document.createElement('div');
             card.className = 'score-card';
+
+            if (this.isSelectionMode) {
+                card.classList.add('selectable');
+                if (this.selectedFingerprints.has(score.fingerprint)) {
+                    card.classList.add('selected');
+                }
+            }
+
             card.innerHTML = `
                 <div class="score-thumb">
                     ${score.thumbnail ? `<img src="${score.thumbnail}" alt="${score.title}">` : '🎼'}
-                    <button class="btn-delete-score" title="Delete Score" data-fp="${score.fingerprint}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <div class="selection-indicator">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
+                            <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
-                    </button>
+                    </div>
                 </div>
                 <div class="score-info">
                     <div class="flex-row-center flex-space-between w-full">
@@ -207,41 +293,86 @@ export class ScoreManager {
                 </div>
             `;
 
-            // Explicit Actions
-            const btnDelete = card.querySelector('.btn-delete-score');
-            const btnInfo = card.querySelector('.btn-score-info');
-            const thumbArea = card.querySelector('.score-thumb');
-            const titleArea = card.querySelector('.score-title');
-
-            if (btnDelete) {
-                btnDelete.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.deleteScore(score.fingerprint);
-                });
-            }
-
-            if (btnInfo) {
-                btnInfo.addEventListener('click', (e) => {
+            // Interaction Logic
+            card.onclick = (e) => {
+                // Priority 1: Info button
+                if (e.target.closest('.btn-score-info')) {
                     e.stopPropagation();
                     this.app.scoreDetailManager.showPanel(score.fingerprint);
-                });
-            }
+                    return;
+                }
 
-            // Clicking the thumb or title opens the score
-            if (thumbArea) {
-                thumbArea.addEventListener('click', (e) => {
-                    // Only open if we didn't click the delete button inside it
-                    if (!e.target.closest('.btn-delete-score')) {
-                        this.loadScore(score.fingerprint);
-                    }
-                });
-            }
-            if (titleArea) {
-                titleArea.addEventListener('click', () => this.loadScore(score.fingerprint));
-            }
+                // Priority 2: Selection Mode
+                if (this.isSelectionMode) {
+                    this.toggleSelectScore(score.fingerprint);
+                    return;
+                }
+
+                // Priority 3: Normal Open
+                this.loadScore(score.fingerprint);
+            };
 
             this.grid.appendChild(card);
         });
+    }
+
+    /**
+     * Batch Actions
+     */
+    async batchDelete() {
+        const count = this.selectedFingerprints.size;
+        if (count === 0) return;
+
+        const confirmed = await this.app.showDialog({
+            title: 'Batch Delete',
+            message: `Are you sure you want to delete ${count} scores? All annotations will be backed up locally before purging.`,
+            type: 'confirm',
+            icon: '🗑️'
+        });
+
+        if (!confirmed) return;
+
+        // Process each selected fingerprint
+        for (const fp of this.selectedFingerprints) {
+            await this.deleteScore(fp, true); // Pass skipConfirm=true
+        }
+
+        this.toggleSelectionMode(false);
+    }
+
+    async batchBackup() {
+        const count = this.selectedFingerprints.size;
+        if (count === 0) return;
+
+        this.app.showMessage(`Backing up ${count} items...`, 'system');
+
+        const totalBackup = {
+            exportedAt: Date.now(),
+            type: 'batch_backup',
+            items: []
+        };
+
+        for (const fp of this.selectedFingerprints) {
+            const itemData = await this.exportScoreData(fp);
+            totalBackup.items.push(itemData);
+        }
+
+        this.triggerDownload(`ScoreFlow_Batch_Backup_${Date.now()}.json`, totalBackup);
+        this.app.showMessage('Batch backup completed.', 'success');
+    }
+
+    async batchHide() {
+        const count = this.selectedFingerprints.size;
+        if (count === 0) return;
+
+        for (const fp of this.selectedFingerprints) {
+            const score = this.registry.find(s => s.fingerprint === fp);
+            if (score) score.hidden = true;
+        }
+
+        await this.saveRegistry();
+        this.toggleSelectionMode(false);
+        this.app.showMessage(`${count} scores hidden.`, 'info');
     }
 
     /**
@@ -265,8 +396,6 @@ export class ScoreManager {
             if (stored) details = JSON.parse(stored);
         } catch (e) { }
 
-        // 4. Get bookmarks (if any are stored globally, though currently they are filtered per score in sync)
-        // Note: For now we bundle registry, stamps, and details.
         return {
             fingerprint,
             exportedAt: Date.now(),
@@ -290,18 +419,19 @@ export class ScoreManager {
         URL.revokeObjectURL(url);
     }
 
-    async deleteScore(fingerprint) {
+    async deleteScore(fingerprint, skipConfirm = false) {
         const score = this.registry.find(s => s.fingerprint === fingerprint);
         if (!score) return;
 
-        const confirmed = await this.app.showDialog({
-            title: 'Delete Score',
-            message: `Are you sure you want to delete "${score.title}"? This will also remove its annotations.`,
-            type: 'confirm',
-            icon: '🗑️'
-        });
-
-        if (!confirmed) return;
+        if (!skipConfirm) {
+            const confirmed = await this.app.showDialog({
+                title: 'Delete Score',
+                message: `Are you sure you want to delete "${score.title}"? This will also remove its annotations.`,
+                type: 'confirm',
+                icon: '🗑️'
+            });
+            if (!confirmed) return;
+        }
 
         // 0. Backup before deletion
         try {

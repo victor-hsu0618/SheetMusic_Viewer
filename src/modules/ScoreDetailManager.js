@@ -13,10 +13,13 @@ export class ScoreDetailManager {
             stampScale: 1.0
         }
         this.isLoading = false
+        this.panel = null
+        this.currentFp = null
     }
 
     init() {
-        // UI Elements
+        this.panel = document.getElementById('score-detail-panel')
+        this.btnClose = document.getElementById('btn-close-score-detail')
         this.scoreNameInput = document.getElementById('score-name-input')
         this.scoreComposerInput = document.getElementById('score-composer-input')
         this.scoreFilenameDisplay = document.getElementById('score-filename-display')
@@ -39,6 +42,10 @@ export class ScoreDetailManager {
     }
 
     initEventListeners() {
+        if (this.btnClose) {
+            this.btnClose.addEventListener('click', () => this.toggle(false))
+        }
+
         if (this.scoreNameInput) {
             this.scoreNameInput.addEventListener('input', () => this.handleInputChange())
         }
@@ -188,6 +195,25 @@ export class ScoreDetailManager {
         this.onModification() // Update timestamp for sync
     }
 
+    toggle(force) {
+        if (!this.panel) return
+        const active = force !== null ? force : !this.panel.classList.contains('active')
+        this.panel.classList.toggle('active', active)
+        if (active) {
+            // Bring to front among panels
+            document.querySelectorAll('.jump-sub-panel').forEach(p => p.style.zIndex = '1000')
+            this.panel.style.zIndex = '1001'
+            this.refreshStats()
+        }
+    }
+
+    async showPanel(fingerprint) {
+        this.currentFp = fingerprint || this.app.pdfFingerprint
+        if (!this.currentFp) return
+        await this.load(this.currentFp)
+        this.toggle(true)
+    }
+
     async load(fingerprint) {
         if (!fingerprint) return
         this.isLoading = true
@@ -250,11 +276,15 @@ export class ScoreDetailManager {
         this.scoreComposerInput.value = this.currentInfo.composer || ''
 
         // Update meta displays
-        if (this.scoreFilenameDisplay) {
-            this.scoreFilenameDisplay.textContent = this.app.activeScoreName || 'Unknown File'
-        }
         if (this.scoreFingerprintDisplay) {
-            this.scoreFingerprintDisplay.textContent = fingerprint ? (fingerprint.slice(0, 16) + '...') : 'Unknown'
+            this.scoreFingerprintDisplay.textContent = fingerprint ? fingerprint : 'Unknown'
+            this.scoreFingerprintDisplay.title = fingerprint || ''
+        }
+
+        // Specific file info if multiple
+        const regScore = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint)
+        if (this.scoreFilenameDisplay) {
+            this.scoreFilenameDisplay.textContent = regScore ? regScore.fileName : (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName : 'Unknown File')
         }
 
         // Render Media List
