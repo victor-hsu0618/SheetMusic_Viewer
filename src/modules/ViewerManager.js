@@ -40,6 +40,10 @@ export class ViewerManager {
         const file = e.target.files[0]
         if (!file) return
 
+        if (this.app.showMessage) {
+            this.app.showMessage(`正在讀取檔案: ${file.name}...`, 'system')
+        }
+
         console.log(`Starting upload for: ${file.name}, size: ${file.size} bytes`)
 
         const loaderId = 'ipad-upload-loader'

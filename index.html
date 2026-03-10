@@ -21,6 +21,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="/src/styles/playback.css" />
+  <link rel="stylesheet" href="/src/styles/toast.css" />
   <style>
     /* Anti-FOUC: welcome-screen covers entire viewport at highest z-index */
     .welcome-screen:not(.hidden) {
@@ -371,6 +372,17 @@
           </svg>
           <span>Score Library</span>
         </div>
+        <div class="library-search-container">
+          <div class="search-input-wrapper">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="library-search-input" placeholder="搜尋樂譜標題或作曲家..." spellcheck="false" />
+            <button id="btn-library-search-clear" class="search-clear-btn hidden">✕</button>
+          </div>
+        </div>
         <div class="library-actions">
           <button id="btn-library-select" class="btn btn-outline-sm">Select</button>
           <div id="library-import-btn" class="btn btn-primary btn-import-wrapper">
@@ -484,7 +496,8 @@
             </div>
             <div class="stats-item-mini">
               <div class="stats-label-mini" style="grid-column: span 2;">雲端檔案庫狀態</div>
-              <div id="cloud-stats-folder-status" class="stats-value-mini" style="grid-column: span 2; color: #10b981;">未連結</div>
+              <div id="cloud-stats-folder-status" class="stats-value-mini" style="grid-column: span 2; color: #10b981;">
+                未連結</div>
             </div>
           </div>
           <button id="btn-refresh-cloud-stats" class="btn btn-outline btn-full btn-smaller mt-10">
@@ -982,6 +995,8 @@
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script type="module" src="/src/main.js"></script>
+  <!-- Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
 </body>
 
 </html>

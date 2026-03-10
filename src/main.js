@@ -439,13 +439,14 @@ class ScoreFlow {
       });
 
       input.addEventListener('change', async (e) => {
-        console.log('[ScoreFlow] Library Import triggered');
         const file = e.target.files[0]
-        if (!file) {
-          console.warn('[ScoreFlow] No file selected');
-          return
-        }
-        console.log(`[ScoreFlow] Importing file: ${file.name}, size: ${file.size}`);
+        if (!file) return
+
+        console.log(`[ScoreFlow] Library Import triggered: ${file.name} (${file.size} bytes)`);
+
+        // Show immediate feedback BEFORE heavy file reading
+        this.showMessage(`正在讀取檔案: ${file.name}...`, 'system');
+
         try {
           const buf = await file.arrayBuffer()
           console.log('[ScoreFlow] ArrayBuffer loaded, starting ScoreManager.importScore');
@@ -702,6 +703,45 @@ class ScoreFlow {
       this.scoreDetailManager.save(this.pdfFingerprint)
     }
     this.redrawAllAnnotationLayersDebounced()
+  }
+
+  /**
+   * Provide non-intrusive UI feedback via toast notifications.
+   * @param {string} msg - Message to display.
+   * @param {string} type - 'success', 'error', 'info', 'system'.
+   */
+  showMessage(msg, type = 'info') {
+    const container = document.getElementById('toast-container')
+    if (!container) {
+      console.warn('[ScoreFlow] Toast container not found. Fallback to alert:', msg)
+      if (type === 'error') alert(msg)
+      return
+    }
+
+    const toast = document.createElement('div')
+    toast.className = `toast ${type}`
+
+    const icons = {
+      success: '✅',
+      error: '❌',
+      info: 'ℹ️',
+      system: '⚙️'
+    }
+
+    toast.innerHTML = `
+      <div class="toast-icon">${icons[type] || '🔔'}</div>
+      <div class="toast-message">${msg}</div>
+    `
+    container.appendChild(toast)
+
+    // Trigger animation
+    setTimeout(() => toast.classList.add('active'), 10)
+
+    // Auto-remove
+    setTimeout(() => {
+      toast.classList.add('removing')
+      toast.addEventListener('transitionend', () => toast.remove())
+    }, 4000)
   }
 }
 

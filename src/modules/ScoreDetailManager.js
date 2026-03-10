@@ -297,6 +297,14 @@ export class ScoreDetailManager {
 
         this.save(this.app.pdfFingerprint);
 
+        // Also update registry to keep them in sync for immediate UI updates (e.g. library thumbnails)
+        if (this.app.scoreManager && this.currentInfo.name) {
+            this.app.scoreManager.updateMetadata(this.app.pdfFingerprint, {
+                title: this.currentInfo.name,
+                composer: this.currentInfo.composer || 'Unknown'
+            });
+        }
+
         // If the Detail tab is currently active, refresh UI immediately
         const activeTab = document.querySelector('.sidebar-tab.active');
         if (activeTab && activeTab.dataset.tab === 'score-detail') {
@@ -369,19 +377,20 @@ export class ScoreDetailManager {
         await this.load(this.currentFp)
         this.toggle(true)
     }
-
     async load(fingerprint) {
         if (!fingerprint) return
         this.isLoading = true
 
         const detailData = localStorage.getItem(`scoreflow_detail_${fingerprint}`)
+        const regScore = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
+
         if (detailData) {
             try {
                 const info = JSON.parse(detailData)
                 this.currentInfo = {
-                    name: info.name || '',
-                    composer: info.composer || '',
-                    lastEdit: info.lastEdit || 0, // Ensure numeric 0 for sync LWW
+                    name: info.name || (regScore?.title) || '',
+                    composer: info.composer || (regScore?.composer) || '',
+                    lastEdit: info.lastEdit || 0,
                     lastAuthor: info.lastAuthor || null,
                     mediaList: info.mediaList || (info.media ? [{ id: 'legacy', label: 'Default Video', ...info.media }] : []),
                     activeMediaId: info.activeMediaId || (info.media ? 'legacy' : null),
@@ -390,14 +399,21 @@ export class ScoreDetailManager {
                 this.app.scoreStampScale = this.currentInfo.stampScale
             } catch (err) {
                 console.error('[ScoreDetailManager] Failed to parse score detail data:', err)
-                this.currentInfo = { name: '', composer: '', lastEdit: 0, mediaList: [], activeMediaId: null }
+                this.currentInfo = {
+                    name: regScore?.title || '',
+                    composer: regScore?.composer || '',
+                    lastEdit: 0,
+                    mediaList: [],
+                    activeMediaId: null,
+                    stampScale: 1.0
+                }
             }
         } else {
             // New score defaults
             this.currentInfo = {
-                name: this.app.activeScoreName ? this.app.activeScoreName.replace(/\.pdf$/i, '') : '',
-                composer: '',
-                lastEdit: 0, // NEW FILE: 0 timestamp means remote will always win
+                name: (regScore?.title) || (this.app.activeScoreName ? this.app.activeScoreName.replace(/\.pdf$/i, '') : ''),
+                composer: (regScore?.composer) || '',
+                lastEdit: 0,
                 mediaList: [],
                 activeMediaId: null,
                 stampScale: 1.0

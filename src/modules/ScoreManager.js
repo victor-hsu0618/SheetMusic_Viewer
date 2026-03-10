@@ -17,6 +17,7 @@ export class ScoreManager {
         this.isSelectionMode = false;
         this.selectedFingerprints = new Set();
         this.showHidden = false; // Toggle to view hidden files
+        this.searchQuery = '';
     }
 
     async init() {
@@ -42,6 +43,33 @@ export class ScoreManager {
         const btnSelect = document.getElementById('btn-library-select');
         if (btnSelect) {
             btnSelect.addEventListener('click', () => this.toggleSelectionMode());
+        }
+        this.initSearch();
+    }
+
+    initSearch() {
+        const searchInput = document.getElementById('library-search-input');
+        const searchClear = document.getElementById('btn-library-search-clear');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.searchQuery = e.target.value.toLowerCase().trim();
+                if (searchClear) {
+                    searchClear.classList.toggle('hidden', this.searchQuery.length === 0);
+                }
+                this.render();
+            });
+        }
+
+        if (searchClear) {
+            searchClear.addEventListener('click', () => {
+                if (searchInput) {
+                    searchInput.value = '';
+                    this.searchQuery = '';
+                    searchClear.classList.add('hidden');
+                    this.render();
+                }
+            });
         }
     }
 
@@ -106,12 +134,14 @@ export class ScoreManager {
      */
     async importScore(file, buffer) {
         console.log(`[ScoreManager] importScore started for: ${file.name}`);
+
         const fingerprint = await this.calculateFingerprint(buffer);
         console.log(`[ScoreManager] Fingerprint: ${fingerprint}`);
         const existing = this.registry.find(s => s.fingerprint === fingerprint);
 
         if (existing) {
             console.log('[ScoreManager] Score already exists in registry, updating timestamp');
+            this.app.showMessage('樂譜已存在於書庫中', 'info');
             existing.lastAccessed = Date.now();
             await this.saveRegistry();
             return existing;
@@ -145,13 +175,19 @@ export class ScoreManager {
 
             // Trigger Drive Upload
             if (this.app.driveSyncManager && this.app.driveSyncManager.isEnabled) {
-                this.app.driveSyncManager.uploadPDF(fingerprint, buffer.slice(0), file.name).catch(e => console.error(e));
+                // Don't await upload to keep UI responsive
+                this.app.driveSyncManager.uploadPDF(fingerprint, buffer.slice(0), file.name).catch(e => {
+                    console.error('[ScoreManager] Background upload failed:', e);
+                    this.app.showMessage('雲端備份失敗，但本地匯入已完成', 'system');
+                });
             }
 
+            this.app.showMessage(`樂譜匯入成功: ${file.name}`, 'success');
             this.render();
             return newEntry;
         } catch (err) {
             console.error('[ScoreManager] importScore failed:', err);
+            this.app.showMessage(`匯入失敗: ${err.message}`, 'error');
             throw err;
         }
     }
@@ -256,9 +292,22 @@ export class ScoreManager {
             return;
         }
 
-        // Sort by last accessed and filter hidden
+        // Sort by last accessed and filter hidden/search
         let sorted = [...this.registry]
-            .filter(s => this.showHidden || !s.hidden)
+            .filter(s => {
+                // Hidden filter
+                if (!this.showHidden && s.hidden) return false;
+
+                // Search filter
+                if (this.searchQuery) {
+                    const titleMatch = (s.title || '').toLowerCase().includes(this.searchQuery);
+                    const composerMatch = (s.composer || '').toLowerCase().includes(this.searchQuery);
+                    const fileMatch = (s.fileName || '').toLowerCase().includes(this.searchQuery);
+                    return titleMatch || composerMatch || fileMatch;
+                }
+
+                return true;
+            })
             .sort((a, b) => b.lastAccessed - a.lastAccessed);
 
         if (sorted.length === 0 && this.registry.length > 0) {
@@ -302,11 +351,14 @@ export class ScoreManager {
                     </div>
 
                     <!-- Cloud Sync Status Icon -->
-                    <div class="cloud-sync-status ${score.isSynced ? 'synced' : 'not-synced'}" 
-                         title="${score.isSynced ? '已同步至雲端' : '已匯入本地 (尚未同步)'}">
+                    <div class="cloud-sync-status ${score.isSynced ? 'synced' : 'not-synced'} ${(score.isCloudOnly && !score.isPdfAvailable) ? 'broken' : ''}" 
+                         title="${score.isSynced ? (score.isPdfAvailable ? '已同步至雲端' : '同步異常：雲端找不到 PDF 檔案') : '已匯入本地 (尚未同步)'}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-                            ${score.isSynced ? '' : '<line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.5" opacity="0.5" />'}
+                            ${(score.isCloudOnly && !score.isPdfAvailable) ?
+                    '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>' :
+                    '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />'
+                }
+                            ${(!score.isSynced && !score.isCloudOnly) ? '<line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.5" opacity="0.5" />' : ''}
                         </svg>
                     </div>
 
@@ -506,6 +558,10 @@ export class ScoreManager {
         this.toggleOverlay(false);
 
         if (score.isCloudOnly) {
+            if (score.isPdfAvailable === false) {
+                this.app.showMessage('下載失敗：雲端找不到此樂譜的實體 PDF 檔案 (Broken Sync)', 'error');
+                return;
+            }
             this.app.showMessage('正在從雲端下載樂譜 PDF...', 'system');
             try {
                 if (this.app.driveSyncManager) {
