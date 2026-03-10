@@ -20,6 +20,16 @@ export async function set(key, value) {
     });
 }
 
+export async function remove(key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('store', 'readwrite');
+        const request = transaction.objectStore('store').delete(key);
+        request.onsuccess = () => resolve();
+        request.onerror = reject;
+    });
+}
+
 export async function clear() {
     const db = await openDB();
     return new Promise((resolve, reject) => {

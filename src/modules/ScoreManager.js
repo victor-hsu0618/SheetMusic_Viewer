@@ -34,37 +34,50 @@ export class ScoreManager {
      * Import a new PDF into the library.
      */
     async importScore(file, buffer) {
+        console.log(`[ScoreManager] importScore started for: ${file.name}`);
         const fingerprint = await this.calculateFingerprint(buffer);
+        console.log(`[ScoreManager] Fingerprint: ${fingerprint}`);
         const existing = this.registry.find(s => s.fingerprint === fingerprint);
 
         if (existing) {
+            console.log('[ScoreManager] Score already exists in registry, updating timestamp');
             existing.lastAccessed = Date.now();
             await this.saveRegistry();
             return existing;
         }
 
-        // Generate Thumbnail (passing a slice to avoid detaching the main buffer)
-        const thumbnail = await this.generateThumbnail(buffer.slice(0));
+        try {
+            // Generate Thumbnail (passing a slice to avoid detaching the main buffer)
+            console.log('[ScoreManager] Generating thumbnail...');
+            const thumbnail = await this.generateThumbnail(buffer.slice(0));
+            console.log('[ScoreManager] Thumbnail generated');
 
-        const newEntry = {
-            fingerprint: fingerprint,
-            title: file.name.replace(/\.pdf$/i, ''),
-            fileName: file.name,
-            composer: 'Unknown',
-            thumbnail: thumbnail,
-            dateImported: Date.now(),
-            lastAccessed: Date.now(),
-            tags: []
-        };
+            const newEntry = {
+                fingerprint: fingerprint,
+                title: file.name.replace(/\.pdf$/i, ''),
+                fileName: file.name,
+                composer: 'Unknown',
+                thumbnail: thumbnail,
+                dateImported: Date.now(),
+                lastAccessed: Date.now(),
+                tags: []
+            };
 
-        this.registry.push(newEntry);
-        await this.saveRegistry();
+            this.registry.push(newEntry);
+            await this.saveRegistry();
+            console.log('[ScoreManager] Registry updated and saved');
 
-        // Save Binary Buffer to IndexedDB
-        await db.set(`score_buf_${fingerprint}`, buffer);
+            // Save Binary Buffer to IndexedDB
+            console.log('[ScoreManager] Saving buffer to IndexedDB...');
+            await db.set(`score_buf_${fingerprint}`, buffer);
+            console.log('[ScoreManager] Buffer saved');
 
-        this.render();
-        return newEntry;
+            this.render();
+            return newEntry;
+        } catch (err) {
+            console.error('[ScoreManager] importScore failed:', err);
+            throw err;
+        }
     }
 
     async saveRegistry() {
@@ -102,12 +115,25 @@ export class ScoreManager {
     }
 
     /**
-     * Generate a unique SHA-256 fingerprint for a PDF buffer.
+     * Generate a unique fingerprint for a PDF buffer.
+     * Uses Web Crypto API if available, falls back to a simple fast hash for non-secure contexts (iPad/LAN).
      */
     async calculateFingerprint(buffer) {
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        if (window.crypto && window.crypto.subtle) {
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Fallback: Simple fast hash (Murmur-like) for non-HTTPS LAN access (iPad)
+        console.warn('[ScoreManager] crypto.subtle unavailable. Using fallback fast-hash.');
+        let hash = 0;
+        const view = new Uint8Array(buffer);
+        for (let i = 0; i < view.length; i++) {
+            hash = ((hash << 5) - hash) + view[i];
+            hash |= 0; // Convert to 32bit integer
+        }
+        return 'fallback_' + Math.abs(hash).toString(16) + '_' + view.length;
     }
 
     /**
@@ -131,7 +157,7 @@ export class ScoreManager {
         }
 
         // Clear legacy list once migrated
-        // localStorage.removeItem('scoreflow_recent_solo_scores');
+        localStorage.removeItem('scoreflow_recent_solo_scores');
     }
 
     toggleOverlay(force = null) {
@@ -160,6 +186,11 @@ export class ScoreManager {
             card.innerHTML = `
                 <div class="score-thumb">
                     ${score.thumbnail ? `<img src="${score.thumbnail}" alt="${score.title}">` : '🎼'}
+                    <button class="btn-delete-score" title="Delete Score" data-fp="${score.fingerprint}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
                 </div>
                 <div class="score-info">
                     <div class="score-title">${score.title}</div>
@@ -167,9 +198,47 @@ export class ScoreManager {
                 </div>
             `;
 
-            card.onclick = () => this.loadScore(score.fingerprint);
+            card.onclick = (e) => {
+                if (e.target.closest('.btn-delete-score')) {
+                    e.stopPropagation();
+                    this.deleteScore(score.fingerprint);
+                    return;
+                }
+                this.loadScore(score.fingerprint);
+            };
             this.grid.appendChild(card);
         });
+    }
+
+    async deleteScore(fingerprint) {
+        const score = this.registry.find(s => s.fingerprint === fingerprint);
+        if (!score) return;
+
+        const confirmed = await this.app.showDialog({
+            title: 'Delete Score',
+            message: `Are you sure you want to delete "${score.title}"? This will also remove its annotations.`,
+            type: 'confirm',
+            icon: '🗑️'
+        });
+
+        if (!confirmed) return;
+
+        // 1. Remove from registry
+        this.registry = this.registry.filter(s => s.fingerprint !== fingerprint);
+        await this.saveRegistry();
+
+        // 2. Purge Binary Buffer from IndexedDB
+        await db.remove(`score_buf_${fingerprint}`);
+
+        // 3. Purge Annotations from localStorage
+        localStorage.removeItem(`scoreflow_stamps_${fingerprint}`);
+
+        // 4. If current score, close it
+        if (this.app.pdfFingerprint === fingerprint) {
+            await this.app.closeFile();
+        }
+
+        this.render();
     }
 
     async loadScore(fingerprint) {
@@ -182,7 +251,7 @@ export class ScoreManager {
         if (buffer) {
             score.lastAccessed = Date.now();
             await this.saveRegistry();
-            this.app.loadPdfBuffer(buffer, score.fileName, fingerprint);
+            this.app.loadPDF(new Uint8Array(buffer), score.fileName);
         } else {
             this.app.showMessage('Score content missing. Please re-import.', 'error');
         }

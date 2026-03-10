@@ -14,10 +14,7 @@ export class ViewerManager {
     }
 
     init() {
-        if (this.app.uploader) {
-            this.app.uploader.addEventListener('change', (e) => this.handleUpload(e))
-        }
-
+        // Redundant listener removed. Listeners are now attached in main.js initElements.
         // Initialize IntersectionObserver for Lazy Rendering
         this.observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -88,7 +85,12 @@ export class ViewerManager {
             console.error('General upload error:', err)
             cleanup()
         } finally {
-            e.target.value = ''
+            // Only clear if this is the transient uploader (not the one in Score Library)
+            // Actually, we should only clear it once all listeners have had a chance.
+            // For now, let's just make sure we don't clear it IF it's likely to be used by ScoreManager.
+            if (!e.target.closest('.btn-import-wrapper')) {
+                e.target.value = ''
+            }
         }
     }
 

@@ -271,7 +271,13 @@ class ScoreFlow {
     this.uploader = this.allUploaders[0] // Default for methods expecting single ref
 
     this.allUploaders.forEach(u => {
-      u.addEventListener('change', (e) => this.handleUpload(e))
+      u.addEventListener('change', async (e) => {
+        // If this is the library import uploader, it's already handled in its own listener
+        if (e.target.closest('.btn-import-wrapper')) return
+
+        // Otherwise, it's a "Quick Open" (Welcome or Sidebar)
+        await this.handleUpload(e)
+      })
     })
 
     this.uploadBtn = document.getElementById('upload-btn')
@@ -395,7 +401,6 @@ class ScoreFlow {
         this.renderSidebarRecentScores()
       })
     }
-    this.uploader.addEventListener('change', (e) => this.handleUpload(e))
 
     // Unified Control Hub Listeners
     if (this.btnSettingsToggle) {
@@ -413,11 +418,33 @@ class ScoreFlow {
     const libraryImportBtn = document.getElementById('library-import-btn')
     if (libraryImportBtn) {
       const input = libraryImportBtn.querySelector('input')
+
+      // iPad Compatibility: Explicitly trigger input click when wrapper is clicked
+      libraryImportBtn.addEventListener('click', (e) => {
+        if (e.target === input) return; // Avoid recursion if input was hit directly
+        console.log('[ScoreFlow] Library Import button wrapper clicked, triggering input.click()');
+        input.click();
+      });
+
       input.addEventListener('change', async (e) => {
+        console.log('[ScoreFlow] Library Import triggered');
         const file = e.target.files[0]
-        if (!file) return
-        const buf = await file.arrayBuffer()
-        await this.scoreManager.importScore(file, new Uint8Array(buf))
+        if (!file) {
+          console.warn('[ScoreFlow] No file selected');
+          return
+        }
+        console.log(`[ScoreFlow] Importing file: ${file.name}, size: ${file.size}`);
+        try {
+          const buf = await file.arrayBuffer()
+          console.log('[ScoreFlow] ArrayBuffer loaded, starting ScoreManager.importScore');
+          await this.scoreManager.importScore(file, new Uint8Array(buf))
+          console.log('[ScoreFlow] ScoreManager.importScore completed');
+        } catch (err) {
+          console.error('[ScoreFlow] Import failed:', err);
+          alert('Import failed: ' + err.message);
+        } finally {
+          e.target.value = '' // Clear to allow re-import
+        }
       })
     }
 
