@@ -10,12 +10,28 @@ export class InputManager {
         this.lastTapTime = 0
         this.tapCount = 0
         this.tapTimer = null
+        this.longPressTimer = null
+        this.isLongPressActive = false
+
+        // Mouse Long Press state
+        this.mouseLongPressTimer = null
+        this.isMouseLongPressActive = false
+        this.mouseDownPos = null
     }
 
     init() {
         this.initKeyboardListeners()
         this.initGestureListeners()
+        this.initMouseListeners()
         this.initScrollListener()
+        this.initResizeListener()
+        this.updateDividerPositions()
+    }
+
+    initResizeListener() {
+        window.addEventListener('resize', () => {
+            this.updateDividerPositions()
+        })
     }
 
     /**
@@ -217,15 +233,6 @@ export class InputManager {
                 const dt = Date.now() - this.swipeStartTime
                 const now = Date.now()
 
-                // 1. Double Tap Detection (Single finger) - Relaxed for iPad (300ms -> 350ms, 10px -> 35px)
-                const doubleTapDiff = now - lastSingleTapTime
-                if (doubleTapDiff < 350 && doubleTapDiff > 0 && Math.abs(dx) < 35 && Math.abs(dy) < 35) {
-                    e.preventDefault()
-                    // Pass coordinates for smart positioning
-                    this.app.toolManager.toggleStampPalette(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
-                    lastSingleTapTime = 0
-                    return
-                }
                 lastSingleTapTime = now
 
                 // 2. Horizontal Swipe (Page Turns)
@@ -241,30 +248,163 @@ export class InputManager {
                 }
 
                 // 4. Single Tap (Zone Tapping)
-                if (dt < 300 && Math.abs(dx) < 30 && Math.abs(dy) < 30) {
-                    if (this.app.activeStampType === 'view') {
-                        const tapX = e.changedTouches[0].clientX
-                        const tapY = e.changedTouches[0].clientY
-                        const vw = window.innerWidth
+                if (this.app.activeStampType === 'view' && dt < 300 && Math.abs(dx) < 30 && Math.abs(dy) < 30) {
+                    const tapX = e.changedTouches[0].clientX
+                    const tapY = e.changedTouches[0].clientY
+                    const vh = window.innerHeight
+                    const vw = window.innerWidth
+                    // Zone Tapping - Based on PDF Page Dimensions
+                    const viewer = document.getElementById('viewer-container')
+                    const firstPage = viewer.querySelector('.page-container')
+                    if (firstPage) {
+                        const rect = firstPage.getBoundingClientRect()
+                        const relX = tapX - rect.left
+                        const relY = tapY - rect.top
+                        const pWidth = rect.width
+                        // User said 35% Top, usually means of the visible PDF area or viewport.
+                        // Let's stick to 35% of viewport height for Top, but 40/60 of PDF width for Bottom.
 
-                        // Define Zones: Left 25% (Prev), Right 25% (Next)
-                        if (tapX < vw * 0.25) {
+                        if (tapY < vh * 0.35) {
                             this.app.jump(-1)
-                            this.showZoneIndicator('prev', tapX, tapY)
-                        } else if (tapX > vw * 0.75) {
-                            this.app.jump(1)
-                            this.showZoneIndicator('next', tapX, tapY)
+                            this.showZoneIndicator('up', tapX, tapY)
+                        } else {
+                            if (relX < pWidth * 0.40) {
+                                this.app.jump(-1)
+                                this.showZoneIndicator('left', tapX, tapY)
+                            } else {
+                                this.app.jump(1)
+                                this.showZoneIndicator('right', tapX, tapY)
+                            }
+                        }
+                    } else {
+                        // Fallback to window if no page loaded
+                        if (tapY < vh * 0.35) {
+                            this.app.jump(-1)
+                            this.showZoneIndicator('up', tapX, tapY)
+                        } else {
+                            if (tapX < vw * 0.40) {
+                                this.app.jump(-1)
+                                this.showZoneIndicator('left', tapX, tapY)
+                            } else {
+                                this.app.jump(1)
+                                this.showZoneIndicator('right', tapX, tapY)
+                            }
                         }
                     }
                 }
-                // No more aggressive preventDefault/return here to allow native momentum to finish
             }
+            // No more aggressive preventDefault/return here to allow native momentum to finish
         }, { passive: false })
+    }
 
-        // Desktop fallback
-        viewer.addEventListener('dblclick', (e) => {
-            if (this.isEventInUI(e)) return
-            this.app.toolManager.toggleStampPalette(e.clientX, e.clientY)
+    initMouseListeners() {
+        const viewer = document.getElementById('viewer-container')
+        if (!viewer) return
+
+        viewer.addEventListener('mousedown', (e) => {
+            if (this.isEventInUI(e) || e.button !== 0) return
+
+            this.isMouseLongPressActive = false
+            this.mouseDownPos = { x: e.clientX, y: e.clientY }
+            this._lastMouseDownPos = { x: e.clientX, y: e.clientY } // Store for drag check
+
+            if (this.mouseLongPressTimer) clearTimeout(this.mouseLongPressTimer)
+            this.mouseLongPressTimer = setTimeout(() => {
+                this.isMouseLongPressActive = true
+                console.log('[InputManager] Mouse Long Press Triggered')
+                this.app.toolManager.toggleStampPalette(e.clientX, e.clientY)
+            }, 500)
+        })
+
+        viewer.addEventListener('mousemove', (e) => {
+            if (!this.mouseDownPos || this.isMouseLongPressActive) return
+            const dx = e.clientX - this.mouseDownPos.x
+            const dy = e.clientY - this.mouseDownPos.y
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                if (this.mouseLongPressTimer) {
+                    clearTimeout(this.mouseLongPressTimer)
+                    this.mouseLongPressTimer = null
+                }
+            }
+        })
+
+        viewer.addEventListener('mouseup', (e) => {
+            if (this.mouseLongPressTimer) {
+                clearTimeout(this.mouseLongPressTimer)
+                this.mouseLongPressTimer = null
+            }
+            if (this.isMouseLongPressActive) {
+                e.preventDefault()
+                e.stopPropagation()
+            }
+            this.mouseDownPos = null
+        })
+
+        viewer.addEventListener('click', (e) => {
+            // Ignore if this is part of a long press
+            if (this.isMouseLongPressActive) {
+                this.isMouseLongPressActive = false
+                e.preventDefault()
+                e.stopPropagation()
+                return
+            }
+
+            // Drag Prevention: Check total displacement since mousedown
+            if (this._lastMouseDownPos) {
+                const dx = e.clientX - this._lastMouseDownPos.x
+                const dy = e.clientY - this._lastMouseDownPos.y
+                const dist = Math.sqrt(dx * dx + dy * dy)
+                if (dist > 10) {
+                    console.log('[InputManager] Drag detected, skipping navigation')
+                    return
+                }
+            }
+
+            // Only trigger in view mode and if not clicking on UI
+            if (this.app.activeStampType !== 'view' || this.isEventInUI(e)) return
+
+            // Prevent conflict with dblclick and other gestures if needed
+            // But standard single click is mostly safe here in view mode
+
+            const tapX = e.clientX
+            const tapY = e.clientY
+            const vh = window.innerHeight
+            const vw = window.innerWidth
+
+            const viewer = document.getElementById('viewer-container')
+            const firstPage = viewer.querySelector('.page-container')
+
+            if (firstPage) {
+                const rect = firstPage.getBoundingClientRect()
+                const relX = tapX - rect.left
+                const pWidth = rect.width
+
+                if (tapY < vh * 0.35) {
+                    this.app.jump(-1)
+                    this.showZoneIndicator('up', tapX, tapY)
+                } else {
+                    if (relX < pWidth * 0.40) {
+                        this.app.jump(-1)
+                        this.showZoneIndicator('left', tapX, tapY)
+                    } else {
+                        this.app.jump(1)
+                        this.showZoneIndicator('right', tapX, tapY)
+                    }
+                }
+            } else {
+                if (tapY < vh * 0.35) {
+                    this.app.jump(-1)
+                    this.showZoneIndicator('up', tapX, tapY)
+                } else {
+                    if (tapX < vw * 0.40) {
+                        this.app.jump(-1)
+                        this.showZoneIndicator('left', tapX, tapY)
+                    } else {
+                        this.app.jump(1)
+                        this.showZoneIndicator('right', tapX, tapY)
+                    }
+                }
+            }
         })
     }
 
@@ -279,6 +419,7 @@ export class InputManager {
                     this.app.updateRulerClip()
                     this.app.computeNextTarget()
                     if (this.app.jumpManager) this.app.jumpManager.updateDisplay()
+                    this.updateDividerPositions()
                     this.scrollTicking = false
                 })
                 this.scrollTicking = true
@@ -286,12 +427,44 @@ export class InputManager {
         }, { passive: true })
     }
 
+    updateDividerPositions() {
+        const hDivider = document.getElementById('nav-divider-h')
+        const vDivider = document.getElementById('nav-divider-v')
+        if (!hDivider || !vDivider) return
+
+        const viewer = document.getElementById('viewer-container')
+        const firstPage = viewer.querySelector('.page-container')
+
+        if (firstPage) {
+            const rect = firstPage.getBoundingClientRect()
+            const vh = window.innerHeight
+
+            // H Divider: 35% of viewport height, aligned to PDF width
+            hDivider.style.top = `${vh * 0.35}px`
+            hDivider.style.left = `${rect.left}px`
+            hDivider.style.width = `${rect.width}px`
+
+            // V Divider: Starts from 35% height down to viewport bottom, at 40% of PDF width
+            vDivider.style.top = `${vh * 0.35}px`
+            vDivider.style.height = `${vh * 0.65}px`
+            vDivider.style.left = `${rect.left + rect.width * 0.40}px`
+        } else {
+            // Fallback: full width
+            hDivider.style.top = '35%'
+            hDivider.style.left = '0'
+            hDivider.style.width = '100%'
+
+            vDivider.style.top = '35%'
+            vDivider.style.height = '65%'
+            vDivider.style.left = '40%'
+        }
+    }
+
     showZoneIndicator(type, x, y) {
         const indicator = document.createElement('div')
-        indicator.className = 'tap-zone-indicator'
-        indicator.innerHTML = type === 'next'
-            ? '<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
-            : '<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>'
+        indicator.className = `tap-zone-indicator ${type}`
+        // All use the same arrow path, but CSS handles rotation
+        indicator.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
 
         indicator.style.left = `${x - 20}px`
         indicator.style.top = `${y - 20}px`

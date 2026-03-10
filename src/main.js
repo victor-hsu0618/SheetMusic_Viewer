@@ -189,6 +189,7 @@ class ScoreFlow {
     this.toolManager.initToolbarResizable()
     this.initSidebarResizable()
     this.initTabs()
+    this.sidebarManager.initSettings()
     this.loadFromStorage()
     this.renderLayerUI()
     this.renderSourceUI()

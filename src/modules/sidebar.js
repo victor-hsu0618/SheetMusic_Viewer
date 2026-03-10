@@ -126,4 +126,24 @@ export class SidebarManager {
             this.app.sidebarRecentList.appendChild(item)
         })
     }
+
+    initSettings() {
+        const navDividerToggle = document.getElementById('settings-show-nav-dividers')
+        if (navDividerToggle) {
+            // Load state from localStorage
+            const showNavDividers = localStorage.getItem('scoreflow_show_nav_dividers') === 'true'
+            navDividerToggle.checked = showNavDividers
+            if (showNavDividers) document.body.classList.add('show-nav-dividers')
+
+            navDividerToggle.addEventListener('change', (e) => {
+                const checked = e.target.checked
+                localStorage.setItem('scoreflow_show_nav_dividers', checked)
+                if (checked) {
+                    document.body.classList.add('show-nav-dividers')
+                } else {
+                    document.body.classList.remove('show-nav-dividers')
+                }
+            })
+        }
+    }
 }

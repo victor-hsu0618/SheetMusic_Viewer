@@ -235,6 +235,7 @@ export class ViewerManager {
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()
+        if (this.app.inputManager) this.app.inputManager.updateDividerPositions()
     }
 
     createPageElement(pageNum) {

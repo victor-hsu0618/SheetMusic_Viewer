@@ -95,6 +95,9 @@
         </div>
       </div>
     </main>
+    <!-- Navigation Zone Dividers (Overlay) -->
+    <div id="nav-divider-h" class="nav-zone-divider nav-zone-divider-h"></div>
+    <div id="nav-divider-v" class="nav-zone-divider nav-zone-divider-v"></div>
 
     <!-- Visual Jump Line Indicator & Ruler (Moved outside main to stabilize iPad layout) -->
   </div>
@@ -609,6 +612,16 @@
               <input type="range" id="settings-jump-offset" min="0" max="800" step="5" value="450" class="w-full"
                 title="Jump Offset" />
               <span id="settings-jump-offset-value" class="badge">450px</span>
+            </div>
+          </div>
+
+          <div class="setting-item mt-15">
+            <div class="flex-row-center flex-space-between w-full">
+              <label class="setting-label">顯示導航觸發區提示線</label>
+              <label class="switch">
+                <input type="checkbox" id="settings-show-nav-dividers" title="顯示導航觸發區提示線">
+                <span class="slider round"></span>
+              </label>
             </div>
           </div>
 
