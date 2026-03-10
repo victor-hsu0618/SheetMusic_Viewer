@@ -123,7 +123,11 @@ export class InteractionManager {
                 return
             }
 
-            if (e.type === 'touchstart') e.preventDefault()
+            if (e.type === 'touchstart') {
+                e.preventDefault()
+                // Trigger initial hover/preview on first touch
+                hoverAction(e)
+            }
             isInteracting = true
 
             const isFreehand = ['pen', 'highlighter', 'line'].includes(toolType)
@@ -172,7 +176,7 @@ export class InteractionManager {
                     sourceId: this.app.activeSourceId,
                     points: [pos],
                     color: this.app.layers.find(l => l.id === 'draw').color,
-                    id: crypto.randomUUID(),
+                    id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
                     updatedAt: Date.now()
                 }
             } else if (toolType === 'eraser') {
@@ -215,7 +219,7 @@ export class InteractionManager {
                     y: pos.y, // Use pos.y instead of undefined ny
                     data: null,
                     draw: stampDraw, // Critical: Attach drawing metadata for non-default tools
-                    id: crypto.randomUUID(),
+                    id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
                     updatedAt: Date.now()
                 }
                 const previewPosFinal = getStampPreviewPos(pos)

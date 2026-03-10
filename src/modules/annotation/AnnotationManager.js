@@ -629,7 +629,7 @@ export class AnnotationManager {
         }
 
         this.app.stamps.push({
-            id: 'stamp-' + Date.now(),
+            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
             page,
             layerId: targetLayerId,
             sourceId: this.app.activeSourceId,
