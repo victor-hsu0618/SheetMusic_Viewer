@@ -83,9 +83,9 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **沉浸式設計**：採用毛玻璃效果 (Glassmorphism)，並針對 Safari/iOS 進行 `backdrop-filter` 相容性優化。
 - **回應式佈局**：自動適應 Desktop 與 iPad/iPhone 螢幕大小，支援觸控操作。
 - **中心化設定管理 (Centralized Settings) - *2026.03.10 更新***：
-  - **側邊欄整合**：為了簡化工具列並集中管理，所有全域應用程式設定（如：全域圖章縮放比例、導航線顯示、翻頁模式）均整合至側邊欄「Settings」分頁。
-  - **圖層管理整合 (Notation Categories) - *2026.03.10 更新***：原本獨立的「Notation Settings」浮動面板面板已移除，其內部的圖層控制功能已完全整合至「Stamp Panel (印章工具箱)」的設定子頁面中。使用者現在可以更集中地在同一面板中管理圖章大小與圖層可見性。
-  - **樂譜專屬設定**：針對特定樂譜的比例修正 (Score Scale) 亦同步移至側邊欄，確保圖章工具箱面板 (Stamp Palette) 保持極致簡潔，僅專注於符號選擇。
+  - **設定面板轉型 (Sub-Panel Transition)**：為了極大化樂譜顯示面積，傳統側邊欄已移除。所有全域設定（如：全域圖章縮放比例、導航線顯示、翻頁模式）均整合至專屬的彈出式「全域設定面板 (Global Settings Panel)」，其風格與 View Inspector 統一，支援自由拖拉。
+  - **圖層管理整合 (Notation Categories)**：圖層控制功能已完全整合至「Stamp Panel (印章工具箱)」的設定子頁面中。
+  - **樂譜專屬設定**：原側邊欄之樂譜比例修正、媒體連結等資訊已移至書庫系統 (Score Library) 或專屬 Inspector 面板中。
 
 ### 4.1 iPad 手勢效能優化 (iPad Gesture Performance Optimization) - *2026.03.08 更新*
 
@@ -140,12 +140,17 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **`InputManager` (交互中心)**：統一掌管所有輸入事件，包含鍵盤快捷鍵系統 (`keydown`)、iPad 專屬手勢 (Swipe Jump)、滑動監聽及多層級滾動同步。
 - **`PersistenceManager` (數據持久化)**：封裝了對 LocalStorage 與 IndexedDB 的存取，實現了註記數據、系統偏好與最近開啟文件的快速緩存。
 - **`LayerManager` (圖層管理器)**：掌管 Performance/Fingering 等專業圖層的視覺開關、顏色分配與數據隔離。
-- **`SidebarManager` (側邊欄與工作區)**：管理側邊欄的 Tab 切換、響應式佈局狀態（Split-View vs Float-View）及 Workspace 的尺寸計算。
+- **`SettingsPanelManager` (全域設定面板)**：掌管彈出式設定面版，負責使用者 Profile、雲端同步與系統偏好。
 - **`RulerManager` (智慧跳轉與尺規)**：驅動 Smart Jump 邏輯，管理垂直 Jump Ruler 的渲染、下一目標計算 (`computeNextTarget`) 與跳轉歷史紀錄。
 - **`DocBarManager` (控制列)**：負責螢幕上方漂浮的 Document Bar 交互、顯示切換及拖拉邏輯。
 - **`DocActionManager` (文件行為)**：處理專案 (.json) 的匯入匯出、備份還原模式，以及全局的系統對話框 UI。
 - **`CollaborationManager` (協作與風格)**：管理 Interpretation Styles 引擎來源，處理多重詮釋風格的顯隱與流量路由。
 - **`ProfileManager` & `ScoreDetailManager`**：專司用戶身份識別與單一樂譜元數據（作品、作曲家）的細節管理。
+- **`ScoreManager` (書庫管理員) - *2026.03.10 更新***：
+  - **書庫索引 (Library Index)**：在 IndexedDB 中維護全局樂譜清單，記錄所有已匯入樂譜的指紋、元數據與最後開啟時間。
+  - **縮圖引擎 (Thumbnail Engine)**：自動為每份樂譜生成第一頁縮圖，提升視覺辨識度。
+  - **快速切換 (Quick Toggle)**：支援在不重新上傳的情況下，於多份已快取的樂譜間快速切換。
+  - **集合管理 (Collections)**：支援建立標籤與自定義分類，優化大規模樂譜庫的組織效率。
 - **`ToolManager`**：動態工具列狀態機，負責追蹤各圖層「最後使用工具」並實現極速切換。
 
 ### 3. 架構優勢

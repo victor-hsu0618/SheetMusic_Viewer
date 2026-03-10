@@ -40,7 +40,7 @@ export class InputManager {
      */
     isEventInUI(e) {
         if (!e || !e.target) return false
-        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, #sidebar, .toolbar-popover, .sidebar-recent-item, .recent-score-card'
+        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, .jump-sub-panel, .library-overlay, .sidebar-recent-item, .recent-score-card'
         return !!e.target.closest(uiSelector)
     }
 
@@ -90,8 +90,10 @@ export class InputManager {
                     this.app.viewPanelManager.togglePanel(false)
                 } else if (this.app.jumpManager && this.app.jumpManager.panel.classList.contains('active')) {
                     this.app.jumpManager.togglePanel(false)
-                } else if (this.app.sidebar && this.app.sidebar.classList.contains('open')) {
-                    this.app.sidebar.classList.remove('open')
+                } else if (this.app.scoreManager && this.app.scoreManager.overlay?.classList.contains('active')) {
+                    this.app.toggleLibrary(false)
+                } else if (this.app.settingsPanelManager && this.app.settingsPanelManager.panel?.classList.contains('active')) {
+                    this.app.toggleSettings(false)
                 }
                 return
             }
@@ -102,9 +104,9 @@ export class InputManager {
                     e.preventDefault()
                     if (this.app.jumpManager) this.app.jumpManager.togglePanel()
                     break
-                case 's': // Sidebar
+                case 's': // Settings Panel
                     e.preventDefault()
-                    this.app.toggleSidebar()
+                    this.app.toggleSettings()
                     break
                 case 'b': // Dock Expansion
                     e.preventDefault()
@@ -122,9 +124,9 @@ export class InputManager {
                     e.preventDefault()
                     this.app.toggleRuler()
                     break
-                case 'o': // Open PDF
+                case 'o': // Score Library
                     e.preventDefault()
-                    this.app.openPdfFilePicker()
+                    this.app.toggleLibrary()
                     break
                 case 'f': // Fullscreen
                     e.preventDefault()

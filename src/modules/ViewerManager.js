@@ -423,7 +423,6 @@ export class ViewerManager {
 
         if (this.app.welcomeView) {
             this.app.welcomeView.classList.remove('hidden')
-            this.app.renderWelcomeRecentScores()
         }
     }
 

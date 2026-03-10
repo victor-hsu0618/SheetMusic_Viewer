@@ -1,49 +1,54 @@
-# 將 Notation Settings 移至 Stamp Panel
+# Score Manager (書庫) 與 Global Settings (全域設定) 重構計劃
 
-此計畫旨在透過將「Notation Settings」（圖層管理）從獨立的浮動面板（由 doc bar 觸發）移至「Stamp Panel」內的設定視圖，來集中管理與標記相關的設定。
+## 1. 重構構思 (Redesign Concept)
 
-## 變更摘要
+### A. Global Settings: 轉型為「彈出式面板 (Sub-Panel)」
+原本占據側邊空間的 `Sidebar` 將被移除，取而代之的是一個與 `View Inspector` 風格一致的 **Pop-Up Sub-Panel**：
+- **內容集中**：僅包含全域設定（個人檔案、雲端同步、全域偏好、系統資訊）。
+- **觸發方式**：點擊 Doc Bar 的設定圖示或按下 `S` 鍵彈出。
 
-### [核心/UI]
+### B. ScoreManager: 中心化「全屏書庫 (Library Overlay)」
+- **Library Overlay**：獨立的全屏介面，展示樂譜網格、縮圖、搜尋列。
+- **檔案映射邏輯 (重要的技術點)**：
+    - **指紋識別 (Identity)**：使用 PDF 內容的 **SHA-256 指紋** 為唯一 ID。
+    - **目錄無關 (Path Independent)**：不依賴作業系統的檔案路徑，解決不同機器目錄不同的問題。
+    - **跨裝置同步**：
+        - **Registry (索引)**：同步至 Google Drive 的 JSON 中。
+        - **PDF Binary (內容)**：保留在 Local (IndexedDB 緩存)。
+        - **機器間對應**：機器 B 同步到 Registry 後，若本地無該 PDF，會顯示「待連結」。一旦用戶在機器 B 提供檔案，系統確認指紋匹配，即可立即恢復所有雲端劃記。
 
-#### [修改] [index.html](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/index.html)
-- 從 `#floating-doc-bar` 中移除 `layer-toggle-fab` 按鈕。
-- 移除 `#layer-shelf` 容器。
-- 確保 `#active-tools-container` 能夠容納新的圖層列表設定。
+### C. 交互邏輯變更
+- **`Settings Panel` (S)**：開啟/關閉全域設定面板。
+- **`Library Overlay` (O)**：開啟「樂譜書庫」。
 
-#### [修改] [src/modules/tools.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/tools.js)
-- 更新 `renderSettingsPanel()` 以包含「Notation Categories」區段。
-- 此區段將託管原本在 layer shelf 中的圖層列表。
-- 在此設定視圖中新增「Add New Category」按鈕。
+## 2. 擬動動變更
 
-#### [修改] [src/modules/LayerManager.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/LayerManager.js)
-- 更新 `renderLayerUI()` 以渲染到 Stamp Settings 面板內的新容器中。
-- 移除對 `layerShelf` 和 `layerToggleBtn` 的引用。
-- 更新事件監聽器以在 Stamp Panel 上下文中運作。
+### [NEW] [ScoreManager.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/ScoreManager.js)
+- **Registry & Storage**: 管理 IndexedDB 中的 `score_registry` (索引) 與 `score_buf_[fp]` (內容緩存)。
+- **Thumbnail Engine**: 異步生成網格展示用的 Base64 縮圖。
 
-#### [修改] [src/modules/docbar.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/docbar.js)
-- 移除 `layerShelf` 和 `layerToggleBtn` 的初始化邏輯。
+### [MODIFY] [sidebar.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/sidebar.js)
+- 改名為 `SettingsPanelManager.js` 並改寫為 Sub-Panel 邏輯。
 
-#### [修改] [src/modules/InputManager.js](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/src/modules/InputManager.js)
-- 移除原本用於開啟圖層面板的 `Shift+V` 快捷鍵邏輯。
+### [MODIFY] [index.html](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/index.html)
+- 移除 `<aside id="sidebar">`，新增 `library-overlay` 與 `settings-panel` 容器。
 
-#### [修改] [index.html](file:///Users/victor_hsu/MyProgram/SheetMusic_Viewer/index.html)
-- 在快捷鍵說明清單中移除 `Shift+V` (Notation Layers) 的項目。
-
-## 驗證計畫
-
-### 自動化測試
-- 執行現有的 e2e 測試，確保工具切換或 PDF 渲染沒有退化。
-```bash
-npm run test:e2e
+## 3. 數據結構 (Registry)
+```javascript
+{
+  fingerprint: "sha256...", 
+  title: "樂曲標題",
+  composer: "作曲家",
+  thumbnail: "data:image/webp...", // 加速顯示
+  lastAccessed: 1710000000000,
+  isMissing: false // 當雲端同步過來但本地無 PDF 時標記
+}
 ```
 
-### 手動驗證
-1. 打開 Stamp Palette (T)。
-2. 點擊底部的「設定」圖示（齒輪）。
-3. 確認「Notation Categories」已列出。
-4. 測試切換類別的可見性（眼睛圖示）。
-5. 測試新增新類別。
-6. 測試刪除自定義類別。
-7. 確認 Doc Bar 不再包含「Notation Settings」按鈕。
-8. 確認 `Shift+V` 會開啟 Stamp Settings 面板。
+---
+## 使用者回饋與修正
+- **評語**: 檔案資訊在哪邊？檔案是 local... 如何維持不同機器間的對應？
+- **AI 響應**: 好的！已在計劃中補充：我們使用 **SHA-256 內容指紋** 作為跨機器的唯一關聯碼。只要內容相同，不論目錄名稱為何，系統都能自動識別並掛載雲端上的劃記資訊。PDF 二進位檔則儲存於各機器的本地 IndexedDB 緩存。
+
+---
+**請確認上述重構構思是否符合您的方向。若無誤請回覆 "engage" 以開始開發。**

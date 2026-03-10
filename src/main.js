@@ -12,7 +12,8 @@ import { RulerManager } from './modules/ruler.js'
 import { PersistenceManager } from './modules/PersistenceManager.js'
 import { LayerManager } from './modules/LayerManager.js'
 import { DocActionManager } from './modules/DocActionManager.js'
-import { SidebarManager } from './modules/sidebar.js'
+import { SettingsPanelManager } from './modules/SettingsPanelManager.js'
+import { ScoreManager } from './modules/ScoreManager.js'
 import { CollaborationManager } from './modules/collaboration.js'
 import { InputManager } from './modules/InputManager.js'
 import { PlaybackManager } from './modules/PlaybackManager.js'
@@ -164,7 +165,8 @@ class ScoreFlow {
     this.persistenceManager = new PersistenceManager(this)
     this.layerManager = new LayerManager(this)
     this.docActionManager = new DocActionManager(this)
-    this.sidebarManager = new SidebarManager(this)
+    this.settingsPanelManager = new SettingsPanelManager(this)
+    this.scoreManager = new ScoreManager(this)
     this.collaborationManager = new CollaborationManager(this)
     this.playbackManager = new PlaybackManager(this)
     this.inputManager = new InputManager(this)
@@ -189,17 +191,14 @@ class ScoreFlow {
     this.scoreDetailManager.init()
     this.driveSyncManager.init()
     this.playbackManager.init()
+    this.scoreManager.init()
+    this.settingsPanelManager.init()
     this.toolManager.initDraggable()
     this.toolManager.initToolbarResizable()
-    this.initSidebarResizable()
-    this.initTabs()
-    this.sidebarManager.initSettings()
     this.loadFromStorage()
     this.renderLayerUI()
     this.renderSourceUI()
     this.toolManager.updateActiveTools()
-    this.renderSidebarRecentScores()
-    this.renderWelcomeRecentScores()
 
     console.log('[ScoreFlow] Version 2.3.5 - Immersive Fullscreen Mode')
 
@@ -249,16 +248,9 @@ class ScoreFlow {
   scrollToNextTarget() { return this.rulerManager.scrollToNextTarget() }
   toggleRuler() { return this.rulerManager.toggleRuler() }
 
-  // SidebarManager Proxies
-  initSidebarResizable() { this.sidebarManager.initSidebarResizable() }
-  initTabs() { this.sidebarManager.initTabs() }
-  renderRecentSoloScores() { this.sidebarManager.renderRecentSoloScores() }
-  renderWelcomeRecentScores() { this.sidebarManager.renderWelcomeRecentScores() }
-  renderSidebarRecentScores() { this.sidebarManager.renderSidebarRecentScores() }
-
-  toggleSidebar() {
-    if (this.sidebar) this.sidebar.classList.toggle('open')
-  }
+  // UI Proxies
+  toggleSettings(force) { this.settingsPanelManager.toggle(force) }
+  toggleLibrary(force) { this.scoreManager.toggleOverlay(force) }
 
   toggleDocBar() {
     if (this.docBarManager) this.docBarManager.toggleDocBar()
@@ -284,8 +276,8 @@ class ScoreFlow {
 
     this.uploadBtn = document.getElementById('upload-btn')
     this.openPdfBtn = document.getElementById('open-pdf-btn')
-    this.sidebar = document.getElementById('sidebar')
-    this.btnSidebarToggle = document.getElementById('btn-sidebar-toggle')
+    this.btnSettingsToggle = document.getElementById('btn-settings-toggle')
+    this.btnLibraryToggle = document.getElementById('btn-library-toggle')
     this.layerList = document.getElementById('layer-list')
     this.btnFitWidth = document.getElementById('view-fit-width')
     this.btnFitHeight = document.getElementById('view-fit-height')
@@ -406,11 +398,26 @@ class ScoreFlow {
     this.uploader.addEventListener('change', (e) => this.handleUpload(e))
 
     // Unified Control Hub Listeners
-    if (this.btnSidebarToggle) {
-      this.btnSidebarToggle.addEventListener('click', () => {
-        // Prevent toggle if we were just dragging the bar
-        if (this.docBar && this.docBar._wasDragging) return
-        this.sidebar.classList.toggle('open')
+    if (this.btnSettingsToggle) {
+      this.btnSettingsToggle.addEventListener('click', () => this.toggleSettings())
+    }
+    if (this.btnLibraryToggle) {
+      this.btnLibraryToggle.addEventListener('click', () => this.toggleLibrary())
+    }
+
+    const libraryCloseBtn = document.getElementById('btn-close-library')
+    if (libraryCloseBtn) {
+      libraryCloseBtn.addEventListener('click', () => this.toggleLibrary(false))
+    }
+
+    const libraryImportBtn = document.getElementById('library-import-btn')
+    if (libraryImportBtn) {
+      const input = libraryImportBtn.querySelector('input')
+      input.addEventListener('change', async (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+        const buf = await file.arrayBuffer()
+        await this.scoreManager.importScore(file, new Uint8Array(buf))
       })
     }
 

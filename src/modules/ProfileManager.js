@@ -123,7 +123,7 @@ export class ProfileManager {
             this.displayText.textContent = `${this.data.title} / ${this.data.userName}`
         }
         if (this.noteText) {
-            this.noteText.textContent = this.data.note || 'No notes added.'
+            this.noteText.textContent = this.data.note || 'Click to edit profile...'
         }
         if (this.avatar) {
             this.avatar.textContent = this.data.userName.charAt(0).toUpperCase()
