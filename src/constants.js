@@ -60,9 +60,8 @@ export const TOOLSETS = [
             { id: 'staccato', label: 'Staccato', icon: '<circle cx="12" cy="12" r="1.5" fill="currentColor" />', draw: { type: 'shape', shape: 'circle', radius: 0.12, fill: true } },
             { id: 'tenuto', label: 'Tenuto', icon: '<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.8" />', draw: { type: 'path', data: 'M -0.4 0 L 0.4 0' } },
             { id: 'fermata', label: 'Fermata', icon: '<path d="M7 15a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13.5" r="1.2" fill="currentColor" />', draw: { type: 'complex', variant: 'fermata' } },
-            { id: 'sharp', label: 'Sharp', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♯</text>', draw: { type: 'text', content: '♯', font: '500', size: 24, fontFace: 'serif' } },
-            { id: 'flat', label: 'Flat', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♭</text>', draw: { type: 'text', content: '♭', font: '500', size: 24, fontFace: 'serif' } }
-        ]
+            { id: 'sharp', label: 'Sharp', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♯</text>', draw: { type: 'text', content: '♯', font: '500', size: 16, fontFace: 'serif' } },
+            { id: 'flat', label: 'Flat', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♭</text>', draw: { type: 'text', content: '♭', font: '500', size: 16, fontFace: 'serif' } }        ]
     },
     {
         name: 'Text',
