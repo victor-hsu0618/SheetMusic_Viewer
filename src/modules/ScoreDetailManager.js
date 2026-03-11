@@ -78,6 +78,11 @@ export class ScoreDetailManager {
             this.btnAddSetlist.addEventListener('click', () => this.handleAddSetlist())
         }
 
+        this.btnResetScoreAll = document.getElementById('btn-reset-score-all')
+        if (this.btnResetScoreAll) {
+            this.btnResetScoreAll.addEventListener('click', () => this.handleResetAll())
+        }
+
         // Tab Switching Logic
         const tabBtns = this.panel.querySelectorAll('.segment-btn')
         tabBtns.forEach(btn => {
@@ -438,6 +443,78 @@ export class ScoreDetailManager {
         }
 
         this.btnSave?.classList.remove('btn-primary-highlight')
+    }
+
+    async handleResetAll() {
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint) return;
+
+        const confirmed = await this.app.showDialog({
+            title: 'Reset Entire Score?',
+            message: `This will PERMANENTLY delete all markings, bookmarks, and cloud data for "${this.currentInfo.name || 'this score'}". This cannot be undone.`,
+            icon: '⚠️',
+            type: 'confirm',
+            confirmText: 'Reset Everything',
+            cancelText: 'Cancel'
+        });
+
+        if (!confirmed) return;
+
+        try {
+            this.app.showMessage('Resetting score data...', 'system');
+
+            // 1. Clear Local Stamps (Current Score)
+            if (this.app.pdfFingerprint === fingerprint) {
+                this.app.stamps = [];
+                this.app.annotationManager.redrawAllAnnotationLayers();
+            }
+            localStorage.removeItem(`scoreflow_stamps_${fingerprint}`);
+
+            // 2. Clear Local Bookmarks
+            if (this.app.jumpManager) {
+                this.app.jumpManager.bookmarks = [];
+                this.app.jumpManager.renderBookmarks();
+                await db.remove(`bookmarks_${fingerprint}`);
+            }
+
+            // 3. Clear Local Score Detail
+            const regScore = this.app.scoreManager?.registry.find(s => s.fingerprint === fingerprint);
+            const initialName = regScore?.fileName?.replace(/\.pdf$/i, '') || 'Untitled';
+            
+            this.currentInfo = {
+                name: initialName,
+                composer: 'Unknown',
+                lastEdit: Date.now(),
+                lastAuthor: this.app.profileManager?.data?.userName || 'Guest',
+                mediaList: [],
+                activeMediaId: null,
+                stampScale: 1.0,
+                lastScrollTop: 0
+            };
+            this.save(fingerprint);
+            
+            if (this.app.scoreManager) {
+                await this.app.scoreManager.updateMetadata(fingerprint, {
+                    title: initialName,
+                    composer: 'Unknown'
+                });
+                this.app.scoreManager.updateSyncStatus(fingerprint, false);
+            }
+
+            // 4. Cloud Reset
+            if (this.app.driveSyncManager && this.app.driveSyncManager.isEnabled) {
+                // Delete the remote JSON sync file
+                await this.app.driveSyncManager.deleteSyncFiles(fingerprint, false);
+            }
+
+            this.render(fingerprint);
+            this.refreshStats();
+            this.app.showMessage('Score reset successfully.', 'success');
+
+        } catch (err) {
+            console.error('[ScoreDetailManager] Reset failed:', err);
+            this.app.showMessage('Reset failed: ' + err.message, 'error');
+        }
     }
 
     async handleAddSetlist() {

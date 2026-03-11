@@ -1195,6 +1195,36 @@ export class DriveSyncManager {
 
     /**
      * Delete both PDF and Sync JSON files for a specific fingerprint from Drive.
+     */
+    async deleteSyncFiles(fingerprint, deletePDF = false) {
+        if (!this.folderId) return;
+
+        try {
+            // 1. Find and delete Sync JSON
+            const syncId = await this.findSyncFile(fingerprint, 'sync');
+            if (syncId) {
+                this.addLog(`正在刪除雲端同步檔 (${fingerprint.slice(0, 8)})...`, 'system');
+                await this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${syncId}`, { method: 'DELETE' });
+            }
+
+            // 2. Find and delete PDF (optional)
+            if (deletePDF) {
+                const pdfId = await this.findSyncFile(fingerprint, 'pdf');
+                if (pdfId) {
+                    this.addLog(`正在刪除雲端 PDF 檔...`, 'system');
+                    await this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${pdfId}`, { method: 'DELETE' });
+                }
+            }
+
+            // 3. Mark as deleted in manifest
+            await this.deleteManifestEntry(fingerprint);
+
+            this.addLog(`樂譜雲端資料已清除 (${fingerprint.slice(0, 8)})`, 'success');
+        } catch (err) {
+            console.error('[DriveSync] Delete failed:', err);
+            this.addLog('刪除雲端資料失敗: ' + err.message, 'error');
+        }
+    }
 
     /**
      * Forces a full rebuild of the manifest by deleting the old one and scanning.
