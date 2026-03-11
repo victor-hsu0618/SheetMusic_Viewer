@@ -138,13 +138,22 @@ export class JumpManager {
         })
 
         sorted.forEach(m => {
+            const source = this.app.sources.find(src => src.id === m.sourceId)
+            const sourceName = source ? source.name : 'Unknown'
+            const isHidden = source ? !source.visible : false
+
             const item = document.createElement('div')
-            item.className = 'bookmark-item'
+            item.className = `bookmark-item ${isHidden ? 'opacity-50' : ''}`
             
             item.innerHTML = `
                 <div class="bm-info">
                     <span class="bm-page">${m.page}</span>
-                    <span class="bm-label">Measure ${m.data}</span>
+                    <div class="flex-column">
+                        <span class="bm-label">Measure ${m.data}</span>
+                        <span class="text-tiny" style="color: ${source?.color || 'inherit'}">
+                            ${sourceName} ${isHidden ? '(Hidden)' : ''}
+                        </span>
+                    </div>
                 </div>
                 <button class="bm-delete" title="Delete">&times;</button>
             `
