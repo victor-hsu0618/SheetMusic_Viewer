@@ -7,7 +7,7 @@
 export const INITIAL_LAYERS = [
     { id: 'draw', name: 'Draw Objects', color: '#ff4757', visible: true, type: 'draw' },
     { id: 'fingering', name: 'Bow/Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
-    { id: 'articulation', name: 'Articulations', color: '#10b981', visible: true, type: 'articulation' },
+    { id: 'articulation', name: 'Articulation', color: '#10b981', visible: true, type: 'articulation' },
     { id: 'text', name: 'Text', color: '#f59e0b', visible: true, type: 'text' },
     { id: 'layout', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'layout' }
 ];

@@ -238,64 +238,74 @@ export class AnnotationManager {
     }
 
     /**
-     * Show the "Erase All" UI with category buckets based on Layers (Notation Categories).
+     * Show the "Erase All" UI with category buckets strictly matching TOOLSETS/Stamp Panel categories.
      */
     showEraseAllModal() {
         if (!this.app.eraseAllModal) return
         const categoryMap = new Map()
         
-        // 1. Initialize buckets based on CURRENT Layers
-        this.app.layers.forEach(layer => {
-            categoryMap.set(layer.id, { 
-                name: layer.name,
-                color: layer.color,
-                stamps: [] 
+        // 1. Map each tool ID to its Toolset Group Name for instant lookup
+        const toolToGroup = {}
+        const groupMeta = {} // color and order
+        
+        this.app.toolsets.forEach(group => {
+            if (group.type === 'edit') return // Skip edit tools like eraser/select
+            
+            // Find corresponding layer color
+            const layer = this.app.layers.find(l => l.type === group.type || l.id === group.type)
+            groupMeta[group.name] = { 
+                color: layer ? layer.color : '#cbd5e1',
+                order: this.app.toolsets.indexOf(group)
+            }
+            
+            group.tools.forEach(t => {
+                toolToGroup[t.id] = group.name
             })
         })
 
-        // 2. Sort existing stamps into layer buckets with Legacy ID mapping
+        // 2. Sort existing stamps into buckets
         this.app.stamps.forEach(stamp => {
             if (stamp.deleted) return
             
-            let targetLayerId = stamp.layerId
+            let groupName = toolToGroup[stamp.type]
 
-            // --- Robust ID Mapping (Legacy support) ---
-            if (!targetLayerId || !categoryMap.has(targetLayerId)) {
-                if (targetLayerId === 'performance' || stamp.type.startsWith('text-') || stamp.type.startsWith('custom-text-')) {
-                    targetLayerId = 'text'
-                } else if (targetLayerId === 'anchor' || targetLayerId === 'other' || ['anchor', 'music-anchor', 'measure'].includes(stamp.type)) {
-                    targetLayerId = 'layout'
-                } else if (targetLayerId === 'articulation') {
-                    targetLayerId = 'articulation' // Keep or fix if ID changed to 'articulations'
+            // --- Robust Mapping for leftovers ---
+            if (!groupName) {
+                if (stamp.type.startsWith('custom-text-') || stamp.type.startsWith('text-')) {
+                    groupName = 'Text'
+                } else if (['anchor', 'music-anchor', 'measure'].includes(stamp.type)) {
+                    groupName = 'Other (Layout)'
+                } else if (['pen', 'highlighter', 'line'].includes(stamp.type)) {
+                    groupName = 'Pens'
+                } else if (stamp.layerId === 'articulation') {
+                    groupName = 'Articulation'
+                } else if (stamp.layerId === 'fingering') {
+                    groupName = 'Bow/Fingering'
                 } else {
-                    // Try matching by toolset type if layerId is completely missing
-                    const toolGroup = this.app.toolsets.find(g => g.tools.some(t => t.id === stamp.type))
-                    if (toolGroup) {
-                        // Map toolset type to layer id (usually they match now)
-                        targetLayerId = toolGroup.type === 'performance' ? 'text' : toolGroup.type
-                    }
+                    groupName = 'Pens' // Absolute fallback
                 }
             }
 
-            // Final fallback to 'draw' if still not found
-            if (!categoryMap.has(targetLayerId)) {
-                targetLayerId = 'draw'
+            if (!categoryMap.has(groupName)) {
+                categoryMap.set(groupName, [])
             }
-
-            if (categoryMap.has(targetLayerId)) {
-                categoryMap.get(targetLayerId).stamps.push(stamp)
-            }
+            categoryMap.get(groupName).push(stamp)
         })
 
         const list = document.getElementById('erase-all-category-list')
         list.innerHTML = ''
         let hasAny = false
         
-        // 3. Render rows for each layer that has stamps
-        // We iterate app.layers to maintain the user's preferred order
-        this.app.layers.forEach(layer => {
-            const data = categoryMap.get(layer.id)
-            if (!data || data.stamps.length === 0) return
+        // 3. Render rows matching Toolset Names and order
+        const sortedGroups = Array.from(categoryMap.keys()).sort((a, b) => {
+            const orderA = groupMeta[a]?.order ?? 99
+            const orderB = groupMeta[b]?.order ?? 99
+            return orderA - orderB
+        })
+
+        sortedGroups.forEach(groupName => {
+            const stamps = categoryMap.get(groupName)
+            if (stamps.length === 0) return
             
             hasAny = true
             const row = document.createElement('button')
@@ -306,26 +316,24 @@ export class AnnotationManager {
             iconEl.style.display = 'inline-block'
             iconEl.style.width = '12px'
             iconEl.style.height = '12px'
-            iconEl.style.borderRadius = '50%'
-            iconEl.style.backgroundColor = data.color
+            iconEl.style.borderRadius = '2px' // Boxy for toolset distinction
+            iconEl.style.backgroundColor = groupMeta[groupName]?.color || '#cbd5e1'
             iconEl.style.marginRight = '12px'
             
             const nameEl = document.createElement('span')
             nameEl.className = 'erase-all-cat-name'
-            nameEl.textContent = data.name
+            nameEl.textContent = groupName
             
             const countEl = document.createElement('span')
             countEl.className = 'erase-all-cat-count'
-            countEl.textContent = data.stamps.length
+            countEl.textContent = stamps.length
             
             row.appendChild(iconEl)
             row.appendChild(nameEl)
             row.appendChild(countEl)
             
-            // The click handler passes the REAL stamps to erase, 
-            // ensuring legacy mapped items are also caught.
             row.addEventListener('click', () => {
-                this._confirmEraseSpecificStamps(data.name, data.stamps)
+                this._confirmEraseSpecificStamps(groupName, stamps)
             })
             list.appendChild(row)
         })
