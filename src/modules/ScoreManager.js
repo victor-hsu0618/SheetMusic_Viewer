@@ -383,7 +383,7 @@ export class ScoreManager {
             return;
         }
 
-        sorted.forEach(score => {
+        sorted.forEach((score, index) => {
             const card = document.createElement('div');
             card.className = 'score-card';
 
@@ -413,6 +413,9 @@ export class ScoreManager {
             const isFullySynced = score.isSynced && score.isPdfAvailable;
 
             card.innerHTML = `
+                <!-- Numerical Index (#1, #2...) -->
+                <div class="score-index-badge">#${index + 1}</div>
+
                 <!-- Selection Indicator (Album Style) -->
                 <div class="selection-indicator">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
@@ -632,7 +635,8 @@ export class ScoreManager {
             // ONLY delete raw files from Drive if "removeFromCloud" was explicitly chosen
             if (removeFromCloud) {
                 console.log(`[ScoreManager] Deleting cloud files for ${fingerprint}...`);
-                this.app.driveSyncManager.deleteSyncFiles(fingerprint).catch(e => console.error(e));
+                // AWAIT deletion to ensure sync state is finalized before UI update
+                await this.app.driveSyncManager.deleteSyncFiles(fingerprint);
             }
         }
 

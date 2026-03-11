@@ -792,6 +792,16 @@ export class DriveSyncManager {
                     }
                 });
 
+                // Reconciliation: Remove stamps that are local but missing from remote
+                // (Only if they were created BEFORE the remote version, meaning they were likely deleted on another device)
+                const remoteIds = new Set(remoteData.stamps.map(s => s.id));
+                const toPrune = this.app.stamps.filter(s => s.id && !remoteIds.has(s.id) && (s.updatedAt || 0) < remoteVer);
+                if (toPrune.length > 0) {
+                    this.app.stamps = this.app.stamps.filter(s => !toPrune.includes(s));
+                    hasChanges = true;
+                    changesDetail.push(`清空已刪除劃記(${toPrune.length})`);
+                }
+
                 if (newStamps > 0 || updatedStamps > 0) {
                     changesDetail.push(`劃記(收${remoteCount}/增${newStamps}/更${updatedStamps})`);
                 }
@@ -814,6 +824,14 @@ export class DriveSyncManager {
                         bmMadeChanges = true;
                     }
                 });
+
+                // Reconciliation: Remove bookmarks missing from remote
+                const remoteBmIds = new Set(remoteData.bookmarks.map(bm => bm.id));
+                const bmToPrune = this.app.jumpManager.bookmarks.filter(bm => bm.id && !remoteBmIds.has(bm.id) && (bm.updatedAt || 0) < remoteVer);
+                if (bmToPrune.length > 0) {
+                    this.app.jumpManager.bookmarks = this.app.jumpManager.bookmarks.filter(bm => !bmToPrune.includes(bm));
+                    bmMadeChanges = true;
+                }
 
                 if (bmMadeChanges) {
                     this.app.jumpManager.renderBookmarks();
@@ -839,6 +857,14 @@ export class DriveSyncManager {
                         srcMadeChanges = true;
                     }
                 });
+
+                // Reconciliation: Remove sources missing from remote
+                const remoteSrcIds = new Set(remoteData.sources.map(src => src.id));
+                const srcToPrune = this.app.sources.filter(src => src.id && !remoteSrcIds.has(src.id) && (src.updatedAt || 0) < remoteVer);
+                if (srcToPrune.length > 0) {
+                    this.app.sources = this.app.sources.filter(src => !srcToPrune.includes(src));
+                    srcMadeChanges = true;
+                }
 
                 if (srcMadeChanges) {
                     this.app.collaborationManager?.renderSourceUI();
@@ -1154,33 +1180,21 @@ export class DriveSyncManager {
      */
     async deleteManifestEntry(fingerprint) {
         if (!this.manifest || !this.manifest[fingerprint]) return;
-        delete this.manifest[fingerprint];
+
+        // Use Tombstone pattern: Mark as deleted rather than removing key.
+        // This prevents "Self-Healing" from adding it back if cloud files persist briefly.
+        this.manifest[fingerprint] = {
+            ...this.manifest[fingerprint],
+            deleted: true,
+            updated: Date.now()
+        };
+
         await this.saveManifest();
-        console.log(`[DriveSync] Entry ${fingerprint} deleted from manifest.`);
+        console.log(`[DriveSync] Entry ${fingerprint} marked as deleted (Tombstone).`);
     }
 
     /**
      * Delete both PDF and Sync JSON files for a specific fingerprint from Drive.
-     */
-    async deleteSyncFiles(fingerprint) {
-        if (!this.folderId) return;
-
-        try {
-            const pdfId = await this.findSyncFile(fingerprint, 'pdf');
-            const syncId = await this.findSyncFile(fingerprint, 'sync');
-
-            if (pdfId) {
-                await this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${pdfId}`, { method: 'DELETE' });
-                console.log(`[DriveSync] Cloud PDF ${pdfId} deleted.`);
-            }
-            if (syncId) {
-                await this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${syncId}`, { method: 'DELETE' });
-                console.log(`[DriveSync] Cloud Sync JSON ${syncId} deleted.`);
-            }
-        } catch (err) {
-            console.error(`[DriveSync] Failed to delete cloud files for ${fingerprint}:`, err);
-        }
-    }
 
     /**
      * Forces a full rebuild of the manifest by deleting the old one and scanning.
@@ -1344,11 +1358,14 @@ export class DriveSyncManager {
                 }
             }
 
-            // Add cloud-only placeholders for ALL manifest entries not yet in the local registry.
-            // Previously this only ran when entry.syncId existed, which caused PDFs uploaded
-            // without a corresponding sync JSON to be counted in cloud stats but silently
-            // excluded from the library — the source of the data mismatch.
+            // 3. Add cloud-only placeholders for ALL manifest entries not yet in the local registry.
             for (const [fp, entry] of Object.entries(this.manifest)) {
+                // IMPORTANT: Respect Deletion Tombstones
+                if (entry.deleted) {
+                    // console.log(`[DriveSync] Skipping deleted entry ${fp}`);
+                    continue;
+                }
+
                 if (!entry.syncId && !entry.pdfId) continue; // Skip completely empty entries
 
                 // For pdfId-only entries with no name, skip — no meaningful data to show
