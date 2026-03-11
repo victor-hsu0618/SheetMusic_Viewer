@@ -102,7 +102,7 @@ export class JumpManager {
         if (this.measureSection) this.measureSection.classList.toggle('active', tabId === 'measures')
 
         if (tabId === 'measures') {
-            this.renderObjects()
+            this.renderMeasures()
         }
     }
 
@@ -116,53 +116,45 @@ export class JumpManager {
             this.isTyping = false
             this.refreshCalcDisplay()
             await this.loadBookmarks()
-            this.renderObjects() // Pre-load all objects
+            this.renderMeasures() // Pre-load all measures
         }
     }
 
-    renderObjects() {
+    renderMeasures() {
         if (!this.measureList) return
-        // List ALL stamps that are not paths (and not deleted)
-        const stamps = this.app.stamps.filter(s => !s.points && !s.deleted)
+        // List ONLY measure stamps (and not deleted)
+        const measures = this.app.stamps.filter(s => s.type === 'measure' && !s.deleted)
 
-        if (stamps.length === 0) {
-            this.measureList.innerHTML = '<div class="empty-state">No objects found</div>'
+        if (measures.length === 0) {
+            this.measureList.innerHTML = '<div class="empty-state">No measures found</div>'
             return
         }
 
         this.measureList.innerHTML = ''
         // Sort by page and then by Y position
-        const sorted = [...stamps].sort((a, b) => {
+        const sorted = [...measures].sort((a, b) => {
             if (a.page !== b.page) return a.page - b.page
             return a.y - b.y
         })
 
-        sorted.forEach(s => {
+        sorted.forEach(m => {
             const item = document.createElement('div')
             item.className = 'bookmark-item'
             
-            let label = s.data || s.type
-            if (s.type.startsWith('f')) label = `Finger ${s.type.slice(1)}`
-            if (s.type.startsWith('custom-text-') && s.draw?.content) label = s.draw.content
-            if (s.type === 'measure') label = `Measure ${s.data}`
-
             item.innerHTML = `
                 <div class="bm-info">
-                    <span class="bm-page">${s.page}</span>
-                    <div class="flex-column">
-                        <span class="bm-label">${label}</span>
-                        <span class="text-tiny opacity-50">${s.type}</span>
-                    </div>
+                    <span class="bm-page">${m.page}</span>
+                    <span class="bm-label">Measure ${m.data}</span>
                 </div>
                 <button class="bm-delete" title="Delete">&times;</button>
             `
             item.onclick = (e) => {
                 if (e.target.classList.contains('bm-delete')) return
-                this.jumpToStamp(s)
+                this.jumpToStamp(m)
             }
             item.querySelector('.bm-delete').onclick = (e) => {
                 e.stopPropagation()
-                this.deleteObject(s)
+                this.deleteMeasure(m)
             }
             this.measureList.appendChild(item)
         })
@@ -182,12 +174,12 @@ export class JumpManager {
         }
     }
 
-    deleteObject(stamp) {
+    deleteMeasure(stamp) {
         stamp.deleted = true
         stamp.updatedAt = Date.now()
         this.app.saveToStorage(true)
         this.app.redrawStamps(stamp.page)
-        this.renderObjects()
+        this.renderMeasures()
         this.app.updateRulerMarks()
     }
 
