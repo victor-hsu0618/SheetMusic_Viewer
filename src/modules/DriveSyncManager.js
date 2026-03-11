@@ -1088,7 +1088,7 @@ export class DriveSyncManager {
 
         const form = new FormData();
         form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        form.append('file', new Blob([JSON.stringify(content)], { type: 'application/json' }));
+        form.append('file', new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' }));
 
         await this.gdriveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
             method: 'POST',
@@ -1102,7 +1102,7 @@ export class DriveSyncManager {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(content)
+            body: JSON.stringify(content, null, 2)
         });
     }
 
