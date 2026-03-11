@@ -32,6 +32,7 @@ export class DriveSyncManager {
         this.lastSilentAttempt = 0;
         this.silentAttemptCount = 0;
         this.pushDebounceTimer = null;
+        this.lastSyncRequest = 0;
     }
 
     /**
@@ -153,41 +154,20 @@ export class DriveSyncManager {
         if (response.status === 401) {
             console.warn('[DriveSync] Token expired (401), attempting silent refresh...');
 
-            return new Promise((resolve, reject) => {
-                // Prepare a listener for the next token update
-                const originalCallback = this.tokenClient.callback;
-                this.tokenClient.callback = async (resp) => {
-                    // Restore original callback
-                    this.tokenClient.callback = originalCallback;
-
-                    if (resp.error) {
-                        this.isEnabled = false;
-                        this.accessToken = null;
-                        this.refreshUI();
-                        reject(new Error('Silent refresh failed'));
-                        return;
-                    }
-
-                    this.accessToken = resp.access_token;
-                    this.isEnabled = true;
-                    this.refreshUI();
-
-                    // Call original callback as well to trigger folder check/sync
-                    await originalCallback(resp);
-
-                    // Retry the original request
-                    try {
-                        options.headers['Authorization'] = `Bearer ${this.accessToken}`;
-                        const retryResponse = await fetch(url, options);
-                        resolve(retryResponse);
-                    } catch (retryErr) {
-                        reject(retryErr);
-                    }
-                };
-
-                // Trigger silent request
-                this.tokenClient.requestAccessToken({ prompt: '' });
-            });
+            try {
+                // Use the new Promise-based signIn (silent)
+                await this.signIn(true);
+                
+                // Retry with new token
+                options.headers['Authorization'] = `Bearer ${this.accessToken}`;
+                return await fetch(url, options);
+            } catch (err) {
+                console.error('[DriveSync] Silent refresh failed during fetch:', err);
+                this.isEnabled = false;
+                this.accessToken = null;
+                this.refreshUI();
+                throw err;
+            }
         }
 
         return response;
@@ -359,15 +339,17 @@ export class DriveSyncManager {
 
     /**
      * Request access token.
+     * @param {boolean} isSilent If true, attempts silent sign-in without prompt.
+     * @returns {Promise<string>} Access token or rejects with error.
      */
-    signIn(isSilent = false) {
+    async signIn(isSilent = false) {
         if (!this.tokenClient) {
             this.addLog('正在嘗試重新初始化 Google 服務...', 'system');
             this.init();
         }
         if (!this.tokenClient) {
             this.addLog('Google 授權組件尚未就緒，請稍後再試', 'error');
-            return;
+            throw new Error('Google Identity Services not ready');
         }
 
         // Prevention: don't overlap auth requests
@@ -382,54 +364,69 @@ export class DriveSyncManager {
             // If failed too many times, wait 5 minutes
             if (this.silentAttemptCount >= 3 && (now - this.lastSilentAttempt) < 300000) {
                 console.warn('[DriveSync] Too many silent auth failures, cooling down.');
-                return;
+                throw new Error('Too many silent auth failures');
             }
             this.lastSilentAttempt = now;
         }
 
         this.isAuthenticating = true;
-        try {
-            // Only log if not too frequent or if manual
-            const shouldLog = !isSilent || this.silentAttemptCount === 0 || (Date.now() - this.lastSilentAttempt > 60000);
-            if (shouldLog) {
-                this.addLog(isSilent ? '正在背景連線...' : '正在請求授權...', 'system');
-            }
 
-            // Clear any existing timeout
-            if (this.authTimeout) clearTimeout(this.authTimeout);
-
-            // Set a timeout to notify user if popup doesn't return
-            this.authTimeout = setTimeout(() => {
+        return new Promise((resolve, reject) => {
+            // Setup a one-time wrapper for the callback
+            const originalCallback = this.tokenClient.callback;
+            this.tokenClient.callback = async (response) => {
+                // Restore original callback
+                this.tokenClient.callback = originalCallback;
+                this.isAuthenticating = false;
                 if (this.authTimeout) {
-                    this.addLog(isSilent ? '背景連線超時，請點擊「連接」手動登入' : '授權請求無回應，請檢查是否有彈出式視窗被瀏覽器封鎖', 'warn');
+                    clearTimeout(this.authTimeout);
                     this.authTimeout = null;
-                    this.isAuthenticating = false;
-                    if (isSilent) this.silentAttemptCount++;
                 }
-            }, 20000); // 20 seconds timeout
 
-            // Safari Popup Handling: ensure call is triggered from user interaction
-            const options = isSilent ? {
-                prompt: '',
-                hint: localStorage.getItem('scoreflow_drive_user_hint') || ''
-            } : { prompt: 'select_account' };
+                // Handle standard callback logic (setting this.accessToken, etc.)
+                await originalCallback(response);
 
-            this.tokenClient.requestAccessToken(options);
-        } catch (err) {
-            this.isAuthenticating = false;
-            if (isSilent) this.silentAttemptCount++;
+                if (response.error) {
+                    reject(new Error(response.error));
+                } else {
+                    resolve(response.access_token);
+                }
+            };
 
-            if (this.authTimeout) {
-                clearTimeout(this.authTimeout);
+            // Set a safety timeout
+            this.authTimeout = setTimeout(() => {
+                this.tokenClient.callback = originalCallback;
+                this.isAuthenticating = false;
                 this.authTimeout = null;
+                reject(new Error('Auth Timeout'));
+            }, 30000);
+
+            try {
+                // Only log if not too frequent or if manual
+                const shouldLog = !isSilent || this.silentAttemptCount === 0 || (Date.now() - this.lastSilentAttempt > 60000);
+                if (shouldLog) {
+                    this.addLog(isSilent ? '正在背景連線...' : '正在請求授權...', 'system');
+                }
+
+                // Safari Popup Handling: ensure call is triggered from user interaction
+                const options = isSilent ? {
+                    prompt: '',
+                    hint: localStorage.getItem('scoreflow_drive_user_hint') || ''
+                } : { prompt: 'select_account' };
+
+                this.tokenClient.requestAccessToken(options);
+            } catch (err) {
+                this.tokenClient.callback = originalCallback;
+                this.isAuthenticating = false;
+                if (this.authTimeout) {
+                    clearTimeout(this.authTimeout);
+                    this.authTimeout = null;
+                }
+                if (isSilent) this.silentAttemptCount++;
+                console.error('[DriveSync] Sign-in request failed:', err);
+                reject(err);
             }
-            console.error('[DriveSync] Sign-in request failed:', err);
-            if (isSilent) {
-                this.addLog('背景連線被瀏覽器攔截，請手動點擊「連接」', 'warn');
-            } else {
-                this.addLog('請求失敗: ' + (err.message || '未知錯誤'), 'error');
-            }
-        }
+        });
     }
 
     signOut() {
@@ -452,7 +449,11 @@ export class DriveSyncManager {
     startAutoSync() {
         this.stopAutoSync();
         this.syncTimer = setInterval(() => this.sync(), this.syncInterval);
-        this.sync(); // Immediate first sync
+        
+        // Only run immediate sync if not already busy
+        if (!this.isSyncing) {
+            this.sync(); 
+        }
     }
 
     stopAutoSync() {
@@ -464,14 +465,31 @@ export class DriveSyncManager {
 
     async sync() {
         if (!this.isEnabled || this.isSyncing) return;
+
+        // Throttling: Don't run full sync more than once every 5 seconds even if requested
+        const now = Date.now();
+        if (this.lastSyncRequest && (now - this.lastSyncRequest) < 5000) {
+            console.log('[DriveSync] Sync requested too soon, skipping throttling.');
+            return;
+        }
+        this.lastSyncRequest = now;
         this.isSyncing = true; // Guard immediately
+
+        // Debug Trace: Find who is calling sync
+        console.groupCollapsed(`[DriveSync] Sync Cycle started at ${new Date().toLocaleTimeString()}`);
+        console.trace('Caller Trace:');
+        console.groupEnd();
 
         // Sync Guard: If enabled but no token, try a silent reconnect once
         if (!this.accessToken) {
             console.log('[DriveSync] Enabled but no access token. Attempting silent reconnect...');
-            this.signIn(true);
-            this.isSyncing = false;
-            return;
+            try {
+                await this.signIn(true);
+            } catch (err) {
+                console.error('[DriveSync] Silent reconnect failed in sync loop:', err);
+                this.isSyncing = false;
+                return;
+            }
         }
 
         console.log('[DriveSync] Syncing cycle started...');
