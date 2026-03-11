@@ -112,11 +112,27 @@ export class AnnotationRenderer {
         const y = stamp.y * canvas.height
         const isBow = stamp.type === 'up-bow' || stamp.type === 'down-bow'
 
+        // Data-Driven Rendering: Find tool metadata early (Prioritize current toolsets for global updates)
+        let toolDef = null
+        for (const set of this.app.toolsets) {
+            const tool = set.tools.find(t => t.id === stamp.type)
+            if (tool) {
+                toolDef = tool
+                break
+            }
+        }
+        // Fallback to embedded draw data if tool not found in current toolsets
+        if (!toolDef && stamp.draw) {
+            toolDef = { draw: stamp.draw }
+        }
+
+        const toolSize = toolDef?.draw?.size || 24;
+
         // Smart Sizing: baseSize * PageFactor * UserMultiplier * ScoreMultiplier * ZoomScale
         const pageFactor = this.app.pageScales[stamp.page] || 1.0
         const userMultiplier = this.app.stampSizeMultiplier || 1.0
         const scoreMultiplier = this.app.scoreStampScale || 1.0
-        const baseSize = 26 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
+        const baseSize = 26 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * (toolSize / 24)
 
         const size = isBow ? baseSize * 0.85 : baseSize
         const textScale = size / 21 // Relative to the original baseline
@@ -160,20 +176,6 @@ export class AnnotationRenderer {
         ctx.lineWidth = (isHovered ? 3.5 : 2.2) * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
-
-        // Data-Driven Rendering: Find tool metadata (Prioritize current toolsets for global updates)
-        let toolDef = null
-        for (const set of this.app.toolsets) {
-            const tool = set.tools.find(t => t.id === stamp.type)
-            if (tool) {
-                toolDef = tool
-                break
-            }
-        }
-        // Fallback to embedded draw data if tool not found in current toolsets
-        if (!toolDef && stamp.draw) {
-            toolDef = { draw: stamp.draw }
-        }
 
         if (toolDef && toolDef.draw) {
             const d = toolDef.draw
