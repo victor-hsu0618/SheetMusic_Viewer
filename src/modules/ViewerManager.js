@@ -36,6 +36,21 @@ export class ViewerManager {
             rootMargin: '1000px 0px', // More aggressive pre-rendering (1000px)
             threshold: 0.01
         })
+
+        // Track scroll position for persistence
+        if (this.app.viewer) {
+            let scrollTimer;
+            this.app.viewer.addEventListener('scroll', () => {
+                clearTimeout(scrollTimer);
+                scrollTimer = setTimeout(() => {
+                    if (this.pdfFingerprint && this.app.scoreDetailManager) {
+                        this.app.scoreDetailManager.currentInfo.lastScrollTop = this.app.viewer.scrollTop;
+                        // Silent save (don't mark as unsynced for just scroll)
+                        this.app.scoreDetailManager.save(this.pdfFingerprint);
+                    }
+                }, 1000); // Debounce save to every 1 second
+            }, { passive: true });
+        }
     }
 
     async handleUpload(e) {
@@ -178,12 +193,6 @@ export class ViewerManager {
         const loadingId = ++this.latestLoadingId;
         console.log(`[ViewerManager] loadPDF started (id: ${loadingId}) for: ${filename || 'unknown'}`);
 
-        // Reset scroll position immediately to avoid flicker or scroll restoration issues
-        if (this.app.viewer) {
-            this.app.viewer.scrollTop = 0;
-            this.app.viewer.scrollLeft = 0;
-        }
-
         if (filename) this.activeScoreName = filename;
         this.isFitToHeight = false;
         this._pageMetrics = {};
@@ -325,10 +334,12 @@ export class ViewerManager {
         // 3. Update cached metrics once after initial layout
         this.updatePageMetrics()
 
-        // Ensure scroll to top after all pages are added to the DOM
+        // Ensure scroll restoration after all pages are added to the DOM
         if (this.app.viewer) {
-            this.app.viewer.scrollTop = 0;
+            const savedScroll = this.app.scoreDetailManager?.currentInfo?.lastScrollTop || 0;
+            this.app.viewer.scrollTop = savedScroll;
             this.app.viewer.scrollLeft = 0;
+            console.log(`[ViewerManager] Restored scroll to: ${savedScroll}`);
         }
 
         if (this.app.inputManager) this.app.inputManager.updateDividerPositions()

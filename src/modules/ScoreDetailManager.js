@@ -10,7 +10,8 @@ export class ScoreDetailManager {
             lastAuthor: null,
             mediaList: [], // [{ id, label, type, source }]
             activeMediaId: null,
-            stampScale: 1.0
+            stampScale: 1.0,
+            lastScrollTop: 0
         }
         this.isLoading = false
         this.panel = null
@@ -506,7 +507,8 @@ export class ScoreDetailManager {
                     lastAuthor: info.lastAuthor || null,
                     mediaList: info.mediaList || (info.media ? [{ id: 'legacy', label: 'Default Video', ...info.media }] : []),
                     activeMediaId: info.activeMediaId || (info.media ? 'legacy' : null),
-                    stampScale: info.stampScale || 1.0
+                    stampScale: info.stampScale || 1.0,
+                    lastScrollTop: info.lastScrollTop || 0
                 }
                 this.app.scoreStampScale = this.currentInfo.stampScale
             } catch (err) {
@@ -517,7 +519,8 @@ export class ScoreDetailManager {
                     lastEdit: 0,
                     mediaList: [],
                     activeMediaId: null,
-                    stampScale: 1.0
+                    stampScale: 1.0,
+                    lastScrollTop: 0
                 }
             }
         } else {
@@ -533,7 +536,8 @@ export class ScoreDetailManager {
                 lastEdit: 0,
                 mediaList: [],
                 activeMediaId: null,
-                stampScale: 1.0
+                stampScale: 1.0,
+                lastScrollTop: 0
             }
             this.app.scoreStampScale = 1.0
         }
