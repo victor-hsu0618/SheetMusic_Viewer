@@ -38,7 +38,7 @@ export const TOOLSETS = [
         tools: [
             { id: 'down-bow', label: 'Down', icon: '<path d="M8 11.5h8v4.3 M8 15.8v-4.3 M16 15.8v-4.3" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.26 0.17 L -0.26 -0.26 L 0.26 -0.26 L 0.26 0.17' } },
             { id: 'up-bow', label: 'Up', icon: '<path d="M8 9.5l4 7l4-7" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.26 -0.3 L 0.4 0 L -0.26 -0.3' } },
-            { id: 'thumb', label: 'Thumb', icon: '<ellipse cx="12" cy="11" rx="1.9" ry="3.2" fill="none" stroke="currentColor" stroke-width="0.8" /><line x1="12" y1="14.2" x2="12" y2="17.4" stroke="currentColor" stroke-width="0.8" />', draw: { type: 'complex', variant: 'thumb', size: 15 } },
+            { id: 'thumb', label: 'Thumb', icon: '<ellipse cx="12" cy="11" rx="1.9" ry="3.2" fill="none" stroke="currentColor" stroke-width="0.8" /><line x1="12" y1="14.2" x2="12" y2="17.4" stroke="currentColor" stroke-width="0.8" />', draw: { type: 'complex', variant: 'thumb', size: 16 } },
             { id: 'f1', label: '1', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">1</text>', draw: { type: 'text', content: '1', font: '300', size: 18 } },
             { id: 'f2', label: '2', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">2</text>', draw: { type: 'text', content: '2', font: '300', size: 18 } },
             { id: 'f3', label: '3', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">3</text>', draw: { type: 'text', content: '3', font: '300', size: 18 } },
@@ -60,8 +60,8 @@ export const TOOLSETS = [
             { id: 'staccato', label: 'Staccato', icon: '<circle cx="12" cy="12" r="1.5" fill="currentColor" />', draw: { type: 'shape', shape: 'circle', radius: 0.12, fill: true } },
             { id: 'tenuto', label: 'Tenuto', icon: '<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.8" />', draw: { type: 'path', data: 'M -0.4 0 L 0.4 0' } },
             { id: 'fermata', label: 'Fermata', icon: '<path d="M7 15a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13.5" r="1.2" fill="currentColor" />', draw: { type: 'complex', variant: 'fermata' } },
-            { id: 'sharp', label: 'Sharp', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♯</text>', draw: { type: 'text', content: '♯', font: '500', size: 16, fontFace: 'serif' } },
-            { id: 'flat', label: 'Flat', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♭</text>', draw: { type: 'text', content: '♭', font: '500', size: 16, fontFace: 'serif' } }        ]
+            { id: 'sharp', label: 'Sharp', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♯</text>', draw: { type: 'text', content: '♯', font: '500', size: 18, fontFace: 'serif' } },
+            { id: 'flat', label: 'Flat', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♭</text>', draw: { type: 'text', content: '♭', font: '500', size: 18, fontFace: 'serif' } }        ]
     },
     {
         name: 'Text',
