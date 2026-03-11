@@ -1201,3 +1201,16 @@ code {
   min-width: 40px;
   text-align: center;
 }
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.text-tiny {
+    font-size: 10px;
+}
+
+.opacity-50 {
+    opacity: 0.5;
+}
