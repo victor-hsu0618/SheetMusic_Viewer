@@ -195,7 +195,8 @@ export class InteractionManager {
                     updatedAt: Date.now()
                 }
             } else if (toolType === 'eraser') {
-                const target = this.app.hoveredStamp || this.app.findClosestStamp(pageNum, pos.x, pos.y)
+                // IMPORTANT: Eraser should detect targets across all visible sources
+                const target = this.app.hoveredStamp || this.app.findClosestStamp(pageNum, pos.x, pos.y, true)
                 if (target) {
                     this.app.eraseStampTarget(target)
                     this.app.hoveredStamp = null
@@ -282,7 +283,8 @@ export class InteractionManager {
             // Eraser hover
             if (this.app.activeStampType === 'eraser' && !isInteracting) {
                 const pos = getPos(e)
-                const found = this.app.findClosestStamp(pageNum, pos.x, pos.y)
+                // Use true for allSources to detect anything visible
+                const found = this.app.findClosestStamp(pageNum, pos.x, pos.y, true)
                 if (found !== this.app.hoveredStamp) {
                     this.app.hoveredStamp = found
                     this.app.redrawStamps(pageNum)

@@ -75,20 +75,57 @@ export class AnnotationManager {
      * Find all annotations near a normalized coordinate (x, y).
      */
     findNearbyStamps(page, x, y, allSources = false) {
-        const threshold = 0.06
+        // More precise threshold: 0.04 instead of 0.06
+        const threshold = 0.04
         const results = []
+        
+        // Use all visible sources if allSources is true
+        const activeSourceIds = allSources 
+            ? this.app.sources.filter(s => s.visible).map(s => s.id)
+            : [this.app.activeSourceId]
+
         this.app.stamps.forEach(s => {
             if (s.page !== page || s.deleted) return
-            if (!allSources && s.sourceId !== this.app.activeSourceId) return
+            if (!activeSourceIds.includes(s.sourceId)) return
+            
             let dist
             if (s.points && s.points.length > 0) {
-                dist = Math.min(...s.points.map(p => Math.sqrt(Math.pow(p.x - x, 2) + Math.pow(p.y - y, 2))))
+                // Improved Path distance: Check all segments (line-point distance)
+                dist = this._minDistanceToPath(x, y, s.points)
             } else {
+                // Stamp distance: simple Euclidean
                 dist = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2))
             }
+            
             if (dist < threshold) results.push({ stamp: s, dist })
         })
         return results.sort((a, b) => a.dist - b.dist).map(r => r.stamp)
+    }
+
+    /**
+     * Calculate minimum distance from a point to a path (series of segments).
+     */
+    _minDistanceToPath(px, py, points) {
+        if (points.length === 0) return Infinity
+        if (points.length === 1) return Math.sqrt(Math.pow(points[0].x - px, 2) + Math.pow(points[0].y - py, 2))
+        
+        let minDist = Infinity
+        for (let i = 0; i < points.length - 1; i++) {
+            const d = this._distToSegment(px, py, points[i], points[i+1])
+            if (d < minDist) minDist = d
+        }
+        return minDist
+    }
+
+    /**
+     * Distance from point P to line segment AB.
+     */
+    _distToSegment(px, py, a, b) {
+        const l2 = Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2)
+        if (l2 === 0) return Math.sqrt(Math.pow(a.x - px, 2) + Math.pow(a.y - py, 2))
+        let t = ((px - a.x) * (b.x - a.x) + (py - a.y) * (b.y - a.y)) / l2
+        t = Math.max(0, Math.min(1, t))
+        return Math.sqrt(Math.pow(px - (a.x + t * (b.x - a.x)), 2) + Math.pow(py - (a.y + t * (b.y - a.y)), 2))
     }
 
     /**
