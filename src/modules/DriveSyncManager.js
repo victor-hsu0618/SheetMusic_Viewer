@@ -632,7 +632,8 @@ export class DriveSyncManager {
         let processedCount = 0;
         const activeFp = this.app.pdfFingerprint;
         
-        console.log(`[SyncDebug] syncBatch starting. Registry size: ${this.app.scoreManager.registry.length}. Manifest size: ${Object.keys(this.manifest).length}`);
+        // Registry length
+        const total = this.app.scoreManager.registry.length;
 
         // Process ALL scores in registry (both local and cloud-only)
         for (const score of this.app.scoreManager.registry) {
@@ -642,57 +643,42 @@ export class DriveSyncManager {
             const fp = score.fingerprint;
             const entry = this.manifest[fp];
             
-            if (!entry) {
-                // If not in manifest, it might be a newly added local file that needs first-time PDF upload
-                const needsInitialPDF = !score.isCloudOnly;
-                if (!needsInitialPDF) continue; 
-            }
+            // If not in manifest, skip (unless it's local and needs upload)
+            if (!entry && score.isCloudOnly) continue;
 
-            const needsPDF = entry ? (!score.isCloudOnly && !entry.pdfId) : !score.isCloudOnly;
-            const canPull = !!(entry && entry.syncId);
-            const needsPush = !score.isCloudOnly && !score.isSynced;
-            // For cloud-only: pull until cloudDataPulled is set.
-            // For local scores: pull whenever manifest's updated timestamp is newer than last pulled version.
-            const needsPull = canPull && (
-                score.isCloudOnly
-                    ? !score.cloudDataPulled
-                    : (entry.updated || 0) > (score.lastPulledVersion || 0)
-            );
-            // Download PDF from cloud if available there but missing locally
-            const needsPdfDownload = score.isCloudOnly && !!(entry && entry.pdfId);
-            // Generate missing thumbnail for scores that have a local PDF but no thumbnail
-            const needsThumbnail = !score.isCloudOnly && !score.thumbnail;
-
-            // Metadata Check: If title is generic, we MUST pull to get the real name
+            // Background PULL Logic:
+            // 1. If it's CloudOnly and we haven't pulled its data yet -> MUST PULL
+            // 2. If the title is generic (Unknown) -> MUST PULL
+            // 3. If there's a syncId and manifest says it was updated recently -> PULL
             const isGeneric = !score.title || score.title === 'Unknown' || score.title.includes('score_buf_');
-            const shouldPullMeta = canPull && isGeneric;
+            const neverPulled = score.isCloudOnly && !score.cloudDataPulled;
+            const hasUpdate = entry && (entry.updated || 0) > (score.lastPulledVersion || 0);
+            
+            const needsPull = !!(entry && entry.syncId) && (isGeneric || neverPulled || hasUpdate);
+            
+            // Background PUSH Logic:
+            const needsPush = !score.isCloudOnly && !score.isSynced;
+            
+            // PDF Logic:
+            const needsPDF = !score.isCloudOnly && (!entry || !entry.pdfId);
 
-            if (needsPDF || needsPush || needsPull || needsPdfDownload || needsThumbnail || shouldPullMeta) {
+            if (needsPull || needsPush || needsPDF) {
                 processedCount++;
-                // Limit to 8 items per cycle for better balance
-                if (processedCount > 8) break;
+                // Process 5 at a time
+                if (processedCount > 5) break; 
 
                 workDone = true;
-                console.log(`[Sync] Background processing: ${score.title || fp.slice(0,8)}... (Reason: PDF=${needsPDF}, PdfDownload=${needsPdfDownload}, Thumb=${needsThumbnail}, Push=${needsPush}, Pull=${needsPull}, PullMeta=${shouldPullMeta})`);
-                await this.syncScore(fp, needsPDF, canPull, needsPush);
+                console.log(`[Sync] Background processing score: ${score.title || fp.slice(0,8)}... (Reason: Pull=${needsPull}, Push=${needsPush}, PDF=${needsPDF})`);
+                
+                await this.syncScore(fp, needsPDF, needsPull, needsPush);
 
-                // After sync, record manifest's updated timestamp so needsPull is false next cycle
-                // (avoids loop caused by entry.updated being slightly newer than remoteVer)
-                const refreshedEntry = this.manifest[fp];
-                if (refreshedEntry && needsPull) {
-                    score.lastPulledVersion = Math.max(score.lastPulledVersion || 0, refreshedEntry.updated || 0);
-                    await this.app.scoreManager.saveRegistry();
-                }
-
-                // Short sleep to prevent UI jank
-                await new Promise(r => setTimeout(r, 600));
+                // Yield to UI
+                await new Promise(r => setTimeout(r, 800));
             }
         }
 
         if (workDone) {
-            console.log(`[Sync] Background cycle finished. Processed ${processedCount} items.`);
-        } else {
-            console.log('[SyncDebug] No background items needed processing.');
+            console.log(`[Sync] Background batch finished. Processed ${processedCount} items.`);
         }
     }
 
@@ -1533,8 +1519,10 @@ export class DriveSyncManager {
 
     /**
      * Delete a score entry from the cloud manifest.
+     * @param {string} fingerprint
+     * @param {string} [title] - Human-readable title stored in the tombstone record
      */
-    async deleteManifestEntry(fingerprint) {
+    async deleteManifestEntry(fingerprint, title = null) {
         if (!this.manifest) this.manifest = {};
 
         // Always create tombstone even if entry didn't exist yet —
@@ -1542,11 +1530,13 @@ export class DriveSyncManager {
         this.manifest[fingerprint] = {
             ...this.manifest[fingerprint],
             deleted: true,
-            updated: Date.now()
+            deletedAt: Date.now(),
+            updated: Date.now(),
+            ...(title && { name: title }),
         };
 
         await this.saveManifest();
-        console.log(`[DriveSync] Entry ${fingerprint} marked as deleted (Tombstone).`);
+        console.log(`[DriveSync] Entry ${fingerprint.slice(0, 8)} tombstoned (title: ${title || 'unknown'}).`);
     }
 
     /**

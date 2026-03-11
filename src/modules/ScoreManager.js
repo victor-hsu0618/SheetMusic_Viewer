@@ -288,7 +288,7 @@ export class ScoreManager {
             await page.render({ canvasContext: context, viewport: viewport }).promise;
             return canvas.toDataURL('image/webp', 0.7);
         } catch (err) {
-            console.error('[ScoreManager] Thumbnail failed:', err);
+            console.warn('[ScoreManager] Thumbnail failed:', err);
             return null;
         }
     }
@@ -399,7 +399,16 @@ export class ScoreManager {
                 }
 
                 // New entry — generate thumbnail and basic metadata
-                const thumbnail = await this.generateThumbnail(uint8.slice(0)).catch(() => null);
+                let thumbnail = null;
+                try {
+                    thumbnail = await this.generateThumbnail(uint8.slice(0));
+                } catch (err) {
+                    if (err.name === 'InvalidPDFException') {
+                        console.warn(`[ScoreManager] Invalid PDF structure in ${key}, removing corrupt buffer.`);
+                        await db.remove(key);
+                        continue;
+                    }
+                }
                 // Try to get score detail for title/composer
                 const detail = await db.get(`score_detail_${fp}`) || await db.get(`score_detail_${key.slice('score_buf_'.length)}`);
                 const lsStamps = localStorage.getItem(`scoreflow_stamps_${fp}`) || localStorage.getItem(`scoreflow_stamps_${key.slice('score_buf_'.length)}`);
@@ -714,7 +723,7 @@ export class ScoreManager {
             // If it's a broken sync item, emphasize clearing cloud record
             const message = isBroken ?
                 `此樂譜為「Broken Sync」狀態 (雲端遺失檔案)。\n您要僅從本地列表移除，還是同時清除雲端索引記錄？` :
-                `確定要刪除 "${score.title}" 嗎？\n(本地數據將在刪除前匯出備份)`;
+                `確定要刪除 "${score.title}" 嗎？`;
 
             const result = isSynced ? await this.app.showDialog({
                 title: '刪除樂譜',
@@ -733,32 +742,15 @@ export class ScoreManager {
             if (result === 'all') removeFromCloud = true;
         }
 
-        // 0. Backup before deletion (Only if local buffer exists)
-        try {
-            const buffer = await db.get(`score_buf_${fingerprint}`);
-            if (buffer) {
-                console.log(`[ScoreManager] Backing up data for ${fingerprint} before deletion...`);
-                const backupData = await this.exportScoreData(fingerprint);
-                const safeName = (score.title || 'backup').replace(/[^a-z0-9]/gi, '_');
-                this.triggerDownload(`ScoreFlow_Backup_${safeName}_${fingerprint.slice(0, 8)}.json`, backupData);
-            }
-        } catch (err) {
-            console.error('[ScoreManager] Backup failed, proceeding anyway:', err);
-        }
+        // 1. Cloud Cleanup — always tombstone if Drive sync is connected, even for local-only scores.
+        // This prevents the score from being re-imported as a cloud placeholder on the next scan.
+        if (this.app.driveSyncManager) {
+            await this.app.driveSyncManager.deleteManifestEntry(fingerprint, score.title);
 
-        // 1. Cloud Cleanup
-        // NEW: If it's a synced or cloud-only score, ALWAYS remove from manifest 
-        // even if we only do "local" deletion. This prevents the "deletion loop" where 
-        // refresh re-imports it as a cloud placeholder.
-        const isSynced = score.isSynced || score.isCloudOnly;
-        if (isSynced && this.app.driveSyncManager) {
-            console.log(`[ScoreManager] Unlinking ${fingerprint} from cloud manifest.`);
-            await this.app.driveSyncManager.deleteManifestEntry(fingerprint);
-
-            // ONLY delete raw files from Drive if "removeFromCloud" was explicitly chosen
-            if (removeFromCloud) {
+            // Only delete the actual Drive files if user chose "remove from cloud"
+            const isSynced = score.isSynced || score.isCloudOnly;
+            if (isSynced && removeFromCloud) {
                 console.log(`[ScoreManager] Deleting cloud files for ${fingerprint}...`);
-                // AWAIT deletion to ensure sync state is finalized before UI update
                 await this.app.driveSyncManager.deleteSyncFiles(fingerprint);
             }
         }
