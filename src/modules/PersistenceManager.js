@@ -94,7 +94,19 @@ export class PersistenceManager {
 
         // SYNC: Preserve custom layers while respecting core defaults
         if (layersData) {
-            const storedLayers = JSON.parse(layersData)
+            let storedLayers = JSON.parse(layersData)
+            
+            // --- Migration logic for legacy names/IDs ---
+            storedLayers.forEach(l => {
+                if (l.id === 'performance') {
+                    l.id = 'text'; 
+                    l.name = 'Text';
+                }
+                if (l.id === 'layout' && l.name !== 'Other (Layout)') {
+                    l.name = 'Other (Layout)';
+                }
+            });
+
             this.app.layers = storedLayers
             INITIAL_LAYERS.forEach(coreLayer => {
                 if (!this.app.layers.find(l => l.id === coreLayer.id)) {
@@ -111,6 +123,10 @@ export class PersistenceManager {
             }
             this.app.stamps = parsedStamps
             this.app.stamps.forEach(s => {
+                // Migrate stamp layer IDs too
+                if (s.layerId === 'performance') s.layerId = 'text';
+                if (s.layerId === 'other' || s.layerId === 'anchor') s.layerId = 'layout';
+
                 if (!this.app.layers.find(l => l.id === s.layerId)) {
                     s.layerId = 'draw'
                 }
