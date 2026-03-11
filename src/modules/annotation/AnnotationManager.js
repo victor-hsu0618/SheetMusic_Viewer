@@ -628,8 +628,9 @@ export class AnnotationManager {
             if (existingMeasure) x = existingMeasure.x
         }
 
+        const now = Date.now();
         this.app.stamps.push({
-            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`,
             page,
             layerId: targetLayerId,
             sourceId: this.app.activeSourceId,
@@ -637,7 +638,9 @@ export class AnnotationManager {
             x,
             y,
             data,
-            draw
+            draw,
+            createdAt: now,
+            updatedAt: now
         })
 
         if (type === 'anchor' || type === 'measure') {
