@@ -178,6 +178,12 @@ export class ViewerManager {
         const loadingId = ++this.latestLoadingId;
         console.log(`[ViewerManager] loadPDF started (id: ${loadingId}) for: ${filename || 'unknown'}`);
 
+        // Reset scroll position immediately to avoid flicker or scroll restoration issues
+        if (this.app.viewer) {
+            this.app.viewer.scrollTop = 0;
+            this.app.viewer.scrollLeft = 0;
+        }
+
         if (filename) this.activeScoreName = filename;
         this.isFitToHeight = false;
         this._pageMetrics = {};
@@ -318,6 +324,12 @@ export class ViewerManager {
 
         // 3. Update cached metrics once after initial layout
         this.updatePageMetrics()
+
+        // Ensure scroll to top after all pages are added to the DOM
+        if (this.app.viewer) {
+            this.app.viewer.scrollTop = 0;
+            this.app.viewer.scrollLeft = 0;
+        }
 
         if (this.app.inputManager) this.app.inputManager.updateDividerPositions()
         console.log(`[ViewerManager] renderPDF layout completed for ${numPages} pages.`);
