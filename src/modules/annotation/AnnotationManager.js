@@ -244,7 +244,7 @@ export class AnnotationManager {
         if (!this.app.eraseAllModal) return
         const categoryMap = new Map()
         
-        // 1. Initialize buckets based on CURRENT Layers (Notation Categories)
+        // 1. Initialize buckets based on CURRENT Layers
         this.app.layers.forEach(layer => {
             categoryMap.set(layer.id, { 
                 name: layer.name,
@@ -253,24 +253,37 @@ export class AnnotationManager {
             })
         })
 
-        // 2. Sort existing stamps into layer buckets
+        // 2. Sort existing stamps into layer buckets with Legacy ID mapping
         this.app.stamps.forEach(stamp => {
             if (stamp.deleted) return
             
-            // Group by layerId
-            if (categoryMap.has(stamp.layerId)) {
-                categoryMap.get(stamp.layerId).stamps.push(stamp)
-            } else {
-                // Fallback for orphaned stamps (shouldn't happen with resetLayers logic)
-                if (!categoryMap.has('draw')) {
-                   const drawLayer = this.app.layers.find(l => l.id === 'draw')
-                   if (drawLayer) {
-                       categoryMap.set('draw', { name: drawLayer.name, color: drawLayer.color, stamps: [] })
-                   }
+            let targetLayerId = stamp.layerId
+
+            // --- Robust ID Mapping (Legacy support) ---
+            if (!targetLayerId || !categoryMap.has(targetLayerId)) {
+                if (targetLayerId === 'performance' || stamp.type.startsWith('text-') || stamp.type.startsWith('custom-text-')) {
+                    targetLayerId = 'text'
+                } else if (targetLayerId === 'anchor' || targetLayerId === 'other' || ['anchor', 'music-anchor', 'measure'].includes(stamp.type)) {
+                    targetLayerId = 'layout'
+                } else if (targetLayerId === 'articulation') {
+                    targetLayerId = 'articulation' // Keep or fix if ID changed to 'articulations'
+                } else {
+                    // Try matching by toolset type if layerId is completely missing
+                    const toolGroup = this.app.toolsets.find(g => g.tools.some(t => t.id === stamp.type))
+                    if (toolGroup) {
+                        // Map toolset type to layer id (usually they match now)
+                        targetLayerId = toolGroup.type === 'performance' ? 'text' : toolGroup.type
+                    }
                 }
-                if (categoryMap.has('draw')) {
-                    categoryMap.get('draw').stamps.push(stamp)
-                }
+            }
+
+            // Final fallback to 'draw' if still not found
+            if (!categoryMap.has(targetLayerId)) {
+                targetLayerId = 'draw'
+            }
+
+            if (categoryMap.has(targetLayerId)) {
+                categoryMap.get(targetLayerId).stamps.push(stamp)
             }
         })
 
@@ -279,37 +292,43 @@ export class AnnotationManager {
         let hasAny = false
         
         // 3. Render rows for each layer that has stamps
-        for (const [layerId, { name, color, stamps }] of categoryMap.entries()) {
-            if (stamps.length === 0) continue
-            hasAny = true
+        // We iterate app.layers to maintain the user's preferred order
+        this.app.layers.forEach(layer => {
+            const data = categoryMap.get(layer.id)
+            if (!data || data.stamps.length === 0) return
             
+            hasAny = true
             const row = document.createElement('button')
             row.className = 'erase-all-cat-row'
             
-            // Use a color dot as the "icon" to match the Sidebar/Settings UI
             const iconEl = document.createElement('span')
             iconEl.className = 'erase-all-cat-icon'
             iconEl.style.display = 'inline-block'
             iconEl.style.width = '12px'
             iconEl.style.height = '12px'
             iconEl.style.borderRadius = '50%'
-            iconEl.style.backgroundColor = color
+            iconEl.style.backgroundColor = data.color
             iconEl.style.marginRight = '12px'
             
             const nameEl = document.createElement('span')
             nameEl.className = 'erase-all-cat-name'
-            nameEl.textContent = name
+            nameEl.textContent = data.name
             
             const countEl = document.createElement('span')
             countEl.className = 'erase-all-cat-count'
-            countEl.textContent = stamps.length
+            countEl.textContent = data.stamps.length
             
             row.appendChild(iconEl)
             row.appendChild(nameEl)
             row.appendChild(countEl)
-            row.addEventListener('click', () => this._confirmEraseCategory(layerId, name, stamps.length))
+            
+            // The click handler passes the REAL stamps to erase, 
+            // ensuring legacy mapped items are also caught.
+            row.addEventListener('click', () => {
+                this._confirmEraseSpecificStamps(data.name, data.stamps)
+            })
             list.appendChild(row)
-        }
+        })
 
         const activeStamps = this.app.stamps.filter(s => !s.deleted)
         const total = activeStamps.length
@@ -329,7 +348,9 @@ export class AnnotationManager {
             allRow.appendChild(iconEl)
             allRow.appendChild(nameEl)
             allRow.appendChild(countEl)
-            allRow.addEventListener('click', () => this._confirmEraseCategory('__all__', 'all annotations', total))
+            allRow.addEventListener('click', () => {
+                this._confirmEraseSpecificStamps('all annotations', activeStamps)
+            })
             list.appendChild(allRow)
         }
 
@@ -345,9 +366,11 @@ export class AnnotationManager {
         document.addEventListener('keydown', this.app._eraseAllEsc)
     }
 
-    async _confirmEraseCategory(idOrAll, displayName, count) {
+    async _confirmEraseSpecificStamps(displayName, stampsToErase) {
         this.closeEraseAllModal()
-        const label = idOrAll === '__all__' ? 'all annotations' : `all "${displayName}" annotations`
+        const count = stampsToErase.length
+        const label = displayName.includes('all') ? displayName : `all "${displayName}" annotations`
+        
         const confirmed = await this.app.showDialog({
             title: 'Erase All',
             message: `Delete ${label} (${count} item${count !== 1 ? 's' : ''})? This cannot be undone.`,
@@ -356,11 +379,27 @@ export class AnnotationManager {
             confirmText: 'Delete',
             cancelText: 'Cancel',
         })
+        
         if (!confirmed) return
-        this.eraseAllByLayer(idOrAll)
+        
+        stampsToErase.forEach(s => {
+            s.deleted = true
+            s.updatedAt = Date.now()
+        })
+        
+        this.app.updateRulerMarks()
+        this.app.computeNextTarget()
+        document.querySelectorAll('.page-container[data-page]').forEach(wrapper => {
+            const page = parseInt(wrapper.dataset.page)
+            this.redrawStamps(page)
+        })
+        this.app.saveToStorage(true)
+        if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
     }
 
     eraseAllByLayer(layerId) {
+        // Keeping this for backward compatibility if called from elsewhere, 
+        // but the main UI now uses _confirmEraseSpecificStamps for better accuracy.
         let removed = 0
         if (layerId === '__all__') {
             this.app.stamps.forEach(s => {
