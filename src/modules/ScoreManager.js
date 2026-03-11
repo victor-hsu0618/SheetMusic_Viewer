@@ -827,6 +827,7 @@ export class ScoreManager {
             }
 
             if (changed) {
+                score.isSynced = false; // Important: Metadata change means it needs a sync
                 await this.saveRegistry();
                 if (this.overlay && this.overlay.classList.contains('active')) {
                     this.render();

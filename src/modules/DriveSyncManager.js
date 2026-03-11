@@ -671,6 +671,8 @@ export class DriveSyncManager {
 
             // Show UI log ONLY if we are actually pushing
             this.addLog(`正在同步當前樂譜: ${score.title}`, 'system');
+            const localEdit = this.app.scoreDetailManager?.currentInfo?.lastEdit || 0;
+            console.log(`[DriveSync] Pushing Score: ${score.title}, Version=${Date.now()}, LocalLastEdit=${localEdit}`);
 
             // Optimistic Locking: If remote is newer than what we just pulled (race condition), skip push
             if (remoteVersion > (this.lastSyncTime || 0)) {
@@ -756,8 +758,13 @@ export class DriveSyncManager {
             if (!remoteData) return 0;
 
             const remoteVer = remoteData.version || 0;
+            const localSyncTime = this.lastSyncTime || 0;
+            const localEditTime = this.app.scoreDetailManager?.currentInfo?.lastEdit || 0;
 
-            if (remoteVer <= (this.lastSyncTime || 0)) {
+            console.log(`[DriveSync] Pulling Fingerprint: ${fingerprint}`);
+            console.log(`[DriveSync] Remote Version: ${remoteVer}, Local LastSyncTime: ${localSyncTime}`);
+
+            if (remoteVer <= localSyncTime) {
                 this.addLog('雲端資料已是最新', 'system');
                 return remoteVer;
             }
@@ -897,7 +904,13 @@ export class DriveSyncManager {
             // 5. Sync Score Detail
             if (remoteData.scoreDetail) {
                 const localInfo = this.app.scoreDetailManager?.currentInfo;
-                if (localInfo && (remoteData.scoreDetail.lastEdit > (localInfo.lastEdit || 0))) {
+                const remoteEdit = remoteData.scoreDetail.lastEdit || 0;
+                const localEdit = localInfo?.lastEdit || 0;
+                
+                console.log(`[DriveSync] Merging ScoreDetail: Remote LastEdit=${remoteEdit}, Local LastEdit=${localEdit}`);
+
+                if (localInfo && (remoteEdit > localEdit)) {
+                    console.log(`[DriveSync] Updating local metadata with: ${remoteData.scoreDetail.name} by ${remoteData.scoreDetail.composer}`);
                     this.app.scoreDetailManager.currentInfo = remoteData.scoreDetail;
                     this.app.scoreDetailManager.save(fingerprint); // Persist to local storage
                     this.app.scoreDetailManager.render(fingerprint);
@@ -1451,8 +1464,10 @@ export class DriveSyncManager {
             // Mark local registry based on manifest
             for (const score of this.app.scoreManager.registry) {
                 const entry = this.manifest[score.fingerprint];
-                const isSynced = !!(entry && entry.syncId);
-                const isPdfAvailable = !!(entry && entry.pdfId);
+                if (!entry) continue;
+
+                const isSynced = !!entry.syncId;
+                const isPdfAvailable = !!entry.pdfId;
 
                 let changed = false;
                 if (score.isSynced !== isSynced) {
@@ -1461,6 +1476,12 @@ export class DriveSyncManager {
                 }
                 if (score.isPdfAvailable !== isPdfAvailable) {
                     score.isPdfAvailable = isPdfAvailable;
+                    changed = true;
+                }
+
+                // Metadata Sync: If local is generic but manifest has a name
+                if (entry.name && (score.title === 'Unknown' || score.title.includes('score_buf_'))) {
+                    score.title = entry.name;
                     changed = true;
                 }
 
