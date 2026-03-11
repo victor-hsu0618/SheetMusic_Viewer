@@ -16,9 +16,12 @@ export class JumpManager {
         this.display = document.getElementById('jump-page-display')
         this.calcValueEl = document.getElementById('calc-value')
 
-        // Bookmark Elements
+        // Index Section Elements
         this.bookmarkSection = document.getElementById('bookmark-section')
         this.bookmarkList = document.getElementById('bookmark-list')
+        this.measureSection = document.getElementById('measure-section')
+        this.measureList = document.getElementById('measure-list')
+
         this.bookmarkOverlay = document.getElementById('bookmark-overlay')
         this.bookmarkInput = document.getElementById('bookmark-label-input')
 
@@ -34,6 +37,15 @@ export class JumpManager {
 
         const btnClose = document.getElementById('btn-close-jump-panel')
         if (btnClose) btnClose.onclick = () => this.togglePanel(false)
+
+        // Tab Switching
+        const tabBtns = this.panel.querySelectorAll('.index-tab-btn')
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab
+                this.switchTab(tab)
+            })
+        })
 
         // Keypad buttons
         document.querySelectorAll('.calc-btn.num-btn').forEach(btn => {
@@ -79,6 +91,21 @@ export class JumpManager {
         }, { passive: true })
     }
 
+    switchTab(tabId) {
+        // Update Buttons
+        this.panel.querySelectorAll('.index-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId)
+        })
+
+        // Update Sections
+        if (this.bookmarkSection) this.bookmarkSection.classList.toggle('active', tabId === 'bookmarks')
+        if (this.measureSection) this.measureSection.classList.toggle('active', tabId === 'measures')
+
+        if (tabId === 'measures') {
+            this.renderMeasures()
+        }
+    }
+
     async togglePanel(force = null) {
         if (!this.panel) return
         const active = force !== null ? force : !this.panel.classList.contains('active')
@@ -89,7 +116,69 @@ export class JumpManager {
             this.isTyping = false
             this.refreshCalcDisplay()
             await this.loadBookmarks()
+            this.renderMeasures() // Pre-load measures
         }
+    }
+
+    renderMeasures() {
+        if (!this.measureList) return
+        const measures = this.app.stamps.filter(s => s.type === 'measure' && !s.deleted)
+
+        if (measures.length === 0) {
+            this.measureList.innerHTML = '<div class="empty-state">No measures found</div>'
+            return
+        }
+
+        this.measureList.innerHTML = ''
+        // Sort by page and then by Y position
+        const sorted = [...measures].sort((a, b) => {
+            if (a.page !== b.page) return a.page - b.page
+            return a.y - b.y
+        })
+
+        sorted.forEach(m => {
+            const item = document.createElement('div')
+            item.className = 'bookmark-item'
+            item.innerHTML = `
+                <div class="bm-info">
+                    <span class="bm-page">${m.page}</span>
+                    <span class="bm-label">Measure ${m.data}</span>
+                </div>
+                <button class="bm-delete" title="Delete">&times;</button>
+            `
+            item.onclick = (e) => {
+                if (e.target.classList.contains('bm-delete')) return
+                this.jumpToStamp(m)
+            }
+            item.querySelector('.bm-delete').onclick = (e) => {
+                e.stopPropagation()
+                this.deleteMeasure(m)
+            }
+            this.measureList.appendChild(item)
+        })
+    }
+
+    jumpToStamp(stamp) {
+        if (!this.app.viewer) return
+        this.app.viewerManager.ensurePageRendered(stamp.page)
+        const metrics = this.app.viewerManager._pageMetrics[stamp.page]
+        if (metrics) {
+            const absoluteY = metrics.top + (stamp.y * metrics.height)
+            this.app.viewer.scrollTo({
+                top: Math.max(0, absoluteY - 100),
+                behavior: 'smooth'
+            })
+            this.updateDisplay()
+        }
+    }
+
+    deleteMeasure(stamp) {
+        stamp.deleted = true
+        stamp.updatedAt = Date.now()
+        this.app.saveToStorage(true)
+        this.app.redrawStamps(stamp.page)
+        this.renderMeasures()
+        this.app.updateRulerMarks()
     }
 
     appendDigit(digit) {

@@ -339,12 +339,25 @@
         </button>
       </div>
 
+      <!-- Index Tabs -->
+      <div class="index-tabs">
+        <button class="index-tab-btn active" data-tab="bookmarks">Bookmarks</button>
+        <button class="index-tab-btn" data-tab="measures">Measures</button>
+      </div>
+
       <!-- Bookmark List Section -->
-      <div id="bookmark-section" class="bookmark-section">
-        <div class="section-title">Bookmarks</div>
+      <div id="bookmark-section" class="index-section active">
         <div id="bookmark-list" class="bookmark-list">
           <!-- Dynamically populated -->
           <div class="empty-state">No bookmarks yet</div>
+        </div>
+      </div>
+
+      <!-- Measures List Section -->
+      <div id="measure-section" class="index-section">
+        <div id="measure-list" class="bookmark-list">
+          <!-- Dynamically populated -->
+          <div class="empty-state">No measures found</div>
         </div>
       </div>
 
