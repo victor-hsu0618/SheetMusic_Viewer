@@ -1423,7 +1423,7 @@ export class DriveSyncManager {
                             manifestChanged = true;
                         }
 
-                        // Self-Heal: Recover name from filename if missing or generic
+                        // Self-Heal: Recover name ONLY if completely missing
                         if (!this.manifest[fp].name || this.manifest[fp].name === 'Unknown') {
                             const fileNamePart = f.name.split('_sync_')[0];
                             if (fileNamePart && fileNamePart !== 'sync') {
@@ -1438,13 +1438,11 @@ export class DriveSyncManager {
                             manifestChanged = true;
                         }
 
-                        // Self-Heal: Recover pdfId if missing
                         if (this.manifest[fp].pdfId !== f.id) {
                             this.manifest[fp].pdfId = f.id;
                             manifestChanged = true;
                         }
 
-                        // Self-Heal: Recover name from filename if missing
                         if (!this.manifest[fp].name || this.manifest[fp].name === 'Unknown') {
                             const fileNamePart = f.name.split('_pdf_')[0];
                             if (fileNamePart && fileNamePart !== 'pdf') {
@@ -1457,7 +1455,7 @@ export class DriveSyncManager {
             }
 
             if (manifestChanged) {
-                console.log('[DriveSync] Manifest healed/updated during scan.');
+                console.log('[DriveSync] Manifest updated during scan.');
                 await this.saveManifest();
             }
 
