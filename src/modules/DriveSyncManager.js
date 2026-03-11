@@ -548,83 +548,86 @@ export class DriveSyncManager {
 
     /**
      * Iterates through the entire registry to backup or update unsynced scores.
-     * This now performs both PULL and PUSH in the background for all local scores.
+     * This now performs both PULL and PUSH in the background for all scores, 
+     * including cloud-only placeholders to fetch their real titles.
      */
     async syncBatch() {
         if (!this.app.scoreManager?.registry) return;
 
         let workDone = false;
         let processedCount = 0;
+        const activeFp = this.app.pdfFingerprint;
 
-        // Find items that need sync (Local scores only)
-        const localScores = this.app.scoreManager.registry.filter(s => !s.isCloudOnly);
-        
-        for (const score of localScores) {
-            // Skip the current active score as it was already handled in sync()
-            if (score.fingerprint === this.app.pdfFingerprint) continue;
+        // Process ALL scores in registry (both local and cloud-only)
+        for (const score of this.app.scoreManager.registry) {
+            // Skip the current active score (already handled)
+            if (score.fingerprint === activeFp) continue;
 
-            const entry = this.manifest[score.fingerprint];
-            const needsPDF = !entry || !entry.pdfId;
+            const fp = score.fingerprint;
+            const entry = this.manifest[fp];
+            if (!entry) continue;
+
+            const needsPDF = !score.isCloudOnly && !entry.pdfId;
+            const canPull = !!entry.syncId;
+            const needsPush = !score.isCloudOnly && !score.isSynced;
             
-            // Check if we need to Pull or Push
-            // 1. Pull if cloud has a syncId and we haven't checked it lately (or at all)
-            // 2. Push if local is marked unsynced
-            const canPull = !!(entry && entry.syncId);
-            const needsPush = !score.isSynced;
+            // Metadata Check: If title is generic, we MUST pull to get the real name
+            const isGeneric = !score.title || score.title === 'Unknown' || score.title.includes('score_buf_');
+            const shouldPullMeta = canPull && isGeneric;
 
-            if (needsPDF || canPull || needsPush) {
+            if (needsPDF || needsPush || shouldPullMeta) {
                 processedCount++;
-                // Limit background sync to 5 items per cycle to prevent freezing/quota hits
-                if (processedCount > 5) break; 
+                // Limit to 8 items per cycle for better balance
+                if (processedCount > 8) break; 
 
                 workDone = true;
-                await this.syncScore(score.fingerprint, needsPDF, canPull, needsPush);
+                console.log(`[Sync] Background processing: ${score.title || fp.slice(0,8)}...`);
+                await this.syncScore(fp, needsPDF, canPull, needsPush);
 
-                // Yield to main thread briefly
-                await new Promise(r => setTimeout(r, 800));
+                // Short sleep to prevent UI jank
+                await new Promise(r => setTimeout(r, 600));
             }
         }
 
-        if (workDone && processedCount > 0) {
-            console.log(`[Sync] Background batch processed ${processedCount} items.`);
+        if (workDone) {
+            console.log(`[Sync] Background cycle finished. Processed ${processedCount} items.`);
         }
     }
 
     /**
      * Synchronizes a specific score (PDF and/or JSON data).
-     * Handles both background PULL (merging) and PUSH.
+     * Now uses manifest entry IDs directly for speed.
      */
     async syncScore(fingerprint, needsPDF, canPull, needsPush) {
         try {
             const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
             if (!score) return;
+            const entry = this.manifest[fingerprint];
 
-            // 1. Handle PDF if missing from Drive
+            // 1. Handle PDF upload if needed
             if (needsPDF) {
                 const pdfKey = `score_buf_${fingerprint}`;
                 const pdfData = await db.get(pdfKey);
                 if (pdfData) {
-                    console.log(`[Sync] -> ${score.title}: PDF missing on Drive. Uploading...`);
                     await this.uploadPDF(fingerprint, pdfData, score.title || 'Unknown');
                 }
             }
 
-            // 2. Background PULL & MERGE (If not the active score)
+            // 2. Background PULL (Headless)
             let remoteVersion = 0;
             if (canPull && fingerprint !== this.app.pdfFingerprint) {
-                // We need a specialized "headless" pull that doesn't touch active UI
-                remoteVersion = await this.pullBackground(fingerprint);
+                // Pass the fileId directly from manifest to skip searching
+                remoteVersion = await this.pullBackground(fingerprint, entry.syncId);
             }
 
-            // 3. Handle PUSH if still needed after pull/merge
-            // We re-check score.isSynced because pullBackground might have updated it
-            if (needsPush || (remoteVersion > 0 && !score.isSynced)) {
-                console.log(`[Sync] -> ${score.title}: Pushing local changes...`);
-
+            // 3. Handle PUSH
+            if (needsPush) {
                 const data = await this.gatherLocalData(fingerprint);
                 const prefix = this.safeTitle(score.title);
                 const fileName = `${prefix}sync_${fingerprint}.json`;
-                const fileId = await this.findSyncFile(fingerprint, 'sync');
+                
+                // Use existing fileId from manifest if available
+                const fileId = entry ? entry.syncId : null;
 
                 if (fileId) {
                     await this.updateFile(fileId, data);
@@ -637,7 +640,6 @@ export class DriveSyncManager {
                 }
                 score.isSynced = true;
                 await this.app.scoreManager.saveRegistry();
-                console.log(`[Sync] -> ${score.title}: Done.`);
             }
 
             this.updateCloudStatsUI();
@@ -651,8 +653,7 @@ export class DriveSyncManager {
      * Specialized "Headless" Pull for background scores.
      * Merges remote data directly into IndexedDB without affecting active viewer.
      */
-    async pullBackground(fingerprint) {
-        const fileId = await this.findSyncFile(fingerprint, 'sync');
+    async pullBackground(fingerprint, fileId) {
         if (!fileId) return 0;
 
         try {
@@ -661,21 +662,20 @@ export class DriveSyncManager {
 
             const remoteVer = remoteData.version || 0;
             const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
+            if (!score) return 0;
             
-            // For background scores, we don't have a robust "lastSyncTime" per score yet,
-            // so we rely on the manifest and scoreDetail's internal lastEdit.
             const localDetail = await db.get(`score_detail_${fingerprint}`);
             const remoteDetail = remoteData.scoreDetail;
             
             let needsSave = false;
             
-            // 1. Merge Metadata (Force if local is Unknown)
+            // 1. Merge Metadata
             if (remoteDetail) {
-                const isLocalGeneric = !localDetail || !localDetail.name || localDetail.name === 'Unknown';
+                const isLocalGeneric = !score.title || score.title === 'Unknown' || score.title.includes('score_buf_');
                 const shouldUpdateMeta = isLocalGeneric || (remoteDetail.lastEdit > (localDetail?.lastEdit || 0));
                 
                 if (shouldUpdateMeta) {
-                    console.log(`[Sync] Background update metadata for ${fingerprint}: ${remoteDetail.name}`);
+                    console.log(`[Sync] -> Updating background metadata: ${remoteDetail.name}`);
                     await db.set(`score_detail_${fingerprint}`, remoteDetail);
                     await this.app.scoreManager.updateMetadata(fingerprint, {
                         title: remoteDetail.name,
