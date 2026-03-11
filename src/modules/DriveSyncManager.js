@@ -1130,11 +1130,22 @@ export class DriveSyncManager {
 
     async updateManifestEntry(fingerprint, data) {
         if (!this.manifest) this.manifest = {};
+
+        // Merge with existing data to prevent accidental field deletion
         this.manifest[fingerprint] = {
             ...this.manifest[fingerprint],
             ...data,
             updated: Date.now()
         };
+
+        // Safety: If name is still missing but we have it locally in registry, fill it
+        if (!this.manifest[fingerprint].name && this.app.scoreManager) {
+            const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
+            if (score && score.title && score.title !== 'Unknown') {
+                this.manifest[fingerprint].name = this.safeTitle(score.title).replace(/_$/, '');
+            }
+        }
+
         await this.saveManifest();
     }
 
@@ -1226,40 +1237,70 @@ export class DriveSyncManager {
 
             // 1. Try to load manifest
             let hasManifest = await this.loadManifest();
+            if (!this.manifest) this.manifest = {};
 
-            // 2. If no manifest, rebuild it by scanning (One-time migration)
-            if (!hasManifest) {
-                this.addLog('正在重建雲端索引 (首次運行)...', 'system');
-                const response = await this.gdriveFetch(
-                    `https://www.googleapis.com/drive/v3/files?q='${this.folderId}' in parents and (name contains 'sync_' or name contains 'pdf_') and trashed=false&fields=files(id,name)`
-                );
-                const data = await response.json();
+            // 2. Scan Drive for files to Rebuild (if no manifest) or Self-Heal (if manifest exists but missing names)
+            this.addLog(hasManifest ? '正在掃描雲端檔案並檢查索引完整性...' : '正在重建雲端索引 (首次運行)...', 'system');
 
-                this.manifest = {};
-                if (data.files) {
-                    data.files.forEach(f => {
-                        const syncMatch = f.name.match(/(?:^|_)sync_([^_].+)\.json$/);
-                        const pdfMatch = f.name.match(/(?:^|_)pdf_([^_].+)\.pdf$/);
+            const response = await this.gdriveFetch(
+                `https://www.googleapis.com/drive/v3/files?q='${this.folderId}' in parents and (name contains 'sync_' or name contains 'pdf_') and trashed=false&fields=files(id,name)`
+            );
+            const data = await response.json();
 
-                        if (syncMatch) {
-                            const fp = syncMatch[1];
-                            if (!this.manifest[fp]) this.manifest[fp] = {};
+            let manifestChanged = !hasManifest;
+            if (data.files) {
+                data.files.forEach(f => {
+                    const syncMatch = f.name.match(/(?:^|_)sync_([^_].+)\.json$/);
+                    const pdfMatch = f.name.match(/(?:^|_)pdf_([^_].+)\.pdf$/);
+
+                    if (syncMatch) {
+                        const fp = syncMatch[1];
+                        if (!this.manifest[fp]) {
+                            this.manifest[fp] = {};
+                            manifestChanged = true;
+                        }
+
+                        // Self-Heal: Recover syncId if missing
+                        if (this.manifest[fp].syncId !== f.id) {
                             this.manifest[fp].syncId = f.id;
-                            // Extract prefix name if exists
-                            const name = f.name.split('_sync_')[0];
-                            if (name) this.manifest[fp].name = name;
-                        } else if (pdfMatch) {
-                            const fp = pdfMatch[1];
-                            if (!this.manifest[fp]) this.manifest[fp] = {};
-                            this.manifest[fp].pdfId = f.id;
-                            // NEW: Also extract prefix name from PDF if not already set by sync JSON
-                            if (!this.manifest[fp].name) {
-                                const name = f.name.split('_pdf_')[0];
-                                if (name) this.manifest[fp].name = name;
+                            manifestChanged = true;
+                        }
+
+                        // Self-Heal: Recover name from filename if missing or generic
+                        if (!this.manifest[fp].name || this.manifest[fp].name === 'Unknown') {
+                            const fileNamePart = f.name.split('_sync_')[0];
+                            if (fileNamePart && fileNamePart !== 'sync') {
+                                this.manifest[fp].name = fileNamePart;
+                                manifestChanged = true;
                             }
                         }
-                    });
-                }
+                    } else if (pdfMatch) {
+                        const fp = pdfMatch[1];
+                        if (!this.manifest[fp]) {
+                            this.manifest[fp] = {};
+                            manifestChanged = true;
+                        }
+
+                        // Self-Heal: Recover pdfId if missing
+                        if (this.manifest[fp].pdfId !== f.id) {
+                            this.manifest[fp].pdfId = f.id;
+                            manifestChanged = true;
+                        }
+
+                        // Self-Heal: Recover name from filename if missing
+                        if (!this.manifest[fp].name || this.manifest[fp].name === 'Unknown') {
+                            const fileNamePart = f.name.split('_pdf_')[0];
+                            if (fileNamePart && fileNamePart !== 'pdf') {
+                                this.manifest[fp].name = fileNamePart;
+                                manifestChanged = true;
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (manifestChanged) {
+                console.log('[DriveSync] Manifest healed/updated during scan.');
                 await this.saveManifest();
             }
 
@@ -1315,9 +1356,12 @@ export class DriveSyncManager {
 
                 const exists = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
                 if (!exists) {
+                    // Robust fallback title: name > FP prefix
+                    const fallbackTitle = entry.name || `雲端 PDF (${fp.slice(0, 8)})`;
+
                     const placeholder = {
                         fingerprint: fp,
-                        title: entry.name || '雲端備份 (讀取中...)',
+                        title: fallbackTitle,
                         fileName: '',
                         composer: 'Unknown',
                         thumbnail: null,
