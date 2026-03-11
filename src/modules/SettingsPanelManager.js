@@ -188,6 +188,10 @@ export class SettingsPanelManager {
             // Must add active class FIRST so dimensions (offsetWidth) are available
             this.panel.classList.add('active')
 
+            // Bring to front among panels (above library overlay 5000)
+            document.querySelectorAll('.jump-sub-panel').forEach(p => p.style.zIndex = '11500')
+            this.panel.style.zIndex = '11501'
+
             // Auto-center on first open if still at default position
             if (this.posX === 80 && this.posY === 80) {
                 // Dimensons are usually available immediately after adding class in most modern browsers
@@ -259,6 +263,24 @@ export class SettingsPanelManager {
                 this.app.jumpOffsetPx = val
                 if (jumpOffsetValue) jumpOffsetValue.textContent = `${val}px`
                 this.app.saveToStorage()
+            })
+        }
+
+        // Jump Speed
+        const jumpSpeedInput = document.getElementById('settings-jump-speed')
+        const jumpSpeedValue = document.getElementById('settings-jump-speed-value')
+        if (jumpSpeedInput) {
+            const currentSpeed = this.app.rulerManager ? this.app.rulerManager.jumpDurationMs : 300
+            jumpSpeedInput.value = currentSpeed
+            if (jumpSpeedValue) jumpSpeedValue.textContent = `${currentSpeed}ms`
+
+            jumpSpeedInput.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value)
+                if (this.app.rulerManager) {
+                    this.app.rulerManager.jumpDurationMs = val
+                }
+                if (jumpSpeedValue) jumpSpeedValue.textContent = `${val}ms`
+                localStorage.setItem('scoreflow_jump_speed_ms', val)
             })
         }
 

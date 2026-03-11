@@ -370,9 +370,17 @@
             <circle cx="6" cy="18" r="3" />
             <circle cx="18" cy="16" r="3" />
           </svg>
-          <span>Score Library</span>
+          <div class="segmented-control library-tabs" style="margin-left: 10px;">
+            <button class="segment-btn active" data-tab="scores">Scores</button>
+            <button class="segment-btn" data-tab="setlists">Setlists</button>
+          </div>
         </div>
         <div class="library-search-container">
+          <select id="library-sort-select" class="form-select mini-select library-sort-select" title="Sort By">
+            <option value="accessed">Last Accessed</option>
+            <option value="title">Title</option>
+            <option value="composer">Composer</option>
+          </select>
           <div class="search-input-wrapper">
             <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2.5">
@@ -395,24 +403,50 @@
       <div id="library-grid" class="library-grid">
         <!-- Dynamically populated by ScoreManager -->
       </div>
+      <div id="setlist-grid" class="library-grid hidden">
+        <!-- Dynamically populated by SetlistManager -->
+      </div>
+
+      <!-- Setlist Detail View (Hidden by default) -->
+      <div id="setlist-detail-view" class="hidden"
+        style="display:flex; flex-direction:column; height: 100%; width: 100%; overflow: hidden; padding: 20px;">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-shrink: 0;">
+          <button id="btn-setlist-back" class="btn btn-ghost-mini">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back
+          </button>
+          <h3 id="setlist-detail-title"
+            style="margin: 0; padding: 0; font-size: 1.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);"></h3>
+          <div style="flex-grow: 1;"></div>
+          <button id="btn-setlist-add-score" class="btn btn-primary btn-sm hidden">⊕ Add Score (Coming Soon)</button>
+        </div>
+        <div id="setlist-detail-list"
+          style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-bottom: 40px;">
+          <!-- Render drag-and-drop score rows here -->
+        </div>
+      </div>
 
       <!-- Batch Action Bar (Hidden by default) -->
       <div id="library-batch-bar" class="batch-action-bar hidden">
         <div class="batch-bar-content">
           <div class="batch-count">0 items selected</div>
           <div class="batch-actions">
+            <button id="batch-add-setlist-btn" class="batch-btn" title="Add to Setlist">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+              </svg>
+              <span>Add to Setlist</span>
+            </button>
             <button id="batch-backup-btn" class="batch-btn" title="Backup selected">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
               </svg>
               <span>Backup</span>
-            </button>
-            <button id="batch-hide-btn" class="batch-btn" title="Hide selected">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <span>Hide</span>
             </button>
             <button id="batch-delete-btn" class="batch-btn delete" title="Delete selected">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -548,6 +582,14 @@
             <div class="flex-row-center gap-10 mt-5">
               <input type="range" id="settings-jump-offset" min="0" max="800" step="5" value="40" class="w-full" />
               <span id="settings-jump-offset-value" class="badge">40px</span>
+            </div>
+          </div>
+
+          <div class="setting-item mb-15">
+            <label class="setting-label">Jump Animation Speed (ms)</label>
+            <div class="flex-row-center gap-10 mt-5">
+              <input type="range" id="settings-jump-speed" min="50" max="1000" step="50" value="300" class="w-full" />
+              <span id="settings-jump-speed-value" class="badge">300ms</span>
             </div>
           </div>
 
@@ -808,6 +850,9 @@
         <div class="modal-body text-center">
           <div id="dialog-icon" class="dialog-icon mb-15">⚠️</div>
           <p id="dialog-message" class="modal-intro"></p>
+          <input type="text" id="dialog-input" class="search-input-mini w-full hidden"
+            style="margin-top: 15px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.2);"
+            placeholder="Enter text here..." autocomplete="off" />
           <div id="dialog-actions" class="dialog-actions-grid mt-20">
             <!-- Dynamically populated buttons -->
           </div>
@@ -936,6 +981,15 @@
             placeholder="e.g. J.S. Bach" />
         </div>
         <button id="btn-save-score-detail" class="btn btn-primary btn-full mt-5 mb-10">Save Changes</button>
+        <div class="tab-divider"></div>
+        <div class="tab-section-label">Performance Setup</div>
+        <button id="btn-detail-add-setlist" class="btn btn-outline btn-full mt-5 mb-10">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            style="vertical-align: middle; margin-right: 5px;">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add to Setlist
+        </button>
       </div>
 
       <!-- Tab: Styles -->

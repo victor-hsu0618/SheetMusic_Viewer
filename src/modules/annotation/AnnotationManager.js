@@ -106,7 +106,7 @@ export class AnnotationManager {
         const idx = this.app.stamps.indexOf(stamp)
         if (idx === -1) return
         this.app.stamps.splice(idx, 1)
-        if (stamp.type === 'anchor') this.app.updateRulerMarks()
+        if (stamp.type === 'anchor' || stamp.type === 'measure') this.app.updateRulerMarks()
         this.app.hoveredStamp = null
         this.closeEraseMenu()
         const wrapper = document.querySelector(`.page-container[data-page="${page}"]`)

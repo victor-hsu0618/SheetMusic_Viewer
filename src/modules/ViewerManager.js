@@ -11,6 +11,7 @@ export class ViewerManager {
         this.activeScoreName = null
         this.observer = null
         this._pageViewports = {} // Cache viewports for placeholder sizing
+        this._pageMetrics = {}   // Cache offsetTop and clientHeight to avoid layout thrashing
         this.isFitToHeight = false
     }
 
@@ -176,6 +177,7 @@ export class ViewerManager {
         console.log(`[ViewerManager] loadPDF started for: ${filename || 'unknown'}`);
         if (filename) this.activeScoreName = filename;
         this.isFitToHeight = false; // Reset on new PDF
+        this._pageMetrics = {};    // Clear cache
         // 1. Save current score's stamps before switching
         if (this.pdfFingerprint) {
             this.app.saveToStorage()
@@ -321,6 +323,9 @@ export class ViewerManager {
             }
         })
 
+        // 3. Update cached metrics once after initial layout
+        this.updatePageMetrics()
+
         // Final ruler update
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
@@ -358,6 +363,26 @@ export class ViewerManager {
         }
     }
 
+    /**
+     * Efficiently capture all page offsets and heights to avoid continuous getBoundingClientRect/offsetTop calls.
+     * Call this after renderPDF, resize, or zoom change.
+     */
+    updatePageMetrics() {
+        if (!this.app.container) return
+        this._pageMetrics = {}
+        const containers = this.app.container.querySelectorAll('.page-container')
+        containers.forEach(el => {
+            const pageNum = parseInt(el.dataset.page)
+            if (pageNum) {
+                this._pageMetrics[pageNum] = {
+                    top: el.offsetTop,
+                    height: el.clientHeight
+                }
+            }
+        })
+        console.log(`[ViewerManager] Cached metrics for ${Object.keys(this._pageMetrics).length} pages.`)
+    }
+
     createPageElement(pageNum) {
         const div = document.createElement('div')
         div.className = 'page-container'
@@ -389,7 +414,10 @@ export class ViewerManager {
         this.isFitToHeight = false
         this.updateZoomDisplay()
 
-        if (this.pdf) await this.renderPDF()
+        if (this.pdf) {
+            await this.renderPDF()
+            this.updatePageMetrics()
+        }
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()
@@ -407,6 +435,7 @@ export class ViewerManager {
         this.updateZoomDisplay()
 
         await this.renderPDF()
+        this.updatePageMetrics()
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()
@@ -422,6 +451,7 @@ export class ViewerManager {
         this.updateZoomDisplay()
 
         await this.renderPDF()
+        this.updatePageMetrics()
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()

@@ -30,6 +30,7 @@ export class InputManager {
 
     initResizeListener() {
         window.addEventListener('resize', () => {
+            this.app.viewerManager.updatePageMetrics()
             this.updateDividerPositions()
         })
     }

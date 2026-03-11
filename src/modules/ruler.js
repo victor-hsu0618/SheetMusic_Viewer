@@ -3,8 +3,13 @@ export class RulerManager {
         this.app = app
         this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
         this.jumpOffsetPx = 40
+        const storedSpeed = localStorage.getItem('scoreflow_jump_speed_ms')
+        this.jumpDurationMs = storedSpeed ? parseInt(storedSpeed) : 300 // Customizable speed (lower = faster)
         this.nextTargetAnchor = null
         this.jumpHistory = []
+        this._isJumping = false
+        this._expectedTargetY = null
+        this._jumpTimer = null
     }
 
     init() {
@@ -142,12 +147,17 @@ export class RulerManager {
         const vh = window.innerHeight
         const stops = ['transparent 0px']
 
-        document.querySelectorAll('.page-container').forEach(page => {
-            const rect = page.getBoundingClientRect()
-            if (rect.bottom <= 0 || rect.top >= vh) return
-            const topY = Math.max(0, rect.top)
-            const bottomY = Math.min(vh, rect.bottom)
-            stops.push(`transparent ${topY}px`, `black ${topY}px`, `black ${bottomY}px`, `transparent ${bottomY}px`)
+        // Use cached metrics for much faster mask generation
+        const metrics = this.app.viewerManager._pageMetrics
+        Object.keys(metrics).forEach(pageNum => {
+            const m = metrics[pageNum]
+            const topY = m.top - this.app.viewer.scrollTop
+            const bottomY = topY + m.height
+
+            if (bottomY <= 0 || topY >= vh) return
+            const visibleTop = Math.max(0, topY)
+            const visibleBottom = Math.min(vh, bottomY)
+            stops.push(`transparent ${visibleTop}px`, `black ${visibleTop}px`, `black ${visibleBottom}px`, `transparent ${visibleBottom}px`)
         })
 
         const mask = `linear-gradient(to bottom, ${stops.join(', ')})`
@@ -155,21 +165,22 @@ export class RulerManager {
         ruler.style.webkitMaskImage = mask
     }
 
-    computeNextTarget() {
+    computeNextTarget(baseScroll = null) {
         if (!this.app.pdf || !this.app.viewer) { this.nextTargetAnchor = null; return }
 
-        const currentScroll = this.app.viewer.scrollTop
+        const currentScroll = baseScroll !== null ? baseScroll : this.app.viewer.scrollTop
         const viewportHeight = this.app.viewer.clientHeight
         const viewportCenter = currentScroll + viewportHeight / 2
         const currentFocusY = currentScroll + this.jumpOffsetPx
 
+        // Use cached metrics for faster candidate calculation
+        const metrics = this.app.viewerManager._pageMetrics
         const candidates = this.app.stamps
             .filter(s => s.type === 'anchor')
             .map(s => {
-                const pageElem = document.querySelector(`.page-container[data-page="${s.page}"]`)
-                if (!pageElem) return null
-                const canvas = pageElem.querySelector('.pdf-canvas')
-                const absoluteY = pageElem.offsetTop + (s.y * canvas.height)
+                const m = metrics[s.page]
+                if (!m) return null
+                const absoluteY = m.top + (s.y * m.height)
                 return { stamp: s, absoluteY }
             })
             .filter(a => a !== null && a.absoluteY > currentFocusY + 10)
@@ -185,21 +196,21 @@ export class RulerManager {
         this.nextTargetAnchor = candidates[0].stamp
     }
 
-    scrollToNextTarget() {
-        this.computeNextTarget()
+    scrollToNextTarget(baseScroll = null) {
+        this.computeNextTarget(baseScroll)
         if (!this.nextTargetAnchor) return
 
-        this.jumpHistory.push(this.app.viewer.scrollTop)
+        const effectiveScroll = baseScroll !== null ? baseScroll : this.app.viewer.scrollTop;
+        this.jumpHistory.push(effectiveScroll)
         if (this.jumpHistory.length > 50) this.jumpHistory.shift()
 
         const baseline = this.jumpOffsetPx
-        const pageElem = document.querySelector(`.page-container[data-page="${this.nextTargetAnchor.page}"]`)
-        if (!pageElem) return
-        const canvas = pageElem.querySelector('.pdf-canvas')
-        const absoluteY = pageElem.offsetTop + (this.nextTargetAnchor.y * canvas.height)
+        const m = this.app.viewerManager._pageMetrics[this.nextTargetAnchor.page]
+        if (!m) return
+        const absoluteY = m.top + (this.nextTargetAnchor.y * m.height)
 
         const targetScroll = absoluteY - baseline
-        this.app.viewer.scrollTo({ top: targetScroll, behavior: 'smooth' })
+        this._executeJump(targetScroll)
 
         const beam = document.querySelector('.jump-line-beam')
         if (beam) {
@@ -208,47 +219,102 @@ export class RulerManager {
         }
     }
 
+    _executeJump(targetScroll) {
+        const maxScroll = Math.max(0, this.app.viewer.scrollHeight - this.app.viewer.clientHeight)
+        const clampedTarget = Math.max(0, Math.min(targetScroll, maxScroll))
+
+        // Prevent unnecessary jumps to identical positions
+        if (Math.abs(clampedTarget - this.app.viewer.scrollTop) < 2) return;
+
+        this._isJumping = true
+        this._expectedTargetY = clampedTarget
+
+        // Custom smooth scroll engine
+        const startY = this.app.viewer.scrollTop
+        const distance = clampedTarget - startY
+        const startTime = performance.now()
+        const duration = this.jumpDurationMs
+
+        const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+
+        const animateScroll = (currentTime) => {
+            const elapsed = currentTime - startTime
+            const progress = Math.min(elapsed / duration, 1)
+            const easeProgress = easeInOutCubic(progress)
+
+            this.app.viewer.scrollTo({ top: startY + (distance * easeProgress) })
+
+            if (progress < 1) {
+                this._jumpTimer = requestAnimationFrame(animateScroll)
+            } else {
+                this._isJumping = false
+                this._expectedTargetY = null
+            }
+        }
+
+        if (this._jumpTimer) cancelAnimationFrame(this._jumpTimer)
+        this._jumpTimer = requestAnimationFrame(animateScroll)
+    }
+
     jump(delta) {
+        // Use expected target if jumping rapidly to allow queueing/skipping
+        const effectiveScroll = (this._isJumping && this._expectedTargetY !== null)
+            ? this._expectedTargetY
+            : this.app.viewer.scrollTop
+
+        const maxScroll = Math.max(0, this.app.viewer.scrollHeight - this.app.viewer.clientHeight)
+
         if (delta > 0) {
-            this.computeNextTarget()
+            if (effectiveScroll >= maxScroll - 2) return; // Prevent spamming past the bottom
+
+            this.computeNextTarget(effectiveScroll)
             if (this.nextTargetAnchor) {
-                this.scrollToNextTarget()
+                this.scrollToNextTarget(effectiveScroll)
             } else {
                 // Fallback: Check for Fit to Height mode
                 if (this.app.viewerManager.isFitToHeight) {
-                    // Find current top page and jump to next
-                    const currentScroll = this.app.viewer.scrollTop
-                    const pages = Array.from(document.querySelectorAll('.page-container'))
-                    const nextPage = pages.find(p => p.offsetTop > currentScroll + 10)
-                    if (nextPage) {
-                        this.jumpHistory.push(currentScroll)
+                    const metrics = this.app.viewerManager._pageMetrics
+                    // Find next page from metrics
+                    const nextPageNum = Object.keys(metrics)
+                        .map(Number)
+                        .sort((a, b) => a - b)
+                        .find(n => metrics[n].top > effectiveScroll + 10)
+
+                    if (nextPageNum) {
+                        this.jumpHistory.push(effectiveScroll)
                         if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                        this.app.viewer.scrollTo({ top: nextPage.offsetTop, behavior: 'smooth' })
+                        this._executeJump(metrics[nextPageNum].top)
                     }
                 } else {
-                    // Fallback: Scroll down by exactly ONE viewport height (as requested: 跳到下個未顯示的畫面)
+                    // Fallback: Scroll down by exactly ONE viewport height
                     const viewportHeight = this.app.viewer.clientHeight
-                    this.jumpHistory.push(this.app.viewer.scrollTop)
+                    const targetScroll = effectiveScroll + viewportHeight
+                    this.jumpHistory.push(effectiveScroll)
                     if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                    this.app.viewer.scrollBy({ top: viewportHeight, behavior: 'smooth' })
+                    this._executeJump(targetScroll)
                 }
             }
         } else {
             if (this.jumpHistory.length > 0) {
                 const last = this.jumpHistory.pop()
-                this.app.viewer.scrollTo({ top: last, behavior: 'smooth' })
+                this._executeJump(last)
             } else {
-                // Fallback for backward jump
+                if (effectiveScroll <= 2) return; // Prevent spamming past the top
+
                 if (this.app.viewerManager.isFitToHeight) {
-                    const currentScroll = this.app.viewer.scrollTop
-                    const pages = Array.from(document.querySelectorAll('.page-container')).reverse()
-                    const prevPage = pages.find(p => p.offsetTop < currentScroll - 10)
-                    if (prevPage) {
-                        this.app.viewer.scrollTo({ top: prevPage.offsetTop, behavior: 'smooth' })
+                    const metrics = this.app.viewerManager._pageMetrics
+                    const prevPageNum = Object.keys(metrics)
+                        .map(Number)
+                        .sort((a, b) => b - a)
+                        .find(n => metrics[n].top < effectiveScroll - 10)
+
+                    if (prevPageNum) {
+                        this._executeJump(metrics[prevPageNum].top)
                     }
                 } else {
                     const viewportHeight = this.app.viewer.clientHeight
-                    this.app.viewer.scrollBy({ top: -viewportHeight, behavior: 'smooth' })
+                    const targetScroll = effectiveScroll - viewportHeight
+                    this._executeJump(targetScroll)
                 }
             }
         }
@@ -260,14 +326,17 @@ export class RulerManager {
         if (!marksContainer) return
 
         const visualMarks = this.app.stamps.filter(s => s.type === 'anchor' || s.type === 'measure')
-        marksContainer.innerHTML = ''
         const viewportHeight = window.innerHeight
+        const scrollY = this.app.viewer.scrollTop
+        const metrics = this.app.viewerManager._pageMetrics
+
+        // Optimized DOM updates: Use a document fragment or reconcile
+        const fragment = document.createDocumentFragment()
 
         visualMarks.forEach((stamp) => {
-            const pageWrapper = document.querySelector(`.page-container[data-page="${stamp.page}"]`)
-            if (pageWrapper && this.app.pdf) {
-                const rect = pageWrapper.getBoundingClientRect()
-                const absY = rect.top + (stamp.y * rect.height)
+            const m = metrics[stamp.page]
+            if (m) {
+                const absY = (m.top - scrollY) + (stamp.y * m.height)
 
                 if (absY > -200 && absY < viewportHeight + 200) {
                     const mark = document.createElement('div')
@@ -279,7 +348,7 @@ export class RulerManager {
                         mark.textContent = stamp.data
                     }
                     mark.style.top = `${absY}px`
-                    marksContainer.appendChild(mark)
+                    fragment.appendChild(mark)
                 }
             }
         })
@@ -289,7 +358,10 @@ export class RulerManager {
             const fallback = document.createElement('div')
             fallback.className = 'ruler-fallback-mark'
             fallback.style.top = `${fallbackY}px`
-            marksContainer.appendChild(fallback)
+            fragment.appendChild(fallback)
         }
+
+        marksContainer.innerHTML = ''
+        marksContainer.appendChild(fragment)
     }
 }

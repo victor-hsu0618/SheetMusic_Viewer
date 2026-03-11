@@ -100,13 +100,23 @@ export class DocActionManager {
         location.reload()
     }
 
-    async showDialog({ title, message, icon = 'ℹ️', type = 'alert', actions = [] }) {
+    async showDialog({ title, message, icon = 'ℹ️', type = 'alert', actions = [], defaultValue = '', placeholder = '' }) {
         if (!this.app.systemDialog) return
 
         this.app.dialogTitle.textContent = title
         this.app.dialogMessage.textContent = message
         this.app.dialogIcon.textContent = icon
         this.app.dialogActions.innerHTML = ''
+
+        if (this.app.dialogInput) {
+            this.app.dialogInput.value = defaultValue
+            this.app.dialogInput.placeholder = placeholder
+            this.app.dialogInput.classList.toggle('hidden', type !== 'input')
+            // Remove previous listeners if any (simple clone to remove)
+            const newInp = this.app.dialogInput.cloneNode(true)
+            this.app.dialogInput.parentNode.replaceChild(newInp, this.app.dialogInput)
+            this.app.dialogInput = newInp
+        }
 
         return new Promise((resolve) => {
             if (type === 'alert') {
@@ -146,9 +156,38 @@ export class DocActionManager {
                     }
                     this.app.dialogActions.appendChild(btn)
                 })
+            } else if (type === 'input') {
+                const cancelBtn = document.createElement('button')
+                cancelBtn.className = 'btn btn-outline'
+                cancelBtn.textContent = 'Cancel'
+                cancelBtn.onclick = () => {
+                    this.app.systemDialog.classList.remove('active')
+                    resolve(null)
+                }
+                const confirmBtn = document.createElement('button')
+                confirmBtn.className = 'btn btn-primary'
+                confirmBtn.textContent = 'Confirm'
+                confirmBtn.onclick = () => {
+                    const val = this.app.dialogInput ? this.app.dialogInput.value.trim() : ''
+                    this.app.systemDialog.classList.remove('active')
+                    resolve(val)
+                }
+                this.app.dialogActions.appendChild(cancelBtn)
+                this.app.dialogActions.appendChild(confirmBtn)
+
+                if (this.app.dialogInput) {
+                    this.app.dialogInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            confirmBtn.click()
+                        }
+                    })
+                }
             }
 
             this.app.systemDialog.classList.add('active')
+            if (type === 'input' && this.app.dialogInput) {
+                setTimeout(() => this.app.dialogInput.focus(), 100)
+            }
         })
     }
 }

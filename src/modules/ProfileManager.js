@@ -4,7 +4,7 @@ export class ProfileManager {
     constructor(app) {
         this.app = app
         this.data = {
-            userName: 'Guest Musician',
+            userName: 'Default Musician',
             title: 'Principal',
             email: '',
             note: 'Always focus on the beat.',

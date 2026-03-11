@@ -52,9 +52,11 @@ export class ScoreDetailManager {
 
         if (this.scoreNameInput) {
             this.scoreNameInput.addEventListener('input', () => this.handleInputChange())
+            this.scoreNameInput.addEventListener('blur', () => this.handleAutoSave())
         }
         if (this.scoreComposerInput) {
             this.scoreComposerInput.addEventListener('input', () => this.handleInputChange())
+            this.scoreComposerInput.addEventListener('blur', () => this.handleAutoSave())
         }
 
         if (this.btnAddYoutube) {
@@ -68,6 +70,11 @@ export class ScoreDetailManager {
         }
         if (this.btnSave) {
             this.btnSave.addEventListener('click', () => this.handleSave())
+        }
+
+        this.btnAddSetlist = document.getElementById('btn-detail-add-setlist')
+        if (this.btnAddSetlist) {
+            this.btnAddSetlist.addEventListener('click', () => this.handleAddSetlist())
         }
 
         // Tab Switching Logic
@@ -333,35 +340,103 @@ export class ScoreDetailManager {
     async handleSave() {
         if (!this.app.pdfFingerprint || this.isLoading) return
 
-        const newName = this.scoreNameInput.value.trim()
-        const newComposer = this.scoreComposerInput.value.trim()
+        const newName = (this.scoreNameInput.value || '').trim()
+        const newComposer = (this.scoreComposerInput.value || '').trim()
 
+        // Update local state
         this.currentInfo.name = newName
         this.currentInfo.composer = newComposer
 
         this.onModification() // Update timestamp and save to localStorage
 
-        // Sync with Library Registry
-        await this.app.scoreManager?.updateMetadata(this.app.pdfFingerprint, {
-            title: newName,
-            composer: newComposer
-        })
+        // Sync with Library Registry (Authority)
+        if (this.app.scoreManager) {
+            await this.app.scoreManager.updateMetadata(this.app.pdfFingerprint, {
+                title: newName,
+                composer: newComposer
+            })
+        }
 
         this.btnSave?.classList.remove('btn-primary-highlight')
 
         // Visual feedback
-        const oldText = this.btnSave.textContent
-        this.btnSave.textContent = '✓ Saved!'
-        this.btnSave.classList.add('btn-success')
+        if (this.btnSave) {
+            const oldText = this.btnSave.textContent
+            this.btnSave.textContent = '✓ Saved!'
+            this.btnSave.classList.add('btn-success')
 
-        setTimeout(() => {
-            if (this.btnSave) {
-                this.btnSave.textContent = oldText
-                this.btnSave.classList.remove('btn-success')
-            }
-        }, 2000)
+            setTimeout(() => {
+                if (this.btnSave) {
+                    this.btnSave.textContent = oldText
+                    this.btnSave.classList.remove('btn-success')
+                }
+            }, 2000)
+        }
 
         this.app.showMessage('Score info saved.', 'success')
+    }
+
+    /**
+     * Silent auto-save when user leaves an input field.
+     */
+    async handleAutoSave() {
+        if (!this.app.pdfFingerprint || this.isLoading) return
+
+        const newName = (this.scoreNameInput.value || '').trim()
+        const newComposer = (this.scoreComposerInput.value || '').trim()
+
+        // Only save if there's actually a change
+        if (newName === this.currentInfo.name && newComposer === this.currentInfo.composer) return
+
+        console.log('[ScoreDetailManager] Auto-saving changes...');
+
+        this.currentInfo.name = newName
+        this.currentInfo.composer = newComposer
+        this.onModification()
+
+        if (this.app.scoreManager) {
+            await this.app.scoreManager.updateMetadata(this.app.pdfFingerprint, {
+                title: newName,
+                composer: newComposer
+            })
+        }
+
+        this.btnSave?.classList.remove('btn-primary-highlight')
+    }
+
+    async handleAddSetlist() {
+        if (!this.currentFp && !this.app.pdfFingerprint) return;
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+
+        const setlists = this.app.setlistManager?.setlists || [];
+        if (setlists.length === 0) {
+            this.app.showMessage('No setlists available. Create one first in the Library.', 'error');
+            return;
+        }
+
+        const actions = setlists.map(list => ({
+            id: list.id,
+            label: list.title,
+            class: 'btn-outline-sm'
+        }));
+        actions.push({ id: 'cancel', label: 'Cancel', class: 'btn-ghost' });
+
+        const setId = await this.app.showDialog({
+            title: 'Add to Setlist',
+            message: `Select a Setlist to add "${this.currentInfo.name || 'this score'}" to:`,
+            type: 'actions',
+            icon: '📋',
+            actions: actions
+        });
+
+        if (setId && setId !== 'cancel') {
+            const added = await this.app.setlistManager.addScore(setId, fingerprint);
+            if (added) {
+                this.app.showMessage('Added to Setlist.', 'success');
+            } else {
+                this.app.showMessage('Score already in the Setlist.', 'info');
+            }
+        }
     }
 
     toggle(force) {
@@ -369,9 +444,9 @@ export class ScoreDetailManager {
         const active = force !== null ? force : !this.panel.classList.contains('active')
         this.panel.classList.toggle('active', active)
         if (active) {
-            // Bring to front among panels
-            document.querySelectorAll('.jump-sub-panel').forEach(p => p.style.zIndex = '1000')
-            this.panel.style.zIndex = '1001'
+            // Bring to front among panels (above library overlay 5000)
+            document.querySelectorAll('.jump-sub-panel').forEach(p => p.style.zIndex = '11500')
+            this.panel.style.zIndex = '11501'
             this.refreshStats()
         }
     }
@@ -387,14 +462,16 @@ export class ScoreDetailManager {
         this.isLoading = true
 
         const detailData = localStorage.getItem(`scoreflow_detail_${fingerprint}`)
+        // ALWAYS get the latest from registry as the authority for Name/Composer
         const regScore = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
 
         if (detailData) {
             try {
                 const info = JSON.parse(detailData)
                 this.currentInfo = {
-                    name: info.name || (regScore?.title) || '',
-                    composer: info.composer || (regScore?.composer) || '',
+                    // Authority check: use registry if available, fallback to detail data
+                    name: regScore?.title || info.name || '',
+                    composer: regScore?.composer || info.composer || '',
                     lastEdit: info.lastEdit || 0,
                     lastAuthor: info.lastAuthor || null,
                     mediaList: info.mediaList || (info.media ? [{ id: 'legacy', label: 'Default Video', ...info.media }] : []),
@@ -414,10 +491,15 @@ export class ScoreDetailManager {
                 }
             }
         } else {
-            // New score defaults
+            // New score defaults: Use active score name as fallback only if not in registry
+            let initialName = regScore?.title
+            if (!initialName) {
+                initialName = this.app.activeScoreName ? this.app.activeScoreName.replace(/\.pdf$/i, '') : ''
+            }
+
             this.currentInfo = {
-                name: (regScore?.title) || (this.app.activeScoreName ? this.app.activeScoreName.replace(/\.pdf$/i, '') : ''),
-                composer: (regScore?.composer) || '',
+                name: initialName,
+                composer: regScore?.composer || '',
                 lastEdit: 0,
                 mediaList: [],
                 activeMediaId: null,

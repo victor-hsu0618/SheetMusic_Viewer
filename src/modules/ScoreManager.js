@@ -16,8 +16,8 @@ export class ScoreManager {
         // Selection Mode
         this.isSelectionMode = false;
         this.selectedFingerprints = new Set();
-        this.showHidden = false; // Toggle to view hidden files
         this.searchQuery = '';
+        this.sortMode = localStorage.getItem('scoreflow_library_sort') || 'accessed';
     }
 
     async init() {
@@ -44,6 +44,29 @@ export class ScoreManager {
         if (btnSelect) {
             btnSelect.addEventListener('click', () => this.toggleSelectionMode());
         }
+
+        // Tab Switching Logic
+        const tabs = document.querySelectorAll('.library-tabs .segment-btn');
+        tabs.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tabId = e.target.dataset.tab;
+                tabs.forEach(t => t.classList.toggle('active', t === e.target));
+
+                document.getElementById('library-grid').classList.toggle('hidden', tabId !== 'scores');
+                document.getElementById('setlist-grid').classList.toggle('hidden', tabId !== 'setlists');
+
+                // Hide search/select in setlist mode for now, or adapt them later
+                const searchContainer = document.querySelector('.library-search-container');
+                const btnSelect = document.getElementById('btn-library-select');
+                if (searchContainer) searchContainer.style.opacity = tabId === 'scores' ? '1' : '0.3';
+                if (btnSelect) btnSelect.style.display = tabId === 'scores' ? 'block' : 'none';
+
+                if (tabId === 'setlists' && this.app.setlistManager) {
+                    this.app.setlistManager.render();
+                }
+            });
+        });
+
         this.initSearch();
     }
 
@@ -78,12 +101,51 @@ export class ScoreManager {
         const btnCancel = document.getElementById('batch-cancel-btn');
         const btnDelete = document.getElementById('batch-delete-btn');
         const btnBackup = document.getElementById('batch-backup-btn');
-        const btnHide = document.getElementById('batch-hide-btn');
+        const btnAddSetlist = document.getElementById('batch-add-setlist-btn');
 
         if (btnCancel) btnCancel.onclick = () => this.toggleSelectionMode(false);
         if (btnDelete) btnDelete.onclick = () => this.batchDelete();
         if (btnBackup) btnBackup.onclick = () => this.batchBackup();
-        if (btnHide) btnHide.onclick = () => this.batchHide();
+        if (btnAddSetlist) btnAddSetlist.onclick = () => this.handleBatchAddSetlist();
+    }
+
+    async handleBatchAddSetlist() {
+        if (this.selectedFingerprints.size === 0) return;
+
+        const setlists = this.app.setlistManager?.setlists || [];
+        if (setlists.length === 0) {
+            this.app.showMessage('No setlists available. Create one first in the Setlists tab.', 'error');
+            return;
+        }
+
+        const actions = setlists.map(list => ({
+            id: list.id,
+            label: list.title,
+            class: 'btn-outline-sm'
+        }));
+        actions.push({ id: 'cancel', label: 'Cancel', class: 'btn-ghost' });
+
+        const setId = await this.app.showDialog({
+            title: 'Add to Setlist',
+            message: `Add ${this.selectedFingerprints.size} score(s) to which Setlist?`,
+            type: 'actions',
+            icon: '📋',
+            actions: actions
+        });
+
+        if (setId && setId !== 'cancel') {
+            let addCount = 0;
+            for (const fp of this.selectedFingerprints) {
+                const added = await this.app.setlistManager.addScore(setId, fp);
+                if (added) addCount++;
+            }
+            this.toggleSelectionMode(false);
+            if (addCount > 0) {
+                this.app.showMessage(`Added ${addCount} score(s) to Setlist.`, 'success');
+            } else {
+                this.app.showMessage(`Scores were already in the Setlist.`, 'info');
+            }
+        }
     }
 
     toggleSelectionMode(force) {
@@ -292,12 +354,9 @@ export class ScoreManager {
             return;
         }
 
-        // Sort by last accessed and filter hidden/search
+        // Sort by last accessed and filter by search
         let sorted = [...this.registry]
             .filter(s => {
-                // Hidden filter
-                if (!this.showHidden && s.hidden) return false;
-
                 // Search filter
                 if (this.searchQuery) {
                     const titleMatch = (s.title || '').toLowerCase().includes(this.searchQuery);
@@ -305,10 +364,19 @@ export class ScoreManager {
                     const fileMatch = (s.fileName || '').toLowerCase().includes(this.searchQuery);
                     return titleMatch || composerMatch || fileMatch;
                 }
-
                 return true;
             })
-            .sort((a, b) => b.lastAccessed - a.lastAccessed);
+            .sort((a, b) => {
+                if (this.sortMode === 'title') {
+                    return (a.title || '').localeCompare(b.title || '');
+                } else if (this.sortMode === 'composer') {
+                    return (a.composer || '').localeCompare(b.composer || '');
+                }
+                // Default: lastAccessed (descending)
+                const lastA = a.lastAccessed || 0;
+                const lastB = b.lastAccessed || 0;
+                return lastB - lastA;
+            });
 
         if (sorted.length === 0 && this.registry.length > 0) {
             this.grid.innerHTML = '<div class="library-empty">No items match current filters.</div>';
@@ -336,47 +404,54 @@ export class ScoreManager {
                 displayTitle = displayTitle.slice(0, -4);
             }
 
-            const thumbContent = score.isCloudOnly ? '<div style="font-size: 3rem; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;" title="雲端樂譜 (需下載)">☁️⬇️</div>' :
+            const thumbContent = score.isCloudOnly ?
+                '<div class="cloud-placeholder" style="font-size: 1.5rem;">☁️</div>' :
                 (score.thumbnail ? `<img src="${score.thumbnail}" alt="${score.title}">` : '🎼');
 
+            // Cloud Sync Status Logic:
+            const isBroken = score.isCloudOnly && !score.isPdfAvailable;
+            const isFullySynced = score.isSynced && score.isPdfAvailable;
+
             card.innerHTML = `
+                <!-- Selection Indicator (Album Style) -->
+                <div class="selection-indicator">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+
                 <div class="score-thumb">
                     ${thumbContent}
-                    
-                    <!-- Selection Indicator (Album Style) - absolute over thumbnail -->
-                    <div class="selection-indicator">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                    </div>
-
-                    <!-- Cloud Sync Status Icon -->
-                    <div class="cloud-sync-status ${score.isSynced ? 'synced' : 'not-synced'} ${(score.isCloudOnly && !score.isPdfAvailable) ? 'broken' : ''}" 
-                         title="${score.isSynced ? (score.isPdfAvailable ? '已同步至雲端' : '同步異常：雲端找不到 PDF 檔案') : '已匯入本地 (尚未同步)'}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            ${(score.isCloudOnly && !score.isPdfAvailable) ?
-                    '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>' :
-                    '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />'
-                }
-                            ${(!score.isSynced && !score.isCloudOnly) ? '<line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.5" opacity="0.5" />' : ''}
-                        </svg>
-                    </div>
-
-                    <!-- Score Title Panel - absolute overlay at bottom of thumbnail -->
-                    <div class="score-info">
-                        <div class="score-title" title="${displayTitle}">${displayTitle}</div>
-                        <div class="score-composer">${score.composer || ''}</div>
-                    </div>
-
-                    <!-- Info Button - bottom right, outside the gradient -->
-                    <button class="btn-icon-mini btn-score-info score-info-btn" title="Score Details" data-fp="${score.fingerprint}">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                    </button>
                 </div>
+
+                <div class="score-info">
+                    <div class="score-meta-row" title="${displayTitle} · ${score.composer || 'Unknown'}">
+                        <span class="score-title">${displayTitle}</span>
+                        <span class="score-meta-separator">·</span>
+                        <span class="score-composer">${score.composer || 'Unknown Composer'}</span>
+                    </div>
+                </div>
+
+                <div class="cloud-sync-status ${isBroken ? 'broken' : (isFullySynced ? 'synced' : 'not-synced')}" 
+                        title="${score.isSynced ? (score.isPdfAvailable ? '已同步並已下載至本地' : '同步異常：雲端找不到 PDF 檔案') : '已匯入本地 (尚未同步)'}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        ${isBroken ?
+                    '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>' :
+                    `<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+                             ${isFullySynced ? '<polyline points="10 13 12 15 16 11" stroke-width="2.5" />' : ''}`
+                }
+                    </svg>
+                </div>
+
+                <button class="btn-icon-mini btn-score-info score-info-btn" title="Score Details" data-fp="${score.fingerprint}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <path d="M9 17V12l4-1v5.5"></path>
+                        <circle cx="8" cy="17" r="1.5"></circle>
+                        <circle cx="12" cy="16" r="1.5"></circle>
+                    </svg>
+                </button>
             `;
 
             // Interaction Logic
@@ -447,19 +522,7 @@ export class ScoreManager {
         this.app.showMessage('Batch backup completed.', 'success');
     }
 
-    async batchHide() {
-        const count = this.selectedFingerprints.size;
-        if (count === 0) return;
 
-        for (const fp of this.selectedFingerprints) {
-            const score = this.registry.find(s => s.fingerprint === fp);
-            if (score) score.hidden = true;
-        }
-
-        await this.saveRegistry();
-        this.toggleSelectionMode(false);
-        this.app.showMessage(`${count} scores hidden.`, 'info');
-    }
 
     /**
      * Aggregates all data for a specific score for backup/export.
@@ -558,13 +621,17 @@ export class ScoreManager {
         }
 
         // 1. Cloud Cleanup
-        if (removeFromCloud && this.app.driveSyncManager) {
-            // Remove from manifest (Always do this)
+        // NEW: If it's a synced or cloud-only score, ALWAYS remove from manifest 
+        // even if we only do "local" deletion. This prevents the "deletion loop" where 
+        // refresh re-imports it as a cloud placeholder.
+        const isSynced = score.isSynced || score.isCloudOnly;
+        if (isSynced && this.app.driveSyncManager) {
+            console.log(`[ScoreManager] Unlinking ${fingerprint} from cloud manifest.`);
             await this.app.driveSyncManager.deleteManifestEntry(fingerprint);
 
-            // Optionally delete raw files from Drive if it wasn't a broken sync
-            if (!score.isCloudOnly || score.isPdfAvailable) {
-                // Background delete
+            // ONLY delete raw files from Drive if "removeFromCloud" was explicitly chosen
+            if (removeFromCloud) {
+                console.log(`[ScoreManager] Deleting cloud files for ${fingerprint}...`);
                 this.app.driveSyncManager.deleteSyncFiles(fingerprint).catch(e => console.error(e));
             }
         }
@@ -582,6 +649,9 @@ export class ScoreManager {
         // 5. If current score, close it
         if (this.app.pdfFingerprint === fingerprint) {
             await this.app.closeFile();
+            // After closing the file, ensure we stay in the library overlay 
+            // instead of jumping to the welcome screen.
+            this.toggleOverlay(true);
         }
 
         this.render();
@@ -616,6 +686,12 @@ export class ScoreManager {
                     score.isCloudOnly = false;
                     score.thumbnail = thumbnail;
                     if (!score.fileName) score.fileName = score.title + '.pdf';
+
+                    // Fix placeholder title if needed
+                    if (score.title && score.title.includes('雲端備份')) {
+                        score.title = score.fileName.replace(/\.pdf$/i, '');
+                    }
+
                     score.lastAccessed = Date.now();
 
                     await this.saveRegistry();
@@ -662,8 +738,41 @@ export class ScoreManager {
                 }
             }
         } else {
-            console.error(`[ScoreManager] Failed: No binary content found for ${score.fileName}.`);
-            this.app.showMessage('樂譜數據缺失，請嘗試重新匯入或從 Google Drive 下載即可恢復。', 'error');
+            // Local buffer is missing. Try to auto-recover from Drive if synced.
+            const manifest = this.app.driveSyncManager?.manifest;
+            const cloudEntry = manifest?.[fingerprint];
+            const hasPdfOnCloud = cloudEntry?.pdfId;
+
+            if (hasPdfOnCloud && this.app.driveSyncManager?.accessToken) {
+                console.log(`[ScoreManager] Local buffer missing for ${score.fileName}. Auto-recovering from Drive...`);
+                this.app.showMessage('本地數據遺失，正在從雲端自動恢復...', 'system');
+                try {
+                    const downloadBuffer = await this.app.driveSyncManager.downloadPDF(fingerprint);
+                    await db.set(`score_buf_${fingerprint}`, downloadBuffer);
+                    const thumbnail = await this.generateThumbnail(downloadBuffer.slice(0));
+                    score.isCloudOnly = false;
+                    score.thumbnail = thumbnail;
+                    score.isPdfAvailable = true;
+                    if (!score.fileName) score.fileName = score.title + '.pdf';
+
+                    // Fix placeholder title if needed
+                    if (score.title && score.title.includes('雲端備份')) {
+                        score.title = score.fileName.replace(/\.pdf$/i, '');
+                    }
+
+                    score.lastAccessed = Date.now();
+                    await this.saveRegistry();
+                    this.render();
+                    this.app.showMessage('已從雲端恢復，正在開啟...', 'success');
+                    await this.app.loadPDF(new Uint8Array(downloadBuffer), score.fileName);
+                } catch (err) {
+                    console.error('[ScoreManager] Auto-recovery failed:', err);
+                    this.app.showMessage(`雲端恢復失敗: ${err.message}`, 'error');
+                }
+            } else {
+                console.error(`[ScoreManager] Failed: No binary content found for ${score.fileName}.`);
+                this.app.showMessage('樂譜數據缺失，請重新匯入或確認 Google Drive 已連線後重試。', 'error');
+            }
         }
     }
 
@@ -678,6 +787,16 @@ export class ScoreManager {
             if (this.overlay && this.overlay.classList.contains('active')) {
                 this.render();
             }
+        }
+
+        const sortSelect = document.getElementById('library-sort-select');
+        if (sortSelect) {
+            sortSelect.value = this.sortMode;
+            sortSelect.addEventListener('change', (e) => {
+                this.sortMode = e.target.value;
+                localStorage.setItem('scoreflow_library_sort', this.sortMode);
+                this.render();
+            });
         }
     }
 
@@ -702,7 +821,18 @@ export class ScoreManager {
                 if (this.overlay && this.overlay.classList.contains('active')) {
                     this.render();
                 }
+
+                // Also notify SetlistManager to refresh if it exists
+                if (this.app.setlistManager) {
+                    this.app.setlistManager.render();
+                    if (this.app.setlistManager.renderDetailList) {
+                        this.app.setlistManager.renderDetailList();
+                    }
+                }
+
+                return true;
             }
         }
+        return false;
     }
 }

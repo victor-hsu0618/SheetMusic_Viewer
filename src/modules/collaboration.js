@@ -4,7 +4,7 @@ export class CollaborationManager {
   constructor(app) {
     this.app = app
     this.profiles = [
-      { id: 'p1', name: 'Guest Musician', orchestra: 'Standard Orchestra', section: 'Section', initial: 'G' }
+      { id: 'p1', name: 'Default Musician', orchestra: 'Standard Orchestra', section: 'Section', initial: 'D' }
     ]
     this.activeProfileId = 'p1'
   }

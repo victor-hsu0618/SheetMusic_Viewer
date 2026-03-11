@@ -77,6 +77,13 @@ export class DriveSyncManager {
                 this.isEnabled = true;
                 localStorage.setItem('scoreflow_drive_sync_enabled', 'true');
 
+                // Persist token for page refreshes (typically valid for 1 hour)
+                if (response.expires_in) {
+                    const expiry = Date.now() + (response.expires_in * 1000);
+                    localStorage.setItem('scoreflow_drive_access_token', response.access_token);
+                    localStorage.setItem('scoreflow_drive_token_expiry', expiry.toString());
+                }
+
                 // Store hint for better silent sign-in chances
                 if (response.login_hint) {
                     localStorage.setItem('scoreflow_drive_user_hint', response.login_hint);
@@ -99,13 +106,31 @@ export class DriveSyncManager {
 
         // Restore state from local storage - Attempt silent reconnect if enabled
         if (localStorage.getItem('scoreflow_drive_sync_enabled') === 'true') {
-            const hasHint = !!localStorage.getItem('scoreflow_drive_user_hint');
-            console.log('[DriveSync] Sync was previously enabled. Attempting silent reconnect...');
-            this.isEnabled = true;
-            if (hasHint) {
-                this.signIn(true); // Silent reconnect
+            const savedToken = localStorage.getItem('scoreflow_drive_access_token');
+            const expiryStr = localStorage.getItem('scoreflow_drive_token_expiry');
+            const now = Date.now();
+
+            // Use persisted token if it's still valid (with 5 min buffer)
+            if (savedToken && expiryStr && (parseInt(expiryStr) > (now + 300000))) {
+                console.log('[DriveSync] Restoring persisted access token.');
+                this.accessToken = savedToken;
+                this.isEnabled = true;
+
+                // Trigger folder check and start sync
+                this.findOrCreateSyncFolder().then(id => {
+                    this.folderId = id;
+                    this.refreshUI();
+                    this.startAutoSync();
+                }).catch(e => console.error(e));
             } else {
-                this.startAutoSync(); // At least start timer, it will trigger guard later
+                const hasHint = !!localStorage.getItem('scoreflow_drive_user_hint');
+                console.log('[DriveSync] Token expired or missing. Attempting silent reconnect...');
+                this.isEnabled = true;
+                if (hasHint) {
+                    this.signIn(true); // Silent reconnect
+                } else {
+                    this.startAutoSync(); // At least start timer, it will trigger guard later
+                }
             }
         }
         this.refreshUI();
@@ -419,6 +444,8 @@ export class DriveSyncManager {
         this.isEnabled = false;
         this.stopAutoSync();
         localStorage.setItem('scoreflow_drive_sync_enabled', 'false');
+        localStorage.removeItem('scoreflow_drive_access_token');
+        localStorage.removeItem('scoreflow_drive_token_expiry');
         this.refreshUI();
     }
 
@@ -1218,11 +1245,18 @@ export class DriveSyncManager {
                             const fp = syncMatch[1];
                             if (!this.manifest[fp]) this.manifest[fp] = {};
                             this.manifest[fp].syncId = f.id;
-                            this.manifest[fp].name = f.name.split('_sync_')[0];
+                            // Extract prefix name if exists
+                            const name = f.name.split('_sync_')[0];
+                            if (name) this.manifest[fp].name = name;
                         } else if (pdfMatch) {
                             const fp = pdfMatch[1];
                             if (!this.manifest[fp]) this.manifest[fp] = {};
                             this.manifest[fp].pdfId = f.id;
+                            // NEW: Also extract prefix name from PDF if not already set by sync JSON
+                            if (!this.manifest[fp].name) {
+                                const name = f.name.split('_pdf_')[0];
+                                if (name) this.manifest[fp].name = name;
+                            }
                         }
                     });
                 }
@@ -1269,9 +1303,15 @@ export class DriveSyncManager {
                 }
             }
 
-            // Add cloud-only placeholders
+            // Add cloud-only placeholders for ALL manifest entries not yet in the local registry.
+            // Previously this only ran when entry.syncId existed, which caused PDFs uploaded
+            // without a corresponding sync JSON to be counted in cloud stats but silently
+            // excluded from the library — the source of the data mismatch.
             for (const [fp, entry] of Object.entries(this.manifest)) {
-                if (!entry.syncId) continue;
+                if (!entry.syncId && !entry.pdfId) continue; // Skip completely empty entries
+
+                // For pdfId-only entries with no name, skip — no meaningful data to show
+                if (!entry.syncId && !entry.name) continue;
 
                 const exists = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
                 if (!exists) {
@@ -1281,10 +1321,10 @@ export class DriveSyncManager {
                         fileName: '',
                         composer: 'Unknown',
                         thumbnail: null,
-                        dateImported: Date.now(),
-                        lastAccessed: Date.now(),
+                        dateImported: 0,     // Sort to bottom — don't displace user's recent scores
+                        lastAccessed: 0,     // Sort to bottom
                         tags: [],
-                        isSynced: true,
+                        isSynced: !!entry.syncId,
                         isCloudOnly: true,
                         isPdfAvailable: !!entry.pdfId
                     };
@@ -1292,7 +1332,7 @@ export class DriveSyncManager {
                     registryChanged = true;
                     newCloudOnlyCount++;
 
-                    if (!entry.name) {
+                    if (entry.syncId && !entry.name) {
                         this.fetchCloudScoreDetails(entry.syncId, fp);
                     }
                 }

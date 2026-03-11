@@ -20,6 +20,7 @@ import { PlaybackManager } from './modules/PlaybackManager.js'
 import { JumpManager } from './modules/JumpManager.js'
 import { ViewPanelManager } from './modules/ViewPanelManager.js'
 import { DriveSyncManager } from './modules/DriveSyncManager.js'
+import { SetlistManager } from './modules/SetlistManager.js'
 
 // Use local worker for total offline reliability
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
@@ -172,6 +173,7 @@ class ScoreFlow {
     this.playbackManager = new PlaybackManager(this)
     this.inputManager = new InputManager(this)
     this.driveSyncManager = new DriveSyncManager(this)
+    this.setlistManager = new SetlistManager(this)
 
     // Stamp Scaling (Global is in app.stampSizeMultiplier, Score-specific here)
     this.scoreStampScale = 1.0
@@ -194,6 +196,7 @@ class ScoreFlow {
     this.playbackManager.init()
     this.scoreManager.init()
     this.settingsPanelManager.init()
+    this.setlistManager.init()
     this.toolManager.initDraggable()
     this.toolManager.initToolbarResizable()
     this.loadFromStorage()
@@ -359,6 +362,7 @@ class ScoreFlow {
     this.dialogTitle = document.getElementById('dialog-title')
     this.dialogMessage = document.getElementById('dialog-message')
     this.dialogIcon = document.getElementById('dialog-icon')
+    this.dialogInput = document.getElementById('dialog-input')
     this.dialogActions = document.getElementById('dialog-actions')
     this.closeDialogBtn = document.getElementById('close-dialog')
 
