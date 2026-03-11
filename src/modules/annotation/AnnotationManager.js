@@ -243,47 +243,78 @@ export class AnnotationManager {
     showEraseAllModal() {
         if (!this.app.eraseAllModal) return
         const categoryMap = new Map()
-        const categoryMeta = {
-            'Pens': { icon: '✏️' },
-            'Bow/Fingering': { icon: '🎻' },
-            'Articulation': { icon: '🎵' },
-            'Tempo': { icon: '♩' },
-            'Dynamic': { icon: 'f' },
-            'Anchor': { icon: '⚓' },
+        
+        // Dynamic Meta lookup from constants
+        const categoryIcons = {
+            'Pens': '✏️',
+            'Bow/Fingering': '🎻',
+            'Articulation': '🎵',
+            'Text': 'T',
+            'Anchor': '⚓',
         }
-        for (const [name, meta] of Object.entries(categoryMeta)) {
-            categoryMap.set(name, { icon: meta.icon, stamps: [] })
-        }
-        for (const stamp of this.app.stamps) {
+
+        // Initialize Map based on actual toolsets (excluding Edit)
+        this.app.toolsets.forEach(group => {
+            if (group.type === 'edit') return
+            categoryMap.set(group.name, { 
+                icon: categoryIcons[group.name] || '📌', 
+                stamps: [] 
+            })
+        })
+
+        // Sort existing stamps into buckets
+        this.app.stamps.forEach(stamp => {
+            if (stamp.deleted) return
+            
+            let targetCategory = null
+            
+            // 1. Check if it's a standard tool
             const group = this.app.toolsets.find(g => g.tools.some(t => t.id === stamp.type))
-            if (!group || group.type === 'edit') continue
-            if (!categoryMap.has(group.name)) categoryMap.set(group.name, { icon: '📌', stamps: [] })
-            categoryMap.get(group.name).stamps.push(stamp)
-        }
+            if (group && group.type !== 'edit') {
+                targetCategory = group.name
+            } 
+            // 2. Special handling for Custom Text (it belongs to the 'Text' category)
+            else if (stamp.type.startsWith('custom-text-')) {
+                targetCategory = 'Text'
+            }
+
+            if (targetCategory && categoryMap.has(targetCategory)) {
+                categoryMap.get(targetCategory).stamps.push(stamp)
+            }
+        })
+
         const list = document.getElementById('erase-all-category-list')
         list.innerHTML = ''
         let hasAny = false
+        
         for (const [name, { icon, stamps }] of categoryMap.entries()) {
             if (stamps.length === 0) continue
             hasAny = true
             const row = document.createElement('button')
             row.className = 'erase-all-cat-row'
+            
             const iconEl = document.createElement('span')
             iconEl.className = 'erase-all-cat-icon'
             iconEl.textContent = icon
+            
             const nameEl = document.createElement('span')
             nameEl.className = 'erase-all-cat-name'
             nameEl.textContent = name
+            
             const countEl = document.createElement('span')
             countEl.className = 'erase-all-cat-count'
             countEl.textContent = stamps.length
+            
             row.appendChild(iconEl)
             row.appendChild(nameEl)
             row.appendChild(countEl)
             row.addEventListener('click', () => this._confirmEraseCategory(name, stamps.length))
             list.appendChild(row)
         }
-        const total = this.app.stamps.length
+
+        const activeStamps = this.app.stamps.filter(s => !s.deleted)
+        const total = activeStamps.length
+
         if (total > 0) {
             const allRow = document.createElement('button')
             allRow.className = 'erase-all-cat-row cat-all'
@@ -302,12 +333,14 @@ export class AnnotationManager {
             allRow.addEventListener('click', () => this._confirmEraseCategory('__all__', total))
             list.appendChild(allRow)
         }
+
         if (!hasAny && total === 0) {
             const empty = document.createElement('p')
             empty.style.cssText = 'text-align:center;opacity:0.5;font-size:13px;padding:16px 0'
             empty.textContent = 'No annotations on this score.'
             list.appendChild(empty)
         }
+
         this.app.eraseAllModal.classList.add('active')
         this.app._eraseAllEsc = (e) => { if (e.key === 'Escape') this.closeEraseAllModal() }
         document.addEventListener('keydown', this.app._eraseAllEsc)
@@ -341,8 +374,15 @@ export class AnnotationManager {
         } else {
             this.app.stamps.forEach(s => {
                 if (!s.deleted) {
+                    // Check standard tools
                     const group = this.app.toolsets.find(g => g.tools.some(t => t.id === s.type))
                     if (group?.name === categoryName) {
+                        s.deleted = true
+                        s.updatedAt = Date.now()
+                        removed++
+                    } 
+                    // Support for Custom Text in the Text category
+                    else if (categoryName === 'Text' && s.type.startsWith('custom-text-')) {
                         s.deleted = true
                         s.updatedAt = Date.now()
                         removed++
