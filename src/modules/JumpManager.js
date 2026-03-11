@@ -126,10 +126,13 @@ export class JumpManager {
         // No closing as per user request
     }
 
-    goToPage(pageNumber) {
+    async goToPage(pageNumber) {
         if (!this.app.pdf) return
         const pageElem = document.querySelector(`.page-container[data-page="${pageNumber}"]`)
         if (pageElem) {
+            // Priority render before or during scroll
+            this.app.viewerManager.ensurePageRendered(pageNumber)
+
             this.app.viewer.scrollTo({
                 top: pageElem.offsetTop,
                 behavior: 'smooth'

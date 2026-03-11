@@ -205,8 +205,13 @@ export class RulerManager {
         if (this.jumpHistory.length > 50) this.jumpHistory.shift()
 
         const baseline = this.jumpOffsetPx
-        const m = this.app.viewerManager._pageMetrics[this.nextTargetAnchor.page]
+        const targetPageNum = this.nextTargetAnchor.page
+        const m = this.app.viewerManager._pageMetrics[targetPageNum]
         if (!m) return
+        
+        // Ensure priority render for jump target
+        this.app.viewerManager.ensurePageRendered(targetPageNum)
+
         const absoluteY = m.top + (this.nextTargetAnchor.y * m.height)
 
         const targetScroll = absoluteY - baseline
