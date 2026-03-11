@@ -546,14 +546,12 @@ export class DriveSyncManager {
             const entry = this.manifest[score.fingerprint];
             const needsPDF = !entry || !entry.pdfId;
             
-            // Logic: Needs JSON sync if local is marked unsynced OR if the title has changed from what's in the manifest
-            const currentSafeTitle = this.safeTitle(score.title).replace(/_$/, '');
-            const nameChanged = entry && entry.name !== currentSafeTitle;
-            const needsJSON = !score.isSynced || nameChanged;
+            // Logic: Background sync only triggers if explicitly unsynced
+            const needsJSON = !score.isSynced;
 
             if (needsPDF || needsJSON) {
                 workDone = true;
-                console.log(`[Sync] Processing background score: ${score.title || 'Untitled'} (Reason: ${nameChanged ? 'Name Changed' : 'Unsynced Data'})`);
+                console.log(`[Sync] Processing background score: ${score.title || 'Untitled'} (Reason: ${needsPDF ? 'PDF Missing' : 'Unsynced Data'})`);
                 await this.syncScore(score.fingerprint, needsPDF, needsJSON);
 
                 // Yield to main thread briefly between files
@@ -908,28 +906,21 @@ export class DriveSyncManager {
                 const localEdit = localInfo?.lastEdit || 0;
                 const remoteName = remoteData.scoreDetail.name;
                 
-                // Logic: 
-                // 1. Remote is strictly newer (Standard LWW)
-                // 2. OR Local is "Unknown/Generic" but Remote has a real name (Heuristic force-sync for new devices)
                 const isLocalGeneric = !localInfo || !localInfo.name || localInfo.name === 'Unknown' || localInfo.name.includes('score_buf_');
                 const hasRemoteRealName = remoteName && remoteName !== 'Unknown' && !remoteName.includes('score_buf_');
                 
                 const shouldAcceptRemote = (remoteEdit > localEdit) || (isLocalGeneric && hasRemoteRealName);
 
-                console.log(`[DriveSync] Merging ScoreDetail: RemoteEdit=${remoteEdit}, LocalEdit=${localEdit}, LocalGeneric=${isLocalGeneric}, Accept=${shouldAcceptRemote}`);
-
                 if (localInfo && shouldAcceptRemote) {
-                    console.log(`[DriveSync] Updating local metadata with: ${remoteName} by ${remoteData.scoreDetail.composer}`);
                     this.app.scoreDetailManager.currentInfo = remoteData.scoreDetail;
-                    this.app.scoreDetailManager.save(fingerprint); // Persist to local storage
+                    this.app.scoreDetailManager.save(fingerprint); 
                     this.app.scoreDetailManager.render(fingerprint);
 
-                    // CRITICAL: Sync with Library Registry
                     if (this.app.scoreManager && remoteName) {
                         await this.app.scoreManager.updateMetadata(fingerprint, {
                             title: remoteName,
                             composer: remoteData.scoreDetail.composer || 'Unknown'
-                        });
+                        }, true); // TRUE: fromSync
                     }
 
                     hasChanges = true;
@@ -1490,8 +1481,11 @@ export class DriveSyncManager {
 
                 // Metadata Sync: If local is generic but manifest has a name
                 if (entry.name && (score.title === 'Unknown' || score.title.includes('score_buf_'))) {
-                    score.title = entry.name;
-                    changed = true;
+                    await this.app.scoreManager.updateMetadata(score.fingerprint, {
+                        title: entry.name
+                    }, true); // fromSync: true
+                    // registryChanged will be handled by updateMetadata saving, but we mark it here too
+                    registryChanged = true;
                 }
 
                 if (changed) {

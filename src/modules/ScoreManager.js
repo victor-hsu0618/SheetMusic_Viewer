@@ -813,7 +813,7 @@ export class ScoreManager {
     /**
      * Update metadata (title/composer) for a specific score in registry.
      */
-    async updateMetadata(fingerprint, metadata) {
+    async updateMetadata(fingerprint, metadata, fromSync = false) {
         const score = this.registry.find(s => s.fingerprint === fingerprint);
         if (score) {
             let changed = false;
@@ -827,7 +827,9 @@ export class ScoreManager {
             }
 
             if (changed) {
-                score.isSynced = false; // Important: Metadata change means it needs a sync
+                if (!fromSync) {
+                    score.isSynced = false; // Only mark unsynced if manual user edit
+                }
                 await this.saveRegistry();
                 if (this.overlay && this.overlay.classList.contains('active')) {
                     this.render();
