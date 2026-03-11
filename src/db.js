@@ -40,6 +40,16 @@ export async function clear() {
     });
 }
 
+export async function getAllKeys() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('store', 'readonly');
+        const request = transaction.objectStore('store').getAllKeys();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = reject;
+    });
+}
+
 export function closeDB() {
     if (activeDB) {
         activeDB.close();

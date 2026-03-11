@@ -1,5 +1,6 @@
 import * as db from '../db.js'
 import * as pdfjsLib from 'pdfjs-dist'
+import { computeFingerprint } from '../fingerprint.js'
 
 export class ViewerManager {
     constructor(app) {
@@ -169,24 +170,7 @@ export class ViewerManager {
     }
 
     async getFingerprint(buffer) {
-        // Ensure we are hashing the actual bytes, not a potentially larger shared buffer
-        const bytes = (buffer instanceof ArrayBuffer) ? new Uint8Array(buffer) : buffer
-        const bufferToHash = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
-
-        // crypto.subtle requires HTTPS — fallback to simple hash for HTTP (local dev / iPad)
-        if (window.isSecureContext && crypto.subtle) {
-            const hashBuffer = await crypto.subtle.digest('SHA-256', bufferToHash)
-            const hashArray = Array.from(new Uint8Array(hashBuffer))
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-        }
-        // Fallback: fast non-cryptographic hash (djb2) for HTTP environments
-        let hash = 5381
-        // Sample every 64 bytes for speed on large PDFs
-        for (let i = 0; i < bytes.length; i += 64) {
-            hash = ((hash << 5) + hash) ^ bytes[i]
-            hash = hash >>> 0 // keep as unsigned 32-bit
-        }
-        return 'fallback_' + hash.toString(16) + '_' + bytes.length
+        return computeFingerprint(buffer);
     }
 
     async loadPDF(data, filename = null) {

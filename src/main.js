@@ -134,6 +134,7 @@ class ScoreFlow {
   constructor() {
     this.recycleItems = []
     window.app = this // Explicit global for debug & legacy support
+    window.rebuildLibrary = () => this.scoreManager.rebuildLibrary() // Console shortcut
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
     // Default categories: Pens and Text
@@ -572,6 +573,11 @@ class ScoreFlow {
       });
     }
 
+    const btnRebuildLibrary = document.getElementById('btn-rebuild-library')
+    if (btnRebuildLibrary) {
+      btnRebuildLibrary.addEventListener('click', () => this.scoreManager.rebuildLibrary())
+    }
+
     const btnResetCloud = document.getElementById('btn-reset-cloud-index')
     if (btnResetCloud) {
       btnResetCloud.addEventListener('click', () => this.driveSyncManager.resetCloudIndex())
@@ -581,7 +587,7 @@ class ScoreFlow {
     if (btnForcePush) {
       btnForcePush.addEventListener('click', () => this.driveSyncManager.forcePushAll())
     }
-    }
+  }
 
     /**
     * Hook for annotation changes to trigger cloud sync.

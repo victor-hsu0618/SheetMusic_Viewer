@@ -500,10 +500,13 @@ export class DriveSyncManager {
             }
             if (!this.folderId) throw new Error('Could not resolve sync folder');
 
-            // Trigger library scan if not done yet
+            // First run: full scan (discovers Drive files, rebuilds manifest)
+            // Subsequent runs: lightweight manifest refresh (picks up changes from other devices)
             if (!this.hasScanned) {
                 this.hasScanned = true;
                 await this.scanRemoteSyncFiles();
+            } else {
+                await this.refreshManifest();
             }
 
             // 0. Sync Profile first (it's global)
@@ -512,6 +515,12 @@ export class DriveSyncManager {
             // 1. Sync the active score (Prioritized)
             if (this.app.pdfFingerprint) {
                 const fingerprint = this.app.pdfFingerprint;
+
+                // Skip if this score was just deleted (tombstoned) on this device
+                if (this.manifest[fingerprint]?.deleted) {
+                    console.log(`[DriveSync] Active score is tombstoned, skipping sync.`);
+                } else {
+
                 const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
                 const title = score ? score.title : 'Unknown';
                 console.log(`[DriveSync] Prioritizing active score: ${title} (${fingerprint})`);
@@ -531,6 +540,7 @@ export class DriveSyncManager {
                 // Sync JSON/Annotations
                 const remoteVersion = await this.pull();
                 await this.push(remoteVersion);
+                } // end tombstone check
             }
 
             // 2. Perform library-wide batch sync for other scores
@@ -551,12 +561,78 @@ export class DriveSyncManager {
      * This now performs both PULL and PUSH in the background for all scores, 
      * including cloud-only placeholders to fetch their real titles.
      */
+    /**
+     * Lightweight manifest refresh — runs every sync cycle after the initial full scan.
+     * Loads the latest manifest from Drive and applies two changes locally:
+     *   1. Remove registry entries tombstoned by another device.
+     *   2. Add cloud-only placeholders for new entries added by another device.
+     */
+    async refreshManifest() {
+        if (!this.folderId || !this.app.scoreManager) return;
+        try {
+            const loaded = await this.loadManifest();
+            if (!loaded || !this.manifest) return;
+
+            let registryChanged = false;
+
+            // 1. Remove tombstoned entries
+            const tombstonedFps = new Set(
+                Object.entries(this.manifest).filter(([, e]) => e.deleted).map(([fp]) => fp)
+            );
+            if (tombstonedFps.size > 0) {
+                const before = this.app.scoreManager.registry.length;
+                this.app.scoreManager.registry = this.app.scoreManager.registry.filter(s => {
+                    if (tombstonedFps.has(s.fingerprint)) {
+                        console.log(`[DriveSync] ✕ removed "${s.title || s.fingerprint.slice(0, 8)}" — deleted on another device`);
+                        return false;
+                    }
+                    return true;
+                });
+                if (this.app.scoreManager.registry.length < before) registryChanged = true;
+            }
+
+            // 2. Add cloud-only placeholders for new manifest entries
+            for (const [fp, entry] of Object.entries(this.manifest)) {
+                if (entry.deleted) continue;
+                if (!entry.syncId && !entry.pdfId) continue;
+                const exists = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
+                if (!exists) {
+                    const placeholder = {
+                        fingerprint: fp,
+                        title: entry.name || `雲端 PDF (${fp.slice(0, 8)})`,
+                        fileName: '',
+                        composer: 'Unknown',
+                        thumbnail: null,
+                        dateImported: 0,
+                        lastAccessed: 0,
+                        tags: [],
+                        isSynced: false,
+                        isCloudOnly: true,
+                        isPdfAvailable: !!entry.pdfId
+                    };
+                    this.app.scoreManager.registry.push(placeholder);
+                    registryChanged = true;
+                    console.log(`[DriveSync] ↓ new file in cloud: "${placeholder.title}" (${fp.slice(0, 8)})`);
+                }
+            }
+
+            if (registryChanged) {
+                await this.app.scoreManager.saveRegistry();
+                this.app.scoreManager.render();
+            }
+        } catch (err) {
+            console.warn('[DriveSync] refreshManifest failed:', err);
+        }
+    }
+
     async syncBatch() {
         if (!this.app.scoreManager?.registry) return;
 
         let workDone = false;
         let processedCount = 0;
         const activeFp = this.app.pdfFingerprint;
+        
+        console.log(`[SyncDebug] syncBatch starting. Registry size: ${this.app.scoreManager.registry.length}. Manifest size: ${Object.keys(this.manifest).length}`);
 
         // Process ALL scores in registry (both local and cloud-only)
         for (const score of this.app.scoreManager.registry) {
@@ -565,24 +641,48 @@ export class DriveSyncManager {
 
             const fp = score.fingerprint;
             const entry = this.manifest[fp];
-            if (!entry) continue;
-
-            const needsPDF = !score.isCloudOnly && !entry.pdfId;
-            const canPull = !!entry.syncId;
-            const needsPush = !score.isCloudOnly && !score.isSynced;
             
+            if (!entry) {
+                // If not in manifest, it might be a newly added local file that needs first-time PDF upload
+                const needsInitialPDF = !score.isCloudOnly;
+                if (!needsInitialPDF) continue; 
+            }
+
+            const needsPDF = entry ? (!score.isCloudOnly && !entry.pdfId) : !score.isCloudOnly;
+            const canPull = !!(entry && entry.syncId);
+            const needsPush = !score.isCloudOnly && !score.isSynced;
+            // For cloud-only: pull until cloudDataPulled is set.
+            // For local scores: pull whenever manifest's updated timestamp is newer than last pulled version.
+            const needsPull = canPull && (
+                score.isCloudOnly
+                    ? !score.cloudDataPulled
+                    : (entry.updated || 0) > (score.lastPulledVersion || 0)
+            );
+            // Download PDF from cloud if available there but missing locally
+            const needsPdfDownload = score.isCloudOnly && !!(entry && entry.pdfId);
+            // Generate missing thumbnail for scores that have a local PDF but no thumbnail
+            const needsThumbnail = !score.isCloudOnly && !score.thumbnail;
+
             // Metadata Check: If title is generic, we MUST pull to get the real name
             const isGeneric = !score.title || score.title === 'Unknown' || score.title.includes('score_buf_');
             const shouldPullMeta = canPull && isGeneric;
 
-            if (needsPDF || needsPush || shouldPullMeta) {
+            if (needsPDF || needsPush || needsPull || needsPdfDownload || needsThumbnail || shouldPullMeta) {
                 processedCount++;
                 // Limit to 8 items per cycle for better balance
-                if (processedCount > 8) break; 
+                if (processedCount > 8) break;
 
                 workDone = true;
-                console.log(`[Sync] Background processing: ${score.title || fp.slice(0,8)}...`);
+                console.log(`[Sync] Background processing: ${score.title || fp.slice(0,8)}... (Reason: PDF=${needsPDF}, PdfDownload=${needsPdfDownload}, Thumb=${needsThumbnail}, Push=${needsPush}, Pull=${needsPull}, PullMeta=${shouldPullMeta})`);
                 await this.syncScore(fp, needsPDF, canPull, needsPush);
+
+                // After sync, record manifest's updated timestamp so needsPull is false next cycle
+                // (avoids loop caused by entry.updated being slightly newer than remoteVer)
+                const refreshedEntry = this.manifest[fp];
+                if (refreshedEntry && needsPull) {
+                    score.lastPulledVersion = Math.max(score.lastPulledVersion || 0, refreshedEntry.updated || 0);
+                    await this.app.scoreManager.saveRegistry();
+                }
 
                 // Short sleep to prevent UI jank
                 await new Promise(r => setTimeout(r, 600));
@@ -591,6 +691,8 @@ export class DriveSyncManager {
 
         if (workDone) {
             console.log(`[Sync] Background cycle finished. Processed ${processedCount} items.`);
+        } else {
+            console.log('[SyncDebug] No background items needed processing.');
         }
     }
 
@@ -604,12 +706,55 @@ export class DriveSyncManager {
             if (!score) return;
             const entry = this.manifest[fingerprint];
 
-            // 1. Handle PDF upload if needed
+            // 1. Handle PDF upload if needed (local → cloud)
             if (needsPDF) {
                 const pdfKey = `score_buf_${fingerprint}`;
                 const pdfData = await db.get(pdfKey);
                 if (pdfData) {
                     await this.uploadPDF(fingerprint, pdfData, score.title || 'Unknown');
+                }
+            }
+
+            // 1b. Handle PDF download if available in cloud but missing locally (cloud → local)
+            const hasPdfInCloud = !!(entry && entry.pdfId);
+            const hasLocalPdf = !!(await db.get(`score_buf_${fingerprint}`));
+            if (hasPdfInCloud && !hasLocalPdf) {
+                try {
+                    console.log(`[DriveSync] ↓ Auto-downloading PDF for "${score.title || fingerprint.slice(0, 8)}"...`);
+                    this.addLog(`正在下載雲端 PDF: ${score.title || '...'}`, 'system');
+                    const buffer = await this.downloadPDF(fingerprint);
+                    await db.set(`score_buf_${fingerprint}`, buffer);
+
+                    // Generate thumbnail so the library card shows a preview
+                    const thumbnail = await this.app.scoreManager.generateThumbnail(buffer.slice(0));
+                    score.thumbnail = thumbnail;
+                    score.isCloudOnly = false;
+                    score.isPdfAvailable = true;
+                    if (!score.fileName) score.fileName = (score.title || fingerprint.slice(0, 8)) + '.pdf';
+                    await this.app.scoreManager.saveRegistry();
+                    this.app.scoreManager.render();
+                    console.log(`[DriveSync] ✓ PDF downloaded: "${score.title}" (${(buffer.byteLength / 1024 / 1024).toFixed(1)} MB)`);
+                    this.addLog(`PDF 下載完成: ${score.title}`, 'success');
+                } catch (err) {
+                    console.warn(`[DriveSync] PDF auto-download failed for ${fingerprint.slice(0, 8)}:`, err.message);
+                }
+            }
+
+            // 1c. Generate thumbnail if missing (retroactive fix for previously downloaded scores)
+            if (!score.isCloudOnly && !score.thumbnail) {
+                try {
+                    const buffer = await db.get(`score_buf_${fingerprint}`);
+                    if (buffer) {
+                        const thumbnail = await this.app.scoreManager.generateThumbnail(buffer.slice(0));
+                        if (thumbnail) {
+                            score.thumbnail = thumbnail;
+                            await this.app.scoreManager.saveRegistry();
+                            this.app.scoreManager.render();
+                            console.log(`[DriveSync] ✓ Thumbnail generated for "${score.title}"`);
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[DriveSync] Thumbnail generation failed for ${fingerprint.slice(0, 8)}:`, err.message);
                 }
             }
 
@@ -668,20 +813,26 @@ export class DriveSyncManager {
             const remoteDetail = remoteData.scoreDetail;
             
             let needsSave = false;
-            
+            const bgChanges = [];
+            const scoreName = remoteDetail?.name || score.title || fingerprint.slice(0, 8);
+
             // 1. Merge Metadata
             if (remoteDetail) {
                 const isLocalGeneric = !score.title || score.title === 'Unknown' || score.title.includes('score_buf_');
                 const shouldUpdateMeta = isLocalGeneric || (remoteDetail.lastEdit > (localDetail?.lastEdit || 0));
-                
+
                 if (shouldUpdateMeta) {
-                    console.log(`[Sync] -> Updating background metadata: ${remoteDetail.name}`);
                     await db.set(`score_detail_${fingerprint}`, remoteDetail);
                     await this.app.scoreManager.updateMetadata(fingerprint, {
                         title: remoteDetail.name,
                         composer: remoteDetail.composer || 'Unknown'
                     }, true); // fromSync: true
                     needsSave = true;
+                    if (isLocalGeneric && remoteDetail.name) {
+                        bgChanges.push(`name resolved: "${remoteDetail.name}"`);
+                    } else {
+                        bgChanges.push(`metadata updated`);
+                    }
                 }
             }
 
@@ -689,28 +840,45 @@ export class DriveSyncManager {
             if (Array.isArray(remoteData.stamps)) {
                 const localStamps = await db.get(`score_stamps_${fingerprint}`) || [];
                 const localMap = new Map(localStamps.map(s => [s.id, s]));
-                let stampsChanged = false;
+                let newCount = 0;
+                let updCount = 0;
+                const newByType = {};
 
                 remoteData.stamps.forEach(remoteS => {
                     if (!remoteS.id) return;
+                    const t = remoteS.type || remoteS.stampType || 'unknown';
                     const localS = localMap.get(remoteS.id);
-                    if (!localS || (remoteS.updatedAt > (localS.updatedAt || 0))) {
+                    if (!localS) {
                         localMap.set(remoteS.id, remoteS);
-                        stampsChanged = true;
+                        newCount++;
+                        newByType[t] = (newByType[t] || 0) + 1;
+                    } else if (remoteS.updatedAt > (localS.updatedAt || 0)) {
+                        localMap.set(remoteS.id, remoteS);
+                        updCount++;
                     }
                 });
 
-                if (stampsChanged) {
+                if (newCount > 0 || updCount > 0) {
                     await db.set(`score_stamps_${fingerprint}`, Array.from(localMap.values()));
                     needsSave = true;
+                    if (newCount > 0) {
+                        const typeStr = Object.entries(newByType).map(([t, n]) => `${t}×${n}`).join(', ');
+                        bgChanges.push(`+${newCount} annotation(s) [${typeStr}]`);
+                    }
+                    if (updCount > 0) bgChanges.push(`updated ${updCount} annotation(s)`);
                 }
             }
-            
-            // 3. Mark as Synced
-            if (needsSave || score.isSynced === false) {
-                score.isSynced = true;
-                await this.app.scoreManager.saveRegistry();
+
+            if (bgChanges.length > 0) {
+                const label = score.isCloudOnly ? 'new file in cloud' : 'bg pull';
+                console.log(`[DriveSync] ↓ ${label} "${scoreName}" — ${bgChanges.join(' | ')}`);
             }
+
+            // 3. Mark as Synced — always persist lastPulledVersion to prevent re-pulling next cycle
+            score.lastPulledVersion = remoteVer;
+            if (score.isCloudOnly) score.cloudDataPulled = true;
+            if (!score.isSynced) score.isSynced = true;
+            await this.app.scoreManager.saveRegistry();
 
             return remoteVer;
         } catch (err) {
@@ -766,7 +934,16 @@ export class DriveSyncManager {
             if (!fingerprint) return;
 
             const score = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
-            if (score && score.isSynced && remoteVersion <= (this.lastSyncTime || 0)) {
+            if (!score) return; // score was deleted, nothing to push
+
+            // Detect local changes: check if any stamp or metadata was modified after last sync
+            const latestStampTime = this.app.stamps.length > 0
+                ? Math.max(...this.app.stamps.map(s => s.updatedAt || 0))
+                : 0;
+            const localEdit = this.app.scoreDetailManager?.currentInfo?.lastEdit || 0;
+            const latestLocalChange = Math.max(latestStampTime, localEdit);
+
+            if (score && score.isSynced && remoteVersion <= (this.lastSyncTime || 0) && latestLocalChange <= (this.lastSyncTime || 0)) {
                 // Heartbeat log only in console
                 console.log(`[DriveSync] Score ${score.title} is already synced. Skipping push.`);
                 return;
@@ -774,8 +951,24 @@ export class DriveSyncManager {
 
             // Show UI log ONLY if we are actually pushing
             this.addLog(`正在同步當前樂譜: ${score.title}`, 'system');
-            const localEdit = this.app.scoreDetailManager?.currentInfo?.lastEdit || 0;
-            console.log(`[DriveSync] Pushing Score: ${score.title}, Version=${Date.now()}, LocalLastEdit=${localEdit}`);
+
+            // Diff summary: show what changed since last sync
+            const sinceLastSync = this.lastSyncTime || 0;
+            const changedStamps = this.app.stamps.filter(s => (s.updatedAt || 0) > sinceLastSync);
+            const diffParts = [];
+            if (changedStamps.length > 0) {
+                // Group by type for clarity
+                const byType = {};
+                changedStamps.forEach(s => {
+                    const t = s.type || s.stampType || 'unknown';
+                    byType[t] = (byType[t] || 0) + 1;
+                });
+                const typeStr = Object.entries(byType).map(([t, n]) => `${t}×${n}`).join(', ');
+                diffParts.push(`stamps: ${changedStamps.length} (${typeStr})`);
+            }
+            if (localEdit > sinceLastSync) diffParts.push('metadata');
+            const diffStr = diffParts.length > 0 ? diffParts.join(' | ') : 'full sync';
+            console.log(`[DriveSync] ↑ Push "${score.title}" — changed: ${diffStr}`);
 
             // Optimistic Locking: If remote is newer than what we just pulled (race condition), skip push
             if (remoteVersion > (this.lastSyncTime || 0)) {
@@ -875,6 +1068,7 @@ export class DriveSyncManager {
             console.log('[DriveSync] Remote changes found, merging...');
             let hasChanges = false;
             let changesDetail = [];
+            const scoreName = remoteData.scoreDetail?.name || this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint)?.title || fingerprint.slice(0, 8);
 
             // 1. Sync Stamps
             if (Array.isArray(remoteData.stamps)) {
@@ -883,19 +1077,23 @@ export class DriveSyncManager {
 
                 let newStamps = 0;
                 let updatedStamps = 0;
-                const remoteCount = remoteData.stamps.length;
+                const newByType = {};
+                const updByType = {};
 
                 remoteData.stamps.forEach(remoteS => {
                     if (!remoteS.id) return;
+                    const t = remoteS.type || remoteS.stampType || 'unknown';
                     const localS = localMap.get(remoteS.id);
                     if (!localS) {
                         this.app.stamps.push(remoteS);
                         hasChanges = true;
                         newStamps++;
+                        newByType[t] = (newByType[t] || 0) + 1;
                     } else if (remoteS.updatedAt > (localS.updatedAt || 0)) {
                         Object.assign(localS, remoteS);
                         hasChanges = true;
                         updatedStamps++;
+                        updByType[t] = (updByType[t] || 0) + 1;
                     }
                 });
 
@@ -906,11 +1104,16 @@ export class DriveSyncManager {
                 if (toPrune.length > 0) {
                     this.app.stamps = this.app.stamps.filter(s => !toPrune.includes(s));
                     hasChanges = true;
-                    changesDetail.push(`清空已刪除劃記(${toPrune.length})`);
+                    changesDetail.push(`deleted ${toPrune.length} annotation(s)`);
                 }
 
-                if (newStamps > 0 || updatedStamps > 0) {
-                    changesDetail.push(`劃記(收${remoteCount}/增${newStamps}/更${updatedStamps})`);
+                if (newStamps > 0) {
+                    const typeStr = Object.entries(newByType).map(([t, n]) => `${t}×${n}`).join(', ');
+                    changesDetail.push(`+${newStamps} annotation(s) [${typeStr}]`);
+                }
+                if (updatedStamps > 0) {
+                    const typeStr = Object.entries(updByType).map(([t, n]) => `${t}×${n}`).join(', ');
+                    changesDetail.push(`updated ${updatedStamps} annotation(s) [${typeStr}]`);
                 }
             }
 
@@ -943,7 +1146,7 @@ export class DriveSyncManager {
                 if (bmMadeChanges) {
                     this.app.jumpManager.renderBookmarks();
                     hasChanges = true;
-                    changesDetail.push(`${remoteData.bookmarks.length} 書籤`);
+                    changesDetail.push(`bookmarks updated (total: ${remoteData.bookmarks.length})`);
                 }
             }
 
@@ -976,7 +1179,7 @@ export class DriveSyncManager {
                 if (srcMadeChanges) {
                     this.app.collaborationManager?.renderSourceUI();
                     hasChanges = true;
-                    changesDetail.push(`${remoteData.sources.length} 詮釋`);
+                    changesDetail.push(`interpretations updated (total: ${remoteData.sources.length})`);
                 }
             }
 
@@ -1029,13 +1232,14 @@ export class DriveSyncManager {
                     }
 
                     hasChanges = true;
-                    changesDetail.push(`作品資訊`);
+                    changesDetail.push(`metadata: name="${remoteName}"`);
                 }
             }
 
             if (hasChanges) {
-                const detail = changesDetail.length > 0 ? `: ${changesDetail.join(', ')}` : '';
-                this.addLog(`已同步遠端更新${detail}`, 'info');
+                const detail = changesDetail.join(' | ');
+                console.log(`[DriveSync] ↓ Pull "${scoreName}" — ${detail}`);
+                this.addLog(`已同步遠端更新: ${detail}`, 'info');
                 this.app.saveToStorage(false);
                 this.app.redrawAllAnnotationLayers();
             } else {
@@ -1331,10 +1535,10 @@ export class DriveSyncManager {
      * Delete a score entry from the cloud manifest.
      */
     async deleteManifestEntry(fingerprint) {
-        if (!this.manifest || !this.manifest[fingerprint]) return;
+        if (!this.manifest) this.manifest = {};
 
-        // Use Tombstone pattern: Mark as deleted rather than removing key.
-        // This prevents "Self-Healing" from adding it back if cloud files persist briefly.
+        // Always create tombstone even if entry didn't exist yet —
+        // Drive files may still be present and would otherwise resurrect the score on next scan.
         this.manifest[fingerprint] = {
             ...this.manifest[fingerprint],
             deleted: true,
@@ -1454,9 +1658,22 @@ export class DriveSyncManager {
                 this.manifestFileId = null;
             }
 
-            // Clear local manifest
-            this.manifest = {};
+            // Preserve deletion tombstones — they must survive the manifest wipe
+            const savedTombstones = {};
+            for (const [fp, entry] of Object.entries(this.manifest)) {
+                if (entry.deleted) savedTombstones[fp] = entry;
+            }
+
+            // Clear local manifest but restore tombstones so scan won't resurrect deleted scores
+            this.manifest = { ...savedTombstones };
             this.hasScanned = false; // Force re-scan
+
+            // Reset sync flags so syncBatch will re-pull everything from Drive
+            for (const score of this.app.scoreManager.registry) {
+                score.isSynced = false;
+                delete score.cloudDataPulled;
+            }
+            await this.app.scoreManager.saveRegistry();
 
             // Re-scan
             await this.scanRemoteSyncFiles();
@@ -1499,6 +1716,9 @@ export class DriveSyncManager {
 
                     if (syncMatch) {
                         const fp = syncMatch[1];
+                        // Never resurrect tombstoned entries during self-heal
+                        if (this.manifest[fp]?.deleted) return;
+
                         if (!this.manifest[fp]) {
                             this.manifest[fp] = {};
                             manifestChanged = true;
@@ -1520,6 +1740,9 @@ export class DriveSyncManager {
                         }
                     } else if (pdfMatch) {
                         const fp = pdfMatch[1];
+                        // Never resurrect tombstoned entries during self-heal
+                        if (this.manifest[fp]?.deleted) return;
+
                         if (!this.manifest[fp]) {
                             this.manifest[fp] = {};
                             manifestChanged = true;
@@ -1563,6 +1786,24 @@ export class DriveSyncManager {
             let registryChanged = false;
             let foundCount = 0;
             let newCloudOnlyCount = 0;
+
+            // Remove registry entries that are tombstoned in the manifest (deleted on another device)
+            const tombstonedFps = new Set(
+                Object.entries(this.manifest)
+                    .filter(([, e]) => e.deleted)
+                    .map(([fp]) => fp)
+            );
+            if (tombstonedFps.size > 0) {
+                const before = this.app.scoreManager.registry.length;
+                this.app.scoreManager.registry = this.app.scoreManager.registry.filter(s => {
+                    if (tombstonedFps.has(s.fingerprint)) {
+                        console.log(`[DriveSync] Removing tombstoned score from registry: ${s.title || s.fingerprint.slice(0, 8)}`);
+                        return false;
+                    }
+                    return true;
+                });
+                if (this.app.scoreManager.registry.length < before) registryChanged = true;
+            }
 
             // Mark local registry based on manifest
             for (const score of this.app.scoreManager.registry) {
@@ -1624,7 +1865,7 @@ export class DriveSyncManager {
                         dateImported: 0,     // Sort to bottom — don't displace user's recent scores
                         lastAccessed: 0,     // Sort to bottom
                         tags: [],
-                        isSynced: !!entry.syncId,
+                        isSynced: false,     // false = data not yet pulled locally; pullBackground will set true
                         isCloudOnly: true,
                         isPdfAvailable: !!entry.pdfId
                     };

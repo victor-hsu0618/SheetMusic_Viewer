@@ -1,5 +1,7 @@
 import * as db from '../db.js';
+import { getAllKeys } from '../db.js';
 import * as pdfjsLib from 'pdfjs-dist';
+import { computeFingerprint } from '../fingerprint.js';
 
 /**
  * ScoreManager handles the Library UI, Registry (Metadata), and PDF Buffer storage.
@@ -34,6 +36,9 @@ export class ScoreManager {
 
         // 3. Migrate legacy data if needed
         await this.migrateLegacyData();
+
+        // 4. Deduplicate: migrate any old fallback_ fingerprints to proper SHA-256
+        this.migrateFallbackFingerprints(); // async, non-blocking
 
         this.initLibraryHeader();
         this.initBatchBar();
@@ -293,24 +298,142 @@ export class ScoreManager {
      * Uses Web Crypto API if available, falls back to a simple fast hash for non-secure contexts (iPad/LAN).
      */
     async calculateFingerprint(buffer) {
-        // Ensure we are hashing the actual bytes, not a potentially larger shared buffer
-        const bytes = (buffer instanceof ArrayBuffer) ? new Uint8Array(buffer) : buffer
-        const bufferToHash = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+        return computeFingerprint(buffer);
+    }
 
-        if (window.crypto && window.crypto.subtle) {
-            const hashBuffer = await crypto.subtle.digest('SHA-256', bufferToHash);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
+    /**
+     * One-time migration: upgrade old fallback_ fingerprints to proper SHA-256.
+     * Runs asynchronously in the background so it doesn't block startup.
+     */
+    async migrateFallbackFingerprints() {
+        const fallbackEntries = this.registry.filter(s => s.fingerprint?.startsWith('fallback_'));
+        if (fallbackEntries.length === 0) return;
 
-        // Fallback: Simple fast hash (Murmur-like) for non-HTTPS LAN access (iPad)
-        console.warn('[ScoreManager] crypto.subtle unavailable. Using fallback fast-hash.');
-        let hash = 5381
-        for (let i = 0; i < bytes.length; i += 64) {
-            hash = ((hash << 5) + hash) ^ bytes[i]
-            hash = hash >>> 0 // keep as unsigned 32-bit
+        console.log(`[ScoreManager] Migrating ${fallbackEntries.length} fallback_ fingerprint(s) to SHA-256...`);
+        let changed = false;
+
+        try {
+            for (const entry of fallbackEntries) {
+                const oldFp = entry.fingerprint;
+                const buffer = await db.get(`score_buf_${oldFp}`);
+                if (!buffer) {
+                    // Orphaned entry with no PDF — just remove it
+                    this.registry = this.registry.filter(s => s.fingerprint !== oldFp);
+                    changed = true;
+                    console.log(`[ScoreManager] Removed orphaned fallback entry: ${oldFp}`);
+                    continue;
+                }
+
+                const newFp = await computeFingerprint(new Uint8Array(buffer));
+                if (newFp === oldFp) continue;
+
+                const duplicate = this.registry.find(s => s.fingerprint === newFp);
+                if (duplicate) {
+                    this.registry = this.registry.filter(s => s.fingerprint !== oldFp);
+                    console.log(`[ScoreManager] Removed duplicate fallback entry ${oldFp}`);
+                } else {
+                    entry.fingerprint = newFp;
+                    await db.set(`score_buf_${newFp}`, buffer);
+                    await db.remove(`score_buf_${oldFp}`);
+
+                    const stamps = await db.get(`score_stamps_${oldFp}`);
+                    if (stamps) { await db.set(`score_stamps_${newFp}`, stamps); await db.remove(`score_stamps_${oldFp}`); }
+
+                    const detail = await db.get(`score_detail_${oldFp}`);
+                    if (detail) { await db.set(`score_detail_${newFp}`, detail); await db.remove(`score_detail_${oldFp}`); }
+
+                    const lsKey = `scoreflow_stamps_${oldFp}`;
+                    const lsStamps = localStorage.getItem(lsKey);
+                    if (lsStamps) { localStorage.setItem(`scoreflow_stamps_${newFp}`, lsStamps); localStorage.removeItem(lsKey); }
+
+                    console.log(`[ScoreManager] Migrated ${oldFp} → ${newFp.slice(0, 8)}...`);
+                }
+                changed = true;
+            }
+
+            if (changed) {
+                await this.saveRegistry();
+                this.render();
+                console.log('[ScoreManager] Fallback fingerprint migration complete.');
+            }
+        } catch (err) {
+            console.error('[ScoreManager] Fallback migration failed:', err);
         }
-        return 'fallback_' + hash.toString(16) + '_' + bytes.length;
+    }
+
+    /**
+     * Rebuild the entire library registry by scanning all score_buf_* entries in IndexedDB.
+     * Preserves existing metadata (title, composer, etc.) for fingerprints that already exist.
+     * Useful for recovering from registry corruption.
+     */
+    async rebuildLibrary() {
+        console.log('[ScoreManager] Rebuilding library from IndexedDB buffers...');
+        this.app.showMessage('Rebuilding library...', 'system');
+
+        try {
+            const allKeys = await getAllKeys();
+            const bufferKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith('score_buf_'));
+            console.log(`[ScoreManager] Found ${bufferKeys.length} PDF buffer(s) in storage.`);
+
+            const newRegistry = [];
+
+            for (const key of bufferKeys) {
+                const buffer = await db.get(key);
+                if (!buffer || !(buffer instanceof ArrayBuffer) && !(buffer instanceof Uint8Array)) continue;
+
+                const uint8 = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+
+                // Skip anything that isn't a PDF (magic bytes: %PDF = 0x25 0x50 0x44 0x46)
+                if (uint8.byteLength < 1024 || uint8[0] !== 0x25 || uint8[1] !== 0x50 || uint8[2] !== 0x44 || uint8[3] !== 0x46) {
+                    console.warn(`[ScoreManager] Skipping non-PDF or corrupt buffer: ${key}`);
+                    await db.remove(key); // Clean up the junk entry
+                    continue;
+                }
+                const fp = await computeFingerprint(uint8);
+
+                // Preserve existing registry metadata if available
+                const existing = this.registry.find(s => s.fingerprint === fp);
+                if (existing) {
+                    newRegistry.push(existing);
+                    continue;
+                }
+
+                // New entry — generate thumbnail and basic metadata
+                const thumbnail = await this.generateThumbnail(uint8.slice(0)).catch(() => null);
+                // Try to get score detail for title/composer
+                const detail = await db.get(`score_detail_${fp}`) || await db.get(`score_detail_${key.slice('score_buf_'.length)}`);
+                const lsStamps = localStorage.getItem(`scoreflow_stamps_${fp}`) || localStorage.getItem(`scoreflow_stamps_${key.slice('score_buf_'.length)}`);
+
+                newRegistry.push({
+                    fingerprint: fp,
+                    title: detail?.name || key.slice('score_buf_'.length, 'score_buf_'.length + 8) + '...',
+                    fileName: detail?.name ? detail.name + '.pdf' : 'recovered.pdf',
+                    composer: detail?.composer || 'Unknown',
+                    thumbnail: thumbnail,
+                    dateImported: Date.now(),
+                    lastAccessed: Date.now(),
+                    tags: [],
+                    isSynced: false,
+                });
+
+                // If buffer was stored under old key, re-key it
+                if (key !== `score_buf_${fp}`) {
+                    await db.set(`score_buf_${fp}`, buffer);
+                    if (lsStamps) localStorage.setItem(`scoreflow_stamps_${fp}`, lsStamps);
+                }
+
+                console.log(`[ScoreManager] Recovered score: ${fp.slice(0, 8)}...`);
+            }
+
+            this.registry = newRegistry;
+            await this.saveRegistry();
+            this.render();
+            this.app.showMessage(`Library rebuilt: ${newRegistry.length} score(s) recovered.`, 'success');
+            console.log(`[ScoreManager] Rebuild complete. ${newRegistry.length} entries.`);
+        } catch (err) {
+            console.error('[ScoreManager] Rebuild failed:', err);
+            this.app.showMessage('Rebuild failed: ' + err.message, 'error');
+        }
     }
 
     /**

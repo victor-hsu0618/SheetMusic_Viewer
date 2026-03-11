@@ -528,20 +528,27 @@
             </div>
 
             <div class="flex-column gap-5 mt-10">
-              <button id="btn-reset-cloud-index" class="btn btn-outline-sm btn-full" title="Re-scan Drive and rebuild local index">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" />
+              <button id="btn-reset-cloud-index" class="btn btn-outline-sm btn-full"
+                title="Re-scan Drive and rebuild local index">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  style="margin-right:4px;">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
                 </svg>
                 Reset Cloud Index
               </button>
-              <button id="btn-drive-force-push" class="btn btn-outline-sm btn-full" title="Re-upload all local scores to Drive">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+              <button id="btn-drive-force-push" class="btn btn-outline-sm btn-full"
+                title="Re-upload all local scores to Drive">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  style="margin-right:4px;">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
                 Push All to Cloud
               </button>
             </div>
-            </div>
+          </div>
           <div class="tab-divider"></div>
 
           <!-- Cloud Data Statistics Section -->
@@ -632,6 +639,12 @@
 
           <div class="tab-divider"></div>
           <div class="tab-section-label">Maintenance</div>
+          <button id="btn-rebuild-library" class="btn btn-outline btn-full btn-smaller mb-10">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M4 4h16v4H4zM4 12h16v4H4zM4 20h16" />
+            </svg>
+            Rebuild Library from Storage
+          </button>
           <button id="btn-reset-cloud-index" class="btn btn-outline btn-full btn-smaller mb-10">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
@@ -1065,7 +1078,8 @@
         <div class="tab-divider"></div>
         <div class="tab-section-label text-danger">Danger Zone</div>
         <button id="btn-reset-score-all" class="btn btn-outline-danger btn-full">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle; margin-right:5px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            style="vertical-align:middle; margin-right:5px;">
             <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             <path d="M10 11v6M14 11v6"></path>
           </svg>
