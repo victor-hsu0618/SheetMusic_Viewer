@@ -636,11 +636,17 @@ export class ScoreManager {
             }
         }
 
-        // 2. Remove from registry
+        // 2. Mark as Deleted in all Setlists (Ghost Record)
+        if (this.app.setlistManager) {
+            const score = this.registry.find(s => s.fingerprint === fingerprint);
+            if (score) await this.app.setlistManager.markScoreAsDeletedAll(fingerprint, score.title);
+        }
+
+        // 3. Remove from registry
         this.registry = this.registry.filter(s => s.fingerprint !== fingerprint);
         await this.saveRegistry();
 
-        // 3. Purge Binary Buffer from IndexedDB
+        // 4. Purge Binary Buffer from IndexedDB
         await db.remove(`score_buf_${fingerprint}`);
 
         // 4. Purge Annotations from localStorage

@@ -78,8 +78,26 @@ export class SetlistManager {
     async removeScore(setId, fingerprint) {
         const list = this.getSetlist(setId)
         if (!list) return
-        list.scores = list.scores.filter(fp => fp !== fingerprint)
+        list.scores = list.scores.filter(item => {
+            const fp = typeof item === 'object' ? item.fingerprint : item
+            return fp !== fingerprint
+        })
         await this.save()
+    }
+
+    async markScoreAsDeletedAll(fingerprint, title) {
+        let changed = false
+        this.setlists.forEach(list => {
+            list.scores = list.scores.map(item => {
+                const fp = typeof item === 'object' ? item.fingerprint : item
+                if (fp === fingerprint && typeof item === 'string') {
+                    changed = true
+                    return { fingerprint, title, status: 'deleted' }
+                }
+                return item
+            })
+        })
+        if (changed) await this.save()
     }
 
     async reorderScore(setId, oldIndex, newIndex) {
@@ -267,10 +285,28 @@ export class SetlistManager {
             return
         }
 
-        list.scores.forEach((fp, index) => {
-            const regScore = this.app.scoreManager.registry.find(s => s.fingerprint === fp)
-            const title = regScore ? regScore.title : 'Unknown Score'
-            const composer = regScore ? regScore.composer : ''
+        list.scores.forEach((item, index) => {
+            const isGhost = typeof item === 'object'
+            const fp = isGhost ? item.fingerprint : item
+            const regScore = !isGhost ? this.app.scoreManager.registry.find(s => s.fingerprint === fp) : null
+
+            let title = ''
+            let composer = ''
+            let isDeleted = false
+
+            if (isGhost) {
+                title = item.title || 'Unknown Deleted Score'
+                composer = '檔案已刪除 (Deleted)'
+                isDeleted = true
+            } else {
+                title = regScore ? regScore.title : 'Unknown Score'
+                composer = regScore ? regScore.composer : ''
+                // Fallback: If not found in registry but still a string, it's effectively a ghost we didn't mark yet
+                if (!regScore) {
+                    isDeleted = true
+                    composer = '檔案遺失 (Missing)'
+                }
+            }
 
             const row = document.createElement('div')
             row.draggable = true
@@ -320,8 +356,12 @@ export class SetlistManager {
                     </svg>
                 </div>
                 <div style="flex-grow: 1;">
-                    <div style="font-size: 1.1rem; font-weight: 500;">${index + 1}. ${title}</div>
-                    <div style="font-size: 0.85rem; opacity: 0.7; margin-top: 4px;">${composer}</div>
+                    <div style="font-size: 1.1rem; font-weight: 500; ${isDeleted ? 'color: #ef4444; text-decoration: line-through; opacity: 0.7;' : ''}">
+                        ${index + 1}. ${title}
+                    </div>
+                    <div style="font-size: 0.85rem; opacity: 0.7; margin-top: 4px; ${isDeleted ? 'color: #ef4444;' : ''}">
+                        ${isDeleted ? '⚠️ ' : ''}${composer}
+                    </div>
                 </div>
                 <button class="btn btn-ghost-mini remove-score-btn" style="color: #ef4444;" title="Remove from list">✕</button>
             `
