@@ -161,16 +161,18 @@ export class AnnotationRenderer {
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
-        // Data-Driven Rendering: Find tool metadata
-        let toolDef = stamp.draw ? { draw: stamp.draw } : null
-        if (!toolDef) {
-            for (const set of this.app.toolsets) {
-                const tool = set.tools.find(t => t.id === stamp.type)
-                if (tool) {
-                    toolDef = tool
-                    break
-                }
+        // Data-Driven Rendering: Find tool metadata (Prioritize current toolsets for global updates)
+        let toolDef = null
+        for (const set of this.app.toolsets) {
+            const tool = set.tools.find(t => t.id === stamp.type)
+            if (tool) {
+                toolDef = tool
+                break
             }
+        }
+        // Fallback to embedded draw data if tool not found in current toolsets
+        if (!toolDef && stamp.draw) {
+            toolDef = { draw: stamp.draw }
         }
 
         if (toolDef && toolDef.draw) {
