@@ -250,7 +250,7 @@ export class AnnotationManager {
             'Bow/Fingering': '🎻',
             'Articulation': '🎵',
             'Text': 'T',
-            'Anchor': '⚓',
+            'Layout': '⚓',
         }
 
         // Initialize Map based on actual toolsets (excluding Edit)
