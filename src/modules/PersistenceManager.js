@@ -102,8 +102,8 @@ export class PersistenceManager {
                     l.id = 'text'; 
                     l.name = 'Text';
                 }
-                if (l.id === 'layout' && l.name !== 'Other (Layout)') {
-                    l.name = 'Other (Layout)';
+                if (l.id === 'layout' && l.name !== 'Others') {
+                    l.name = 'Others';
                 }
             });
 

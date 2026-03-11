@@ -9,7 +9,7 @@ export const INITIAL_LAYERS = [
     { id: 'fingering', name: 'Bow/Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
     { id: 'articulation', name: 'Articulation', color: '#10b981', visible: true, type: 'articulation' },
     { id: 'text', name: 'Text', color: '#f59e0b', visible: true, type: 'text' },
-    { id: 'layout', name: 'Other (Layout)', color: '#64748b', visible: true, type: 'layout' }
+    { id: 'layout', name: 'Others', color: '#64748b', visible: true, type: 'layout' }
 ];
 
 export const TOOLSETS = [
@@ -81,7 +81,7 @@ export const TOOLSETS = [
         ]
     },
     {
-        name: 'Other (Layout)',
+        name: 'Others',
         type: 'layout',
         tools: [
             { id: 'anchor', label: 'Anchor', icon: '<circle cx="12" cy="3" r="1.5" fill="currentColor" /><rect x="11.25" y="4.5" width="1.5" height="9" fill="currentColor" /><rect x="7.5" y="10.5" width="9" height="1.5" fill="currentColor" /><path d="M6 12 C6 18, 18 18, 18 12 L16.5 12 C16.5 16.5, 7.5 16.5, 7.5 12 Z" fill="currentColor" />', draw: { type: 'complex', variant: 'anchor' } },
