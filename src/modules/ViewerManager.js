@@ -13,6 +13,7 @@ export class ViewerManager {
         this._pageViewports = {} // Cache viewports for placeholder sizing
         this._pageMetrics = {}   // Cache offsetTop and clientHeight to avoid layout thrashing
         this.isFitToHeight = false
+        this.latestLoadingId = 0 // Race condition protection
     }
 
     init() {
@@ -174,23 +175,22 @@ export class ViewerManager {
     }
 
     async loadPDF(data, filename = null) {
-        console.log(`[ViewerManager] loadPDF started for: ${filename || 'unknown'}`);
+        const loadingId = ++this.latestLoadingId;
+        console.log(`[ViewerManager] loadPDF started (id: ${loadingId}) for: ${filename || 'unknown'}`);
+
         if (filename) this.activeScoreName = filename;
-        this.isFitToHeight = false; // Reset on new PDF
-        this._pageMetrics = {};    // Clear cache
-        // 1. Save current score's stamps before switching
+        this.isFitToHeight = false;
+        this._pageMetrics = {};
+
         if (this.pdfFingerprint) {
             this.app.saveToStorage()
         }
 
-        // 1.5 Add to Recent Scores
         if (filename) {
             this.app.addToRecentSoloScores(filename)
             this.app.saveToStorage()
         }
 
-        // 2. Compute fingerprint of the new PDF
-        // Robust conversion to Uint8Array/ArrayBuffer
         let uint8Data;
         if (data instanceof Uint8Array) {
             uint8Data = data;
@@ -203,26 +203,25 @@ export class ViewerManager {
             throw new Error('Unsupported data type');
         }
 
-        console.log(`[ViewerManager] Computing fingerprint for ${uint8Data.byteLength} bytes...`);
+        if (loadingId !== this.latestLoadingId) return;
+
         const newFingerprint = await this.getFingerprint(uint8Data)
+
+        if (loadingId !== this.latestLoadingId) return;
+
         console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
         this.pdfFingerprint = newFingerprint
         this.app.jumpManager?.loadBookmarks()
 
-        // 3. Load this score's saved stamps (or start fresh)
         const savedStamps = localStorage.getItem(`scoreflow_stamps_${newFingerprint}`)
         this.app.stamps = savedStamps ? JSON.parse(savedStamps) : []
         this.app.jumpHistory = []
 
-        // 4. Update Score Detail UI
         if (this.app.updateScoreDetailUI) {
             this.app.updateScoreDetailUI(newFingerprint)
         }
 
-        // 5. Load and render the PDF
         const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
-        const pdfjsDir = new URL('pdfjs/', baseUrl).href
-
         const loadingTask = pdfjsLib.getDocument({
             data: uint8Data,
             cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
@@ -235,18 +234,22 @@ export class ViewerManager {
         })
 
         try {
-            this.pdf = await loadingTask.promise
+            const pdf = await loadingTask.promise;
+            if (loadingId !== this.latestLoadingId) {
+                console.log(`[ViewerManager] loadPDF id ${loadingId} superseded by ${this.latestLoadingId}. Skipping render.`);
+                return;
+            }
+            this.pdf = pdf;
             console.log(`[ViewerManager] PDF.js success. Pages: ${this.pdf.numPages}`);
         } catch (err) {
+            if (loadingId !== this.latestLoadingId) return;
             console.error('[ViewerManager] PDF.js failed to load document:', err);
-            // Re-throw with more context if it's a known PDF.js error
             if (err.name === 'InvalidPDFException') {
                 throw new Error('InvalidPDFException: 樂譜檔案格式損毀或無效 (Invalid PDF structure)');
             }
             throw err;
         }
 
-        // Open with 'Fit to Height' by default on PC, 'Fit to Width' on mobile
         this.showMainUI()
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
         if (isTouch) {

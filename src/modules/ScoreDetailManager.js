@@ -199,6 +199,9 @@ export class ScoreDetailManager {
     }
 
     handleAddYoutube() {
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint) return;
+
         const url = this.mediaUrlInput.value.trim()
         const label = this.mediaLabelInput.value.trim() || 'YouTube Video'
         if (!url) return
@@ -217,7 +220,7 @@ export class ScoreDetailManager {
         this.mediaLabelInput.value = ''
 
         this.onModification() // Ensure lastEdit is updated for sync
-        this.render(this.app.pdfFingerprint)
+        this.render(fingerprint)
 
         // If it's the first one, load it automatically
         if (this.currentInfo.activeMediaId === mediaObj.id) {
@@ -226,6 +229,9 @@ export class ScoreDetailManager {
     }
 
     handleLocalFile(e) {
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint) return;
+
         const file = e.target.files[0]
         if (!file) return
 
@@ -234,16 +240,15 @@ export class ScoreDetailManager {
             id: 'media-' + Date.now(),
             label,
             type: 'local',
-            source: file // Note: File object, will need special handling for persistence if desired, 
-            // but for now we follow the existing pattern
+            source: file
         }
 
         this.currentInfo.mediaList.push(mediaObj)
         if (!this.currentInfo.activeMediaId) this.currentInfo.activeMediaId = mediaObj.id
 
         this.mediaLabelInput.value = ''
-        this.save(this.app.pdfFingerprint)
-        this.render(this.app.pdfFingerprint)
+        this.save(fingerprint)
+        this.render(fingerprint)
 
         if (this.currentInfo.activeMediaId === mediaObj.id) {
             this.app.playbackManager?.loadMedia(mediaObj)
@@ -252,9 +257,12 @@ export class ScoreDetailManager {
     }
 
     selectMedia(id) {
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint) return;
+
         this.currentInfo.activeMediaId = id
-        this.save(this.app.pdfFingerprint)
-        this.render(this.app.pdfFingerprint)
+        this.save(fingerprint)
+        this.render(fingerprint)
 
         const media = this.currentInfo.mediaList.find(m => m.id === id)
         if (media) {
@@ -263,18 +271,36 @@ export class ScoreDetailManager {
     }
 
     deleteMedia(id) {
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint) return;
+
         this.currentInfo.mediaList = this.currentInfo.mediaList.filter(m => m.id !== id)
         if (this.currentInfo.activeMediaId === id) {
             this.currentInfo.activeMediaId = this.currentInfo.mediaList[0]?.id || null
         }
         this.onModification() // Update timestamp for sync
-        this.render(this.app.pdfFingerprint)
+        this.render(fingerprint)
     }
 
     refreshStats() {
-        if (!this.app.pdfFingerprint) return;
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint) return;
 
-        const stamps = this.app.stamps || [];
+        // Statistics should reflect the viewed score, not necessarily the open one
+        // If viewing current open score, we can use app.stamps
+        // If viewing an UNOPENED score from library, we need to load its stamps from storage
+        let stamps = [];
+        if (this.app.pdfFingerprint === fingerprint) {
+            stamps = this.app.stamps || [];
+        } else {
+            try {
+                const stored = localStorage.getItem(`scoreflow_stamps_${fingerprint}`);
+                if (stored) stamps = JSON.parse(stored);
+            } catch (e) {
+                console.warn('[ScoreDetailManager] Failed to load stamps for stats:', e);
+            }
+        }
+
         const count = stamps.length;
 
         let lastTime = 'Never';
@@ -297,21 +323,22 @@ export class ScoreDetailManager {
     }
 
     onModification() {
-        if (!this.app.pdfFingerprint) return;
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint) return;
 
         this.currentInfo.lastEdit = Date.now();
         this.currentInfo.lastAuthor = this.app.profileManager?.data?.userName || 'Guest';
 
-        this.save(this.app.pdfFingerprint);
+        this.save(fingerprint);
 
         // Mark as unsynced
         if (this.app.scoreManager) {
-            this.app.scoreManager.updateSyncStatus(this.app.pdfFingerprint, false);
+            this.app.scoreManager.updateSyncStatus(fingerprint, false);
         }
 
         // Also update registry to keep them in sync for immediate UI updates (e.g. library thumbnails)
         if (this.app.scoreManager && this.currentInfo.name) {
-            this.app.scoreManager.updateMetadata(this.app.pdfFingerprint, {
+            this.app.scoreManager.updateMetadata(fingerprint, {
                 title: this.currentInfo.name,
                 composer: this.currentInfo.composer || 'Unknown'
             });
@@ -325,7 +352,8 @@ export class ScoreDetailManager {
     }
 
     handleInputChange() {
-        if (!this.app.pdfFingerprint || this.isLoading) return
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint || this.isLoading) return
 
         const newName = this.scoreNameInput.value.trim()
         const newComposer = this.scoreComposerInput.value.trim()
@@ -338,7 +366,8 @@ export class ScoreDetailManager {
     }
 
     async handleSave() {
-        if (!this.app.pdfFingerprint || this.isLoading) return
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint || this.isLoading) return
 
         const newName = (this.scoreNameInput.value || '').trim()
         const newComposer = (this.scoreComposerInput.value || '').trim()
@@ -351,7 +380,7 @@ export class ScoreDetailManager {
 
         // Sync with Library Registry (Authority)
         if (this.app.scoreManager) {
-            await this.app.scoreManager.updateMetadata(this.app.pdfFingerprint, {
+            await this.app.scoreManager.updateMetadata(fingerprint, {
                 title: newName,
                 composer: newComposer
             })
@@ -380,7 +409,8 @@ export class ScoreDetailManager {
      * Silent auto-save when user leaves an input field.
      */
     async handleAutoSave() {
-        if (!this.app.pdfFingerprint || this.isLoading) return
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint || this.isLoading) return
 
         const newName = (this.scoreNameInput.value || '').trim()
         const newComposer = (this.scoreComposerInput.value || '').trim()
@@ -395,7 +425,7 @@ export class ScoreDetailManager {
         this.onModification()
 
         if (this.app.scoreManager) {
-            await this.app.scoreManager.updateMetadata(this.app.pdfFingerprint, {
+            await this.app.scoreManager.updateMetadata(fingerprint, {
                 title: newName,
                 composer: newComposer
             })
@@ -405,8 +435,8 @@ export class ScoreDetailManager {
     }
 
     async handleAddSetlist() {
-        if (!this.currentFp && !this.app.pdfFingerprint) return;
         const fingerprint = this.currentFp || this.app.pdfFingerprint;
+        if (!fingerprint) return;
 
         const setlists = this.app.setlistManager?.setlists || [];
         if (setlists.length === 0) {
@@ -580,10 +610,11 @@ export class ScoreDetailManager {
     }
 
     getExportMetadata() {
+        const fingerprint = this.currentFp || this.app.pdfFingerprint;
         return {
             name: this.currentInfo.name,
             composer: this.currentInfo.composer,
-            fingerprint: this.app.pdfFingerprint
+            fingerprint: fingerprint
         }
     }
 
