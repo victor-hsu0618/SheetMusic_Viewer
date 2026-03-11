@@ -70,6 +70,9 @@ export class DocBarManager {
         if (!el) return
 
         const dragStart = (e) => {
+            // Disable dragging on mobile to keep it centered
+            if (window.innerWidth <= 600) return;
+
             // In expanded mode, only drag-handle works. In collapsed mode, the whole bar (the button) works.
             const isCollapsed = el.classList.contains('collapsed')
             if (!isCollapsed && !e.target.closest(".doc-drag-handle")) return

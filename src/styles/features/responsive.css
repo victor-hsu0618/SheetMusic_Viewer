@@ -1,0 +1,145 @@
+/* 
+  Modular Responsive Design System
+  ScoresFlow Elite - Mobile Optimization Layer
+*/
+
+@media (max-width: 600px) {
+    /* 1. Global Touch Adjustments */
+    :root {
+        --sidebar-width: 100vw;
+    }
+
+    body {
+        -webkit-tap-highlight-color: transparent;
+        overflow: hidden; /* Prevent body scroll during modal open */
+    }
+
+    /* 2. Unified Bottom Sheet Pattern (Applied to all Panels) */
+    .jump-sub-panel.calculator-style {
+        display: none; /* Hidden by default */
+        position: fixed !important;
+        inset: auto 0 0 0 !important; /* Bottom-anchored */
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: var(--sheet-max-height) !important;
+        border-radius: var(--sheet-radius) var(--sheet-radius) 0 0 !important;
+        border-bottom: none !important;
+        transform: translateY(100%) !important; /* Start off-screen */
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.4) !important;
+        z-index: 6000 !important;
+        padding-bottom: env(safe-area-inset-bottom, 20px);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s !important;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .jump-sub-panel.calculator-style.active {
+        display: block;
+        transform: translateY(0) !important;
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* 2b. Hide Sidebar/Floating Doc Bar triggers that are too small or unnecessary on mobile */
+    #btn-settings-toggle, 
+    #btn-doc-bar-toggle,
+    .suite-divider,
+    .doc-bar-divider {
+        display: none !important;
+    }
+
+    /* Center the remaining Doc Bar on mobile */
+    #floating-doc-bar {
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        bottom: 24px !important;
+        top: auto !important;
+        margin-left: 0 !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
+    }
+
+    #floating-doc-bar.collapsed {
+        left: 50% !important;
+        transform: translateX(-50%) scale(1.4) !important;
+    }
+
+    /* Hide keyboard shortcut modal/help and other large overlays on mobile */
+    #shortcuts-modal,
+    .btn-help,
+    [title="Shortcuts Help"] {
+        display: none !important;
+    }
+
+    /* Score Library Mobile optimization */
+    .jump-drag-handle {
+        cursor: default;
+        height: 24px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .drag-bar {
+        width: 36px !important;
+        height: 4px !important;
+        background: rgba(255,255,255,0.2) !important;
+        border-radius: 2px;
+    }
+
+    /* 4. Optimize Go To (Jump Panel) Grid for Fingers */
+    .calculator-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 12px !important;
+        padding: 10px 15px !important;
+    }
+
+    .calc-btn {
+        height: 54px !important; /* Larger touch target */
+        font-size: 1.1rem !important;
+        border-radius: 14px !important;
+    }
+
+    /* Ensure specific buttons don't overflow */
+    .zero-btn {
+        grid-column: span 1 !important;
+    }
+
+    .go {
+        grid-row: span 2 !important;
+        height: 120px !important;
+    }
+
+    /* 5. Library Full-screen adaptations */
+    .library-header {
+        flex-direction: column;
+        height: auto !important;
+        padding: 15px !important;
+        gap: 10px;
+    }
+
+    .library-search-container {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .library-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .library-grid {
+        grid-template-columns: repeat(2, 1fr) !important; /* 2 columns on mobile */
+        padding: 10px !important;
+    }
+
+    .score-card {
+        height: 220px !important;
+    }
+
+    /* Animations */
+    @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+}

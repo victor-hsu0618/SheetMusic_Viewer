@@ -9,6 +9,14 @@
   --border: #e2e8f0;
   --sidebar-width: 320px;
   --header-height: 0px;
+
+  /* Responsive Breakpoints */
+  --breakpoint-mobile: 600px;
+  --breakpoint-tablet: 1024px;
+  
+  /* Bottom Sheet Heights */
+  --sheet-max-height: 85vh;
+  --sheet-radius: 24px;
 }
 
 [data-theme="dark"] {
