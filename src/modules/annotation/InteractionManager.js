@@ -195,13 +195,13 @@ export class InteractionManager {
                     updatedAt: Date.now()
                 }
             } else if (toolType === 'eraser') {
-                const nearby = this.app.findNearbyStamps(pageNum, pos.x, pos.y)
-                if (nearby.length === 1) {
-                    this.app.eraseStampTarget(nearby[0])
-                } else if (nearby.length > 1) {
-                    const clientX = e.clientX || (e.touches && e.touches[0].clientX)
-                    const clientY = e.clientY || (e.touches && e.touches[0].clientY)
-                    this.app.showEraseMenu(nearby, clientX, clientY)
+                const target = this.app.hoveredStamp || this.app.findClosestStamp(pageNum, pos.x, pos.y)
+                if (target) {
+                    this.app.eraseStampTarget(target)
+                    this.app.hoveredStamp = null
+                    this.app.redrawStamps(pageNum)
+                    const oldChip = wrapper.querySelector('.erase-hover-chip')
+                    if (oldChip) oldChip.remove()
                 }
                 isInteracting = false
             } else {
