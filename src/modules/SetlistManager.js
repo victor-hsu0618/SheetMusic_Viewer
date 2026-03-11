@@ -35,6 +35,7 @@ export class SetlistManager {
             id: 'setlist_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             title: title || '未命名歌單 (Untitled)',
             dateCreated: Date.now(),
+            updatedAt: Date.now(),
             scores: [] // Array of fingerprints
         }
         this.setlists.push(newList)
@@ -52,6 +53,7 @@ export class SetlistManager {
         const list = this.getSetlist(id)
         if (list) {
             list.title = newTitle
+            list.updatedAt = Date.now()
             await this.save()
         }
     }
@@ -65,12 +67,12 @@ export class SetlistManager {
         if (!list) return false
 
         // Prevent duplicates in the same setlist? 
-        // Real concert might have same piece played twice (e.g. intro/outro), but usually we prevent duplicates for simplicity unless needed.
         if (list.scores.includes(fingerprint)) {
             return false // Already added
         }
 
         list.scores.push(fingerprint)
+        list.updatedAt = Date.now()
         await this.save()
         return true
     }
@@ -82,20 +84,24 @@ export class SetlistManager {
             const fp = typeof item === 'object' ? item.fingerprint : item
             return fp !== fingerprint
         })
+        list.updatedAt = Date.now()
         await this.save()
     }
 
     async markScoreAsDeletedAll(fingerprint, title) {
         let changed = false
         this.setlists.forEach(list => {
+            let listChanged = false
             list.scores = list.scores.map(item => {
                 const fp = typeof item === 'object' ? item.fingerprint : item
                 if (fp === fingerprint && typeof item === 'string') {
                     changed = true
+                    listChanged = true
                     return { fingerprint, title, status: 'deleted' }
                 }
                 return item
             })
+            if (listChanged) list.updatedAt = Date.now()
         })
         if (changed) await this.save()
     }
@@ -111,6 +117,7 @@ export class SetlistManager {
             }
         }
         list.scores.splice(newIndex, 0, list.scores.splice(oldIndex, 1)[0])
+        list.updatedAt = Date.now()
         await this.save()
     }
 

@@ -534,14 +534,7 @@ export class DriveSyncManager {
     async syncBatch() {
         if (!this.app.scoreManager?.registry) return;
 
-        const pending = this.calculateLocalPendingSync();
-        if (pending.json === 0 && pending.pdf === 0) {
-            // Quiet heartbeat
-            return;
-        }
-
         let workDone = false;
-        console.log(`[Sync] Starting batch backup (${pending.json} JSON, ${pending.pdf} PDF remaining)...`);
 
         // Find items that need sync
         for (const score of this.app.scoreManager.registry) {
@@ -552,11 +545,15 @@ export class DriveSyncManager {
 
             const entry = this.manifest[score.fingerprint];
             const needsPDF = !entry || !entry.pdfId;
-            const needsJSON = !score.isSynced;
+            
+            // Logic: Needs JSON sync if local is marked unsynced OR if the title has changed from what's in the manifest
+            const currentSafeTitle = this.safeTitle(score.title).replace(/_$/, '');
+            const nameChanged = entry && entry.name !== currentSafeTitle;
+            const needsJSON = !score.isSynced || nameChanged;
 
             if (needsPDF || needsJSON) {
                 workDone = true;
-                console.log(`[Sync] Processing background score: ${score.title || 'Untitled'}`);
+                console.log(`[Sync] Processing background score: ${score.title || 'Untitled'} (Reason: ${nameChanged ? 'Name Changed' : 'Unsynced Data'})`);
                 await this.syncScore(score.fingerprint, needsPDF, needsJSON);
 
                 // Yield to main thread briefly between files
@@ -939,14 +936,15 @@ export class DriveSyncManager {
     // --- DRIVE API HELPERS ---
 
     /**
-     * Sync Global User Profile.
+     * Sync Global User Profile & Setlists.
      */
     async syncProfile() {
         if (!this.folderId) return;
         const fileName = 'user_profile_sync.json';
         const fileId = await this.findSyncFile(fileName);
-        const localData = this.app.profileManager?.data;
-        if (!localData) return;
+        const localProfile = this.app.profileManager?.data;
+        const localSetlists = this.app.setlistManager?.setlists || [];
+        if (!localProfile) return;
 
         try {
             if (fileId) {
@@ -954,66 +952,102 @@ export class DriveSyncManager {
                 let shouldPush = false;
 
                 if (remoteData && remoteData.version > (this.lastProfileSyncTime || 0)) {
-                    // LWW Merge: Only merge if remote updatedAt is strictly greater than local
+                    // 1. Merge Profile (LWW)
                     const remoteProfile = remoteData.profile;
-                    if (remoteProfile && (remoteProfile.updatedAt || 0) > (localData.updatedAt || 0)) {
-                        console.log('[DriveSync] Merging newer remote profile over local...');
+                    if (remoteProfile && (remoteProfile.updatedAt || 0) > (localProfile.updatedAt || 0)) {
+                        console.log('[DriveSync] Merging newer remote profile...');
                         Object.assign(this.app.profileManager.data, remoteProfile);
-
-                        // Merge Custom Text Library (Set Union)
-                        if (Array.isArray(remoteData.userTextLibrary)) {
-                            const localSet = new Set(this.app.userTextLibrary);
-                            let hasNewText = false;
-                            remoteData.userTextLibrary.forEach(text => {
-                                if (!localSet.has(text)) {
-                                    this.app.userTextLibrary.push(text);
-                                    localSet.add(text);
-                                    hasNewText = true;
-                                }
-                            });
-                            if (hasNewText) {
-                                this.app.saveToStorage();
-                                if (this.app.toolManager) this.app.toolManager.updateActiveTools();
-                            }
-                        }
-
                         this.app.profileManager.save();
                         this.app.profileManager.render();
-                        this.addLog('已更新個人檔案與術語庫 (雲端較新)', 'info');
-                    } else if (remoteProfile && (localData.updatedAt || 0) > (remoteProfile.updatedAt || 0)) {
-                        // Local is newer, we should push
+                    } else if (remoteProfile && (localProfile.updatedAt || 0) > (remoteProfile.updatedAt || 0)) {
                         shouldPush = true;
                     }
+
+                    // 2. Merge Custom Text Library (Set Union)
+                    if (Array.isArray(remoteData.userTextLibrary)) {
+                        const localSet = new Set(this.app.userTextLibrary);
+                        let hasNewText = false;
+                        remoteData.userTextLibrary.forEach(text => {
+                            if (!localSet.has(text)) {
+                                this.app.userTextLibrary.push(text);
+                                localSet.add(text);
+                                hasNewText = true;
+                            }
+                        });
+                        if (hasNewText) {
+                            this.app.saveToStorage();
+                            if (this.app.toolManager) this.app.toolManager.updateActiveTools();
+                        }
+                    }
+
+                    // 3. Merge Setlists (LWW per setlist)
+                    if (Array.isArray(remoteData.setlists) && this.app.setlistManager) {
+                        let setlistChanged = false;
+                        const remoteSetlists = remoteData.setlists;
+                        
+                        remoteSetlists.forEach(remoteSet => {
+                            const localSet = this.app.setlistManager.setlists.find(s => s.id === remoteSet.id);
+                            if (!localSet) {
+                                // New setlist from remote
+                                this.app.setlistManager.setlists.push(remoteSet);
+                                setlistChanged = true;
+                            } else if ((remoteSet.updatedAt || 0) > (localSet.updatedAt || 0)) {
+                                // Remote is newer
+                                Object.assign(localSet, remoteSet);
+                                setlistChanged = true;
+                            }
+                        });
+
+                        // Check if local has newer setlists to push
+                        this.app.setlistManager.setlists.forEach(ls => {
+                            const rs = remoteSetlists.find(s => s.id === ls.id);
+                            if (!rs || (ls.updatedAt || 0) > (rs.updatedAt || 0)) {
+                                shouldPush = true;
+                            }
+                        });
+
+                        if (setlistChanged) {
+                            await this.app.setlistManager.save();
+                            this.app.setlistManager.render();
+                        }
+                    }
                 } else {
-                    // Check if local changed since last sync
-                    if (localData.updatedAt > (this.lastProfileSyncTime || 0)) {
+                    // Check if anything local changed since last sync
+                    if (localProfile.updatedAt > (this.lastProfileSyncTime || 0)) {
+                        shouldPush = true;
+                    }
+                    // Check if any setlist is newer
+                    const localNewestSetlist = Math.max(0, ...localSetlists.map(s => s.updatedAt || 0));
+                    if (localNewestSetlist > (this.lastProfileSyncTime || 0)) {
                         shouldPush = true;
                     }
                 }
 
                 if (shouldPush || !this.lastProfileSyncTime) {
                     const payload = {
-                        profile: localData,
+                        profile: localProfile,
                         userTextLibrary: this.app.userTextLibrary,
+                        setlists: localSetlists,
                         version: Date.now()
                     };
                     await this.updateFile(fileId, payload);
                     this.lastProfileSyncTime = payload.version;
-                    console.log('[DriveSync] Local profile pushed (Newer).');
+                    console.log('[DriveSync] Global sync data pushed (Newer).');
                 }
             } else {
                 // First time upload
                 const payload = {
-                    profile: localData,
+                    profile: localProfile,
                     userTextLibrary: this.app.userTextLibrary,
+                    setlists: localSetlists,
                     version: Date.now()
                 };
                 await this.createFile(fileName, payload);
                 this.lastProfileSyncTime = payload.version;
-                console.log('[DriveSync] Profile uploaded for the first time.');
+                this.addLog('首次上傳雲端設定與歌單', 'success');
             }
         } catch (err) {
-            console.error('[DriveSync] Profile sync failed:', err);
+            console.error('[DriveSync] Profile/Setlist sync failed:', err);
         }
     }
 
@@ -1238,7 +1272,7 @@ export class DriveSyncManager {
 
         const confirmed = await this.app.showDialog({
             title: '強制同步所有資料',
-            message: `這將把本地書庫中的所有標記資料重新上傳至雲端。如果雲端已存在較新版本，可能會被本地覆蓋。確定要繼續嗎？`,
+            message: `這將把本地書庫中的所有標記資料（包含曲名、作曲家、劃記、書籤及歌單）重新上傳至雲端。如果雲端已存在較新版本，可能會被本地覆蓋。確定要繼續嗎？`,
             type: 'confirm',
             icon: '📤'
         });
@@ -1250,15 +1284,18 @@ export class DriveSyncManager {
             
             // 1. Mark all registry entries as unsynced
             if (this.app.scoreManager?.registry) {
-                this.app.scoreManager.registry.forEach(score => {
+                for (const score of this.app.scoreManager.registry) {
                     if (!score.isCloudOnly) {
                         score.isSynced = false;
                     }
-                });
+                }
                 await this.app.scoreManager.saveRegistry();
             }
 
-            // 2. Trigger a full sync cycle
+            // 2. Reset last profile sync time to force setlist/profile push
+            this.lastProfileSyncTime = 0;
+
+            // 3. Trigger a full sync cycle
             this.addLog('開始全面背景上傳...', 'system');
             this.sync(); 
             
