@@ -16,52 +16,76 @@
 
     /* 2. Unified Bottom Sheet Pattern (Applied to all Panels) */
     .jump-sub-panel.calculator-style {
-        display: none; /* Hidden by default */
+        display: flex; /* Use flex to ensure content fills */
+        flex-direction: column;
         position: fixed !important;
-        inset: auto 0 0 0 !important; /* Bottom-anchored */
+        inset: auto 0 0 0 !important; 
         width: 100% !important;
         max-width: 100% !important;
         height: auto !important;
-        max-height: var(--sheet-max-height) !important;
-        border-radius: var(--sheet-radius) var(--sheet-radius) 0 0 !important;
+        min-height: 300px;
+        max-height: 80vh !important;
+        background: var(--bg-sidebar) !important; /* Ensure solid background */
+        color: var(--text-main) !important;       /* Ensure text visibility */
+        border-radius: 24px 24px 0 0 !important;
+        border: 1px solid var(--border) !important;
         border-bottom: none !important;
-        transform: translateY(100%) !important; /* Start off-screen */
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.4) !important;
-        z-index: 6000 !important;
+        transform: translateY(100%) !important; 
+        box-shadow: 0 -10px 50px rgba(0,0,0,0.5) !important;
+        z-index: 10000 !important; /* Extremely high to stay above everything */
         padding-bottom: env(safe-area-inset-bottom, 20px);
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s !important;
-        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s !important;
+        visibility: hidden;
         pointer-events: none;
+        overflow: hidden;
     }
 
     .jump-sub-panel.calculator-style.active {
-        display: block;
+        visibility: visible;
         transform: translateY(0) !important;
-        opacity: 1;
         pointer-events: auto;
     }
 
-    /* 2b. Hide Sidebar/Floating Doc Bar triggers that are too small or unnecessary on mobile */
-    #btn-settings-toggle, 
-    #btn-doc-bar-toggle,
-    .suite-divider,
-    .doc-bar-divider {
-        display: none !important;
+    /* Ensure content inside panels doesn't disappear */
+    .calculator-grid, .view-panel-grid, .settings-scroll-area {
+        display: grid !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        flex: 1;
+        overflow-y: auto;
     }
 
-    /* Center the remaining Doc Bar on mobile */
+    /* 2b. Doc Bar Center & Clickability Fix */
     #floating-doc-bar {
+        display: flex !important;
+        position: fixed !important;
         left: 50% !important;
-        transform: translateX(-50%) !important;
-        bottom: 24px !important;
+        bottom: 30px !important;
         top: auto !important;
-        margin-left: 0 !important;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
+        margin: 0 !important;
+        transform: translateX(-50%) !important;
+        z-index: 9999 !important; /* Just below panels */
+        pointer-events: auto !important;
+        background: var(--bg-sidebar) !important;
+        border: 1px solid var(--border) !important;
+        padding: 8px 15px !important;
+        border-radius: 50px !important;
+        width: auto !important;
+        min-width: 200px;
+        justify-content: center;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
     }
 
     #floating-doc-bar.collapsed {
-        left: 50% !important;
-        transform: translateX(-50%) scale(1.4) !important;
+        transform: translateX(-50%) scale(1.3) !important;
+    }
+
+    /* Buttons inside Doc Bar need to be big enough */
+    #floating-doc-bar button {
+        width: 44px !important;
+        height: 44px !important;
+        margin: 0 5px !important;
+        pointer-events: auto !important;
     }
 
     /* Hide keyboard shortcut modal/help and other large overlays on mobile */
