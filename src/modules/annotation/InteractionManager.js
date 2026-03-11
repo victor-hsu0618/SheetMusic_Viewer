@@ -147,7 +147,37 @@ export class InteractionManager {
 
             const isFreehand = ['pen', 'highlighter', 'line'].includes(toolType)
 
-            if (toolType === 'select' || toolType === 'recycle-bin') {
+            if (toolType === 'copy') {
+                const target = this.app.selectHoveredStamp
+                    || this.app.findClosestStamp(pageNum, pos.x, pos.y, true)
+                
+                if (target) {
+                    // Clone the object
+                    const clone = JSON.parse(JSON.stringify(target))
+                    // New identity
+                    clone.id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+                    clone.updatedAt = Date.now()
+                    
+                    // Add to system
+                    this.app.stamps.push(clone)
+                    
+                    // Switch to select mode and start moving the clone
+                    this.app.activeStampType = 'select'
+                    isMovingExisting = true
+                    activeObject = clone
+                    this.app.lastFocusedStamp = activeObject
+                    this.app._dragLastPos = pos
+                    this.app.selectHoveredStamp = null
+                    
+                    this.app.saveToStorage(true)
+                    if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
+                    this.app.redrawStamps(pageNum)
+                    this.app.updateActiveTools()
+                    this.app.showMessage('Object Cloned', 'success')
+                } else {
+                    isInteracting = false
+                }
+            } else if (toolType === 'select' || toolType === 'recycle-bin') {
                 const target = this.app.selectHoveredStamp
                     || this.app.findClosestStamp(pageNum, pos.x, pos.y, true)
 
@@ -306,8 +336,8 @@ export class InteractionManager {
                 }
             }
 
-            // Select / Recycle Bin hover
-            if ((this.app.activeStampType === 'select' || this.app.activeStampType === 'recycle-bin') && !isInteracting) {
+            // Select / Copy / Recycle Bin hover
+            if ((this.app.activeStampType === 'select' || this.app.activeStampType === 'copy' || this.app.activeStampType === 'recycle-bin') && !isInteracting) {
                 const pos = getPos(e)
                 const found = this.app.findClosestStamp(pageNum, pos.x, pos.y, true)
                 if (found !== this.app.selectHoveredStamp) {
