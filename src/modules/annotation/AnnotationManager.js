@@ -238,48 +238,39 @@ export class AnnotationManager {
     }
 
     /**
-     * Show the "Erase All" UI with category buckets.
+     * Show the "Erase All" UI with category buckets based on Layers (Notation Categories).
      */
     showEraseAllModal() {
         if (!this.app.eraseAllModal) return
         const categoryMap = new Map()
         
-        // Dynamic Meta lookup from constants
-        const categoryIcons = {
-            'Pens': '✏️',
-            'Bow/Fingering': '🎻',
-            'Articulation': '🎵',
-            'Text': 'T',
-            'Layout': '⚓',
-        }
-
-        // Initialize Map based on actual toolsets (excluding Edit)
-        this.app.toolsets.forEach(group => {
-            if (group.type === 'edit') return
-            categoryMap.set(group.name, { 
-                icon: categoryIcons[group.name] || '📌', 
+        // 1. Initialize buckets based on CURRENT Layers (Notation Categories)
+        this.app.layers.forEach(layer => {
+            categoryMap.set(layer.id, { 
+                name: layer.name,
+                color: layer.color,
                 stamps: [] 
             })
         })
 
-        // Sort existing stamps into buckets
+        // 2. Sort existing stamps into layer buckets
         this.app.stamps.forEach(stamp => {
             if (stamp.deleted) return
             
-            let targetCategory = null
-            
-            // 1. Check if it's a standard tool
-            const group = this.app.toolsets.find(g => g.tools.some(t => t.id === stamp.type))
-            if (group && group.type !== 'edit') {
-                targetCategory = group.name
-            } 
-            // 2. Special handling for Custom Text (it belongs to the 'Text' category)
-            else if (stamp.type.startsWith('custom-text-')) {
-                targetCategory = 'Text'
-            }
-
-            if (targetCategory && categoryMap.has(targetCategory)) {
-                categoryMap.get(targetCategory).stamps.push(stamp)
+            // Group by layerId
+            if (categoryMap.has(stamp.layerId)) {
+                categoryMap.get(stamp.layerId).stamps.push(stamp)
+            } else {
+                // Fallback for orphaned stamps (shouldn't happen with resetLayers logic)
+                if (!categoryMap.has('draw')) {
+                   const drawLayer = this.app.layers.find(l => l.id === 'draw')
+                   if (drawLayer) {
+                       categoryMap.set('draw', { name: drawLayer.name, color: drawLayer.color, stamps: [] })
+                   }
+                }
+                if (categoryMap.has('draw')) {
+                    categoryMap.get('draw').stamps.push(stamp)
+                }
             }
         })
 
@@ -287,15 +278,23 @@ export class AnnotationManager {
         list.innerHTML = ''
         let hasAny = false
         
-        for (const [name, { icon, stamps }] of categoryMap.entries()) {
+        // 3. Render rows for each layer that has stamps
+        for (const [layerId, { name, color, stamps }] of categoryMap.entries()) {
             if (stamps.length === 0) continue
             hasAny = true
+            
             const row = document.createElement('button')
             row.className = 'erase-all-cat-row'
             
+            // Use a color dot as the "icon" to match the Sidebar/Settings UI
             const iconEl = document.createElement('span')
             iconEl.className = 'erase-all-cat-icon'
-            iconEl.textContent = icon
+            iconEl.style.display = 'inline-block'
+            iconEl.style.width = '12px'
+            iconEl.style.height = '12px'
+            iconEl.style.borderRadius = '50%'
+            iconEl.style.backgroundColor = color
+            iconEl.style.marginRight = '12px'
             
             const nameEl = document.createElement('span')
             nameEl.className = 'erase-all-cat-name'
@@ -308,7 +307,7 @@ export class AnnotationManager {
             row.appendChild(iconEl)
             row.appendChild(nameEl)
             row.appendChild(countEl)
-            row.addEventListener('click', () => this._confirmEraseCategory(name, stamps.length))
+            row.addEventListener('click', () => this._confirmEraseCategory(layerId, name, stamps.length))
             list.appendChild(row)
         }
 
@@ -330,7 +329,7 @@ export class AnnotationManager {
             allRow.appendChild(iconEl)
             allRow.appendChild(nameEl)
             allRow.appendChild(countEl)
-            allRow.addEventListener('click', () => this._confirmEraseCategory('__all__', total))
+            allRow.addEventListener('click', () => this._confirmEraseCategory('__all__', 'all annotations', total))
             list.appendChild(allRow)
         }
 
@@ -346,9 +345,9 @@ export class AnnotationManager {
         document.addEventListener('keydown', this.app._eraseAllEsc)
     }
 
-    async _confirmEraseCategory(categoryName, count) {
+    async _confirmEraseCategory(idOrAll, displayName, count) {
         this.closeEraseAllModal()
-        const label = categoryName === '__all__' ? 'all annotations' : `all "${categoryName}" annotations`
+        const label = idOrAll === '__all__' ? 'all annotations' : `all "${displayName}" annotations`
         const confirmed = await this.app.showDialog({
             title: 'Erase All',
             message: `Delete ${label} (${count} item${count !== 1 ? 's' : ''})? This cannot be undone.`,
@@ -358,12 +357,12 @@ export class AnnotationManager {
             cancelText: 'Cancel',
         })
         if (!confirmed) return
-        this.eraseAllByCategory(categoryName)
+        this.eraseAllByLayer(idOrAll)
     }
 
-    eraseAllByCategory(categoryName) {
+    eraseAllByLayer(layerId) {
         let removed = 0
-        if (categoryName === '__all__') {
+        if (layerId === '__all__') {
             this.app.stamps.forEach(s => {
                 if (!s.deleted) {
                     s.deleted = true
@@ -373,20 +372,10 @@ export class AnnotationManager {
             })
         } else {
             this.app.stamps.forEach(s => {
-                if (!s.deleted) {
-                    // Check standard tools
-                    const group = this.app.toolsets.find(g => g.tools.some(t => t.id === s.type))
-                    if (group?.name === categoryName) {
-                        s.deleted = true
-                        s.updatedAt = Date.now()
-                        removed++
-                    } 
-                    // Support for Custom Text in the Text category
-                    else if (categoryName === 'Text' && s.type.startsWith('custom-text-')) {
-                        s.deleted = true
-                        s.updatedAt = Date.now()
-                        removed++
-                    }
+                if (!s.deleted && s.layerId === layerId) {
+                    s.deleted = true
+                    s.updatedAt = Date.now()
+                    removed++
                 }
             })
         }
