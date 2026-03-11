@@ -333,7 +333,7 @@ export class AnnotationManager {
             row.appendChild(countEl)
             
             row.addEventListener('click', () => {
-                this._confirmEraseSpecificStamps(groupName, stamps)
+                this.confirmEraseSpecificStamps(groupName, stamps)
             })
             list.appendChild(row)
         })
@@ -357,7 +357,7 @@ export class AnnotationManager {
             allRow.appendChild(nameEl)
             allRow.appendChild(countEl)
             allRow.addEventListener('click', () => {
-                this._confirmEraseSpecificStamps('all annotations', activeStamps)
+                this.confirmEraseSpecificStamps('all annotations', activeStamps)
             })
             list.appendChild(allRow)
         }
@@ -374,7 +374,7 @@ export class AnnotationManager {
         document.addEventListener('keydown', this.app._eraseAllEsc)
     }
 
-    async _confirmEraseSpecificStamps(displayName, stampsToErase) {
+    async confirmEraseSpecificStamps(displayName, stampsToErase) {
         this.closeEraseAllModal()
         const count = stampsToErase.length
         const label = displayName.includes('all') ? displayName : `all "${displayName}" annotations`
@@ -407,7 +407,7 @@ export class AnnotationManager {
 
     eraseAllByLayer(layerId) {
         // Keeping this for backward compatibility if called from elsewhere, 
-        // but the main UI now uses _confirmEraseSpecificStamps for better accuracy.
+        // but the main UI now uses confirmEraseSpecificStamps for better accuracy.
         let removed = 0
         if (layerId === '__all__') {
             this.app.stamps.forEach(s => {

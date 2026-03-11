@@ -5,35 +5,11 @@ export class LayerManager {
 
     init() {
         this.app.externalLayerList = document.getElementById('external-layer-list')
-
-        // iPad pointer containment (Close if clicking outside if it was still a popup, 
-        // but now it's part of Stamp Panel, so we might not need this anymore or need to adapt it)
-        // For now, let's keep it minimal as it will be managed by ToolManager's render logic
     }
 
-
-
     addNewLayer() {
-        const name = prompt('Notation Category Name (e.g., Bowing, Vibrato):')
-        if (!name) return
-
-        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ff4757']
-        const color = colors[this.app.layers.length % colors.length]
-        const id = `layer_${Date.now()}`
-
-        this.app.layers.push({
-            id,
-            name,
-            color,
-            visible: true,
-            type: 'custom',
-            updatedAt: Date.now()
-        })
-
-        this.app.activeLayerId = id
-        this.app.saveToStorage()
-        this.renderLayerUI()
-        if (this.app.pdf) this.app.viewerManager.renderPDF()
+        // Disabled per user request - we no longer allow adding categories manually
+        console.warn('Adding new layers is disabled.')
     }
 
     deleteLayer(layerId) {
@@ -65,21 +41,35 @@ export class LayerManager {
 
     async resetLayers() {
         const confirmed = await this.app.showDialog({
-            title: 'Reset Categories?',
-            message: 'This will restore default categories and move custom notations to "Draw Objects". Continue?',
-            icon: '⚠️',
-            type: 'confirm'
+            title: 'Reset to Defaults?',
+            message: 'Restore 5 core categories? All current annotations will be moved to "Draw Objects".',
+            icon: '🔄',
+            type: 'confirm',
+            confirmText: 'Reset',
+            cancelText: 'Cancel'
         })
 
         if (!confirmed) return
 
-        this.app.stamps.forEach(s => s.layerId = 'draw')
-        this.app.layers = JSON.parse(JSON.stringify(this.app.INITIAL_LAYERS))
+        // 1. Remap all existing stamps to 'draw' to avoid orphan items
+        this.app.stamps.forEach(s => {
+            s.layerId = 'draw'
+            s.updatedAt = Date.now()
+        })
+
+        // 2. Restore core 5 from constants
+        this.app.layers = JSON.parse(JSON.stringify(INITIAL_LAYERS))
         this.app.activeLayerId = 'draw'
 
         this.app.saveToStorage()
         this.renderLayerUI()
-        if (this.app.pdf) this.app.viewerManager.renderPDF()
+        
+        // Refresh all pages
+        if (this.app.pdf) {
+            for (let p = 1; p <= this.app.pdf.numPages; p++) {
+                this.app.annotationManager.redrawStamps(p)
+            }
+        }
     }
 
     renderLayerUI() {
@@ -114,11 +104,11 @@ export class LayerManager {
            <button class="layer-vis-btn ${layer.visible ? 'visible' : 'inactive'}" title="${layer.visible ? 'Hide' : 'Show'}">
              ${eyeIcon}
            </button>
-           ${layer.type === 'custom' ? '<button class="btn-delete-layer">✕</button>' : ''}
+           ${count > 0 ? `<button class="layer-erase-btn" title="Erase All in this Category"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
         </div>
       `
 
-            // iPad fix: Stop touch propagation to prevent double-tap gesture from triggering stamp bar
+            // iPad fix: Stop touch propagation
             item.ontouchstart = (e) => e.stopPropagation()
 
             item.onclick = (e) => {
@@ -129,7 +119,6 @@ export class LayerManager {
             }
 
             const visBtn = item.querySelector('.layer-vis-btn')
-            visBtn.ontouchstart = (e) => e.stopPropagation()
             visBtn.onclick = (e) => {
                 e.stopPropagation()
                 layer.visible = !layer.visible
@@ -140,12 +129,11 @@ export class LayerManager {
                 }
             }
 
-            const delBtn = item.querySelector('.btn-delete-layer')
-            if (delBtn) {
-                delBtn.ontouchstart = (e) => e.stopPropagation()
-                delBtn.onclick = (e) => {
+            const eraseBtn = item.querySelector('.layer-erase-btn')
+            if (eraseBtn) {
+                eraseBtn.onclick = (e) => {
                     e.stopPropagation()
-                    this.deleteLayer(layer.id)
+                    this.app.annotationManager.confirmEraseSpecificStamps(layer.name, this.app.stamps.filter(s => s.layerId === layer.id && !s.deleted))
                 }
             }
 

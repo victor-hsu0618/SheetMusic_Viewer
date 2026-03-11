@@ -619,7 +619,16 @@ export class ToolManager {
                 <div class="setting-item">
                     <div class="setting-label flex-space-between">
                         <span>Notation Categories</span>
-                        <button id="btn-add-layer-mini" class="btn-text-primary">+ Add</button>
+                        <div class="flex-row-center gap-10">
+                            <button id="btn-erase-all-mini" class="btn-text-danger" title="Erase by Category">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                Erase
+                            </button>
+                            <button id="btn-reset-layers-mini" class="btn-text-primary" title="Reset to Defaults">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                                Reset
+                            </button>
+                        </div>
                     </div>
                     <div id="settings-layer-list" class="layer-list-mini mt-10"></div>
                 </div>
@@ -636,7 +645,8 @@ export class ToolManager {
         const sliderScore = panel.querySelector('#slider-score-scale')
         const valScore = panel.querySelector('#val-score-scale')
         const btnBack = panel.querySelector('#btn-settings-back')
-        const btnAddLayer = panel.querySelector('#btn-add-layer-mini')
+        const btnResetLayers = panel.querySelector('#btn-reset-layers-mini')
+        const btnEraseAll = panel.querySelector('#btn-erase-all-mini')
 
         sliderScore.oninput = (e) => {
             const val = e.target.value
@@ -644,9 +654,14 @@ export class ToolManager {
             this.app.updateScoreStampScale(val)
         }
 
-        btnAddLayer.onclick = (e) => {
+        btnResetLayers.onclick = (e) => {
             e.stopPropagation()
-            this.app.layerManager.addNewLayer()
+            this.app.layerManager.resetLayers()
+        }
+
+        btnEraseAll.onclick = (e) => {
+            e.stopPropagation()
+            this.app.annotationManager.showEraseAllModal()
         }
 
         btnBack.onclick = (e) => {
