@@ -305,8 +305,10 @@ export class ToolManager {
         const recentRibbon = document.createElement("div")
         recentRibbon.className = "recent-tools-ribbon"
 
-        // 1. Permanently Pinned SELECT tool
+        // 1. Permanently Pinned SELECT & ERASER tools
         const selectTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === 'select')
+        const eraserTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === 'eraser')
+
         if (selectTool) {
             const btn = document.createElement("button")
             btn.className = `recent-tool-btn pinned ${this.app.activeStampType === 'select' ? "active" : ""}`
@@ -320,9 +322,22 @@ export class ToolManager {
             recentRibbon.appendChild(btn)
         }
 
-        // 2. Dynamically tracked recent tools (excluding select and view)
+        if (eraserTool) {
+            const btn = document.createElement("button")
+            btn.className = `recent-tool-btn pinned ${this.app.activeStampType === 'eraser' ? "active" : ""}`
+            btn.innerHTML = this.getIcon(eraserTool, 18)
+            btn.title = "Eraser (E)"
+            btn.onclick = (e) => {
+                e.stopPropagation()
+                this.app.activeStampType = 'eraser'
+                this.updateActiveTools()
+            }
+            recentRibbon.appendChild(btn)
+        }
+
+        // 2. Dynamically tracked recent tools (excluding select, eraser and view)
         this.app.recentTools.forEach(toolId => {
-            if (toolId === 'select') return // Skip since it's pinned
+            if (toolId === 'select' || toolId === 'eraser') return // Skip since they are pinned
             const tool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === toolId)
             if (!tool) return
             const btn = document.createElement("button")
@@ -567,7 +582,7 @@ export class ToolManager {
                         this.app.lastUsedToolPerCategory[catName] = tool.id
 
                         // Update Recent Tools History
-                        if (tool.id !== 'view' && tool.id !== 'select') {
+                        if (tool.id !== 'view' && tool.id !== 'select' && tool.id !== 'eraser') {
                             this.app.recentTools = [tool.id, ...this.app.recentTools.filter(id => id !== tool.id)].slice(0, 5)
                         }
 
