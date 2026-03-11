@@ -64,8 +64,9 @@ export class AnnotationRenderer {
 
         // Highlight if hovered
         if (isHovered) {
-            ctx.shadowBlur = 10
+            ctx.shadowBlur = 20
             ctx.shadowColor = '#ef4444'
+            ctx.strokeStyle = '#ef4444' // Force red
         } else if (isSelectHovered) {
             ctx.shadowBlur = 12
             ctx.shadowColor = '#6366f1'
@@ -82,10 +83,11 @@ export class AnnotationRenderer {
         const pageFactor = this.app.pageScales[path.page] || 1.0
         if (path.type === 'highlighter') {
             ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : '#fde04788')
-            ctx.lineWidth = 14 * (this.app.scale / 1.5) * pageFactor
+            ctx.lineWidth = (isHovered ? 18 : 14) * (this.app.scale / 1.5) * pageFactor
         } else {
             ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
             ctx.lineWidth = (path.type === 'line' ? 2 : 3) * (this.app.scale / 1.5) * pageFactor
+            if (isHovered) ctx.lineWidth *= 1.5 // Make path thicker when hovered
         }
 
         ctx.beginPath()
@@ -137,7 +139,7 @@ export class AnnotationRenderer {
 
         // Glow effects
         if (isHovered) {
-            ctx.shadowBlur = 15
+            ctx.shadowBlur = 25
             ctx.shadowColor = '#ef4444'
         } else if (isSelectHovered) {
             ctx.shadowBlur = 15
@@ -152,9 +154,10 @@ export class AnnotationRenderer {
             ctx.globalAlpha *= 0.7
         }
 
-        ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : color
-        ctx.fillStyle = isHovered ? '#ef444433' : isSelectHovered ? '#6366f133' : `${color}33`
-        ctx.lineWidth = 2.2 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
+        const finalColor = isHovered ? '#ef4444' : (isSelectHovered ? '#6366f1' : color)
+        ctx.strokeStyle = finalColor
+        ctx.fillStyle = isHovered ? '#ef444444' : (isSelectHovered ? '#6366f133' : `${color}33`)
+        ctx.lineWidth = (isHovered ? 3.5 : 2.2) * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
@@ -177,7 +180,7 @@ export class AnnotationRenderer {
             switch (d.type) {
                 case 'text':
                     ctx.font = `${d.font || ''} ${d.size * textScale}px ${d.fontFace || 'Outfit'}`
-                    ctx.fillStyle = color
+                    ctx.fillStyle = finalColor
                     ctx.textAlign = 'center'
                     ctx.textBaseline = 'middle'
                     ctx.fillText(d.content, x, y)
