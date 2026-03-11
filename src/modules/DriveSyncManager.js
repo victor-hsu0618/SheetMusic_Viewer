@@ -906,19 +906,28 @@ export class DriveSyncManager {
                 const localInfo = this.app.scoreDetailManager?.currentInfo;
                 const remoteEdit = remoteData.scoreDetail.lastEdit || 0;
                 const localEdit = localInfo?.lastEdit || 0;
+                const remoteName = remoteData.scoreDetail.name;
                 
-                console.log(`[DriveSync] Merging ScoreDetail: Remote LastEdit=${remoteEdit}, Local LastEdit=${localEdit}`);
+                // Logic: 
+                // 1. Remote is strictly newer (Standard LWW)
+                // 2. OR Local is "Unknown/Generic" but Remote has a real name (Heuristic force-sync for new devices)
+                const isLocalGeneric = !localInfo || !localInfo.name || localInfo.name === 'Unknown' || localInfo.name.includes('score_buf_');
+                const hasRemoteRealName = remoteName && remoteName !== 'Unknown' && !remoteName.includes('score_buf_');
+                
+                const shouldAcceptRemote = (remoteEdit > localEdit) || (isLocalGeneric && hasRemoteRealName);
 
-                if (localInfo && (remoteEdit > localEdit)) {
-                    console.log(`[DriveSync] Updating local metadata with: ${remoteData.scoreDetail.name} by ${remoteData.scoreDetail.composer}`);
+                console.log(`[DriveSync] Merging ScoreDetail: RemoteEdit=${remoteEdit}, LocalEdit=${localEdit}, LocalGeneric=${isLocalGeneric}, Accept=${shouldAcceptRemote}`);
+
+                if (localInfo && shouldAcceptRemote) {
+                    console.log(`[DriveSync] Updating local metadata with: ${remoteName} by ${remoteData.scoreDetail.composer}`);
                     this.app.scoreDetailManager.currentInfo = remoteData.scoreDetail;
                     this.app.scoreDetailManager.save(fingerprint); // Persist to local storage
                     this.app.scoreDetailManager.render(fingerprint);
 
                     // CRITICAL: Sync with Library Registry
-                    if (this.app.scoreManager && remoteData.scoreDetail.name) {
+                    if (this.app.scoreManager && remoteName) {
                         await this.app.scoreManager.updateMetadata(fingerprint, {
-                            title: remoteData.scoreDetail.name,
+                            title: remoteName,
                             composer: remoteData.scoreDetail.composer || 'Unknown'
                         });
                     }
