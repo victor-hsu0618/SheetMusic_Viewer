@@ -337,12 +337,17 @@ export class ScoreDetailManager {
             this.app.scoreManager.updateSyncStatus(fingerprint, false);
         }
 
-        // Also update registry to keep them in sync for immediate UI updates (e.g. library thumbnails)
+        // 1. Update registry metadata FIRST to ensure the new title is the source for cloud filename
         if (this.app.scoreManager && this.currentInfo.name) {
             this.app.scoreManager.updateMetadata(fingerprint, {
                 title: this.currentInfo.name,
                 composer: this.currentInfo.composer || 'Unknown'
             });
+        }
+
+        // 2. Trigger cloud sync (debounced)
+        if (this.app.onAnnotationChanged) {
+            this.app.onAnnotationChanged();
         }
 
         // If the Detail tab is currently active, refresh UI immediately
