@@ -40,8 +40,31 @@ export class ScoreManager {
         // 4. Deduplicate: migrate any old fallback_ fingerprints to proper SHA-256
         this.migrateFallbackFingerprints(); // async, non-blocking
 
+        // 5. Fix missing dateImported
+        this.fixMissingImportDates();
+
         this.initLibraryHeader();
         this.initBatchBar();
+    }
+
+    /**
+     * Data Repair: Ensure all scores have a dateImported timestamp.
+     * Uses lastAccessed as a fallback for old scores.
+     */
+    async fixMissingImportDates() {
+        let changed = false;
+        this.registry.forEach(score => {
+            if (!score.dateImported || score.dateImported === 0) {
+                // If it was already accessed, that's our best guess for import date
+                score.dateImported = score.lastAccessed || Date.now();
+                changed = true;
+            }
+        });
+        if (changed) {
+            console.log(`[ScoreManager] Repaired missing import dates for registry.`);
+            await this.saveRegistry();
+            this.render();
+        }
     }
 
     initLibraryHeader() {
@@ -497,6 +520,7 @@ export class ScoreManager {
         }
 
         // Sort by last accessed and filter by search
+        console.log(`[ScoreManager] Rendering with sortMode: ${this.sortMode}`);
         let sorted = [...this.registry]
             .filter(s => {
                 // Search filter
@@ -516,6 +540,9 @@ export class ScoreManager {
                 } else if (this.sortMode === 'imported') {
                     const dateA = a.dateImported || 0;
                     const dateB = b.dateImported || 0;
+                    if (dateA === 0 || dateB === 0) {
+                        console.warn(`[ScoreManager] Score missing dateImported: ${a.title} (${dateA}), ${b.title} (${dateB})`);
+                    }
                     return dateB - dateA;
                 }
                 // Default: lastAccessed (descending)

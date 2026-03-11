@@ -815,8 +815,8 @@ export class DriveSyncManager {
                     }, true); // fromSync: true
                     
                     // Sync dateImported if available and local is 0 or newer
-                    if (remoteData.dateImported && (!score.dateImported || score.dateImported === 0)) {
-                        score.dateImported = remoteData.dateImported;
+                    if (!score.dateImported || score.dateImported === 0) {
+                        score.dateImported = remoteData.dateImported || remoteVer || Date.now();
                     }
 
                     needsSave = true;
@@ -1861,7 +1861,7 @@ export class DriveSyncManager {
                         fileName: '',
                         composer: 'Unknown',
                         thumbnail: null,
-                        dateImported: 0,     // Sort to bottom — don't displace user's recent scores
+                        dateImported: entry.updated || Date.now(), // Use manifest update time or now
                         lastAccessed: 0,     // Sort to bottom
                         tags: [],
                         isSynced: false,     // false = data not yet pulled locally; pullBackground will set true
