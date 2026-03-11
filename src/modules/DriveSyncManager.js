@@ -583,6 +583,13 @@ export class DriveSyncManager {
                 const before = this.app.scoreManager.registry.length;
                 this.app.scoreManager.registry = this.app.scoreManager.registry.filter(s => {
                     if (tombstonedFps.has(s.fingerprint)) {
+                        // CRITICAL: If the score is fully present locally (not cloud-only),
+                        // do NOT delete it. This allows manual re-imports to survive 
+                        // until the next push clears the cloud tombstone.
+                        if (!s.isCloudOnly) {
+                            // console.log(`[DriveSync] Keeping tombstoned score ${s.title} because it exists locally.`);
+                            return true;
+                        }
                         console.log(`[DriveSync] ✕ removed "${s.title || s.fingerprint.slice(0, 8)}" — deleted on another device`);
                         return false;
                     }
@@ -1508,12 +1515,20 @@ export class DriveSyncManager {
     async updateManifestEntry(fingerprint, data) {
         if (!this.manifest) this.manifest = {};
 
+        // Resurrect if previously deleted (User is manually re-importing or updating)
+        const previouslyDeleted = this.manifest[fingerprint]?.deleted;
+
         // Merge with existing data to prevent accidental field deletion
         this.manifest[fingerprint] = {
             ...this.manifest[fingerprint],
             ...data,
+            deleted: false, // Force active
             updated: Date.now()
         };
+
+        if (previouslyDeleted) {
+            console.log(`[DriveSync] Resurrecting tombstoned entry: ${fingerprint.slice(0, 8)}`);
+        }
 
         // Safety: If name is still missing but we have it locally in registry, fill it
         if (!this.manifest[fingerprint].name && this.app.scoreManager) {
@@ -1932,9 +1947,7 @@ export class DriveSyncManager {
         const fileId = await this.findSyncFile(fingerprint, 'pdf');
         if (fileId) {
             console.log(`[DriveSync] PDF for ${fingerprint} already exists on Drive. Updating manifest.`);
-            if (!this.manifest[fingerprint]) this.manifest[fingerprint] = {};
-            this.manifest[fingerprint].pdfId = fileId;
-            await this.saveManifest();
+            await this.updateManifestEntry(fingerprint, { pdfId: fileId });
             return;
         }
 
