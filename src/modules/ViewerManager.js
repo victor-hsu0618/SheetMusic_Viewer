@@ -267,17 +267,61 @@ export class ViewerManager {
 
         this.showMainUI()
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+        
+        // Initial render: Pass true to enable scroll restoration from DB
         if (isTouch) {
-            await this.fitToWidth()
+            await this.fitToWidth(true)
         } else {
-            await this.fitToHeight()
+            await this.fitToHeight(true)
         }
 
         this.app.updateJumpLinePosition()
         this.app.updateRulerClip()
     }
 
-    async renderPDF() {
+    /**
+     * Captures the current focal point (page and relative offset) to preserve view during zoom.
+     */
+    _captureFocalPoint() {
+        if (!this.app.viewer || !this.pdf) return null
+        const scrollTop = this.app.viewer.scrollTop
+        const viewportH = this.app.viewer.clientHeight
+        const focalY = scrollTop + (viewportH / 3) // Focal point is top 1/3 of screen
+
+        const metrics = this._pageMetrics
+        let targetPage = 1
+        let offsetRatio = 0
+
+        // Find which page contains the focal point
+        for (const pageNum in metrics) {
+            const m = metrics[pageNum]
+            if (focalY >= m.top && focalY <= m.top + m.height) {
+                targetPage = parseInt(pageNum)
+                offsetRatio = (focalY - m.top) / m.height
+                break
+            }
+        }
+        return { page: targetPage, ratio: offsetRatio }
+    }
+
+    /**
+     * Restores the focal point after a scale change.
+     */
+    _restoreFocalPoint(focalPoint) {
+        if (!focalPoint || !this.app.viewer) return
+        this.updatePageMetrics() // Ensure latest metrics are used
+        const m = this._pageMetrics[focalPoint.page]
+        if (!m) return
+
+        const viewportH = this.app.viewer.clientHeight
+        const newFocalY = m.top + (focalPoint.ratio * m.height)
+        const newScrollTop = Math.max(0, newFocalY - (viewportH / 3))
+
+        this.app.viewer.scrollTop = newScrollTop
+        console.log(`[ViewerManager] Restored focal point to page ${focalPoint.page} at ${Math.round(focalPoint.ratio * 100)}%`)
+    }
+
+    async renderPDF(isInitialLoad = false) {
         console.log(`[ViewerManager] renderPDF started. PDF defined: ${!!this.pdf}`);
         if (!this.pdf) return
 
@@ -334,12 +378,12 @@ export class ViewerManager {
         // 3. Update cached metrics once after initial layout
         this.updatePageMetrics()
 
-        // Ensure scroll restoration after all pages are added to the DOM
-        if (this.app.viewer) {
+        // Ensure scroll restoration ONLY on initial file load
+        if (isInitialLoad && this.app.viewer) {
             const savedScroll = this.app.scoreDetailManager?.currentInfo?.lastScrollTop || 0;
             this.app.viewer.scrollTop = savedScroll;
             this.app.viewer.scrollLeft = 0;
-            console.log(`[ViewerManager] Restored scroll to: ${savedScroll}`);
+            console.log(`[ViewerManager] Initial load: Restored scroll to ${savedScroll}`);
         }
 
         if (this.app.inputManager) this.app.inputManager.updateDividerPositions()
@@ -485,21 +529,24 @@ export class ViewerManager {
     }
 
     async changeZoom(delta) {
+        const focalPoint = this._captureFocalPoint()
         this.scale = Math.min(Math.max(0.2, this.scale + delta), 4)
         this.isFitToHeight = false
         this.updateZoomDisplay()
 
         if (this.pdf) {
-            await this.renderPDF()
-            this.updatePageMetrics()
+            await this.renderPDF(false) // Not initial load
+            this._restoreFocalPoint(focalPoint)
         }
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()
     }
 
-    async fitToWidth() {
+    async fitToWidth(isInitialLoad = false) {
         if (!this.pdf) return
+        const focalPoint = isInitialLoad ? null : this._captureFocalPoint()
+
         const page = await this.pdf.getPage(1)
         const naturalWidth = page.getViewport({ scale: 1 }).width
 
@@ -509,15 +556,21 @@ export class ViewerManager {
         this.isFitToHeight = false
         this.updateZoomDisplay()
 
-        await this.renderPDF()
-        this.updatePageMetrics()
+        await this.renderPDF(isInitialLoad)
+        
+        if (!isInitialLoad) {
+            this._restoreFocalPoint(focalPoint)
+        }
+
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()
     }
 
-    async fitToHeight() {
+    async fitToHeight(isInitialLoad = false) {
         if (!this.pdf) return
+        const focalPoint = isInitialLoad ? null : this._captureFocalPoint()
+
         const page = await this.pdf.getPage(1)
         const naturalHeight = page.getViewport({ scale: 1 }).height
         const availH = this.app.viewer.clientHeight - 20 // 20px safety margin
@@ -525,8 +578,12 @@ export class ViewerManager {
         this.isFitToHeight = true
         this.updateZoomDisplay()
 
-        await this.renderPDF()
-        this.updatePageMetrics()
+        await this.renderPDF(isInitialLoad)
+
+        if (!isInitialLoad) {
+            this._restoreFocalPoint(focalPoint)
+        }
+
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()
