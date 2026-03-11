@@ -77,16 +77,18 @@ export class LayerManager {
         if (!list) return
         list.innerHTML = ''
 
-        const countByLayer = {}
+        const countByEffectiveLayer = {}
         this.app.stamps.forEach(s => {
-            countByLayer[s.layerId] = (countByLayer[s.layerId] || 0) + 1
+            if (s.deleted) return
+            const effId = this.app.annotationManager.getEffectiveLayerId(s)
+            countByEffectiveLayer[effId] = (countByEffectiveLayer[effId] || 0) + 1
         })
 
         this.app.layers.forEach(layer => {
             const item = document.createElement('div')
             item.className = `layer-item ${this.app.activeLayerId === layer.id ? 'active' : ''}`
 
-            const count = countByLayer[layer.id] || 0
+            const count = countByEffectiveLayer[layer.id] || 0
             const countBadge = count > 0 ? `<span class="layer-count-badge">${count}</span>` : ''
 
             const eyeIcon = layer.visible
@@ -107,9 +109,6 @@ export class LayerManager {
            ${count > 0 ? `<button class="layer-erase-btn" title="Erase All in this Category"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
         </div>
       `
-
-            // iPad fix: Stop touch propagation
-            item.ontouchstart = (e) => e.stopPropagation()
 
             item.onclick = (e) => {
                 if (e.target.closest('.layer-actions')) return
@@ -133,7 +132,10 @@ export class LayerManager {
             if (eraseBtn) {
                 eraseBtn.onclick = (e) => {
                     e.stopPropagation()
-                    this.app.annotationManager.confirmEraseSpecificStamps(layer.name, this.app.stamps.filter(s => s.layerId === layer.id && !s.deleted))
+                    const targets = this.app.stamps.filter(s => 
+                        !s.deleted && this.app.annotationManager.getEffectiveLayerId(s) === layer.id
+                    )
+                    this.app.annotationManager.confirmEraseSpecificStamps(layer.name, targets)
                 }
             }
 

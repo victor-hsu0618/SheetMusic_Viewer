@@ -238,6 +238,37 @@ export class AnnotationManager {
     }
 
     /**
+     * Map any stamp to one of the current core layer IDs, handling legacy IDs.
+     */
+    getEffectiveLayerId(stamp) {
+        let lid = stamp.layerId;
+        
+        // 1. Direct matches
+        const coreIds = ['draw', 'fingering', 'articulation', 'text', 'layout'];
+        if (lid && coreIds.includes(lid)) return lid;
+
+        // 2. Legacy ID Mapping
+        if (lid === 'performance' || stamp.type.startsWith('text-') || stamp.type.startsWith('custom-text-')) {
+            return 'text';
+        }
+        if (lid === 'anchor' || lid === 'other' || ['anchor', 'music-anchor', 'measure'].includes(stamp.type)) {
+            return 'layout';
+        }
+        if (lid === 'articulations') {
+            return 'articulation';
+        }
+
+        // 3. Tool-based lookup fallback
+        const toolGroup = this.app.toolsets.find(g => g.tools.some(t => t.id === stamp.type));
+        if (toolGroup) {
+            if (toolGroup.type === 'performance') return 'text';
+            if (coreIds.includes(toolGroup.type)) return toolGroup.type;
+        }
+
+        return 'draw'; // Final fallback
+    }
+
+    /**
      * Show the "Erase All" UI with category buckets strictly matching TOOLSETS/Stamp Panel categories.
      */
     showEraseAllModal() {
@@ -257,34 +288,16 @@ export class AnnotationManager {
                 color: layer ? layer.color : '#cbd5e1',
                 order: this.app.toolsets.indexOf(group)
             }
-            
-            group.tools.forEach(t => {
-                toolToGroup[t.id] = group.name
-            })
         })
 
         // 2. Sort existing stamps into buckets
         this.app.stamps.forEach(stamp => {
             if (stamp.deleted) return
             
-            let groupName = toolToGroup[stamp.type]
-
-            // --- Robust Mapping for leftovers ---
-            if (!groupName) {
-                if (stamp.type.startsWith('custom-text-') || stamp.type.startsWith('text-')) {
-                    groupName = 'Text'
-                } else if (['anchor', 'music-anchor', 'measure'].includes(stamp.type)) {
-                    groupName = 'Other (Layout)'
-                } else if (['pen', 'highlighter', 'line'].includes(stamp.type)) {
-                    groupName = 'Pens'
-                } else if (stamp.layerId === 'articulation') {
-                    groupName = 'Articulation'
-                } else if (stamp.layerId === 'fingering') {
-                    groupName = 'Bow/Fingering'
-                } else {
-                    groupName = 'Pens' // Absolute fallback
-                }
-            }
+            // Use the centralized mapping
+            const effId = this.getEffectiveLayerId(stamp);
+            const layer = this.app.layers.find(l => l.id === effId);
+            const groupName = layer ? (this.app.toolsets.find(g => g.type === layer.type || g.type === layer.id)?.name || layer.name) : 'Pens';
 
             if (!categoryMap.has(groupName)) {
                 categoryMap.set(groupName, [])
