@@ -263,24 +263,28 @@ export class AnnotationRenderer {
                         if (!isNextTarget) ctx.globalAlpha *= 0.35
                         ctx.fillStyle = aColor
                         ctx.strokeStyle = aColor
+                        
+                        // Internal scaling for anchor to make it match text size (approx 0.6x original)
+                        const s = size * 0.65; 
+
                         // 圓點
                         ctx.beginPath()
-                        ctx.arc(x, y - size * 1.1, size * 0.18, 0, Math.PI * 2)
+                        ctx.arc(x, y - s * 1.1, s * 0.18, 0, Math.PI * 2)
                         ctx.fill()
                         // 直棒
                         ctx.beginPath()
-                        ctx.lineWidth = size * 0.12
-                        ctx.moveTo(x, y - size * 0.9)
-                        ctx.lineTo(x, y + size * 0.3)
+                        ctx.lineWidth = s * 0.15 // Slightly thicker line for readability at small size
+                        ctx.moveTo(x, y - s * 0.9)
+                        ctx.lineTo(x, y + s * 0.3)
                         ctx.stroke()
                         // 橫桿
                         ctx.beginPath()
-                        ctx.moveTo(x - size * 0.6, y)
-                        ctx.lineTo(x + size * 0.6, y)
+                        ctx.moveTo(x - s * 0.6, y)
+                        ctx.lineTo(x + s * 0.6, y)
                         ctx.stroke()
                         // 弧形
                         ctx.beginPath()
-                        ctx.arc(x, y, size * 0.6, 0, Math.PI, false)
+                        ctx.arc(x, y, s * 0.6, 0, Math.PI, false)
                         ctx.stroke()
                         ctx.lineWidth = 2.2 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
                     }
