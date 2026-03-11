@@ -571,12 +571,21 @@ class ScoreFlow {
         this.driveSyncManager.signOut();
       });
     }
-  }
 
-  /**
-   * Hook for annotation changes to trigger cloud sync.
-   */
-  onAnnotationChanged() {
+    const btnResetCloud = document.getElementById('btn-reset-cloud-index')
+    if (btnResetCloud) {
+      btnResetCloud.addEventListener('click', () => this.driveSyncManager.resetCloudIndex())
+    }
+
+    const btnForcePush = document.getElementById('btn-drive-force-push')
+    if (btnForcePush) {
+      btnForcePush.addEventListener('click', () => this.driveSyncManager.forcePushAll())
+    }
+    }
+
+    /**
+    * Hook for annotation changes to trigger cloud sync.
+    */  onAnnotationChanged() {
     if (this.driveSyncManager && this.driveSyncManager.isEnabled) {
       this.driveSyncManager.pushDebounce()
     }

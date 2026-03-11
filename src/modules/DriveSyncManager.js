@@ -1227,6 +1227,51 @@ export class DriveSyncManager {
     }
 
     /**
+     * Forces all local scores to be marked as unsynced and triggers a full batch sync.
+     * This ensures all local data is pushed to the cloud regardless of its current state.
+     */
+    async forcePushAll() {
+        if (!this.isEnabled || !this.accessToken) {
+            this.addLog('請先連線 Google Drive 才能執行同步', 'error');
+            return;
+        }
+
+        const confirmed = await this.app.showDialog({
+            title: '強制同步所有資料',
+            message: `這將把本地書庫中的所有標記資料重新上傳至雲端。如果雲端已存在較新版本，可能會被本地覆蓋。確定要繼續嗎？`,
+            type: 'confirm',
+            icon: '📤'
+        });
+
+        if (!confirmed) return;
+
+        try {
+            this.addLog('正在準備強制同步...', 'system');
+            
+            // 1. Mark all registry entries as unsynced
+            if (this.app.scoreManager?.registry) {
+                this.app.scoreManager.registry.forEach(score => {
+                    if (!score.isCloudOnly) {
+                        score.isSynced = false;
+                    }
+                });
+                await this.app.scoreManager.saveRegistry();
+            }
+
+            // 2. Trigger a full sync cycle
+            this.addLog('開始全面背景上傳...', 'system');
+            this.sync(); 
+            
+            if (this.app.showMessage) {
+                this.app.showMessage('已開始全量上傳流程，請查看日誌了解進度', 'success');
+            }
+        } catch (err) {
+            console.error('[DriveSync] Force push failed:', err);
+            this.addLog('強制同步啟動失敗: ' + err.message, 'error');
+        }
+    }
+
+    /**
      * Forces a full rebuild of the manifest by deleting the old one and scanning.
      */
     async resetCloudIndex() {
