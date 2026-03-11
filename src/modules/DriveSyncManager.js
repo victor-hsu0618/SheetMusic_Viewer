@@ -813,6 +813,12 @@ export class DriveSyncManager {
                         title: remoteDetail.name,
                         composer: remoteDetail.composer || 'Unknown'
                     }, true); // fromSync: true
+                    
+                    // Sync dateImported if available and local is 0 or newer
+                    if (remoteData.dateImported && (!score.dateImported || score.dateImported === 0)) {
+                        score.dateImported = remoteData.dateImported;
+                    }
+
                     needsSave = true;
                     if (isLocalGeneric && remoteDetail.name) {
                         bgChanges.push(`name resolved: "${remoteDetail.name}"`);
@@ -894,6 +900,8 @@ export class DriveSyncManager {
             scoreDetail = detailRaw ? JSON.parse(detailRaw) : null;
         } catch (e) { console.error('Failed to parse detail for sync', e); }
 
+        const score = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
+
         return {
             stamps: stamps,
             bookmarks: bookmarks,
@@ -901,7 +909,8 @@ export class DriveSyncManager {
             layers: this.app.layers || [],
             scoreDetail: scoreDetail,
             version: Date.now(),
-            fingerprint: fp
+            fingerprint: fp,
+            dateImported: score?.dateImported || 0
         };
     }
 

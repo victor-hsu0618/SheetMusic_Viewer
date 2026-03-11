@@ -50,6 +50,16 @@ export class ScoreManager {
             btnSelect.addEventListener('click', () => this.toggleSelectionMode());
         }
 
+        const sortSelect = document.getElementById('library-sort-select');
+        if (sortSelect) {
+            sortSelect.value = this.sortMode;
+            sortSelect.addEventListener('change', (e) => {
+                this.sortMode = e.target.value;
+                localStorage.setItem('scoreflow_library_sort', this.sortMode);
+                this.render();
+            });
+        }
+
         // Tab Switching Logic
         const tabs = document.querySelectorAll('.library-tabs .segment-btn');
         tabs.forEach(btn => {
@@ -503,6 +513,10 @@ export class ScoreManager {
                     return (a.title || '').localeCompare(b.title || '');
                 } else if (this.sortMode === 'composer') {
                     return (a.composer || '').localeCompare(b.composer || '');
+                } else if (this.sortMode === 'imported') {
+                    const dateA = a.dateImported || 0;
+                    const dateB = b.dateImported || 0;
+                    return dateB - dateA;
                 }
                 // Default: lastAccessed (descending)
                 const lastA = a.lastAccessed || 0;
@@ -912,16 +926,6 @@ export class ScoreManager {
             if (this.overlay && this.overlay.classList.contains('active')) {
                 this.render();
             }
-        }
-
-        const sortSelect = document.getElementById('library-sort-select');
-        if (sortSelect) {
-            sortSelect.value = this.sortMode;
-            sortSelect.addEventListener('change', (e) => {
-                this.sortMode = e.target.value;
-                localStorage.setItem('scoreflow_library_sort', this.sortMode);
-                this.render();
-            });
         }
     }
 
