@@ -1,4 +1,5 @@
 import './style.css'
+import { registerSW } from 'virtual:pwa-register'
 import * as pdfjsLib from 'pdfjs-dist'
 import * as db from './db.js'
 import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
@@ -765,3 +766,13 @@ class ScoreFlow {
 }
 
 new ScoreFlow()
+
+// Register Service Worker for offline support
+registerSW({
+  onNeedRefresh() {
+    console.log('[PWA] New content available, please refresh.')
+  },
+  onOfflineReady() {
+    console.log('[PWA] App ready to work offline.')
+  },
+})
