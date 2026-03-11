@@ -222,8 +222,11 @@ export class ToolManager {
                 drag(e.touches[0].clientX, e.touches[0].clientY)
             } else if (el.contains(e.target)) {
                 e.stopPropagation()
-                // Do NOT preventDefault if we are touching an input (like range sliders)
-                if (e.target.tagName !== 'INPUT' && el.style.overflowY !== 'auto') {
+                // Do NOT preventDefault if we are touching an input or button
+                const isInteractive = e.target.tagName === 'INPUT' || 
+                                     e.target.tagName === 'BUTTON' || 
+                                     e.target.closest('button')
+                if (!isInteractive && el.style.overflowY !== 'auto') {
                     e.preventDefault()
                 }
             }
@@ -654,15 +657,21 @@ export class ToolManager {
             this.app.updateScoreStampScale(val)
         }
 
-        btnResetLayers.onclick = (e) => {
+        btnResetLayers.addEventListener('click', (e) => {
             e.stopPropagation()
             this.app.layerManager.resetLayers()
-        }
+        })
+        btnResetLayers.addEventListener('touchstart', (e) => {
+            e.stopPropagation()
+        }, { passive: true })
 
-        btnEraseAll.onclick = (e) => {
+        btnEraseAll.addEventListener('click', (e) => {
             e.stopPropagation()
             this.app.annotationManager.showEraseAllModal()
-        }
+        })
+        btnEraseAll.addEventListener('touchstart', (e) => {
+            e.stopPropagation()
+        }, { passive: true })
 
         btnBack.onclick = (e) => {
             e.stopPropagation()

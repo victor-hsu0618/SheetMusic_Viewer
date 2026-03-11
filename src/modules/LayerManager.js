@@ -1,3 +1,5 @@
+import { INITIAL_LAYERS } from '../constants.js'
+
 export class LayerManager {
     constructor(app) {
         this.app = app
@@ -130,13 +132,16 @@ export class LayerManager {
 
             const eraseBtn = item.querySelector('.layer-erase-btn')
             if (eraseBtn) {
-                eraseBtn.onclick = (e) => {
+                eraseBtn.addEventListener('click', (e) => {
                     e.stopPropagation()
                     const targets = this.app.stamps.filter(s => 
                         !s.deleted && this.app.annotationManager.getEffectiveLayerId(s) === layer.id
                     )
                     this.app.annotationManager.confirmEraseSpecificStamps(layer.name, targets)
-                }
+                })
+                eraseBtn.addEventListener('touchstart', (e) => {
+                    e.stopPropagation()
+                }, { passive: true })
             }
 
             list.appendChild(item)
