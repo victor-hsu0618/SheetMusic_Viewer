@@ -1,59 +1,66 @@
 let activeDB = null;
 
-export async function get(key) {
-    const db = await openDB();
+// Wraps a DB operation with one automatic retry on InvalidStateError
+// (stale connection from versionchange/close race condition).
+async function withDB(fn) {
+    try {
+        return await fn(await openDB());
+    } catch (err) {
+        if (err.name === 'InvalidStateError') {
+            activeDB = null;
+            return await fn(await openDB());
+        }
+        throw err;
+    }
+}
+
+function txPromise(db, mode, fn) {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction('store', 'readonly');
-        const request = transaction.objectStore('store').get(key);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-        transaction.onerror = () => reject(transaction.error);
+        const tx = db.transaction('store', mode);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+        fn(tx.objectStore('store'), resolve, reject);
     });
 }
 
-export async function set(key, value) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('store', 'readwrite');
-        const request = transaction.objectStore('store').put(value, key);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-        transaction.onerror = () => reject(transaction.error);
-        transaction.onabort = () => reject(transaction.error);
-    });
+export function get(key) {
+    return withDB(db => txPromise(db, 'readonly', (store, resolve, reject) => {
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    }));
 }
 
-export async function remove(key) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('store', 'readwrite');
-        const request = transaction.objectStore('store').delete(key);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-        transaction.onerror = () => reject(transaction.error);
-    });
+export function set(key, value) {
+    return withDB(db => txPromise(db, 'readwrite', (store, resolve, reject) => {
+        const req = store.put(value, key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+    }));
 }
 
-export async function clear() {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('store', 'readwrite');
-        const request = transaction.objectStore('store').clear();
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-        transaction.onerror = () => reject(transaction.error);
-    });
+export function remove(key) {
+    return withDB(db => txPromise(db, 'readwrite', (store, resolve, reject) => {
+        const req = store.delete(key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+    }));
 }
 
-export async function getAllKeys() {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('store', 'readonly');
-        const request = transaction.objectStore('store').getAllKeys();
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-        transaction.onerror = () => reject(transaction.error);
-    });
+export function clear() {
+    return withDB(db => txPromise(db, 'readwrite', (store, resolve, reject) => {
+        const req = store.clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+    }));
+}
+
+export function getAllKeys() {
+    return withDB(db => txPromise(db, 'readonly', (store, resolve, reject) => {
+        const req = store.getAllKeys();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    }));
 }
 
 export function closeDB() {
