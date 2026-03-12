@@ -19,39 +19,57 @@
 /* Floating Document Control Bar */
 .floating-doc-bar {
   position: fixed;
-  bottom: 80px;
-  right: 8px;
+  bottom: 20px;
+  left: 50%;
   top: auto;
+  transform: translateX(-50%);
   background: var(--bg-card);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 12px 6px;
+  border-radius: 40px;
+  padding: 8px 16px;
   z-index: 3000;
-  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* Global horizontal default */
   align-items: center;
   gap: 12px;
   cursor: default;
   overflow: visible;
-  transition: width 0.3s, height 0.3s, border-radius 0.3s, right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 .floating-doc-bar.collapsed {
-  padding: 6px;
-  gap: 0;
-  border-radius: 28px;
+  padding: 6px 12px;
+  gap: 8px;
+  border-radius: 40px;
   min-height: 44px;
 }
 
-.floating-doc-bar.collapsed>*:not(#btn-doc-bar-toggle):not(.core-trigger-suite) {
-  display: none !important;
+/* Buttons inside Doc Bar */
+.floating-doc-bar button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.floating-doc-bar.collapsed .core-trigger-suite>*:not(#btn-sidebar-toggle) {
-  display: none !important;
+.floating-doc-bar button:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary);
+}
+
+.floating-doc-bar button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .floating-doc-bar #btn-doc-bar-toggle .icon-expand {
@@ -78,14 +96,16 @@
 }
 
 .doc-drag-handle {
-  width: 100%;
-  padding: 4px 0;
+  width: 18px;
+  height: 100%;
+  padding: 0 4px;
   display: flex;
+  align-items: center;
   justify-content: center;
   color: var(--text-muted);
   cursor: grab;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
+  border-right: 1px solid var(--border);
+  margin-right: 4px;
 }
 
 .doc-drag-handle:active {
@@ -94,9 +114,9 @@
 
 .zoom-box {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .zoom-btn-mini {
@@ -117,7 +137,7 @@
 .core-trigger-suite,
 .score-trigger-suite {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 8px;
 }
@@ -210,11 +230,11 @@
 
 
 .suite-divider {
-  width: 20px;
-  height: 1px;
+  width: 1px;
+  height: 20px;
   background: var(--border);
   opacity: 0.5;
-  margin: 4px 0;
+  margin: 0 4px;
 }
 
 .control-suite.collapsed .suite-divider {
