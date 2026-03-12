@@ -25,7 +25,7 @@ export class InitializationManager {
         app.layerList = document.getElementById('layer-shelf-list')
         app.jumpLine = document.getElementById('jump-line')
         app.activeToolsContainer = document.getElementById('active-tools-container')
-        app.sourceList = document.getElementById('source-list-container')
+        app.sourceList = document.getElementById('source-list')
 
         app.openPdfBtn = document.getElementById('open-pdf-btn')
         app.btnSettingsToggle = document.getElementById('btn-settings-toggle')
