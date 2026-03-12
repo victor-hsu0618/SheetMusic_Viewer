@@ -428,8 +428,20 @@ export class ViewerManager {
                 this._pageCache[pageNum] = page
             }
 
+            // Guard: wrapper may have been removed from DOM while awaiting
+            if (!wrapper.isConnected) return
+
             const canvas = wrapper.querySelector('.pdf-canvas')
-            const context = canvas.getContext('2d', { alpha: false }) // Optimization: disable alpha if not needed
+            if (!canvas) return
+
+            const context = canvas.getContext('2d', { alpha: false })
+            // iOS limits simultaneous canvas contexts; getContext returns null when exceeded
+            if (!context) {
+                console.warn(`[ViewerManager] No 2D context for page ${pageNum}, will retry`)
+                wrapper.dataset.rendering = 'false'
+                setTimeout(() => this.enqueueRender(pageNum, wrapper), 1000)
+                return
+            }
             const viewport = page.getViewport({ scale: this.scale })
 
             // Update viewport cache and wrapper size in case it differs from the first page
@@ -460,6 +472,8 @@ export class ViewerManager {
             wrapper.dataset.rendered = 'true'
             console.log(`[ViewerManager] Page ${pageNum} rendered lazily.`)
         } catch (err) {
+            // PDF.js throws a plain object when a render is cancelled (e.g. zoom change mid-flight)
+            if (err?.name === 'RenderingCancelledException') return
             console.error(`[ViewerManager] Lazy render failed for page ${pageNum}:`, err)
         } finally {
             wrapper.dataset.rendering = 'false'
