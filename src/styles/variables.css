@@ -1,9 +1,11 @@
 :root {
   --primary: #6366f1;
+  --primary-rgb: 99, 102, 241;
   --primary-hover: #4f46e5;
   --bg-app: #f8fafc;
   --bg-sidebar: #ffffff;
   --bg-card: #ffffff;
+  --bg-card-rgb: 255, 255, 255;
   --text-main: #1e293b;
   --text-muted: #64748b;
   --border: #e2e8f0;
@@ -23,6 +25,7 @@
   --bg-app: #0f172a;
   --bg-sidebar: #1e293b;
   --bg-card: #1e293b;
+  --bg-card-rgb: 30, 23, 59;
   --text-main: #f1f5f9;
   --text-muted: #94a3b8;
   --border: #334155;

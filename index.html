@@ -441,30 +441,43 @@
             <button class="segment-btn" data-tab="setlists">Setlists</button>
           </div>
         </div>
+        <div class="library-actions">
+          <button id="btn-library-select" class="btn btn-outline-sm">Edit</button>
+          <button id="btn-close-library" class="btn-close-overlay">✕</button>
+        </div>
+      </div>
+
+      <div class="library-toolbar">
         <div class="library-search-container">
-          <select id="library-sort-select" class="form-select mini-select library-sort-select" title="Sort By">
-            <option value="accessed">最近開啟</option>
-            <option value="imported">最近匯入</option>
-            <option value="title">標題</option>
-            <option value="composer">作曲家</option>
-          </select>
-          <div class="search-input-wrapper">
+          <div id="library-search-wrapper" class="search-input-wrapper">
             <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2.5">
               <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="21" cy="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input type="text" id="library-search-input" placeholder="搜尋樂譜標題或作曲家..." spellcheck="false" />
+            <input type="text" id="library-search-input" placeholder="Search title or composer..." spellcheck="false" />
             <button id="btn-library-search-clear" class="search-clear-btn hidden">✕</button>
           </div>
+          <select id="library-sort-select" class="form-select mini-select library-sort-select" title="Sort By">
+            <option value="accessed">Sort: Recent</option>
+            <option value="imported">Sort: Newest</option>
+            <option value="title">Sort: A-Z</option>
+            <option value="composer">Sort: Composer</option>
+          </select>
         </div>
-        <div class="library-actions">
-          <button id="btn-library-select" class="btn btn-outline-sm">Select</button>
-          <div id="library-import-btn" class="btn btn-primary btn-import-wrapper">
-            + Import PDF
-            <input type="file" class="native-file-input" accept="application/pdf" title="Import PDF File" />
+        <div class="library-stats-bar">
+          <span id="library-score-count">All Scores: 0</span>
+          
+          <!-- Unified Action Area -->
+          <div class="library-stats-actions">
+            <div id="score-actions-area" class="btn-import-wrapper btn-primary btn-mini-inline">
+              + Score
+              <input type="file" class="native-file-input" accept="application/pdf" title="Import PDF File" />
+            </div>
+            <div id="setlist-actions-area" class="hidden">
+              <button id="btn-create-setlist-mini" class="btn btn-primary btn-mini-inline">⊕ Setlist</button>
+            </div>
           </div>
-          <button id="btn-close-library" class="btn-close-overlay">✕</button>
         </div>
       </div>
       <div id="library-grid" class="library-grid">
@@ -568,9 +581,10 @@
             </div>
           </div>
 
-          <div class="flex-row-center gap-10 mt-10">
-            <button id="btn-drive-signin" class="btn btn-primary btn-mini-sidebar w-full">連接</button>
-            <button id="btn-drive-signout" class="btn btn-outline-sm btn-mini-sidebar w-full hidden">斷開</button>
+          <div class="flex-column gap-5 mt-10">
+            <button id="btn-drive-signin" class="btn btn-primary btn-full">連接 Google Drive</button>
+            <button id="btn-drive-pause" class="btn btn-outline-sm btn-full hidden">暫停自動同步</button>
+            <button id="btn-drive-signout" class="btn btn-ghost-mini btn-full hidden">完全斷開連線 (Sign Out)</button>
           </div>
 
           <div id="drive-sync-info" class="mt-15 hidden">
@@ -718,6 +732,12 @@
               <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
             重置雲端索引 (修復 Broken Sync)
+          </button>
+          <button id="btn-purge-cloud-data" class="btn btn-outline btn-full btn-smaller mb-10 text-danger">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+            清理雲端數據 (Purge Drive Data)
           </button>
           <button id="reset-system-btn" class="btn btn-outline btn-full text-danger btn-smaller">⚠️ Reset Full
             System</button>

@@ -33,6 +33,8 @@ export class DriveSyncManager {
         this.silentAttemptCount = 0;
         this.pushDebounceTimer = null;
         this.lastSyncRequest = 0;
+        this.isPaused = false; // New: allow pausing background loop
+        this.MANIFEST_NAME = 'cloud_manifest_v2.json';
     }
 
     /**
@@ -184,14 +186,22 @@ export class DriveSyncManager {
 
         if (badge) {
             if (this.isEnabled && this.accessToken) {
-                badge.textContent = '已連線';
-                badge.className = 'badge badge-success';
+                badge.textContent = this.isPaused ? '同步暫停' : '同步中';
+                badge.className = this.isPaused ? 'badge badge-warn' : 'badge badge-success';
                 if (infoBox) infoBox.classList.remove('hidden');
             } else {
                 badge.textContent = '已中斷';
                 badge.className = 'badge badge-error';
                 if (infoBox) infoBox.classList.add('hidden');
             }
+        }
+
+        const btnPause = document.getElementById('btn-drive-pause');
+        if (btnPause) {
+            btnPause.classList.toggle('hidden', !(this.isEnabled && this.accessToken));
+            btnPause.textContent = this.isPaused ? '恢復自動同步' : '暫停自動同步';
+            btnPause.classList.toggle('btn-outline-sm', !this.isPaused);
+            btnPause.classList.toggle('btn-primary-sm', this.isPaused);
         }
 
         if (btnSignIn && btnSignOut) {
@@ -429,6 +439,14 @@ export class DriveSyncManager {
         });
     }
 
+    togglePauseSync() {
+        this.isPaused = !this.isPaused;
+        const msg = this.isPaused ? '自動同步已暫停 (保持連線中)' : '自動同步已恢復';
+        this.addLog(msg, this.isPaused ? 'warn' : 'success');
+        if (this.app.showMessage) this.app.showMessage(msg, this.isPaused ? 'system' : 'success');
+        this.refreshUI();
+    }
+
     signOut() {
         this.addLog('已斷開 Google Drive 連線', 'warn');
         if (this.accessToken) {
@@ -463,8 +481,54 @@ export class DriveSyncManager {
         }
     }
 
+    /**
+     * Checks if the cloud has been reset by another device.
+     * If so, clears all local sync flags to prevent re-uploading old data.
+     */
+    async checkGlobalReset() {
+        const remoteResetTime = this.manifest?.globalResetTime;
+        if (!remoteResetTime) return;
+
+        const localAckReset = parseInt(localStorage.getItem('scoreflow_last_global_reset') || '0');
+        
+        if (remoteResetTime > localAckReset) {
+            console.warn('[DriveSync] Global Reset Detected! Clearing local sync state...');
+            this.addLog('偵測到雲端已由其他設備重置，正在重置本地同步標記...', 'warn');
+
+            // Reset all local sync flags
+            if (this.app.scoreManager?.registry) {
+                this.app.scoreManager.registry.forEach(s => {
+                    s.isSynced = false;
+                    delete s.cloudDataPulled;
+                });
+                await this.app.scoreManager.saveRegistry();
+            }
+
+            // Acknowledge the reset
+            localStorage.setItem('scoreflow_last_global_reset', remoteResetTime.toString());
+            
+            if (this.app.showMessage) {
+                this.app.showMessage('雲端數據已重置，本地同步已暫停。', 'info');
+            }
+            
+            // Auto-pause to let user decide what to do
+            this.isPaused = true;
+            this.refreshUI();
+            this.app.scoreManager?.render();
+        }
+    }
+
     async sync() {
-        if (!this.isEnabled || this.isSyncing) return;
+        if (!this.isEnabled || this.isSyncing || this.isPaused) {
+            if (this.isPaused) console.log('[DriveSync] Auto-sync is currently PAUSED.');
+            return;
+        }
+
+        // --- ADDED: Skip sync if no score is open (prevent idle resource waste) ---
+        if (!this.app.pdfFingerprint) {
+            // console.log('[DriveSync] No active score, skipping auto-sync.');
+            return;
+        }
 
         // Throttling: Don't run full sync more than once every 5 seconds even if requested
         const now = Date.now();
@@ -508,6 +572,9 @@ export class DriveSyncManager {
             } else {
                 await this.refreshManifest();
             }
+
+            // --- ADDED: Check for global reset marker ---
+            await this.checkGlobalReset();
 
             // 0. Sync Profile first (it's global)
             await this.syncProfile();
@@ -1472,7 +1539,7 @@ export class DriveSyncManager {
     async loadManifest() {
         if (!this.folderId) return;
         try {
-            const fileName = 'cloud_manifest.json';
+            const fileName = this.MANIFEST_NAME;
             const fileId = await this.findFileByName(fileName);
             if (fileId) {
                 this.manifestFileId = fileId;
@@ -1490,7 +1557,7 @@ export class DriveSyncManager {
         if (!this.folderId || this.isManifestSaving) return;
         this.isManifestSaving = true;
         try {
-            const fileName = 'cloud_manifest.json';
+            const fileName = this.MANIFEST_NAME;
             const content = this.manifest;
 
             // Double check fileId or existence before creating
@@ -1664,7 +1731,7 @@ export class DriveSyncManager {
 
             // Delete manifest file from Drive
             if (!this.manifestFileId) {
-                this.manifestFileId = await this.findFileByName('cloud_manifest.json');
+                this.manifestFileId = await this.findFileByName(this.MANIFEST_NAME);
             }
 
             if (this.manifestFileId) {
@@ -1697,6 +1764,99 @@ export class DriveSyncManager {
         } catch (err) {
             console.error('[DriveSync] Index reset failed:', err);
             this.addLog('索引重置失敗: ' + err.message, 'error');
+        }
+    }
+
+    /**
+     * PERMANENTLY DELETES all ScoreFlow files from Google Drive sync folder.
+     * This is the "nuclear option" to start cloud sync from scratch.
+     */
+    async purgeAllCloudData() {
+        console.log('[DriveSync] purgeAllCloudData triggered');
+        if (!this.isEnabled || !this.accessToken) {
+            alert('請先連接 Google Drive');
+            return;
+        }
+
+        const confirmed = await this.app.showDialog({
+            title: '永久清理雲端數據？',
+            message: '這將刪除雲端目錄中的所有 PDF、劃記及索引檔案。本地書庫不會受損。此操作不可撤銷，確定要重來嗎？',
+            type: 'confirm',
+            icon: '☢️'
+        });
+
+        if (!confirmed) return;
+
+        try {
+            // 0. STOP auto-sync immediately to prevent race conditions
+            this.stopAutoSync();
+            this.isSyncing = true; // Use guard to block any accidental sync() calls
+
+            this.addLog('正在啟動雲端全量清理 (同步已暫停)...', 'warn');
+            if (this.app.showMessage) this.app.showMessage('正在清理雲端數據，請稍候...', 'system');
+
+            // 1. Get ALL files in the folder (including old manifest)
+            const response = await this.gdriveFetch(
+                `https://www.googleapis.com/drive/v3/files?q='${this.folderId}' in parents and trashed=false&fields=files(id,name)`
+            );
+            const data = await response.json();
+
+            if (data.files && data.files.length > 0) {
+                this.addLog(`找到 ${data.files.length} 個檔案 (包括舊版索引)，正在逐一刪除...`, 'system');
+                
+                const files = data.files;
+                for (let i = 0; i < files.length; i += 5) {
+                    const batch = files.slice(i, i + 5);
+                    await Promise.all(batch.map(f => 
+                        this.gdriveFetch(`https://www.googleapis.com/drive/v3/files/${f.id}`, { method: 'DELETE' })
+                            .catch(e => console.warn(`Failed to delete ${f.name}:`, e))
+                    ));
+                }
+            }
+
+            // 2. Initialize NEW Generation Manifest (v2)
+            const resetTime = Date.now();
+            this.manifest = { 
+                globalResetTime: resetTime,
+                generation: 2,
+                description: "Cloud was purged. Switched to manifest v2."
+            };
+            
+            // This will create 'cloud_manifest_v2.json'
+            await this.saveManifest();
+            
+            // Mark locally when we last acknowledged a reset
+            localStorage.setItem('scoreflow_last_global_reset', resetTime.toString());
+
+            this.manifestFileId = await this.findFileByName(this.MANIFEST_NAME);
+            this.hasScanned = true; 
+            this.lastSyncTime = resetTime;
+            this.lastProfileSyncTime = 0;
+
+            // Reset sync flags in registry - CRITICAL to prevent re-upload
+            if (this.app.scoreManager?.registry) {
+                this.app.scoreManager.registry.forEach(s => {
+                    s.isSynced = false;
+                    delete s.cloudDataPulled;
+                });
+                await this.app.scoreManager.saveRegistry();
+            }
+
+            this.addLog('雲端數據已完全清空，本地同步標記已重置', 'success');
+            
+            this.isSyncing = false; // Release guard
+            
+            // Do NOT call startAutoSync() here. 
+            // Let the user manually trigger sync or wait for next refresh/toggle.
+            
+            if (this.app.showMessage) this.app.showMessage('雲端數據已清空。同步已暫停，您可以重新整理頁面後再開啟同步。', 'success');
+            
+            this.refreshUI();
+            this.app.scoreManager?.render();
+
+        } catch (err) {
+            console.error('[DriveSync] Purge failed:', err);
+            this.addLog('全量清理失敗: ' + err.message, 'error');
         }
     }
 
@@ -1838,11 +1998,11 @@ export class DriveSyncManager {
                 }
 
                 // Metadata Sync: If local is generic but manifest has a name
-                if (entry.name && (score.title === 'Unknown' || score.title.includes('score_buf_'))) {
+                const isGeneric = (score.title === 'Unknown' || score.title.startsWith('score_buf_') || score.title.startsWith('Recovered ('));
+                if (entry.name && entry.name !== 'Unknown' && isGeneric) {
                     await this.app.scoreManager.updateMetadata(score.fingerprint, {
                         title: entry.name
                     }, true); // fromSync: true
-                    // registryChanged will be handled by updateMetadata saving, but we mark it here too
                     registryChanged = true;
                 }
 

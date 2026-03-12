@@ -59,6 +59,11 @@ export class InitializationManager {
         app.btnRulerToggle = document.getElementById('view-ruler-toggle')
         app.btnFullscreen = document.getElementById('view-fullscreen')
         app.systemDialog = document.getElementById('system-dialog')
+        app.dialogTitle = document.getElementById('dialog-title')
+        app.dialogMessage = document.getElementById('dialog-message')
+        app.dialogIcon = document.getElementById('dialog-icon')
+        app.dialogActions = document.getElementById('dialog-actions')
+        app.dialogInput = document.getElementById('dialog-input')
         app.closeDialogBtn = document.getElementById('close-dialog')
 
         document.querySelectorAll('.zoom-btn-mini[title]').forEach(btn => {
@@ -169,8 +174,13 @@ export class InitializationManager {
 
         document.getElementById('btn-drive-signin')?.addEventListener('click', (e) => { e.preventDefault(); app.driveSyncManager.signIn() })
         document.getElementById('btn-drive-signout')?.addEventListener('click', (e) => { e.preventDefault(); app.driveSyncManager.signOut() })
+        document.getElementById('btn-drive-pause')?.addEventListener('click', (e) => { e.preventDefault(); app.togglePauseSync() })
         document.getElementById('btn-rebuild-library')?.addEventListener('click', () => app.scoreManager.rebuildLibrary())
         document.getElementById('btn-reset-cloud-index')?.addEventListener('click', () => app.driveSyncManager.resetCloudIndex())
+        document.getElementById('btn-purge-cloud-data')?.addEventListener('click', () => {
+            console.log('[InitializationManager] Purge button clicked');
+            app.purgeAllCloudData();
+        })
         document.getElementById('btn-drive-force-push')?.addEventListener('click', () => app.driveSyncManager.forcePushAll())
     }
 }

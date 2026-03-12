@@ -173,11 +173,35 @@ class ScoreFlow {
   }
 
   async resetToSystemDefault() {
-    const confirmed = await this.showDialog({ title: 'System Reset', message: 'Delete all data?', type: 'confirm', icon: '⚠️' })
+    const confirmed = await this.showDialog({ 
+      title: '⚠️ 徹底重置本地系統', 
+      message: '這將永久刪除本地所有的 PDF 樂譜、劃記、書籤及個人設定。此操作不可撤銷。確定要清空本地資料嗎？', 
+      type: 'confirm', 
+      icon: '☢️' 
+    })
+    
     if (confirmed) {
+      // 1. Stop all active background processes
+      this.driveSyncManager?.stopAutoSync()
+      
+      // 2. Clear all storage types
       localStorage.clear()
-      try { await db.clear() } catch (err) { window.indexedDB?.deleteDatabase('ScoreFlowStorage') }
-      window.location.reload()
+      sessionStorage.clear()
+      
+      try { 
+        await db.clear() 
+        console.log('[System] IndexedDB cleared successfully.')
+      } catch (err) { 
+        console.warn('[System] db.clear failed, attempting deleteDatabase:', err)
+        window.indexedDB?.deleteDatabase('ScoreFlowStorage') 
+      }
+      
+      this.showMessage('本地系統已重置，正在重新載入...', 'success')
+      
+      // 3. Force reload ignoring cache
+      setTimeout(() => {
+        window.location.href = window.location.origin + window.location.pathname + '?reset=' + Date.now()
+      }, 1000)
     }
   }
 

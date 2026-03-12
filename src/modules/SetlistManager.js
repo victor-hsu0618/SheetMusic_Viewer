@@ -31,6 +31,7 @@ export class SetlistManager {
     }
 
     async createSetlist(title) {
+        console.log('[SetlistManager] createSetlist:', title);
         const newList = {
             id: 'setlist_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             title: title || '未命名歌單 (Untitled)',
@@ -40,6 +41,7 @@ export class SetlistManager {
         }
         this.setlists.push(newList)
         await this.save()
+        console.log('[SetlistManager] Setlist created, count:', this.setlists.length);
         return newList
     }
 
@@ -142,22 +144,26 @@ export class SetlistManager {
     }
 
     render() {
-        if (!this.grid) return
-        this.grid.innerHTML = ''
+        console.log('[SetlistManager] Rendering, count:', this.setlists.length);
+        if (!this.grid) {
+            console.error('[SetlistManager] Grid not found during render');
+            return;
+        }
+        this.grid.innerHTML = '';
 
-        if (this.setlists.length === 0) {
-            this.grid.innerHTML = `
-                <div class="library-empty">
-                    <div style="margin-bottom:15px; font-size: 2rem;">🎵</div>
-                    <div>No Setlists found.</div>
-                    <button class="btn btn-primary" id="btn-create-first-setlist" style="margin-top: 15px;">Create Custom Setlist</button>
-                </div>
-            `
-            const btn = document.getElementById('btn-create-first-setlist')
-            if (btn) btn.onclick = async () => {
+        // Update Stats Label & Actions
+        const countEl = document.getElementById('library-score-count');
+        const actionsArea = document.getElementById('setlist-actions-area');
+        const btnCreateMini = document.getElementById('btn-create-setlist-mini');
+
+        if (countEl) countEl.textContent = `All Setlists (${this.setlists.length})`;
+        if (actionsArea) actionsArea.classList.remove('hidden');
+
+        if (btnCreateMini && !btnCreateMini.onclick) {
+            btnCreateMini.onclick = async () => {
                 const title = await this.app.showDialog({
                     title: 'New Setlist',
-                    message: 'Enter a name for your new Setlist (e.g., 2026 Recital):',
+                    message: 'Enter a name for your new Setlist:',
                     type: 'input',
                     icon: '🎵',
                     placeholder: 'Setlist Name'
@@ -167,30 +173,17 @@ export class SetlistManager {
                     this.render()
                 }
             }
-            return
         }
 
-        // Add "Create New" Card
-        const createCard = document.createElement('div')
-        createCard.className = 'score-card'
-        createCard.style.justifyContent = 'center'
-        createCard.style.borderStyle = 'dashed'
-        createCard.style.opacity = '0.7'
-        createCard.innerHTML = `<div style="font-size:16px; font-weight: 600;">⊕ Create New Setlist</div>`
-        createCard.onclick = async () => {
-            const title = await this.app.showDialog({
-                title: 'New Setlist',
-                message: 'Enter a name for your new Setlist:',
-                type: 'input',
-                icon: '🎵',
-                placeholder: 'Setlist Name'
-            })
-            if (title) {
-                await this.createSetlist(title)
-                this.render()
-            }
+        if (this.setlists.length === 0) {
+            this.grid.innerHTML = `
+                <div class="library-empty">
+                    <div style="margin-bottom:15px; font-size: 2rem;">🎵</div>
+                    <div>No Setlists found.</div>
+                </div>
+            `
+            return
         }
-        this.grid.appendChild(createCard)
 
         // Render existing setlists
         this.setlists.forEach(list => {
