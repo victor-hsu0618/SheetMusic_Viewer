@@ -399,6 +399,7 @@ export class DriveAuthManager {
         localStorage.setItem('scoreflow_drive_sync_enabled', 'false');
         localStorage.removeItem('scoreflow_drive_access_token');
         localStorage.removeItem('scoreflow_drive_token_expiry');
+        localStorage.removeItem('scoreflow_drive_folder_ids');
         this.refreshUI();
     }
 

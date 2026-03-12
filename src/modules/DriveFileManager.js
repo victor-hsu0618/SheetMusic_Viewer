@@ -50,27 +50,63 @@ export class DriveFileManager {
 
     async _doFindOrCreateSyncFolder() {
         const folderName = 'ScoreFlow_Sync';
+
+        // Fast path: restore folder IDs cached from last session
+        const cached = this._loadCachedFolderIds();
+        if (cached) {
+            this.sync.pdfsFolderId = cached.pdfs;
+            this.sync.annotationsFolderId = cached.annotations;
+            console.log('[DriveSync] Restored folder IDs from cache.');
+            return cached.root;
+        }
+
         const response = await this.sync.gdriveFetch(
             `https://www.googleapis.com/drive/v3/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`
         );
         const data = await response.json();
+
+        let rootId;
         if (data.files && data.files.length > 0) {
-            const rootId = data.files[0].id;
-            this.sync.pdfsFolderId = await this.findOrCreateSubfolder('pdfs', rootId);
-            this.sync.annotationsFolderId = await this.findOrCreateSubfolder('annotations', rootId);
-            return rootId;
+            rootId = data.files[0].id;
+        } else {
+            const createResp = await this.sync.gdriveFetch('https://www.googleapis.com/drive/v3/files', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: folderName, mimeType: 'application/vnd.google-apps.folder' })
+            });
+            const folder = await createResp.json();
+            rootId = folder.id;
         }
 
-        const createResp = await this.sync.gdriveFetch('https://www.googleapis.com/drive/v3/files', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: folderName, mimeType: 'application/vnd.google-apps.folder' })
-        });
-        const folder = await createResp.json();
-        const rootId = folder.id;
-        this.sync.pdfsFolderId = await this.findOrCreateSubfolder('pdfs', rootId);
-        this.sync.annotationsFolderId = await this.findOrCreateSubfolder('annotations', rootId);
+        // Resolve subfolders in parallel
+        const [pdfsFolderId, annotationsFolderId] = await Promise.all([
+            this.findOrCreateSubfolder('pdfs', rootId),
+            this.findOrCreateSubfolder('annotations', rootId)
+        ]);
+        this.sync.pdfsFolderId = pdfsFolderId;
+        this.sync.annotationsFolderId = annotationsFolderId;
+
+        this._saveCachedFolderIds(rootId, pdfsFolderId, annotationsFolderId);
         return rootId;
+    }
+
+    _loadCachedFolderIds() {
+        try {
+            const raw = localStorage.getItem('scoreflow_drive_folder_ids');
+            if (!raw) return null;
+            const { root, pdfs, annotations, savedAt } = JSON.parse(raw);
+            // Cache valid for 7 days — folders almost never change
+            if (root && pdfs && annotations && (Date.now() - savedAt) < 7 * 24 * 3600 * 1000) {
+                return { root, pdfs, annotations };
+            }
+        } catch (e) { /* ignore */ }
+        return null;
+    }
+
+    _saveCachedFolderIds(root, pdfs, annotations) {
+        try {
+            localStorage.setItem('scoreflow_drive_folder_ids', JSON.stringify({ root, pdfs, annotations, savedAt: Date.now() }));
+        } catch (e) { /* ignore */ }
     }
 
     /**
