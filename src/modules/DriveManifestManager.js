@@ -108,10 +108,15 @@ export class DriveManifestManager {
     async scanRemoteSyncFiles() {
         if (!this.sync.folderId || !this.sync.app.scoreManager) return;
 
+        const scanStart = Date.now();
+        console.log(`[DriveSync] 🗂 scanRemoteSyncFiles() started at ${new Date().toLocaleTimeString()}`);
+
         try {
             this.sync.addLog('正在同步雲端清單...', 'system');
 
+            const t1 = Date.now();
             let hasManifest = await this.loadManifest();
+            console.log(`[DriveSync] 🗂 loadManifest: ${Date.now() - t1}ms, found=${hasManifest}`);
             if (!this.sync.manifest) this.sync.manifest = {};
 
             if (!hasManifest) {
@@ -130,40 +135,41 @@ export class DriveManifestManager {
             this.sync.cloudStats.totalPDFs = pdfCount;
             this.sync.updateCloudStatsUI();
 
-            // Backfill filename/pdfFilename for existing entries that predate this field
-            let manifestDirty = false;
+            // Backfill filename/pdfFilename for existing entries that predate this field.
+            // Run ALL lookups in parallel to avoid O(N) sequential API calls.
+            const backfillTasks = [];
             for (const [fp, entry] of Object.entries(this.sync.manifest)) {
                 if (entry.deleted) continue;
                 if (entry.syncId && !entry.filename) {
-                    try {
-                        const hash = this.sync.shortHash(fp);
-                        const annotParent = this.sync.annotationsFolderId || this.sync.folderId;
-                        const resp = await this.sync.gdriveFetch(
+                    const hash = this.sync.shortHash(fp);
+                    const annotParent = this.sync.annotationsFolderId || this.sync.folderId;
+                    backfillTasks.push(
+                        this.sync.gdriveFetch(
                             `https://www.googleapis.com/drive/v3/files?q=name contains '${hash}' and '${annotParent}' in parents and trashed=false&fields=files(id,name)&orderBy=createdTime asc`
-                        );
-                        const data = await resp.json();
-                        if (data.files?.length > 0) {
-                            entry.filename = data.files[0].name;
-                            manifestDirty = true;
-                        }
-                    } catch (_) {}
+                        ).then(r => r.json()).then(data => {
+                            if (data.files?.length > 0) entry.filename = data.files[0].name;
+                        }).catch(() => {})
+                    );
                 }
                 if (entry.pdfId && !entry.pdfFilename) {
-                    try {
-                        const hash = this.sync.shortHash(fp);
-                        const pdfParent = this.sync.pdfsFolderId || this.sync.folderId;
-                        const resp = await this.sync.gdriveFetch(
+                    const hash = this.sync.shortHash(fp);
+                    const pdfParent = this.sync.pdfsFolderId || this.sync.folderId;
+                    backfillTasks.push(
+                        this.sync.gdriveFetch(
                             `https://www.googleapis.com/drive/v3/files?q=name contains '${hash}' and '${pdfParent}' in parents and trashed=false&fields=files(id,name)&orderBy=createdTime asc`
-                        );
-                        const data = await resp.json();
-                        if (data.files?.length > 0) {
-                            entry.pdfFilename = data.files[0].name;
-                            manifestDirty = true;
-                        }
-                    } catch (_) {}
+                        ).then(r => r.json()).then(data => {
+                            if (data.files?.length > 0) entry.pdfFilename = data.files[0].name;
+                        }).catch(() => {})
+                    );
                 }
             }
-            if (manifestDirty) await this.saveManifest();
+            if (backfillTasks.length > 0) {
+                console.log(`[DriveSync] 🔍 Backfilling ${backfillTasks.length} filename(s) in parallel...`);
+                const bfStart = Date.now();
+                await Promise.all(backfillTasks);
+                console.log(`[DriveSync] 🔍 Backfill done in ${Date.now() - bfStart}ms`);
+                await this.saveManifest();
+            }
 
             let registryChanged = false;
             let foundCount = 0;
@@ -246,6 +252,7 @@ export class DriveManifestManager {
                 this.sync.app.scoreManager.render();
             }
 
+            console.log(`[DriveSync] 🗂 scanRemoteSyncFiles() done in ${Date.now() - scanStart}ms — ${syncCount} sync files, ${pdfCount} PDFs, ${newCloudOnlyCount} new cloud-only`);
             this.sync.addLog(`掃描完成: 索引中共有 ${syncCount} 份備份`, 'success');
 
         } catch (err) {

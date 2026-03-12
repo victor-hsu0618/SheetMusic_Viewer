@@ -50,25 +50,31 @@ export class DriveFileManager {
 
     async _doFindOrCreateSyncFolder() {
         const folderName = 'ScoreFlow_Sync';
+        const t0 = Date.now();
 
         // Fast path: restore folder IDs cached from last session
         const cached = this._loadCachedFolderIds();
         if (cached) {
             this.sync.pdfsFolderId = cached.pdfs;
             this.sync.annotationsFolderId = cached.annotations;
-            console.log('[DriveSync] Restored folder IDs from cache.');
+            console.log(`[DriveSync] 📁 Folder IDs restored from cache (${Date.now() - t0}ms)`);
             return cached.root;
         }
 
+        console.log('[DriveSync] 📁 Searching for ScoreFlow_Sync root folder...');
+        const t1 = Date.now();
         const response = await this.sync.gdriveFetch(
             `https://www.googleapis.com/drive/v3/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`
         );
         const data = await response.json();
+        console.log(`[DriveSync] 📁 Root folder search: ${Date.now() - t1}ms, found=${data.files?.length > 0}`);
 
         let rootId;
         if (data.files && data.files.length > 0) {
             rootId = data.files[0].id;
         } else {
+            console.log('[DriveSync] 📁 Creating ScoreFlow_Sync root folder...');
+            const t2 = Date.now();
             const createResp = await this.sync.gdriveFetch('https://www.googleapis.com/drive/v3/files', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -76,17 +82,22 @@ export class DriveFileManager {
             });
             const folder = await createResp.json();
             rootId = folder.id;
+            console.log(`[DriveSync] 📁 Root folder created in ${Date.now() - t2}ms`);
         }
 
         // Resolve subfolders in parallel
+        console.log('[DriveSync] 📁 Resolving pdfs + annotations subfolders in parallel...');
+        const t3 = Date.now();
         const [pdfsFolderId, annotationsFolderId] = await Promise.all([
             this.findOrCreateSubfolder('pdfs', rootId),
             this.findOrCreateSubfolder('annotations', rootId)
         ]);
+        console.log(`[DriveSync] 📁 Subfolders ready in ${Date.now() - t3}ms`);
         this.sync.pdfsFolderId = pdfsFolderId;
         this.sync.annotationsFolderId = annotationsFolderId;
 
         this._saveCachedFolderIds(rootId, pdfsFolderId, annotationsFolderId);
+        console.log(`[DriveSync] 📁 Total folder setup: ${Date.now() - t0}ms`);
         return rootId;
     }
 

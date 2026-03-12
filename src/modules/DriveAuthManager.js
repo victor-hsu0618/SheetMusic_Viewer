@@ -46,6 +46,7 @@ export class DriveAuthManager {
                 }
 
                 // Success!
+                const tokenMs = Date.now() - (this.sync._authStartTime || Date.now());
                 this.sync.silentAttemptCount = 0;
                 this.sync.accessToken = response.access_token;
                 this.sync.isEnabled = true;
@@ -55,22 +56,28 @@ export class DriveAuthManager {
                     const expiry = Date.now() + (response.expires_in * 1000);
                     localStorage.setItem('scoreflow_drive_access_token', response.access_token);
                     localStorage.setItem('scoreflow_drive_token_expiry', expiry.toString());
+                    console.log(`[DriveSync] ✅ Token acquired in ${tokenMs}ms, expires in ${Math.round(response.expires_in / 60)} min`);
+                } else {
+                    console.log(`[DriveSync] ✅ Token acquired in ${tokenMs}ms`);
                 }
 
                 if (response.login_hint) {
                     localStorage.setItem('scoreflow_drive_user_hint', response.login_hint);
                 }
 
-                console.log('[DriveSync] Access token acquired.');
                 this.addLog('已取得存取權限', 'success');
 
                 try {
+                    console.log('[DriveSync] 📁 Setting up sync folders...');
+                    const folderStart = Date.now();
                     this.sync.folderId = await this.sync.findOrCreateSyncFolder();
+                    console.log(`[DriveSync] 📁 Folders ready in ${Date.now() - folderStart}ms — root:${this.sync.folderId?.slice(-6)} pdfs:${this.sync.pdfsFolderId?.slice(-6)} annot:${this.sync.annotationsFolderId?.slice(-6)}`);
                 } catch (err) {
-                    console.error('[DriveSync] Init check failed:', err);
+                    console.error('[DriveSync] ❌ Folder setup failed:', err);
                 }
 
                 this.refreshUI();
+                console.log('[DriveSync] 🔄 Starting auto-sync...');
                 this.startAutoSync();
             },
         });
@@ -362,6 +369,8 @@ export class DriveAuthManager {
                     hint: localStorage.getItem('scoreflow_drive_user_hint') || ''
                 } : { prompt: 'select_account' };
 
+                this.sync._authStartTime = Date.now();
+                console.log(`[DriveSync] 🔑 requestAccessToken called (${isSilent ? 'silent' : 'interactive'}) at ${new Date().toLocaleTimeString()}`);
                 this.sync.tokenClient.requestAccessToken(options);
             } catch (err) {
                 this.sync.tokenClient.callback = originalCallback;
