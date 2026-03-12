@@ -245,7 +245,7 @@ export class ScoreDetailUIManager {
             // Resolve Display Name: 1. From Manifest, 2. From Registry FileName, 3. From active score name
             let defaultName = entry?.name;
             if (!defaultName) {
-                const fileName = regScore?.fileName || (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName : '');
+                const fileName = regScore?.fileName || (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName : '') || '';
                 defaultName = fileName.replace(/\.pdf$/i, '');
             }
 
