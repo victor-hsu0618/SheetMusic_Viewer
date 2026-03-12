@@ -26,7 +26,7 @@
 
 .floating-stamp-bar.expanded {
   display: flex;
-  z-index: 2500;
+  z-index: 12000; /* Stay above Doc Bar (3000) and Shelf Panels (3100/10000) */
 }
 
 .palette-header {

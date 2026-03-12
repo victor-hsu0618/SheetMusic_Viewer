@@ -12,8 +12,8 @@
     border: 1px solid var(--border);
     border-radius: 24px 24px 0 0; /* Shelf-style: top rounded only */
     padding: 16px 20px;
-    z-index: 3100;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+    z-index: 10000; /* Elevated stack - above Doc Bar (3000) */
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -33,9 +33,8 @@
 
 /* Specific Refinement for Score Detail (Stacked Shelf) */
 #score-detail-panel {
-    width: 80%;
-    min-width: 400px;
-    max-width: 1200px;
+    width: 600px; /* PC Refinement: Elegant narrower centered shelf */
+    max-width: 95vw;
     bottom: 76px;
     top: auto;
     transform: translate(-50%, 100%);

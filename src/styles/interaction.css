@@ -500,7 +500,7 @@
 .nav-zone-divider {
   position: fixed;
   pointer-events: none;
-  z-index: 9998;
+  z-index: 10001; /* Stay just above Shelf Panels (10000) */
   background: rgba(99, 102, 241, 0.05);
   transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;

@@ -1,23 +1,17 @@
 /* Global Settings Sub-Panel (Calculator Style) */
 #settings-panel {
-    position: fixed;
-    top: 0;
-    left: 0;
-    transform: none;
-    width: 320px;
-    /* Standardize width */
+    /* Inherit base properties from .jump-sub-panel.calculator-style */
+    width: 400px; /* PC Refinement: Elegant narrower centered shelf */
     max-height: 80vh;
     display: flex;
     flex-direction: column;
-    z-index: 6000;
-    /* Ensure it's above other things */
+    z-index: 10000;
 }
 
 #settings-panel.active {
     opacity: 1;
     pointer-events: auto;
-    transform: none;
-    /* Keep none to avoid centering conflict */
+    transform: translate(-50%, 0);
 }
 
 .settings-scroll-area {
