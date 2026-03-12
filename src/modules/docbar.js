@@ -5,117 +5,59 @@ export class DocBarManager {
 
     init() {
         this.app.docBar = document.getElementById('floating-doc-bar')
-        this.app.docBarToggleBtn = document.getElementById('btn-doc-bar-toggle')
-
         this.app.zoomLevelDisplay = document.getElementById('zoom-level')
 
+        // Restore hidden state
+        if (localStorage.getItem('scoreflow_doc_bar_hidden') === 'true') {
+            this.app.docBar?.classList.add('doc-hidden')
+        }
 
-        this.app.zoomLevelDisplay = document.getElementById('zoom-level')
-
-        this.initDraggable()
-        this.initEventListeners()
+        this.initGrip()
+        this.initGripPositionSetting()
     }
 
-    initEventListeners() {
-        // Shared listeners for mode eraser and quick open are moved to InitializationManager
+    applyGripPosition(pos) {
+        const el = this.app.docBar
+        if (!el) return
+        el.classList.toggle('grip-right', pos === 'right')
+        localStorage.setItem('scoreflow_grip_position', pos)
+        document.querySelectorAll('[data-grip]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.grip === pos)
+        })
+    }
+
+    initGripPositionSetting() {
+        const saved = localStorage.getItem('scoreflow_grip_position') || 'left'
+        this.applyGripPosition(saved)
+        document.querySelectorAll('[data-grip]').forEach(btn => {
+            btn.addEventListener('click', () => this.applyGripPosition(btn.dataset.grip))
+        })
     }
 
     toggleDocBar() {
         if (!this.app.docBar) return
-        if (this.app.docBar._wasDragging) return
         this.app.docBar.classList.toggle('collapsed')
         localStorage.setItem('scoreflow_doc_bar_collapsed', this.app.docBar.classList.contains('collapsed'))
     }
 
-    initDraggable() {
-        let isDragging = false
-        let startX, startY, initialX, initialY, xOffset = 0, yOffset = 0
-        let dragDistance = 0
-        let positionInitialized = false
+    toggleDocBarHidden(force = null) {
         const el = this.app.docBar
         if (!el) return
+        const hidden = force !== null ? force : !el.classList.contains('doc-hidden')
+        el.classList.toggle('doc-hidden', hidden)
+        localStorage.setItem('scoreflow_doc_bar_hidden', hidden)
+    }
 
-        const dragStart = (e) => {
-            // Disable dragging on mobile to keep it centered
-            if (window.innerWidth <= 600) return;
+    // Grip: tap → toggle collapsed/expanded
+    // Hide button (⌄): tap → hide doc bar
+    // Show: long press in bottom 15% of viewer (handled in InputManager)
+    initGrip() {
+        const el = this.app.docBar
+        if (!el) return
+        const handle = el.querySelector('.doc-drag-handle')
+        if (handle) handle.addEventListener('click', () => this.toggleDocBar())
 
-            // In expanded mode, only drag-handle works. In collapsed mode, the whole bar (the button) works.
-            const isCollapsed = el.classList.contains('collapsed')
-            if (!isCollapsed && !e.target.closest(".doc-drag-handle")) return
-
-            // First drag: compensate for CSS `left: 50%; translateX(-50%)` centering so the
-            // element doesn't jump right by half its width when translate3d(0,0,0) replaces
-            // the CSS translateX(-50%).
-            if (!positionInitialized) {
-                xOffset = -el.offsetWidth / 2
-                positionInitialized = true
-            }
-
-            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
-            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
-
-            startX = clientX
-            startY = clientY
-            initialX = clientX - xOffset
-            initialY = clientY - yOffset
-            isDragging = true
-            dragDistance = 0
-        }
-
-        const drag = (e) => {
-            if (isDragging) {
-                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
-                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
-
-                const dx = clientX - startX
-                const dy = clientY - startY
-                dragDistance = Math.sqrt(dx * dx + dy * dy)
-
-                currentX = clientX - initialX
-                currentY = clientY - initialY
-                xOffset = currentX
-                yOffset = currentY
-                el.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`
-            }
-        }
-
-        const dragEnd = () => {
-            initialX = currentX
-            initialY = currentY
-            isDragging = false
-            // If we moved more than 5px, consider it a drag and prevent the next click
-            if (dragDistance > 5) {
-                el._wasDragging = true
-                setTimeout(() => { el._wasDragging = false }, 50)
-            }
-        }
-
-        let currentX, currentY
-
-        el.addEventListener("mousedown", (e) => {
-            e.stopPropagation()
-            dragStart(e)
-        })
-        document.addEventListener("mousemove", drag)
-        document.addEventListener("mouseup", dragEnd)
-
-        el.addEventListener("touchstart", (e) => {
-            e.stopPropagation() // Prevent triggering viewer gestures
-            const isCollapsed = el.classList.contains('collapsed')
-            if (!isCollapsed && !e.target.closest(".doc-drag-handle")) return
-            dragStart(e)
-        }, { passive: false })
-
-        document.addEventListener("touchmove", (e) => {
-            if (isDragging) {
-                e.preventDefault()
-                drag(e)
-            }
-        }, { passive: false })
-
-        el.addEventListener("touchend", (e) => {
-            e.stopPropagation()
-            dragEnd()
-        })
+        document.getElementById('btn-hide-docbar')
+            ?.addEventListener('click', () => this.toggleDocBarHidden(true))
     }
 }

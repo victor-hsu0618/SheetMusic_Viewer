@@ -136,21 +136,37 @@ export class InputManager {
         viewer.addEventListener('touchstart', (e) => {
             if (this.isEventInUI(e) || e.touches.length !== 1) return
 
+            // Ignore synthetic touchstart fired by iOS when pointer-events changes mid-touch
+            const msSinceLongPress = this.lastLongPressAt ? Date.now() - this.lastLongPressAt : Infinity
+            if (this.isLongPressActive || msSinceLongPress < 600) return
+
             const startX = e.touches[0].clientX
             const startY = e.touches[0].clientY
+            this._lpStartX = startX
+            this._lpStartY = startY
 
             this.isLongPressActive = false
             if (this.longPressTimer) clearTimeout(this.longPressTimer)
 
             this.longPressTimer = setTimeout(() => {
                 this.isLongPressActive = true
+                this.lastLongPressAt = Date.now()
                 if (navigator.vibrate) navigator.vibrate(12)
-                this.app.toolManager.toggleStampPalette(startX, startY)
+                // Bottom 15% of screen → toggle doc bar hidden/visible
+                if (startY > window.innerHeight * 0.85) {
+                    this.app.docBarManager?.toggleDocBarHidden()
+                } else {
+                    this.app.toolManager.toggleStampPalette(startX, startY)
+                }
             }, 500)
         }, { passive: true })
 
         viewer.addEventListener('touchmove', (e) => {
-            if (this.longPressTimer) {
+            if (!this.longPressTimer) return
+            const touch = e.touches[0]
+            const dx = touch.clientX - this._lpStartX
+            const dy = touch.clientY - this._lpStartY
+            if (Math.sqrt(dx * dx + dy * dy) > 10) {
                 clearTimeout(this.longPressTimer)
                 this.longPressTimer = null
             }
@@ -185,8 +201,12 @@ export class InputManager {
             if (this.mouseLongPressTimer) clearTimeout(this.mouseLongPressTimer)
             this.mouseLongPressTimer = setTimeout(() => {
                 this.isMouseLongPressActive = true
-                console.log('[InputManager] Mouse Long Press Triggered')
-                this.app.toolManager.toggleStampPalette(e.clientX, e.clientY)
+                // Bottom 15% of screen → toggle doc bar hidden/visible
+                if (e.clientY > window.innerHeight * 0.85) {
+                    this.app.docBarManager?.toggleDocBarHidden()
+                } else {
+                    this.app.toolManager.toggleStampPalette(e.clientX, e.clientY)
+                }
             }, 500)
         })
 

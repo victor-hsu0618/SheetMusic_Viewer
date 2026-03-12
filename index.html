@@ -47,9 +47,6 @@
         zoom: 1.25;
       }
 
-      .floating-doc-bar.collapsed {
-        zoom: 1.4;
-      }
 
       #zoom-level {
         font-size: 10px !important;
@@ -109,7 +106,8 @@
     <!-- Floating Document Control Bar (Unified Control Hub - Moved outside for stable layering) -->
     <div id="floating-doc-bar" class="floating-doc-bar collapsed">
       <div class="doc-drag-handle">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+        <!-- Expanded state: 6-dot grip -->
+        <svg class="grip-icon-expanded" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="5" cy="9" r="1.5" />
           <circle cx="12" cy="9" r="1.5" />
           <circle cx="19" cy="9" r="1.5" />
@@ -117,6 +115,53 @@
           <circle cx="12" cy="15" r="1.5" />
           <circle cx="19" cy="15" r="1.5" />
         </svg>
+        <!-- Collapsed state: hamburger (tap to expand) -->
+        <svg class="grip-icon-collapsed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </div>
+
+      <button id="btn-hide-docbar" class="grip-hide-btn" title="Hide toolbar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="5 7 12 13 19 7" />
+          <polyline points="5 13 12 19 19 13" />
+        </svg>
+      </button>
+
+      <!-- Page Nav: always adjacent to grip -->
+      <div class="quick-nav-btns">
+        <button id="quick-page-up" class="zoom-btn-mini" title="Previous Page">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="18 15 12 9 6 15" />
+          </svg>
+        </button>
+        <button id="quick-page-down" class="zoom-btn-mini" title="Next Page">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Quick Tool Suite: visible only when collapsed -->
+      <div class="quick-tool-suite">
+        <button id="quick-fit-width" class="zoom-btn-mini" title="Fit to Width (W)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12H3M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4" />
+          </svg>
+        </button>
+        <button id="quick-fit-height" class="zoom-btn-mini" title="Fit to Height (F)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4" />
+          </svg>
+        </button>
+        <div class="suite-divider"></div>
+        <button id="quick-open-library" class="zoom-btn-mini" title="Score Library (O)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
       </div>
 
       <!-- Unified Core Triggers: Settings & Score Tools -->
@@ -151,6 +196,8 @@
         </button>
       </div>
 
+      <div class="suite-divider"></div>
+
       <!-- Navigation & Jump -->
       <button id="btn-jump-panel-toggle" class="zoom-btn-mini navigation-btn" title="Go To (G)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -180,21 +227,10 @@
         </svg>
       </button>
 
-      <div class="doc-bar-divider"></div>
-
-      <button id="btn-doc-bar-toggle" class="zoom-btn-mini toggle-bar-btn" title="Dock Settings (B)">
-        <svg class="icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-        <svg class="icon-collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2">
-          <polyline points="13 17 18 12 13 7" />
-          <polyline points="6 17 11 12 6 7" />
-        </svg>
-      </button>
-
     </div>
+
+    <!-- Recall hint: visible only when doc bar is hidden -->
+    <div class="doc-bar-recall-hint">Long press bottom area to recall toolbar</div>
 
     <!-- View Control Sub-Panel (Modular Inspector - Calculator Aesthetic) -->
     <div id="view-control-panel" class="jump-sub-panel calculator-style">
@@ -658,6 +694,14 @@
                 <input type="checkbox" id="settings-show-nav-dividers">
                 <span class="slider round"></span>
               </label>
+            </div>
+          </div>
+
+          <div class="setting-item mb-15">
+            <label class="setting-label">Toolbar Grip Position</label>
+            <div class="segmented-control mt-5">
+              <button class="segment-btn" data-grip="left">Left</button>
+              <button class="segment-btn" data-grip="right">Right</button>
             </div>
           </div>
 

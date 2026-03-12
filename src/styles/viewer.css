@@ -40,21 +40,120 @@
   transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-.floating-doc-bar.collapsed {
-  padding: 6px 10px;
-  gap: 4px;
-  border-radius: 40px;
-  min-height: 44px;
+/* Fully hidden — toggled by double-click/double-tap in bottom 15% of screen */
+.floating-doc-bar.doc-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(calc(100% + 28px));
 }
 
-/* Logic to hide elements when collapsed in horizontal mode */
-.floating-doc-bar.collapsed > *:not(#btn-doc-bar-toggle):not(.core-trigger-suite):not(.doc-drag-handle) {
+/* Recall hint: only shown when doc bar is hidden */
+.doc-bar-recall-hint {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2999;
+  white-space: nowrap;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.floating-doc-bar.doc-hidden ~ .doc-bar-recall-hint {
+  animation: recallHintFade 5.5s ease forwards;
+}
+
+/* Suppress hint on welcome screen */
+#app-root:has(.welcome-screen:not(.hidden)) .doc-bar-recall-hint {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+@keyframes recallHintFade {
+  0%   { opacity: 0; }
+  7%   { opacity: 1; }
+  82%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.floating-doc-bar.collapsed {
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  /* Cancel the coarse-pointer zoom that was designed for iPad */
+  .floating-doc-bar,
+  .floating-doc-bar.collapsed {
+    zoom: 1.1;
+    padding: 5px 8px;
+    gap: 4px;
+  }
+
+  .floating-doc-bar button {
+    width: 34px;
+    height: 34px;
+  }
+
+  .floating-doc-bar button svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .zoom-btn-mini {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .zoom-level-display {
+    font-size: 0.75rem;
+    min-width: 36px;
+  }
+}
+
+/* When collapsed: show grip + hide button + quick-nav-btns + quick tool suite */
+.floating-doc-bar.collapsed > *:not(.quick-tool-suite):not(.quick-nav-btns):not(.doc-drag-handle):not(.grip-hide-btn) {
   display: none !important;
 }
 
-/* In horizontal mode, we might want to keep settings visible too, but let's stick to the core toggle for now */
-.floating-doc-bar.collapsed .core-trigger-suite > *:not(#btn-settings-toggle) {
-  display: block; /* Keep settings visible even when collapsed for quick access */
+/* Quick suites: only visible when collapsed */
+.floating-doc-bar:not(.collapsed) .quick-tool-suite,
+.floating-doc-bar:not(.collapsed) .quick-nav-btns {
+  display: none !important;
+}
+
+.quick-tool-suite,
+.quick-nav-btns {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Nav btns: default order 0 = right after grip (order -1) */
+.quick-nav-btns {
+  order: 0;
+  border-right: 1px solid var(--border);
+  padding-right: 4px;
+  margin-right: 4px;
+}
+
+/* grip-right: nav btns move to right (just before grip at 999) */
+.floating-doc-bar.grip-right .quick-nav-btns {
+  order: 998;
+  border-right: none;
+  border-left: 1px solid var(--border);
+  padding-right: 0;
+  padding-left: 4px;
+  margin-right: 0;
+  margin-left: 4px;
 }
 
 /* Buttons inside Doc Bar */
@@ -82,21 +181,6 @@
   height: 20px;
 }
 
-.floating-doc-bar #btn-doc-bar-toggle .icon-expand {
-  display: none;
-}
-
-.floating-doc-bar #btn-doc-bar-toggle .icon-collapse {
-  display: block;
-}
-
-.floating-doc-bar.collapsed #btn-doc-bar-toggle .icon-expand {
-  display: block;
-}
-
-.floating-doc-bar.collapsed #btn-doc-bar-toggle .icon-collapse {
-  display: none;
-}
 
 .toggle-bar-btn {
   background: var(--primary) !important;
@@ -105,7 +189,9 @@
   border: none !important;
 }
 
+/* Grip — default left */
 .doc-drag-handle {
+  order: -1;
   width: 18px;
   height: 100%;
   padding: 0 4px;
@@ -113,14 +199,56 @@
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  cursor: grab;
+  cursor: default;
   border-right: 1px solid var(--border);
   margin-right: 4px;
 }
 
-.doc-drag-handle:active {
-  cursor: grabbing;
+/* Hide button — default right */
+.grip-hide-btn {
+  order: 999;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  opacity: 0.5;
+  transition: opacity 0.15s;
 }
+
+.grip-hide-btn:hover {
+  opacity: 1;
+  color: var(--text-main);
+}
+
+/* Right-hand mode: swap sides */
+.floating-doc-bar.grip-right .doc-drag-handle {
+  order: 999;
+  border-right: none;
+  border-left: 1px solid var(--border);
+  margin-right: 0;
+  margin-left: 4px;
+}
+
+.floating-doc-bar.grip-right .grip-hide-btn {
+  order: -1;
+  border-left: none;
+  border-right: 1px solid var(--border);
+  margin-left: 0;
+  margin-right: 4px;
+}
+
+/* Grip icon swap: dots when expanded, hamburger when collapsed */
+.floating-doc-bar .grip-icon-collapsed { display: none; }
+.floating-doc-bar.collapsed .grip-icon-expanded { display: none; }
+.floating-doc-bar.collapsed .grip-icon-collapsed { display: block; }
 
 .zoom-box {
   display: flex;

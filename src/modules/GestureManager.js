@@ -64,28 +64,7 @@ export class GestureManager {
             activePanel = null
         }, { passive: true })
 
-        // Swipe Up logic
-        document.addEventListener('touchstart', (e) => {
-            if (window.innerWidth > 600) return
-            const anyActive = Array.from(panels).some(p => p.classList.contains('active'))
-            if (anyActive) return
-            const touchY = e.touches[0].clientY
-            const vh = window.innerHeight
-            if (touchY > vh - 150 && touchY < vh - 20) {
-                this._startY = touchY
-                this._potentialSwipeUp = true
-            }
-        }, { passive: true })
-
-        document.addEventListener('touchend', (e) => {
-            if (!this._potentialSwipeUp) return
-            this._potentialSwipeUp = false
-            const diff = this._startY - e.changedTouches[0].clientY
-            if (diff > 60) {
-                const targetId = this._lastMobilePanelId || 'view-control-panel'
-                this.executePanelToggle(targetId, true)
-            }
-        }, { passive: true })
+        // Swipe-up-to-open removed: conflicts with normal page scrolling.
     }
 
     executePanelToggle(panelId, forceState) {
@@ -109,6 +88,13 @@ export class GestureManager {
     initNavigationGestures(viewer) {
         viewer.addEventListener('touchstart', (e) => {
             if (this.inputManager.isEventInUI(e)) return
+
+            // Ignore synthetic touchstart fired by iOS when pointer-events changes mid-touch
+            const msSinceLongPress = this.inputManager.lastLongPressAt
+                ? Date.now() - this.inputManager.lastLongPressAt
+                : Infinity
+            if (this.inputManager.isLongPressActive || msSinceLongPress < 600) return
+
             if (e.touches.length === 1) {
                 this._startX = e.touches[0].clientX
                 this._startY = e.touches[0].clientY
@@ -118,6 +104,16 @@ export class GestureManager {
 
         viewer.addEventListener('touchend', (e) => {
             if (this.inputManager.isEventInUI(e)) return
+
+            // Block navigation if a long press fired (boolean) or fired very recently (timestamp guard)
+            const msSinceLongPress = this.inputManager.lastLongPressAt
+                ? Date.now() - this.inputManager.lastLongPressAt
+                : Infinity
+            if (this.inputManager.isLongPressActive || msSinceLongPress < 600) {
+                this.inputManager.isLongPressActive = false
+                return
+            }
+
             if (e.changedTouches.length === 1) {
                 const dy = this._startY - e.changedTouches[0].clientY
                 const dx = this._startX - e.changedTouches[0].clientX

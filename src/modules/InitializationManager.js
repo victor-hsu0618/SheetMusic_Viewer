@@ -107,6 +107,13 @@ export class InitializationManager {
         document.getElementById('btn-jump-panel-toggle')?.addEventListener('click', (e) => { e.stopPropagation(); app.jumpManager?.togglePanel() })
         document.getElementById('btn-view-panel-toggle')?.addEventListener('click', (e) => { e.stopPropagation(); app.viewPanelManager?.togglePanel() })
 
+        // Quick tool suite (collapsed doc bar)
+        document.getElementById('quick-page-up')?.addEventListener('click', () => app.jump(-1))
+        document.getElementById('quick-page-down')?.addEventListener('click', () => app.jump(1))
+        document.getElementById('quick-fit-width')?.addEventListener('click', () => app.fitToWidth())
+        document.getElementById('quick-fit-height')?.addEventListener('click', () => app.fitToHeight())
+        document.getElementById('quick-open-library')?.addEventListener('click', () => app.toggleLibrary())
+
         document.getElementById('btn-close-library')?.addEventListener('click', () => app.toggleLibrary(false))
 
         const libraryImportBtn = document.getElementById('library-import-btn')
@@ -149,7 +156,6 @@ export class InitializationManager {
         app.btnRulerToggle?.addEventListener('click', () => app.rulerManager?.toggleRuler())
 
         // Doc Bar Toggles & Actions
-        document.getElementById('btn-doc-bar-toggle')?.addEventListener('click', () => app.docBarManager?.toggleDocBar())
         document.getElementById('btn-stamp-palette')?.addEventListener('click', () => app.toolManager?.toggleStampPalette())
         document.getElementById('btn-quick-open')?.addEventListener('click', () => app.openPdfFilePicker())
         document.getElementById('btn-mode-eraser')?.addEventListener('click', () => {
