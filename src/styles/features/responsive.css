@@ -193,7 +193,7 @@
     /* Score Library Mobile optimization */
     .jump-drag-handle {
         cursor: default;
-        height: 24px !important;
+        height: 18px !important;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -208,8 +208,19 @@
 
     /* 4. Optimize Go To (Jump Panel) Grid for Fingers */
     .calculator-display {
-        padding: 6px 12px !important;
-        min-height: 48px !important;
+        padding: 4px 10px !important;
+        min-height: 38px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .calc-current-input {
+        font-size: 1.25rem !important;
+        line-height: 1;
+    }
+
+    .calc-info {
+        font-size: 0.6rem !important;
+        margin-bottom: 0 !important;
     }
 
     .calculator-grid {
