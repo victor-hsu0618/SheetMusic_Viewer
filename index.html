@@ -16,7 +16,6 @@
   <title>ScoreFlow | Elite SheetMusic Viewer</title>
   <link rel="stylesheet" href="./src/styles/score-manager.css">
   <link rel="stylesheet" href="./src/styles/settings-panel.css">
-  <link rel="stylesheet" href="./src/styles/settings-panel.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -268,8 +267,12 @@
               <span>Scroll Offset</span>
               <span id="view-jump-offset-value">40px</span>
             </div>
-            <input type="range" id="view-jump-offset" class="view-range-slider" min="0" max="800" value="40"
-              title="Adjust the baseline position (top: 0, bottom: viewport height)">
+            <div class="slider-control-group">
+              <button class="slider-adj-btn minus" data-target="view-jump-offset">-</button>
+              <input type="range" id="view-jump-offset" class="view-range-slider" min="0" max="800" value="40"
+                title="Adjust the baseline position (top: 0, bottom: viewport height)">
+              <button class="slider-adj-btn plus" data-target="view-jump-offset">+</button>
+            </div>
           </div>
         </div>
       </div>
@@ -306,61 +309,72 @@
         </button>
       </div>
 
-      <div class="calculator-display">
-        <div id="jump-page-display" class="calc-info">Page 1 of 1</div>
-        <div id="calc-value" class="calc-current-input">1</div>
-      </div>
-
-      <div class="calculator-grid">
-        <!-- Row 1: Nav -->
-        <button class="calc-btn nav-btn" id="btn-calc-head" title="Go to Beginning">|&lt;</button>
-        <button class="calc-btn nav-btn" id="btn-calc-prev" title="Previous Page">&lt;</button>
-        <button class="calc-btn nav-btn" id="btn-calc-next" title="Next Page">&gt;</button>
-        <button class="calc-btn nav-btn" id="btn-calc-end" title="Go to End">&gt;|</button>
-
-        <!-- Row 2-4: Keypad -->
-        <button class="calc-btn num-btn" data-key="7">7</button>
-        <button class="calc-btn num-btn" data-key="8">8</button>
-        <button class="calc-btn num-btn" data-key="9">9</button>
-        <button class="calc-btn action-btn clear" id="btn-calc-clear">C</button>
-
-        <button class="calc-btn num-btn" data-key="4">4</button>
-        <button class="calc-btn num-btn" data-key="5">5</button>
-        <button class="calc-btn num-btn" data-key="6">6</button>
-        <button class="calc-btn action-btn go" id="btn-calc-go">GO</button>
-
-        <button class="calc-btn num-btn" data-key="1">1</button>
-        <button class="calc-btn num-btn" data-key="2">2</button>
-        <button class="calc-btn num-btn" data-key="3">3</button>
-        <button class="calc-btn num-btn zero-btn" data-key="0">0</button>
-
-        <!-- Row 5: Bookmark Toggle -->
-        <button class="calc-btn action-btn bookmark" id="btn-calc-bookmark" title="Add Bookmark">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-          </svg>
-        </button>
-      </div>
-
-      <!-- Index Tabs -->
-      <div class="index-tabs">
-        <button class="index-tab-btn active" data-tab="bookmarks">Bookmarks</button>
-        <button class="index-tab-btn" data-tab="measures">Measures</button>
-      </div>
-
-      <!-- Bookmark List Section -->
-      <div id="bookmark-section" class="index-section active">
-        <div id="bookmark-list" class="bookmark-list">
-          <!-- Dynamically populated -->
-          <div class="empty-state">No bookmarks yet</div>
+      <div class="jump-main-content">
+        <!-- Left Side: Tabs -->
+        <div class="jump-tabs-side">
+          <button class="jump-tab-btn active" data-tab="keypad">Keypad</button>
+          <button class="jump-tab-btn" data-tab="bookmarks">Bookmarks</button>
+          <button class="jump-tab-btn" data-tab="measures">Measures</button>
         </div>
-      </div>
 
-      <!-- Measures List Section -->
-      <div id="measure-section" class="index-section">
-        <div id="measure-list" class="bookmark-list">
-          <!-- Dynamically populated -->
-          <div class="empty-state">No measures found</div>
+        <!-- Right Side: Content Area -->
+        <div class="jump-content-area">
+          <!-- Tab: Keypad (Calculator) -->
+          <div id="pane-keypad" class="jump-tab-pane active">
+            <div class="calculator-display">
+              <div id="jump-page-display" class="calc-info">Page 1 of 1</div>
+              <div id="calc-value" class="calc-current-input">1</div>
+            </div>
+
+            <div class="calculator-grid">
+              <!-- Row 1: Nav -->
+              <button class="calc-btn nav-btn" id="btn-calc-head" title="Go to Beginning">|&lt;</button>
+              <button class="calc-btn nav-btn" id="btn-calc-prev" title="Previous Page">&lt;</button>
+              <button class="calc-btn nav-btn" id="btn-calc-next" title="Next Page">&gt;</button>
+              <button class="calc-btn nav-btn" id="btn-calc-end" title="Go to End">&gt;|</button>
+
+              <!-- Row 2-4: Keypad -->
+              <button class="calc-btn num-btn" data-key="7">7</button>
+              <button class="calc-btn num-btn" data-key="8">8</button>
+              <button class="calc-btn num-btn" data-key="9">9</button>
+              <button class="calc-btn action-btn clear" id="btn-calc-clear">C</button>
+
+              <button class="calc-btn num-btn" data-key="4">4</button>
+              <button class="calc-btn num-btn" data-key="5">5</button>
+              <button class="calc-btn num-btn" data-key="6">6</button>
+              <button class="calc-btn action-btn go" id="btn-calc-go">GO</button>
+
+              <button class="calc-btn num-btn" data-key="1">1</button>
+              <button class="calc-btn num-btn" data-key="2">2</button>
+              <button class="calc-btn num-btn" data-key="3">3</button>
+              <button class="calc-btn num-btn zero-btn" data-key="0">0</button>
+
+              <!-- Row 5: Bookmark Toggle -->
+              <button class="calc-btn action-btn bookmark" id="btn-calc-bookmark" title="Add Bookmark">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab: Bookmarks -->
+          <div id="pane-bookmarks" class="jump-tab-pane">
+            <div class="jump-list-container">
+              <div id="bookmark-list" class="bookmark-list">
+                <div class="empty-state">No bookmarks yet</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Measures -->
+          <div id="pane-measures" class="jump-tab-pane">
+            <div class="jump-list-container">
+              <div id="measure-list" class="bookmark-list">
+                <div class="empty-state">No measures found</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -609,24 +623,30 @@
 
           <div class="setting-item mb-15">
             <label class="setting-label">Stamp Size Multiplier</label>
-            <div class="flex-row-center gap-10 mt-5">
+            <div class="slider-control-group">
+              <button class="slider-adj-btn minus" data-target="settings-stamp-size">-</button>
               <input type="range" id="settings-stamp-size" min="0.5" max="3.0" step="0.1" value="1.0" class="w-full" />
+              <button class="slider-adj-btn plus" data-target="settings-stamp-size">+</button>
               <span id="settings-stamp-size-value" class="badge">1.0x</span>
             </div>
           </div>
 
           <div class="setting-item mb-15">
             <label class="setting-label">Anchor Scroll Offset</label>
-            <div class="flex-row-center gap-10 mt-5">
+            <div class="slider-control-group">
+              <button class="slider-adj-btn minus" data-target="settings-jump-offset">-</button>
               <input type="range" id="settings-jump-offset" min="0" max="800" step="5" value="40" class="w-full" />
+              <button class="slider-adj-btn plus" data-target="settings-jump-offset">+</button>
               <span id="settings-jump-offset-value" class="badge">40px</span>
             </div>
           </div>
 
           <div class="setting-item mb-15">
             <label class="setting-label">Jump Animation Speed (ms)</label>
-            <div class="flex-row-center gap-10 mt-5">
+            <div class="slider-control-group">
+              <button class="slider-adj-btn minus" data-target="settings-jump-speed">-</button>
               <input type="range" id="settings-jump-speed" min="50" max="1000" step="50" value="300" class="w-full" />
+              <button class="slider-adj-btn plus" data-target="settings-jump-speed">+</button>
               <span id="settings-jump-speed-value" class="badge">300ms</span>
             </div>
           </div>
@@ -992,14 +1012,17 @@
       <button id="btn-close-score-detail" class="btn-close-mini">✕</button>
     </div>
 
-    <div class="settings-scroll-area">
-      <!-- Tab Control (Segmented Control) -->
-      <div class="segmented-control mb-15">
-        <button class="segment-btn active" data-tab="general">General</button>
-        <button class="segment-btn" data-tab="styles">Styles</button>
-        <button class="segment-btn" data-tab="media">Media</button>
-        <button class="segment-btn" data-tab="system">System</button>
+    <div class="detail-main-content">
+      <!-- Left Side: Tabs -->
+      <div class="score-detail-tabs-side">
+        <button class="detail-tab-btn active" data-tab="general">General</button>
+        <button class="detail-tab-btn" data-tab="styles">Styles</button>
+        <button class="detail-tab-btn" data-tab="media">Media</button>
+        <button class="detail-tab-btn" data-tab="system">System</button>
       </div>
+
+      <!-- Right Side: Content Area -->
+      <div class="detail-content-area settings-scroll-area">
 
       <!-- Tab: General -->
       <div class="detail-tab-pane active" id="pane-general">

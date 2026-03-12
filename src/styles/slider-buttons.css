@@ -1,0 +1,45 @@
+/* Slider Precise Adjustment Buttons */
+.slider-control-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.slider-adj-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-soft);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    transition: all 0.2s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.slider-adj-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.slider-adj-btn:active {
+    transform: scale(0.9);
+}
+
+.slider-adj-btn.minus {
+    padding-bottom: 2px; /* Visual alignment for minus sign */
+}
+
+/* Specific adjustment for Setting Sheet */
+.setting-item .slider-control-group {
+    margin-top: 5px;
+}

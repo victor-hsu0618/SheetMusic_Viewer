@@ -31,7 +31,13 @@ export class ScoreDetailManager {
     toggle(force) {
         if (!this.ui.panel) return
         const active = force !== null ? force : !this.ui.panel.classList.contains('active')
+        
+        if (active) {
+            this.app.uiManager.closeAllActivePanels('ScoreDetailManager')
+        }
+
         this.ui.panel.classList.toggle('active', active)
+
         if (active) {
             document.querySelectorAll('.jump-sub-panel').forEach(p => p.style.zIndex = '11500')
             this.ui.panel.style.zIndex = '11501'

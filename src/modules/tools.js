@@ -9,6 +9,7 @@ export class ToolManager {
         this._dragStartY = 0
         this._dragInitialLeft = 0
         this._dragInitialTop = 0
+        this.isStampPaletteOpen = false
     }
 
     async preloadSvgs() {
@@ -41,7 +42,7 @@ export class ToolManager {
         return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="currentColor" stroke-width="1.3" fill="none">${tool.icon}</svg>`
     }
 
-    toggleStampPalette(x = null, y = null) {
+    toggleStampPalette(x = null, y = null, force = null) {
         // Debounce to prevent multiple fires from ghost clicks (iPad)
         const now = Date.now()
         if (this._lastPaletteToggleTime && (now - this._lastPaletteToggleTime < 250)) {
@@ -52,9 +53,12 @@ export class ToolManager {
         const el = this.app.activeToolsContainer
         if (!el) return
 
-        const isExpanding = !el.classList.contains('expanded')
+        const isExpanding = force !== null ? force : !el.classList.contains('expanded')
 
         if (isExpanding) {
+            this.app.uiManager.closeAllActivePanels('ToolManager')
+            this.isStampPaletteOpen = true
+
             // Smart Positioning if coordinates provided
             if (x !== null && y !== null) {
                 // Ensure position is materialized for absolute/fixed positioning
@@ -101,6 +105,7 @@ export class ToolManager {
             el.classList.add('expanded')
         } else {
             el.classList.remove('expanded')
+            this.isStampPaletteOpen = false
             // Reset to pan/view mode on close to avoid accidental stamp placement
             this.app.activeStampType = 'view'
         }

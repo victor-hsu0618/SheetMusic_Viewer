@@ -55,7 +55,7 @@ export class ScoreDetailUIManager {
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
         document.getElementById('btn-reset-score-all')?.addEventListener('click', () => this.manager.handleResetAll())
 
-        const tabBtns = this.panel?.querySelectorAll('.segment-btn')
+        const tabBtns = this.panel?.querySelectorAll('.detail-tab-btn')
         tabBtns?.forEach(btn => {
             btn.addEventListener('click', () => this.switchTab(btn.dataset.tab))
         })
@@ -136,7 +136,7 @@ export class ScoreDetailUIManager {
     }
 
     switchTab(tabId) {
-        this.panel.querySelectorAll('.segment-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId))
+        this.panel.querySelectorAll('.detail-tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId))
         this.panel.querySelectorAll('.detail-tab-pane').forEach(pane => pane.classList.toggle('active', pane.id === `pane-${tabId}`))
         if (tabId === 'styles') this.app.renderSourceUI()
     }

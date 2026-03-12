@@ -79,4 +79,33 @@ export class UIManager {
             });
         }, { passive: true });
     }
+
+    /**
+     * Close all active drawer panels and floating palettes.
+     * Used for mutual exclusivity between Doc Bar panels.
+     * @param {string} exceptManagerName - The class name of the manager to skip.
+     */
+    closeAllActivePanels(exceptManagerName = null) {
+        // List of managers that handle sub-panels
+        const managers = [
+            { name: 'SettingsPanelManager', method: 'toggle', ref: 'settingsPanelManager' },
+            { name: 'JumpManager', method: 'togglePanel', ref: 'jumpManager' },
+            { name: 'ViewPanelManager', method: 'togglePanel', ref: 'viewPanelManager' },
+            { name: 'ScoreDetailManager', method: 'toggle', ref: 'scoreDetailManager' }
+        ];
+
+        managers.forEach(m => {
+            if (m.name !== exceptManagerName && this.app[m.ref]) {
+                const manager = this.app[m.ref];
+                if (manager[m.method]) {
+                    manager[m.method](false);
+                }
+            }
+        });
+
+        // Also close stamp palette if open (ToolManager)
+        if (exceptManagerName !== 'ToolManager' && this.app.toolManager?.isStampPaletteOpen) {
+            this.app.toolManager.toggleStampPalette(null, null, false);
+        }
+    }
 }

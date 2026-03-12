@@ -1,11 +1,7 @@
 /* View Control Sub-Panel - Pro Redesign */
-.jump-sub-panel.calculator-style {
-    /* Inherits base from jump.css */
+#view-control-panel {
     width: 280px;
-    /* Slightly wider for view grid */
 }
-
-/* Redefine active state for JS compatibility if needed, but jump.css has it */
 
 .view-panel-grid {
     display: grid;

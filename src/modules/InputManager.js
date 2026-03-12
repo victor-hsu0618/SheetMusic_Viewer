@@ -155,6 +155,21 @@ export class InputManager {
                 this.longPressTimer = null
             }
         }, { passive: true })
+
+        // Cancel long press if the touch ends before 500ms (i.e. single tap, not a hold)
+        viewer.addEventListener('touchend', () => {
+            if (this.longPressTimer) {
+                clearTimeout(this.longPressTimer)
+                this.longPressTimer = null
+            }
+        }, { passive: true })
+
+        viewer.addEventListener('touchcancel', () => {
+            if (this.longPressTimer) {
+                clearTimeout(this.longPressTimer)
+                this.longPressTimer = null
+            }
+        }, { passive: true })
     }
 
     initMouseListeners() {

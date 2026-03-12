@@ -16,10 +16,8 @@ export class JumpManager {
         this.display = document.getElementById('jump-page-display')
         this.calcValueEl = document.getElementById('calc-value')
 
-        // Index Section Elements
-        this.bookmarkSection = document.getElementById('bookmark-section')
+        // List Containers
         this.bookmarkList = document.getElementById('bookmark-list')
-        this.measureSection = document.getElementById('measure-section')
         this.measureList = document.getElementById('measure-list')
 
         this.bookmarkOverlay = document.getElementById('bookmark-overlay')
@@ -35,8 +33,8 @@ export class JumpManager {
         const btnClose = document.getElementById('btn-close-jump-panel')
         if (btnClose) btnClose.onclick = () => this.togglePanel(false)
 
-        // Tab Switching
-        const tabBtns = this.panel.querySelectorAll('.index-tab-btn')
+        // Tab Switching (Keypad, Bookmarks, Measures)
+        const tabBtns = this.panel.querySelectorAll('.jump-tab-btn')
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const tab = btn.dataset.tab
@@ -81,34 +79,47 @@ export class JumpManager {
 
     switchTab(tabId) {
         // Update Buttons
-        this.panel.querySelectorAll('.index-tab-btn').forEach(btn => {
+        this.panel.querySelectorAll('.jump-tab-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabId)
         })
 
-        // Update Sections
-        if (this.bookmarkSection) this.bookmarkSection.classList.toggle('active', tabId === 'bookmarks')
-        if (this.measureSection) this.measureSection.classList.toggle('active', tabId === 'measures')
+        // Update Panes
+        this.panel.querySelectorAll('.jump-tab-pane').forEach(pane => {
+            pane.classList.toggle('active', pane.id === `pane-${tabId}`)
+        })
 
         if (tabId === 'measures') {
             this.renderMeasures()
+        } else if (tabId === 'bookmarks') {
+            this.renderBookmarks()
         }
     }
 
     async togglePanel(force = null) {
         if (!this.panel) return
         const active = force !== null ? force : !this.panel.classList.contains('active')
+        
+        if (active) {
+            this.app.uiManager.closeAllActivePanels('JumpManager')
+        }
+
+        this.panel.classList.toggle('active', active)
         if (active) {
             // Reset position to let CSS fix it as a "Stacked Shelf"
             this.panel.style.top = ''
             this.panel.style.left = ''
+            this.panel.style.bottom = ''
             this.panel.style.transform = ''
             
             this.updateDisplay()
             this.displayValue = this.currentPage.toString()
-            this.isTyping = false
+            this.isTyping = true
             this.refreshCalcDisplay()
             await this.loadBookmarks()
-            this.renderMeasures() // Pre-load all measures
+            this.renderMeasures()
+            
+            // Default to keypad when opening
+            this.switchTab('keypad')
         }
     }
 

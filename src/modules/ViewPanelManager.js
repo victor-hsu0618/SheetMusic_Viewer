@@ -38,6 +38,30 @@ export class ViewPanelManager {
             })
         }
 
+        // Initialize adjustment buttons for sliders in this panel
+        this.panel.querySelectorAll('.slider-adj-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = btn.dataset.target
+                const slider = document.getElementById(targetId)
+                if (!slider) return
+
+                const isPlus = btn.classList.contains('plus')
+                const step = parseFloat(slider.step) || 1
+                const min = parseFloat(slider.min) || 0
+                const max = parseFloat(slider.max) || 100
+                let val = parseFloat(slider.value)
+
+                if (isPlus) {
+                    val = Math.min(max, val + step)
+                } else {
+                    val = Math.max(min, val - step)
+                }
+
+                slider.value = val
+                slider.dispatchEvent(new Event('input'))
+            })
+        })
+
     }
 
     updateZoomDisplay() {
@@ -49,6 +73,11 @@ export class ViewPanelManager {
     togglePanel(force = null) {
         if (!this.panel) return
         const active = force !== null ? force : !this.panel.classList.contains('active')
+        
+        if (active) {
+            this.app.uiManager.closeAllActivePanels('ViewPanelManager')
+        }
+
         this.panel.classList.toggle('active', active)
 
         const btnToggle = document.getElementById('btn-view-panel-toggle')

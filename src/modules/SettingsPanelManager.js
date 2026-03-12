@@ -33,7 +33,7 @@ export class SettingsPanelManager {
 
         this.resizeHandle = this.panel?.querySelector('.panel-resize-handle')
         this.initSettings()
-        this.initResizable()
+        // this.initResizable() // REQ: Disable resize function
         this.initTabs()
     }
 
@@ -185,6 +185,7 @@ export class SettingsPanelManager {
         this.isVisible = force !== null ? force : !this.isVisible
 
         if (this.isVisible) {
+            this.app.uiManager.closeAllActivePanels('SettingsPanelManager')
             // Must add active class FIRST so dimensions (offsetWidth) are available
             this.panel.classList.add('active')
 
@@ -307,5 +308,29 @@ export class SettingsPanelManager {
                 }
             })
         }
+
+        // Initialize adjustment buttons for ALL sliders in this panel
+        this.panel.querySelectorAll('.slider-adj-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = btn.dataset.target
+                const slider = document.getElementById(targetId)
+                if (!slider) return
+
+                const isPlus = btn.classList.contains('plus')
+                const step = parseFloat(slider.step) || 1
+                const min = parseFloat(slider.min) || 0
+                const max = parseFloat(slider.max) || 100
+                let val = parseFloat(slider.value)
+
+                if (isPlus) {
+                    val = Math.min(max, val + step)
+                } else {
+                    val = Math.max(min, val - step)
+                }
+
+                slider.value = val
+                slider.dispatchEvent(new Event('input'))
+            })
+        })
     }
 }
