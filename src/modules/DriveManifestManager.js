@@ -12,11 +12,16 @@ export class DriveManifestManager {
         if (!this.sync.folderId) return;
         try {
             const fileName = this.sync.MANIFEST_NAME;
+            console.log('[DriveSync] 🗂 Searching for manifest file...');
+            const t0 = Date.now();
             const fileId = await this.sync.findFileByName(fileName);
+            console.log(`[DriveSync] 🗂 Manifest search: ${Date.now() - t0}ms, found=${!!fileId}`);
             if (fileId) {
                 this.sync.manifestFileId = fileId;
+                console.log('[DriveSync] 🗂 Downloading manifest...');
+                const t1 = Date.now();
                 this.sync.manifest = await this.sync.getFileContent(fileId);
-                console.log('[DriveSync] Manifest loaded:', Object.keys(this.sync.manifest).length, 'entries');
+                console.log(`[DriveSync] 🗂 Manifest downloaded: ${Date.now() - t1}ms, ${Object.keys(this.sync.manifest).length} entries`);
                 return true;
             }
         } catch (err) {
@@ -112,7 +117,7 @@ export class DriveManifestManager {
         console.log(`[DriveSync] 🗂 scanRemoteSyncFiles() started at ${new Date().toLocaleTimeString()}`);
 
         try {
-            this.sync.addLog('正在同步雲端清單...', 'system');
+            this.sync.addLog('正在載入雲端清單...', 'system');
 
             const t1 = Date.now();
             let hasManifest = await this.loadManifest();
@@ -131,6 +136,7 @@ export class DriveManifestManager {
                 if (entry.pdfId) pdfCount++;
             });
 
+            this.sync.addLog(`清單載入完成，共 ${syncCount} 份備份`, 'system');
             this.sync.cloudStats.totalAnnotations = syncCount;
             this.sync.cloudStats.totalPDFs = pdfCount;
             this.sync.updateCloudStatsUI();
@@ -164,11 +170,13 @@ export class DriveManifestManager {
                 }
             }
             if (backfillTasks.length > 0) {
+                this.sync.addLog(`正在補全 ${backfillTasks.length} 個雲端檔名...`, 'system');
                 console.log(`[DriveSync] 🔍 Backfilling ${backfillTasks.length} filename(s) in parallel...`);
                 const bfStart = Date.now();
                 await Promise.all(backfillTasks);
                 console.log(`[DriveSync] 🔍 Backfill done in ${Date.now() - bfStart}ms`);
                 await this.saveManifest();
+                this.sync.addLog('檔名補全完成', 'system');
             }
 
             let registryChanged = false;
