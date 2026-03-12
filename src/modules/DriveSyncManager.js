@@ -508,11 +508,8 @@ export class DriveSyncManager {
 
         const bookmarks = await db.get(`bookmarks_${fp}`) || [];
 
-        let scoreDetail = null;
-        try {
-            const detailRaw = localStorage.getItem(`scoreflow_detail_${fp}`);
-            scoreDetail = detailRaw ? JSON.parse(detailRaw) : null;
-        } catch (e) { console.error('Failed to parse detail for sync', e); }
+        // --- FIXED: Use safe getMetadata instead of stale currentInfo ---
+        const scoreDetail = this.app.scoreDetailManager?.getMetadata(fp);
 
         const score = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
 
@@ -544,10 +541,13 @@ export class DriveSyncManager {
             const score = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
             if (!score) return;
 
+            // --- FIXED: Use safe getMetadata instead of stale currentInfo ---
+            const metadata = this.app.scoreDetailManager?.getMetadata(fingerprint);
+            
             const latestStampTime = this.app.stamps.length > 0
                 ? Math.max(...this.app.stamps.map(s => s.updatedAt || 0))
                 : 0;
-            const localEdit = this.app.scoreDetailManager?.currentInfo?.lastEdit || 0;
+            const localEdit = metadata?.lastEdit || 0;
             const latestLocalChange = Math.max(latestStampTime, localEdit);
 
             if (score.isSynced && remoteVersion <= (this.lastSyncTime || 0) && latestLocalChange <= (this.lastSyncTime || 0)) {
@@ -587,7 +587,7 @@ export class DriveSyncManager {
                 bookmarks: this.app.jumpManager?.bookmarks || [],
                 sources: this.app.sources || [],
                 layers: this.app.layers || [],
-                scoreDetail: this.app.scoreDetailManager?.currentInfo || null,
+                scoreDetail: metadata,
                 version: Date.now(),
                 fingerprint
             };
@@ -613,6 +613,7 @@ export class DriveSyncManager {
 
             this.addLog(`已上傳: ${stampsCount} 劃記, ${bookmarksCount} 書籤, ${sourcesCount} 詮釋`, 'success');
             this.lastSyncTime = data.version;
+            localStorage.setItem(`scoreflow_sync_time_${fingerprint}`, data.version);
 
             this.app.scoreManager?.updateSyncStatus(fingerprint, true);
         } catch (err) {
@@ -650,6 +651,11 @@ export class DriveSyncManager {
             if (!remoteData) return 0;
 
             const remoteVer = remoteData.version || 0;
+            // Restore persisted lastSyncTime for this fingerprint (survives app restarts)
+            if (!this.lastSyncTime) {
+                const stored = parseInt(localStorage.getItem(`scoreflow_sync_time_${fingerprint}`) || '0');
+                if (stored > 0) this.lastSyncTime = stored;
+            }
             const localSyncTime = this.lastSyncTime || 0;
 
             console.log(`[DriveSync] Pulling Fingerprint: ${fingerprint}`);
@@ -693,7 +699,13 @@ export class DriveSyncManager {
                 });
 
                 const remoteIds = new Set(remoteData.stamps.map(s => s.id));
-                const toPrune = this.app.stamps.filter(s => s.id && !remoteIds.has(s.id) && (s.updatedAt || 0) < remoteVer);
+                // Only prune stamps that existed at last sync (updatedAt ≤ localSyncTime) but
+                // are now absent from cloud — i.e., they were deleted remotely. Stamps created
+                // locally after the last sync (updatedAt > localSyncTime) are never pruned here;
+                // they will be pushed in the subsequent push() call.
+                const toPrune = localSyncTime > 0
+                    ? this.app.stamps.filter(s => s.id && !remoteIds.has(s.id) && (s.updatedAt || 0) <= localSyncTime)
+                    : [];
                 if (toPrune.length > 0) {
                     this.app.stamps = this.app.stamps.filter(s => !toPrune.includes(s));
                     hasChanges = true;
@@ -729,7 +741,9 @@ export class DriveSyncManager {
                 });
 
                 const remoteBmIds = new Set(remoteData.bookmarks.map(bm => bm.id));
-                const bmToPrune = this.app.jumpManager.bookmarks.filter(bm => bm.id && !remoteBmIds.has(bm.id) && (bm.updatedAt || 0) < remoteVer);
+                const bmToPrune = localSyncTime > 0
+                    ? this.app.jumpManager.bookmarks.filter(bm => bm.id && !remoteBmIds.has(bm.id) && (bm.updatedAt || 0) <= localSyncTime)
+                    : [];
                 if (bmToPrune.length > 0) {
                     this.app.jumpManager.bookmarks = this.app.jumpManager.bookmarks.filter(bm => !bmToPrune.includes(bm));
                     bmMadeChanges = true;
@@ -761,7 +775,9 @@ export class DriveSyncManager {
                 });
 
                 const remoteSrcIds = new Set(remoteData.sources.map(src => src.id));
-                const srcToPrune = this.app.sources.filter(src => src.id && !remoteSrcIds.has(src.id) && (src.updatedAt || 0) < remoteVer);
+                const srcToPrune = localSyncTime > 0
+                    ? this.app.sources.filter(src => src.id && !remoteSrcIds.has(src.id) && (src.updatedAt || 0) <= localSyncTime)
+                    : [];
                 if (srcToPrune.length > 0) {
                     this.app.sources = this.app.sources.filter(src => !srcToPrune.includes(src));
                     srcMadeChanges = true;
@@ -838,6 +854,7 @@ export class DriveSyncManager {
             }
 
             this.lastSyncTime = remoteVer;
+            localStorage.setItem(`scoreflow_sync_time_${fingerprint}`, remoteVer);
             this.app.scoreManager?.updateSyncStatus(fingerprint, true);
             return remoteVer;
         } catch (err) {

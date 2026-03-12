@@ -7,7 +7,7 @@ export default defineConfig({
         host: true,
         headers: {
             'Permissions-Policy': 'fullscreen=(self)',
-            'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
+            'Cross-Origin-Opener-Policy': 'unsafe-none'
         }
     },
     define: {
