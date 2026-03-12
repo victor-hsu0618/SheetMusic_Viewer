@@ -31,6 +31,7 @@ export class DocBarManager {
         let isDragging = false
         let startX, startY, initialX, initialY, xOffset = 0, yOffset = 0
         let dragDistance = 0
+        let positionInitialized = false
         const el = this.app.docBar
         if (!el) return
 
@@ -41,6 +42,14 @@ export class DocBarManager {
             // In expanded mode, only drag-handle works. In collapsed mode, the whole bar (the button) works.
             const isCollapsed = el.classList.contains('collapsed')
             if (!isCollapsed && !e.target.closest(".doc-drag-handle")) return
+
+            // First drag: compensate for CSS `left: 50%; translateX(-50%)` centering so the
+            // element doesn't jump right by half its width when translate3d(0,0,0) replaces
+            // the CSS translateX(-50%).
+            if (!positionInitialized) {
+                xOffset = -el.offsetWidth / 2
+                positionInitialized = true
+            }
 
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
