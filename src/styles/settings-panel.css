@@ -140,3 +140,28 @@
     opacity: 0.5;
     margin-bottom: 4px;
 }
+
+.btn-reset-mini {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-reset-mini:hover {
+    background: var(--bg-app);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-reset-mini:active {
+    transform: scale(0.95);
+}

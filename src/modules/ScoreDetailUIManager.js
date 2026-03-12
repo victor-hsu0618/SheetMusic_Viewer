@@ -19,6 +19,11 @@ export class ScoreDetailUIManager {
         this.scoreFingerprintDisplay = document.getElementById('score-fingerprint-display')
         this.btnSave = document.getElementById('btn-save-score-detail')
 
+        this.syncFilenameInput = document.getElementById('sync-filename-input')
+        this.btnSyncRename = document.getElementById('btn-sync-rename')
+        this.syncFileIdDisplay = document.getElementById('sync-file-id-display')
+        this.syncFullPreview = document.getElementById('sync-full-filename-preview')
+
         this.mediaLabelInput = document.getElementById('sidebar-media-label')
         this.mediaUrlInput = document.getElementById('sidebar-media-url')
         this.mediaListContainer = document.getElementById('sidebar-media-list')
@@ -51,9 +56,33 @@ export class ScoreDetailUIManager {
         this.btnAddLocal?.addEventListener('click', () => this.localFileInput.click())
         this.localFileInput?.addEventListener('change', (e) => this.manager.handleLocalFile(e))
         this.btnSave?.addEventListener('click', () => this.manager.handleSave())
+        this.btnSyncRename?.addEventListener('click', () => this.manager.handleSyncRename())
+        this.syncFilenameInput?.addEventListener('input', () => {
+            const fp = this.manager.currentFp || this.app.pdfFingerprint;
+            if (!fp) return;
+            const val = this.syncFilenameInput.value.trim();
+            const hash = fp.slice(0, 8);
+            const preview = val ? `${val}_${hash}.json` : `sync_${hash}.json`;
+            if (this.syncFullPreview) this.syncFullPreview.textContent = `Full: ${preview}`;
+        });
 
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
         document.getElementById('btn-reset-score-all')?.addEventListener('click', () => this.manager.handleResetAll())
+
+        document.getElementById('btn-toggle-keep-offline')?.addEventListener('click', async () => {
+            const fp = this.manager.currentFp || this.app.pdfFingerprint
+            if (!fp) return
+            const score = this.app.scoreManager?.registry.find(s => s.fingerprint === fp)
+            if (!score) return
+            const newMode = score.storageMode === 'pinned' ? 'cached' : 'pinned'
+            await this.app.scoreManager?.setStorageMode(fp, newMode)
+            if (newMode === 'pinned') {
+                const hasLocal = await import('../db.js').then(db => db.get(`score_buf_${fp}`))
+                if (!hasLocal) this.app.driveSyncManager?.downloadAndCacheScore(fp)
+            }
+            this.updateKeepOfflineBtn(fp)
+            this.app.scoreManager?.render()
+        })
 
         const tabBtns = this.panel?.querySelectorAll('.detail-tab-btn')
         tabBtns?.forEach(btn => {
@@ -163,18 +192,71 @@ export class ScoreDetailUIManager {
         if (this.statsAuthor) this.statsAuthor.textContent = info.lastAuthor || 'Guest'
     }
 
+    updateKeepOfflineBtn(fingerprint) {
+        const btn = document.getElementById('btn-toggle-keep-offline')
+        if (!btn) return
+        const score = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint)
+        if (!score) return
+        const isPinned = score.storageMode === 'pinned'
+        btn.textContent = isPinned ? '📌 Pinned Offline' : 'Pin Offline'
+        btn.classList.toggle('btn-primary-sm', isPinned)
+        btn.classList.toggle('btn-outline-sm', !isPinned)
+    }
+
     render(fingerprint, info) {
         if (!this.scoreNameInput) return
         this.scoreNameInput.value = info.name || ''
         this.scoreComposerInput.value = info.composer || ''
+        this.updateKeepOfflineBtn(fingerprint)
+
+        // Resolve Score Entry from Registry
+        const registry = this.app.scoreManager?.registry || [];
+        const regScore = registry.find(s => s.fingerprint === fingerprint)
+
         if (this.scoreFingerprintDisplay) {
             const shortFinger = fingerprint ? `${fingerprint.slice(0, 8)}...${fingerprint.slice(-8)}` : 'Unknown'
             this.scoreFingerprintDisplay.textContent = shortFinger
             this.scoreFingerprintDisplay.title = fingerprint || ''
         }
+
         if (this.scoreFilenameDisplay) {
-            const regScore = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint)
-            this.scoreFilenameDisplay.textContent = regScore ? regScore.fileName : (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName : 'Unknown File')
+            // 1. Try Registry
+            let fileName = regScore?.fileName;
+            
+            // 2. Try Current Active Name (if it's the open file)
+            if (!fileName && this.app.pdfFingerprint === fingerprint) {
+                fileName = this.app.activeScoreName;
+            }
+            
+            // 3. Last Resort: Use the Piece Title (which you confirmed is correct)
+            if (!fileName) {
+                fileName = (info.name || 'Untitled') + '.pdf';
+            }
+            
+            this.scoreFilenameDisplay.textContent = fileName;
+        }
+
+        // --- ADDED: Populate Sync Filename ---
+        if (this.syncFilenameInput) {
+            const manifest = this.app.driveSyncManager?.manifest || {};
+            const entry = manifest[fingerprint];
+            const hash = fingerprint.slice(0, 8);
+            
+            // Resolve Display Name: 1. From Manifest, 2. From Registry FileName, 3. From active score name
+            let defaultName = entry?.name;
+            if (!defaultName) {
+                const fileName = regScore?.fileName || (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName : '');
+                defaultName = fileName.replace(/\.pdf$/i, '');
+            }
+
+            this.syncFilenameInput.value = defaultName || '';
+            const preview = defaultName ? `${defaultName}_${hash}.json` : `sync_${hash}.json`;
+            
+            if (this.syncFullPreview) this.syncFullPreview.textContent = `Full: ${preview}`;
+            
+            if (this.syncFileIdDisplay) {
+                this.syncFileIdDisplay.textContent = entry?.syncId ? `Cloud ID: ${entry.syncId}` : 'Not on cloud';
+            }
         }
 
         if (this.mediaListContainer) {

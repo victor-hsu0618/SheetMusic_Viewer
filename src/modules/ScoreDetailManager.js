@@ -55,6 +55,19 @@ export class ScoreDetailManager {
     async load(fingerprint) {
         if (!fingerprint) return
         this.isLoading = true
+        this.currentFp = fingerprint
+
+        // Reset to clean state first
+        this.currentInfo = {
+            name: '',
+            composer: 'Unknown',
+            lastEdit: 0,
+            lastAuthor: null,
+            mediaList: [],
+            activeMediaId: null,
+            stampScale: 1.0,
+            lastScrollTop: 0
+        }
 
         const detailData = localStorage.getItem(`scoreflow_detail_${fingerprint}`)
         const regScore = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint)
@@ -77,8 +90,16 @@ export class ScoreDetailManager {
                 this.currentInfo.name = regScore?.title || ''
             }
         } else {
-            this.currentInfo.name = regScore?.title || (this.app.activeScoreName?.replace(/\.pdf$/i, '') || '')
-            this.currentInfo.composer = regScore?.composer || ''
+            this.currentInfo = {
+                name: regScore?.title || (this.app.activeScoreName?.replace(/\.pdf$/i, '') || ''),
+                composer: regScore?.composer || 'Unknown',
+                lastEdit: 0,
+                lastAuthor: null,
+                mediaList: [],
+                activeMediaId: null,
+                stampScale: 1.0,
+                lastScrollTop: 0
+            }
         }
 
         this.render(fingerprint)
@@ -165,6 +186,44 @@ export class ScoreDetailManager {
         this.currentInfo.name = newName
         this.currentInfo.composer = newComposer
         this.onModification()
+    }
+
+    async handleSyncRename() {
+        const fp = this.currentFp || this.app.pdfFingerprint;
+        if (!fp) return;
+
+        const drive = this.app.driveSyncManager;
+        if (!drive?.isEnabled || !drive?.accessToken) {
+            alert('請先連接 Google Drive');
+            return;
+        }
+
+        const rawName = (this.ui.syncFilenameInput.value || '').trim();
+        const hash = fp.slice(0, 8);
+        
+        // Final name format: MozSym40_abc12345.json
+        const finalFilename = rawName ? `${rawName}_${hash}.json` : `sync_${hash}.json`;
+
+        const entry = drive.manifest[fp];
+        if (!entry || !entry.syncId) {
+            alert('此樂譜尚未在雲端建立劃記同步檔');
+            return;
+        }
+
+        try {
+            this.app.showMessage('正在重新命名雲端檔案...', 'system');
+            await drive.renameFile(entry.syncId, finalFilename);
+            
+            // Update local manifest and Save
+            entry.name = rawName; // Store only the display part in name field
+            await drive.saveManifest();
+            
+            this.app.showMessage('雲端檔名已更新', 'success');
+            this.render(fp);
+        } catch (err) {
+            console.error('[ScoreDetail] Rename failed:', err);
+            alert('重命名失敗: ' + err.message);
+        }
     }
 
     handleAddYoutube() {

@@ -22,6 +22,15 @@ export class ScoreManager {
     async init() {
         const stored = await db.get('score_registry');
         this.registry = stored || [];
+
+        // Backfill storageMode for existing entries
+        for (const entry of this.registry) {
+            if (!entry.storageMode) {
+                const hasLocal = await db.get(`score_buf_${entry.fingerprint}`);
+                entry.storageMode = hasLocal ? 'cached' : 'cloud';
+            }
+        }
+
         this.overlay = document.getElementById('library-overlay');
         this.grid = document.getElementById('library-grid');
         this.isLoaded = true;
@@ -49,11 +58,16 @@ export class ScoreManager {
             btn.addEventListener('click', (e) => {
                 const tabId = e.target.dataset.tab;
                 document.querySelectorAll('.library-tabs .segment-btn').forEach(t => t.classList.toggle('active', t === e.target));
-                document.getElementById('library-grid').classList.toggle('hidden', tabId !== 'scores');
-                document.getElementById('setlist-grid').classList.toggle('hidden', tabId !== 'setlists');
+                
+                const libraryGrid = document.getElementById('library-grid');
+                const setlistGrid = document.getElementById('setlist-grid');
+                if (libraryGrid) libraryGrid.classList.toggle('hidden', tabId !== 'scores');
+                if (setlistGrid) setlistGrid.classList.toggle('hidden', tabId !== 'setlists');
                 
                 const scoreActions = document.getElementById('score-actions-area');
                 const setlistActions = document.getElementById('setlist-actions-area');
+                
+                // Explicitly set one to show and the other to hide
                 if (scoreActions) scoreActions.classList.toggle('hidden', tabId !== 'scores');
                 if (setlistActions) setlistActions.classList.toggle('hidden', tabId !== 'setlists');
 
@@ -210,12 +224,29 @@ export class ScoreManager {
             thumbnail,
             dateImported: Date.now(),
             lastAccessed: Date.now(),
-            tags: []
+            tags: [],
+            storageMode: 'cached'
         };
 
         this.registry.push(entry);
         await this.helper.saveRegistry(this.registry);
         await db.set(`score_buf_${fp}`, buffer);
+
+        // --- ADDED: Initialize Score Detail for the new score ---
+        if (this.app.scoreDetailManager) {
+            this.app.scoreDetailManager.currentInfo = {
+                name: entry.title,
+                composer: 'Unknown',
+                lastEdit: Date.now(),
+                lastAuthor: this.app.profileManager?.data?.userName || 'Guest',
+                mediaList: [],
+                activeMediaId: null,
+                stampScale: 1.0,
+                lastScrollTop: 0
+            };
+            this.app.scoreDetailManager.save(fp);
+        }
+
         this.render();
         this.app.showMessage(`Imported: ${file.name}`, 'success');
         return entry;
@@ -225,11 +256,60 @@ export class ScoreManager {
         const score = this.registry.find(s => s.fingerprint === fp);
         if (!score) return;
         this.toggleOverlay(false);
-        const buffer = await db.get(`score_buf_${fp}`);
+
+        let buffer = await db.get(`score_buf_${fp}`);
+
+        if (!buffer && score.storageMode === 'cloud') {
+            const drive = this.app.driveSyncManager;
+            if (!drive?.isEnabled || !drive?.accessToken) {
+                this.app.showMessage('此樂譜僅存於雲端，請先連接 Google Drive', 'error');
+                this.toggleOverlay(true);
+                return;
+            }
+            try {
+                this.app.showMessage('正在從雲端下載樂譜...', 'info');
+                buffer = await drive.downloadPDF(fp);
+                await db.set(`score_buf_${fp}`, buffer);
+                score.storageMode = 'cached';
+                await this.helper.saveRegistry(this.registry);
+            } catch (err) {
+                this.app.showMessage('雲端下載失敗: ' + err.message, 'error');
+                this.toggleOverlay(true);
+                return;
+            }
+        }
+
         if (buffer) {
             score.lastAccessed = Date.now();
+            
+            // --- ADDED: Auto-generate missing thumbnail ---
+            if (!score.thumbnail) {
+                console.log('[ScoreManager] Generating missing thumbnail...');
+                const thumb = await this.helper.generateThumbnail(buffer.slice(0));
+                if (thumb) {
+                    score.thumbnail = thumb;
+                }
+            }
+
             await this.helper.saveRegistry(this.registry);
             await this.app.loadPDF(new Uint8Array(buffer), score.fileName);
+        }
+    }
+
+    async setStorageMode(fp, mode) {
+        const score = this.registry.find(s => s.fingerprint === fp);
+        if (score) {
+            score.storageMode = mode;
+            await this.helper.saveRegistry(this.registry);
+        }
+    }
+
+    async updateSyncStatus(fp, isSynced) {
+        const score = this.registry.find(s => s.fingerprint === fp);
+        if (score) {
+            score.isSynced = isSynced;
+            await this.helper.saveRegistry(this.registry);
+            this.render();
         }
     }
 
@@ -237,10 +317,25 @@ export class ScoreManager {
         if (!this.overlay) return;
         const active = force !== undefined ? force : !this.overlay.classList.contains('active');
         this.overlay.classList.toggle('active', active);
-        if (active) this.render();
+        
+        if (active) {
+            // Ensure header and toolbar are visible when opening library
+            document.querySelector('.library-header')?.classList.remove('hidden-important');
+            document.querySelector('.library-toolbar')?.classList.remove('hidden-important');
+            this.app.setlistManager?.closeDetailView(); // Close any left-over detail view
+            this.render();
+        }
     }
 
     render() { this.ui.render(); }
+
+    async saveRegistry() {
+        await this.helper.saveRegistry(this.registry);
+    }
+
+    async rebuildLibrary() {
+        await this.helper.rebuildLibrary();
+    }
 
     toggleSelectionMode(val) {
         this.isSelectionMode = val !== undefined ? val : !this.isSelectionMode;

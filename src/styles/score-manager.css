@@ -377,33 +377,42 @@
     display: block;
 }
 
-.cloud-sync-status {
-    width: 24px;
-    height: 24px;
-    background: rgba(255, 255, 255, 0.07);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-left: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+.cloud-sync-status.clickable {
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cloud-sync-status.not-synced {
-    color: rgba(255, 255, 255, 0.3);
+.cloud-sync-status.clickable:hover {
+    transform: scale(1.2);
+    background: rgba(var(--primary-rgb), 0.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.cloud-sync-status.synced {
-    background: rgba(99, 102, 241, 0.15);
+.cloud-sync-status.clickable:active {
+    transform: scale(0.9);
+}
+
+.cloud-sync-status.pinned {
+    color: #ef4444; /* Standard pin red */
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.cloud-sync-status.cached {
+    color: var(--text-muted);
+    opacity: 0.4;
+}
+
+.cloud-sync-status.cached:hover {
+    opacity: 1;
     color: var(--primary);
-    border-color: rgba(99, 102, 241, 0.4);
 }
 
-.cloud-sync-status.broken {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
-    border-color: rgba(239, 68, 68, 0.4);
+
+.cloud-sync-status.pinned {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.4);
+    font-size: 13px;
 }
 
 /* Info button */
@@ -592,4 +601,8 @@
     right: 20px;
     z-index: 100;
     box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+}
+
+.hidden-important {
+    display: none !important;
 }

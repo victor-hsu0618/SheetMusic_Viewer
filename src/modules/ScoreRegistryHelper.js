@@ -151,4 +151,52 @@ export class ScoreRegistryHelper {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
+
+    async rebuildLibrary() {
+        console.log('[ScoreRegistryHelper] Rebuilding library from IndexedDB buffers...');
+        this.app.showMessage('Rebuilding library...', 'system');
+        
+        try {
+            // Get all keys from DB using a helper if available, or brute force prefix
+            // For now, we assume db has a way to get all keys or we use common prefixes
+            const allKeys = await db.getAllKeys(); 
+            const bufferKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith('score_buf_'));
+            console.log(`[ScoreRegistryHelper] Found ${bufferKeys.length} PDF buffer(s) in storage.`);
+
+            const newRegistry = [];
+            for (const key of bufferKeys) {
+                const fp = key.replace('score_buf_', '');
+                const buffer = await db.get(key);
+                if (!buffer) continue;
+
+                // Recover metadata if possible
+                const detail = await db.get(`score_detail_${fp}`) || await db.get(`score_detail_${fp}`);
+                const score = this.manager.registry.find(s => s.fingerprint === fp);
+                const thumbnail = await this.generateThumbnail(buffer.slice(0)).catch(() => null);
+
+                newRegistry.push({
+                    fingerprint: fp,
+                    title: detail?.name || (score?.title && score.title !== 'Unknown' ? score.title : `Recovered (${fp.slice(0, 6)})`),
+                    fileName: detail?.name ? detail.name + '.pdf' : (score?.fileName || 'recovered.pdf'),
+                    composer: detail?.composer || (score?.composer !== 'Unknown' ? score.composer : 'Unknown'),
+                    thumbnail: thumbnail,
+                    dateImported: score?.dateImported || Date.now(),
+                    lastAccessed: score?.lastAccessed || Date.now(),
+                    tags: score?.tags || [],
+                    isSynced: score?.isSynced || false,
+                    storageMode: score?.storageMode || 'cached'
+                });
+                console.log(`[ScoreRegistryHelper] Recovered score: ${fp.slice(0, 8)}...`);
+            }
+
+            this.manager.registry = newRegistry;
+            await this.saveRegistry(this.manager.registry);
+            this.manager.render();
+            this.app.showMessage(`Library rebuilt: ${newRegistry.length} score(s) recovered.`, 'success');
+            console.log(`[ScoreRegistryHelper] Rebuild complete. ${newRegistry.length} entries.`);
+        } catch (err) {
+            console.error('[ScoreRegistryHelper] Rebuild failed:', err);
+            this.app.showMessage('Rebuild failed: ' + err.message, 'error');
+        }
+    }
 }

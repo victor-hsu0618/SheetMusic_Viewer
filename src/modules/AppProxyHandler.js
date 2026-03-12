@@ -90,7 +90,7 @@ export function applyAppProxies(app) {
     // --- UI/Panel Proxies ---
     app.toggleSettings = (f) => app.settingsPanelManager.toggle(f);
     app.toggleLibrary = (f) => app.scoreManager.toggleOverlay(f);
-    app.toggleScoreDetail = (f) => app.scoreDetailManager.toggle(f);
+    app.toggleScoreDetail = (f) => app.scoreDetailManager?.showPanel(f);
     app.togglePauseSync = () => app.driveSyncManager?.togglePauseSync();
     app.purgeAllCloudData = () => {
         console.log('[AppProxy] Calling purgeAllCloudData');
@@ -110,4 +110,5 @@ export function applyAppProxies(app) {
     // --- Collaboration Proxies ---
     app.renderSourceUI = () => app.collaborationManager.renderSourceUI();
     app.addSource = () => app.collaborationManager.addSource();
+    app.updateScoreDetailUI = (f) => app.scoreDetailManager?.load(f);
 }
