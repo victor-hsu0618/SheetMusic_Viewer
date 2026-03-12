@@ -207,16 +207,21 @@
     }
 
     /* 4. Optimize Go To (Jump Panel) Grid for Fingers */
+    .calculator-display {
+        padding: 6px 12px !important;
+        min-height: 48px !important;
+    }
+
     .calculator-grid {
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 12px !important;
-        padding: 10px 15px !important;
+        gap: 8px !important;
+        padding: 5px 15px !important;
     }
 
     .calc-btn {
-        height: 54px !important; /* Larger touch target */
-        font-size: 1.1rem !important;
-        border-radius: 14px !important;
+        height: 44px !important; /* Optimized touch target for space efficiency */
+        font-size: 1rem !important;
+        border-radius: 12px !important;
     }
 
     /* Ensure specific buttons don't overflow */
@@ -226,7 +231,7 @@
 
     .go {
         grid-row: span 2 !important;
-        height: 120px !important;
+        height: 96px !important; /* (44*2 + 8) */
     }
 
     /* 5. Library Full-screen adaptations */
