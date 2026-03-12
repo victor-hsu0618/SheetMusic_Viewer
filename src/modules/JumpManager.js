@@ -26,7 +26,8 @@ export class JumpManager {
         this.bookmarkInput = document.getElementById('bookmark-label-input')
 
         this.initEventListeners()
-        this.initDraggable()
+        // Disable draggable for PC to maintain "Stacked Shelf" design
+        // this.initDraggable()
     }
 
     initEventListeners() {
@@ -96,8 +97,12 @@ export class JumpManager {
     async togglePanel(force = null) {
         if (!this.panel) return
         const active = force !== null ? force : !this.panel.classList.contains('active')
-        this.panel.classList.toggle('active', active)
         if (active) {
+            // Reset position to let CSS fix it as a "Stacked Shelf"
+            this.panel.style.top = ''
+            this.panel.style.left = ''
+            this.panel.style.transform = ''
+            
             this.updateDisplay()
             this.displayValue = this.currentPage.toString()
             this.isTyping = false

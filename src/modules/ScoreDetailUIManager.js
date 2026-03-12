@@ -31,7 +31,8 @@ export class ScoreDetailUIManager {
         this.statsAuthor = document.getElementById('stats-author')
         
         this.initEventListeners()
-        this.initDraggable()
+        // Disable draggable for PC to maintain "Stacked Shelf" design
+        // this.initDraggable()
         this.initResizable()
     }
 

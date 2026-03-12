@@ -21,7 +21,9 @@ export class SettingsPanelManager {
         this.dragHandle = this.panel?.querySelector('.jump-drag-handle')
 
         if (this.panel && this.dragHandle) {
-            this.initDraggable()
+            // Only enable draggable on Desktop if not in "Shelf" design
+            // For now, user wants "Fixed Stacked Shelf" as the standard
+            // this.initDraggable() 
         }
 
         const closeBtn = document.getElementById('btn-close-settings')
@@ -174,10 +176,8 @@ export class SettingsPanelManager {
 
     updatePosition() {
         if (!this.panel) return
-        this.panel.style.left = `${this.posX}px`
-        this.panel.style.top = `${this.posY}px`
-        this.panel.style.bottom = 'auto'
-        this.panel.style.right = 'auto'
+        // Do nothing inline for "Stacked Shelf" pattern
+        // Let CSS handle centering (left: 50%, transform: translate(-50%, ...))
     }
 
     toggle(force = null) {
@@ -192,16 +192,12 @@ export class SettingsPanelManager {
             document.querySelectorAll('.jump-sub-panel').forEach(p => p.style.zIndex = '11500')
             this.panel.style.zIndex = '11501'
 
-            // Auto-center on first open if still at default position
-            if (this.posX === 80 && this.posY === 80) {
-                // Dimensons are usually available immediately after adding class in most modern browsers
-                const panelWidth = this.panel.offsetWidth || 320
-                const panelHeight = this.panel.offsetHeight || 500
-
-                this.posX = Math.max(0, (window.innerWidth - panelWidth) / 2)
-                this.posY = Math.max(40, (window.innerHeight - panelHeight) / 2)
-            }
-            this.updatePosition()
+            // Reset style to let CSS values take over
+            this.panel.style.left = ''
+            this.panel.style.top = ''
+            this.panel.style.bottom = ''
+            this.panel.style.transform = ''
+            
             this.refreshUI()
         } else {
             this.panel.classList.remove('active')

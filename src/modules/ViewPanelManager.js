@@ -16,7 +16,8 @@ export class ViewPanelManager {
         if (!this.panel) return
 
         this.initEventListeners()
-        this.initDraggable()
+        // Disable draggable for PC to maintain "Stacked Shelf" design
+        // this.initDraggable()
         this.updateZoomDisplay()
     }
 
@@ -54,9 +55,10 @@ export class ViewPanelManager {
         if (btnToggle) btnToggle.classList.toggle('active', active)
 
         if (active) {
-            // Reset position to center whenever it's opened
+            // Reset position to let CSS fix it as a "Stacked Shelf"
             this.panel.style.top = ''
             this.panel.style.left = ''
+            this.panel.style.bottom = ''
             this.panel.style.transform = ''
 
             this.updateZoomDisplay()
