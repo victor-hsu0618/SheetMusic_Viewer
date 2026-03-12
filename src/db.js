@@ -6,7 +6,8 @@ export async function get(key) {
         const transaction = db.transaction('store', 'readonly');
         const request = transaction.objectStore('store').get(key);
         request.onsuccess = () => resolve(request.result);
-        request.onerror = reject;
+        request.onerror = () => reject(request.error);
+        transaction.onerror = () => reject(transaction.error);
     });
 }
 
@@ -16,7 +17,9 @@ export async function set(key, value) {
         const transaction = db.transaction('store', 'readwrite');
         const request = transaction.objectStore('store').put(value, key);
         request.onsuccess = () => resolve();
-        request.onerror = reject;
+        request.onerror = () => reject(request.error);
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error);
     });
 }
 
@@ -26,7 +29,8 @@ export async function remove(key) {
         const transaction = db.transaction('store', 'readwrite');
         const request = transaction.objectStore('store').delete(key);
         request.onsuccess = () => resolve();
-        request.onerror = reject;
+        request.onerror = () => reject(request.error);
+        transaction.onerror = () => reject(transaction.error);
     });
 }
 
@@ -36,7 +40,8 @@ export async function clear() {
         const transaction = db.transaction('store', 'readwrite');
         const request = transaction.objectStore('store').clear();
         request.onsuccess = () => resolve();
-        request.onerror = reject;
+        request.onerror = () => reject(request.error);
+        transaction.onerror = () => reject(transaction.error);
     });
 }
 
@@ -46,7 +51,8 @@ export async function getAllKeys() {
         const transaction = db.transaction('store', 'readonly');
         const request = transaction.objectStore('store').getAllKeys();
         request.onsuccess = () => resolve(request.result);
-        request.onerror = reject;
+        request.onerror = () => reject(request.error);
+        transaction.onerror = () => reject(transaction.error);
     });
 }
 
@@ -64,8 +70,10 @@ function openDB() {
         request.onupgradeneeded = () => request.result.createObjectStore('store');
         request.onsuccess = () => {
             activeDB = request.result;
+            activeDB.onversionchange = () => { activeDB.close(); activeDB = null; };
+            activeDB.onclose = () => { activeDB = null; };
             resolve(activeDB);
         };
-        request.onerror = reject;
+        request.onerror = () => reject(request.error);
     });
 }

@@ -34,6 +34,8 @@ export class DriveSyncManager {
         this.syncTimer = null;
         this.pushDebounceTimer = null;
         this.lastSyncRequest = 0;
+        this.lastActivityTime = 0;
+        this.activityTimeoutMs = 5 * 60 * 1000; // stop syncing after 5 min of inactivity
 
         // --- Auth state ---
         this.authTimeout = null;
@@ -115,9 +117,19 @@ export class DriveSyncManager {
     // SYNC LOGIC — core coordination methods
     // =========================================================
 
+    recordActivity() {
+        this.lastActivityTime = Date.now();
+    }
+
     async sync() {
         if (!this.isEnabled || this.isSyncing || this.isPaused) {
             if (this.isPaused) console.log('[DriveSync] Auto-sync is currently PAUSED.');
+            return;
+        }
+
+        // Skip periodic sync when user has been idle
+        if (this.lastActivityTime > 0 && (Date.now() - this.lastActivityTime) > this.activityTimeoutMs) {
+            console.log('[DriveSync] User inactive, skipping sync.');
             return;
         }
 

@@ -173,10 +173,17 @@ export class InitializationManager {
         document.getElementById('btn-drive-pause')?.addEventListener('click', (e) => { e.preventDefault(); app.togglePauseSync() })
         document.getElementById('btn-rebuild-library')?.addEventListener('click', () => app.scoreManager.rebuildLibrary())
         document.getElementById('btn-reset-cloud-index')?.addEventListener('click', () => app.driveSyncManager.resetCloudIndex())
+        document.getElementById('btn-heal-cloud-titles')?.addEventListener('click', () => app.driveSyncManager.healManifestNames())
         document.getElementById('btn-purge-cloud-data')?.addEventListener('click', () => {
             console.log('[InitializationManager] Purge button clicked');
             app.purgeAllCloudData();
         })
         document.getElementById('btn-drive-force-push')?.addEventListener('click', () => app.driveSyncManager.forcePushAll())
+
+        // Activity tracking: record user presence for Drive sync idle detection
+        const recordActivity = () => app.driveSyncManager?.recordActivity()
+        document.addEventListener('pointerdown', recordActivity, { passive: true, capture: true })
+        document.addEventListener('keydown', recordActivity, { passive: true, capture: true })
+        document.addEventListener('wheel', recordActivity, { passive: true, capture: true })
     }
 }
