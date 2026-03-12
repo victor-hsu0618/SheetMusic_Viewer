@@ -220,7 +220,8 @@ export class SettingsPanelManager {
         // Nav Dividers
         const navDividerToggle = document.getElementById('settings-show-nav-dividers')
         if (navDividerToggle) {
-            const showNavDividers = localStorage.getItem('scoreflow_show_nav_dividers') === 'true'
+            const stored = localStorage.getItem('scoreflow_show_nav_dividers')
+            const showNavDividers = (stored === null) ? true : (stored === 'true')
             navDividerToggle.checked = showNavDividers
             if (showNavDividers) document.body.classList.add('show-nav-dividers')
 
@@ -330,6 +331,23 @@ export class SettingsPanelManager {
 
                 slider.value = val
                 slider.dispatchEvent(new Event('input'))
+            })
+        })
+
+        // Initialize individual Reset buttons
+        this.panel.querySelectorAll('.btn-reset-mini').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.reset
+                if (type === 'stamp-size') {
+                    const slider = document.getElementById('settings-stamp-size')
+                    if (slider) { slider.value = 1.0; slider.dispatchEvent(new Event('input')) }
+                } else if (type === 'jump-offset') {
+                    const slider = document.getElementById('settings-jump-offset')
+                    if (slider) { slider.value = 40; slider.dispatchEvent(new Event('input')) }
+                } else if (type === 'jump-speed') {
+                    const slider = document.getElementById('settings-jump-speed')
+                    if (slider) { slider.value = 300; slider.dispatchEvent(new Event('input')) }
+                }
             })
         })
     }

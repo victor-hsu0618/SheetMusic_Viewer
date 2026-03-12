@@ -15,9 +15,16 @@ export class SetlistManager {
         this.detailList = document.getElementById('setlist-detail-list')
         this.detailTitle = document.getElementById('setlist-detail-title')
         this.btnBack = document.getElementById('btn-setlist-back')
+        this.btnAddScore = document.getElementById('btn-setlist-add-score')
 
         if (this.btnBack) {
             this.btnBack.addEventListener('click', () => this.closeDetailView())
+        }
+
+        if (this.btnAddScore) {
+            this.btnAddScore.onclick = () => {
+                if (this.activeDetailSetId) this.showScorePicker(this.activeDetailSetId)
+            }
         }
 
         const stored = await db.get('score_setlists')
@@ -68,7 +75,7 @@ export class SetlistManager {
         const list = this.getSetlist(setId)
         if (!list) return false
 
-        // Prevent duplicates in the same setlist? 
+        // Prevent duplicates in the same setlist?
         if (list.scores.includes(fingerprint)) {
             return false // Already added
         }
@@ -76,6 +83,14 @@ export class SetlistManager {
         list.scores.push(fingerprint)
         list.updatedAt = Date.now()
         await this.save()
+
+        // Auto-pin: ensure the score is always available offline
+        await this.app.scoreManager?.setStorageMode(fingerprint, 'pinned')
+        const hasLocal = await import('../db.js').then(db => db.get(`score_buf_${fingerprint}`))
+        if (!hasLocal) {
+            this.app.driveSyncManager?.downloadAndCacheScore(fingerprint)
+        }
+
         return true
     }
 
@@ -88,6 +103,14 @@ export class SetlistManager {
         })
         list.updatedAt = Date.now()
         await this.save()
+
+        // If no longer in any setlist, downgrade from pinned to cached
+        const stillPinned = this.setlists.some(l =>
+            l.scores.some(item => (typeof item === 'object' ? item.fingerprint : item) === fingerprint)
+        )
+        if (!stillPinned) {
+            await this.app.scoreManager?.setStorageMode(fingerprint, 'cached')
+        }
     }
 
     async markScoreAsDeletedAll(fingerprint, title) {
@@ -237,10 +260,19 @@ export class SetlistManager {
         const list = this.getSetlist(setId)
         if (!list) return
 
-        // Hide Library Header and Grids
-        document.querySelector('.library-header').style.display = 'none'
+        // Hide header, toolbar, and grids using CSS classes for consistency
+        document.querySelector('.library-header')?.classList.add('hidden-important')
+        document.querySelector('.library-toolbar')?.classList.add('hidden-important')
         document.getElementById('setlist-grid').classList.add('hidden')
         document.getElementById('library-grid').classList.add('hidden')
+
+        // Reset Add Score button in case picker was left open
+        if (this.btnAddScore) {
+            this.btnAddScore.textContent = '⊕ Add Score'
+            this.btnAddScore.onclick = () => {
+                if (this.activeDetailSetId) this.showScorePicker(this.activeDetailSetId)
+            }
+        }
 
         // Show Detail View
         this.detailView.classList.remove('hidden')
@@ -250,19 +282,34 @@ export class SetlistManager {
     }
 
     closeDetailView() {
+        console.log('[SetlistManager] Closing detail view...');
         this.activeDetailSetId = null
+
+        // Reset picker state
+        if (this.btnAddScore) {
+            this.btnAddScore.textContent = '⊕ Add Score'
+            this.btnAddScore.onclick = () => {
+                if (this.activeDetailSetId) this.showScorePicker(this.activeDetailSetId)
+            }
+        }
+
         // Hide Detail View
         this.detailView.classList.add('hidden')
 
-        // Show Library Header and Grids based on active tab
-        document.querySelector('.library-header').style.display = 'flex'
+        // Restore header and toolbar
+        document.querySelector('.library-header')?.classList.remove('hidden-important')
+        document.querySelector('.library-toolbar')?.classList.remove('hidden-important')
 
         const tabs = document.querySelectorAll('.library-tabs .segment-btn')
         let activeTab = 'scores'
         tabs.forEach(t => { if (t.classList.contains('active')) activeTab = t.dataset.tab })
 
-        document.getElementById('library-grid').classList.toggle('hidden', activeTab !== 'scores')
-        document.getElementById('setlist-grid').classList.toggle('hidden', activeTab !== 'setlists')
+        console.log('[SetlistManager] Restoring active tab:', activeTab);
+        const libGrid = document.getElementById('library-grid');
+        const setGrid = document.getElementById('setlist-grid');
+        
+        if (libGrid) libGrid.classList.toggle('hidden', activeTab !== 'scores');
+        if (setGrid) setGrid.classList.toggle('hidden', activeTab !== 'setlists');
 
         if (activeTab === 'setlists') this.render()
     }
@@ -387,5 +434,89 @@ export class SetlistManager {
 
             this.detailList.appendChild(row)
         })
+    }
+
+    showScorePicker(setId) {
+        const list = this.getSetlist(setId)
+        if (!list) return
+
+        const alreadyIn = new Set(list.scores.map(item => typeof item === 'object' ? item.fingerprint : item))
+        const available = (this.app.scoreManager?.registry || [])
+            .filter(s => !alreadyIn.has(s.fingerprint) && !s.isCloudOnly)
+
+        // Replace the list area with picker UI (keeps header + Back button visible)
+        this.detailList.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-shrink:0;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input id="picker-search-input" type="text" placeholder="Search scores…"
+                    style="flex:1; background:var(--bg-app); border:1px solid var(--border); border-radius:10px; padding:8px 12px; color:var(--text-main); font-size:14px; font-family:inherit; outline:none;">
+            </div>
+            <div id="picker-score-list" style="display:flex; flex-direction:column; gap:2px;"></div>
+        `
+
+        // Swap Add Score button to "✓ Done" while picker is open
+        if (this.btnAddScore) {
+            this.btnAddScore.textContent = '✓ Done'
+            this.btnAddScore.onclick = () => {
+                this.btnAddScore.textContent = '⊕ Add Score'
+                this.btnAddScore.onclick = () => {
+                    if (this.activeDetailSetId) this.showScorePicker(this.activeDetailSetId)
+                }
+                this.renderDetailList()
+            }
+        }
+
+        const searchInput = this.detailList.querySelector('#picker-search-input')
+        const scoreList = this.detailList.querySelector('#picker-score-list')
+
+        const renderList = (query = '') => {
+            const q = query.toLowerCase()
+            const filtered = q
+                ? available.filter(s => (s.title || '').toLowerCase().includes(q) || (s.composer || '').toLowerCase().includes(q))
+                : available
+
+            scoreList.innerHTML = ''
+
+            if (filtered.length === 0) {
+                scoreList.innerHTML = `<div style="text-align:center; padding:40px 0; opacity:0.5; font-style:italic;">${q ? 'No matches.' : 'All scores are already in this setlist.'}</div>`
+                return
+            }
+
+            filtered.forEach(score => {
+                const row = document.createElement('div')
+                row.style.cssText = `
+                    display:flex; align-items:center; gap:12px; padding:10px 0;
+                    border-bottom:1px solid rgba(255,255,255,0.06); cursor:pointer;
+                `
+                row.innerHTML = `
+                    <div style="width:36px; height:46px; border-radius:4px; background:var(--bg-app); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; overflow:hidden;">
+                        ${score.thumbnail ? `<img src="${score.thumbnail}" style="width:100%;height:100%;object-fit:cover;">` : '🎼'}
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${score.title || 'Untitled'}</div>
+                        <div style="font-size:12px; opacity:0.6; margin-top:2px;">${score.composer || 'Unknown'}</div>
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" style="flex-shrink:0;opacity:0.7;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                `
+                row.addEventListener('mouseenter', () => { row.style.background = 'rgba(99,102,241,0.08)'; row.style.borderRadius = '8px' })
+                row.addEventListener('mouseleave', () => { row.style.background = ''; row.style.borderRadius = '' })
+
+                row.addEventListener('click', async () => {
+                    await this.addScore(setId, score.fingerprint)
+                    alreadyIn.add(score.fingerprint)
+                    const idx = available.findIndex(s => s.fingerprint === score.fingerprint)
+                    if (idx !== -1) available.splice(idx, 1)
+                    this.renderDetailList()
+                    renderList(searchInput.value)
+                })
+
+                scoreList.appendChild(row)
+            })
+        }
+
+        renderList()
+        setTimeout(() => searchInput.focus(), 50)
+
+        searchInput.addEventListener('input', () => renderList(searchInput.value))
     }
 }

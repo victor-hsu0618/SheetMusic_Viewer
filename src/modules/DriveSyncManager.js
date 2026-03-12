@@ -334,7 +334,7 @@ export class DriveSyncManager {
                     const buffer = await this.downloadPDF(fingerprint);
                     await db.set(`score_buf_${fingerprint}`, buffer);
 
-                    const thumbnail = await this.app.scoreManager.generateThumbnail(buffer.slice(0));
+                    const thumbnail = await this.app.scoreManager.helper.generateThumbnail(buffer.slice(0));
                     score.thumbnail = thumbnail;
                     score.isCloudOnly = false;
                     score.isPdfAvailable = true;
@@ -353,7 +353,7 @@ export class DriveSyncManager {
                 try {
                     const buffer = await db.get(`score_buf_${fingerprint}`);
                     if (buffer) {
-                        const thumbnail = await this.app.scoreManager.generateThumbnail(buffer.slice(0));
+                        const thumbnail = await this.app.scoreManager.helper.generateThumbnail(buffer.slice(0));
                         if (thumbnail) {
                             score.thumbnail = thumbnail;
                             await this.app.scoreManager.saveRegistry();

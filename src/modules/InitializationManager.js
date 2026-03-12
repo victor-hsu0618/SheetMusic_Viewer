@@ -121,13 +121,9 @@ export class InitializationManager {
 
         document.getElementById('btn-close-library')?.addEventListener('click', () => app.toggleLibrary(false))
 
-        const libraryImportBtn = document.getElementById('library-import-btn')
-        if (libraryImportBtn) {
-            const input = libraryImportBtn.querySelector('input')
-            libraryImportBtn.addEventListener('click', (e) => {
-                if (e.target !== input) input.click()
-            })
-            input.addEventListener('change', async (e) => {
+        const scoreActionsInput = document.querySelector('#score-actions-area input[type="file"]')
+        if (scoreActionsInput) {
+            scoreActionsInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0]
                 if (!file) return
                 app.showMessage(`正在讀取檔案: ${file.name}...`, 'system')

@@ -27,7 +27,7 @@ export class DocBarManager {
     }
 
     initGripPositionSetting() {
-        const saved = localStorage.getItem('scoreflow_grip_position') || 'left'
+        const saved = localStorage.getItem('scoreflow_grip_position') || 'right'
         this.applyGripPosition(saved)
         document.querySelectorAll('[data-grip]').forEach(btn => {
             btn.addEventListener('click', () => this.applyGripPosition(btn.dataset.grip))

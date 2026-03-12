@@ -70,7 +70,18 @@ export class ScoreLibraryUIManager {
                 timeInfo = `Last opened: ${this.formatRelativeTime(score.lastAccessed)}`;
             }
 
-            const thumbContent = score.isCloudOnly ? '☁️' : (score.thumbnail ? `<img src="${score.thumbnail}">` : '🎼');
+            const thumbContent = score.storageMode === 'cloud' ? '☁️' : (score.thumbnail ? `<img src="${score.thumbnail}">` : '🎼');
+
+            // Storage mode badge
+            let storageBadge = '';
+            if (score.storageMode === 'pinned') {
+                storageBadge = `<div class="cloud-sync-status pinned clickable" title="Pinned offline — tap to unpin">📌</div>`;
+            } else if (score.storageMode === 'cloud') {
+                storageBadge = `<div class="cloud-sync-status not-synced clickable" title="Cloud only — tap to download">☁️</div>`;
+            } else {
+                // For 'cached', we could show a subtle icon or nothing. Let's show a toggleable ghost pin.
+                storageBadge = `<div class="cloud-sync-status cached clickable" title="Cached locally — tap to pin permanently">📍</div>`;
+            }
 
             // Add selection indicator if in selection mode
             const selectionIndicator = this.manager.isSelectionMode ? `
@@ -95,13 +106,35 @@ export class ScoreLibraryUIManager {
                         ${timeInfo}
                     </div>
                 </div>
+                ${storageBadge}
                 <div class="score-info-btn" title="Score Details">ℹ️</div>
             `;
 
             card.querySelector('.score-info-btn').onclick = (e) => {
                 e.stopPropagation();
-                this.app.showScoreDetail(score.fingerprint);
+                this.app.toggleScoreDetail(score.fingerprint);
             };
+
+            const badgeBtn = card.querySelector('.cloud-sync-status');
+            if (badgeBtn) {
+                badgeBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    const currentMode = score.storageMode || 'cached';
+                    let newMode = 'pinned';
+                    
+                    if (currentMode === 'pinned') newMode = 'cached';
+                    else if (currentMode === 'cloud') newMode = 'pinned';
+
+                    await this.manager.setStorageMode(score.fingerprint, newMode);
+                    
+                    // If pinning from cloud, trigger download
+                    if (newMode === 'pinned' && currentMode === 'cloud') {
+                        this.app.driveSyncManager?.downloadAndCacheScore(score.fingerprint);
+                    }
+                    
+                    this.render(); // Re-render this list
+                };
+            }
 
             card.onclick = () => {
                 if (this.manager.isSelectionMode) {
