@@ -16,7 +16,7 @@
   <title>ScoreFlow | Elite SheetMusic Viewer</title>
   <link rel="stylesheet" href="./src/styles/score-manager.css">
   <link rel="stylesheet" href="./src/styles/settings-panel.css">
-  <link rel="stylesheet" href="./src/styles/features/responsive.css">
+  <link rel="stylesheet" href="./src/styles/settings-panel.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -28,7 +28,7 @@
     .welcome-screen:not(.hidden) {
       position: fixed !important;
       inset: 0 !important;
-      z-index: 9999 !important;
+      z-index: 20000 !important;
       background: var(--bg, #0f0f13) !important;
     }
 
@@ -74,6 +74,12 @@
       <div id="pdf-viewer" class="pdf-viewer">
         <div class="welcome-screen">
           <div class="welcome-card">
+            <button id="btn-welcome-skip" class="btn btn-sm" style="position: absolute; top: 24px; right: 24px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Skip
+            </button>
             <div id="welcome-view" class="welcome-view">
               <div class="welcome-header">
                 <div class="welcome-icon">🎼</div>
@@ -89,10 +95,6 @@
                 </div>
                 <div class="tab-section-label welcome-list-label">Recent Scores</div>
                 <div id="welcome-recent-list" class="sidebar-recent-list"></div>
-              </div>
-              <div class="welcome-footer-actions" style="margin-top: 30px; display: flex; justify-content: flex-end;">
-                <button id="btn-welcome-skip" class="btn btn-outline" style="font-size: 0.8rem; padding: 6px 16px;">Skip
-                  to Workspace</button>
               </div>
             </div>
           </div>
@@ -274,7 +276,7 @@
     </div>
 
     <!-- Next Target Jump Ruler -->
-    <div id="jump-ruler" class="jump-ruler">
+    <div id="jump-ruler" class="jump-ruler hidden">
       <div class="ruler-track"></div>
       <div id="ruler-marks" class="ruler-marks"></div>
       <div id="jump-line" class="jump-line">

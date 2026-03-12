@@ -1,10 +1,9 @@
+import { GestureManager } from './GestureManager.js'
+
 export class InputManager {
     constructor(app) {
         this.app = app
-        this.swipeStartY = 0
-        this.swipeStartX = 0
-        this.swipeStartTime = 0
-        this.scrollTicking = false
+        this.gestureManager = new GestureManager(app, this)
 
         // Gesture state tracking
         this.lastTapTime = 0
@@ -26,11 +25,14 @@ export class InputManager {
         this.initScrollListener()
         this.initResizeListener()
         this.updateDividerPositions()
+
+        // Delegated to GestureManager
+        this.gestureManager.initBottomSheetGestures()
     }
 
     initResizeListener() {
         window.addEventListener('resize', () => {
-            this.app.viewerManager.updatePageMetrics()
+            if (this.app.viewerManager) this.app.viewerManager.updatePageMetrics()
             this.updateDividerPositions()
         })
     }
@@ -41,7 +43,7 @@ export class InputManager {
      */
     isEventInUI(e) {
         if (!e || !e.target) return false
-        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, .jump-sub-panel, .library-overlay, .sidebar-recent-item, .recent-score-card'
+        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, .jump-sub-panel, .library-overlay, .sidebar-recent-item, .recent-score-card, .bookmark-item'
         return !!e.target.closest(uiSelector)
     }
 
@@ -84,214 +86,75 @@ export class InputManager {
             // 3. Global Esc Handling (Cascading Close)
             if (key === 'escape' || code === 'Escape') {
                 e.preventDefault()
-                // Order: Shortcuts -> View Panel -> Jump Panel -> Layer Shelf -> Sidebar
-                if (this.app.shortcutsModal && this.app.shortcutsModal.classList.contains('active')) {
-                    this.app.toggleShortcuts(false)
-                } else if (this.app.viewPanelManager && this.app.viewPanelManager.panel.classList.contains('active')) {
-                    this.app.viewPanelManager.togglePanel(false)
-                } else if (this.app.jumpManager && this.app.jumpManager.panel.classList.contains('active')) {
-                    this.app.jumpManager.togglePanel(false)
-                } else if (this.app.scoreManager && this.app.scoreManager.overlay?.classList.contains('active')) {
-                    this.app.toggleLibrary(false)
-                } else if (this.app.settingsPanelManager && this.app.settingsPanelManager.panel?.classList.contains('active')) {
-                    this.app.toggleSettings(false)
-                }
+                this.handleEscape()
                 return
             }
 
             // 4. UI Toggles
-            switch (key) {
-                case 'g': // Go To (Calculator)
-                    e.preventDefault()
-                    if (this.app.jumpManager) this.app.jumpManager.togglePanel()
-                    break
-                case 's': // Settings Panel
-                    e.preventDefault()
-                    this.app.toggleSettings()
-                    break
-                case 'b': // Dock Expansion
-                    e.preventDefault()
-                    this.app.toggleDocBar()
-                    break
-                case 't': // Stamp Palette
-                    e.preventDefault()
-                    this.app.toolManager.toggleStampPalette()
-                    break
-                case 'v': // View Inspector
-                    e.preventDefault()
-                    if (this.app.viewPanelManager) this.app.viewPanelManager.togglePanel()
-                    break;
-                case 'r': // Ruler
-                    e.preventDefault()
-                    this.app.toggleRuler()
-                    break
-                case 'o': // Score Library
-                    e.preventDefault()
-                    this.app.toggleLibrary()
-                    break
-                case 'f': // Fullscreen
-                    e.preventDefault()
-                    this.app.toggleFullscreen()
-                    break
-                case 'h':
-                case '?': // Help
-                    e.preventDefault()
-                    this.app.toggleShortcuts()
-                    break
+            const toggleMap = {
+                'g': () => this.app.jumpManager?.togglePanel(),
+                's': () => this.app.toggleSettings(),
+                'b': () => this.app.toggleDocBar(),
+                't': () => this.app.toolManager.toggleStampPalette(),
+                'v': () => this.app.viewPanelManager?.togglePanel(),
+                'r': () => this.app.toggleRuler(),
+                'o': () => this.app.toggleLibrary(),
+                'f': () => this.app.toggleFullscreen(),
+                'h': () => this.app.toggleShortcuts(),
+                '?': () => this.app.toggleShortcuts()
+            }
+            if (toggleMap[key]) {
+                e.preventDefault()
+                toggleMap[key]()
             }
         })
+    }
+
+    handleEscape() {
+        // Order: Shortcuts -> View Panel -> Jump Panel -> Layer Shelf -> Sidebar
+        if (this.app.shortcutsModal?.classList.contains('active')) {
+            this.app.toggleShortcuts(false)
+        } else if (this.app.viewPanelManager?.panel.classList.contains('active')) {
+            this.app.viewPanelManager.togglePanel(false)
+        } else if (this.app.jumpManager?.panel.classList.contains('active')) {
+            this.app.jumpManager.togglePanel(false)
+        } else if (this.app.scoreManager?.overlay?.classList.contains('active')) {
+            this.app.toggleLibrary(false)
+        } else if (this.app.settingsPanelManager?.panel?.classList.contains('active')) {
+            this.app.toggleSettings(false)
+        }
     }
 
     initGestureListeners() {
         const viewer = document.getElementById('viewer-container')
         if (!viewer) return
 
-        let lastTwoFingerTapTime = 0
-        let lastSingleTapTime = 0
+        // Specialized workspace gestures offloaded to GestureManager
+        this.gestureManager.initNavigationGestures(viewer)
 
-        // Handle START
+        // Basic Long Press for Palette
         viewer.addEventListener('touchstart', (e) => {
-            if (this.isEventInUI(e)) return
+            if (this.isEventInUI(e) || e.touches.length !== 1) return
 
-            if (e.touches.length === 1) {
-                // Clear any existing long press timer first
-                if (this.longPressTimer) clearTimeout(this.longPressTimer)
+            const startX = e.touches[0].clientX
+            const startY = e.touches[0].clientY
 
-                this.swipeStartY = e.touches[0].clientY
-                this.swipeStartX = e.touches[0].clientX
-                this.swipeStartTime = Date.now()
+            this.isLongPressActive = false
+            if (this.longPressTimer) clearTimeout(this.longPressTimer)
 
-                // Long Press (0.5s) to toggle palette reliably
-                this.isLongPressActive = false
-                if (this.longPressTimer) clearTimeout(this.longPressTimer)
+            this.longPressTimer = setTimeout(() => {
+                this.isLongPressActive = true
+                if (navigator.vibrate) navigator.vibrate(12)
+                this.app.toolManager.toggleStampPalette(startX, startY)
+            }, 500)
+        }, { passive: true })
 
-                this.longPressTimer = setTimeout(() => {
-                    this.isLongPressActive = true
-                    // Vibrate for feedback
-                    if (navigator.vibrate) navigator.vibrate(12)
-
-                    // Call toggle with latest coordinates
-                    console.log('[InputManager] Long Press Triggered')
-                    this.app.toolManager.toggleStampPalette(this.swipeStartX, this.swipeStartY)
-                    lastSingleTapTime = 0
-                }, 500)
-            } else if (e.touches.length === 2) {
-                if (this.longPressTimer) clearTimeout(this.longPressTimer)
-                const x = (e.touches[0].clientX + e.touches[1].clientX) / 2
-                const y = (e.touches[0].clientY + e.touches[1].clientY) / 2
-                this.app.toolManager.toggleStampPalette(x, y)
-                lastSingleTapTime = 0
-            }
-        }, { passive: false })
-
-        // Handle MOVE (to cancel long press if moving too much)
         viewer.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 1) {
-                const dx = e.touches[0].clientX - this.swipeStartX
-                const dy = e.touches[0].clientY - this.swipeStartY
-                // Highly forgiving threshold (45px) for iPad jitter
-                if (Math.abs(dx) > 45 || Math.abs(dy) > 45) {
-                    if (this.longPressTimer) {
-                        clearTimeout(this.longPressTimer)
-                        this.longPressTimer = null
-                    }
-                }
-            } else {
-                if (this.longPressTimer) {
-                    clearTimeout(this.longPressTimer)
-                    this.longPressTimer = null
-                }
-            }
-        }, { passive: false })
-
-        // Unified Handle END (Gesture logic only)
-        viewer.addEventListener('touchend', (e) => {
             if (this.longPressTimer) {
                 clearTimeout(this.longPressTimer)
                 this.longPressTimer = null
             }
-
-            // If we just handled a long press, stop here to avoid accidental page turn
-            if (this.isLongPressActive) {
-                this.isLongPressActive = false
-                // Prevent ghost taps/turns
-                e.preventDefault()
-                return
-            }
-
-            if (this.isEventInUI(e)) return
-
-            if (e.changedTouches.length === 1) {
-                const dy = this.swipeStartY - e.changedTouches[0].clientY
-                const dx = this.swipeStartX - e.changedTouches[0].clientX
-                const dt = Date.now() - this.swipeStartTime
-                const now = Date.now()
-
-                lastSingleTapTime = now
-
-                // 2. Horizontal Swipe (Page Turns)
-                if (dt < 400 && Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-                    dx > 0 ? this.app.jump(1) : this.app.jump(-1)
-                    return
-                }
-
-                // 3. Vertical Swipe (Strategic Jump)
-                if (dt < 400 && Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx) * 1.5) {
-                    dy > 0 ? this.app.jump(1) : this.app.jump(-1)
-                    return
-                }
-
-                // 4. Single Tap (Zone Tapping)
-                if (this.app.activeStampType === 'view' && dt < 300 && Math.abs(dx) < 30 && Math.abs(dy) < 30) {
-                    const tapX = e.changedTouches[0].clientX
-                    const tapY = e.changedTouches[0].clientY
-                    const vh = window.innerHeight
-                    const vw = window.innerWidth
-                    // Zone Tapping - Based on PDF Page Dimensions
-                    const viewer = document.getElementById('viewer-container')
-                    const firstPage = viewer.querySelector('.page-container')
-                    if (firstPage) {
-                        const rect = firstPage.getBoundingClientRect()
-                        const relX = tapX - rect.left
-                        const relY = tapY - rect.top
-                        const pWidth = rect.width
-                        // User said 35% Top, usually means of the visible PDF area or viewport.
-                        // Let's stick to 35% of viewport height for Top, but 40/60 of PDF width for Bottom.
-
-                        if (tapY < vh * 0.35) {
-                            this.app.jump(-1)
-                            this.showZoneIndicator('up', tapX, tapY)
-                            this.flashDividers()
-                        } else {
-                            if (relX < pWidth * 0.40) {
-                                this.app.jump(-1)
-                                this.showZoneIndicator('left', tapX, tapY)
-                                this.flashDividers()
-                            } else {
-                                this.app.jump(1)
-                                this.showZoneIndicator('right', tapX, tapY)
-                                this.flashDividers()
-                            }
-                        }
-                    } else {
-                        // Fallback to window if no page loaded
-                        if (tapY < vh * 0.35) {
-                            this.app.jump(-1)
-                            this.showZoneIndicator('up', tapX, tapY)
-                        } else {
-                            if (tapX < vw * 0.40) {
-                                this.app.jump(-1)
-                                this.showZoneIndicator('left', tapX, tapY)
-                            } else {
-                                this.app.jump(1)
-                                this.showZoneIndicator('right', tapX, tapY)
-                            }
-                        }
-                    }
-                }
-            }
-            // No more aggressive preventDefault/return here to allow native momentum to finish
-        }, { passive: false })
+        }, { passive: true })
     }
 
     initMouseListeners() {
@@ -303,7 +166,6 @@ export class InputManager {
 
             this.isMouseLongPressActive = false
             this.mouseDownPos = { x: e.clientX, y: e.clientY }
-            this._lastMouseDownPos = { x: e.clientX, y: e.clientY } // Store for drag check
 
             if (this.mouseLongPressTimer) clearTimeout(this.mouseLongPressTimer)
             this.mouseLongPressTimer = setTimeout(() => {
@@ -330,9 +192,8 @@ export class InputManager {
                 clearTimeout(this.mouseLongPressTimer)
                 this.mouseLongPressTimer = null
             }
-            if (this.isMouseLongPressActive) {
+            if (this.isMouseLongPressActive && this.app.activeStampType === 'view') {
                 e.preventDefault()
-                e.stopPropagation()
             }
             this.mouseDownPos = null
         })
@@ -341,70 +202,13 @@ export class InputManager {
             // Ignore if this is part of a long press
             if (this.isMouseLongPressActive) {
                 this.isMouseLongPressActive = false
-                e.preventDefault()
-                e.stopPropagation()
                 return
-            }
-
-            // Drag Prevention: Check total displacement since mousedown
-            if (this._lastMouseDownPos) {
-                const dx = e.clientX - this._lastMouseDownPos.x
-                const dy = e.clientY - this._lastMouseDownPos.y
-                const dist = Math.sqrt(dx * dx + dy * dy)
-                if (dist > 10) {
-                    console.log('[InputManager] Drag detected, skipping navigation')
-                    return
-                }
             }
 
             // Only trigger in view mode and if not clicking on UI
             if (this.app.activeStampType !== 'view' || this.isEventInUI(e)) return
 
-            // Prevent conflict with dblclick and other gestures if needed
-            // But standard single click is mostly safe here in view mode
-
-            const tapX = e.clientX
-            const tapY = e.clientY
-            const vh = window.innerHeight
-            const vw = window.innerWidth
-
-            const viewer = document.getElementById('viewer-container')
-            const firstPage = viewer.querySelector('.page-container')
-
-            if (firstPage) {
-                const rect = firstPage.getBoundingClientRect()
-                const relX = tapX - rect.left
-                const pWidth = rect.width
-
-                if (tapY < vh * 0.35) {
-                    this.app.jump(-1)
-                    this.showZoneIndicator('up', tapX, tapY)
-                    this.flashDividers()
-                } else {
-                    if (relX < pWidth * 0.40) {
-                        this.app.jump(-1)
-                        this.showZoneIndicator('left', tapX, tapY)
-                        this.flashDividers()
-                    } else {
-                        this.app.jump(1)
-                        this.showZoneIndicator('right', tapX, tapY)
-                        this.flashDividers()
-                    }
-                }
-            } else {
-                if (tapY < vh * 0.35) {
-                    this.app.jump(-1)
-                    this.showZoneIndicator('up', tapX, tapY)
-                } else {
-                    if (tapX < vw * 0.40) {
-                        this.app.jump(-1)
-                        this.showZoneIndicator('left', tapX, tapY)
-                    } else {
-                        this.app.jump(1)
-                        this.showZoneIndicator('right', tapX, tapY)
-                    }
-                }
-            }
+            this.gestureManager.handleZoneTap(e.clientX, e.clientY)
         })
     }
 
@@ -438,47 +242,28 @@ export class InputManager {
         if (firstPage) {
             const rect = firstPage.getBoundingClientRect()
             const vh = window.innerHeight
-            const pWidth = rect.width
-
-            // T-Shape intersection: y = 35% vh, x = rect.left + 40% pWidth
             const intersectY = vh * 0.35
-            const intersectX = rect.left + pWidth * 0.40
+            const intersectX = rect.left + rect.width * 0.40
+            const hWidth = rect.width * 0.20
 
-            // H Divider: 1/5 (20%) of PDF width, centered at intersectX
-            const hWidth = pWidth * 0.20
             hDivider.style.top = `${intersectY}px`
             hDivider.style.left = `${intersectX - hWidth / 2}px`
             hDivider.style.width = `${hWidth}px`
 
-            // V Divider: T-Shape (Vertical DOWN only)
-            // Length is 1/5 (20%) of screen height
             const vHeight = vh * 0.20
-            vDivider.style.top = `${intersectY}px` // Start from intersectY
+            vDivider.style.top = `${intersectY}px`
             vDivider.style.left = `${intersectX}px`
             vDivider.style.height = `${vHeight}px`
-        } else {
-            // Fallback: T-Shape
-            hDivider.style.top = '35%'
-            hDivider.style.left = '30%'
-            hDivider.style.width = '20%'
-
-            vDivider.style.top = '35%' // Start from 35%
-            vDivider.style.left = '40%'
-            vDivider.style.height = '20%'
         }
     }
 
     flashDividers() {
-        // Only flash if setting is enabled via body class
         if (!document.body.classList.contains('show-nav-dividers')) return
-
         const hDivider = document.getElementById('nav-divider-h')
         const vDivider = document.getElementById('nav-divider-v')
         if (!hDivider || !vDivider) return
 
-        // Cancel previous sequence if any
         if (this._flashTimeout) clearTimeout(this._flashTimeout)
-
         hDivider.classList.add('active')
         vDivider.classList.add('active')
 
@@ -487,19 +272,5 @@ export class InputManager {
             vDivider.classList.remove('active')
             this._flashTimeout = null
         }, 500)
-    }
-
-    showZoneIndicator(type, x, y) {
-        const indicator = document.createElement('div')
-        indicator.className = `tap-zone-indicator ${type}`
-        // All use the same arrow path, but CSS handles rotation
-        indicator.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
-
-        indicator.style.left = `${x - 20}px`
-        indicator.style.top = `${y - 20}px`
-        document.body.appendChild(indicator)
-
-        setTimeout(() => indicator.classList.add('fade-out'), 50)
-        setTimeout(() => indicator.remove(), 600)
     }
 }

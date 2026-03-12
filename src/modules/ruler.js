@@ -101,6 +101,14 @@ export class RulerManager {
     updateRulerPosition() {
         const ruler = document.getElementById('jump-ruler')
         if (!ruler) return
+        
+        // Don't show if no PDF or Welcome Screen is active
+        const welcomeActive = !document.querySelector('.welcome-screen').classList.contains('hidden')
+        if (!this.app.pdf || welcomeActive) {
+            ruler.style.display = 'none'
+            return
+        }
+
         ruler.style.display = this.rulerVisible ? 'block' : 'none'
 
         const firstPage = document.querySelector('.page-container')

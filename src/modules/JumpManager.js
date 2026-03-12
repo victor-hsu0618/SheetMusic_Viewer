@@ -30,10 +30,6 @@ export class JumpManager {
     }
 
     initEventListeners() {
-        const btnToggle = document.getElementById('btn-jump-panel-toggle')
-        if (btnToggle) {
-            btnToggle.addEventListener('click', () => this.togglePanel())
-        }
 
         const btnClose = document.getElementById('btn-close-jump-panel')
         if (btnClose) btnClose.onclick = () => this.togglePanel(false)
@@ -80,15 +76,6 @@ export class JumpManager {
 
         const btnCancelBookmark = document.getElementById('btn-bookmark-cancel')
         if (btnCancelBookmark) btnCancelBookmark.onclick = () => this.hideBookmarkOverlay()
-
-        // Close on outside click (iPad)
-        document.addEventListener('touchstart', (e) => {
-            if (this.panel && this.panel.classList.contains('active') &&
-                !this.panel.contains(e.target) &&
-                !document.getElementById('btn-jump-panel-toggle').contains(e.target)) {
-                this.togglePanel(false)
-            }
-        }, { passive: true })
     }
 
     switchTab(tabId) {

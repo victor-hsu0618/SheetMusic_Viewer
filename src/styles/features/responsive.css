@@ -15,26 +15,35 @@
     }
 
     /* 2. Unified Bottom Sheet Pattern (Applied to all Panels) */
+    .jump-sub-panel.calculator-style,
+    .jump-sub-panel.calculator-style * {
+        box-sizing: border-box !important;
+    }
+
     .jump-sub-panel.calculator-style {
         display: flex; /* Use flex to ensure content fills */
         flex-direction: column;
         position: fixed !important;
-        inset: auto 0 0 0 !important; 
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
         width: 100% !important;
-        max-width: 100% !important;
-        height: auto !important;
-        min-height: 300px;
-        max-height: 80vh !important;
-        background: var(--bg-sidebar) !important; /* Ensure solid background */
-        color: var(--text-main) !important;       /* Ensure text visibility */
+        max-width: 100vw !important;
+        height: 75vh !important; /* Fixed height to prevent top jitter on tab switch */
+        background: var(--bg-sidebar) !important; 
+        color: var(--text-main) !important;
         border-radius: 24px 24px 0 0 !important;
         border: 1px solid var(--border) !important;
         border-bottom: none !important;
-        transform: translateY(100%) !important; 
+        touch-action: pan-y; 
+        -webkit-user-select: none;
+        user-select: none;
+        transform: translateY(100%); /* Default state: hidden below */
         box-shadow: 0 -10px 50px rgba(0,0,0,0.5) !important;
         z-index: 10000 !important; /* Extremely high to stay above everything */
         padding-bottom: env(safe-area-inset-bottom, 20px);
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s !important;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
         visibility: hidden;
         pointer-events: none;
         overflow: hidden;
@@ -42,17 +51,103 @@
 
     .jump-sub-panel.calculator-style.active {
         visibility: visible;
-        transform: translateY(0) !important;
+        transform: translateY(0) !important; /* Force override for mobile, JS can still override via element.style */
         pointer-events: auto;
     }
 
     /* Ensure content inside panels doesn't disappear */
     .calculator-grid, .view-panel-grid, .settings-scroll-area {
-        display: grid !important;
         opacity: 1 !important;
         visibility: visible !important;
         flex: 1;
         overflow-y: auto;
+        overflow-x: hidden !important; /* Block horizontal scroll strictly */
+        width: 100% !important;
+        min-height: 0;
+    }
+
+    .settings-scroll-area {
+        display: flex !important;
+        flex-direction: column;
+    }
+
+    .detail-tab-pane.active {
+        display: flex !important;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .source-item, .media-item-row {
+        flex-shrink: 0;
+        margin-bottom: 8px;
+        padding: 8px !important;
+    }
+
+    .segmented-control {
+        flex-wrap: wrap !important; /* Allow tabs to flow to next line */
+        height: auto !important;
+        gap: 6px !important;
+        padding: 6px !important;
+    }
+
+    .segment-btn {
+        flex: 1 1 auto !important; /* Grow and shrink but allow multi-line */
+        min-width: 60px;
+        padding: 6px 4px !important;
+        font-size: 0.7rem !important;
+    }
+
+    .search-input-mini, input[type="text"], select {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* System Tab Fingerprint Alignment */
+    #score-fingerprint-display {
+        font-family: var(--font-mono, monospace) !important;
+        font-size: 0.75rem !important;
+        background: rgba(0, 0, 0, 0.15);
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: var(--primary-light);
+    }
+
+    .meta-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 2px !important;
+        margin-bottom: 10px;
+    }
+
+    .stats-grid-compact {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+
+    .stats-item {
+        padding: 8px !important;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+    }
+
+    #score-detail-panel {
+        min-width: 0 !important;
+        top: auto !important;
+        transform: translateY(100%) !important;
+    }
+
+    #score-detail-panel.active {
+        transform: translateY(0) !important;
+    }
+
+    .detail-tab-pane {
+        padding: 5px 15px !important;
+    }
+    
+    .setting-item.mb-15 {
+        margin-bottom: 8px !important;
     }
 
     /* 2b. Doc Bar Center & Clickability Fix */

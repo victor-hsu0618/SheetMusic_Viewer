@@ -21,10 +21,6 @@ export class ViewPanelManager {
     }
 
     initEventListeners() {
-        const btnToggle = document.getElementById('btn-view-panel-toggle')
-        if (btnToggle) {
-            btnToggle.addEventListener('click', () => this.togglePanel())
-        }
 
         const btnClose = document.getElementById('btn-close-view-panel')
         if (btnClose) {
@@ -41,34 +37,6 @@ export class ViewPanelManager {
             })
         }
 
-        // View Actions
-        const map = {
-            'view-zoom-in': () => this.app.changeZoom(0.1),
-            'view-zoom-out': () => this.app.changeZoom(-0.1),
-            'view-fit-width': () => this.app.fitToWidth(),
-            'view-fit-height': () => this.app.fitToHeight(),
-            'view-fullscreen': () => this.app.docActionManager.toggleFullscreen(),
-            'view-ruler-toggle': () => this.app.rulerManager.toggleRuler()
-        }
-
-        Object.entries(map).forEach(([id, fn]) => {
-            const el = document.getElementById(id)
-            if (el) {
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation()
-                    fn()
-                })
-            }
-        })
-
-        // Close on outside click (Touch)
-        document.addEventListener('touchstart', (e) => {
-            if (this.panel && this.panel.classList.contains('active') &&
-                !this.panel.contains(e.target) &&
-                !document.getElementById('btn-view-panel-toggle').contains(e.target)) {
-                this.togglePanel(false)
-            }
-        }, { passive: true })
     }
 
     updateZoomDisplay() {

@@ -17,42 +17,7 @@ export class DocBarManager {
     }
 
     initEventListeners() {
-        // Control Suite Collapsible Toggle
-
-
-        // Doc Bar Toggle
-        if (this.app.docBarToggleBtn) {
-            this.app.docBarToggleBtn.addEventListener('click', () => this.toggleDocBar())
-        }
-
-        // Navigation (Jump) Actions moved to JumpManager
-
-        // Mode / Action Toggles
-        const btnQuickOpen = document.getElementById('btn-quick-open')
-        if (btnQuickOpen) btnQuickOpen.onclick = () => this.app.openPdfFilePicker()
-
-        const btnModeEraser = document.getElementById('btn-mode-eraser')
-        if (btnModeEraser) {
-            btnModeEraser.onclick = () => {
-                this.app.activeStampType = this.app.activeStampType === 'eraser' ? 'view' : 'eraser'
-                this.app.updateActiveTools()
-            }
-        }
-
-        const closeEraseAll = document.getElementById('close-erase-all-modal')
-        if (closeEraseAll) closeEraseAll.addEventListener('click', () => this.app.annotationManager.closeEraseAllModal())
-
-        const cancelEraseAll = document.getElementById('erase-all-cancel')
-        if (cancelEraseAll) cancelEraseAll.addEventListener('click', () => this.app.annotationManager.closeEraseAllModal())
-
-        const btnStampPalette = document.getElementById('btn-stamp-palette')
-        if (btnStampPalette) {
-            btnStampPalette.addEventListener('click', () => {
-                this.app.toolManager.toggleStampPalette()
-            })
-        }
-
-        // iPad pointer containment for Layer Shelf handled by LayerManager during init
+        // Shared listeners for mode eraser and quick open are moved to InitializationManager
     }
 
     toggleDocBar() {
