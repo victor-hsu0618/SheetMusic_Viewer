@@ -397,7 +397,7 @@ export class DriveSyncManager {
                     await this.createFile(fileName, data, annotParent);
                     const newId = await this.findSyncFile(fingerprint, 'sync');
                     if (newId) {
-                        await this.updateManifestEntry(fingerprint, { syncId: newId, name: prefix.replace(/_$/, '') });
+                        await this.updateManifestEntry(fingerprint, { syncId: newId, name: prefix.replace(/_$/, ''), filename: fileName });
                     }
                 }
                 score.isSynced = true;
@@ -581,9 +581,13 @@ export class DriveSyncManager {
                 const typeStr = Object.entries(byType).map(([t, n]) => `${t}×${n}`).join(', ');
                 diffParts.push(`stamps: ${changedStamps.length} (${typeStr})`);
             }
-            if (localEdit > sinceLastSync) diffParts.push('metadata');
+            if (localEdit > sinceLastSync) {
+                const metaName = metadata?.name || score.title;
+                const prevName = score.title !== metaName ? ` (title: "${score.title}" → "${metaName}")` : '';
+                diffParts.push(`metadata${prevName}`);
+            }
             const diffStr = diffParts.length > 0 ? diffParts.join(' | ') : 'full sync';
-            console.log(`[DriveSync] ↑ Push "${score.title}" — changed: ${diffStr}`);
+            console.log(`[DriveSync] ↑ Push "${metadata?.name || score.title}" — changed: ${diffStr}`);
 
             if (remoteVersion > (this.lastSyncTime || 0)) {
                 console.warn('[DriveSync] Push skipped: Remote is newer than local lastSyncTime.');
@@ -618,14 +622,25 @@ export class DriveSyncManager {
                 activeSyncId = await this.findSyncFile(fingerprint, 'sync');
             }
 
+            // Only set filename on first creation; preserve existing filename if file already existed
+            const existingFilename = this.manifest[fingerprint]?.filename;
             await this.updateManifestEntry(fingerprint, {
                 syncId: activeSyncId,
-                name: prefix.replace(/_$/, '')
+                name: prefix.replace(/_$/, ''),
+                filename: existingFilename || fileName
             });
 
             this.addLog(`已上傳: ${stampsCount} 劃記, ${bookmarksCount} 書籤, ${sourcesCount} 詮釋`, 'success');
             this.lastSyncTime = data.version;
             localStorage.setItem(`scoreflow_sync_time_${fingerprint}`, data.version);
+
+            // Keep registry title in sync with pushed metadata name
+            if (metadata?.name && metadata.name !== score.title) {
+                await this.app.scoreManager?.updateMetadata(fingerprint, {
+                    title: metadata.name,
+                    composer: metadata.composer || score.composer
+                });
+            }
 
             this.app.scoreManager?.updateSyncStatus(fingerprint, true);
         } catch (err) {
@@ -837,6 +852,12 @@ export class DriveSyncManager {
                 const hasRemoteRealName = remoteName && remoteName !== 'Unknown' && !remoteName.includes('score_buf_');
 
                 const shouldAcceptRemote = (remoteEdit > localEdit) || (isLocalGeneric && hasRemoteRealName);
+
+                if (shouldAcceptRemote) {
+                    console.log(`[DriveSync] ↓ Metadata pull: "${localInfo?.name}" → "${remoteName}" (remoteEdit=${new Date(remoteEdit).toLocaleTimeString()}, localEdit=${new Date(localEdit).toLocaleTimeString()})`);
+                } else if (remoteName && remoteName !== localInfo?.name) {
+                    console.log(`[DriveSync] ↓ Metadata pull SKIPPED (local is newer): keeping "${localInfo?.name}", remote had "${remoteName}"`);
+                }
 
                 if (localInfo && shouldAcceptRemote) {
                     this.app.scoreDetailManager.currentInfo = remoteData.scoreDetail;

@@ -65,10 +65,19 @@ export class DriveManifestManager {
             console.log(`[DriveSync] Resurrecting tombstoned entry: ${fingerprint.slice(0, 8)}`);
         }
 
-        if (!this.sync.manifest[fingerprint].name && this.sync.app.scoreManager) {
+        // --- Proactive Name Update ---
+        // If manifest doesn't have a name, OR we want to force it to match Registry
+        if (this.sync.app.scoreManager) {
             const score = this.sync.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
-            if (score && score.title && score.title !== 'Unknown') {
-                this.sync.manifest[fingerprint].name = this.sync.safeTitle(score.title).replace(/_$/, '');
+            const localName = score?.title;
+            const isGeneric = !localName || localName === 'Unknown' || localName.startsWith('score_buf_') || localName.startsWith('Recovered (');
+            
+            if (score && !isGeneric) {
+                const safeLocalName = this.sync.safeTitle(localName).replace(/_$/, '');
+                // Update if manifest name is missing, generic, or if we want to sync a name change
+                if (!this.sync.manifest[fingerprint].name || this.sync.manifest[fingerprint].name === 'Unknown' || this.sync.manifest[fingerprint].name.startsWith('sync_')) {
+                    this.sync.manifest[fingerprint].name = safeLocalName;
+                }
             }
         }
 
@@ -120,6 +129,41 @@ export class DriveManifestManager {
             this.sync.cloudStats.totalAnnotations = syncCount;
             this.sync.cloudStats.totalPDFs = pdfCount;
             this.sync.updateCloudStatsUI();
+
+            // Backfill filename/pdfFilename for existing entries that predate this field
+            let manifestDirty = false;
+            for (const [fp, entry] of Object.entries(this.sync.manifest)) {
+                if (entry.deleted) continue;
+                if (entry.syncId && !entry.filename) {
+                    try {
+                        const hash = this.sync.shortHash(fp);
+                        const annotParent = this.sync.annotationsFolderId || this.sync.folderId;
+                        const resp = await this.sync.gdriveFetch(
+                            `https://www.googleapis.com/drive/v3/files?q=name contains '${hash}' and '${annotParent}' in parents and trashed=false&fields=files(id,name)&orderBy=createdTime asc`
+                        );
+                        const data = await resp.json();
+                        if (data.files?.length > 0) {
+                            entry.filename = data.files[0].name;
+                            manifestDirty = true;
+                        }
+                    } catch (_) {}
+                }
+                if (entry.pdfId && !entry.pdfFilename) {
+                    try {
+                        const hash = this.sync.shortHash(fp);
+                        const pdfParent = this.sync.pdfsFolderId || this.sync.folderId;
+                        const resp = await this.sync.gdriveFetch(
+                            `https://www.googleapis.com/drive/v3/files?q=name contains '${hash}' and '${pdfParent}' in parents and trashed=false&fields=files(id,name)&orderBy=createdTime asc`
+                        );
+                        const data = await resp.json();
+                        if (data.files?.length > 0) {
+                            entry.pdfFilename = data.files[0].name;
+                            manifestDirty = true;
+                        }
+                    } catch (_) {}
+                }
+            }
+            if (manifestDirty) await this.saveManifest();
 
             let registryChanged = false;
             let foundCount = 0;
@@ -235,6 +279,60 @@ export class DriveManifestManager {
             }
         } catch (err) {
             console.error(`[DriveSync] Failed to fetch details for ${fingerprint}:`, err);
+        }
+    }
+
+    async healManifestNames() {
+        if (!this.sync.folderId) return;
+        this.sync.addLog('正在啟動雲端名稱修復流程...', 'warn');
+        
+        try {
+            const pdfsId = this.sync.pdfsFolderId;
+            const annotsId = this.sync.annotationsFolderId;
+            if (!pdfsId && !annotsId) throw new Error('雲端目錄結構不完整，無法修復');
+
+            // 1. Scan PDF folder
+            const pdfResp = await this.sync.gdriveFetch(`https://www.googleapis.com/drive/v3/files?q='${pdfsId}' in parents and trashed=false&fields=files(id,name)`);
+            const pdfData = await pdfResp.json();
+            
+            // 2. Scan Annotation folder
+            const annResp = await this.sync.gdriveFetch(`https://www.googleapis.com/drive/v3/files?q='${annotsId}' in parents and trashed=false&fields=files(id,name)`);
+            const annData = await annResp.json();
+
+            let repairedCount = 0;
+            const allFiles = [...(pdfData.files || []), ...(annData.files || [])];
+
+            for (const file of allFiles) {
+                // Extract hash from filename (e.g. MyTitle_abc12345.pdf)
+                const match = file.name.match(/^(.*)_([a-f0-9]{8,})\.(pdf|json)$/i);
+                if (match) {
+                    const realName = match[1].replace(/_/g, ' ').trim();
+                    const hash = match[2];
+                    
+                    // Find entry in manifest starting with this hash
+                    const fp = Object.keys(this.sync.manifest).find(k => k.startsWith(hash));
+                    if (fp) {
+                        const entry = this.sync.manifest[fp];
+                        if (entry.name !== realName) {
+                            console.log(`[Heal] Correcting ${hash}: "${entry.name}" -> "${realName}"`);
+                            entry.name = realName;
+                            repairedCount++;
+                        }
+                    }
+                }
+            }
+
+            if (repairedCount > 0) {
+                await this.saveManifest();
+                await this.scanRemoteSyncFiles(); // Refresh local registry
+                this.sync.addLog(`修復完成：已更正 ${repairedCount} 份樂譜名稱`, 'success');
+            } else {
+                this.sync.addLog('未發現需要修復的名稱', 'info');
+            }
+
+        } catch (err) {
+            console.error('[Heal] Failed:', err);
+            this.sync.addLog('修復失敗: ' + err.message, 'error');
         }
     }
 

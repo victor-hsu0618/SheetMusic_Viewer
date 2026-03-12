@@ -191,7 +191,8 @@ export class DriveFileManager {
                     console.warn('[DriveSync] Conflict 409: PDF already exists on Drive. Recovering file ID...');
                     const recoveredId = await this.findSyncFile(fingerprint, 'pdf');
                     if (recoveredId) {
-                        await this.sync.updateManifestEntry(fingerprint, { pdfId: recoveredId, name: prefix });
+                        const existingPdfFilename = this.sync.manifest[fingerprint]?.pdfFilename;
+                        await this.sync.updateManifestEntry(fingerprint, { pdfId: recoveredId, name: prefix, pdfFilename: existingPdfFilename || fileName });
                         this.sync.addLog(`檢測到衝突: PDF 已在雲端，索引已同步。`, 'success');
                         return;
                     }
@@ -242,9 +243,11 @@ export class DriveFileManager {
 
             const finalPdfId = await this.findSyncFile(fingerprint, 'pdf');
 
+            const existingPdfFilename = this.sync.manifest[fingerprint]?.pdfFilename;
             await this.sync.updateManifestEntry(fingerprint, {
                 pdfId: finalPdfId,
-                name: prefix.replace(/_$/, '')
+                name: prefix.replace(/_$/, ''),
+                pdfFilename: existingPdfFilename || fileName
             });
 
             this.sync.addLog(`樂譜檔案 ${originalFileName} 備份成功`, 'success');

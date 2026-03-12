@@ -76,8 +76,8 @@ export class ScoreDetailManager {
             try {
                 const info = JSON.parse(detailData)
                 this.currentInfo = {
-                    name: regScore?.title || info.name || '',
-                    composer: regScore?.composer || info.composer || '',
+                    name: info.name || regScore?.title || '',
+                    composer: info.composer || regScore?.composer || '',
                     lastEdit: info.lastEdit || 0,
                     lastAuthor: info.lastAuthor || null,
                     mediaList: info.mediaList || [],
@@ -116,6 +116,75 @@ export class ScoreDetailManager {
         const saveData = { ...this.currentInfo }
         saveData.mediaList = saveData.mediaList.map(m => m.type === 'local' ? { ...m, source: null } : m)
         localStorage.setItem(`scoreflow_detail_${fingerprint}`, JSON.stringify(saveData))
+    }
+
+    /**
+     * Initializes a new score detail record in storage without touching the current active state.
+     * Essential for background imports to prevent UI/Sync cross-contamination.
+     */
+    initializeNewScore(fingerprint, name) {
+        if (!fingerprint) return;
+        const info = {
+            name: name || 'Untitled',
+            composer: 'Unknown',
+            lastEdit: Date.now(),
+            lastAuthor: this.app.profileManager?.data?.userName || 'Guest',
+            mediaList: [],
+            activeMediaId: null,
+            stampScale: 1.0,
+            lastScrollTop: 0
+        };
+        localStorage.setItem(`scoreflow_detail_${fingerprint}`, JSON.stringify(info));
+        console.log(`[ScoreDetailManager] Initialized new record for: ${name} (${fingerprint.slice(0,8)})`);
+    }
+
+    /**
+     * Safely retrieves metadata for a specific fingerprint from localStorage or Registry.
+     * Prevents stale data contamination during background sync.
+     */
+    getMetadata(fingerprint) {
+        if (!fingerprint) return null;
+        
+        // If it's the currently loaded score, return currentInfo
+        if (fingerprint === this.currentFp) return this.currentInfo;
+
+        // Otherwise, load from localStorage
+        const detailData = localStorage.getItem(`scoreflow_detail_${fingerprint}`);
+        const regScore = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
+
+        if (detailData) {
+            try {
+                const info = JSON.parse(detailData);
+                return {
+                    name: regScore?.title || info.name || '',
+                    composer: regScore?.composer || info.composer || 'Unknown',
+                    lastEdit: info.lastEdit || 0,
+                    lastAuthor: info.lastAuthor || null,
+                    mediaList: info.mediaList || [],
+                    activeMediaId: info.activeMediaId || null,
+                    stampScale: info.stampScale || 1.0,
+                    lastScrollTop: info.lastScrollTop || 0
+                };
+            } catch (err) {
+                console.error('[ScoreDetailManager] getMetadata parse failed:', err);
+            }
+        }
+
+        // Fallback to Registry info if no detail record exists
+        if (regScore) {
+            return {
+                name: regScore.title,
+                composer: regScore.composer || 'Unknown',
+                lastEdit: 0,
+                lastAuthor: null,
+                mediaList: [],
+                activeMediaId: null,
+                stampScale: 1.0,
+                lastScrollTop: 0
+            };
+        }
+
+        return null;
     }
 
     render(fingerprint) {
@@ -160,8 +229,16 @@ export class ScoreDetailManager {
         const fingerprint = this.currentFp || this.app.pdfFingerprint
         if (!fingerprint || this.isLoading) return
 
+        const prevName = this.currentInfo.name;
+        const prevComposer = this.currentInfo.composer;
         this.currentInfo.name = (this.scoreNameInput.value || '').trim()
         this.currentInfo.composer = (this.scoreComposerInput.value || '').trim()
+
+        const nameChanged = this.currentInfo.name !== prevName;
+        const composerChanged = this.currentInfo.composer !== prevComposer;
+        if (nameChanged) console.log(`[ScoreDetail] Title changed: "${prevName}" → "${this.currentInfo.name}"`);
+        if (composerChanged) console.log(`[ScoreDetail] Composer changed: "${prevComposer}" → "${this.currentInfo.composer}"`);
+
         this.onModification()
 
         if (this.app.scoreManager) {
@@ -204,26 +281,76 @@ export class ScoreDetailManager {
         // Final name format: MozSym40_abc12345.json
         const finalFilename = rawName ? `${rawName}_${hash}.json` : `sync_${hash}.json`;
 
-        const entry = drive.manifest[fp];
-        if (!entry || !entry.syncId) {
-            alert('此樂譜尚未在雲端建立劃記同步檔');
+        let entry = drive.manifest[fp];
+        
+        // If entry doesn't exist at all, we can't do much yet
+        if (!entry) {
+            const confirmed = await this.app.showDialog({
+                title: '建立雲端紀錄',
+                message: '此樂譜在雲端索引中查無紀錄。是否現在為其建立索引（僅名稱），以便下次同步時使用？',
+                type: 'confirm',
+                icon: '📝'
+            });
+            if (!confirmed) return;
+            
+            // Create a stub entry
+            await drive.updateManifestEntry(fp, { name: rawName, updated: Date.now() });
+            this.app.showMessage('已建立雲端預約名稱', 'success');
+            this.render(fp);
             return;
         }
 
         try {
-            this.app.showMessage('正在重新命名雲端檔案...', 'system');
-            await drive.renameFile(entry.syncId, finalFilename);
+            this.app.showMessage('正在更新雲端資訊...', 'system');
+
+            // 1. If we have a syncId, rename the actual file on GDrive
+            if (entry.syncId) {
+                console.log(`[ScoreDetail] Renaming remote file: ${entry.syncId} -> ${finalFilename}`);
+                await drive.renameFile(entry.syncId, finalFilename);
+            }
             
-            // Update local manifest and Save
-            entry.name = rawName; // Store only the display part in name field
+            // 2. Always update the manifest entry's display name
+            entry.name = rawName;
+            entry.updated = Date.now();
             await drive.saveManifest();
             
-            this.app.showMessage('雲端檔名已更新', 'success');
+            this.app.showMessage(entry.syncId ? '雲端檔名已更新' : '雲端預測名稱已更新', 'success');
             this.render(fp);
         } catch (err) {
             console.error('[ScoreDetail] Rename failed:', err);
-            alert('重命名失敗: ' + err.message);
+            // If it failed because the file was missing, but we have a syncId, maybe reset it?
+            if (err.message?.includes('404')) {
+                const fix = await this.app.showDialog({
+                    title: '雲端檔案遺失',
+                    message: '找不到雲端同步檔，可能已被手動刪除。是否清除此無效的同步連結？',
+                    type: 'confirm'
+                });
+                if (fix) {
+                    delete entry.syncId;
+                    entry.name = rawName;
+                    await drive.saveManifest();
+                    this.render(fp);
+                }
+            } else {
+                alert('更新失敗: ' + err.message);
+            }
         }
+    }
+
+    handleSyncMatchLocal() {
+        if (!this.ui.syncFilenameInput || !this.ui.scoreNameInput) return;
+        const drive = this.app.driveSyncManager;
+        if (!drive) return;
+
+        const localTitle = this.ui.scoreNameInput.value.trim();
+        if (!localTitle) return;
+
+        const safePrefix = drive.safeTitle(localTitle).replace(/_$/, '');
+        this.ui.syncFilenameInput.value = safePrefix;
+        
+        // Trigger the input event to update the "Full" preview
+        this.ui.syncFilenameInput.dispatchEvent(new Event('input'));
+        this.app.showMessage('已從曲名抓取建議檔名', 'info');
     }
 
     handleAddYoutube() {
