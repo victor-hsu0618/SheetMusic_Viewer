@@ -78,6 +78,8 @@ export class ScoreDetailManager {
                 this.currentInfo = {
                     name: info.name || regScore?.title || '',
                     composer: info.composer || regScore?.composer || '',
+                    nameEditedAt: info.nameEditedAt || info.lastEdit || 0,
+                    composerEditedAt: info.composerEditedAt || info.lastEdit || 0,
                     lastEdit: info.lastEdit || 0,
                     lastAuthor: info.lastAuthor || null,
                     mediaList: info.mediaList || [],
@@ -93,6 +95,8 @@ export class ScoreDetailManager {
             this.currentInfo = {
                 name: regScore?.title || (this.app.activeScoreName?.replace(/\.pdf$/i, '') || ''),
                 composer: regScore?.composer || 'Unknown',
+                nameEditedAt: 0,
+                composerEditedAt: 0,
                 lastEdit: 0,
                 lastAuthor: null,
                 mediaList: [],
@@ -156,8 +160,10 @@ export class ScoreDetailManager {
             try {
                 const info = JSON.parse(detailData);
                 return {
-                    name: regScore?.title || info.name || '',
-                    composer: regScore?.composer || info.composer || 'Unknown',
+                    name: info.name || regScore?.title || '',
+                    composer: info.composer || regScore?.composer || 'Unknown',
+                    nameEditedAt: info.nameEditedAt || info.lastEdit || 0,
+                    composerEditedAt: info.composerEditedAt || info.lastEdit || 0,
                     lastEdit: info.lastEdit || 0,
                     lastAuthor: info.lastAuthor || null,
                     mediaList: info.mediaList || [],
@@ -236,8 +242,15 @@ export class ScoreDetailManager {
 
         const nameChanged = this.currentInfo.name !== prevName;
         const composerChanged = this.currentInfo.composer !== prevComposer;
-        if (nameChanged) console.log(`[ScoreDetail] Title changed: "${prevName}" → "${this.currentInfo.name}"`);
-        if (composerChanged) console.log(`[ScoreDetail] Composer changed: "${prevComposer}" → "${this.currentInfo.composer}"`);
+        const now = Date.now();
+        if (nameChanged) {
+            this.currentInfo.nameEditedAt = now;
+            console.log(`[ScoreDetail] Title changed: "${prevName}" → "${this.currentInfo.name}"`);
+        }
+        if (composerChanged) {
+            this.currentInfo.composerEditedAt = now;
+            console.log(`[ScoreDetail] Composer changed: "${prevComposer}" → "${this.currentInfo.composer}"`);
+        }
 
         this.onModification()
 
@@ -260,6 +273,9 @@ export class ScoreDetailManager {
         const newComposer = (this.scoreComposerInput.value || '').trim()
         if (newName === this.currentInfo.name && newComposer === this.currentInfo.composer) return
 
+        const now = Date.now();
+        if (newName !== this.currentInfo.name) this.currentInfo.nameEditedAt = now;
+        if (newComposer !== this.currentInfo.composer) this.currentInfo.composerEditedAt = now;
         this.currentInfo.name = newName
         this.currentInfo.composer = newComposer
         this.onModification()

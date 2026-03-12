@@ -432,16 +432,30 @@ export class DriveSyncManager {
             const bgChanges = [];
             const scoreName = remoteDetail?.name || score.title || fingerprint.slice(0, 8);
 
-            // 1. Merge Metadata
+            // 1. Merge Metadata — per-field to avoid stamp edits overwriting name
             if (remoteDetail) {
                 const isLocalGeneric = !score.title || score.title === 'Unknown' || score.title.includes('score_buf_');
-                const shouldUpdateMeta = isLocalGeneric || (remoteDetail.lastEdit > (localDetail?.lastEdit || 0));
+                const remoteNameTs = remoteDetail.nameEditedAt || remoteDetail.lastEdit || 0;
+                const localNameTs  = localDetail?.nameEditedAt  || localDetail?.lastEdit  || 0;
+                const shouldUpdateName = isLocalGeneric || (remoteNameTs > localNameTs);
+                const remoteComposerTs = remoteDetail.composerEditedAt || remoteDetail.lastEdit || 0;
+                const localComposerTs  = localDetail?.composerEditedAt  || localDetail?.lastEdit  || 0;
+                const shouldUpdateMeta = shouldUpdateName || (remoteDetail.lastEdit > (localDetail?.lastEdit || 0));
 
                 if (shouldUpdateMeta) {
-                    await db.set(`score_detail_${fingerprint}`, remoteDetail);
+                    const merged = { ...(localDetail || {}), ...remoteDetail };
+                    if (!shouldUpdateName) {
+                        merged.name = localDetail?.name || score.title;
+                        merged.nameEditedAt = localNameTs;
+                    }
+                    if (remoteComposerTs <= localComposerTs) {
+                        merged.composer = localDetail?.composer || score.composer;
+                        merged.composerEditedAt = localComposerTs;
+                    }
+                    await db.set(`score_detail_${fingerprint}`, merged);
                     await this.app.scoreManager.updateMetadata(fingerprint, {
-                        title: remoteDetail.name,
-                        composer: remoteDetail.composer || 'Unknown'
+                        title: merged.name || score.title,
+                        composer: merged.composer || 'Unknown'
                     }, true);
 
                     if (!score.dateImported || score.dateImported === 0) {
@@ -841,38 +855,62 @@ export class DriveSyncManager {
                 }
             }
 
-            // 5. Sync Score Detail
-            if (remoteData.scoreDetail) {
-                const localInfo = this.app.scoreDetailManager?.currentInfo;
-                const remoteEdit = remoteData.scoreDetail.lastEdit || 0;
-                const localEdit = localInfo?.lastEdit || 0;
-                const remoteName = remoteData.scoreDetail.name;
+            // 5. Sync Score Detail — per-field merge to avoid stamp/media edits
+            //    overwriting name/composer changes from the other device.
+            if (remoteData.scoreDetail && localInfo) {
+                const remote = remoteData.scoreDetail;
+                let metaChanged = false;
 
-                const isLocalGeneric = !localInfo || !localInfo.name || localInfo.name === 'Unknown' || localInfo.name.includes('score_buf_');
-                const hasRemoteRealName = remoteName && remoteName !== 'Unknown' && !remoteName.includes('score_buf_');
+                // name: compare nameEditedAt (falls back to lastEdit for old data)
+                const remoteNameTs = remote.nameEditedAt || remote.lastEdit || 0;
+                const localNameTs  = localInfo.nameEditedAt  || localInfo.lastEdit  || 0;
+                const isLocalNameGeneric = !localInfo.name || localInfo.name === 'Unknown' || localInfo.name.includes('score_buf_');
+                const hasRemoteRealName  = remote.name && remote.name !== 'Unknown' && !remote.name.includes('score_buf_');
 
-                const shouldAcceptRemote = (remoteEdit > localEdit) || (isLocalGeneric && hasRemoteRealName);
-
-                if (shouldAcceptRemote) {
-                    console.log(`[DriveSync] ↓ Metadata pull: "${localInfo?.name}" → "${remoteName}" (remoteEdit=${new Date(remoteEdit).toLocaleTimeString()}, localEdit=${new Date(localEdit).toLocaleTimeString()})`);
-                } else if (remoteName && remoteName !== localInfo?.name) {
-                    console.log(`[DriveSync] ↓ Metadata pull SKIPPED (local is newer): keeping "${localInfo?.name}", remote had "${remoteName}"`);
+                if ((remoteNameTs > localNameTs) || (isLocalNameGeneric && hasRemoteRealName)) {
+                    if (remote.name && remote.name !== localInfo.name) {
+                        console.log(`[DriveSync] ↓ name: "${localInfo.name}" → "${remote.name}" (remoteTs=${new Date(remoteNameTs).toLocaleTimeString()}, localTs=${new Date(localNameTs).toLocaleTimeString()})`);
+                        localInfo.name = remote.name;
+                        localInfo.nameEditedAt = remoteNameTs;
+                        metaChanged = true;
+                    }
+                } else if (remote.name && remote.name !== localInfo.name) {
+                    console.log(`[DriveSync] ↓ name SKIPPED (local newer): keeping "${localInfo.name}", remote had "${remote.name}"`);
                 }
 
-                if (localInfo && shouldAcceptRemote) {
-                    this.app.scoreDetailManager.currentInfo = remoteData.scoreDetail;
+                // composer: compare composerEditedAt
+                const remoteComposerTs = remote.composerEditedAt || remote.lastEdit || 0;
+                const localComposerTs  = localInfo.composerEditedAt  || localInfo.lastEdit  || 0;
+                if (remoteComposerTs > localComposerTs) {
+                    if (remote.composer && remote.composer !== localInfo.composer) {
+                        localInfo.composer = remote.composer;
+                        localInfo.composerEditedAt = remoteComposerTs;
+                        metaChanged = true;
+                    }
+                }
+
+                // non-name fields: use lastEdit for the rest (media, stampScale, etc.)
+                const remoteEdit = remote.lastEdit || 0;
+                const localEdit  = localInfo.lastEdit || 0;
+                if (remoteEdit > localEdit) {
+                    localInfo.mediaList    = remote.mediaList    || localInfo.mediaList;
+                    localInfo.activeMediaId = remote.activeMediaId ?? localInfo.activeMediaId;
+                    localInfo.stampScale   = remote.stampScale   ?? localInfo.stampScale;
+                    localInfo.lastEdit     = remoteEdit;
+                    metaChanged = true;
+                }
+
+                if (metaChanged) {
                     this.app.scoreDetailManager.save(fingerprint);
                     this.app.scoreDetailManager.render(fingerprint);
-
-                    if (this.app.scoreManager && remoteName) {
-                        await this.app.scoreManager.updateMetadata(fingerprint, {
-                            title: remoteName,
-                            composer: remoteData.scoreDetail.composer || 'Unknown'
+                    if (localInfo.name) {
+                        await this.app.scoreManager?.updateMetadata(fingerprint, {
+                            title: localInfo.name,
+                            composer: localInfo.composer || 'Unknown'
                         }, true);
                     }
-
                     hasChanges = true;
-                    changesDetail.push(`metadata: name="${remoteName}"`);
+                    changesDetail.push(`metadata: name="${localInfo.name}"`);
                 }
             }
 
