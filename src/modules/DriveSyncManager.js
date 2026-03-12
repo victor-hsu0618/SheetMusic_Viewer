@@ -857,6 +857,7 @@ export class DriveSyncManager {
 
             // 5. Sync Score Detail — per-field merge to avoid stamp/media edits
             //    overwriting name/composer changes from the other device.
+            const localInfo = this.app.scoreDetailManager?.currentInfo;
             if (remoteData.scoreDetail && localInfo) {
                 const remote = remoteData.scoreDetail;
                 let metaChanged = false;
