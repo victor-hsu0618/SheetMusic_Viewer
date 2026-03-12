@@ -41,10 +41,20 @@
 }
 
 .floating-doc-bar.collapsed {
-  padding: 6px 12px;
-  gap: 8px;
+  padding: 6px 10px;
+  gap: 4px;
   border-radius: 40px;
   min-height: 44px;
+}
+
+/* Logic to hide elements when collapsed in horizontal mode */
+.floating-doc-bar.collapsed > *:not(#btn-doc-bar-toggle):not(.core-trigger-suite):not(.doc-drag-handle) {
+  display: none !important;
+}
+
+/* In horizontal mode, we might want to keep settings visible too, but let's stick to the core toggle for now */
+.floating-doc-bar.collapsed .core-trigger-suite > *:not(#btn-settings-toggle) {
+  display: block; /* Keep settings visible even when collapsed for quick access */
 }
 
 /* Buttons inside Doc Bar */
