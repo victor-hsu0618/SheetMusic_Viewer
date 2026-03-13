@@ -132,7 +132,10 @@ export class InteractionManager {
                 }
             }
 
-            if (toolType === 'copy' || toolType === 'select' || toolType === 'recycle-bin' || toolType === 'slur') {
+            const isSelectionTool = ['copy', 'select', 'recycle-bin'].includes(toolType);
+            const isSlurBending = (toolType === 'slur' && target && target.type === 'slur');
+
+            if (isSelectionTool || isSlurBending) {
                 if (target) {
                     if (toolType === 'recycle-bin') {
                         this.app.annotationManager.eraseStampTarget(target);
@@ -175,8 +178,8 @@ export class InteractionManager {
                         InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
                         attachGlobalListeners();
                     }
-                } else {
-                    // MAGNETIC START: Allow starting interaction even if we hit nothing
+                } else if (isSelectionTool) {
+                    // MAGNETIC START: Allow starting interaction even if we hit nothing (ONLY for selection tools)
                     isInteracting = true;
                     activeObject = null;
                     isMovingExisting = true; // Flag that we ARE looking for something to move/interact with
