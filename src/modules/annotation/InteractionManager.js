@@ -185,6 +185,7 @@ export class InteractionManager {
                     InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
                 }
             } else if (['pen', 'highlighter', 'line', 'slur'].includes(toolType)) {
+                isInteracting = true;
                 activeObject = {
                     type: toolType, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
                     points: [CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay)],
@@ -208,6 +209,7 @@ export class InteractionManager {
                 }
             } else {
                 // New stamp placement
+                isInteracting = true;
                 const fPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
                 activeObject = {
                     page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
