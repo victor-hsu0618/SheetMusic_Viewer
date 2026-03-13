@@ -730,7 +730,7 @@ export class AnnotationManager {
                 type: 'text',
                 content: this.app._activeCustomText,
                 font: 'italic 300',
-                size: 20,
+                size: this.app.defaultFontSize,
                 fontFace: 'serif'
             }
         }

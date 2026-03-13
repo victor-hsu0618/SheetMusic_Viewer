@@ -35,7 +35,7 @@ export class AnnotationRenderer {
                 if (stamp.points) {
                     this.drawPathOnCanvas(ctx, canvas, stamp, isForeign, isHovered, isSelectHovered)
                 } else {
-                    this.drawStampOnCanvas(ctx, canvas, stamp, layer.color, isForeign, isHovered, isSelectHovered)
+                    this.drawStampOnCanvas(ctx, canvas, stamp, (stamp.color || layer.color), isForeign, isHovered, isSelectHovered)
                 }
             })
             ctx.restore()
@@ -149,7 +149,7 @@ export class AnnotationRenderer {
                     type: 'text',
                     content: this.app._activeCustomText,
                     font: 'italic 300',
-                    size: 20,
+                    size: this.app.defaultFontSize,
                     fontFace: 'serif'
                 }
             }

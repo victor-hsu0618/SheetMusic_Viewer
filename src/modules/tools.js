@@ -31,15 +31,16 @@ export class ToolManager {
         this.updateActiveTools()
     }
 
-    getIcon(tool, size = 24) {
+    getIcon(tool, size = 24, color = null) {
+        const strokeColor = color || 'currentColor'
         if (this.app._svgCache?.[tool.id]) {
-            // Strip existing width/height and inject the correct size
+            // Strip existing width/height and inject the correct size and color
             return this.app._svgCache[tool.id].replace(/<svg\b([^>]*)>/, (_, attrs) => {
                 const a = attrs.replace(/\s+width="[^"]*"/, '').replace(/\s+height="[^"]*"/, '')
-                return `<svg${a} width="${size}" height="${size}">`
+                return `<svg${a} width="${size}" height="${size}" style="color: ${strokeColor};">`
             })
         }
-        return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="currentColor" stroke-width="1.3" fill="none">${tool.icon}</svg>`
+        return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="${strokeColor}" stroke-width="1.3" fill="none">${tool.icon}</svg>`
     }
 
     toggleStampPalette(x = null, y = null, force = null) {
@@ -271,7 +272,7 @@ export class ToolManager {
             this.app.btnStampPalette.classList.toggle('active', isExpanded || !!activeTool)
             if (!this._stampBtnDefault) this._stampBtnDefault = this.app.btnStampPalette.innerHTML
             this.app.btnStampPalette.innerHTML = activeTool
-                ? this.getIcon(activeTool, 18)
+                ? this.getIcon(activeTool, 18, this.app.activeColor)
                 : this._stampBtnDefault
         }
 
@@ -363,6 +364,9 @@ export class ToolManager {
         header.appendChild(recentRibbon)
         this.app.activeToolsContainer.appendChild(header)
 
+        // Color Picker (New)
+        this.renderColorPicker()
+
         // Grid, Recycle Bin or Settings
         if (this.app.activeStampType === "recycle-bin") {
             this.renderRecycleBin()
@@ -434,6 +438,58 @@ export class ToolManager {
         }, 0)
     }
 
+    renderColorPicker() {
+        const ribbon = document.createElement("div")
+        ribbon.className = "color-picker-ribbon"
+
+        const colors = [
+            { name: 'Red', value: '#ff4757' },
+            { name: 'Blue', value: '#3b82f6' },
+            { name: 'Green', value: '#10b981' },
+            { name: 'Orange', value: '#f59e0b' },
+            { name: 'Purple', value: '#8b5cf6' },
+            { name: 'Black', value: '#2d3436' }
+        ]
+
+        colors.forEach(color => {
+            const swatch = document.createElement("button")
+            const isActive = this.app.activeColor === color.value
+            swatch.className = `color-swatch ${isActive ? "active" : ""}`
+            swatch.style.backgroundColor = color.value
+            swatch.title = color.name
+            swatch.onclick = (e) => {
+                e.stopPropagation()
+                this.app.activeColor = color.value
+                this.updateActiveTools()
+            }
+            ribbon.appendChild(swatch)
+        })
+
+        // --- RESET TO DEFAULT BUTTON ---
+        const divider = document.createElement("div")
+        divider.style.width = "1px"
+        divider.style.height = "16px"
+        divider.style.background = "var(--border)"
+        divider.style.margin = "0 4px"
+        ribbon.appendChild(divider)
+
+        const resetBtn = document.createElement("button")
+        resetBtn.className = "color-reset-btn"
+        resetBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`
+        resetBtn.title = "Reset to Category Color"
+        resetBtn.onclick = (e) => {
+            e.stopPropagation()
+            const layer = this.app.layers.find(l => l.id === this.app.activeLayerId)
+            if (layer) {
+                this.app.activeColor = layer.color
+                this.updateActiveTools()
+            }
+        }
+        ribbon.appendChild(resetBtn)
+
+        this.app.activeToolsContainer.appendChild(ribbon)
+    }
+
     renderRecycleBin() {
         const binContainer = document.createElement("div")
         binContainer.className = "recycle-bin-view"
@@ -488,6 +544,12 @@ export class ToolManager {
                 container.appendChild(divider)
             }
 
+            // --- Determine the display color for this row ---
+            // 為每個工具列計算動態顏色。如果是當前活耀類別，使用 app.activeColor；否則使用該類別（圖層）的原始設定顏色。
+            const layer = this.app.layers.find(l => l.name === group.name || l.type === group.type)
+            const isActiveRow = layer && layer.id === this.app.activeLayerId
+            const rowColor = isActiveRow ? this.app.activeColor : (layer ? layer.color : 'currentColor')
+
             const row = document.createElement("div")
             row.className = "active-tools-row"
 
@@ -500,6 +562,7 @@ export class ToolManager {
                     const pill = document.createElement("button")
                     pill.className = `text-tool-pill ${this.app.activeStampType === tool.id ? "active" : ""}`
                     pill.textContent = tool.label
+                    pill.style.color = rowColor // 使用動態顏色
                     pill.onclick = (e) => {
                         e.stopPropagation()
                         this.app.activeStampType = tool.id
@@ -529,6 +592,7 @@ export class ToolManager {
                         this.app._activeCustomText = text // Internal ref for renderer
                         this.updateActiveTools()
                     }
+                    pill.style.color = rowColor // 使用動態顏色
                     row.appendChild(pill)
                 })
 
@@ -575,7 +639,7 @@ export class ToolManager {
                     btn.className = `stamp-tool ${this.app.activeStampType === tool.id ? "active" : ""}`
                     btn.title = tool.label
                     btn.dataset.tooltip = tool.label
-                    btn.innerHTML = this.getIcon(tool, 22)
+                    btn.innerHTML = this.getIcon(tool, 22, rowColor)
                     btn.onclick = (e) => {
                         e.stopPropagation()
                         if (tool.id === 'erase-all') {
@@ -618,8 +682,25 @@ export class ToolManager {
                         <span>Score Scale (Current)</span>
                         <span class="setting-value" id="val-score-scale">${(this.app.scoreStampScale || 1.0).toFixed(1)}x</span>
                     </div>
-                    <input type="range" class="setting-slider" id="slider-score-scale" min="0.5" max="3.0" step="0.1" value="${this.app.scoreStampScale || 1.0}" />
+                    <div class="slider-control-row">
+                        <button class="slider-adjust-btn" id="btn-scale-minus">−</button>
+                        <input type="range" class="setting-slider" id="slider-score-scale" min="0.5" max="3.0" step="0.1" value="${this.app.scoreStampScale || 1.0}" />
+                        <button class="slider-adjust-btn" id="btn-scale-plus">+</button>
+                    </div>
                     <p class="setting-hint">Applies only to this specific score.</p>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Default Font Size</span>
+                        <span class="setting-value" id="val-font-size">${this.app.defaultFontSize}px</span>
+                    </div>
+                    <div class="slider-control-row">
+                        <button class="slider-adjust-btn" id="btn-font-minus">−</button>
+                        <input type="range" class="setting-slider" id="slider-font-size" min="16" max="32" step="1" value="${this.app.defaultFontSize}" />
+                        <button class="slider-adjust-btn" id="btn-font-plus">+</button>
+                    </div>
+                    <p class="setting-hint">Adjustment for dynamic markings and text.</p>
                 </div>
 
                 <div class="setting-divider"></div>
@@ -652,15 +733,40 @@ export class ToolManager {
 
         const sliderScore = panel.querySelector('#slider-score-scale')
         const valScore = panel.querySelector('#val-score-scale')
+        const sliderFont = panel.querySelector('#slider-font-size')
+        const valFont = panel.querySelector('#val-font-size')
         const btnBack = panel.querySelector('#btn-settings-back')
         const btnResetLayers = panel.querySelector('#btn-reset-layers-mini')
         const btnEraseAll = panel.querySelector('#btn-erase-all-mini')
 
-        sliderScore.oninput = (e) => {
-            const val = e.target.value
-            valScore.textContent = `${parseFloat(val).toFixed(1)}x`
-            this.app.updateScoreStampScale(val)
+        // Micromanagement Buttons
+        const btnScaleMinus = panel.querySelector('#btn-scale-minus')
+        const btnScalePlus = panel.querySelector('#btn-scale-plus')
+        const btnFontMinus = panel.querySelector('#btn-font-minus')
+        const btnFontPlus = panel.querySelector('#btn-font-plus')
+
+        const updateScore = (val) => {
+            const num = Math.max(0.5, Math.min(3.0, parseFloat(val)))
+            sliderScore.value = num
+            valScore.textContent = `${num.toFixed(1)}x`
+            this.app.updateScoreStampScale(num)
         }
+
+        const updateFont = (val) => {
+            const num = Math.max(16, Math.min(32, parseInt(val)))
+            sliderFont.value = num
+            valFont.textContent = `${num}px`
+            this.app.defaultFontSize = num
+            this.app.saveToStorage()
+        }
+
+        sliderScore.oninput = (e) => updateScore(e.target.value)
+        sliderFont.oninput = (e) => updateFont(e.target.value)
+
+        btnScaleMinus.onclick = (e) => { e.stopPropagation(); updateScore(parseFloat(sliderScore.value) - 0.1) }
+        btnScalePlus.onclick = (e) => { e.stopPropagation(); updateScore(parseFloat(sliderScore.value) + 0.1) }
+        btnFontMinus.onclick = (e) => { e.stopPropagation(); updateFont(parseInt(sliderFont.value) - 1) }
+        btnFontPlus.onclick = (e) => { e.stopPropagation(); updateFont(parseInt(sliderFont.value) + 1) }
 
         btnResetLayers.addEventListener('click', (e) => {
             e.stopPropagation()

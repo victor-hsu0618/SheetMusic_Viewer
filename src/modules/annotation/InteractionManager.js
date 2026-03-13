@@ -160,7 +160,7 @@ export class InteractionManager {
                 activeObject = {
                     type: toolType, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
                     points: [CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay)],
-                    color: this.app.layers.find(l => l.id === 'draw').color,
+                    color: this.app.activeColor,
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
                     updatedAt: Date.now()
                 };
@@ -175,7 +175,7 @@ export class InteractionManager {
                 const fPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
                 activeObject = {
                     page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
-                    x: fPos.x, y: fPos.y, data: null, updatedAt: Date.now(),
+                    x: fPos.x, y: fPos.y, color: this.app.activeColor, data: null, updatedAt: Date.now(),
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`
                 };
                 const group = this.app.toolsets.find(g => g.tools.some(t => t.id === toolType));
@@ -185,7 +185,12 @@ export class InteractionManager {
                 }
                 if (!activeObject.layerId) activeObject.layerId = 'draw';
                 if (toolType.startsWith('custom-text-') && this.app._activeCustomText) {
-                    activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 300', size: 20, fontFace: 'serif' };
+                    activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 300', size: this.app.defaultFontSize, fontFace: 'serif' };
+                } else {
+                    const tool = group?.tools.find(t => t.id === toolType);
+                    if (tool && tool.draw && tool.draw.type === 'text') {
+                        activeObject.draw = { ...tool.draw, size: this.app.defaultFontSize };
+                    }
                 }
                 this.app.lastFocusedStamp = activeObject;
                 attachGlobalListeners();

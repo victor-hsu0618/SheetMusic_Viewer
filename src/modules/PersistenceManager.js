@@ -23,6 +23,8 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_recent_solo_scores', JSON.stringify(this.app.recentSoloScores || []))
         localStorage.setItem('scoreflow_active_categories', JSON.stringify(this.app.activeCategories))
         localStorage.setItem('scoreflow_layers', JSON.stringify(this.app.layers))
+        localStorage.setItem('scoreflow_active_color', this.app.activeColor)
+        localStorage.setItem('scoreflow_default_font_size', this.app.defaultFontSize)
         localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary))
         localStorage.setItem('scoreflow_stamp_size_multiplier', this.app.stampSizeMultiplier)
         localStorage.setItem('scoreflow_stamp_offset_touch_y', this.app.stampOffsetTouchY)
@@ -53,6 +55,8 @@ export class PersistenceManager {
         const docBarCollapsedStr = localStorage.getItem('scoreflow_doc_bar_collapsed')
         const rulerVisibleData = localStorage.getItem('scoreflow_ruler_visible')
         const userTextLibraryData = localStorage.getItem('scoreflow_user_text_library')
+        const activeColorData = localStorage.getItem('scoreflow_active_color')
+        const defaultFontSizeData = localStorage.getItem('scoreflow_default_font_size')
         const stampSizeMultiplierData = localStorage.getItem('scoreflow_stamp_size_multiplier')
 
         if (recentSoloData) this.app.recentSoloScores = JSON.parse(recentSoloData)
@@ -75,6 +79,8 @@ export class PersistenceManager {
         if (userTextLibraryData) {
             this.app.userTextLibrary = JSON.parse(userTextLibraryData)
         }
+        if (activeColorData) this.app.activeColor = activeColorData
+        if (defaultFontSizeData) this.app.defaultFontSize = parseInt(defaultFontSizeData)
         if (stampSizeMultiplierData) {
             this.app.stampSizeMultiplier = parseFloat(stampSizeMultiplierData)
             if (this.app.settingsStampSizeInput) {

@@ -436,9 +436,9 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   animation: slideInUp 0.3s ease-out;
-  padding: 4px;
+  padding: 2px 4px;
 }
 
 .settings-header h3 {
@@ -452,7 +452,7 @@
 .settings-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .setting-item {
@@ -480,6 +480,7 @@
   width: 100%;
   height: 6px;
   -webkit-appearance: none;
+  appearance: none;
   background: var(--bg-soft);
   border-radius: 6px;
   outline: none;
@@ -495,11 +496,77 @@
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
 }
 
+.slider-control-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.slider-adjust-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  padding: 0;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.slider-adjust-btn:hover {
+  background: var(--bg-soft);
+  color: var(--primary);
+  border-color: var(--primary);
+  transform: scale(1.1);
+}
+
+.slider-adjust-btn:active {
+  transform: scale(0.9);
+}
+
 .setting-hint {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
-  margin: -4px 0 0 0;
-  opacity: 0.8;
+  margin: -2px 0 0 0;
+  opacity: 0.7;
+}
+
+/* Specific overrides for settings list to make it cleaner */
+.layer-list-mini {
+  margin-top: 4px;
+}
+
+.layer-list-mini .layer-item {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  margin-bottom: 4px;
+}
+
+.layer-list-mini .color-dot {
+  width: 18px;
+  height: 18px;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  cursor: pointer;
+}
+
+.layer-list-mini .layer-name {
+  font-size: 0.85rem;
+}
+
+.layer-list-mini .layer-vis-btn {
+  padding: 4px 8px;
+  background: rgba(0,0,0,0.03);
 }
 
 .cat-settings {

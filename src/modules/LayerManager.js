@@ -98,13 +98,11 @@ export class LayerManager {
                 : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
 
             item.innerHTML = `
-        <div class="layer-info">
-          <div class="color-dot" style="background:${layer.color}"></div>
-          <div class="layer-meta">
-            <span class="layer-name">${layer.name} ${countBadge}</span>
-          </div>
+        <div class="layer-info" style="display:flex; align-items:center; gap:10px; flex:1;">
+          <div class="color-dot" style="background:${layer.color}; cursor:pointer;" title="Tap to cycle color"></div>
+          <span class="layer-name" style="font-weight:700;">${layer.name} ${countBadge}</span>
         </div>
-        <div class="layer-actions">
+        <div class="layer-actions" style="display:flex; align-items:center; gap:8px;">
            <button class="layer-vis-btn ${layer.visible ? 'visible' : 'inactive'}" title="${layer.visible ? 'Hide' : 'Show'}">
              ${eyeIcon}
            </button>
@@ -112,9 +110,32 @@ export class LayerManager {
         </div>
       `
 
+            const colorDot = item.querySelector('.color-dot')
+            colorDot.onclick = (e) => {
+                e.stopPropagation()
+                const colors = ['#ff4757', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#2d3436']
+                let currIdx = colors.indexOf(layer.color)
+                if (currIdx === -1) currIdx = 0 // Fallback if custom hex was somehow set
+                const nextIdx = (currIdx + 1) % colors.length
+                const newColor = colors[nextIdx]
+
+                layer.color = newColor
+                layer.updatedAt = Date.now()
+                if (this.app.activeLayerId === layer.id) {
+                    this.app.activeColor = newColor
+                }
+                this.renderLayerUI()
+                this.app.saveToStorage()
+                this.app.updateActiveTools()
+                if (this.app.pdf) this.app.redrawAllAnnotationLayers()
+            }
+
             item.onclick = (e) => {
-                if (e.target.closest('.layer-actions')) return
+                if (e.target.closest('.layer-actions') || e.target.closest('.color-dot')) return
                 this.app.activeLayerId = layer.id
+                // Switching categories should NO LONGER override the manually chosen global color
+                // unless we want it to reset to default. User requested "Color First" logic.
+                this.app.activeStampType = this.app.lastUsedToolPerCategory[layer.name] || (this.app.toolsets.find(g => g.name === layer.name)?.tools[0]?.id)
                 this.renderLayerUI()
                 this.app.updateActiveTools()
             }

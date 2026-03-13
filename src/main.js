@@ -40,6 +40,8 @@ class ScoreFlow {
     this.activeCategories = ['Pens', 'Text']
     this.activeCategory = 'Pens'
     this.isMultiSelectMode = true
+    this.activeColor = '#ff4757'
+    this.defaultFontSize = 22
     this.toolbarWidth = 600
     this.lastUsedToolPerCategory = {}
     this.recentTools = []
