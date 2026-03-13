@@ -700,15 +700,15 @@
 /* ─── Virtual Pointer (Visual Sync for Offset) ─── */
 .virtual-pointer {
   position: absolute;
-  width: 6px;
-  height: 6px;
-  background: #6366f1;
-  border: 1.5px solid white;
+  width: 12px;
+  height: 12px;
+  background: var(--primary, #6366f1);
+  border: 2px solid white;
   border-radius: 50%;
   pointer-events: none;
   z-index: 1000;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 8px rgba(99, 102, 241, 0.8);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.8), 0 0 4px rgba(255, 255, 255, 0.5);
   transition: opacity 0.15s ease-out;
   opacity: 0;
 }

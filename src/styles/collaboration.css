@@ -829,7 +829,7 @@
 }
 
 /* ── CSS Fullscreen (iOS Safari fallback) ── */
-#app.css-fullscreen {
+#app-root.css-fullscreen {
   position: fixed !important;
   inset: 0 !important;
   width: 100% !important;

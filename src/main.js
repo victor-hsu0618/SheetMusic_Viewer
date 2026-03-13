@@ -145,6 +145,7 @@ class ScoreFlow {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
     const root = document.getElementById('app-root')
     const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || root?.classList.contains('css-fullscreen'))
+    
     const updateBtn = (nowFs) => {
       if (this.btnFullscreen) {
         this.btnFullscreen.classList.toggle('active', nowFs)
@@ -153,11 +154,30 @@ class ScoreFlow {
           : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>`
       }
     }
+
+    if (!this._fsBound) {
+      const fsEvent = (document.webkitFullscreenElement !== undefined) ? 'webkitfullscreenchange' : 'fullscreenchange'
+      document.addEventListener(fsEvent, () => {
+        const nowFs = !!(document.fullscreenElement || document.webkitFullscreenElement || root?.classList.contains('css-fullscreen'))
+        updateBtn(nowFs)
+      })
+      this._fsBound = true
+    }
+
     if (isIOS || (isSafari && !document.fullscreenEnabled)) {
       root?.classList.toggle('css-fullscreen', !isFs); updateBtn(!isFs)
     } else {
-      if (!isFs) (document.body.requestFullscreen ? document.body.requestFullscreen() : document.body.webkitRequestFullscreen?.())?.then(() => updateBtn(true))
-      else (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.())?.then(() => updateBtn(false))
+      if (!isFs) {
+        const target = root || document.body
+        const req = target.requestFullscreen ? target.requestFullscreen() : target.webkitRequestFullscreen?.()
+        req?.then(() => updateBtn(true)).catch(err => {
+          console.warn('[Fullscreen] Request rejected:', err)
+          // Fallback to CSS if API fails (e.g. not called from user gesture)
+          root?.classList.add('css-fullscreen'); updateBtn(true)
+        })
+      } else {
+        (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.())?.then(() => updateBtn(false))
+      }
     }
   }
 

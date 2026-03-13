@@ -205,7 +205,7 @@ export class InteractionManager {
 
             if (isMovingExisting) {
                 overlay.style.cursor = 'grabbing';
-                const targetPos = CoordMapper.getStampPreviewPos(pos, isTouch, activeObject.type, this.app, overlay);
+                const targetPos = CoordMapper.getStampPreviewPos(pos, isTouch, this.app.activeStampType, this.app, overlay);
                 if (activeObject.points) {
                     const dx = targetPos.x - (this.app._dragLastPos?.x ?? targetPos.x);
                     const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y);
