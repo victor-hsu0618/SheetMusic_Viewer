@@ -132,17 +132,23 @@ export class AnnotationRenderer {
         const y = stamp.y * canvas.height
         const isBow = stamp.type === 'up-bow' || stamp.type === 'down-bow'
 
-        // Data-Driven Rendering: Find tool metadata early (Prioritize current toolsets for global updates)
-        let toolDef = null
-        for (const set of this.app.toolsets) {
-            const tool = set.tools.find(t => t.id === stamp.type)
-            if (tool) {
-                toolDef = tool
-                break
+        // PRIORITY 1: Embedded draw data (For "placed" stamps to ensure independence)
+        if (stamp.draw) {
+            toolDef = { draw: stamp.draw }
+        }
+
+        // PRIORITY 2: Static toolset lookup (For standard signs)
+        if (!toolDef) {
+            for (const set of this.app.toolsets) {
+                const tool = set.tools.find(t => t.id === stamp.type)
+                if (tool) {
+                    toolDef = tool
+                    break
+                }
             }
         }
         
-        // SPECIAL: Handle Custom Text if not in static toolsets (e.g. for previews)
+        // PRIORITY 3: Global state fallback (ONLY for unplaced/preview stamps)
         if (!toolDef && stamp.type && stamp.type.startsWith('custom-text-') && this.app._activeCustomText) {
             toolDef = {
                 draw: {
@@ -153,11 +159,6 @@ export class AnnotationRenderer {
                     fontFace: 'serif'
                 }
             }
-        }
-
-        // Fallback to embedded draw data if tool not found in current toolsets
-        if (!toolDef && stamp.draw) {
-            toolDef = { draw: stamp.draw }
         }
 
         const toolSize = toolDef?.draw?.size || 24;
