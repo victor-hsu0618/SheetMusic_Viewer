@@ -558,6 +558,7 @@ export class AnnotationManager {
         editor.placeholder = 'Type here...'
         editor.style.left = (stamp.x * 100) + '%'
         editor.style.top = (stamp.y * 100) + '%'
+        editor.style.fontSize = this.app.defaultFontSize + 'px'
         const layer = this.app.layers.find(l => l.id === stamp.layerId)
         editor.style.color = layer ? layer.color : '#ff4757'
         overlay.appendChild(editor)
@@ -761,16 +762,20 @@ export class AnnotationManager {
         }
 
         const now = Date.now();
-        this.app.stamps.push({
-            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`,
-            page,
-            layerId: targetLayerId,
-            sourceId: this.app.activeSourceId,
-            type,
-            x,
-            y,
-            data,
-            draw,
+            if (draw && draw.type === 'text') {
+                draw = { ...draw, size: this.app.defaultFontSize };
+            }
+
+            this.app.stamps.push({
+                id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`,
+                page,
+                layerId: targetLayerId,
+                sourceId: this.app.activeSourceId,
+                type,
+                x,
+                y,
+                data,
+                draw,
             createdAt: now,
             updatedAt: now
         })

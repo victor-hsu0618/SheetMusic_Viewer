@@ -28,8 +28,8 @@ export class InteractionManager {
         const resetPointerIdleTimer = () => {
             if (pointerIdleTimer) clearTimeout(pointerIdleTimer);
             
-            // If we are currently in "view" (pan) mode, we don't need to auto-switch
-            if (this.app.activeStampType === 'view') return;
+            // If we are currently in "view" mode, "settings", or "recycle-bin", we don't need to auto-switch
+            if (['view', 'settings', 'recycle-bin'].includes(this.app.activeStampType)) return;
 
             pointerIdleTimer = setTimeout(() => {
                 // HARD SAFE MODE: Automatically switch to "view" (pan) tool
@@ -57,6 +57,12 @@ export class InteractionManager {
             };
         };
 
+        const updateTouchAction = () => {
+            const toolType = this.app.activeStampType;
+            // Ensure body-level attribute is synced (redundant but safe)
+            document.body.dataset.activeTool = toolType;
+        };
+
         // --- HANDLERS ---
 
         const startAction = (e) => {
@@ -66,6 +72,7 @@ export class InteractionManager {
             const toolType = this.app.activeStampType;
             const pointerType = getPointerType(e);
 
+            // 1. View Mode Panning (Only for mouse/pen in view mode)
             if (toolType === 'view') {
                 if (pointerType !== 'touch') {
                     isPanning = true;
@@ -73,7 +80,6 @@ export class InteractionManager {
                     const startScrollTop = this.app.viewer.scrollTop;
                     const startScrollLeft = this.app.viewer.scrollLeft;
                     overlay.style.cursor = 'grabbing';
-                    e.preventDefault();
                     this.app.viewer.style.scrollBehavior = 'auto';
                     const doPan = (ev) => {
                         if (!isPanning) return;
@@ -85,16 +91,19 @@ export class InteractionManager {
                         overlay.style.cursor = '';
                         this.app.viewer.style.scrollBehavior = '';
                         window.removeEventListener('pointermove', doPan);
-                        window.removeEventListener('pointerup', stopPan);
+                        window.removeEventListener('mouseup', stopPan);
                     };
                     window.addEventListener('pointermove', doPan);
-                    window.addEventListener('pointerup', stopPan);
+                    window.addEventListener('mouseup', stopPan);
                 }
                 return;
             }
 
-            if (pointerType === 'touch' && e.touches && e.touches.length > 1) return;
-            if (pointerType === 'touch') e.preventDefault();
+            // 2. Prevent Scroll for all other tools (Select, Pen, Stamp, etc.)
+            if (pointerType === 'touch') {
+                if (e.touches && e.touches.length > 1) return; // Allow multi-touch zoom
+                if (e.cancelable) e.preventDefault(); // Stop native scrolling
+            }
 
             // 1. Grace Period Interaction
             if (graceObject) {
@@ -222,6 +231,7 @@ export class InteractionManager {
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
                     updatedAt: Date.now()
                 };
+                if (toolType === 'slur') activeObject.curvature = -0.28;
                 attachGlobalListeners();
                 InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
             } else if (toolType === 'eraser') {
@@ -506,5 +516,6 @@ export class InteractionManager {
 
         InteractionUI.ensureTrashBin(wrapper);
         wrapper.appendChild(overlay);
+        updateTouchAction();
     }
 }

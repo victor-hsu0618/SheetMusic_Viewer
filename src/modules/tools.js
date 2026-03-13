@@ -255,10 +255,12 @@ export class ToolManager {
         const isExpanded = this.app.activeToolsContainer.classList.contains("expanded")
 
         if (this.app.viewer) {
-            if (this.app.viewer.dataset.activeTool !== this.app.activeStampType) {
-                this.app.viewer.dataset.activeTool = this.app.activeStampType
-                this.app.redrawAllAnnotationLayers()
-            }
+            const toolType = this.app.activeStampType;
+            // Set on both viewer and body for maximum compatibility with CSS selectors
+            this.app.viewer.dataset.activeTool = toolType;
+            document.body.dataset.activeTool = toolType;
+            
+            this.app.redrawAllAnnotationLayers();
         }
 
         // Sync Doc Bar
@@ -312,14 +314,27 @@ export class ToolManager {
         const recentRibbon = document.createElement("div")
         recentRibbon.className = "recent-tools-ribbon"
 
-        // 1. Permanently Pinned SELECT & ERASER tools
+        // 1. Permanently Pinned PAN VIEW & SELECT tools
+        const viewTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === 'view')
         const selectTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === 'select')
-        const eraserTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === 'eraser')
+
+        if (viewTool) {
+            const btn = document.createElement("button")
+            btn.className = `recent-tool-btn pinned ${this.app.activeStampType === 'view' ? "active" : ""}`
+            btn.innerHTML = this.getIcon(viewTool, 22)
+            btn.title = "Pan View (Space/H)"
+            btn.onclick = (e) => {
+                e.stopPropagation()
+                this.app.activeStampType = 'view'
+                this.updateActiveTools()
+            }
+            recentRibbon.appendChild(btn)
+        }
 
         if (selectTool) {
             const btn = document.createElement("button")
             btn.className = `recent-tool-btn pinned ${this.app.activeStampType === 'select' ? "active" : ""}`
-            btn.innerHTML = this.getIcon(selectTool, 18)
+            btn.innerHTML = this.getIcon(selectTool, 22)
             btn.title = "Select (V)"
             btn.onclick = (e) => {
                 e.stopPropagation()
@@ -329,27 +344,14 @@ export class ToolManager {
             recentRibbon.appendChild(btn)
         }
 
-        if (eraserTool) {
-            const btn = document.createElement("button")
-            btn.className = `recent-tool-btn pinned ${this.app.activeStampType === 'eraser' ? "active" : ""}`
-            btn.innerHTML = this.getIcon(eraserTool, 18)
-            btn.title = "Eraser (E)"
-            btn.onclick = (e) => {
-                e.stopPropagation()
-                this.app.activeStampType = 'eraser'
-                this.updateActiveTools()
-            }
-            recentRibbon.appendChild(btn)
-        }
-
-        // 2. Dynamically tracked recent tools (excluding select, eraser and view)
+        // 2. Dynamically tracked recent tools (excluding view and select)
         this.app.recentTools.forEach(toolId => {
-            if (toolId === 'select' || toolId === 'eraser') return // Skip since they are pinned
+            if (toolId === 'view' || toolId === 'select') return // Skip since they are pinned
             const tool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === toolId)
             if (!tool) return
             const btn = document.createElement("button")
             btn.className = `recent-tool-btn ${this.app.activeStampType === toolId ? "active" : ""}`
-            btn.innerHTML = this.getIcon(tool, 18)
+            btn.innerHTML = this.getIcon(tool, 22)
             btn.onclick = (e) => {
                 e.stopPropagation()
                 this.app.activeStampType = toolId
@@ -362,60 +364,59 @@ export class ToolManager {
         header.appendChild(recentRibbon)
         this.app.activeToolsContainer.appendChild(header)
 
-        // Color Picker (New)
-        this.renderColorPicker()
-
         // Grid, Recycle Bin or Settings
         if (this.app.activeStampType === "recycle-bin") {
             this.renderRecycleBin()
         } else if (this.app.activeStampType === "settings") {
             this.renderSettingsPanel()
         } else {
+            // Color Picker & Tools Grid: Only show these in normal tool selection mode
+            this.renderColorPicker()
             this.renderToolsGrid()
         }
-
-        // Category Ribbon (Now at the BOTTOM)
-        const ribbon = document.createElement("div")
-        ribbon.className = "category-ribbon"
-        this.app.toolsets.forEach(group => {
-            const isActive = this.app.activeCategories.includes(group.name)
-            const pill = document.createElement("button")
-            pill.className = `cat-pill ${isActive ? "active" : ""}`
-            pill.textContent = group.name
-            pill.onclick = (e) => {
-                e.stopPropagation()
-                if (isActive) {
-                    // Don't allow deselecting if it's the only one
-                    if (this.app.activeCategories.length > 1) {
-                        this.app.activeCategories = this.app.activeCategories.filter(c => c !== group.name)
+        // 3. Category & Control Ribbon (Now at the BOTTOM - Hide if in Settings/Recycle Bin)
+        if (this.app.activeStampType !== "settings" && this.app.activeStampType !== "recycle-bin") {
+            const ribbon = document.createElement("div")
+            ribbon.className = "category-ribbon"
+            this.app.toolsets.forEach(group => {
+                const isActive = this.app.activeCategories.includes(group.name)
+                const pill = document.createElement("button")
+                pill.className = `cat-pill ${isActive ? "active" : ""}`
+                pill.textContent = group.name
+                pill.onclick = (e) => {
+                    e.stopPropagation()
+                    if (isActive) {
+                        // Don't allow deselecting if it's the only one
+                        if (this.app.activeCategories.length > 1) {
+                            this.app.activeCategories = this.app.activeCategories.filter(c => c !== group.name)
+                        }
+                    } else {
+                        // Limit to 2 categories: Remove oldest (first) and add new one
+                        if (this.app.activeCategories.length >= 2) {
+                            this.app.activeCategories.shift()
+                        }
+                        this.app.activeCategories.push(group.name)
                     }
-                } else {
-                    // Limit to 2 categories: Remove oldest (first) and add new one
-                    if (this.app.activeCategories.length >= 2) {
-                        this.app.activeCategories.shift()
-                    }
-                    this.app.activeCategories.push(group.name)
+                    this.app.saveToStorage()
+                    this.updateActiveTools()
                 }
-                this.app.saveToStorage()
+                ribbon.appendChild(pill)
+            })
+
+            // Settings Tab Button
+            const settingsBtn = document.createElement("button")
+            const isSettings = this.app.activeStampType === "settings"
+            settingsBtn.className = `cat-pill cat-settings ${isSettings ? "active" : ""}`
+            settingsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
+            settingsBtn.title = "Stamp Settings"
+            settingsBtn.onclick = (e) => {
+                e.stopPropagation()
+                this.app.activeStampType = "settings"
                 this.updateActiveTools()
             }
-            ribbon.appendChild(pill)
-        })
-
-        // Settings Tab Button
-        const settingsBtn = document.createElement("button")
-        const isSettings = this.app.activeStampType === "settings"
-        settingsBtn.className = `cat-pill cat-settings ${isSettings ? "active" : ""}`
-        settingsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
-        settingsBtn.title = "Stamp Settings"
-        settingsBtn.onclick = (e) => {
-            e.stopPropagation()
-            this.app.activeStampType = isSettings ? "view" : "settings"
-            this.updateActiveTools()
+            ribbon.appendChild(settingsBtn)
+            this.app.activeToolsContainer.appendChild(ribbon)
         }
-        ribbon.appendChild(settingsBtn)
-
-        this.app.activeToolsContainer.appendChild(ribbon)
 
         // Resize Handle
         const resizer = document.createElement("div")
@@ -637,7 +638,7 @@ export class ToolManager {
                     btn.className = `stamp-tool ${this.app.activeStampType === tool.id ? "active" : ""}`
                     btn.title = tool.label
                     btn.dataset.tooltip = tool.label
-                    btn.innerHTML = this.getIcon(tool, 22, rowColor)
+                    btn.innerHTML = this.getIcon(tool, 28, rowColor)
                     btn.onclick = (e) => {
                         e.stopPropagation()
                         if (tool.id === 'erase-all') {
@@ -756,6 +757,12 @@ export class ToolManager {
             valFont.textContent = `${num}px`
             this.app.defaultFontSize = num
             this.app.saveToStorage()
+
+            // Also update any active floating text editor
+            document.querySelectorAll('.floating-text-editor').forEach(el => {
+                el.style.fontSize = `${num}px`
+            })
+            this.app.redrawAllAnnotationLayers()
         }
 
         sliderScore.oninput = (e) => updateScore(e.target.value)

@@ -30,7 +30,7 @@ export const TOOLSETS = [
             { id: 'pen', label: 'Pen', icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M 1 0 L -1 0' } },
             { id: 'highlighter', label: 'Highlighter', icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.2" /><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="3" opacity="0.3" />' },
             { id: 'line', label: 'Line', icon: '<line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2" />' },
-            { id: 'slur', label: 'Slur', icon: '<path d="M4 16c4-8 12-8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />' }
+            { id: 'slur', label: 'Slur', icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />' }
         ]
     },
     {

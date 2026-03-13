@@ -166,12 +166,16 @@ export class InputManager {
             this.longPressTimer = setTimeout(() => {
                 this.isLongPressActive = true
                 this.lastLongPressAt = Date.now()
-                if (navigator.vibrate) navigator.vibrate(12)
                 // Bottom 15% of screen → toggle doc bar hidden/visible
                 if (startY > window.innerHeight * 0.85) {
+                    if (navigator.vibrate) navigator.vibrate(12)
                     this.app.docBarManager?.toggleDocBarHidden()
                 } else {
-                    this.app.toolManager.toggleStampPalette(startX, startY)
+                    // Only OPEN if currently closed. Do NOT close via long press.
+                    if (!this.app.toolManager?.isStampPaletteOpen) {
+                        if (navigator.vibrate) navigator.vibrate(12)
+                        this.app.toolManager.toggleStampPalette(startX, startY)
+                    }
                 }
             }, 500)
         }, { passive: true })
@@ -220,7 +224,10 @@ export class InputManager {
                 if (e.clientY > window.innerHeight * 0.85) {
                     this.app.docBarManager?.toggleDocBarHidden()
                 } else {
-                    this.app.toolManager.toggleStampPalette(e.clientX, e.clientY)
+                    // Only OPEN if currently closed. Do NOT close via long press.
+                    if (!this.app.toolManager?.isStampPaletteOpen) {
+                        this.app.toolManager.toggleStampPalette(e.clientX, e.clientY)
+                    }
                 }
             }, 500)
         })

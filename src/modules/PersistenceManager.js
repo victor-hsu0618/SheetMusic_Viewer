@@ -81,7 +81,13 @@ export class PersistenceManager {
             this.app.userTextLibrary = JSON.parse(userTextLibraryData)
         }
         if (activeColorData) this.app.activeColor = activeColorData
-        if (defaultFontSizeData) this.app.defaultFontSize = parseInt(defaultFontSizeData)
+        if (defaultFontSizeData) {
+            this.app.defaultFontSize = parseInt(defaultFontSizeData)
+            const slider = document.getElementById('slider-font-size')
+            const value = document.getElementById('val-font-size')
+            if (slider) slider.value = this.app.defaultFontSize
+            if (value) value.textContent = `${this.app.defaultFontSize}px`
+        }
         if (stampSizeMultiplierData) {
             this.app.stampSizeMultiplier = parseFloat(stampSizeMultiplierData)
             if (this.app.settingsStampSizeInput) {

@@ -100,10 +100,27 @@ export const InteractionUI = {
      * Sync the virtual pointer's position and visibility.
      */
     syncVirtualPointer: (e, toolType, overlay, virtualPointer, coordMapper, app) => {
-        if (!toolType || !virtualPointer) {
-            if (virtualPointer) virtualPointer.classList.remove('active');
-            if (virtualPointer) virtualPointer.classList.remove('idle-pan');
-            if (overlay && !app.isTouch) overlay.style.cursor = '';
+        if (!virtualPointer) return;
+
+        // Determine pointer type early
+        let pointerType = 'mouse'
+        if (e.pointerType) {
+            pointerType = e.pointerType
+        } else if (e.type.startsWith('touch') || (e.touches && e.touches.length > 0)) {
+            pointerType = 'touch'
+        }
+
+        // 1. HARD DISABLE for Pen: Pen should NEVER see a virtual pointer or square frame
+        if (pointerType === 'pen') {
+            virtualPointer.classList.remove('active', 'idle-pan', 'dragging');
+            if (overlay) overlay.style.cursor = 'crosshair'; // Keep system crosshair for pen
+            return;
+        }
+
+        // 2. Standard Hiding: If no tool or no overlay
+        if (!toolType) {
+            virtualPointer.classList.remove('active', 'idle-pan', 'dragging');
+            if (overlay) overlay.style.cursor = '';
             return;
         }
         
@@ -112,22 +129,20 @@ export const InteractionUI = {
         const effectiveTool = toolType === 'idle-pan' ? app.activeStampType : toolType;
         
         const pos = coordMapper.getPos(e, overlay)
-        
-        // Determine pointer type
-        let pointerType = 'mouse'
-        if (e.pointerType) {
-            pointerType = e.pointerType
-        } else if (e.type.startsWith('touch') || (e.touches && e.touches.length > 0)) {
-            pointerType = 'touch'
-        }
-        
         const previewPos = coordMapper.getStampPreviewPos(pos, pointerType, effectiveTool, app, overlay)
-        const hasOffset = previewPos.x !== pos.x || previewPos.y !== pos.y
+        const hasOffset = Math.abs(previewPos.x - pos.x) > 0.0001 || Math.abs(previewPos.y - pos.y) > 0.0001
         
-        const isTargetingTool = ['select', 'copy', 'recycle-bin', 'text', 'tempo-text', 'view'].includes(effectiveTool);
-        const isDesktopStamp = pointerType === 'mouse' && (app.isStampTool() || isTargetingTool);
+        const isTargetingTool = ['select', 'copy', 'recycle-bin', 'text', 'tempo-text', 'eraser', 'measure'].includes(effectiveTool);
         
-        if (hasOffset || isDesktopStamp || isIdle) {
+        // Show virtual pointer if:
+        // 1. It's touch and has an offset (to bridge finger distance)
+        // 2. It's mouse and it's a stamp tool (to show crosshair placement)
+        // 3. It's idle pan mode
+        const shouldShow = (pointerType === 'touch' && hasOffset) || 
+                           (pointerType === 'mouse' && (app.isStampTool() || isIdle)) ||
+                           isIdle;
+        
+        if (shouldShow) {
             const rect = overlay.getBoundingClientRect()
             virtualPointer.style.left = `${previewPos.x * rect.width}px`
             virtualPointer.style.top = `${previewPos.y * rect.height}px`
@@ -140,14 +155,17 @@ export const InteractionUI = {
             virtualPointer.classList.toggle('dragging', !!app.isInteracting);
             
             // Ensure system cursor is hidden if we are showing the custom one on desktop
-            if (isDesktopStamp || isIdle) {
+            if (pointerType === 'mouse' || isIdle) {
                 // Use 'grabbing' if interacting, else 'grab'
-                overlay.style.cursor = isIdle ? (app.isInteracting ? 'grabbing' : 'grab') : 'none';
+                if (overlay) overlay.style.cursor = isIdle ? (app.isInteracting ? 'grabbing' : 'grab') : 'none';
             }
         } else {
-            virtualPointer.classList.remove('active')
-            virtualPointer.classList.remove('idle-pan')
-            if (overlay && pointerType === 'mouse') overlay.style.cursor = ''
+            virtualPointer.classList.remove('active', 'idle-pan', 'dragging');
+            if (overlay) {
+                if (pointerType === 'mouse') overlay.style.cursor = isTargetingTool ? 'default' : '';
+                else if (pointerType === 'pen') overlay.style.cursor = 'crosshair';
+                else if (pointerType === 'touch') overlay.style.cursor = 'none'; // Keep none to let system hide original dot
+            }
         }
     }
 }

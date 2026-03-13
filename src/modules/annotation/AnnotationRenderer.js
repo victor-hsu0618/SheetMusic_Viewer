@@ -111,8 +111,8 @@ export class AnnotationRenderer {
             const dy = y2 - y1;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            // Curvature offset (default 18% of length)
-            const curvatureValue = path.curvature !== undefined ? path.curvature : 0.18;
+            // Curvature offset (default -28% of length to curve downwards)
+            const curvatureValue = path.curvature !== undefined ? path.curvature : -0.28;
             const curvature = dist * curvatureValue;
             const px = -(dy / dist) * curvature;
             const py = (dx / dist) * curvature;
@@ -223,7 +223,7 @@ export class AnnotationRenderer {
             }
         }
 
-        const toolSize = toolDef?.draw?.size || 24;
+        const toolSize = (toolDef?.draw?.type === 'text') ? (this.app.defaultFontSize || 24) : (toolDef?.draw?.size || 24);
 
         // Smart Sizing: baseSize * PageFactor * UserMultiplier * ScoreMultiplier * ZoomScale
         const pageFactor = this.app.pageScales[stamp.page] || 1.0
@@ -232,7 +232,7 @@ export class AnnotationRenderer {
         const baseSize = 14 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * (toolSize / 24)
 
         const size = isBow ? baseSize * 0.85 : baseSize
-        const textScale = size / 21 // Relative to the original baseline
+        const textScale = size / 14 // Relative to the original baseline
 
         ctx.save()
 

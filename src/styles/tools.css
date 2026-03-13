@@ -46,8 +46,8 @@
 }
 
 .recent-tool-btn {
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   border-radius: 8px;
   border: 1px solid transparent;
   background: rgba(0, 0, 0, 0.03);
@@ -242,8 +242,8 @@
 }
 
 .stamp-tool {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   background: transparent;
   border: 1px solid transparent;
@@ -376,7 +376,7 @@
 
 .bin-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
   gap: 8px;
   max-height: 200px;
   overflow-y: auto;
@@ -567,6 +567,18 @@
 .layer-list-mini .layer-vis-btn {
   padding: 4px 8px;
   background: rgba(0,0,0,0.03);
+  color: var(--text-muted);
+}
+
+.layer-list-mini .layer-vis-btn.visible {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.layer-list-mini .layer-vis-btn.inactive {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-muted);
 }
 
 .cat-settings {

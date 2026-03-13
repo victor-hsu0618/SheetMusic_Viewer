@@ -22,21 +22,23 @@ export const CoordMapper = {
      * pointerType: 'mouse', 'touch', or 'pen'
      */
     getStampPreviewPos: (pos, pointerType, toolType, app, overlay) => {
-        // No offset for specific tools or if viewing
-        if (toolType === 'view' || toolType === 'select' || toolType === 'eraser' || toolType === 'copy' || toolType === 'recycle-bin' || toolType === 'text' || toolType === 'tempo-text' || toolType === 'measure') {
-            return pos
+        // Mode detection
+        const isTargetingTool = ['select', 'copy', 'recycle-bin', 'eraser', 'text', 'tempo-text', 'measure'].includes(toolType);
+        
+        // No offset for any tool if using Mouse or Pen (high precision)
+        if (pointerType !== 'touch') {
+            return pos;
+        }
+
+        // View mode always zero offset even for touch
+        if (toolType === 'view') {
+            return pos;
         }
 
         const rect = overlay.getBoundingClientRect()
         const offsetX = -45
         
-        let offsetY = app.stampOffsetMouseY // Default to mouse offset
-        if (pointerType === 'touch') {
-            offsetY = app.stampOffsetTouchY
-        } else if (pointerType === 'pen') {
-            // For iPad Pen, use zero offset for maximum precision
-            return pos
-        }
+        let offsetY = app.stampOffsetTouchY; // Default touch offset
 
         let dxPx = offsetX
         let dyPx = -offsetY
