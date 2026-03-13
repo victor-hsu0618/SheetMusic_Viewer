@@ -158,15 +158,26 @@ export class AnnotationRenderer {
             }
             ctx.stroke()
 
-            // SLUR CURVATURE HANDLE
+            // SLUR CURVATURE HANDLE & GUIDE
             if (path.type === 'slur' && path._renderedApex) {
+                // Background Guide Line
+                ctx.beginPath();
+                ctx.setLineDash([3, 3]);
+                ctx.strokeStyle = '#6366f166';
+                ctx.lineWidth = 1;
+                ctx.moveTo(mx, my);
+                ctx.lineTo(path._renderedApex.x * canvas.width, path._renderedApex.y * canvas.height);
+                ctx.stroke();
+
+                // Apex Handle
                 ctx.beginPath();
                 ctx.setLineDash([]);
                 ctx.fillStyle = '#6366f1';
-                ctx.arc(path._renderedApex.x * canvas.width, path._renderedApex.y * canvas.height, 4 * (this.app.scale / 1.5) * pageFactor, 0, Math.PI * 2);
+                // Increased radius from 4 to 10 for easier grab
+                ctx.arc(path._renderedApex.x * canvas.width, path._renderedApex.y * canvas.height, 10 * (this.app.scale / 1.5) * pageFactor, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = 'white';
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = 2;
                 ctx.stroke();
             }
         }

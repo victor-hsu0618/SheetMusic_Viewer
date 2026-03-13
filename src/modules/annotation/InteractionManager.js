@@ -132,7 +132,7 @@ export class InteractionManager {
                 }
             }
 
-            if (toolType === 'copy' || toolType === 'select' || toolType === 'recycle-bin') {
+            if (toolType === 'copy' || toolType === 'select' || toolType === 'recycle-bin' || toolType === 'slur') {
                 if (target) {
                     if (toolType === 'recycle-bin') {
                         this.app.annotationManager.eraseStampTarget(target);
@@ -153,7 +153,8 @@ export class InteractionManager {
                         if (activeObject.type === 'slur' && activeObject._renderedApex) {
                             const dx = (pPos.x - activeObject._renderedApex.x) * width;
                             const dy = (pPos.y - activeObject._renderedApex.y) * height;
-                            if (Math.sqrt(dx*dx + dy*dy) < 30) {
+                            // Increased tolerance to 45 for easier touch targeting
+                            if (Math.sqrt(dx*dx + dy*dy) < 45) {
                                 this.isAdjustingCurvature = true;
                             } else {
                                 this.isAdjustingCurvature = false;
