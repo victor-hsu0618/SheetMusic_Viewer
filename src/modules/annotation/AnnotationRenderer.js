@@ -112,15 +112,22 @@ export class AnnotationRenderer {
             const dy = y2 - y1;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            // Normalized Perpendicular (-dy, dx)
-            // Curvature offset (approx 15% of length)
-            const curvature = dist * 0.18;
+            // Curvature offset (default 18% of length)
+            const curvatureValue = path.curvature !== undefined ? path.curvature : 0.18;
+            const curvature = dist * curvatureValue;
             const px = -(dy / dist) * curvature;
             const py = (dx / dist) * curvature;
             
             // Control point
             const cx = mx + px;
             const cy = my + py;
+            
+            // Actual Apex for handle and hit detection
+            // Note: For quadratic bezier, the apex is at the average of (P0, P1, C) * 0.5 effectively, 
+            // but we use the midpoint + half-offset as the visual apex for handles.
+            const apexX = mx + px * 0.5;
+            const apexY = my + py * 0.5;
+            path._renderedApex = { x: apexX / canvas.width, y: apexY / canvas.height };
             
             ctx.beginPath();
             ctx.moveTo(x1, y1);
@@ -150,6 +157,18 @@ export class AnnotationRenderer {
                 ctx.lineTo(px, py)
             }
             ctx.stroke()
+
+            // SLUR CURVATURE HANDLE
+            if (path.type === 'slur' && path._renderedApex) {
+                ctx.beginPath();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#6366f1';
+                ctx.arc(path._renderedApex.x * canvas.width, path._renderedApex.y * canvas.height, 4 * (this.app.scale / 1.5) * pageFactor, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
         }
 
         ctx.restore()

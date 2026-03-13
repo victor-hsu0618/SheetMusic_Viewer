@@ -140,6 +140,19 @@ export class InteractionManager {
                     } else {
                         activeObject = target;
                         isMovingExisting = true;
+
+                        // SLUR CURVATURE CHECK: If clicking near the apex of a selected slur
+                        if (activeObject.type === 'slur' && activeObject._renderedApex) {
+                            const dx = (pPos.x - activeObject._renderedApex.x) * width;
+                            const dy = (pPos.y - activeObject._renderedApex.y) * height;
+                            if (Math.sqrt(dx*dx + dy*dy) < 30) {
+                                this.isAdjustingCurvature = true;
+                            } else {
+                                this.isAdjustingCurvature = false;
+                            }
+                        } else {
+                            this.isAdjustingCurvature = false;
+                        }
                     }
                     
                     if (activeObject) {
@@ -244,17 +257,33 @@ export class InteractionManager {
             }
 
             if (isMovingExisting) {
-                overlay.style.cursor = 'grabbing';
-                const targetPos = CoordMapper.getStampPreviewPos(pos, isTouch, this.app.activeStampType, this.app, overlay);
-                if (activeObject.points) {
-                    const dx = targetPos.x - (this.app._dragLastPos?.x ?? targetPos.x);
-                    const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y);
-                    activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+                if (this.isAdjustingCurvature && activeObject.type === 'slur') {
+                    const p0 = activeObject.points[0];
+                    const p1 = activeObject.points[activeObject.points.length - 1];
+                    const dxBaseline = p1.x - p0.x;
+                    const dyBaseline = p1.y - p0.y;
+                    const distBaseline = Math.sqrt(dxBaseline*dxBaseline + dyBaseline*dyBaseline);
+                    
+                    if (distBaseline > 0.0001) {
+                        // Signed perpendicular distance from pos to baseline
+                        const perpDist = (-dyBaseline * pos.x + dxBaseline * pos.y + (dyBaseline * p0.x - dxBaseline * p0.y)) / distBaseline;
+                        // Map perpendicular distance to curvature property
+                        // Since apex height = dist * curvature * 0.5, we want curvature = (perpDist / dist) * 2
+                        activeObject.curvature = (perpDist / distBaseline) * 2;
+                    }
                 } else {
-                    activeObject.x = targetPos.x;
-                    activeObject.y = targetPos.y;
+                    overlay.style.cursor = 'grabbing';
+                    const targetPos = CoordMapper.getStampPreviewPos(pos, isTouch, this.app.activeStampType, this.app, overlay);
+                    if (activeObject.points) {
+                        const dx = targetPos.x - (this.app._dragLastPos?.x ?? targetPos.x);
+                        const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y);
+                        activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+                    } else {
+                        activeObject.x = targetPos.x;
+                        activeObject.y = targetPos.y;
+                    }
+                    this.app._dragLastPos = targetPos;
                 }
-                this.app._dragLastPos = targetPos;
                 this.app.redrawStamps(pageNum);
             } else if (activeObject.points) {
                 const currentPos = CoordMapper.getStampPreviewPos(pos, isTouch, activeObject.type, this.app, overlay);
@@ -334,6 +363,7 @@ export class InteractionManager {
             isInteracting = false;
             isMovingExisting = false;
             activeObject = null;
+            this.isAdjustingCurvature = false;
             this.app._dragLastPos = null;
             overlay.style.cursor = this.app.isStampTool() ? 'crosshair' : '';
             if (!graceObject) InteractionUI.showTrash(false, wrapper);
