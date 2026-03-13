@@ -124,8 +124,6 @@ export class AnnotationRenderer {
             ctx.quadraticCurveTo(cx, cy, x2, y2);
         } else {
             ctx.beginPath()
-            const startX = path.points[0].x * canvas.width
-            const startY = path.points[0].y * canvas.height
             ctx.moveTo(startX, startY)
 
             for (let i = 1; i < path.points.length; i++) {
