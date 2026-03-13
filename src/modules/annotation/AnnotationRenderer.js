@@ -59,6 +59,7 @@ export class AnnotationRenderer {
         if (!path.points || path.points.length < 2) return
 
         ctx.save()
+        ctx.setLineDash([]) // Safety reset
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
@@ -74,9 +75,6 @@ export class AnnotationRenderer {
             ctx.shadowBlur = 10
             ctx.shadowColor = '#6366f1'
             ctx.strokeStyle = '#6366f1' // Blue highlight
-        } else if (this.app.activeStampType === 'select' && !isForeign) {
-            ctx.shadowBlur = 8
-            ctx.shadowColor = '#6366f188' // Subtle interactive glow
         }
 
         // Dashed line for foreign (shared) annotations
@@ -97,6 +95,7 @@ export class AnnotationRenderer {
         const startX = path.points[0].x * canvas.width
         const startY = path.points[0].y * canvas.height
 
+        let mx = 0, my = 0;
         if (path.type === 'slur' && path.points.length >= 2) {
             const p1 = path.points[0];
             const p2 = path.points[path.points.length - 1];
@@ -104,8 +103,8 @@ export class AnnotationRenderer {
             const x2 = p2.x * canvas.width, y2 = p2.y * canvas.height;
             
             // Midpoint
-            const mx = (x1 + x2) / 2;
-            const my = (y1 + y2) / 2;
+            mx = (x1 + x2) / 2;
+            my = (y1 + y2) / 2;
             
             // Vector and Perpendicular
             const dx = x2 - x1;
@@ -123,8 +122,6 @@ export class AnnotationRenderer {
             const cy = my + py;
             
             // Actual Apex for handle and hit detection
-            // Note: For quadratic bezier, the apex is at the average of (P0, P1, C) * 0.5 effectively, 
-            // but we use the midpoint + half-offset as the visual apex for handles.
             const apexX = mx + px * 0.5;
             const apexY = my + py * 0.5;
             path._renderedApex = { x: apexX / canvas.width, y: apexY / canvas.height };
@@ -156,30 +153,33 @@ export class AnnotationRenderer {
                 const py = path.points[i].y * canvas.height
                 ctx.lineTo(px, py)
             }
-            ctx.stroke()
+        }
+        ctx.stroke()
 
-            // SLUR CURVATURE HANDLE & GUIDE
-            if (path.type === 'slur' && path._renderedApex) {
-                // Background Guide Line
-                ctx.beginPath();
-                ctx.setLineDash([3, 3]);
-                ctx.strokeStyle = '#6366f166';
-                ctx.lineWidth = 1;
-                ctx.moveTo(mx, my);
-                ctx.lineTo(path._renderedApex.x * canvas.width, path._renderedApex.y * canvas.height);
-                ctx.stroke();
+        // SLUR CURVATURE HANDLE & GUIDE: Show if slur is active or being edited
+        const showSlurControls = path.type === 'slur' && path._renderedApex && 
+                                (path === this.app._lastGraceObject || isSelectHovered || 
+                                 (this.app.activeStampType === 'slur' && isHovered));
 
-                // Apex Handle
-                ctx.beginPath();
-                ctx.setLineDash([]);
-                ctx.fillStyle = '#6366f1';
-                // Increased radius from 4 to 10 for easier grab
-                ctx.arc(path._renderedApex.x * canvas.width, path._renderedApex.y * canvas.height, 10 * (this.app.scale / 1.5) * pageFactor, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
+        if (showSlurControls) {
+            // Background Guide Line
+            ctx.beginPath();
+            ctx.setLineDash([3, 3]);
+            ctx.strokeStyle = '#6366f166';
+            ctx.lineWidth = 1;
+            ctx.moveTo(mx, my);
+            ctx.lineTo(path._renderedApex.x * canvas.width, path._renderedApex.y * canvas.height);
+            ctx.stroke();
+
+            // Apex Handle
+            ctx.beginPath();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#6366f1';
+            ctx.arc(path._renderedApex.x * canvas.width, path._renderedApex.y * canvas.height, 10 * (this.app.scale / 1.5) * pageFactor, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
         }
 
         ctx.restore()
@@ -270,9 +270,6 @@ export class AnnotationRenderer {
             ctx.arc(x, y, size * 0.4, 0, Math.PI * 2) 
             ctx.stroke()
             ctx.restore()
-        } else if (this.app.activeStampType === 'select' && !isForeign) {
-            ctx.shadowBlur = 12
-            ctx.shadowColor = '#6366f166' // Subtle interactive glow
         }
 
         if (isForeign) {
