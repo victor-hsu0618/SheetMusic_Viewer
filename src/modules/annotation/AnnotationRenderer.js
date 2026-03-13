@@ -305,4 +305,38 @@ export class AnnotationRenderer {
 
         ctx.restore()
     }
+
+    /**
+     * Render a simple virtual tip for freehand tools (Pen/Highlighter).
+     * Used mainly for touch devices to show where the stroke will start relative to offset.
+     */
+    drawFreehandPreview(ctx, canvas, pos, color, type) {
+        const x = pos.x * canvas.width
+        const y = pos.y * canvas.height
+        const size = 6 * (this.app.scale / 1.5)
+
+        ctx.save()
+        ctx.beginPath()
+        ctx.globalAlpha = 0.5
+        ctx.fillStyle = color
+        
+        if (type === 'highlighter') {
+            // Rectangular tip for highlighter
+            const w = size * 2.5, h = size * 0.8
+            ctx.roundRect(x - w/2, y - h/2, w, h, 2)
+        } else {
+            // Circular tip for pen
+            ctx.arc(x, y, size, 0, Math.PI * 2)
+        }
+        
+        ctx.fill()
+        
+        // Slight border for visibility
+        ctx.globalAlpha = 0.3
+        ctx.strokeStyle = '#FFFFFF'
+        ctx.lineWidth = 1
+        ctx.stroke()
+        
+        ctx.restore()
+    }
 }

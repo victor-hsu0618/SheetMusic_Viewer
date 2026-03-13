@@ -52,6 +52,8 @@ class ScoreFlow {
     this.stamps = []
     this.toolsets = TOOLSETS
     this.scoreStampScale = 1.0
+    this.stampOffsetTouchY = 65
+    this.stampOffsetMouseY = 25
 
     // Managers Initialization
     this.toolManager = new ToolManager(this)

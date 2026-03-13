@@ -54,41 +54,51 @@ export class InteractionManager {
          * Compute preview position for stamps with smooth 2D lerp (Shrink & Flip).
          * Uses local rect coordinates instead of window coordinates to avoid layout offsets.
          */
-        const getStampPreviewPos = (pos) => {
+        const getStampPreviewPos = (pos, isTouch = false, toolType = null) => {
+            const isFreehand = ['pen', 'highlighter', 'line'].includes(toolType || this.app.activeStampType)
+            
+            let offsetY = isTouch ? (this.app.stampOffsetTouchY || 65) : (this.app.stampOffsetMouseY || 25)
+            if (!isTouch && isFreehand) offsetY = 0 // Precise for mouse pen
+
+            if (offsetY === 0) return pos
+            
             const rect = overlay.getBoundingClientRect()
 
             // 1. Vertical Positioning (Smooth Shrink at Top/Bottom)
-            const transY = STAMP_OFFSET_Y_PX * 3 // Transition zone pixels
+            const transY = offsetY * 3 // Transition zone pixels
             const distFromBottomPx = (1.0 - pos.y) * rect.height
             const distFromTopPx = pos.y * rect.height
 
-            let dyPx = -STAMP_OFFSET_Y_PX // Default: Above
+            let dyPx = -offsetY // Default: Above
 
             if (distFromBottomPx < transY) {
                 // Approaches bottom -> smoothly shrink offset to 0
                 const t = Math.max(0, Math.min(1, distFromBottomPx / transY))
-                dyPx = -STAMP_OFFSET_Y_PX * t
+                dyPx = -offsetY * t
             } else if (distFromTopPx < transY) {
                 // Approaches top -> smoothly shrink offset to 0
                 const t = Math.max(0, Math.min(1, distFromTopPx / transY))
-                dyPx = -STAMP_OFFSET_Y_PX * t
+                dyPx = -offsetY * t
             }
 
             // 2. Horizontal Positioning (Smooth Flip at Left, Shrink at Right)
-            const transX = Math.abs(STAMP_OFFSET_X_PX) * 3 || 150
+            // Note: X offset is currently fixed or relative to Y? 
+            // In previous code STAMP_OFFSET_X_PX was -45. We should probably make it relative or keep it.
+            // Let's keep a slight X offset if offsetY > 0 for better visibility.
+            const offsetX = offsetY > 0 ? -45 * (offsetY / 65) : 0
+            
+            const transX = Math.abs(offsetX) * 3 || 150
             const distFromRightPx = (1.0 - pos.x) * rect.width
             const distFromLeftPx = pos.x * rect.width
 
-            let dxPx = STAMP_OFFSET_X_PX // Default: Left (-45)
+            let dxPx = offsetX 
 
             if (distFromLeftPx < transX) {
-                // Approaches left -> smoothly SHRINK to 0 to reach edge
                 const t = Math.max(0, Math.min(1, distFromLeftPx / transX))
-                dxPx = STAMP_OFFSET_X_PX * t
+                dxPx = offsetX * t
             } else if (distFromRightPx < transX) {
-                // Approaches right -> smoothly SHRINK to 0 to reach edge
                 const t = Math.max(0, Math.min(1, distFromRightPx / transX))
-                dxPx = STAMP_OFFSET_X_PX * t
+                dxPx = offsetX * t
             }
 
             return {
@@ -148,8 +158,9 @@ export class InteractionManager {
             const isFreehand = ['pen', 'highlighter', 'line'].includes(toolType)
 
             if (toolType === 'copy') {
+                const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
                 const target = this.app.selectHoveredStamp
-                    || this.app.findClosestStamp(pageNum, pos.x, pos.y, true)
+                    || this.app.findClosestStamp(pageNum, getStampPreviewPos(pos, isTouch, toolType).x, getStampPreviewPos(pos, isTouch, toolType).y, true)
                 
                 if (target) {
                     // Clone the object
@@ -166,7 +177,12 @@ export class InteractionManager {
                     isMovingExisting = true
                     activeObject = clone
                     this.app.lastFocusedStamp = activeObject
-                    this.app._dragLastPos = pos
+                    
+                    // Unified Offset: Set move start pos considering offset
+                    const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
+                    const targetPos = getStampPreviewPos(pos, isTouch, toolType)
+                    this.app._dragLastPos = targetPos 
+                    
                     this.app.selectHoveredStamp = null
                     
                     this.app.saveToStorage(true)
@@ -178,8 +194,9 @@ export class InteractionManager {
                     isInteracting = false
                 }
             } else if (toolType === 'select' || toolType === 'recycle-bin') {
+                const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
                 const target = this.app.selectHoveredStamp
-                    || this.app.findClosestStamp(pageNum, pos.x, pos.y, true)
+                    || this.app.findClosestStamp(pageNum, getStampPreviewPos(pos, isTouch).x, getStampPreviewPos(pos, isTouch).y, true)
 
                 if (!target) {
                     isInteracting = false
@@ -208,18 +225,25 @@ export class InteractionManager {
                         isMovingExisting = true
                         activeObject = target
                         this.app.lastFocusedStamp = activeObject
-                        this.app._dragLastPos = pos
+                        
+                        // Unified Offset: Use offset relative position
+                        const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
+                        const targetPos = getStampPreviewPos(pos, isTouch, toolType)
+                        this.app._dragLastPos = targetPos
+                        
                         this.app.selectHoveredStamp = null
                         this.app.redrawStamps(pageNum)
                     }
                 }
             } else if (isFreehand) {
+                const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
+                const activePos = getStampPreviewPos(pos, isTouch, toolType)
                 activeObject = {
                     type: toolType,
                     page: pageNum,
                     layerId: 'draw',
                     sourceId: this.app.activeSourceId,
-                    points: [pos],
+                    points: [activePos],
                     color: this.app.layers.find(l => l.id === 'draw').color,
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
                     updatedAt: Date.now()
@@ -244,7 +268,8 @@ export class InteractionManager {
                     if (layer) targetLayerId = layer.id
                 }
 
-                const previewPos = getStampPreviewPos(pos)
+                const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
+                const previewPos = getStampPreviewPos(pos, isTouch, toolType)
                 let stampDraw = null
                 if (toolType.startsWith('custom-text-') && this.app._activeCustomText) {
                     stampDraw = {
@@ -256,7 +281,7 @@ export class InteractionManager {
                     }
                 }
 
-                const finalPos = getStampPreviewPos(pos)
+                const finalPos = getStampPreviewPos(pos, isTouch, toolType)
                 activeObject = {
                     page: pageNum,
                     layerId: targetLayerId,
@@ -276,29 +301,32 @@ export class InteractionManager {
         const moveAction = (e) => {
             if (!isInteracting || !activeObject) return
             const pos = getPos(e)
+            const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
 
             if (isMovingExisting) {
+                const targetPos = getStampPreviewPos(pos, isTouch, activeObject.type)
                 if (activeObject.points) {
-                    const dx = pos.x - (this.app._dragLastPos?.x ?? pos.x)
-                    const dy = pos.y - (this.app._dragLastPos?.y ?? pos.y)
+                    const dx = targetPos.x - (this.app._dragLastPos?.x ?? targetPos.x)
+                    const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y)
                     activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }))
                 } else {
-                    activeObject.x = pos.x
-                    activeObject.y = pos.y
+                    activeObject.x = targetPos.x
+                    activeObject.y = targetPos.y
                 }
-                this.app._dragLastPos = pos
+                this.app._dragLastPos = targetPos
                 this.app.redrawStamps(pageNum)
             } else if (activeObject.points) {
+                const activePos = getStampPreviewPos(pos, isTouch, activeObject.type)
                 if (this.app.activeStampType === 'line') {
-                    activeObject.points[1] = pos
+                    activeObject.points[1] = activePos
                 } else {
-                    activeObject.points.push(pos)
+                    activeObject.points.push(activePos)
                 }
                 const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
                 if (canvas) this.app.drawPathOnCanvas(canvas.getContext('2d'), canvas, activeObject)
             } else {
                 // Preview new stamp
-                const previewPos = getStampPreviewPos(pos)
+                const previewPos = getStampPreviewPos(pos, isTouch, activeObject.type)
                 activeObject.x = previewPos.x
                 activeObject.y = previewPos.y
                 const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
@@ -310,6 +338,8 @@ export class InteractionManager {
         }
 
         const hoverAction = (e) => {
+            const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
+            
             // Eraser hover
             if (this.app.activeStampType === 'eraser' && !isInteracting) {
                 const pos = getPos(e)
@@ -338,8 +368,8 @@ export class InteractionManager {
 
             // Select / Copy / Recycle Bin hover
             if ((this.app.activeStampType === 'select' || this.app.activeStampType === 'copy' || this.app.activeStampType === 'recycle-bin') && !isInteracting) {
-                const pos = getPos(e)
-                const found = this.app.findClosestStamp(pageNum, pos.x, pos.y, true)
+                const offsetPos = getStampPreviewPos(getPos(e), isTouch, this.app.activeStampType)
+                const found = this.app.findClosestStamp(pageNum, offsetPos.x, offsetPos.y, true)
                 if (found !== this.app.selectHoveredStamp) {
                     this.app.selectHoveredStamp = found
                     this.app.redrawStamps(pageNum)
@@ -350,7 +380,7 @@ export class InteractionManager {
             if (this.app.isStampTool() && !isInteracting) {
                 const pos = getPos(e)
                 this.app._lastValidPos = pos // Persist for mouseleave "ghost" preview
-                const previewPos = getStampPreviewPos(pos)
+                const previewPos = getStampPreviewPos(pos, isTouch, this.app.activeStampType)
                 const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
                 if (canvas) {
                     this.app.redrawStamps(pageNum)
@@ -376,6 +406,21 @@ export class InteractionManager {
                         page: pageNum,
                         draw: previewDraw
                     }, color, true, false, false, pos)
+                }
+            }
+
+            // Freehand tool virtual tip preview (Touch Only)
+            const isFreehand = ['pen', 'highlighter', 'line'].includes(this.app.activeStampType)
+            
+            if (isFreehand && !isInteracting && isTouch) {
+                const pos = getPos(e)
+                const previewPos = getStampPreviewPos(pos, isTouch, this.app.activeStampType)
+                const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
+                if (canvas) {
+                    this.app.redrawStamps(pageNum)
+                    const ctx = canvas.getContext('2d')
+                    const color = this.app.layers.find(l => l.id === 'draw')?.color || '#ff4757'
+                    this.app.renderer.drawFreehandPreview(ctx, canvas, previewPos, color, this.app.activeStampType)
                 }
             }
         }

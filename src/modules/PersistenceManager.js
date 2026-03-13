@@ -25,6 +25,8 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_layers', JSON.stringify(this.app.layers))
         localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary))
         localStorage.setItem('scoreflow_stamp_size_multiplier', this.app.stampSizeMultiplier)
+        localStorage.setItem('scoreflow_stamp_offset_touch_y', this.app.stampOffsetTouchY)
+        localStorage.setItem('scoreflow_stamp_offset_mouse_y', this.app.stampOffsetMouseY)
 
         const turnerMode = document.getElementById('turner-mode-select') ? document.getElementById('turner-mode-select').value : 'default';
         localStorage.setItem('scoreflow_turner_mode', turnerMode)
@@ -81,6 +83,24 @@ export class PersistenceManager {
                     this.app.settingsStampSizeValue.textContent = `${this.app.stampSizeMultiplier.toFixed(1)}x`
                 }
             }
+        }
+
+        const offsetTouchData = localStorage.getItem('scoreflow_stamp_offset_touch_y')
+        if (offsetTouchData !== null) {
+            this.app.stampOffsetTouchY = parseInt(offsetTouchData)
+            const input = document.getElementById('settings-offset-touch')
+            const value = document.getElementById('settings-offset-touch-value')
+            if (input) input.value = this.app.stampOffsetTouchY
+            if (value) value.textContent = `${this.app.stampOffsetTouchY}px`
+        }
+
+        const offsetMouseData = localStorage.getItem('scoreflow_stamp_offset_mouse_y')
+        if (offsetMouseData !== null) {
+            this.app.stampOffsetMouseY = parseInt(offsetMouseData)
+            const input = document.getElementById('settings-offset-mouse')
+            const value = document.getElementById('settings-offset-mouse-value')
+            if (input) input.value = this.app.stampOffsetMouseY
+            if (value) value.textContent = `${this.app.stampOffsetMouseY}px`
         }
 
         const turnerSelect = document.getElementById('turner-mode-select')

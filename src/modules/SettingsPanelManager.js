@@ -347,8 +347,42 @@ export class SettingsPanelManager {
                 } else if (type === 'jump-speed') {
                     const slider = document.getElementById('settings-jump-speed')
                     if (slider) { slider.value = 300; slider.dispatchEvent(new Event('input')) }
+                } else if (type === 'offset-touch') {
+                    const slider = document.getElementById('settings-offset-touch')
+                    if (slider) { slider.value = 65; slider.dispatchEvent(new Event('input')) }
+                } else if (type === 'offset-mouse') {
+                    const slider = document.getElementById('settings-offset-mouse')
+                    if (slider) { slider.value = 25; slider.dispatchEvent(new Event('input')) }
                 }
             })
         })
+
+        // Interaction Offset - Touch
+        const offsetTouchInput = document.getElementById('settings-offset-touch')
+        const offsetTouchValue = document.getElementById('settings-offset-touch-value')
+        if (offsetTouchInput) {
+            offsetTouchInput.value = this.app.stampOffsetTouchY || 65
+            if (offsetTouchValue) offsetTouchValue.textContent = `${offsetTouchInput.value}px`
+            offsetTouchInput.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value)
+                this.app.stampOffsetTouchY = val
+                if (offsetTouchValue) offsetTouchValue.textContent = `${val}px`
+                this.app.saveToStorage()
+            })
+        }
+
+        // Interaction Offset - Mouse
+        const offsetMouseInput = document.getElementById('settings-offset-mouse')
+        const offsetMouseValue = document.getElementById('settings-offset-mouse-value')
+        if (offsetMouseInput) {
+            offsetMouseInput.value = this.app.stampOffsetMouseY || 25
+            if (offsetMouseValue) offsetMouseValue.textContent = `${offsetMouseInput.value}px`
+            offsetMouseInput.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value)
+                this.app.stampOffsetMouseY = val
+                if (offsetMouseValue) offsetMouseValue.textContent = `${val}px`
+                this.app.saveToStorage()
+            })
+        }
     }
 }

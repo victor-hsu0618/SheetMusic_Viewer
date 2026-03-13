@@ -49,7 +49,9 @@ export const TOOLSETS = [
             { id: 'i', label: 'I', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">I</text>', draw: { type: 'text', content: 'I', font: '300', size: 14, fontFace: 'serif' } },
             { id: 'ii', label: 'II', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">II</text>', draw: { type: 'text', content: 'II', font: '300', size: 14, fontFace: 'serif' } },
             { id: 'iii', label: 'III', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">III</text>', draw: { type: 'text', content: 'III', font: '300', size: 14, fontFace: 'serif' } },
-            { id: 'iv', label: 'IV', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">IV</text>', draw: { type: 'text', content: 'IV', font: '300', size: 14, fontFace: 'serif' } }
+            { id: 'iv', label: 'IV', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">IV</text>', draw: { type: 'text', content: 'IV', font: '300', size: 14, fontFace: 'serif' } },
+            { id: 'f-exp', label: 'x', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">x</text>', draw: { type: 'text', content: 'x', font: '300', size: 16 } },
+            { id: 'f-shift', label: '+', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">+</text>', draw: { type: 'text', content: '+', font: '300', size: 18 } }
         ]
     },
     {

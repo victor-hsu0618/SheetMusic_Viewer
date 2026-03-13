@@ -708,6 +708,32 @@
           </div>
 
           <div class="setting-item mb-15">
+            <div class="flex-row-center flex-space-between mb-5">
+              <label class="setting-label">Interaction Offset - Touch (px)</label>
+              <button class="btn-reset-mini" data-reset="offset-touch" title="Reset to 65px">🔄 Reset</button>
+            </div>
+            <div class="slider-control-group">
+              <button class="slider-adj-btn minus" data-target="settings-offset-touch">-</button>
+              <input type="range" id="settings-offset-touch" min="0" max="200" step="5" value="65" class="w-full" />
+              <button class="slider-adj-btn plus" data-target="settings-offset-touch">+</button>
+              <span id="settings-offset-touch-value" class="badge">65px</span>
+            </div>
+          </div>
+
+          <div class="setting-item mb-15">
+            <div class="flex-row-center flex-space-between mb-5">
+              <label class="setting-label">Interaction Offset - Mouse (px)</label>
+              <button class="btn-reset-mini" data-reset="offset-mouse" title="Reset to 25px">🔄 Reset</button>
+            </div>
+            <div class="slider-control-group">
+              <button class="slider-adj-btn minus" data-target="settings-offset-mouse">-</button>
+              <input type="range" id="settings-offset-mouse" min="0" max="200" step="5" value="25" class="w-full" />
+              <button class="slider-adj-btn plus" data-target="settings-offset-mouse">+</button>
+              <span id="settings-offset-mouse-value" class="badge">25px</span>
+            </div>
+          </div>
+
+          <div class="setting-item mb-15">
             <div class="flex-row-center flex-space-between w-full">
               <label class="setting-label">顯示導航觸發區提示線</label>
               <label class="switch">
