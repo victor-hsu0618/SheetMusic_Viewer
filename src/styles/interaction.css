@@ -212,7 +212,8 @@
   top: 0 !important;
   left: 0 !important;
   z-index: 50 !important;
-  cursor: auto;
+  cursor: crosshair;
+  touch-action: none;
 }
 
 /* Category Navigator & Dropdown (Premium UI) */

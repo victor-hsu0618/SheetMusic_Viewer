@@ -4,12 +4,13 @@
  */
 export const CoordMapper = {
     /**
-     * Get normalized (0-1) coordinates from mouse/touch event relative to overlay.
+     * Get normalized (0-1) coordinates from mouse/touch/pointer event relative to overlay.
      */
     getPos: (e, overlay) => {
         const rect = overlay.getBoundingClientRect()
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || (e.changedTouches && e.changedTouches[0].clientX)
-        const clientY = e.clientY || (e.touches && e.touches[0].clientY) || (e.changedTouches && e.changedTouches[0].clientY)
+        // Support PointerEvent, MouseEvent, and TouchEvent
+        const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0))
+        const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0))
         return {
             x: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
             y: Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
@@ -17,16 +18,25 @@ export const CoordMapper = {
     },
 
     /**
-     * Calculate stamp preview position with offset for touch/mouse.
+     * Calculate stamp preview position with offset based on pointer type.
+     * pointerType: 'mouse', 'touch', or 'pen'
      */
-    getStampPreviewPos: (pos, isTouch, toolType, app, overlay) => {
-        if (toolType === 'view' || !isTouch) {
+    getStampPreviewPos: (pos, pointerType, toolType, app, overlay) => {
+        // No offset for specific tools or if viewing
+        if (toolType === 'view' || toolType === 'select' || toolType === 'eraser' || toolType === 'copy' || toolType === 'recycle-bin' || toolType === 'text' || toolType === 'tempo-text' || toolType === 'measure') {
             return pos
         }
 
         const rect = overlay.getBoundingClientRect()
         const offsetX = -45
-        const offsetY = isTouch ? app.stampOffsetTouchY : app.stampOffsetMouseY
+        
+        let offsetY = app.stampOffsetMouseY // Default to mouse offset
+        if (pointerType === 'touch') {
+            offsetY = app.stampOffsetTouchY
+        } else if (pointerType === 'pen') {
+            // For iPad Pen, use zero offset for maximum precision
+            return pos
+        }
 
         let dxPx = offsetX
         let dyPx = -offsetY

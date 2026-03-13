@@ -102,7 +102,7 @@ export const InteractionUI = {
     syncVirtualPointer: (e, toolType, overlay, virtualPointer, coordMapper, app) => {
         if (!toolType || !virtualPointer) {
             if (virtualPointer) virtualPointer.classList.remove('active');
-            virtualPointer.classList.remove('idle-pan');
+            if (virtualPointer) virtualPointer.classList.remove('idle-pan');
             if (overlay && !app.isTouch) overlay.style.cursor = '';
             return;
         }
@@ -112,12 +112,20 @@ export const InteractionUI = {
         const effectiveTool = toolType === 'idle-pan' ? app.activeStampType : toolType;
         
         const pos = coordMapper.getPos(e, overlay)
-        const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
-        const previewPos = coordMapper.getStampPreviewPos(pos, isTouch, effectiveTool, app, overlay)
+        
+        // Determine pointer type
+        let pointerType = 'mouse'
+        if (e.pointerType) {
+            pointerType = e.pointerType
+        } else if (e.type.startsWith('touch') || (e.touches && e.touches.length > 0)) {
+            pointerType = 'touch'
+        }
+        
+        const previewPos = coordMapper.getStampPreviewPos(pos, pointerType, effectiveTool, app, overlay)
         const hasOffset = previewPos.x !== pos.x || previewPos.y !== pos.y
         
         const isTargetingTool = ['select', 'copy', 'recycle-bin', 'text', 'tempo-text', 'view'].includes(effectiveTool);
-        const isDesktopStamp = !app.isTouch && (app.isStampTool() || isTargetingTool);
+        const isDesktopStamp = pointerType === 'mouse' && (app.isStampTool() || isTargetingTool);
         
         if (hasOffset || isDesktopStamp || isIdle) {
             const rect = overlay.getBoundingClientRect()
@@ -139,7 +147,7 @@ export const InteractionUI = {
         } else {
             virtualPointer.classList.remove('active')
             virtualPointer.classList.remove('idle-pan')
-            if (overlay && !app.isTouch) overlay.style.cursor = ''
+            if (overlay && pointerType === 'mouse') overlay.style.cursor = ''
         }
     }
 }

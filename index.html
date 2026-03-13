@@ -778,6 +778,13 @@
             </svg>
             重置雲端索引 (修復 Broken Sync)
           </button>
+          <button id="btn-heal-cloud-titles" class="btn btn-outline btn-full btn-smaller mb-10">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="M8 11h8M12 7v8" />
+            </svg>
+            修復雲端名稱 (糾正錯位)
+          </button>
           <button id="btn-purge-cloud-data" class="btn btn-outline btn-full btn-smaller mb-10 text-danger">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -1262,6 +1269,12 @@
             <label class="setting-label">Cloud Sync Name (Display Part)</label>
             <div class="flex-row-center gap-10 mt-5">
               <input type="text" id="sync-filename-input" class="search-input-mini w-full" placeholder="e.g. Mozart_Sym40">
+              <button id="btn-sync-match-local" class="btn btn-icon-mini" title="Sync from Piece Title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-5v5h5"></path>
+                  <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 5v-5h-5"></path>
+                </svg>
+              </button>
               <button id="btn-sync-rename" class="btn btn-outline-sm" title="Rename file on Google Drive">Rename</button>
             </div>
             <div id="sync-full-filename-preview" class="text-mini mt-5 color-primary" style="font-weight: 600; opacity: 0.8;">Full: ---</div>

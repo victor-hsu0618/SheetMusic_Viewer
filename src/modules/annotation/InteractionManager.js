@@ -39,6 +39,15 @@ export class InteractionManager {
             }, this.app.pointerIdleTimeoutMs || 8000); 
         };
 
+        // --- HELPERS ---
+
+        const getPointerType = (e) => {
+            if (e.pointerType) return e.pointerType;
+            // Fallback for older environments or specific touch events
+            if (e.type.startsWith('touch') || (e.touches && e.touches.length > 0)) return 'touch';
+            return 'mouse';
+        };
+
         const getWrapperPixels = (normX, normY) => {
             const canvas = wrapper.querySelector('.pdf-canvas') || wrapper.querySelector('.annotation-layer:not(.virtual-canvas)');
             if (!canvas) return { x: normX * width, y: normY * height };
@@ -55,11 +64,10 @@ export class InteractionManager {
 
             const pos = CoordMapper.getPos(e, overlay);
             const toolType = this.app.activeStampType;
+            const pointerType = getPointerType(e);
 
             if (toolType === 'view') {
-                isInteracting = false;
-                this.app.isInteracting = false;
-                if (e.type !== 'touchstart') {
+                if (pointerType !== 'touch') {
                     isPanning = true;
                     const startX = e.clientX, startY = e.clientY;
                     const startScrollTop = this.app.viewer.scrollTop;
@@ -76,22 +84,21 @@ export class InteractionManager {
                         isPanning = false;
                         overlay.style.cursor = '';
                         this.app.viewer.style.scrollBehavior = '';
-                        window.removeEventListener('mousemove', doPan);
-                        window.removeEventListener('mouseup', stopPan);
+                        window.removeEventListener('pointermove', doPan);
+                        window.removeEventListener('pointerup', stopPan);
                     };
-                    window.addEventListener('mousemove', doPan);
-                    window.addEventListener('mouseup', stopPan);
+                    window.addEventListener('pointermove', doPan);
+                    window.addEventListener('pointerup', stopPan);
                 }
                 return;
             }
 
-            if (e.type === 'touchstart' && e.touches && e.touches.length > 1) return;
-            if (e.type === 'touchstart') e.preventDefault();
+            if (pointerType === 'touch' && e.touches && e.touches.length > 1) return;
+            if (pointerType === 'touch') e.preventDefault();
 
             // 1. Grace Period Interaction
             if (graceObject) {
-                const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0);
-                const offsetPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
+                const offsetPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 const center = CoordMapper.getGraceCenter(graceObject);
                 const dx = (offsetPos.x - center.x) * width;
                 const dy = (offsetPos.y - center.y) * height;
@@ -102,6 +109,7 @@ export class InteractionManager {
                     activeObject = graceObject;
                     isMovingExisting = true;
                     isInteracting = true;
+                    this.app.isInteracting = true;
                     
                     // SHOW TRASH only when the user actually grabs the grace object
                     // SHOW TRASH Pop-up Portal (70px above the object)
@@ -127,10 +135,9 @@ export class InteractionManager {
             InteractionUI.showTrash(false, wrapper);
             isInteracting = true;
             this.app.isInteracting = true;
-            const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0);
             
             // 2. Selection/Text Logic: Allow clicking existing objects even when not in explicit Select mode
-            const pPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
+            const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
             const target = this.app.selectHoveredStamp || this.app.findClosestStamp(pageNum, pPos.x, pPos.y, true);
 
             // Special handling for Text Tool: click existing text to edit it
@@ -151,10 +158,11 @@ export class InteractionManager {
 
             if (isSelectionTool || isSlurBending) {
                 if (target) {
-                    overlay.style.cursor = isTouch ? 'pointer' : (toolType === 'recycle-bin' ? 'none' : 'none'); // Also hide for selection if we want the target
+                    overlay.style.cursor = pointerType === 'mouse' ? 'none' : (toolType === 'recycle-bin' ? 'none' : 'none'); 
                     if (toolType === 'recycle-bin') {
                         this.app.annotationManager.eraseStampTarget(target);
                         isInteracting = false;
+                        this.app.isInteracting = false;
                     } else if (toolType === 'copy') {
                         const clone = JSON.parse(JSON.stringify(target));
                         clone.id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`;
@@ -196,17 +204,20 @@ export class InteractionManager {
                 } else if (isSelectionTool) {
                     // MAGNETIC START: Allow starting interaction even if we hit nothing (ONLY for selection tools)
                     isInteracting = true;
+                    this.app.isInteracting = true;
                     activeObject = null;
                     isMovingExisting = true; // Flag that we ARE looking for something to move/interact with
                     this.app._dragLastPos = pPos;
                     attachGlobalListeners();
                     InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
+                } else {
+                    isInteracting = false;
+                    this.app.isInteracting = false;
                 }
             } else if (['pen', 'highlighter', 'line', 'slur'].includes(toolType)) {
-                isInteracting = true;
                 activeObject = {
                     type: toolType, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
-                    points: [CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay)],
+                    points: [CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay)],
                     color: this.app.activeColor,
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
                     updatedAt: Date.now()
@@ -218,17 +229,18 @@ export class InteractionManager {
                 if (eraserTarget) {
                     this.app.annotationManager.eraseStampTarget(eraserTarget);
                     isInteracting = false;
+                    this.app.isInteracting = false;
                 } else {
                     // MAGNETIC START for eraser
                     isInteracting = true;
+                    this.app.isInteracting = true;
                     activeObject = null;
                     attachGlobalListeners();
                     InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
                 }
             } else {
                 // New stamp placement
-                isInteracting = true;
-                const fPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
+                const fPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 activeObject = {
                     page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
                     x: fPos.x, y: fPos.y, color: this.app.activeColor, data: null, updatedAt: Date.now(),
@@ -257,12 +269,12 @@ export class InteractionManager {
         const moveAction = (e) => {
             if (!isInteracting) return;
             const pos = CoordMapper.getPos(e, overlay);
-            const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0);
+            const pointerType = getPointerType(e);
             const toolType = this.app.activeStampType;
 
             // MAGNETIC PICKUP: If we started an interaction but hadn't hit anything yet
             if (!activeObject && (['select', 'eraser', 'copy', 'recycle-bin'].includes(toolType))) {
-                const pPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
+                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 const target = this.app.findClosestStamp(pageNum, pPos.x, pPos.y, toolType !== 'eraser');
                 if (target) {
                     if (toolType === 'eraser' || toolType === 'recycle-bin') {
@@ -280,6 +292,7 @@ export class InteractionManager {
                     }
                 }
             }
+
             if (!activeObject) {
                 InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
                 return;
@@ -297,12 +310,10 @@ export class InteractionManager {
                         // Signed perpendicular distance from pos to baseline
                         const perpDist = (-dyBaseline * pos.x + dxBaseline * pos.y + (dyBaseline * p0.x - dxBaseline * p0.y)) / distBaseline;
                         // Map perpendicular distance to curvature property
-                        // Since apex height = dist * curvature * 0.5, we want curvature = (perpDist / dist) * 2
                         activeObject.curvature = (perpDist / distBaseline) * 2;
                     }
                 } else {
-                    overlay.style.cursor = 'grabbing';
-                    const targetPos = CoordMapper.getStampPreviewPos(pos, isTouch, this.app.activeStampType, this.app, overlay);
+                    const targetPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, overlay);
                     if (activeObject.points) {
                         const dx = targetPos.x - (this.app._dragLastPos?.x ?? targetPos.x);
                         const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y);
@@ -315,9 +326,9 @@ export class InteractionManager {
                 }
                 this.app.redrawStamps(pageNum);
             } else if (activeObject.points) {
-                const currentPos = CoordMapper.getStampPreviewPos(pos, isTouch, activeObject.type, this.app, overlay);
+                const currentPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, overlay);
                 if (activeObject.type === 'line' || activeObject.type === 'slur') {
-                    // Constant 2 points for a straight line: [start, current]
+                    // Constant 2 points for a straight line or slur: [start, current]
                     activeObject.points = [activeObject.points[0], currentPos];
                 } else {
                     activeObject.points.push(currentPos);
@@ -325,7 +336,7 @@ export class InteractionManager {
                 const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
                 if (canvas) this.app.drawPathOnCanvas(canvas.getContext('2d'), canvas, activeObject);
             } else {
-                const pPos = CoordMapper.getStampPreviewPos(pos, isTouch, activeObject.type, this.app, overlay);
+                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, overlay);
                 activeObject.x = pPos.x; activeObject.y = pPos.y;
                 const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
                 if (canvas) {
@@ -382,7 +393,6 @@ export class InteractionManager {
             graceObject = obj;
             this.app._lastGraceObject = graceObject;
             // REMOVED IMMEDIATE TRASH SHOW: Don't show trash until the user actually drags the object again.
-            // This ensures a clear path for rapid subsequent stamps.
             if (graceTimer) clearTimeout(graceTimer);
             graceTimer = setTimeout(() => {
                 if (graceObject === obj) { 
@@ -403,9 +413,8 @@ export class InteractionManager {
             this.isAdjustingCurvature = false;
             this.app._dragLastPos = null;
             
-            // For desktop, we keep cursor 'none' if a stamp tool is active to maintain the crosshair focus
-            const isTouch = e && (e.type?.startsWith('touch') || (e.touches && e.touches.length > 0));
-            overlay.style.cursor = this.app.isStampTool() ? (isTouch ? 'crosshair' : 'none') : '';
+            const pointerType = getPointerType(e || { type: 'mousemove' });
+            overlay.style.cursor = this.app.isStampTool() ? (pointerType === 'mouse' ? 'none' : 'crosshair') : '';
             
             if (!graceObject) InteractionUI.showTrash(false, wrapper);
             else InteractionUI.setTrashActive(false, wrapper);
@@ -418,7 +427,7 @@ export class InteractionManager {
         const hoverAction = (e) => {
             if (isInteracting) return;
             const pos = CoordMapper.getPos(e, overlay);
-            const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0);
+            const pointerType = getPointerType(e);
             const toolType = this.app.activeStampType;
 
             if (toolType === 'eraser') {
@@ -439,14 +448,14 @@ export class InteractionManager {
             }
 
             if (['select', 'copy', 'recycle-bin', 'text', 'tempo-text'].includes(toolType)) {
-                const pPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
+                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 const found = this.app.findClosestStamp(pageNum, pPos.x, pPos.y, true);
                 if (found !== this.app.selectHoveredStamp) {
                     this.app.selectHoveredStamp = found;
                     this.app.redrawStamps(pageNum);
                 }
             } else if (this.app.isStampTool()) {
-                const pPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
+                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 let shouldPreview = true;
                 if (graceObject) {
                     const center = CoordMapper.getGraceCenter(graceObject);
@@ -460,7 +469,7 @@ export class InteractionManager {
                     }
                 }
                 if (shouldPreview) {
-                    overlay.style.cursor = isTouch ? 'crosshair' : 'none';
+                    overlay.style.cursor = pointerType === 'mouse' ? 'none' : 'crosshair';
                     const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
                     if (canvas) {
                         this.app.redrawStamps(pageNum);
@@ -475,31 +484,25 @@ export class InteractionManager {
 
         const attachGlobalListeners = () => {
             detachGlobalListeners(); 
-            window.addEventListener('mousemove', moveAction);
-            window.addEventListener('mouseup', endAction);
-            window.addEventListener('touchmove', moveAction, { passive: false });
-            window.addEventListener('touchend', endAction);
-            window.addEventListener('touchcancel', endAction);
+            window.addEventListener('pointermove', moveAction);
+            window.addEventListener('pointerup', endAction);
+            window.addEventListener('pointercancel', endAction);
         };
 
         const detachGlobalListeners = () => {
-            window.removeEventListener('mousemove', moveAction);
-            window.removeEventListener('mouseup', endAction);
-            window.removeEventListener('touchmove', moveAction);
-            window.removeEventListener('touchend', endAction);
-            window.removeEventListener('touchcancel', endAction);
+            window.removeEventListener('pointermove', moveAction);
+            window.removeEventListener('pointerup', endAction);
+            window.removeEventListener('pointercancel', endAction);
         };
 
-        overlay.addEventListener('mousedown', startAction);
-        overlay.addEventListener('mousemove', hoverAction);
+        overlay.addEventListener('pointerdown', startAction);
+        overlay.addEventListener('pointermove', hoverAction);
         overlay.addEventListener('mouseleave', () => {
             virtualPointer?.classList.remove('active');
             this.app.hoveredStamp = this.app.selectHoveredStamp = null;
             this.app.redrawStamps(pageNum);
             wrapper.querySelector('.erase-hover-chip')?.remove();
         });
-        overlay.addEventListener('touchstart', startAction, { passive: false });
-        overlay.addEventListener('touchend', endAction);
 
         InteractionUI.ensureTrashBin(wrapper);
         wrapper.appendChild(overlay);

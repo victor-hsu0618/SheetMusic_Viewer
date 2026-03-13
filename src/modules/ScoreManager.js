@@ -232,19 +232,9 @@ export class ScoreManager {
         await this.helper.saveRegistry(this.registry);
         await db.set(`score_buf_${fp}`, buffer);
 
-        // --- ADDED: Initialize Score Detail for the new score ---
+        // --- FIXED: Initialize Score Detail without touching active state ---
         if (this.app.scoreDetailManager) {
-            this.app.scoreDetailManager.currentInfo = {
-                name: entry.title,
-                composer: 'Unknown',
-                lastEdit: Date.now(),
-                lastAuthor: this.app.profileManager?.data?.userName || 'Guest',
-                mediaList: [],
-                activeMediaId: null,
-                stampScale: 1.0,
-                lastScrollTop: 0
-            };
-            this.app.scoreDetailManager.save(fp);
+            this.app.scoreDetailManager.initializeNewScore(fp, entry.title);
         }
 
         this.render();

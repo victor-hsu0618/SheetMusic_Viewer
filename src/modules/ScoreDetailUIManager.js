@@ -23,6 +23,7 @@ export class ScoreDetailUIManager {
         this.btnSyncRename = document.getElementById('btn-sync-rename')
         this.syncFileIdDisplay = document.getElementById('sync-file-id-display')
         this.syncFullPreview = document.getElementById('sync-full-filename-preview')
+        this.btnSyncMatchLocal = document.getElementById('btn-sync-match-local')
 
         this.mediaLabelInput = document.getElementById('sidebar-media-label')
         this.mediaUrlInput = document.getElementById('sidebar-media-url')
@@ -57,6 +58,7 @@ export class ScoreDetailUIManager {
         this.localFileInput?.addEventListener('change', (e) => this.manager.handleLocalFile(e))
         this.btnSave?.addEventListener('click', () => this.manager.handleSave())
         this.btnSyncRename?.addEventListener('click', () => this.manager.handleSyncRename())
+        this.btnSyncMatchLocal?.addEventListener('click', () => this.manager.handleSyncMatchLocal())
         this.syncFilenameInput?.addEventListener('input', () => {
             const fp = this.manager.currentFp || this.app.pdfFingerprint;
             if (!fp) return;
@@ -242,8 +244,15 @@ export class ScoreDetailUIManager {
             const entry = manifest[fingerprint];
             const hash = fingerprint.slice(0, 8);
             
-            // Resolve Display Name: 1. From Manifest, 2. From Registry FileName, 3. From active score name
+            // Decide Display Name: 1. From Manifest, 2. From Registry FileName, 3. From active score name
             let defaultName = entry?.name;
+            const pieceName = regScore?.title || (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName?.replace(/\.pdf$/i, '') : '') || '';
+            
+            // --- AUTO FIX: If manifest name is empty or totally different from piece title, and we have a piece title
+            if (!defaultName && pieceName && pieceName !== 'Unknown') {
+                defaultName = this.app.driveSyncManager.safeTitle(pieceName).replace(/_$/, '');
+            }
+
             if (!defaultName) {
                 const fileName = regScore?.fileName || (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName : '') || '';
                 defaultName = fileName.replace(/\.pdf$/i, '');
