@@ -154,7 +154,13 @@ export class InteractionManager {
                         attachGlobalListeners();
                     }
                 } else {
-                    isInteracting = false;
+                    // MAGNETIC START: Allow starting interaction even if we hit nothing
+                    isInteracting = true;
+                    activeObject = null;
+                    isMovingExisting = true; // Flag that we ARE looking for something to move/interact with
+                    this.app._dragLastPos = pPos;
+                    attachGlobalListeners();
+                    InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
                 }
             } else if (['pen', 'highlighter', 'line', 'slur'].includes(toolType)) {
                 activeObject = {
@@ -167,9 +173,17 @@ export class InteractionManager {
                 attachGlobalListeners();
                 InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
             } else if (toolType === 'eraser') {
-                const eraserTarget = this.app.hoveredStamp || this.app.findClosestStamp(pageNum, pos.x, pos.y, false);
-                if (eraserTarget) this.app.annotationManager.eraseStampTarget(eraserTarget);
-                isInteracting = false;
+                const eraserTarget = this.app.hoveredStamp || this.app.findClosestStamp(pageNum, pPos.x, pPos.y, false);
+                if (eraserTarget) {
+                    this.app.annotationManager.eraseStampTarget(eraserTarget);
+                    isInteracting = false;
+                } else {
+                    // MAGNETIC START for eraser
+                    isInteracting = true;
+                    activeObject = null;
+                    attachGlobalListeners();
+                    InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
+                }
             } else {
                 // New stamp placement
                 const fPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
@@ -199,9 +213,35 @@ export class InteractionManager {
         };
 
         const moveAction = (e) => {
-            if (!isInteracting || !activeObject) return;
+            if (!isInteracting) return;
             const pos = CoordMapper.getPos(e, overlay);
             const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0);
+            const toolType = this.app.activeStampType;
+
+            // MAGNETIC PICKUP: If we started an interaction but hadn't hit anything yet
+            if (!activeObject && (['select', 'eraser', 'copy', 'recycle-bin'].includes(toolType))) {
+                const pPos = CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay);
+                const target = this.app.findClosestStamp(pageNum, pPos.x, pPos.y, toolType !== 'eraser');
+                if (target) {
+                    if (toolType === 'eraser' || toolType === 'recycle-bin') {
+                        this.app.annotationManager.eraseStampTarget(target);
+                        // For eraser, we can either stop or keep erasing. Let's keep isInteracting true to allow "swipe to erase multiple"
+                    } else {
+                        activeObject = target;
+                        isMovingExisting = true;
+                        this.app.lastFocusedStamp = activeObject;
+                        this.app._dragLastPos = pPos;
+                        const cent = CoordMapper.getGraceCenter(activeObject);
+                        const wCent = getWrapperPixels(cent.x, cent.y);
+                        InteractionUI.showTrash(true, wrapper, wCent.x, wCent.y);
+                        this.app.redrawStamps(pageNum);
+                    }
+                }
+            }
+            if (!activeObject) {
+                InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
+                return;
+            }
 
             if (isMovingExisting) {
                 overlay.style.cursor = 'grabbing';
