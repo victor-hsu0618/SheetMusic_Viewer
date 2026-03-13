@@ -572,7 +572,9 @@ export class AnnotationManager {
                     this.app.userTextLibrary.push(val)
                     if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
                 }
-                this.app.stamps.push(stamp)
+                if (!this.app.stamps.includes(stamp)) {
+                    this.app.stamps.push(stamp)
+                }
                 this.app.saveToStorage(true)
                 this.redrawStamps(pageNum)
                 if (this.app.toolManager) this.app.toolManager.updateActiveTools()
@@ -711,7 +713,8 @@ export class AnnotationManager {
 
         const group = this.app.toolsets.find(g => g.tools.some(t => t.id === type))
         if (group) {
-            const layer = this.app.layers.find(l => l.type === group.type)
+            // Robust lookup: try type first, then fallback to group type matching layer id
+            const layer = this.app.layers.find(l => l.type === group.type || l.id === group.type)
             if (layer) targetLayerId = layer.id
         }
 
@@ -727,7 +730,7 @@ export class AnnotationManager {
                 type: 'text',
                 content: this.app._activeCustomText,
                 font: 'italic 300',
-                size: 22,
+                size: 20,
                 fontFace: 'serif'
             }
         }

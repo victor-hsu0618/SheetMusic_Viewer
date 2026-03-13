@@ -37,21 +37,21 @@ export const TOOLSETS = [
         type: 'fingering',
         tools: [
             { id: 'down-bow', label: 'Down', icon: '<path d="M8 11.5h8v4.3 M8 15.8v-4.3 M16 15.8v-4.3" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.26 0.17 L -0.26 -0.26 L 0.26 -0.26 L 0.26 0.17' } },
-            { id: 'up-bow', label: 'Up', icon: '<path d="M8 9.5l4 7l4-7" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.26 -0.3 L 0.4 0 L -0.26 -0.3' } },
+            { id: 'up-bow', label: 'Up', icon: '<path d="M8 9.5l4 7l4-7" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.26 -0.26 L 0 0.22 L 0.26 -0.26' } },
             { id: 'thumb', label: 'Thumb', icon: '<ellipse cx="12" cy="11" rx="1.9" ry="3.2" fill="none" stroke="currentColor" stroke-width="0.8" /><line x1="12" y1="14.2" x2="12" y2="17.4" stroke="currentColor" stroke-width="0.8" />', draw: { type: 'complex', variant: 'thumb', size: 15 } },
-            { id: 'f1', label: '1', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">1</text>', draw: { type: 'text', content: '1', font: '300', size: 18 } },
-            { id: 'f2', label: '2', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">2</text>', draw: { type: 'text', content: '2', font: '300', size: 18 } },
-            { id: 'f3', label: '3', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">3</text>', draw: { type: 'text', content: '3', font: '300', size: 18 } },
-            { id: 'f4', label: '4', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">4</text>', draw: { type: 'text', content: '4', font: '300', size: 18 } },
-            { id: 'f5', label: '5', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">5</text>', draw: { type: 'text', content: '5', font: '300', size: 18 } },
-            { id: 'f0', label: '0', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">0</text>', draw: { type: 'text', content: '0', font: '300', size: 18 } },
+            { id: 'f1', label: '1', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">1</text>', draw: { type: 'text', content: '1', font: '300', size: 20 } },
+            { id: 'f2', label: '2', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">2</text>', draw: { type: 'text', content: '2', font: '300', size: 20 } },
+            { id: 'f3', label: '3', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">3</text>', draw: { type: 'text', content: '3', font: '300', size: 20 } },
+            { id: 'f4', label: '4', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">4</text>', draw: { type: 'text', content: '4', font: '300', size: 20 } },
+            { id: 'f5', label: '5', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">5</text>', draw: { type: 'text', content: '5', font: '300', size: 20 } },
+            { id: 'f0', label: '0', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">0</text>', draw: { type: 'text', content: '0', font: '300', size: 20 } },
             { id: 'open_string', label: 'o', icon: '<circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.3" />', draw: { type: 'shape', shape: 'circle', radius: 0.5, fill: false } },
-            { id: 'i', label: 'I', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">I</text>', draw: { type: 'text', content: 'I', font: '300', size: 14, fontFace: 'serif' } },
-            { id: 'ii', label: 'II', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">II</text>', draw: { type: 'text', content: 'II', font: '300', size: 14, fontFace: 'serif' } },
-            { id: 'iii', label: 'III', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">III</text>', draw: { type: 'text', content: 'III', font: '300', size: 14, fontFace: 'serif' } },
-            { id: 'iv', label: 'IV', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">IV</text>', draw: { type: 'text', content: 'IV', font: '300', size: 14, fontFace: 'serif' } },
-            { id: 'f-exp', label: 'x', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">x</text>', draw: { type: 'text', content: 'x', font: '300', size: 16 } },
-            { id: 'f-shift', label: '+', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">+</text>', draw: { type: 'text', content: '+', font: '300', size: 18 } }
+            { id: 'i', label: 'I', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">I</text>', draw: { type: 'text', content: 'I', font: '300', size: 20, fontFace: 'serif' } },
+            { id: 'ii', label: 'II', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">II</text>', draw: { type: 'text', content: 'II', font: '300', size: 20, fontFace: 'serif' } },
+            { id: 'iii', label: 'III', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">III</text>', draw: { type: 'text', content: 'III', font: '300', size: 20, fontFace: 'serif' } },
+            { id: 'iv', label: 'IV', icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">IV</text>', draw: { type: 'text', content: 'IV', font: '300', size: 20, fontFace: 'serif' } },
+            { id: 'f-exp', label: 'x', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">x</text>', draw: { type: 'text', content: 'x', font: '300', size: 20 } },
+            { id: 'f-shift', label: '+', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">+</text>', draw: { type: 'text', content: '+', font: '300', size: 20 } }
         ]
     },
     {
@@ -62,8 +62,8 @@ export const TOOLSETS = [
             { id: 'staccato', label: 'Staccato', icon: '<circle cx="12" cy="12" r="1.5" fill="currentColor" />', draw: { type: 'shape', shape: 'circle', radius: 0.12, fill: true } },
             { id: 'tenuto', label: 'Tenuto', icon: '<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.8" />', draw: { type: 'path', data: 'M -0.4 0 L 0.4 0' } },
             { id: 'fermata', label: 'Fermata', icon: '<path d="M7 15a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13.5" r="1.2" fill="currentColor" />', draw: { type: 'complex', variant: 'fermata' } },
-            { id: 'sharp', label: 'Sharp', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♯</text>', draw: { type: 'text', content: '♯', font: '500', size: 18, fontFace: 'serif' } },
-            { id: 'flat', label: 'Flat', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♭</text>', draw: { type: 'text', content: '♭', font: '500', size: 18, fontFace: 'serif' } }        ]
+            { id: 'sharp', label: 'Sharp', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♯</text>', draw: { type: 'text', content: '♯', font: '500', size: 20, fontFace: 'serif' } },
+            { id: 'flat', label: 'Flat', icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♭</text>', draw: { type: 'text', content: '♭', font: '500', size: 20, fontFace: 'serif' } }        ]
     },
     {
         name: 'Text',
@@ -71,10 +71,10 @@ export const TOOLSETS = [
         tools: [
             { id: 'text-pizz', label: 'pizz.', draw: { type: 'text', content: 'pizz.', font: 'italic 300', size: 20, fontFace: 'serif' } },
             { id: 'text-arco', label: 'arco.', draw: { type: 'text', content: 'arco.', font: 'italic 300', size: 20, fontFace: 'serif' } },
-            { id: 'text-f', label: 'f', draw: { type: 'text', content: 'f', font: 'italic 600', size: 24, fontFace: 'serif' } },
-            { id: 'text-p', label: 'p', draw: { type: 'text', content: 'p', font: 'italic 600', size: 24, fontFace: 'serif' } },
-            { id: 'text-mf', label: 'mf', draw: { type: 'text', content: 'mf', font: 'italic 600', size: 22, fontFace: 'serif' } },
-            { id: 'text-mp', label: 'mp', draw: { type: 'text', content: 'mp', font: 'italic 600', size: 22, fontFace: 'serif' } },
+            { id: 'text-f', label: 'f', draw: { type: 'text', content: 'f', font: 'italic 600', size: 20, fontFace: 'serif' } },
+            { id: 'text-p', label: 'p', draw: { type: 'text', content: 'p', font: 'italic 600', size: 20, fontFace: 'serif' } },
+            { id: 'text-mf', label: 'mf', draw: { type: 'text', content: 'mf', font: 'italic 600', size: 20, fontFace: 'serif' } },
+            { id: 'text-mp', label: 'mp', draw: { type: 'text', content: 'mp', font: 'italic 600', size: 20, fontFace: 'serif' } },
             { id: 'text-rit', label: 'rit.', draw: { type: 'text', content: 'rit.', font: 'italic 300', size: 20, fontFace: 'serif' } },
             { id: 'text-accel', label: 'accel.', draw: { type: 'text', content: 'accel.', font: 'italic 300', size: 20, fontFace: 'serif' } },
             { id: 'text-cresc', label: 'cresc.', draw: { type: 'text', content: 'cresc.', font: 'italic 300', size: 20, fontFace: 'serif' } },

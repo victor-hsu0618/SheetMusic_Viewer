@@ -1,49 +1,44 @@
-# 實作計畫 - 自定義互動位移設定 (Customizable Interaction Offset)
+# 實作計畫 - 印章放下後的 2 秒反悔期 (Grace Period)
 
-本計畫旨在區分「畫筆工具」與「印章工具」的位移邏輯，並提供使用者在全域設定中調整位移距離。
+本計畫旨在優化使用者体验：在放置印章後，提供 2 秒鐘的「寬限期」，在此期間使用者可以直接對剛放置的對象進行「再次移動」或「刪除」操作。
 
 ## 需求細節
-1.  **畫筆工具 (Pen, Highlighter, Line)**：
-    *   **滑鼠 (PC)**：0px 位移（精準對齊）。
-    *   **觸控 (iPad)**：維持位移（預設 65px，可調），避免手指遮擋。
-2.  **印章/標註工具 (Bowing, Articulation, Text 等)**：
-    *   **滑鼠 (PC)**：小位移（預設 25px，可調），避免被游標擋住。
-    *   **觸控 (iPad)**：大位移（預設 65px，可調），避免手指遮擋。
-3.  **可設定性**：在「Global Settings」中提供調整滑桿。
+1.  **觸發條件**：使用者放置一個印章（Stamp）後。
+2.  **寬限期行為**：
+    *   放置後 2 秒內，該印章進入「活動狀態」（顯示虛線邊框或發光）。
+    *   **移動設計 (How to Move)**：
+        *   **直接抓取**：即便您仍在使用印章工具，只要按住這個活動印章，系統會自動將其視為「選中狀態」，讓您能直接拖動微調位置。
+        *   **計時重置**：當您開始移動時，2 秒計時器會暫停；當您再次放開印章時，會在新的位置重新開始 2 秒寬限期。
+    *   若使用者在 2 秒內點擊頁面其他地方：放下目前的寬限對象並正式定稿，然後在點擊處放置新印章（並開啟新的 2 秒寬限期）。
+    *   若 2 秒時間到：重置狀態，正式將印章納入譜面，恢復一般工具預覽模式。
+3.  **刪除機制 (How to Delete)**：
+    *   **鍵盤 (PC)**：在 2 秒寬限期內，按下 `Delete` 或 `Backspace` 可立即移除該印章。
+    *   **界面 (UI)**：在印章上方顯示一個小型的浮動刪除按鈕（如 🗑 或 ✖）。點擊該按鈕即可刪除並取消寬限期。
+    *   **快速反悔**：若連續點擊同一個印章（不拖動），視為刪除意圖。
 
 ## 預計修改內容
-
-### [Component] UI & State
-
-#### [MODIFY] [index.html](file:///Users/victor/MyProgram/SheetMusic_Viewer/index.html)
-*   在 `settings-pane-system` 中加入兩個新的設定項：
-    *   `Interaction Offset (Touch)`
-    *   `Interaction Offset (Mouse)`
-
-#### [MODIFY] [main.js](file:///Users/victor/MyProgram/SheetMusic_Viewer/src/main.js)
-*   初始化 `stampOffsetTouchY = 65` 與 `stampOffsetMouseY = 25`。
-
-#### [MODIFY] [PersistenceManager.js](file:///Users/victor/MyProgram/SheetMusic_Viewer/src/modules/PersistenceManager.js)
-*   在 `saveToStorage` 與 `loadFromStorage` 中處理這兩個新欄位。
-
-#### [MODIFY] [SettingsPanelManager.js](file:///Users/victor/MyProgram/SheetMusic_Viewer/src/modules/SettingsPanelManager.js)
-*   在 `initSettings` 中綁定新滑桿的事件處理。
 
 ### [Component] Interaction Logic
 
 #### [MODIFY] [InteractionManager.js](file:///Users/victor/MyProgram/SheetMusic_Viewer/src/modules/annotation/InteractionManager.js)
-*   重構 `getStampPreviewPos(pos, isTouch, toolType)`：
-    *   判定 `isFreehand = ['pen', 'highlighter', 'line'].includes(toolType)`。
-    *   如果 `isTouch`：位移量 = `app.stampOffsetTouchY`。
-    *   如果 `!isTouch`：
-        *   如果 `isFreehand`：位移量 = 0。
-        *   否則：位移量 = `app.stampOffsetMouseY`。
+*   **狀態定義**：
+    *   新增變數 `graceObject = null` 與 `graceTimer = null`。
+*   **`startAction` 重構**：
+    *   點擊時檢查 `graceObject`。
+    *   計算點擊位置相對於 `graceObject` 的距離。
+    *   若距離極近（點擊到該對象）：將 `activeObject` 設為該對象，`isMovingExisting = true`，並清除計時器。
+*   **`endAction` 重構**：
+    *   放下新印章後，不立即 `activeObject = null`。
+    *   將 `graceObject` 設為該新印章。
+    *   啟動 `graceTimer`，2 秒後將 `graceObject` 設為 `null` 並重繪。
+*   **`hoverAction` / `moveAction` 調優**：
+    *   確保寬限期對象在重繪時有特殊的視覺提示（如發光或邊框）。
 
 ## 驗證計畫
 
 ### 手動驗證
-1. 啟動 `npm run dev`。
-2. 開啟 **Global Settings** -> **System Settings**。
-3. 調整 **Mouse Offset** 為 50px，確認印章工具（如 Down Bow）在滑鼠下游標上方明顯處預覽。
-4. 選擇 **Pen** 工具，確認滑鼠繪圖時位移依然為 0。
-5. 在 iPad 上確認觸控位移正常且可調。
+1. 選擇任意印章工具（如 Down Bow）。
+2. 在譜面上點擊放下。
+3. **反悔測試**：放下後立即（2 秒內）用滑鼠/手指再次按住該印章，確認可以拖動它而不需要切換到 Select 工具。
+4. **連續放置測試**：放下後點擊譜面另一個位置，確認會在該處產生新印章，舊印章則結束寬限期。
+5. **逾期測試**：放下後等待 3 秒，游標應恢復為預設的印章預覽。

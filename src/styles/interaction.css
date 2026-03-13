@@ -640,3 +640,79 @@
     opacity: 1;
   }
 }
+
+/* ─── Grace Period Trash Bin (Drag to Delete) ─── */
+.grace-trash-bin {
+  position: absolute; /* Relative to wrapper */
+  width: 64px;
+  height: 64px;
+  background: rgba(30, 30, 30, 0.85);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.7);
+  transition: opacity 0.3s, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.grace-trash-bin.show {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+}
+
+.grace-trash-bin.active {
+  background: #ef4444;
+  border-color: white;
+  transform: scale(1.2);
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.6);
+}
+
+.grace-trash-bin svg {
+  width: 32px;
+  height: 32px;
+  color: white;
+  transition: transform 0.2s ease;
+}
+
+.grace-trash-bin.active svg {
+  transform: scale(1.3) rotate(12deg);
+}
+
+.grace-trash-bin::after {
+  content: 'TRASH';
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+/* ─── Virtual Pointer (Visual Sync for Offset) ─── */
+.virtual-pointer {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #6366f1;
+  border: 1.5px solid white;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1000;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.8);
+  transition: opacity 0.15s ease-out;
+  opacity: 0;
+}
+
+.virtual-pointer.active {
+  opacity: 1;
+}

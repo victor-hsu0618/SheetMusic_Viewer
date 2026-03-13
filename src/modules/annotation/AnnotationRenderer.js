@@ -70,6 +70,10 @@ export class AnnotationRenderer {
         } else if (isSelectHovered) {
             ctx.shadowBlur = 12
             ctx.shadowColor = '#6366f1'
+        } else if (path === this.app._lastGraceObject) {
+            ctx.shadowBlur = 10
+            ctx.shadowColor = '#6366f1'
+            ctx.strokeStyle = '#6366f1' // Blue highlight
         } else if (this.app.activeStampType === 'select' && !isForeign) {
             ctx.shadowBlur = 8
             ctx.shadowColor = '#6366f188' // Subtle interactive glow
@@ -86,7 +90,7 @@ export class AnnotationRenderer {
             ctx.lineWidth = (isHovered ? 18 : 14) * (this.app.scale / 1.5) * pageFactor
         } else {
             ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
-            ctx.lineWidth = (path.type === 'line' ? 2 : 3) * (this.app.scale / 1.5) * pageFactor
+            ctx.lineWidth = (path.type === 'line' ? 1.2 : 1.8) * (this.app.scale / 1.5) * pageFactor
             if (isHovered) ctx.lineWidth *= 1.5 // Make path thicker when hovered
         }
 
@@ -101,6 +105,22 @@ export class AnnotationRenderer {
             ctx.lineTo(px, py)
         }
         ctx.stroke()
+
+        // GRACE RING for paths
+        if (path === this.app._lastGraceObject) {
+            ctx.beginPath()
+            ctx.lineWidth = 1 * (this.app.scale / 1.5) * pageFactor
+            ctx.setLineDash([4, 4])
+            ctx.strokeStyle = '#6366f1'
+            ctx.moveTo(startX, startY)
+            for (let i = 1; i < path.points.length; i++) {
+                const px = path.points[i].x * canvas.width
+                const py = path.points[i].y * canvas.height
+                ctx.lineTo(px, py)
+            }
+            ctx.stroke()
+        }
+
         ctx.restore()
     }
 
@@ -121,6 +141,20 @@ export class AnnotationRenderer {
                 break
             }
         }
+        
+        // SPECIAL: Handle Custom Text if not in static toolsets (e.g. for previews)
+        if (!toolDef && stamp.type && stamp.type.startsWith('custom-text-') && this.app._activeCustomText) {
+            toolDef = {
+                draw: {
+                    type: 'text',
+                    content: this.app._activeCustomText,
+                    font: 'italic 300',
+                    size: 20,
+                    fontFace: 'serif'
+                }
+            }
+        }
+
         // Fallback to embedded draw data if tool not found in current toolsets
         if (!toolDef && stamp.draw) {
             toolDef = { draw: stamp.draw }
@@ -132,7 +166,7 @@ export class AnnotationRenderer {
         const pageFactor = this.app.pageScales[stamp.page] || 1.0
         const userMultiplier = this.app.stampSizeMultiplier || 1.0
         const scoreMultiplier = this.app.scoreStampScale || 1.0
-        const baseSize = 26 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * (toolSize / 24)
+        const baseSize = 14 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * (toolSize / 24)
 
         const size = isBow ? baseSize * 0.85 : baseSize
         const textScale = size / 21 // Relative to the original baseline
@@ -160,6 +194,19 @@ export class AnnotationRenderer {
         } else if (isSelectHovered) {
             ctx.shadowBlur = 15
             ctx.shadowColor = '#6366f1'
+        } else if (stamp === this.app._lastGraceObject) {
+            ctx.shadowBlur = 8 
+            ctx.shadowColor = '#6366f1'
+            
+            // Draw a SHRUNKEN VISUAL RING
+            ctx.save()
+            ctx.beginPath()
+            ctx.setLineDash([2, 2])
+            ctx.strokeStyle = 'rgba(99, 102, 241, 0.6)'
+            ctx.lineWidth = 1.0 * (this.app.scale / 1.5)
+            ctx.arc(x, y, size * 0.4, 0, Math.PI * 2) 
+            ctx.stroke()
+            ctx.restore()
         } else if (this.app.activeStampType === 'select' && !isForeign) {
             ctx.shadowBlur = 12
             ctx.shadowColor = '#6366f166' // Subtle interactive glow
@@ -224,7 +271,7 @@ export class AnnotationRenderer {
                         ctx.font = `bold ${22 * textScale}px Outfit`
                         ctx.fillStyle = color
                         const lines = (stamp.data || '').split('\n')
-                        const lineHeight = 26 * textScale
+                        const lineHeight = 20 * textScale
                         lines.forEach((line, i) => {
                             ctx.fillText(line, x, y + (i * lineHeight))
                         })
