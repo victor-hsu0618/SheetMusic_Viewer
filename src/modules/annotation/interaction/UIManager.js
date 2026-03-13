@@ -106,8 +106,6 @@ export const InteractionUI = {
             const rect = overlay.getBoundingClientRect()
             virtualPointer.style.left = `${previewPos.x * rect.width}px`
             virtualPointer.style.top = `${previewPos.y * rect.height}px`
-            virtualPointer.style.backgroundColor = app.activeColor;
-            virtualPointer.style.boxShadow = `0 0 12px ${app.activeColor}cc`;
             virtualPointer.classList.add('active')
         } else {
             virtualPointer.classList.remove('active')

@@ -700,21 +700,52 @@
 /* ─── Virtual Pointer (Visual Sync for Offset) ─── */
 .virtual-pointer {
   position: absolute;
-  width: 12px;
-  height: 12px;
-  background: var(--primary, #6366f1);
-  border: 2px solid white;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: 1.5px solid var(--primary, #6366f1);
   border-radius: 50%;
   pointer-events: none;
   z-index: 1000;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.8), 0 0 4px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
   transition: opacity 0.15s ease-out;
   opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .virtual-pointer.active {
   opacity: 1;
+}
+
+.virtual-pointer::before,
+.virtual-pointer::after {
+  content: '';
+  position: absolute;
+  background: var(--primary, #6366f1);
+  opacity: 0.8;
+}
+
+/* Vertical crosshair */
+.virtual-pointer::before {
+  width: 1px;
+  height: 100%;
+}
+
+/* Horizontal crosshair */
+.virtual-pointer::after {
+  width: 100%;
+  height: 1px;
+}
+
+/* Small center gap for precision */
+.virtual-pointer::after {
+  background: linear-gradient(to right, var(--primary) 35%, transparent 35%, transparent 65%, var(--primary) 65%);
+}
+.virtual-pointer::before {
+  background: linear-gradient(to bottom, var(--primary) 35%, transparent 35%, transparent 65%, var(--primary) 65%);
 }
 
 /* ─── Color Picker Ribbon (Global Palette) ─── */
