@@ -94,15 +94,45 @@ export class AnnotationRenderer {
             if (isHovered) ctx.lineWidth *= 1.5 // Make path thicker when hovered
         }
 
-        ctx.beginPath()
-        const startX = path.points[0].x * canvas.width
-        const startY = path.points[0].y * canvas.height
-        ctx.moveTo(startX, startY)
+        if (path.type === 'slur' && path.points.length >= 2) {
+            const p1 = path.points[0];
+            const p2 = path.points[path.points.length - 1];
+            const x1 = p1.x * canvas.width, y1 = p1.y * canvas.height;
+            const x2 = p2.x * canvas.width, y2 = p2.y * canvas.height;
+            
+            // Midpoint
+            const mx = (x1 + x2) / 2;
+            const my = (y1 + y2) / 2;
+            
+            // Vector and Perpendicular
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            // Normalized Perpendicular (-dy, dx)
+            // Curvature offset (approx 15% of length)
+            const curvature = dist * 0.18;
+            const px = -(dy / dist) * curvature;
+            const py = (dx / dist) * curvature;
+            
+            // Control point
+            const cx = mx + px;
+            const cy = my + py;
+            
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.quadraticCurveTo(cx, cy, x2, y2);
+        } else {
+            ctx.beginPath()
+            const startX = path.points[0].x * canvas.width
+            const startY = path.points[0].y * canvas.height
+            ctx.moveTo(startX, startY)
 
-        for (let i = 1; i < path.points.length; i++) {
-            const px = path.points[i].x * canvas.width
-            const py = path.points[i].y * canvas.height
-            ctx.lineTo(px, py)
+            for (let i = 1; i < path.points.length; i++) {
+                const px = path.points[i].x * canvas.width
+                const py = path.points[i].y * canvas.height
+                ctx.lineTo(px, py)
+            }
         }
         ctx.stroke()
 

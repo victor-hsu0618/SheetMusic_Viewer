@@ -156,7 +156,7 @@ export class InteractionManager {
                 } else {
                     isInteracting = false;
                 }
-            } else if (['pen', 'highlighter', 'line'].includes(toolType)) {
+            } else if (['pen', 'highlighter', 'line', 'slur'].includes(toolType)) {
                 activeObject = {
                     type: toolType, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
                     points: [CoordMapper.getStampPreviewPos(pos, isTouch, toolType, this.app, overlay)],
@@ -218,7 +218,7 @@ export class InteractionManager {
                 this.app.redrawStamps(pageNum);
             } else if (activeObject.points) {
                 const currentPos = CoordMapper.getStampPreviewPos(pos, isTouch, activeObject.type, this.app, overlay);
-                if (activeObject.type === 'line') {
+                if (activeObject.type === 'line' || activeObject.type === 'slur') {
                     // Constant 2 points for a straight line: [start, current]
                     activeObject.points = [activeObject.points[0], currentPos];
                 } else {
