@@ -27,9 +27,16 @@ export class InteractionManager {
 
         const resetPointerIdleTimer = () => {
             if (pointerIdleTimer) clearTimeout(pointerIdleTimer);
+            
+            // If we are currently in "view" (pan) mode, we don't need to auto-switch
+            if (this.app.activeStampType === 'view') return;
+
             pointerIdleTimer = setTimeout(() => {
-                InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, overlay, virtualPointer, CoordMapper, this.app);
-            }, 1500); // Hide after 1.5s of no movement
+                // HARD SAFE MODE: Automatically switch to "view" (pan) tool
+                this.app.activeStampType = 'view';
+                if (this.app.toolManager) this.app.toolManager.updateActiveTools();
+                InteractionUI.syncVirtualPointer({ type: 'mousemove' }, 'view', overlay, virtualPointer, CoordMapper, this.app);
+            }, this.app.pointerIdleTimeoutMs || 8000); 
         };
 
         const getWrapperPixels = (normX, normY) => {
@@ -50,6 +57,8 @@ export class InteractionManager {
             const toolType = this.app.activeStampType;
 
             if (toolType === 'view') {
+                isInteracting = false;
+                this.app.isInteracting = false;
                 if (e.type !== 'touchstart') {
                     isPanning = true;
                     const startX = e.clientX, startY = e.clientY;
@@ -87,14 +96,18 @@ export class InteractionManager {
                 const dx = (offsetPos.x - center.x) * width;
                 const dy = (offsetPos.y - center.y) * height;
                 const distSq = dx * dx + dy * dy;
-                const thresholdSq = Math.pow(CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 0.6, 2);
+                const thresholdSq = Math.pow(CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 0.2, 2);
                 
                 if (distSq < thresholdSq) { 
                     activeObject = graceObject;
                     isMovingExisting = true;
                     isInteracting = true;
+                    
+                    // SHOW TRASH only when the user actually grabs the grace object
+                    // SHOW TRASH Pop-up Portal (70px above the object)
                     const wCenter = getWrapperPixels(center.x, center.y);
-                    InteractionUI.showTrash(true, wrapper, wCenter.x, wCenter.y);
+                    InteractionUI.showTrash(true, wrapper, wCenter.x, wCenter.y - 70);
+                    
                     if (graceTimer) clearTimeout(graceTimer);
                     graceObject = null;
                     this.app._lastGraceObject = null;
@@ -113,6 +126,7 @@ export class InteractionManager {
 
             InteractionUI.showTrash(false, wrapper);
             isInteracting = true;
+            this.app.isInteracting = true;
             const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0);
             
             // 2. Selection/Text Logic: Allow clicking existing objects even when not in explicit Select mode
@@ -137,6 +151,7 @@ export class InteractionManager {
 
             if (isSelectionTool || isSlurBending) {
                 if (target) {
+                    overlay.style.cursor = isTouch ? 'pointer' : (toolType === 'recycle-bin' ? 'none' : 'none'); // Also hide for selection if we want the target
                     if (toolType === 'recycle-bin') {
                         this.app.annotationManager.eraseStampTarget(target);
                         isInteracting = false;
@@ -173,7 +188,7 @@ export class InteractionManager {
                         this.app.selectHoveredStamp = null;
                         const cent = CoordMapper.getGraceCenter(activeObject);
                         const wCent = getWrapperPixels(cent.x, cent.y);
-                        InteractionUI.showTrash(true, wrapper, wCent.x, wCent.y);
+                        InteractionUI.showTrash(true, wrapper, wCent.x, wCent.y - 70);
                         this.app.redrawStamps(pageNum);
                         InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
                         attachGlobalListeners();
@@ -260,7 +275,7 @@ export class InteractionManager {
                         this.app._dragLastPos = pPos;
                         const cent = CoordMapper.getGraceCenter(activeObject);
                         const wCent = getWrapperPixels(cent.x, cent.y);
-                        InteractionUI.showTrash(true, wrapper, wCent.x, wCent.y);
+                        InteractionUI.showTrash(true, wrapper, wCent.x, wCent.y - 70);
                         this.app.redrawStamps(pageNum);
                     }
                 }
@@ -348,7 +363,7 @@ export class InteractionManager {
                         });
                         return;
                     } else {
-                        if (!isMovingExisting) this.app.stamps.push(activeObject);
+                        if (!isMovingExisting && activeObject.type !== 'view') this.app.stamps.push(activeObject);
                         if (activeObject.type === 'anchor') this.app.updateRulerMarks();
                         this.app.saveToStorage(true);
                         this.app.redrawStamps(pageNum);
@@ -358,7 +373,7 @@ export class InteractionManager {
             } finally {
                 // HIDE POINTER on end
                 InteractionUI.syncVirtualPointer(e, null, overlay, virtualPointer, CoordMapper, this.app);
-                cleanupInteraction();
+                cleanupInteraction(e);
             }
         };
 
@@ -366,9 +381,8 @@ export class InteractionManager {
             if (!obj || obj.deleted) return;
             graceObject = obj;
             this.app._lastGraceObject = graceObject;
-            const center = CoordMapper.getGraceCenter(graceObject);
-            const wPix = getWrapperPixels(center.x, center.y);
-            InteractionUI.showTrash(true, wrapper, wPix.x, wPix.y);
+            // REMOVED IMMEDIATE TRASH SHOW: Don't show trash until the user actually drags the object again.
+            // This ensures a clear path for rapid subsequent stamps.
             if (graceTimer) clearTimeout(graceTimer);
             graceTimer = setTimeout(() => {
                 if (graceObject === obj) { 
@@ -381,13 +395,18 @@ export class InteractionManager {
             }, 1500);
         };
 
-        const cleanupInteraction = () => {
+        const cleanupInteraction = (e) => {
             isInteracting = false;
+            this.app.isInteracting = false;
             isMovingExisting = false;
             activeObject = null;
             this.isAdjustingCurvature = false;
             this.app._dragLastPos = null;
-            overlay.style.cursor = this.app.isStampTool() ? 'crosshair' : '';
+            
+            // For desktop, we keep cursor 'none' if a stamp tool is active to maintain the crosshair focus
+            const isTouch = e && (e.type?.startsWith('touch') || (e.touches && e.touches.length > 0));
+            overlay.style.cursor = this.app.isStampTool() ? (isTouch ? 'crosshair' : 'none') : '';
+            
             if (!graceObject) InteractionUI.showTrash(false, wrapper);
             else InteractionUI.setTrashActive(false, wrapper);
             detachGlobalListeners();
@@ -441,7 +460,7 @@ export class InteractionManager {
                     }
                 }
                 if (shouldPreview) {
-                    overlay.style.cursor = 'crosshair';
+                    overlay.style.cursor = isTouch ? 'crosshair' : 'none';
                     const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
                     if (canvas) {
                         this.app.redrawStamps(pageNum);

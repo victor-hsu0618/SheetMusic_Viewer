@@ -29,6 +29,7 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_stamp_size_multiplier', this.app.stampSizeMultiplier)
         localStorage.setItem('scoreflow_stamp_offset_touch_y', this.app.stampOffsetTouchY)
         localStorage.setItem('scoreflow_stamp_offset_mouse_y', this.app.stampOffsetMouseY)
+        localStorage.setItem('scoreflow_pointer_idle_timeout_ms', this.app.pointerIdleTimeoutMs || 8000)
 
         const turnerMode = document.getElementById('turner-mode-select') ? document.getElementById('turner-mode-select').value : 'default';
         localStorage.setItem('scoreflow_turner_mode', turnerMode)
@@ -107,6 +108,17 @@ export class PersistenceManager {
             const value = document.getElementById('settings-offset-mouse-value')
             if (input) input.value = this.app.stampOffsetMouseY
             if (value) value.textContent = `${this.app.stampOffsetMouseY}px`
+        }
+
+        const pointerIdleData = localStorage.getItem('scoreflow_pointer_idle_timeout_ms')
+        if (pointerIdleData !== null) {
+            this.app.pointerIdleTimeoutMs = parseInt(pointerIdleData)
+            const input = document.getElementById('settings-pointer-idle')
+            const value = document.getElementById('settings-pointer-idle-value')
+            if (input) input.value = Math.round(this.app.pointerIdleTimeoutMs / 1000)
+            if (value) value.textContent = `${Math.round(this.app.pointerIdleTimeoutMs / 1000)}s`
+        } else {
+            this.app.pointerIdleTimeoutMs = 8000 // Default 8s
         }
 
         const turnerSelect = document.getElementById('turner-mode-select')

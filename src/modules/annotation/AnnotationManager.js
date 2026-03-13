@@ -84,9 +84,12 @@ export class AnnotationManager {
             ? this.app.sources.filter(s => s.visible).map(s => s.id)
             : [this.app.activeSourceId]
 
+        const visibleLayerIds = new Set(this.app.layers.filter(l => l.visible).map(l => l.id));
+
         this.app.stamps.forEach(s => {
             if (s.page !== page || s.deleted) return
             if (!activeSourceIds.includes(s.sourceId)) return
+            if (!visibleLayerIds.has(s.layerId)) return
             
             let dist
             if (s.points && s.points.length > 0) {

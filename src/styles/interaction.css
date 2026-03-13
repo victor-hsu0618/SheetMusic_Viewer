@@ -212,7 +212,7 @@
   top: 0 !important;
   left: 0 !important;
   z-index: 50 !important;
-  cursor: crosshair;
+  cursor: auto;
 }
 
 /* Category Navigator & Dropdown (Premium UI) */
@@ -641,34 +641,38 @@
   }
 }
 
-/* ─── Grace Period Trash Bin (Drag to Delete) ─── */
+/* ─── Grace Period Trash Bin (Fixed at Bottom) ─── */
 .grace-trash-bin {
-  position: absolute; /* Relative to wrapper */
-  width: 64px;
-  height: 64px;
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.7);
+  width: 72px;
+  height: 72px;
   background: rgba(30, 30, 30, 0.85);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+  border-radius: 50%;
   display: flex;
   flex-direction: column;
   gap: 2px;
   align-items: center;
   justify-content: center;
   color: white;
-  z-index: 10000;
+  z-index: 15000; /* High enough to be over everything */
   opacity: 0;
+  display: none; /* Changed from flex to none */
   pointer-events: none;
-  transform: scale(0.7);
   transition: opacity 0.3s, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.2);
 }
 
 .grace-trash-bin.show {
+  display: flex; /* Restore flex only when showing */
   opacity: 1;
   transform: scale(1) translateY(0);
-  pointer-events: auto;
+  pointer-events: auto; /* Allow interactions when showing */
 }
 
 .grace-trash-bin.active {
@@ -700,16 +704,16 @@
 /* ─── Virtual Pointer (Visual Sync for Offset) ─── */
 .virtual-pointer {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   background: transparent;
   border: 1.5px solid var(--primary, #6366f1);
   border-radius: 50%;
   pointer-events: none;
   z-index: 1000;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
-  transition: opacity 0.15s ease-out;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+  transition: opacity 0.15s ease-out, width 0.2s, height 0.2s, border-radius 0.2s;
   opacity: 0;
   display: flex;
   align-items: center;
@@ -720,32 +724,59 @@
   opacity: 1;
 }
 
+/* Corner bracket effect for dragging - Larger to avoid covering center */
+.virtual-pointer.dragging {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: 
+    linear-gradient(to right, var(--primary) 2px, transparent 2px) 0 0,
+    linear-gradient(to bottom, var(--primary) 2px, transparent 2px) 0 0,
+    linear-gradient(to left, var(--primary) 2px, transparent 2px) 100% 0,
+    linear-gradient(to bottom, var(--primary) 2px, transparent 2px) 100% 0,
+    linear-gradient(to right, var(--primary) 2px, transparent 2px) 0 100%,
+    linear-gradient(to top, var(--primary) 2px, transparent 2px) 0 100%,
+    linear-gradient(to left, var(--primary) 2px, transparent 2px) 100% 100%,
+    linear-gradient(to top, var(--primary) 2px, transparent 2px) 100% 100%;
+  background-repeat: no-repeat;
+  background-size: 10px 10px;
+  border-radius: 6px;
+  box-shadow: none;
+  filter: drop-shadow(0 0 4px var(--primary));
+}
+
+/* Idle Hand (Pan) mode style - Hide virtual pointer on PC since we use system grab cursor */
+.virtual-pointer.idle-pan {
+  display: none !important;
+}
+
 .virtual-pointer::before,
 .virtual-pointer::after {
   content: '';
   position: absolute;
   background: var(--primary, #6366f1);
   opacity: 0.8;
+  transition: opacity 0.2s;
 }
 
-/* Vertical crosshair */
+/* Hide center crosshair when dragging */
+.virtual-pointer.dragging::before,
+.virtual-pointer.dragging::after {
+  opacity: 0;
+}
+
+/* Vertical crosshair - Wider gap in middle */
 .virtual-pointer::before {
-  width: 1px;
+  width: 1.5px;
   height: 100%;
+  background: linear-gradient(to bottom, var(--primary) 15%, transparent 15%, transparent 85%, var(--primary) 85%);
 }
 
-/* Horizontal crosshair */
+/* Horizontal crosshair - Wider gap in middle */
 .virtual-pointer::after {
   width: 100%;
-  height: 1px;
-}
-
-/* Small center gap for precision */
-.virtual-pointer::after {
-  background: linear-gradient(to right, var(--primary) 35%, transparent 35%, transparent 65%, var(--primary) 65%);
-}
-.virtual-pointer::before {
-  background: linear-gradient(to bottom, var(--primary) 35%, transparent 35%, transparent 65%, var(--primary) 65%);
+  height: 1.5px;
+  background: linear-gradient(to right, var(--primary) 15%, transparent 15%, transparent 85%, var(--primary) 85%);
 }
 
 /* ─── Color Picker Ribbon (Global Palette) ─── */

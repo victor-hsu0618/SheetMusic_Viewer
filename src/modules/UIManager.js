@@ -86,6 +86,7 @@ export class UIManager {
      * @param {string} exceptManagerName - The class name of the manager to skip.
      */
     closeAllActivePanels(exceptManagerName = null) {
+        if (this.app.isInteracting) return;
         // List of managers that handle sub-panels
         const managers = [
             { name: 'SettingsPanelManager', method: 'toggle', ref: 'settingsPanelManager' },

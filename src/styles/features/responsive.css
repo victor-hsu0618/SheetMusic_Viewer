@@ -283,3 +283,34 @@
         to { transform: translateY(0); }
     }
 }
+
+/* 6. Tablet Optimization (iPad) */
+@media (min-width: 601px) and (max-width: 1366px) {
+    .stamp-tool {
+        width: 48px !important;
+        height: 48px !important;
+    }
+    
+    .stamp-tool-wrapper {
+        min-width: 48px !important;
+    }
+
+    .cat-pill {
+        padding: 6px 16px !important;
+        font-size: 0.85rem !important;
+    }
+
+    .recent-tool-btn {
+        width: 42px !important;
+        height: 42px !important;
+    }
+    
+    .recent-tools-ribbon {
+        gap: 6px !important;
+    }
+
+    .color-swatch {
+        width: 28px !important;
+        height: 28px !important;
+    }
+}

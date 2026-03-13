@@ -33,33 +33,37 @@ export const InteractionUI = {
     showTrash: (show, wrapper, x = null, y = null) => {
         const bin = InteractionUI.ensureTrashBin(wrapper)
         if (show) {
+            // Restore display: flex first to allow position calculations (via class or style)
+            bin.classList.add('show') 
+            
             if (x !== null && y !== null) {
-                const binWidth = 64
-                const binHeight = 64
-                const padding = 12
+                const binWidth = 72 
+                const binHeight = 72
                 
-                // Prioritize LEFT side of the object
-                let left = x - 40 - binWidth 
-                let top = y - binHeight / 2
-                
-                // Boundary check: Flip to right if left side is blocked
-                if (left < padding) {
-                    left = x + 40
-                }
+                let left = x - binWidth / 2
+                let top = y - binHeight / 2 
                 
                 const rect = wrapper.getBoundingClientRect()
-                // Horizontal clamping
+                const padding = 20
                 left = Math.max(padding, Math.min(rect.width - binWidth - padding, left))
-                // Vertical clamping
                 top = Math.max(padding, Math.min(rect.height - binHeight - padding, top))
                 
+                bin.style.position = 'absolute'
                 bin.style.left = `${left}px`
                 bin.style.top = `${top}px`
+            } else {
+                // If showing but no coords, clear previous absolute positioning to use CSS fixed position
+                bin.style.left = ''
+                bin.style.top = ''
+                bin.style.position = ''
             }
-            bin.classList.add('show')
         } else {
             bin.classList.remove('show')
             bin.classList.remove('active')
+            // Reset position to avoid ghost footprints
+            bin.style.left = ''
+            bin.style.top = ''
+            bin.style.position = ''
         }
     },
 
@@ -98,20 +102,44 @@ export const InteractionUI = {
     syncVirtualPointer: (e, toolType, overlay, virtualPointer, coordMapper, app) => {
         if (!toolType || !virtualPointer) {
             if (virtualPointer) virtualPointer.classList.remove('active');
+            virtualPointer.classList.remove('idle-pan');
+            if (overlay && !app.isTouch) overlay.style.cursor = '';
             return;
         }
+        
+        // Treat 'view' as the idle-pan state
+        const isIdle = toolType === 'idle-pan' || toolType === 'view';
+        const effectiveTool = toolType === 'idle-pan' ? app.activeStampType : toolType;
+        
         const pos = coordMapper.getPos(e, overlay)
         const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
-        const previewPos = coordMapper.getStampPreviewPos(pos, isTouch, toolType, app, overlay)
+        const previewPos = coordMapper.getStampPreviewPos(pos, isTouch, effectiveTool, app, overlay)
         const hasOffset = previewPos.x !== pos.x || previewPos.y !== pos.y
         
-        if (hasOffset) {
+        const isTargetingTool = ['select', 'copy', 'recycle-bin', 'text', 'tempo-text', 'view'].includes(effectiveTool);
+        const isDesktopStamp = !app.isTouch && (app.isStampTool() || isTargetingTool);
+        
+        if (hasOffset || isDesktopStamp || isIdle) {
             const rect = overlay.getBoundingClientRect()
             virtualPointer.style.left = `${previewPos.x * rect.width}px`
             virtualPointer.style.top = `${previewPos.y * rect.height}px`
             virtualPointer.classList.add('active')
+            
+            // Handle idle state styling (hand icon)
+            virtualPointer.classList.toggle('idle-pan', isIdle);
+            
+            // Toggle dragging class based on app state
+            virtualPointer.classList.toggle('dragging', !!app.isInteracting);
+            
+            // Ensure system cursor is hidden if we are showing the custom one on desktop
+            if (isDesktopStamp || isIdle) {
+                // Use 'grabbing' if interacting, else 'grab'
+                overlay.style.cursor = isIdle ? (app.isInteracting ? 'grabbing' : 'grab') : 'none';
+            }
         } else {
             virtualPointer.classList.remove('active')
+            virtualPointer.classList.remove('idle-pan')
+            if (overlay && !app.isTouch) overlay.style.cursor = ''
         }
     }
 }

@@ -353,6 +353,9 @@ export class SettingsPanelManager {
                 } else if (type === 'offset-mouse') {
                     const slider = document.getElementById('settings-offset-mouse')
                     if (slider) { slider.value = 25; slider.dispatchEvent(new Event('input')) }
+                } else if (type === 'pointer-idle') {
+                    const slider = document.getElementById('settings-pointer-idle')
+                    if (slider) { slider.value = 8; slider.dispatchEvent(new Event('input')) }
                 }
             })
         })
@@ -381,6 +384,20 @@ export class SettingsPanelManager {
                 const val = parseInt(e.target.value)
                 this.app.stampOffsetMouseY = val
                 if (offsetMouseValue) offsetMouseValue.textContent = `${val}px`
+                this.app.saveToStorage()
+            })
+        }
+
+        // Pointer Idle Lock Time
+        const pointerIdleInput = document.getElementById('settings-pointer-idle')
+        const pointerIdleValue = document.getElementById('settings-pointer-idle-value')
+        if (pointerIdleInput) {
+            pointerIdleInput.value = Math.round((this.app.pointerIdleTimeoutMs || 8000) / 1000)
+            if (pointerIdleValue) pointerIdleValue.textContent = `${pointerIdleInput.value}s`
+            pointerIdleInput.addEventListener('input', (e) => {
+                const valSec = parseInt(e.target.value)
+                this.app.pointerIdleTimeoutMs = valSec * 1000
+                if (pointerIdleValue) pointerIdleValue.textContent = `${valSec}s`
                 this.app.saveToStorage()
             })
         }

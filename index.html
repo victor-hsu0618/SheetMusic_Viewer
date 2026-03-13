@@ -709,6 +709,19 @@
 
           <div class="setting-item mb-15">
             <div class="flex-row-center flex-space-between mb-5">
+              <label class="setting-label">Pointer Idle Lock (Sec)</label>
+              <button class="btn-reset-mini" data-reset="pointer-idle" title="Reset to 8s">🔄 Reset</button>
+            </div>
+            <div class="slider-control-group">
+              <button class="slider-adj-btn minus" data-target="settings-pointer-idle">-</button>
+              <input type="range" id="settings-pointer-idle" min="1" max="30" step="1" value="8" class="w-full" />
+              <button class="slider-adj-btn plus" data-target="settings-pointer-idle">+</button>
+              <span id="settings-pointer-idle-value" class="badge">8s</span>
+            </div>
+          </div>
+
+          <div class="setting-item mb-15">
+            <div class="flex-row-center flex-space-between mb-5">
               <label class="setting-label">Interaction Offset - Touch (px)</label>
               <button class="btn-reset-mini" data-reset="offset-touch" title="Reset to 65px">🔄 Reset</button>
             </div>
