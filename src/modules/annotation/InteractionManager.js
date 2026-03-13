@@ -23,6 +23,14 @@ export class InteractionManager {
         let isPanning = false;
         let graceObject = null;
         let graceTimer = null;
+        let pointerIdleTimer = null;
+
+        const resetPointerIdleTimer = () => {
+            if (pointerIdleTimer) clearTimeout(pointerIdleTimer);
+            pointerIdleTimer = setTimeout(() => {
+                InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, overlay, virtualPointer, CoordMapper, this.app);
+            }, 1500); // Hide after 1.5s of no movement
+        };
 
         const getWrapperPixels = (normX, normY) => {
             const canvas = wrapper.querySelector('.pdf-canvas') || wrapper.querySelector('.annotation-layer:not(.virtual-canvas)');
@@ -307,6 +315,7 @@ export class InteractionManager {
             }
             InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper), wrapper);
             InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
+            resetPointerIdleTimer();
         };
 
         const endAction = (e) => {
@@ -341,6 +350,8 @@ export class InteractionManager {
                     }
                 }
             } finally {
+                // HIDE POINTER on end
+                InteractionUI.syncVirtualPointer(e, null, overlay, virtualPointer, CoordMapper, this.app);
                 cleanupInteraction();
             }
         };
@@ -354,9 +365,14 @@ export class InteractionManager {
             InteractionUI.showTrash(true, wrapper, wPix.x, wPix.y);
             if (graceTimer) clearTimeout(graceTimer);
             graceTimer = setTimeout(() => {
-                if (graceObject === obj) { graceObject = null; InteractionUI.showTrash(false, wrapper); }
+                if (graceObject === obj) { 
+                    graceObject = null; 
+                    InteractionUI.showTrash(false, wrapper); 
+                    // HIDE POINTER when grace ends if not moving
+                    InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, overlay, virtualPointer, CoordMapper, this.app);
+                }
                 if (this.app._lastGraceObject === obj) { this.app._lastGraceObject = null; this.app.redrawStamps(pageNum); }
-            }, 2000);
+            }, 1500);
         };
 
         const cleanupInteraction = () => {
@@ -369,6 +385,9 @@ export class InteractionManager {
             if (!graceObject) InteractionUI.showTrash(false, wrapper);
             else InteractionUI.setTrashActive(false, wrapper);
             detachGlobalListeners();
+
+            // Explicitly hide pointer if no activity
+            InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, overlay, virtualPointer, CoordMapper, this.app);
         };
 
         const hoverAction = (e) => {
@@ -426,6 +445,7 @@ export class InteractionManager {
                 }
             }
             InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
+            resetPointerIdleTimer();
         };
 
         const attachGlobalListeners = () => {

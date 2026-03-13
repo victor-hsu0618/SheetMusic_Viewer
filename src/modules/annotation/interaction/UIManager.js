@@ -96,7 +96,10 @@ export const InteractionUI = {
      * Sync the virtual pointer's position and visibility.
      */
     syncVirtualPointer: (e, toolType, overlay, virtualPointer, coordMapper, app) => {
-        if (!toolType || !virtualPointer) return
+        if (!toolType || !virtualPointer) {
+            if (virtualPointer) virtualPointer.classList.remove('active');
+            return;
+        }
         const pos = coordMapper.getPos(e, overlay)
         const isTouch = e.type.startsWith('touch') || (e.touches && e.touches.length > 0)
         const previewPos = coordMapper.getStampPreviewPos(pos, isTouch, toolType, app, overlay)

@@ -107,8 +107,6 @@ export class ToolManager {
         } else {
             el.classList.remove('expanded')
             this.isStampPaletteOpen = false
-            // Reset to pan/view mode on close to avoid accidental stamp placement
-            this.app.activeStampType = 'view'
         }
 
         this.updateActiveTools()
