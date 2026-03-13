@@ -20,7 +20,7 @@ export const CoordMapper = {
      * Calculate stamp preview position with offset for touch/mouse.
      */
     getStampPreviewPos: (pos, isTouch, toolType, app, overlay) => {
-        if (toolType === 'view') {
+        if (toolType === 'view' || !isTouch) {
             return pos
         }
 
