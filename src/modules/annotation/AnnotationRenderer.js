@@ -94,6 +94,9 @@ export class AnnotationRenderer {
             if (isHovered) ctx.lineWidth *= 1.5 // Make path thicker when hovered
         }
 
+        const startX = path.points[0].x * canvas.width
+        const startY = path.points[0].y * canvas.height
+
         if (path.type === 'slur' && path.points.length >= 2) {
             const p1 = path.points[0];
             const p2 = path.points[path.points.length - 1];
@@ -159,6 +162,7 @@ export class AnnotationRenderer {
         const x = stamp.x * canvas.width
         const y = stamp.y * canvas.height
         const isBow = stamp.type === 'up-bow' || stamp.type === 'down-bow'
+        let toolDef = null
 
         // PRIORITY 1: Embedded draw data (For "placed" stamps to ensure independence)
         if (stamp.draw) {
