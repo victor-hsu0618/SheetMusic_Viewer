@@ -694,14 +694,18 @@ export class InteractionManager {
                     // Force the overlay itself to be transparent to touches in view mode
                     if (isTouch && toolType === 'view') {
                         el.style.pointerEvents = 'none';
+                        el.style.zIndex = '-1'; // Push to background
                     } else {
                         el.style.pointerEvents = '';
+                        el.style.zIndex = '';
                     }
 
                     // Also force the touch-action on the overlay AND the page container
                     el.style.setProperty('touch-action', action, 'important');
                     if (el.parentElement) {
                         el.parentElement.style.setProperty('touch-action', action, 'important');
+                        // FORCE REFLOW: Reading offsetHeight forces the browser to apply styles NOW
+                        const _unused = el.parentElement.offsetHeight;
                     }
                 } catch (innerErr) {
                     console.error(`[TouchAction] Overlay sync error:`, innerErr);

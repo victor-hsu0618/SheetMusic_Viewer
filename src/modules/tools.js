@@ -167,13 +167,17 @@ export class ToolManager {
             // IMMEDIATE SYNC: Update touch-action immediately to restore scrolling responsiveness
             const interaction = this.app.annotationManager?.interaction;
             if (interaction) {
-                console.log(`[PaletteDebug] Found interaction manager, calling sync...`);
+                console.log(`[PaletteDebug] Closing Palette. Found interaction manager, calling sync...`);
                 interaction.updateAllOverlaysTouchAction();
-                // DEFENSIVE: Sync again in next frame to be 100% sure
-                requestAnimationFrame(() => {
-                    console.log(`[PaletteDebug] Second (RAF) sync...`);
+                // DEFENSIVE: Sync again after a slight delay to ensure iOS Safari picks up the changes
+                setTimeout(() => {
+                    console.log(`[PaletteDebug] Delayed (50ms) sync...`);
                     interaction.updateAllOverlaysTouchAction();
-                });
+                    // FORCE VIEWER REFLOW
+                    if (this.app.viewer) {
+                        const _ = this.app.viewer.offsetHeight;
+                    }
+                }, 50);
             } else {
                 console.warn(`[PaletteDebug] Interaction manager NOT FOUND during palette close!`);
             }
