@@ -223,7 +223,7 @@ export class InteractionManager {
                     isInteracting = false;
                     this.app.isInteracting = false;
                 }
-            } else if (['pen', 'highlighter', 'line', 'slur', 'green-pen', 'blue-pen', 'dashed-pen', 'arrow-pen', 'highlighter-red', 'highlighter-blue', 'highlighter-green'].includes(toolType)) {
+            } else if (['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen'].includes(toolType)) {
                 const toolDef = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === toolType);
                 activeObject = {
                     type: toolType, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
