@@ -672,33 +672,39 @@ export class InteractionManager {
     updateAllOverlaysTouchAction() {
         try {
             const toolType = this.app.activeStampType;
-            // SYNC BODY DATASET: Crucial for CSS rules like touch-action: none !important
+            // SYNC ALL SCROLL PARENTS: html, body, and viewer
+            document.documentElement.dataset.activeTool = toolType;
             document.body.dataset.activeTool = toolType;
 
             const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-            console.log(`[TouchAction] START - Tool: ${toolType}, Action: ${action}, isTouch: ${isTouch}`);
+            console.log(`[TouchAction] START - Tool: ${toolType}, Action: ${action}`);
 
-            // SYNC VIEWER CONTAINER: Use setProperty to override !important CSS
-            if (this.app.viewer) {
-                this.app.viewer.style.setProperty('touch-action', action, 'important');
-            }
+            // 1. Force release touch-action on the entire chain
+            const scrollChain = [document.documentElement, document.body, this.app.viewer];
+            scrollChain.forEach(el => {
+                if (el) el.style.setProperty('touch-action', action, 'important');
+            });
 
+            // 2. Sync all overlays AND their parent containers (the actual touch targets)
             const overlays = document.querySelectorAll('.capture-overlay');
             overlays.forEach(el => {
                 try {
-                    // FORCE OVERRIDE CSS !important
-                    el.style.setProperty('touch-action', action, 'important');
-                    
+                    // Force the overlay itself to be transparent to touches in view mode
                     if (isTouch && toolType === 'view') {
                         el.style.pointerEvents = 'none';
                     } else {
                         el.style.pointerEvents = '';
                     }
-                    console.log(`[TouchAction] Sync Overlay Page ${el.parentElement?.dataset?.page || '?'}: pointer-events=${el.style.pointerEvents}`);
+
+                    // Also force the touch-action on the overlay AND the page container
+                    el.style.setProperty('touch-action', action, 'important');
+                    if (el.parentElement) {
+                        el.parentElement.style.setProperty('touch-action', action, 'important');
+                    }
                 } catch (innerErr) {
-                    console.error(`[TouchAction] Error syncing individual overlay:`, innerErr);
+                    console.error(`[TouchAction] Overlay sync error:`, innerErr);
                 }
             });
 
