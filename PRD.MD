@@ -82,6 +82,7 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
     - **混合操作流**：標準工具維持左側對齊以保證整齊性，自由工具則提供最大的排版彈性。
   - **獨立視覺導航**：純視覺輔助設計，小節標記不具備 Anchor 屬性，絕不會干擾翻頁踏板與樂句跳躍 (Anchor Jump) 的既有邏輯。
 
+
 ### 4. UI/UX 軟體美學 (Minimize Interface, Maximize Content)
 
 - **智慧工作區 (Dynamic Workspace)**：

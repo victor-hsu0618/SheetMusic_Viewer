@@ -15,6 +15,7 @@ export class ViewerManager {
         this._pageMetrics = {}   // Cache offsetTop and clientHeight to avoid layout thrashing
         this.isFitToHeight = false
         this.latestLoadingId = 0 // Race condition protection
+        this.baseNaturalWidth = 0 // Reference width for uniform rendering
     }
 
     init() {
@@ -332,6 +333,9 @@ export class ViewerManager {
 
         // 1. Get ONLY the first page to determine typical layout/scale
         const firstPage = await this.pdf.getPage(1)
+        const firstNaturalViewport = firstPage.getViewport({ scale: 1.0 })
+        this.baseNaturalWidth = firstNaturalViewport.width
+
         const firstViewport = firstPage.getViewport({ scale: this.scale })
         const aspect = firstViewport.width / firstViewport.height
         this._pageCache[1] = firstPage
@@ -442,7 +446,15 @@ export class ViewerManager {
                 setTimeout(() => this.enqueueRender(pageNum, wrapper), 1000)
                 return
             }
-            const viewport = page.getViewport({ scale: this.scale })
+            
+            // Calculate specific scale to match baseNaturalWidth * global scale
+            const naturalViewport = page.getViewport({ scale: 1.0 })
+            const targetWidth = this.baseNaturalWidth * this.scale
+            const specificScale = targetWidth / naturalViewport.width
+            const viewport = page.getViewport({ scale: specificScale })
+
+            // Page scale calculation for annotations
+            this.app.pageScales[pageNum] = naturalViewport.width / 595.0
 
             // Update viewport cache and wrapper size in case it differs from the first page
             this._pageViewports[pageNum] = viewport
@@ -451,10 +463,6 @@ export class ViewerManager {
 
             canvas.height = viewport.height
             canvas.width = viewport.width
-
-            // Page scale calculation for annotations
-            const naturalViewport = page.getViewport({ scale: 1.0 })
-            this.app.pageScales[pageNum] = naturalViewport.width / 595.0
 
             const renderTask = page.render({ 
                 canvasContext: context, 
