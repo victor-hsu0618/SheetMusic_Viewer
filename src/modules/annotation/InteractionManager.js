@@ -117,13 +117,14 @@ export class InteractionManager {
                     window.addEventListener('pointermove', doPan);
                     window.addEventListener('mouseup', stopPan);
                 } else {
-                    // TOUCH in VIEW MODE: If this fires, it means pointer-events = 'none' 
-                    // didn't work. We MUST NOT absorb this touch.
-                    // By setting it to 'none' again here, we ensure subsequent touches are safe.
+                    // TOUCH in VIEW MODE: This SHOULD NOT HAPPEN if pointer-events is 'none'
+                    console.warn(`[TouchDebug] Overlay CAPTURED touch in VIEW mode! Page: ${pageNum}, pointer-events: "${overlay.style.pointerEvents}"`);
                     overlay.style.pointerEvents = 'none';
                 }
                 return;
             }
+
+            console.log(`[TouchDebug] startAction triggered. Tool: ${toolType}, Pointer: ${pointerType}, Page: ${pageNum}`);
 
             // 2. Prevent Scroll for all other tools (Select, Pen, Stamp, etc.)
             if (pointerType === 'touch') {
