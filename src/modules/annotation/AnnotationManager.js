@@ -758,7 +758,7 @@ export class AnnotationManager {
             this.app.lastMeasureNum = String(measureInput)
             data = String(measureInput)
             const existingMeasure = this.app.stamps.find(s => s.type === 'measure' && s.page === page)
-            if (existingMeasure) x = existingMeasure.x
+            if (existingMeasure && type === 'measure') x = existingMeasure.x
         }
 
         const now = Date.now();
