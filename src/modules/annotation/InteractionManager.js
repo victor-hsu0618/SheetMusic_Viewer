@@ -53,9 +53,8 @@ export class InteractionManager {
 
         const getPixelsForWrapper = (targetWrap, normX, normY) => {
             const canvas = targetWrap.querySelector('.pdf-canvas') || targetWrap.querySelector('.annotation-layer:not(.virtual-canvas)');
-            const wrapWidth = targetWrap.offsetWidth || width;
-            const wrapHeight = targetWrap.offsetHeight || height;
-            if (!canvas) return { x: normX * wrapWidth, y: normY * wrapHeight };
+            const rect = targetWrap.getBoundingClientRect();
+            if (!canvas) return { x: normX * rect.width, y: normY * rect.height };
             return {
                 x: canvas.offsetLeft + (normX * canvas.offsetWidth),
                 y: canvas.offsetTop + (normY * canvas.offsetHeight)
@@ -124,7 +123,7 @@ export class InteractionManager {
                 const dx = (offsetPos.x - center.x) * width;
                 const dy = (offsetPos.y - center.y) * height;
                 const distSq = dx * dx + dy * dy;
-                const thresholdSq = Math.pow(CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 0.2, 2);
+                const thresholdSq = Math.pow(CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 2.0, 2);
                 
                 if (distSq < thresholdSq) { 
                     activeObject = graceObject;
@@ -219,7 +218,8 @@ export class InteractionManager {
                         const wCent = getPixelsForWrapper(wrapper, cent.x, cent.y);
                         InteractionUI.showTrash(true, wrapper, wCent.x, wCent.y - 70);
                         this.app.redrawStamps(pageNum);
-                        InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
+                        const startSyncType = ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
+                        InteractionUI.syncVirtualPointer(e, startSyncType, overlay, virtualPointer, CoordMapper, this.app);
                         attachGlobalListeners();
                     }
                 } else if (isSelectionTool) {
@@ -287,6 +287,13 @@ export class InteractionManager {
                     }
                 }
                 this.app.lastFocusedStamp = activeObject;
+                // Draw preview immediately on touch-down so stamp appears before any movement
+                const previewCanvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
+                if (previewCanvas) {
+                    this.app.redrawStamps(pageNum);
+                    const previewLayer = this.app.layers.find(l => l.id === activeObject.layerId);
+                    this.app.drawStampOnCanvas(previewCanvas.getContext('2d'), previewCanvas, activeObject, previewLayer?.color || '#000', true, false, false, pos);
+                }
                 attachGlobalListeners();
                 InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
             }
@@ -368,19 +375,22 @@ export class InteractionManager {
                         activeObject.curvature = (perpDist / distBaseline) * 2;
                     }
                 } else {
-                    const targetPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
+                    // When moving an existing object via select/copy/recycle-bin, use toolType (no offset)
+                    // so the delta matches the no-offset _dragLastPos set in startAction.
+                    const moveEffectiveType = ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
+                    const targetPos = CoordMapper.getStampPreviewPos(pos, pointerType, moveEffectiveType, this.app, currentOverlay);
                     if (activeObject.page !== currentPageNum) {
                         const oldPage = activeObject.page;
                         activeObject.page = currentPageNum;
                         this.app.redrawStamps(oldPage);
                     }
+                    const dx = targetPos.x - (this.app._dragLastPos?.x ?? targetPos.x);
+                    const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y);
                     if (activeObject.points) {
-                        const dx = targetPos.x - (this.app._dragLastPos?.x ?? targetPos.x);
-                        const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y);
                         activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
                     } else {
-                        activeObject.x = Number(targetPos.x);
-                        activeObject.y = Number(targetPos.y);
+                        activeObject.x = Number(activeObject.x) + dx;
+                        activeObject.y = Number(activeObject.y) + dy;
                     }
                     this.app._dragLastPos = targetPos;
                 }
@@ -415,17 +425,18 @@ export class InteractionManager {
                 }
             }
             InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, currentWrapper, CoordMapper), currentWrapper);
+            // Keep trash bin visible during drag without repositioning
             if (isMovingExisting) {
-                const cent = CoordMapper.getGraceCenter(activeObject);
-                const wCent = getPixelsForWrapper(currentWrapper, cent.x, cent.y);
-                InteractionUI.showTrash(true, currentWrapper, wCent.x, wCent.y - 70);
+                const trashBin = wrapper.querySelector('.grace-trash-bin');
+                if (trashBin) trashBin.classList.add('show');
             }
             
             // Sync current virtual pointer and hide others
             document.querySelectorAll('.virtual-pointer.active').forEach(vp => {
                 if (vp !== currentVirtualPointer) vp.classList.remove('active');
             });
-            InteractionUI.syncVirtualPointer(e, activeObject.type, currentOverlay, currentVirtualPointer, CoordMapper, this.app);
+            const moveSyncType = isMovingExisting && ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
+            InteractionUI.syncVirtualPointer(e, moveSyncType, currentOverlay, currentVirtualPointer, CoordMapper, this.app);
             resetPointerIdleTimer();
         };
 
@@ -485,6 +496,9 @@ export class InteractionManager {
             graceObject = obj;
             this.app._lastGraceObject = graceObject;
             
+            // REDRAW to show the highlight/glow of the grace object
+            this.app.redrawStamps(obj.page);
+
             // RESTORE IMMEDIATE TRASH SHOW: Show trash immediately so user knows they can delete it
             const targetWrapper = document.querySelector(`.page-container[data-page="${obj.page}"]`);
             if (targetWrapper) {
@@ -493,18 +507,23 @@ export class InteractionManager {
                 InteractionUI.showTrash(true, targetWrapper, wCent.x, wCent.y - 70);
                 this.updateAllOverlaysTouchAction(); // Sync pointer-events
             }
+            
             if (graceTimer) clearTimeout(graceTimer);
             graceTimer = setTimeout(() => {
                 if (graceObject === obj) { 
                     graceObject = null; 
-                    const targetWrapper = document.querySelector(`.page-container[data-page="${obj.page}"]`);
-                    InteractionUI.showTrash(false, targetWrapper); 
-                    const targetOverlay = targetWrapper?.querySelector('.capture-overlay');
-                    const targetVP = targetOverlay?.querySelector('.virtual-pointer');
-                    InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, targetOverlay, targetVP, CoordMapper, this.app);
+                    const tWrapper = document.querySelector(`.page-container[data-page="${obj.page}"]`);
+                    if (tWrapper) InteractionUI.showTrash(false, tWrapper); 
+                    const tOverlay = tWrapper?.querySelector('.capture-overlay');
+                    const tVP = tOverlay?.querySelector('.virtual-pointer');
+                    InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, tOverlay, tVP, CoordMapper, this.app);
                 }
-                if (this.app._lastGraceObject === obj) { this.app._lastGraceObject = null; this.app.redrawStamps(obj.page); }
-            }, 1500);
+                if (this.app._lastGraceObject === obj) { 
+                    this.app._lastGraceObject = null; 
+                    this.app.redrawStamps(obj.page); 
+                    this.updateAllOverlaysTouchAction();
+                }
+            }, 1800); // Slightly longer to give user time to react
         };
 
         const cleanupInteraction = (e) => {
@@ -564,7 +583,7 @@ export class InteractionManager {
                     const canvas = wrapper.querySelector('.pdf-canvas') || wrapper.querySelector('.annotation-layer:not(.virtual-canvas)');
                     const dx = (pPos.x - center.x) * (canvas?.offsetWidth || width);
                     const dy = (pPos.y - center.y) * (canvas?.offsetHeight || height);
-                    if (Math.sqrt(dx*dx + dy*dy) < CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 0.6) {
+                    if (Math.sqrt(dx*dx + dy*dy) < CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 0.7) {
                         this.app.redrawStamps(pageNum);
                         overlay.style.cursor = 'grab';
                         shouldPreview = false;
