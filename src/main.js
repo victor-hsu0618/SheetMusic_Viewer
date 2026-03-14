@@ -36,7 +36,7 @@ const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'jus
 class ScoreFlow {
   constructor() {
     window.app = this
-    this.DEBUG_VERSION = '2026.03.14.v1'
+    this.DEBUG_VERSION = '2026.03.14.v2'
     console.log(`%c [ScoreFlow] Initializing Version: ${this.DEBUG_VERSION} `, 'background: #222; color: #bada55');
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'

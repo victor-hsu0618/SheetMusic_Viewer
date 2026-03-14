@@ -695,7 +695,21 @@ export class InteractionManager {
             // 1. Force release touch-action on the entire chain
             const scrollChain = [document.documentElement, document.body, this.app.viewer];
             scrollChain.forEach(el => {
-                if (el) el.style.setProperty('touch-action', action, 'important');
+                if (el) {
+                    el.style.setProperty('touch-action', action, 'important');
+                    
+                    // SPECIAL IPAD WAKE-UP: If entering view mode, force-reset scroll container
+                    if (toolType === 'view' && el === this.app.viewer && isTouch) {
+                        const originalOverflow = el.style.overflow;
+                        el.style.overflow = 'hidden';
+                        const _reflow = el.offsetHeight;
+                        el.style.overflow = originalOverflow;
+                        
+                        // Micro-scroll to kickstart the scroll engine
+                        el.scrollTop += 1;
+                        el.scrollTop -= 1;
+                    }
+                }
             });
 
             // 2. Sync all overlays AND their parent containers
