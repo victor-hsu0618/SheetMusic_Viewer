@@ -601,6 +601,18 @@ export class ToolManager {
                     btn.innerHTML = tool.icon || tool.label
                     btn.style.color = isSelected ? '#ffffff' : rowColor
                     
+                    // Apply font styling from tool definition if available
+                    if (tool.draw && tool.draw.type === 'text') {
+                        if (tool.draw.font) {
+                            if (tool.draw.font.includes('italic')) btn.style.fontStyle = 'italic';
+                            // Extract numeric weight if present
+                            const weightMatch = tool.draw.font.match(/\d+/);
+                            if (weightMatch) btn.style.fontWeight = weightMatch[0];
+                        }
+                        if (tool.draw.fontFace) btn.style.fontFamily = tool.draw.fontFace;
+                        if (tool.draw.weight) btn.style.fontWeight = tool.draw.weight;
+                    }
+                    
                     btn.onclick = (e) => {
                         e.stopPropagation()
                         this.app.activeStampType = tool.id
