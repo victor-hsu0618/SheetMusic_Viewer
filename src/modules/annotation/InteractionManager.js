@@ -687,25 +687,29 @@ export class InteractionManager {
                 if (el) el.style.setProperty('touch-action', action, 'important');
             });
 
-            // 2. Sync all overlays AND their parent containers (the actual touch targets)
+            // 2. Sync all overlays AND their parent containers
             const overlays = document.querySelectorAll('.capture-overlay');
             overlays.forEach(el => {
                 try {
-                    // Force the overlay itself to be transparent to touches in view mode
-                    if (isTouch && toolType === 'view') {
-                        el.style.pointerEvents = 'none';
-                        el.style.zIndex = '-1'; // Push to background
+                    if (toolType === 'view') {
+                        // THE ULTIMATE FIX FOR IPAD: Physical disappearance.
+                        // If it's a touch device and we are in view mode, HIDE the overlay completely.
+                        // This forces the browser to hit-test the underlying viewer immediately.
+                        if (isTouch) {
+                            el.style.display = 'none';
+                        } else {
+                            el.style.display = '';
+                            el.style.pointerEvents = 'none'; // Still let mouse through if needed
+                        }
                     } else {
+                        el.style.display = '';
                         el.style.pointerEvents = '';
                         el.style.zIndex = '';
                     }
 
-                    // Also force the touch-action on the overlay AND the page container
-                    el.style.setProperty('touch-action', action, 'important');
+                    // Force touch-action on the parent container (the scroll target)
                     if (el.parentElement) {
                         el.parentElement.style.setProperty('touch-action', action, 'important');
-                        // FORCE REFLOW: Reading offsetHeight forces the browser to apply styles NOW
-                        const _unused = el.parentElement.offsetHeight;
                     }
                 } catch (innerErr) {
                     console.error(`[TouchAction] Overlay sync error:`, innerErr);
