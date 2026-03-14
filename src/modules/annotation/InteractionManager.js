@@ -671,18 +671,16 @@ export class InteractionManager {
 
         document.querySelectorAll('.capture-overlay').forEach(el => {
             el.style.touchAction = action;
-            // DIRECT SYNC: If we are in view mode on touch, we MUST disable pointer events 
+            // DIRECT SYNC: If we are in view mode on touch, we MUST disable pointer events
             // on the overlay to ensure the browser captures the first touch for panning.
-            // EXCEPTION: If there is an active grace object or interaction, we NEED pointer events to grab it.
             // In view mode on touch, ALWAYS set pointerEvents = 'none' so native scroll gets
             // the first touch. The grace re-grab check never runs in view mode (startAction
             // returns early), so keeping pointerEvents = '' when grace is active would just
             // silently absorb the touch without doing anything useful.
-            if (isTouch && toolType === 'view' && !this.app.isInteracting) {
+            if (isTouch && toolType === 'view') {
                 el.style.pointerEvents = 'none';
             } else {
                 el.style.pointerEvents = '';
-            }
-        });
+            }        });
     }
 }
