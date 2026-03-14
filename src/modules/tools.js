@@ -162,8 +162,21 @@ export class ToolManager {
             this.app.activeStampType = 'view'
             this.app.saveToStorage() // Persist this change
             
+            console.log(`[PaletteDebug] Closing Palette. ActiveStampType set to: ${this.app.activeStampType}`);
+
             // IMMEDIATE SYNC: Update touch-action immediately to restore scrolling responsiveness
-            this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
+            const interaction = this.app.annotationManager?.interaction;
+            if (interaction) {
+                console.log(`[PaletteDebug] Found interaction manager, calling sync...`);
+                interaction.updateAllOverlaysTouchAction();
+                // DEFENSIVE: Sync again in next frame to be 100% sure
+                requestAnimationFrame(() => {
+                    console.log(`[PaletteDebug] Second (RAF) sync...`);
+                    interaction.updateAllOverlaysTouchAction();
+                });
+            } else {
+                console.warn(`[PaletteDebug] Interaction manager NOT FOUND during palette close!`);
+            }
 
             // FORCE BLUR: To break any touch event capture chain on iPad
             if (document.activeElement) document.activeElement.blur();
