@@ -146,7 +146,7 @@ export class AnnotationManager {
         const idx = this.app.stamps.indexOf(stamp)
         if (idx === -1) return
         this.app.stamps.splice(idx, 1)
-        if (stamp.type === 'anchor' || stamp.type === 'measure') this.app.updateRulerMarks()
+        if (stamp.type === 'anchor' || stamp.type === 'measure' || stamp.type === 'measure-free') this.app.updateRulerMarks()
         this.app.hoveredStamp = null
         this.closeEraseMenu()
         const wrapper = document.querySelector(`.page-container[data-page="${page}"]`)
@@ -254,7 +254,7 @@ export class AnnotationManager {
         if (lid === 'performance' || stamp.type.startsWith('text-') || stamp.type.startsWith('custom-text-')) {
             return 'text';
         }
-        if (lid === 'anchor' || lid === 'other' || ['anchor', 'music-anchor', 'measure'].includes(stamp.type)) {
+        if (lid === 'anchor' || lid === 'other' || ['anchor', 'music-anchor', 'measure', 'measure-free'].includes(stamp.type)) {
             return 'layout';
         }
         if (lid === 'articulations') {
@@ -748,7 +748,7 @@ export class AnnotationManager {
                 this.app.userTextLibrary.push(data)
                 if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
             }
-        } else if (type === 'measure') {
+        } else if (type === 'measure' || type === 'measure-free') {
             let defVal = 1
             if (this.app.lastMeasureNum) {
                 defVal = parseInt(this.app.lastMeasureNum) + (this.app.measureStep || 4)
@@ -780,7 +780,7 @@ export class AnnotationManager {
             updatedAt: now
         })
 
-        if (type === 'anchor' || type === 'measure') {
+        if (type === 'anchor' || type === 'measure' || type === 'measure-free') {
             this.app.updateRulerMarks()
         }
 

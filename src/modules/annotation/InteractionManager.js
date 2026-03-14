@@ -256,7 +256,8 @@ export class InteractionManager {
                 const fPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 activeObject = {
                     page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
-                    x: fPos.x, y: fPos.y, color: this.app.activeColor, data: null, updatedAt: Date.now(),
+                    x: toolType === 'measure' ? 0.05 : fPos.x, 
+                    y: fPos.y, color: this.app.activeColor, data: null, updatedAt: Date.now(),
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`
                 };
                 const group = this.app.toolsets.find(g => g.tools.some(t => t.id === toolType));
@@ -281,33 +282,59 @@ export class InteractionManager {
 
         const moveAction = (e) => {
             if (!isInteracting) return;
-            const pos = CoordMapper.getPos(e, overlay);
+            
             const pointerType = getPointerType(e);
             const toolType = this.app.activeStampType;
 
+            // --- CROSS-PAGE HANDOFF LOGIC ---
+            let currentOverlay = overlay;
+            let currentWrapper = wrapper;
+            let currentPageNum = pageNum;
+
+            // Check if we are outside current overlay or if we have an activeObject on a different page
+            const rawPos = CoordMapper.getPos(e, overlay);
+            if (rawPos.y < -0.01 || rawPos.y > 1.01 || (activeObject && activeObject.page !== pageNum)) {
+                const el = document.elementFromPoint(e.clientX, e.clientY);
+                const targetOverlay = el?.closest('.capture-overlay');
+                if (targetOverlay) {
+                    const newPageNum = parseInt(targetOverlay.dataset.page);
+                    if (!isNaN(newPageNum)) {
+                        currentPageNum = newPageNum;
+                        currentOverlay = targetOverlay;
+                        currentWrapper = targetOverlay.parentElement;
+                    }
+                }
+            }
+            
+            const pos = CoordMapper.getPos(e, currentOverlay);
+            const currentVirtualPointer = currentOverlay.querySelector('.virtual-pointer');
+
             // MAGNETIC PICKUP: If we started an interaction but hadn't hit anything yet
             if (!activeObject && (['select', 'eraser', 'copy', 'recycle-bin'].includes(toolType))) {
-                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
-                const target = this.app.findClosestStamp(pageNum, pPos.x, pPos.y, toolType !== 'eraser');
+                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, currentOverlay);
+                const target = this.app.findClosestStamp(currentPageNum, pPos.x, pPos.y, toolType !== 'eraser');
                 if (target) {
                     if (toolType === 'eraser' || toolType === 'recycle-bin') {
                         this.app.annotationManager.eraseStampTarget(target);
-                        // For eraser, we can either stop or keep erasing. Let's keep isInteracting true to allow "swipe to erase multiple"
                     } else {
                         activeObject = target;
                         isMovingExisting = true;
                         this.app.lastFocusedStamp = activeObject;
                         this.app._dragLastPos = pPos;
                         const cent = CoordMapper.getGraceCenter(activeObject);
-                        const wCent = getWrapperPixels(cent.x, cent.y);
-                        InteractionUI.showTrash(true, wrapper, wCent.x, wCent.y - 70);
-                        this.app.redrawStamps(pageNum);
+                        const wCent = getWrapperPixels(cent.x, cent.y); // This uses Page 1's wrapper still, might need fix but trash is fixed anyway
+                        InteractionUI.showTrash(true, currentWrapper, wCent.x, wCent.y - 70);
+                        this.app.redrawStamps(currentPageNum);
                     }
                 }
             }
 
             if (!activeObject) {
-                InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
+                // If no object, hide all virtual pointers except the current one
+                document.querySelectorAll('.virtual-pointer.active').forEach(vp => {
+                    if (vp !== currentVirtualPointer) vp.classList.remove('active');
+                });
+                InteractionUI.syncVirtualPointer(e, toolType, currentOverlay, currentVirtualPointer, CoordMapper, this.app);
                 return;
             }
 
@@ -320,46 +347,63 @@ export class InteractionManager {
                     const distBaseline = Math.sqrt(dxBaseline*dxBaseline + dyBaseline*dyBaseline);
                     
                     if (distBaseline > 0.0001) {
-                        // Signed perpendicular distance from pos to baseline
                         const perpDist = (-dyBaseline * pos.x + dxBaseline * pos.y + (dyBaseline * p0.x - dxBaseline * p0.y)) / distBaseline;
-                        // Map perpendicular distance to curvature property
                         activeObject.curvature = (perpDist / distBaseline) * 2;
                     }
                 } else {
-                    const targetPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, overlay);
+                    const targetPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
+                    if (activeObject.page !== currentPageNum) {
+                        const oldPage = activeObject.page;
+                        activeObject.page = currentPageNum;
+                        this.app.redrawStamps(oldPage);
+                    }
                     if (activeObject.points) {
                         const dx = targetPos.x - (this.app._dragLastPos?.x ?? targetPos.x);
                         const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y);
                         activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
                     } else {
-                        activeObject.x = targetPos.x;
+                        activeObject.x = activeObject.type === 'measure' ? 0.05 : targetPos.x;
                         activeObject.y = targetPos.y;
                     }
                     this.app._dragLastPos = targetPos;
                 }
-                this.app.redrawStamps(pageNum);
+                this.app.redrawStamps(currentPageNum);
             } else if (activeObject.points) {
-                const currentPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, overlay);
+                const currentPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
+                if (activeObject.page !== currentPageNum) {
+                    const oldPage = activeObject.page;
+                    activeObject.page = currentPageNum;
+                    this.app.redrawStamps(oldPage);
+                }
                 if (activeObject.type === 'line' || activeObject.type === 'slur') {
-                    // Constant 2 points for a straight line or slur: [start, current]
                     activeObject.points = [activeObject.points[0], currentPos];
                 } else {
                     activeObject.points.push(currentPos);
                 }
-                const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
+                const canvas = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
                 if (canvas) this.app.drawPathOnCanvas(canvas.getContext('2d'), canvas, activeObject);
             } else {
-                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, overlay);
+                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
+                if (activeObject.page !== currentPageNum) {
+                    const oldPage = activeObject.page;
+                    activeObject.page = currentPageNum;
+                    this.app.redrawStamps(oldPage);
+                }
                 activeObject.x = pPos.x; activeObject.y = pPos.y;
-                const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
+                const canvas = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
                 if (canvas) {
-                    this.app.redrawStamps(pageNum);
+                    this.app.redrawStamps(currentPageNum);
                     const layer = this.app.layers.find(l => l.id === activeObject.layerId);
                     this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, activeObject, layer?.color || '#000', true, false, false, pos);
                 }
             }
-            InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper), wrapper);
-            InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
+            InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, currentWrapper, CoordMapper), currentWrapper);
+            
+            // Sync current virtual pointer and hide others
+            document.querySelectorAll('.virtual-pointer.active').forEach(vp => {
+                if (vp !== currentVirtualPointer) vp.classList.remove('active');
+            });
+            InteractionUI.syncVirtualPointer(e, activeObject.type, currentOverlay, currentVirtualPointer, CoordMapper, this.app);
             resetPointerIdleTimer();
         };
 
@@ -367,31 +411,34 @@ export class InteractionManager {
             if (!isInteracting) return;
             try {
                 if (activeObject) {
-                    const isOverTrash = InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper);
+                    const targetPageNum = activeObject.page;
+                    const targetWrapper = document.querySelector(`.page-container[data-page="${targetPageNum}"]`);
+                    const isOverTrash = InteractionUI.isObjectOverTrash(activeObject, targetWrapper, CoordMapper);
                     if (isOverTrash) {
                         if (isMovingExisting) this.app.annotationManager.eraseStampTarget(activeObject);
                         this.app.showMessage('Object Deleted', 'success');
                         activeObject = null;
-                        InteractionUI.showTrash(false, wrapper);
-                        this.app.redrawStamps(pageNum);
+                        InteractionUI.showTrash(false, targetWrapper);
+                        this.app.redrawStamps(targetPageNum);
                     } else if (activeObject.type === 'text' || activeObject.type === 'tempo-text') {
-                        this.app.annotationManager.spawnTextEditor(wrapper, pageNum, activeObject);
-                    } else if (activeObject.type === 'measure' && !isMovingExisting) {
+                        this.app.annotationManager.spawnTextEditor(targetWrapper, targetPageNum, activeObject);
+                    } else if (['measure', 'measure-free'].includes(activeObject.type) && !isMovingExisting) {
                         const targetObj = activeObject;
-                        this.app.annotationManager.promptMeasureNumber(this.app.lastMeasureNum).then(num => {
+                        const defVal = parseInt(this.app.lastMeasureNum || 0) + (this.app.measureStep || 4);
+                        this.app.annotationManager.promptMeasureNumber(defVal).then(num => {
                             if (num !== null && num !== undefined) {
                                 targetObj.data = String(num); this.app.lastMeasureNum = String(num);
                                 this.app.stamps.push(targetObj); this.app.saveToStorage(true); this.app.updateRulerMarks();
                                 startGracePeriod(targetObj);
                             }
-                            this.app.redrawStamps(pageNum);
+                            this.app.redrawStamps(targetPageNum);
                         });
                         return;
                     } else {
                         if (!isMovingExisting && activeObject.type !== 'view') this.app.stamps.push(activeObject);
                         if (activeObject.type === 'anchor') this.app.updateRulerMarks();
                         this.app.saveToStorage(true);
-                        this.app.redrawStamps(pageNum);
+                        this.app.redrawStamps(targetPageNum);
                         startGracePeriod(activeObject);
                     }
                 }
@@ -411,11 +458,13 @@ export class InteractionManager {
             graceTimer = setTimeout(() => {
                 if (graceObject === obj) { 
                     graceObject = null; 
-                    InteractionUI.showTrash(false, wrapper); 
-                    // HIDE POINTER when grace ends if not moving
-                    InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, overlay, virtualPointer, CoordMapper, this.app);
+                    const targetWrapper = document.querySelector(`.page-container[data-page="${obj.page}"]`);
+                    InteractionUI.showTrash(false, targetWrapper); 
+                    const targetOverlay = targetWrapper?.querySelector('.capture-overlay');
+                    const targetVP = targetOverlay?.querySelector('.virtual-pointer');
+                    InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, targetOverlay, targetVP, CoordMapper, this.app);
                 }
-                if (this.app._lastGraceObject === obj) { this.app._lastGraceObject = null; this.app.redrawStamps(pageNum); }
+                if (this.app._lastGraceObject === obj) { this.app._lastGraceObject = null; this.app.redrawStamps(obj.page); }
             }, 1500);
         };
 

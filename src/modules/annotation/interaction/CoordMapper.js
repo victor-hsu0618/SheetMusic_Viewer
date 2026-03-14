@@ -12,8 +12,8 @@ export const CoordMapper = {
         const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0))
         const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0))
         return {
-            x: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
-            y: Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
+            x: (clientX - rect.left) / rect.width,
+            y: (clientY - rect.top) / rect.height
         }
     },
 
@@ -58,9 +58,13 @@ export const CoordMapper = {
             dxPx = offsetX * t
         }
 
+        if (toolType === 'measure') {
+            return { x: 0.05, y: pos.y + dyPx / rect.height };
+        }
+
         return {
-            x: Math.max(0.0001, Math.min(0.9999, pos.x + dxPx / rect.width)),
-            y: Math.max(0.0001, Math.min(0.9999, pos.y + dyPx / rect.height))
+            x: pos.x + dxPx / rect.width,
+            y: pos.y + dyPx / rect.height
         }
     },
 
