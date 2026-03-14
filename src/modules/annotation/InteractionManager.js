@@ -519,6 +519,20 @@ export class InteractionManager {
 
         InteractionUI.ensureTrashBin(wrapper);
         wrapper.appendChild(overlay);
+        
+        // Save reference for manual updates if needed
+        overlay._updateTouchAction = updateTouchAction;
         updateTouchAction();
+    }
+
+    /**
+     * Globally update the touch-action of all active overlays based on current tool.
+     */
+    updateAllOverlaysTouchAction() {
+        const toolType = this.app.activeStampType;
+        const action = (toolType === 'view') ? 'pan-y' : 'none';
+        document.querySelectorAll('.capture-overlay').forEach(el => {
+            el.style.touchAction = action;
+        });
     }
 }

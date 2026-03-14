@@ -326,24 +326,28 @@ export class AnnotationRenderer {
                     break
 
                 case 'path':
-                    // Relative path rendering (-1 to 1 space)
-                    const pParts = d.data.split(' ')
+                    // Native SVG Path rendering using Path2D
                     ctx.save()
                     ctx.translate(x, y)
                     ctx.scale(size, size)
-                    // Adjust line width to be consistent despite scaling
-                    ctx.lineWidth = 2.5 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier / size
+                    
+                    // Maintain standard line width despite internal coordinate space scaling
+                    const effectiveLineWidth = 2.5 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier / size
+                    ctx.lineWidth = effectiveLineWidth
                     ctx.lineCap = 'round'
                     ctx.lineJoin = 'round'
 
-                    for (let i = 0; i < pParts.length; i++) {
-                        const cmd = pParts[i]
-                        if (cmd === 'M') ctx.moveTo(parseFloat(pParts[++i]), parseFloat(pParts[++i]))
-                        else if (cmd === 'L') ctx.lineTo(parseFloat(pParts[++i]), parseFloat(pParts[++i]))
-                        else if (cmd === 'C') ctx.bezierCurveTo(parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]))
+                    try {
+                        const pathObj = new Path2D(d.data)
+                        ctx.strokeStyle = finalColor
+                        ctx.stroke(pathObj)
+                        if (d.fill !== 'none') {
+                            ctx.fillStyle = finalColor
+                            ctx.fill(pathObj)
+                        }
+                    } catch (e) {
+                        console.error("Path2D error:", e, d.data)
                     }
-                    ctx.fillStyle = finalColor
-                    ctx.fill()
                     ctx.restore()
                     break
 

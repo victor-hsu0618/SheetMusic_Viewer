@@ -364,6 +364,7 @@ export class ToolManager {
                     e.stopPropagation()
                     this.app.activeStampType = tool.id
                     this.updateActiveTools()
+                    this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
                 }
                 recentRibbon.appendChild(btn)
             })
@@ -382,6 +383,7 @@ export class ToolManager {
                 e.stopPropagation()
                 this.app.activeStampType = toolId
                 this.updateActiveTools()
+                this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
             }
             recentRibbon.appendChild(btn)
         })
@@ -604,6 +606,8 @@ export class ToolManager {
                         this.app.activeStampType = tool.id
                         this.app.lastUsedToolPerCategory[catName] = tool.id
                         this.updateActiveTools()
+                        // Immediate sync for touch-action lock
+                        this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
                     }
                     if (tool.row === 1) {
                         r1.appendChild(btn)
@@ -852,6 +856,7 @@ export class ToolManager {
             e.stopPropagation()
             this.app.activeStampType = "view"
             this.updateActiveTools()
+            this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
         }
 
         this.app.activeToolsContainer.appendChild(panel)
