@@ -43,12 +43,59 @@ export class AnnotationRenderer {
     }
 
     /**
-     * Redraw all annotation layers across all pages.
+     * Redraw annotation layers. 
+     * Optimized: Only redraws visible pages OR pages with pending interaction states.
+     * @param {boolean} forceAll - If true, strictly redraws everything (use sparingly).
      */
-    redrawAllAnnotationLayers() {
+    redrawAllAnnotationLayers(forceAll = false) {
         if (!this.app.pdf) return;
-        for (let i = 1; i <= this.app.pdf.numPages; i++) {
-            this.redrawStamps(i);
+        
+        const numPages = this.app.pdf.numPages;
+        const targetPages = new Set();
+        
+        // 1. Always prioritize visible pages
+        document.querySelectorAll('.page-container[data-page]').forEach(el => {
+            const rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight && rect.bottom > 0) {
+                targetPages.add(parseInt(el.dataset.page));
+            }
+        });
+
+        // 2. Identify pages that might have stale interaction ghosts (hover, select, etc.)
+        // We look at the stamps that WERE hovered or selected recently
+        if (this.app._lastRedrawPages) {
+            this.app._lastRedrawPages.forEach(p => targetPages.add(p));
+        }
+
+        // 3. Redraw the target set
+        targetPages.forEach(p => this.redrawStamps(p));
+
+        // Track what we just redrew so we can clean up their ghosts next time
+        this.app._lastRedrawPages = new Set(targetPages);
+
+        // 4. If forceAll is requested, batch the rest in background
+        if (forceAll) {
+            const remainingPages = [];
+            for (let i = 1; i <= numPages; i++) {
+                if (!targetPages.has(i)) remainingPages.push(i);
+            }
+            if (remainingPages.length > 0) {
+                const batchSize = 10;
+                let currentIdx = 0;
+                const processBatch = () => {
+                    const end = Math.min(currentIdx + batchSize, remainingPages.length);
+                    for (let i = currentIdx; i < end; i++) {
+                        this.redrawStamps(remainingPages[i]);
+                    }
+                    currentIdx = end;
+                    if (currentIdx < remainingPages.length) {
+                        if (window.requestIdleCallback) requestIdleCallback(processBatch);
+                        else setTimeout(processBatch, 100);
+                    }
+                };
+                if (window.requestIdleCallback) requestIdleCallback(processBatch);
+                else setTimeout(processBatch, 100);
+            }
         }
     }
 
@@ -316,11 +363,23 @@ export class AnnotationRenderer {
 
             switch (d.type) {
                 case 'text':
-                    ctx.font = `${d.font || ''} ${(d.size || 24) * textScale}px ${d.fontFace || 'Outfit'}`
+                    let textContent = d.content || stamp.data || '#'
+                    const hasCJK = /[\u4e00-\u9fa5]/.test(textContent)
+                    
+                    let fontStr = d.font || ''
+                    let fontSize = (d.size || 24) * textScale
+                    
+                    if (hasCJK) {
+                        // CJK characters fill the em-box more than Latin, so we balance them
+                        fontSize *= 0.85 // Scale down by 15%
+                        fontStr = fontStr.replace('italic', '').trim() // Remove italics for CJK
+                    }
+
+                    ctx.font = `${fontStr} ${fontSize}px ${d.fontFace || 'Outfit'}`
                     ctx.fillStyle = finalColor
                     ctx.textAlign = 'center'
                     ctx.textBaseline = 'middle'
-                    ctx.fillText(d.content, x, y)
+                    ctx.fillText(textContent, x, y)
                     break
 
                 case 'shape':
@@ -360,28 +419,67 @@ export class AnnotationRenderer {
 
                 case 'special':
                     if (d.variant === 'input-text') {
-                        ctx.font = `bold ${15 * textScale}px Outfit`
+                        const content = stamp.data || ''
+                        const hasCJK = /[\u4e00-\u9fa5]/.test(content)
+                        
+                        let fontSize = 15 * textScale
+                        let fontWeight = 'bold'
+                        
+                        if (hasCJK) {
+                            fontSize *= 0.85
+                            fontWeight = '500' // Less aggressive than bold for CJK
+                        }
+                        
+                        ctx.font = `${fontWeight} ${fontSize}px Outfit`
                         ctx.fillStyle = color
-                        const lines = (stamp.data || '').split('\n')
-                        const lineHeight = 15 * textScale
+                        const lines = content.split('\n')
+                        const lineHeight = fontSize
                         lines.forEach((line, i) => {
                             ctx.fillText(line, x, y + (i * lineHeight))
                         })
                     } else if (d.variant === 'measure') {
-                        const bw = 24 * textScale, bh = 22 * textScale
-                        const bx = x - bw / 2, by = y - bh / 2
-                        // Outline-only box (no fill)
-                        ctx.strokeStyle = isHovered ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.3)'
-                        ctx.lineWidth = 1.2 * textScale
-                        ctx.beginPath()
-                        if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 3 * textScale)
-                        else ctx.rect(bx, by, bw, bh)
-                        ctx.stroke()
-                        // Light text
-                        ctx.font = `500 ${14 * textScale}px Outfit`
-                        ctx.fillStyle = isHovered ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.5)'
-                        ctx.textAlign = 'center'
+                        const isFree = stamp.type === 'measure-free'
+                        
+                        // Skip if user has hidden measure stamps, but NOT for Free Measures
+                        if (this.app.hideMeasureNumbers && !isFree) {
+                            break
+                        }
+                        
+                        // Text Tightness (Compactness)
+                        // Use a slightly smaller font than before (14 -> 13) and tighter weight if needed
+                        // Also for Free Measure, add a circle frame
+                        const fontSize = (isFree ? 12 : 13) * textScale
+                        ctx.font = `700 ${fontSize}px Outfit`
+                        ctx.fillStyle = isHovered ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.55)'
+                        ctx.textAlign = 'left'
                         ctx.textBaseline = 'middle'
+
+                        if (isFree) {
+                            // Rounded frame for Free Measure, left aligned
+                            const textWidth = ctx.measureText(stamp.data || '#').width
+                            const padding = fontSize * 0.4
+                            const w = textWidth + padding * 2
+                            const h = fontSize + padding
+                            
+                            ctx.strokeStyle = ctx.fillStyle
+                            ctx.lineWidth = 1.2 * globalScale
+                            
+                            // Rounded rectangle for "softer" look
+                            const radius = 4 * globalScale
+                            ctx.beginPath()
+                            const rectX = x - padding
+                            const rectY = y - h/2
+                            if (ctx.roundRect) {
+                                ctx.roundRect(rectX, rectY, w, h, radius)
+                            } else {
+                                ctx.strokeRect(rectX, rectY, w, h)
+                            }
+                            ctx.stroke()
+                            
+                            // Slightly darker text inside frame
+                            ctx.fillStyle = isHovered ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.8)'
+                        }
+
                         ctx.fillText(stamp.data || '#', x, y)
                     } else if (d.variant === 'playback') {
                         // Restore missing Music Anchor / Playback Head

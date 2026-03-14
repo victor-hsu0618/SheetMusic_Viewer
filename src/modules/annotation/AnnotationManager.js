@@ -562,11 +562,20 @@ export class AnnotationManager {
         const layer = this.app.layers.find(l => l.id === stamp.layerId)
         editor.style.color = layer ? layer.color : '#ff4757'
         overlay.appendChild(editor)
+
+        // Preserve scroll position: browser auto-scrolls when focusing a textarea
+        const scroller = document.querySelector('.pdf-container') || document.documentElement
+        const savedScrollLeft = scroller.scrollLeft
+        const savedScrollTop = scroller.scrollTop
         setTimeout(() => {
-            editor.focus()
+            editor.focus({ preventScroll: true })
             editor.style.height = 'auto'
             editor.style.height = editor.scrollHeight + 'px'
+            // Restore in case preventScroll wasn't supported
+            scroller.scrollLeft = savedScrollLeft
+            scroller.scrollTop = savedScrollTop
         }, 10)
+
         const finalize = () => {
             const val = editor.value.trim()
             if (val) {
@@ -603,34 +612,86 @@ export class AnnotationManager {
     async promptMeasureNumber(defVal) {
         return new Promise(resolve => {
             const dialog = document.getElementById('measure-dialog')
-            const display = document.getElementById('measure-display')
+            const songDisplay = document.getElementById('measure-song-display')
+            const numDisplay = document.getElementById('measure-num-display')
             const stepDisplay = document.getElementById('measure-step-display')
             const btnDec = document.getElementById('measure-step-minus')
             const btnInc = document.getElementById('measure-step-plus')
             const btnCancel = document.getElementById('measure-cancel')
 
-            if (!dialog || !display) {
+            if (!dialog || !songDisplay || !numDisplay) {
                 resolve(prompt('Enter measure number:', defVal))
                 return
             }
 
             this.app.measureStep = this.app.measureStep || 4
-            const lastVal = parseInt(this.app.lastMeasureNum || 0)
+            const lastNum = parseInt(this.app.lastMeasureNum || 0)
 
-            // "Current" anticipated value based on last + increment
-            let currentDefVal = Math.min(999, Math.max(1, lastVal + this.app.measureStep))
+            // Song always starts blank (user must manually enter)
+            // Measure defaults to last + step, but not if the result would be 0
+            let currentDefNum = lastNum > 0 ? Math.min(999, lastNum + this.app.measureStep) : null
             stepDisplay.textContent = this.app.measureStep
 
-            let typed = ''
+            let typedSong = this.app.lastSongNum || ''
+            let typedMeasure = ''
+            let activeField = 'measure' // 'song' or 'measure'
+
+            // Set up active field switching
+            const switchField = (field) => {
+                activeField = field
+                if (field === 'song') {
+                    songDisplay.classList.add('active')
+                    numDisplay.classList.remove('active')
+                } else {
+                    songDisplay.classList.remove('active')
+                    numDisplay.classList.add('active')
+                }
+            }
+            songDisplay.onclick = () => switchField('song')
+            numDisplay.onclick = () => switchField('measure')
+            switchField('measure') // default
+
             const showDisplay = () => {
-                // If user typed something, show it directly; otherwise show the computed "Current" val
-                display.textContent = typed || String(currentDefVal)
-                display.style.opacity = typed ? '1' : '0.45'
+                // Song display — always empty unless user types
+                if (typedSong) {
+                    songDisplay.textContent = typedSong
+                    songDisplay.style.opacity = '1'
+                } else {
+                    songDisplay.textContent = ''
+                    songDisplay.style.opacity = '1'
+                }
+
+                // Measure display — show typed value, or greyed default if > 0
+                if (typedMeasure) {
+                    numDisplay.textContent = typedMeasure
+                    numDisplay.style.opacity = '1'
+                } else if (currentDefNum !== null) {
+                    numDisplay.textContent = String(currentDefNum)
+                    numDisplay.style.opacity = '0.45'
+                } else {
+                    numDisplay.textContent = ''
+                    numDisplay.style.opacity = '1'
+                }
+
                 stepDisplay.textContent = this.app.measureStep
             }
             showDisplay()
 
-            const getValue = () => typed ? parseInt(typed) : currentDefVal
+            const getFinalString = () => {
+                const finalSong = typedSong  // Song is ALWAYS what user typed (no default carry)
+                const finalMeasure = typedMeasure ? parseInt(typedMeasure) : currentDefNum
+
+                if (finalMeasure === null && !typedMeasure) return null // Nothing to save
+                
+                // Save state to app
+                this.app.lastSongNum = finalSong || ''
+                this.app.lastMeasureNum = finalMeasure
+
+                if (finalSong) {
+                    return `${finalSong} - ${finalMeasure}`
+                }
+                return finalMeasure !== null ? String(finalMeasure) : null
+            }
 
             const updateIncrement = (delta) => {
                 // Adjustment logic: Update the increment AND the resulting "Current" value
@@ -640,13 +701,16 @@ export class AnnotationManager {
                 this.app.measureStep = newStep
 
                 // Recalculate what we are placing "This Time"
-                currentDefVal = Math.min(999, Math.max(1, lastVal + this.app.measureStep))
+                if (lastNum > 0) {
+                    currentDefNum = Math.min(999, lastNum + this.app.measureStep)
+                }
                 showDisplay()
             }
 
             const confirm = () => {
+                const result = getFinalString()
                 cleanup()
-                resolve(getValue())
+                resolve(result)
             }
 
             const onKeyDown = (e) => {
@@ -655,7 +719,18 @@ export class AnnotationManager {
                     e.preventDefault(); e.stopPropagation(); confirm(); return
                 }
                 if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cleanup(); resolve(null); return }
-                e.stopPropagation()
+                
+                // Allow hardware keyboard typing seamlessly
+                if (/^[0-9]$/.test(e.key)) {
+                    e.preventDefault(); e.stopPropagation();
+                    handleKeyInput(e.key)
+                } else if (e.key === 'Backspace') {
+                    e.preventDefault(); e.stopPropagation();
+                    handleKeyInput('back')
+                } else if (e.key === 'Tab') {
+                    e.preventDefault(); e.stopPropagation();
+                    switchField(activeField === 'song' ? 'measure' : 'song')
+                }
             }
             document.addEventListener('keydown', onKeyDown)
 
@@ -666,20 +741,35 @@ export class AnnotationManager {
                 if (btnDec) btnDec.onclick = null
                 if (btnInc) btnInc.onclick = null
                 if (btnCancel) btnCancel.onclick = null
+                songDisplay.onclick = null
+                numDisplay.onclick = null
+            }
+
+            const handleKeyInput = (key) => {
+                if (activeField === 'measure') {
+                    if (key === 'back') {
+                        typedMeasure = typedMeasure.slice(0, -1)
+                    } else {
+                        if (typedMeasure === '' && key === '0') return
+                        const next = typedMeasure + key
+                        if (next.length <= 3) typedMeasure = next
+                    }
+                } else {
+                    if (key === 'back') {
+                        typedSong = typedSong.slice(0, -1)
+                    } else {
+                        const next = typedSong + key
+                        if (next.length <= 3) typedSong = next
+                    }
+                }
+                showDisplay()
             }
 
             dialog.querySelectorAll('.keypad-btn').forEach(btn => {
                 btn.onclick = () => {
                     const key = btn.dataset.key
                     if (key === 'confirm') { confirm(); return }
-                    if (key === 'back') {
-                        typed = typed.slice(0, -1)
-                    } else {
-                        if (typed === '' && key === '0') return
-                        const next = typed + key
-                        if (next.length <= 3) typed = next
-                    }
-                    showDisplay()
+                    handleKeyInput(key)
                 }
             })
 
@@ -733,8 +823,8 @@ export class AnnotationManager {
             draw = {
                 type: 'text',
                 content: this.app._activeCustomText,
-                font: 'italic 300',
-                size: this.app.defaultFontSize,
+                font: 'italic 500',
+                size: 16,
                 fontFace: 'serif'
             }
         }

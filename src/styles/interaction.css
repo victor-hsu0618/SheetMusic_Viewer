@@ -213,8 +213,8 @@
   left: 0 !important;
   z-index: 50 !important;
   cursor: crosshair;
-  /* Default touch action, will be overridden by global lock below */
-  touch-action: pan-y;
+  /* Default touch action, will be overridden by tool-specific rules below */
+  touch-action: pan-x pan-y pinch-zoom;
 }
 
 /* Global Scroll Lock - Proactively disable touch actions when an annotation tool is active */
@@ -223,9 +223,21 @@ body[data-active-tool]:not([data-active-tool="view"]) .capture-overlay {
   touch-action: none !important;
 }
 
-/* Ensure the body itself allows panning when in view mode, overriding base.css global lock */
+/* Ensure the viewer allows full free panning and zooming in view mode */
 body[data-active-tool="view"] {
-  touch-action: pan-y !important;
+  touch-action: pan-x pan-y pinch-zoom !important;
+}
+
+/* 
+ * UI RESPONSIVENESS FIX: On touch devices, if we are in view mode, 
+ * we let pointer events pass through the overlay entirely.
+ * This ensures the browser starts scrolling/panning IMMEDIATELY on the first touch,
+ * without waiting for JS listeners on the overlay to resolve.
+ */
+@media (pointer: coarse) {
+  body[data-active-tool="view"] .capture-overlay {
+    pointer-events: none !important;
+  }
 }
 
 /* Category Navigator & Dropdown (Premium UI) */

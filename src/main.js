@@ -45,7 +45,7 @@ class ScoreFlow {
     this.toolbarWidth = 600
     this.lastUsedToolPerCategory = {}
     this.recentTools = []
-    this.userTextLibrary = ['dolce', 'espress.', 'marcato', 'tenuto']
+    this.userTextLibrary = ['dolce']
     this.stampSizeMultiplier = 1.0
     this.stampSizeOverrides = {}   // per-tool size overrides: { toolId: sizeNumber }
     this.pageScales = {}

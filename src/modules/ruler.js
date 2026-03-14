@@ -92,7 +92,9 @@ export class RulerManager {
 
     updateJumpLinePosition() {
         if (this.app.jumpLine) {
-            this.app.jumpLine.style.top = `${this.jumpOffsetPx}px`
+            const viewerRect = this.app.viewer ? this.app.viewer.getBoundingClientRect() : { top: 0 }
+            const viewerOffset = viewerRect.top
+            this.app.jumpLine.style.top = `${this.jumpOffsetPx + viewerOffset}px`
         }
         this.updateRulerClip()
         this.updateRulerMarks()
@@ -176,39 +178,40 @@ export class RulerManager {
     computeNextTarget(baseScroll = null) {
         if (!this.app.pdf || !this.app.viewer) { this.nextTargetAnchor = null; return }
 
-        const currentScroll = baseScroll !== null ? baseScroll : this.app.viewer.scrollTop
+        const currentScroll = this.app.viewer.scrollTop
         const viewportHeight = this.app.viewer.clientHeight
         const viewportCenter = currentScroll + viewportHeight / 2
+        // baseline is the vertical point in the viewer we want to focus on
         const currentFocusY = currentScroll + this.jumpOffsetPx
 
-        // Use cached metrics for faster candidate calculation
+        const visualMarks = this.app.stamps.filter(s => s.type === 'anchor')
         const metrics = this.app.viewerManager._pageMetrics
-        const candidates = this.app.stamps
-            .filter(s => s.type === 'anchor')
-            .map(s => {
-                const m = metrics[s.page]
-                if (!m) return null
-                const absoluteY = m.top + (s.y * m.height)
-                return { stamp: s, absoluteY }
-            })
-            .filter(a => a !== null && a.absoluteY > currentFocusY + 10)
+        if (!metrics) { this.nextTargetAnchor = null; return }
 
-        if (candidates.length === 0) {
-            this.nextTargetAnchor = null
-            return
-        }
+        const candidates = visualMarks.filter(stamp => {
+            const m = metrics[stamp.page]
+            if (!m) return false
+            const absY = m.top + (stamp.y * m.height)
+            return absY > currentFocusY + 2
+        })
+        
+        candidates.sort((a, b) => {
+            const ma = metrics[a.page]
+            const mb = metrics[b.page]
+            const ay = ma.top + (a.y * ma.height)
+            const by = mb.top + (b.y * mb.height)
+            if (a.page !== b.page) return a.page - b.page
+            return ay - by
+        })
 
-        candidates.sort((a, b) =>
-            Math.abs(a.absoluteY - viewportCenter) - Math.abs(b.absoluteY - viewportCenter)
-        )
-        this.nextTargetAnchor = candidates[0].stamp
+        this.nextTargetAnchor = candidates[0] || null
     }
 
-    scrollToNextTarget(baseScroll = null) {
-        this.computeNextTarget(baseScroll)
-        if (!this.nextTargetAnchor) return
+    scrollToNextTarget() {
+        if (!this.nextTargetAnchor || !this.app.viewer) return
 
-        const effectiveScroll = baseScroll !== null ? baseScroll : this.app.viewer.scrollTop;
+        const currentScroll = this.app.viewer.scrollTop
+        const effectiveScroll = currentScroll
         this.jumpHistory.push(effectiveScroll)
         if (this.jumpHistory.length > 50) this.jumpHistory.shift()
 
@@ -345,25 +348,26 @@ export class RulerManager {
         const marksContainer = document.getElementById('ruler-marks')
         if (!marksContainer) return
 
-        const visualMarks = this.app.stamps.filter(s => s.type === 'anchor' || s.type === 'measure')
+        const visualMarks = this.app.stamps.filter(s => s.type === 'anchor' || s.type === 'measure' || s.type === 'measure-free')
         const viewportHeight = window.innerHeight
         const scrollY = this.app.viewer.scrollTop
         const metrics = this.app.viewerManager._pageMetrics
 
-        // Optimized DOM updates: Use a document fragment or reconcile
+        const viewerRect = this.app.viewer ? this.app.viewer.getBoundingClientRect() : { top: 0 }
+        const viewerOffset = viewerRect.top
         const fragment = document.createDocumentFragment()
 
         visualMarks.forEach((stamp) => {
             const m = metrics[stamp.page]
             if (m) {
-                const absY = (m.top - scrollY) + (stamp.y * m.height)
+                const absY = (m.top - scrollY) + (stamp.y * m.height) + viewerOffset
 
                 if (absY > -200 && absY < viewportHeight + 200) {
                     const mark = document.createElement('div')
                     if (stamp.type === 'anchor') {
                         const isNextTarget = stamp === this.nextTargetAnchor
                         mark.className = isNextTarget ? 'ruler-anchor-mark ruler-next-target' : 'ruler-anchor-mark'
-                    } else if (stamp.type === 'measure') {
+                    } else if (stamp.type === 'measure' || stamp.type === 'measure-free') {
                         mark.className = 'ruler-measure-mark'
                         mark.textContent = stamp.data
                     }
@@ -374,7 +378,7 @@ export class RulerManager {
         })
 
         if (this.app.viewer && !this.nextTargetAnchor) {
-            const fallbackY = this.app.viewer.clientHeight - this.jumpOffsetPx
+            const fallbackY = this.jumpOffsetPx + viewerOffset
             const fallback = document.createElement('div')
             fallback.className = 'ruler-fallback-mark'
             fallback.style.top = `${fallbackY}px`

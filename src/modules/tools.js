@@ -157,6 +157,13 @@ export class ToolManager {
         } else {
             el.classList.remove('expanded')
             this.isStampPaletteOpen = false
+            
+            // FORCE VIEW MODE: When closing the palette, revert to pan/view mode to prevent accidental stamps.
+            this.app.activeStampType = 'view'
+            this.app.saveToStorage() // Persist this change
+            
+            // IMMEDIATE SYNC: Update touch-action immediately to restore scrolling responsiveness
+            this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
         }
 
         this.updateActiveTools()
@@ -614,6 +621,8 @@ export class ToolManager {
                 r1.className = "tools-row text-cloud-row row-1"
                 const r2 = document.createElement("div")
                 r2.className = "tools-row text-cloud-row row-2"
+                const r3 = document.createElement("div")
+                r3.className = "tools-row text-cloud-row row-3"
 
                 // 1. Sort Default Tools into Rows
                 group.tools.forEach(tool => {
@@ -625,14 +634,20 @@ export class ToolManager {
                     
                     // Apply font styling from tool definition if available
                     if (tool.draw && tool.draw.type === 'text') {
+                        const hasCJK = /[\u4e00-\u9fa5]/.test(tool.label || '')
                         if (tool.draw.font) {
-                            if (tool.draw.font.includes('italic')) btn.style.fontStyle = 'italic';
+                            if (tool.draw.font.includes('italic') && !hasCJK) btn.style.fontStyle = 'italic';
+                            else btn.style.fontStyle = 'normal';
+
                             // Extract numeric weight if present
                             const weightMatch = tool.draw.font.match(/\d+/);
                             if (weightMatch) btn.style.fontWeight = weightMatch[0];
                         }
                         if (tool.draw.fontFace) btn.style.fontFamily = tool.draw.fontFace;
                         if (tool.draw.weight) btn.style.fontWeight = tool.draw.weight;
+                        
+                        // Scale down CJK labels slightly on buttons too
+                        if (hasCJK) btn.style.fontSize = '12px';
                     }
                     
                     btn.onclick = (e) => {
@@ -650,13 +665,21 @@ export class ToolManager {
                     }
                 })
 
-                // 2. Render User Custom Library (Appended to Row 2)
+                // 2. Render User Custom Library (Now on Row 3)
                 this.app.userTextLibrary.forEach((text, idx) => {
                     const btn = document.createElement("button")
                     const isSelected = this.app.activeStampType === `custom-text-${idx}`
                     btn.className = `text-tool-pill user-custom ${isSelected ? "active" : ""}`
                     btn.style.color = isSelected ? '#ffffff' : rowColor
                     
+                    const hasCJK = /[\u4e00-\u9fa5]/.test(text || '')
+                    if (hasCJK) {
+                        btn.style.fontStyle = 'normal';
+                        btn.style.fontSize = '12px';
+                    } else {
+                        btn.style.fontStyle = 'italic';
+                    }
+
                     btn.innerHTML = `
                         <span class="text-label">${text}</span>
                         <span class="delete-text">&times;</span>
@@ -674,10 +697,10 @@ export class ToolManager {
                         this.app._activeCustomText = text
                         this.updateActiveTools()
                     }
-                    r2.appendChild(btn)
+                    r3.appendChild(btn)
                 })
 
-                // 3. Render "Add New" Input (Appended to Row 2)
+                // 3. Render "Add New" Input (Appended to Row 3)
                 const addWrapper = document.createElement("div")
                 addWrapper.className = "add-text-wrapper"
                 addWrapper.innerHTML = `
@@ -705,7 +728,7 @@ export class ToolManager {
                 btn.onclick = (e) => { e.stopPropagation(); commit() }
                 input.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); commit() } }
                 input.onclick = (e) => e.stopPropagation()
-                r2.appendChild(addWrapper)
+                r3.appendChild(addWrapper)
                 
                 // Append directly to container for cleaner column stacking
                 if (r1.children.length > 0) {
@@ -715,6 +738,10 @@ export class ToolManager {
                 if (r2.children.length > 0) {
                     container.appendChild(r2)
                     this.enableClickToScroll(r2)
+                }
+                if (r3.children.length > 0) {
+                    container.appendChild(r3)
+                    this.enableClickToScroll(r3)
                 }
             } else {
                 // NORMAL TOOL GRID RENDERING: Grouped by Row (Flex Row Layout)

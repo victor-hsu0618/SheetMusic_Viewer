@@ -159,6 +159,30 @@ export class InitializationManager {
         app.btnFullscreen?.addEventListener('click', () => app.toggleFullscreen())
         app.btnRulerToggle?.addEventListener('click', () => app.rulerManager?.toggleRuler())
 
+        // Measure number visibility toggle
+        const measureVisToggle = document.getElementById('toggle-measure-visibility')
+        if (measureVisToggle) {
+            // Load saved state
+            const saved = localStorage.getItem('hideMeasureNumbers')
+            if (saved === 'true') {
+                app.hideMeasureNumbers = true
+                measureVisToggle.checked = false
+            } else {
+                app.hideMeasureNumbers = false
+                measureVisToggle.checked = true
+            }
+            measureVisToggle.addEventListener('change', () => {
+                app.hideMeasureNumbers = !measureVisToggle.checked
+                localStorage.setItem('hideMeasureNumbers', app.hideMeasureNumbers)
+                // Redraw all pages to reflect change
+                if (app.pdf) {
+                    for (let i = 1; i <= app.pdf.numPages; i++) {
+                        app.redrawStamps(i)
+                    }
+                }
+            })
+        }
+
         // Doc Bar Toggles & Actions
         document.getElementById('btn-stamp-palette')?.addEventListener('click', () => app.toolManager?.toggleStampPalette())
         document.getElementById('btn-quick-open')?.addEventListener('click', () => app.openPdfFilePicker())

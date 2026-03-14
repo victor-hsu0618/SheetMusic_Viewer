@@ -221,23 +221,110 @@
 }
 
 /* Numeric Keypad for Measure Dialog */
-.measure-display {
-  font-size: 48px;
-  font-weight: 700;
-  color: var(--primary);
-  background: rgba(99, 102, 241, 0.08);
-  border: 2px solid rgba(99, 102, 241, 0.2);
-  border-radius: 12px;
-  padding: 10px 24px;
-  min-width: 120px;
-  text-align: center;
-  letter-spacing: 2px;
-  display: inline-block;
-  -webkit-user-select: none;
-  user-select: none;
+.measure-keypad-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  z-index: 15000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.measure-keypad-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.measure-keypad-overlay.active .measure-keypad {
+  transform: translateY(0);
 }
 
 .measure-keypad {
+  background: var(--bg-card);
+  width: 380px;
+  max-width: 90vw;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+  padding: 24px;
+  transform: translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.measure-keypad-header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.measure-keypad-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.measure-display-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(99, 102, 241, 0.05);
+  border: 2px solid rgba(99, 102, 241, 0.15);
+  border-radius: 12px;
+  padding: 8px 16px;
+  margin-bottom: 15px;
+}
+
+.measure-input-field {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 60px;
+  text-align: center;
+  letter-spacing: 1px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+}
+
+.measure-input-field:empty::before {
+  content: attr(placeholder);
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+.measure-input-field.active {
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.measure-display-separator {
+  font-size: 32px;
+  color: var(--text-muted);
+  font-weight: 300;
+  opacity: 0.5;
+}
+
+.measure-keypad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;

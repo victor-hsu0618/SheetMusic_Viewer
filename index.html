@@ -685,6 +685,16 @@
 
           <div class="setting-item mb-15">
             <div class="setting-row-compact">
+              <label class="setting-label" for="toggle-measure-visibility">Show Measure Numbers</label>
+              <label class="switch">
+                <input type="checkbox" id="toggle-measure-visibility" checked>
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-item mb-15">
+            <div class="setting-row-compact">
               <label class="setting-label">Anchor Offset</label>
               <div class="slider-container">
                 <button class="slider-adj-btn minus" data-target="settings-jump-offset">−</button>
@@ -981,18 +991,20 @@
       </div>
     </div>
 
-    <div id="measure-dialog" class="modal-overlay">
-      <div class="modal-content small-modal">
-        <div class="modal-header">
-          <h3>Add Measure Number</h3>
+    <!-- Custom Keypad for Measure Number Input -->
+    <div id="measure-dialog" class="measure-keypad-overlay">
+      <div class="measure-keypad">
+        <div class="measure-keypad-header">
+          <span class="measure-keypad-title">Number Input</span>
         </div>
-        <div class="modal-body text-center">
-          <p class="modal-intro mb-5">Current measure to place:</p>
-          <div class="mb-10">
-            <div id="measure-display" class="measure-display"></div>
+        <div class="measure-keypad-body">
+          <div class="measure-display-area">
+            <div id="measure-song-display" class="measure-input-field" data-type="song" placeholder="Song"></div>
+            <div class="measure-display-separator">-</div>
+            <div id="measure-num-display" class="measure-input-field active" data-type="measure" placeholder="Measure"></div>
           </div>
-
-          <div class="measure-keypad mb-5">
+          
+          <div class="measure-keypad-grid mb-15">
             <!-- Row 1: 7 8 9 -->
             <button class="keypad-btn" data-key="7">7</button>
             <button class="keypad-btn" data-key="8">8</button>

@@ -256,9 +256,10 @@ export class InputManager {
         })
 
         viewer.addEventListener('click', (e) => {
-            // Ignore if this is part of a long press
-            if (this.isMouseLongPressActive) {
+            // Ignore if this is part of a long press OR if we just finished panning
+            if (this.isMouseLongPressActive || this.app._wasPanning) {
                 this.isMouseLongPressActive = false
+                this.app._wasPanning = false // Consumption
                 return
             }
 

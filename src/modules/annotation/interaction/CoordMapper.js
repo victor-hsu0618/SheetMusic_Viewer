@@ -8,12 +8,20 @@ export const CoordMapper = {
      */
     getPos: (e, overlay) => {
         const rect = overlay.getBoundingClientRect()
-        // Support PointerEvent, MouseEvent, and TouchEvent
-        const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0))
-        const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0))
+        // Support PointerEvent, MouseEvent, and TouchEvent with viewport fallbacks
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+
+        if (clientX === undefined || clientX === null) {
+            clientX = (e.touches && e.touches[0] ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0))
+        }
+        if (clientY === undefined || clientY === null) {
+            clientY = (e.touches && e.touches[0] ? e.touches[0].clientY : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0))
+        }
+
         return {
-            x: (clientX - rect.left) / rect.width,
-            y: (clientY - rect.top) / rect.height
+            x: (clientX - rect.left) / (rect.width || 1),
+            y: (clientY - rect.top) / (rect.height || 1)
         }
     },
 
@@ -25,12 +33,22 @@ export const CoordMapper = {
         // Mode detection
         const isTargetingTool = ['select', 'copy', 'recycle-bin', 'eraser', 'text', 'tempo-text', 'measure'].includes(toolType);
         
+        const rect = overlay.getBoundingClientRect()
+        const offsetX = Number(app.stampOffsetTouchX || 0);
+        const offsetY = Number(app.stampOffsetTouchY || 0);
+
+        // 1. Standard Measure Lock: Always stay on the left margin (applies to ALL pointer types)
+        if (toolType === 'measure') {
+            const dyPx = (pointerType === 'touch') ? -offsetY : 0;
+            return { x: 0.05, y: Number(pos.y + dyPx / (rect.height || 1)) };
+        }
+
         // No offset for any tool if using Mouse or Pen (high precision)
         if (pointerType !== 'touch') {
             return pos;
         }
 
-        // 1. Direct Tools check: No offset for Pens and Edit tools
+        // 2. Direct Tools check: No offset for Pens and Edit tools
         const isPenTool = toolType && ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen'].includes(toolType);
         const isEditTool = toolType && ['select', 'eraser', 'copy', 'recycle-bin', 'view'].includes(toolType);
         
@@ -38,33 +56,27 @@ export const CoordMapper = {
             return pos;
         }
 
-        const rect = overlay.getBoundingClientRect()
-        const offsetX = app.stampOffsetTouchX;
-        const offsetY = app.stampOffsetTouchY;
-
         let dxPx = offsetX
         let dyPx = -offsetY
 
-        // Edge detection to pull stamp away from toolbars/edges
-        const distFromLeftPx = pos.x * rect.width
-        const distFromRightPx = rect.width - (pos.x * rect.width)
-        const transX = 60 
-
-        if (distFromLeftPx < transX) {
-            const t = Math.max(0, Math.min(1, distFromLeftPx / transX))
-            dxPx = offsetX * t
-        } else if (distFromRightPx < transX) {
-            const t = Math.max(0, Math.min(1, distFromRightPx / transX))
-            dxPx = offsetX * t
+        // Disable horizontal offset for specific tools that need 1:1 finger placement
+        const noXOffsetTools = ['measure-free', 'view', 'select', 'eraser', 'copy', 'recycle-bin'];
+        if (noXOffsetTools.includes(toolType)) {
+            dxPx = 0;
         }
 
-        if (toolType === 'measure') {
-            return { x: 0.05, y: pos.y + dyPx / rect.height };
-        }
+        // Calculate target pixels and clamp to keep within page boundaries
+        const targetXPx = (pos.x * rect.width) + dxPx;
+        const targetYPx = (pos.y * rect.height) + dyPx;
+
+        // Keep 5px margin from edges
+        const margin = 5;
+        const clampedX = Math.max(margin, Math.min(rect.width - margin, targetXPx));
+        const clampedY = Math.max(margin, Math.min(rect.height - margin, targetYPx));
 
         return {
-            x: pos.x + dxPx / rect.width,
-            y: pos.y + dyPx / rect.height
+            x: clampedX / (rect.width || 1),
+            y: clampedY / (rect.height || 1)
         }
     },
 

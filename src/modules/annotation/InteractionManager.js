@@ -86,13 +86,20 @@ export class InteractionManager {
                     this.app.viewer.style.scrollBehavior = 'auto';
                     const doPan = (ev) => {
                         if (!isPanning) return;
-                        this.app.viewer.scrollTop = startScrollTop - (ev.clientY - startY);
-                        this.app.viewer.scrollLeft = startScrollLeft - (ev.clientX - startX);
+                        const dx = ev.clientX - startX;
+                        const dy = ev.clientY - startY;
+                        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                            this.app._wasPanning = true;
+                        }
+                        this.app.viewer.scrollTop = startScrollTop - dy;
+                        this.app.viewer.scrollLeft = startScrollLeft - dx;
                     };
                     const stopPan = () => {
                         isPanning = false;
                         overlay.style.cursor = '';
                         this.app.viewer.style.scrollBehavior = '';
+                        // Clear the panning flag slightly later to allow click event to be swallowed
+                        setTimeout(() => { this.app._wasPanning = false; }, 50);
                         window.removeEventListener('pointermove', doPan);
                         window.removeEventListener('mouseup', stopPan);
                     };
@@ -259,7 +266,7 @@ export class InteractionManager {
                 const fPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 activeObject = {
                     page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
-                    x: toolType === 'measure' ? 0.05 : fPos.x, 
+                    x: fPos.x, 
                     y: fPos.y, color: this.app.activeColor, data: null, updatedAt: Date.now(),
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`
                 };
@@ -270,7 +277,7 @@ export class InteractionManager {
                 }
                 if (!activeObject.layerId) activeObject.layerId = 'draw';
                 if (toolType.startsWith('custom-text-') && this.app._activeCustomText) {
-                    activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 300', size: this.app.defaultFontSize, fontFace: 'serif' };
+                    activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 500', size: 16, fontFace: 'serif' };
                 } else {
                     const tool = group?.tools.find(t => t.id === toolType);
                     if (tool && tool.draw) {
@@ -288,6 +295,11 @@ export class InteractionManager {
             
             const pointerType = getPointerType(e);
             const toolType = this.app.activeStampType;
+
+            // Stop native behaviors (scrolling/swiping) during interaction
+            if (pointerType === 'touch' && e.cancelable) {
+                e.preventDefault();
+            }
 
             // --- CROSS-PAGE HANDOFF LOGIC ---
             let currentOverlay = overlay;
@@ -365,8 +377,8 @@ export class InteractionManager {
                         const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y);
                         activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
                     } else {
-                        activeObject.x = activeObject.type === 'measure' ? 0.05 : targetPos.x;
-                        activeObject.y = targetPos.y;
+                        activeObject.x = Number(targetPos.x);
+                        activeObject.y = Number(targetPos.y);
                     }
                     this.app._dragLastPos = targetPos;
                 }
@@ -392,7 +404,7 @@ export class InteractionManager {
                     activeObject.page = currentPageNum;
                     this.app.redrawStamps(oldPage);
                 }
-                activeObject.x = pPos.x; activeObject.y = pPos.y;
+                activeObject.x = Number(pPos.x); activeObject.y = Number(pPos.y);
                 const canvas = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
                 if (canvas) {
                     this.app.redrawStamps(currentPageNum);
@@ -426,13 +438,22 @@ export class InteractionManager {
                     } else if (activeObject.type === 'text' || activeObject.type === 'tempo-text') {
                         this.app.annotationManager.spawnTextEditor(targetWrapper, targetPageNum, activeObject);
                     } else if (['measure', 'measure-free'].includes(activeObject.type) && !isMovingExisting) {
+                        // Guard: if user switched back to view mode, don't trigger the keypad
+                        if (this.app.activeStampType === 'view') {
+                            this.app.redrawStamps(targetPageNum);
+                            return;
+                        }
                         const targetObj = activeObject;
-                        const defVal = parseInt(this.app.lastMeasureNum || 0) + (this.app.measureStep || 4);
-                        this.app.annotationManager.promptMeasureNumber(defVal).then(num => {
-                            if (num !== null && num !== undefined) {
-                                targetObj.data = String(num); this.app.lastMeasureNum = String(num);
-                                this.app.stamps.push(targetObj); this.app.saveToStorage(true); this.app.updateRulerMarks();
+                        this.app.annotationManager.promptMeasureNumber().then(numStr => {
+                            if (numStr !== null && numStr !== undefined && numStr !== '') {
+                                targetObj.data = numStr; 
+                                this.app.stamps.push(targetObj); 
+                                this.app.saveToStorage(true); 
+                                this.app.updateRulerMarks();
                                 startGracePeriod(targetObj);
+                            } else {
+                                // If cancelled or empty, don't keep the temporary stamp
+                                activeObject = null;
                             }
                             this.app.redrawStamps(targetPageNum);
                         });
@@ -583,7 +604,8 @@ export class InteractionManager {
      */
     updateAllOverlaysTouchAction() {
         const toolType = this.app.activeStampType;
-        const action = (toolType === 'view') ? 'pan-y' : 'none';
+        // RELAXED: Use 'pan-x pan-y pinch-zoom' for view mode to allow full free movement.
+        const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
         document.querySelectorAll('.capture-overlay').forEach(el => {
             el.style.touchAction = action;
         });
