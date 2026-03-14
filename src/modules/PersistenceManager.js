@@ -29,7 +29,9 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_stamp_size_multiplier', this.app.stampSizeMultiplier)
         localStorage.setItem('scoreflow_stamp_size_overrides', JSON.stringify(this.app.stampSizeOverrides || {}))
         localStorage.setItem('scoreflow_stamp_offset_touch_y', this.app.stampOffsetTouchY)
+        localStorage.setItem('scoreflow_stamp_offset_touch_x', this.app.stampOffsetTouchX)
         localStorage.setItem('scoreflow_stamp_offset_mouse_y', this.app.stampOffsetMouseY)
+        localStorage.setItem('scoreflow_stamp_offset_mouse_x', this.app.stampOffsetMouseX)
         localStorage.setItem('scoreflow_pointer_idle_timeout_ms', this.app.pointerIdleTimeoutMs || 8000)
 
         const turnerMode = document.getElementById('turner-mode-select') ? document.getElementById('turner-mode-select').value : 'default';
@@ -137,6 +139,15 @@ export class PersistenceManager {
             if (value) value.textContent = `${this.app.stampOffsetTouchY}px`
         }
 
+        const offsetTouchXData = localStorage.getItem('scoreflow_stamp_offset_touch_x')
+        if (offsetTouchXData !== null) {
+            this.app.stampOffsetTouchX = parseInt(offsetTouchXData)
+            const input = document.getElementById('settings-offset-touch-x')
+            const value = document.getElementById('settings-offset-touch-x-value')
+            if (input) input.value = this.app.stampOffsetTouchX
+            if (value) value.textContent = `${this.app.stampOffsetTouchX}px`
+        }
+
         const offsetMouseData = localStorage.getItem('scoreflow_stamp_offset_mouse_y')
         if (offsetMouseData !== null) {
             this.app.stampOffsetMouseY = parseInt(offsetMouseData)
@@ -144,6 +155,11 @@ export class PersistenceManager {
             const value = document.getElementById('settings-offset-mouse-value')
             if (input) input.value = this.app.stampOffsetMouseY
             if (value) value.textContent = `${this.app.stampOffsetMouseY}px`
+        }
+
+        const offsetMouseXData = localStorage.getItem('scoreflow_stamp_offset_mouse_x')
+        if (offsetMouseXData !== null) {
+            this.app.stampOffsetMouseX = parseInt(offsetMouseXData)
         }
 
         const pointerIdleData = localStorage.getItem('scoreflow_pointer_idle_timeout_ms')

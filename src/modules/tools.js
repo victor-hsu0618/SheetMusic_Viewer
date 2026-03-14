@@ -18,36 +18,48 @@ export class ToolManager {
         let startX
         let scrollLeft
 
-        el.addEventListener('mousedown', (e) => {
+        const start = (pageX) => {
             isDown = true
             el.classList.add('dragging')
-            startX = e.pageX - el.offsetLeft
+            startX = pageX - el.offsetLeft
             scrollLeft = el.scrollLeft
             el.style.cursor = 'grabbing'
             el.style.userSelect = 'none'
-        })
-        
-        el.addEventListener('mouseleave', () => {
+        }
+
+        const end = () => {
             isDown = false
             el.classList.remove('dragging')
             el.style.cursor = ''
             el.style.userSelect = ''
-        })
-        
-        el.addEventListener('mouseup', () => {
-            isDown = false
-            el.classList.remove('dragging')
-            el.style.cursor = ''
-            el.style.userSelect = ''
-        })
-        
-        el.addEventListener('mousemove', (e) => {
+        }
+
+        const move = (pageX) => {
             if (!isDown) return
-            e.preventDefault()
-            const x = e.pageX - el.offsetLeft
+            const x = pageX - el.offsetLeft
             const walk = (x - startX) * 2
             el.scrollLeft = scrollLeft - walk
+        }
+
+        el.addEventListener('mousedown', (e) => start(e.pageX))
+        el.addEventListener('touchstart', (e) => start(e.touches[0].pageX), { passive: true })
+        
+        el.addEventListener('mouseleave', end)
+        el.addEventListener('mouseup', end)
+        el.addEventListener('touchend', end)
+        
+        el.addEventListener('mousemove', (e) => {
+            if (isDown) e.preventDefault()
+            move(e.pageX)
         })
+        el.addEventListener('touchmove', (e) => {
+            if (isDown) {
+                // Do NOT preventDefault here if we want native scroll to potentially kick in,
+                // but since we are doing custom horizontal scroll, we usually prevent it.
+                // However, the palette is already preventing it globally.
+                move(e.touches[0].pageX)
+            }
+        }, { passive: true })
     }
 
     async preloadSvgs() {
@@ -268,7 +280,8 @@ export class ToolManager {
                 const isInteractive = e.target.tagName === 'INPUT' || 
                                      e.target.tagName === 'BUTTON' || 
                                      e.target.closest('button')
-                if (!isInteractive && el.style.overflowY !== 'auto') {
+                const isScrollableRow = e.target.closest('.text-cloud-row, .tools-row, .recent-tools-ribbon, .category-ribbon')
+                if (!isInteractive && !isScrollableRow && el.style.overflowY !== 'auto') {
                     e.preventDefault()
                 }
             }
@@ -788,6 +801,34 @@ export class ToolManager {
                     <p class="setting-hint">Adjustment for markings and text.</p>
                 </div>
 
+                <div class="setting-item mb-15">
+                    <div class="setting-row-compact">
+                        <label class="setting-label">Touch Offset (Y)</label>
+                        <div class="slider-container">
+                            <button class="slider-adj-btn minus" id="btn-offset-minus">−</button>
+                            <input type="range" class="setting-slider" id="settings-offset-touch" min="0" max="150" step="5" value="${this.app.stampOffsetTouchY}" />
+                            <button class="slider-adj-btn plus" id="btn-offset-plus">+</button>
+                        </div>
+                        <span id="settings-offset-touch-value" class="badge">${this.app.stampOffsetTouchY}px</span>
+                        <button class="btn-reset-mini" id="btn-offset-reset">Reset</button>
+                    </div>
+                    <p class="setting-hint">Up/Down distance.</p>
+                </div>
+
+                <div class="setting-item mb-15">
+                    <div class="setting-row-compact">
+                        <label class="setting-label">Touch Offset (X)</label>
+                        <div class="slider-container">
+                            <button class="slider-adj-btn minus" id="btn-offset-x-minus">−</button>
+                            <input type="range" class="setting-slider" id="settings-offset-touch-x" min="-150" max="150" step="5" value="${this.app.stampOffsetTouchX}" />
+                            <button class="slider-adj-btn plus" id="btn-offset-x-plus">+</button>
+                        </div>
+                        <span id="settings-offset-touch-x-value" class="badge">${this.app.stampOffsetTouchX}px</span>
+                        <button class="btn-reset-mini" id="btn-offset-x-reset">Reset</button>
+                    </div>
+                    <p class="setting-hint">Left/Right distance.</p>
+                </div>
+
                 <div class="setting-divider"></div>
 
                 <div class="setting-item">
@@ -814,6 +855,13 @@ export class ToolManager {
 
         const btnScaleReset = panel.querySelector('#btn-scale-reset')
         const btnFontReset = panel.querySelector('#btn-font-reset')
+        const btnOffsetReset = panel.querySelector('#btn-offset-reset')
+        const btnOffsetXReset = panel.querySelector('#btn-offset-x-reset')
+
+        const sliderOffset = panel.querySelector('#settings-offset-touch')
+        const valOffset = panel.querySelector('#settings-offset-touch-value')
+        const sliderOffsetX = panel.querySelector('#settings-offset-touch-x')
+        const valOffsetX = panel.querySelector('#settings-offset-touch-x-value')
 
         const updateScore = (val) => {
             const num = Math.max(0.5, Math.min(3.0, parseFloat(val)))
@@ -843,11 +891,39 @@ export class ToolManager {
             }
         }
 
+        const updateOffset = (val) => {
+            const num = Math.max(0, Math.min(150, parseInt(val)))
+            sliderOffset.value = num
+            valOffset.textContent = `${num}px`
+            this.app.stampOffsetTouchY = num
+            this.app.saveToStorage()
+            
+            // Dynamic track color
+            const percentage = (num / 150) * 100
+            sliderOffset.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
+        }
+
+        const updateOffsetX = (val) => {
+            const num = Math.max(-150, Math.min(150, parseInt(val)))
+            sliderOffsetX.value = num
+            valOffsetX.textContent = `${num}px`
+            this.app.stampOffsetTouchX = num
+            this.app.saveToStorage()
+            
+            // Dynamic track color (handle -150 to 150)
+            const percentage = ((num + 150) / 300) * 100
+            sliderOffsetX.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
+        }
+
         sliderScore.oninput = (e) => updateScore(e.target.value)
         sliderFont.oninput = (e) => updateFont(e.target.value)
+        sliderOffset.oninput = (e) => updateOffset(e.target.value)
+        sliderOffsetX.oninput = (e) => updateOffsetX(e.target.value)
 
         btnScaleReset.onclick = () => updateScore(1.0)
         btnFontReset.onclick = () => updateFont(20)
+        btnOffsetReset.onclick = () => updateOffset(50)
+        btnOffsetXReset.onclick = () => updateOffsetX(-30)
 
         // General Slider Adjustment Buttons
         panel.querySelectorAll('.slider-adj-btn').forEach(btn => {
@@ -855,13 +931,17 @@ export class ToolManager {
                 e.stopPropagation()
                 const isPlus = btn.classList.contains('plus')
                 const isScale = btn.id.includes('scale')
-                const slider = isScale ? sliderScore : sliderFont
+                const isFont = btn.id.includes('font')
+                const isOffsetX = btn.id.includes('offset-x')
+                const slider = isScale ? sliderScore : (isFont ? sliderFont : (isOffsetX ? sliderOffsetX : sliderOffset))
                 const step = parseFloat(slider.step) || 1
                 const current = parseFloat(slider.value)
                 const next = isPlus ? (current + step) : (current - step)
                 
                 if (isScale) updateScore(next)
-                else updateFont(next)
+                else if (isFont) updateFont(next)
+                else if (isOffsetX) updateOffsetX(next)
+                else updateOffset(next)
             }
         })
 
@@ -885,6 +965,8 @@ export class ToolManager {
         // Initial track colors
         updateScore(this.app.scoreStampScale || 1.0)
         updateFont(this.app.defaultFontSize)
+        updateOffset(this.app.stampOffsetTouchY)
+        updateOffsetX(this.app.stampOffsetTouchX)
 
         // Render the layer list into the new container
         this.app.externalLayerList = panel.querySelector('#settings-layer-list')

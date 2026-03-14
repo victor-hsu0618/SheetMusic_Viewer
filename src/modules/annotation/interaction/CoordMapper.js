@@ -30,15 +30,17 @@ export const CoordMapper = {
             return pos;
         }
 
-        // View mode always zero offset even for touch
-        if (toolType === 'view') {
+        // 1. Direct Tools check: No offset for Pens and Edit tools
+        const isPenTool = toolType && ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen'].includes(toolType);
+        const isEditTool = toolType && ['select', 'eraser', 'copy', 'recycle-bin', 'view'].includes(toolType);
+        
+        if (isPenTool || isEditTool) {
             return pos;
         }
 
         const rect = overlay.getBoundingClientRect()
-        const offsetX = -45
-        
-        let offsetY = app.stampOffsetTouchY; // Default touch offset
+        const offsetX = app.stampOffsetTouchX;
+        const offsetY = app.stampOffsetTouchY;
 
         let dxPx = offsetX
         let dyPx = -offsetY
