@@ -79,6 +79,14 @@ export class InteractionManager {
 
         // --- HANDLERS ---
 
+        // GLOBAL TOUCH MONITOR: Let's see what is actually being hit
+        document.body.addEventListener('touchstart', (e) => {
+            const seq = this._syncSeq || 0;
+            const target = e.target;
+            const tool = this.app.activeStampType;
+            console.log(`[GlobalTouch #${seq}] Touch on <${target.tagName}>.${target.className}, Tool: ${tool}`);
+        }, { passive: true });
+
         const startAction = (e) => {
             if (isInteracting) return; 
 
@@ -117,14 +125,13 @@ export class InteractionManager {
                     window.addEventListener('pointermove', doPan);
                     window.addEventListener('mouseup', stopPan);
                 } else {
-                    // TOUCH in VIEW MODE: This SHOULD NOT HAPPEN if pointer-events is 'none'
-                    console.warn(`[TouchDebug] Overlay CAPTURED touch in VIEW mode! Page: ${pageNum}, pointer-events: "${overlay.style.pointerEvents}"`);
-                    overlay.style.pointerEvents = 'none';
+                    // TOUCH in VIEW MODE: This SHOULD NOT HAPPEN if display is 'none'
+                    console.warn(`[TouchDebug #${this._syncSeq || 0}] Overlay CAPTURED touch in VIEW mode! Page: ${pageNum}`);
                 }
                 return;
             }
 
-            console.log(`[TouchDebug] startAction triggered. Tool: ${toolType}, Pointer: ${pointerType}, Page: ${pageNum}`);
+            console.log(`[TouchDebug #${this._syncSeq || 0}] startAction triggered. Tool: ${toolType}, Pointer: ${pointerType}, Page: ${pageNum}`);
 
             // 2. Prevent Scroll for all other tools (Select, Pen, Stamp, etc.)
             if (pointerType === 'touch') {
@@ -670,6 +677,9 @@ export class InteractionManager {
      * Globally update the touch-action of all active overlays based on current tool.
      */
     updateAllOverlaysTouchAction() {
+        if (!this._syncSeq) this._syncSeq = 0;
+        const seq = ++this._syncSeq;
+        
         try {
             const toolType = this.app.activeStampType;
             // SYNC ALL SCROLL PARENTS: html, body, and viewer
@@ -679,7 +689,7 @@ export class InteractionManager {
             const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-            console.log(`[TouchAction] START - Tool: ${toolType}, Action: ${action}`);
+            console.log(`[TouchAction #${seq}] START - Tool: ${toolType}, Action: ${action}`);
 
             // 1. Force release touch-action on the entire chain
             const scrollChain = [document.documentElement, document.body, this.app.viewer];
@@ -712,16 +722,16 @@ export class InteractionManager {
                         el.parentElement.style.setProperty('touch-action', action, 'important');
                     }
                 } catch (innerErr) {
-                    console.error(`[TouchAction] Overlay sync error:`, innerErr);
+                    console.error(`[TouchAction #${seq}] Overlay sync error:`, innerErr);
                 }
             });
 
             if (toolType === 'view') {
                 this.app.isInteracting = false;
             }
-            console.log(`[TouchAction] FINISH`);
+            console.log(`[TouchAction #${seq}] FINISH`);
         } catch (err) {
-            console.error(`[TouchAction] GLOBAL CRASH:`, err);
+            console.error(`[TouchAction #${seq}] GLOBAL CRASH:`, err);
         }
     }
 }
