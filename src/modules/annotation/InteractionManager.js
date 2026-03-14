@@ -669,7 +669,10 @@ export class InteractionManager {
         const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-        document.querySelectorAll('.capture-overlay').forEach(el => {
+        const overlays = document.querySelectorAll('.capture-overlay');
+        console.log(`[TouchAction] Tool: ${toolType}, isTouch: ${isTouch}, Overlays found: ${overlays.length}`);
+
+        overlays.forEach(el => {
             el.style.touchAction = action;
             // DIRECT SYNC: If we are in view mode on touch, we MUST disable pointer events
             // on the overlay to ensure the browser captures the first touch for panning.
@@ -681,6 +684,8 @@ export class InteractionManager {
                 el.style.pointerEvents = 'none';
             } else {
                 el.style.pointerEvents = '';
-            }        });
+            }
+            console.log(`[TouchAction] Overlay Page ${el.parentElement?.dataset.page}: pointer-events = "${el.style.pointerEvents}", touch-action = "${el.style.touchAction}"`);
+        });
     }
 }
