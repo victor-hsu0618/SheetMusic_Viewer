@@ -1,0 +1,203 @@
+{
+  "stamps": [
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.08213944603629418,
+      "data": "98",
+      "draw": null,
+      "id": "6c54d045-f072-43c8-b46d-7533449992d1",
+      "updatedAt": 1773310521446
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.15854823304680038,
+      "data": "103",
+      "draw": null,
+      "id": "7f3d9816-1acc-44dc-b7ad-51bfa0e73382",
+      "updatedAt": 1773310530638
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.23256924546322827,
+      "data": "106",
+      "draw": null,
+      "id": "25059f2d-6dc3-403d-b402-529a16da0396",
+      "updatedAt": 1773313520530
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.3108882521489971,
+      "data": "109",
+      "draw": null,
+      "id": "92bc99b2-bef3-4362-905e-fd38f9260d35",
+      "updatedAt": 1773313525279
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.3997134670487106,
+      "data": "114",
+      "draw": null,
+      "id": "c918b201-5ed7-4da2-80d9-55566f5f09ed",
+      "updatedAt": 1773313531768
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.48376313276026744,
+      "data": "119",
+      "draw": null,
+      "id": "a52d4899-106d-4d97-95e3-be55efea5ec6",
+      "updatedAt": 1773313536606
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.5744985673352436,
+      "data": "125",
+      "draw": null,
+      "id": "214171af-9cb7-4fd8-807c-d6b39efc65d2",
+      "updatedAt": 1773313544078
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.6628462273161414,
+      "data": "132",
+      "draw": null,
+      "id": "3d5f0b75-52a9-44c6-ab20-7c57f69a832c",
+      "updatedAt": 1773313552514
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.7449856733524356,
+      "data": "138",
+      "draw": null,
+      "id": "a8b4b5ea-098a-4bee-831f-a9feb0ff8d66",
+      "updatedAt": 1773313559006
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.8268067494428526,
+      "data": "144",
+      "draw": null,
+      "id": "0e1ce5fb-d494-4575-92dc-6be87757f75f",
+      "updatedAt": 1773313570717
+    },
+    {
+      "page": 47,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07237587014897293,
+      "y": 0.9006685768863419,
+      "data": "148",
+      "draw": null,
+      "id": "c4960779-8862-47c9-973f-489b3ab6c3bf",
+      "updatedAt": 1773313577231
+    }
+  ],
+  "bookmarks": [
+    {
+      "id": "bm-1773310324390",
+      "page": 45,
+      "label": "#15",
+      "updatedAt": 1773310324390
+    }
+  ],
+  "sources": [
+    {
+      "id": "self",
+      "name": "Primary Interpretation",
+      "visible": true,
+      "opacity": 1,
+      "color": "#6366f1"
+    }
+  ],
+  "layers": [
+    {
+      "id": "draw",
+      "name": "Draw Objects",
+      "color": "#ff4757",
+      "visible": true,
+      "type": "draw"
+    },
+    {
+      "id": "fingering",
+      "name": "Bow/Fingering",
+      "color": "#3b82f6",
+      "visible": true,
+      "type": "fingering"
+    },
+    {
+      "id": "articulation",
+      "name": "Articulation",
+      "color": "#10b981",
+      "visible": true,
+      "type": "articulation"
+    },
+    {
+      "id": "text",
+      "name": "Text",
+      "color": "#f59e0b",
+      "visible": true,
+      "type": "text"
+    },
+    {
+      "id": "layout",
+      "name": "Others",
+      "color": "#64748b",
+      "visible": true,
+      "type": "layout"
+    }
+  ],
+  "scoreDetail": {
+    "name": "Duport_-_21_Etudes_for_Cello",
+    "composer": "Duport",
+    "lastEdit": 1773312525390,
+    "lastAuthor": "Default Musician",
+    "mediaList": [],
+    "activeMediaId": null,
+    "stampScale": 1,
+    "lastScrollTop": 48311
+  },
+  "version": 1773315458367,
+  "fingerprint": "698cf80f144719dbbc4e165cbfe6cbdef659bf5b8f523b1a4705847452c771dc",
+  "dateImported": 1773309967178
+}

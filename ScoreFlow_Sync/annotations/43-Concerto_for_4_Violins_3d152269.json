@@ -1,0 +1,63 @@
+{
+  "stamps": [],
+  "bookmarks": [],
+  "sources": [
+    {
+      "id": "self",
+      "name": "Primary Interpretation",
+      "visible": true,
+      "opacity": 1,
+      "color": "#6366f1"
+    }
+  ],
+  "layers": [
+    {
+      "id": "draw",
+      "name": "Draw Objects",
+      "color": "#ff4757",
+      "visible": true,
+      "type": "draw"
+    },
+    {
+      "id": "fingering",
+      "name": "Bow/Fingering",
+      "color": "#3b82f6",
+      "visible": true,
+      "type": "fingering"
+    },
+    {
+      "id": "articulation",
+      "name": "Articulation",
+      "color": "#10b981",
+      "visible": true,
+      "type": "articulation"
+    },
+    {
+      "id": "text",
+      "name": "Text",
+      "color": "#f59e0b",
+      "visible": true,
+      "type": "text"
+    },
+    {
+      "id": "layout",
+      "name": "Others",
+      "color": "#64748b",
+      "visible": true,
+      "type": "layout"
+    }
+  ],
+  "scoreDetail": {
+    "name": "Duport_-_21_Etudes_for_Cello",
+    "composer": "Duport",
+    "lastEdit": 1773312525390,
+    "lastAuthor": "Default Musician",
+    "mediaList": [],
+    "activeMediaId": null,
+    "stampScale": 1,
+    "lastScrollTop": 48584.5
+  },
+  "version": 1773320222338,
+  "fingerprint": "3d152269a14b8f80664473d764dbb150baf5c7e5e80f47739193280ce82c29e7",
+  "dateImported": 1773315306797
+}

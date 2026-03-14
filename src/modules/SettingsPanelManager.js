@@ -243,6 +243,7 @@ export class SettingsPanelManager {
                 const val = parseFloat(e.target.value)
                 this.app.stampSizeMultiplier = val
                 if (stampSizeValue) stampSizeValue.textContent = `${val.toFixed(1)}x`
+                this.updateSliderGradient(stampSizeInput)
                 this.app.saveToStorage()
             })
         }
@@ -260,6 +261,7 @@ export class SettingsPanelManager {
                 const val = parseInt(e.target.value)
                 this.app.jumpOffsetPx = val
                 if (jumpOffsetValue) jumpOffsetValue.textContent = `${val}px`
+                this.updateSliderGradient(jumpOffsetInput)
                 this.app.saveToStorage()
             })
         }
@@ -278,6 +280,7 @@ export class SettingsPanelManager {
                     this.app.rulerManager.jumpDurationMs = val
                 }
                 if (jumpSpeedValue) jumpSpeedValue.textContent = `${val}ms`
+                this.updateSliderGradient(jumpSpeedInput)
                 localStorage.setItem('scoreflow_jump_speed_ms', val)
             })
         }
@@ -370,6 +373,7 @@ export class SettingsPanelManager {
                 const val = parseInt(e.target.value)
                 this.app.stampOffsetTouchY = val
                 if (offsetTouchValue) offsetTouchValue.textContent = `${val}px`
+                this.updateSliderGradient(offsetTouchInput)
                 this.app.saveToStorage()
             })
         }
@@ -384,6 +388,7 @@ export class SettingsPanelManager {
                 const val = parseInt(e.target.value)
                 this.app.stampOffsetMouseY = val
                 if (offsetMouseValue) offsetMouseValue.textContent = `${val}px`
+                this.updateSliderGradient(offsetMouseInput)
                 this.app.saveToStorage()
             })
         }
@@ -394,12 +399,28 @@ export class SettingsPanelManager {
         if (pointerIdleInput) {
             pointerIdleInput.value = Math.round((this.app.pointerIdleTimeoutMs || 8000) / 1000)
             if (pointerIdleValue) pointerIdleValue.textContent = `${pointerIdleInput.value}s`
+            
             pointerIdleInput.addEventListener('input', (e) => {
                 const valSec = parseInt(e.target.value)
                 this.app.pointerIdleTimeoutMs = valSec * 1000
                 if (pointerIdleValue) pointerIdleValue.textContent = `${valSec}s`
+                this.updateSliderGradient(pointerIdleInput)
                 this.app.saveToStorage()
             })
         }
+
+        // Initialize all gradients
+        this.panel.querySelectorAll('input[type="range"].setting-slider').forEach(input => {
+            this.updateSliderGradient(input)
+        })
+    }
+
+    updateSliderGradient(input) {
+        if (!input) return
+        const min = parseFloat(input.min) || 0
+        const max = parseFloat(input.max) || 100
+        const val = parseFloat(input.value)
+        const percentage = ((val - min) / (max - min)) * 100
+        input.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
     }
 }

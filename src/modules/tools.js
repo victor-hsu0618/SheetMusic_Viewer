@@ -12,6 +12,44 @@ export class ToolManager {
         this.isStampPaletteOpen = false
     }
 
+    enableClickToScroll(el) {
+        if (!el) return
+        let isDown = false
+        let startX
+        let scrollLeft
+
+        el.addEventListener('mousedown', (e) => {
+            isDown = true
+            el.classList.add('dragging')
+            startX = e.pageX - el.offsetLeft
+            scrollLeft = el.scrollLeft
+            el.style.cursor = 'grabbing'
+            el.style.userSelect = 'none'
+        })
+        
+        el.addEventListener('mouseleave', () => {
+            isDown = false
+            el.classList.remove('dragging')
+            el.style.cursor = ''
+            el.style.userSelect = ''
+        })
+        
+        el.addEventListener('mouseup', () => {
+            isDown = false
+            el.classList.remove('dragging')
+            el.style.cursor = ''
+            el.style.userSelect = ''
+        })
+        
+        el.addEventListener('mousemove', (e) => {
+            if (!isDown) return
+            e.preventDefault()
+            const x = e.pageX - el.offsetLeft
+            const walk = (x - startX) * 2
+            el.scrollLeft = scrollLeft - walk
+        })
+    }
+
     async preloadSvgs() {
         const existingSvgs = [
             'pen', 'highlighter', 'line',
@@ -314,39 +352,27 @@ export class ToolManager {
         const recentRibbon = document.createElement("div")
         recentRibbon.className = "recent-tools-ribbon"
 
-        // 1. Permanently Pinned PAN VIEW & SELECT tools
-        const viewTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === 'view')
-        const selectTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === 'select')
-
-        if (viewTool) {
-            const btn = document.createElement("button")
-            btn.className = `recent-tool-btn pinned ${this.app.activeStampType === 'view' ? "active" : ""}`
-            btn.innerHTML = this.getIcon(viewTool, 22)
-            btn.title = "Pan View (Space/H)"
-            btn.onclick = (e) => {
-                e.stopPropagation()
-                this.app.activeStampType = 'view'
-                this.updateActiveTools()
-            }
-            recentRibbon.appendChild(btn)
+        // 1. PINNED EDIT CATEGORY TOOLS (View, Select, Copy, Eraser)
+        const editGroup = this.app.toolsets.find(g => g.name === 'Edit')
+        if (editGroup) {
+            editGroup.tools.forEach(tool => {
+                const btn = document.createElement("button")
+                const isSelected = this.app.activeStampType === tool.id
+                btn.className = `recent-tool-btn pinned ${isSelected ? "active" : ""}`
+                btn.innerHTML = this.getIcon(tool, 22)
+                btn.onclick = (e) => {
+                    e.stopPropagation()
+                    this.app.activeStampType = tool.id
+                    this.updateActiveTools()
+                }
+                recentRibbon.appendChild(btn)
+            })
         }
 
-        if (selectTool) {
-            const btn = document.createElement("button")
-            btn.className = `recent-tool-btn pinned ${this.app.activeStampType === 'select' ? "active" : ""}`
-            btn.innerHTML = this.getIcon(selectTool, 22)
-            btn.title = "Select (V)"
-            btn.onclick = (e) => {
-                e.stopPropagation()
-                this.app.activeStampType = 'select'
-                this.updateActiveTools()
-            }
-            recentRibbon.appendChild(btn)
-        }
-
-        // 2. Dynamically tracked recent tools (excluding view and select)
+        // 2. Dynamically tracked recent tools (excluding pinned ones)
+        const pinnedIds = editGroup ? editGroup.tools.map(t => t.id) : []
         this.app.recentTools.forEach(toolId => {
-            if (toolId === 'view' || toolId === 'select') return // Skip since they are pinned
+            if (pinnedIds.includes(toolId)) return
             const tool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === toolId)
             if (!tool) return
             const btn = document.createElement("button")
@@ -360,8 +386,24 @@ export class ToolManager {
             recentRibbon.appendChild(btn)
         })
 
+        this.enableClickToScroll(recentRibbon)
+
         header.appendChild(handle)
-        header.appendChild(recentRibbon)
+        if (this.app.activeStampType !== "settings" && this.app.activeStampType !== "recycle-bin") {
+            header.appendChild(recentRibbon)
+
+            // Add Settings Icon to the Top Right
+            const settingsBtn = document.createElement("button")
+            settingsBtn.className = "btn-settings-top-right"
+            settingsBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
+            settingsBtn.title = "Stamp Settings"
+            settingsBtn.onclick = (e) => {
+                e.stopPropagation()
+                this.app.activeStampType = "settings"
+                this.updateActiveTools()
+            }
+            header.appendChild(settingsBtn)
+        }
         this.app.activeToolsContainer.appendChild(header)
 
         // Grid, Recycle Bin or Settings
@@ -374,47 +416,40 @@ export class ToolManager {
             this.renderColorPicker()
             this.renderToolsGrid()
         }
-        // 3. Category & Control Ribbon (Now at the BOTTOM - Hide if in Settings/Recycle Bin)
+        // 3. Category & Control Ribbon (FILTER OUT 'Edit')
         if (this.app.activeStampType !== "settings" && this.app.activeStampType !== "recycle-bin") {
             const ribbon = document.createElement("div")
             ribbon.className = "category-ribbon"
             this.app.toolsets.forEach(group => {
+                // SKIP EDIT CATEGORY (Handled in top ribbon)
+                if (group.name === 'Edit') return
+
                 const isActive = this.app.activeCategories.includes(group.name)
                 const pill = document.createElement("button")
                 pill.className = `cat-pill ${isActive ? "active" : ""}`
                 pill.textContent = group.name
+                
                 pill.onclick = (e) => {
                     e.stopPropagation()
-                    if (isActive) {
-                        // Don't allow deselecting if it's the only one
-                        if (this.app.activeCategories.length > 1) {
-                            this.app.activeCategories = this.app.activeCategories.filter(c => c !== group.name)
-                        }
-                    } else {
-                        // Limit to 2 categories: Remove oldest (first) and add new one
-                        if (this.app.activeCategories.length >= 2) {
-                            this.app.activeCategories.shift()
-                        }
-                        this.app.activeCategories.push(group.name)
+                    // Muscle Memory Optimization: Single category selection only
+                    this.app.activeCategories = [group.name]
+                    
+                    // Automatically switch active layer to match chosen category
+                    const layer = this.app.layers.find(l => l.name === group.name || l.type === group.type)
+                    if (layer && this.app.activeLayerId !== layer.id) {
+                        this.app.activeLayerId = layer.id
                     }
+                    
                     this.app.saveToStorage()
                     this.updateActiveTools()
+                    
+                    // Reset scroll position to help consistency
+                    const grid = this.app.activeToolsContainer.querySelector('.active-tools-rows')
+                    if (grid) grid.scrollLeft = 0
                 }
                 ribbon.appendChild(pill)
             })
-
-            // Settings Tab Button
-            const settingsBtn = document.createElement("button")
-            const isSettings = this.app.activeStampType === "settings"
-            settingsBtn.className = `cat-pill cat-settings ${isSettings ? "active" : ""}`
-            settingsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
-            settingsBtn.title = "Stamp Settings"
-            settingsBtn.onclick = (e) => {
-                e.stopPropagation()
-                this.app.activeStampType = "settings"
-                this.updateActiveTools()
-            }
-            ribbon.appendChild(settingsBtn)
+            this.enableClickToScroll(ribbon)
             this.app.activeToolsContainer.appendChild(ribbon)
         }
 
@@ -496,12 +531,9 @@ export class ToolManager {
 
         const closeBtn = document.createElement("button")
         closeBtn.className = "bin-close-btn btn btn-primary btn-full mt-10"
-        closeBtn.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="icon-mr-6">
-                <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-            Back to Tools
-        `
+        closeBtn.className = "icon-back-top-right"
+        closeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>`
+        closeBtn.title = "Back to Tools"
         closeBtn.onclick = () => { this.app.activeStampType = "view"; this.updateActiveTools() }
         binContainer.appendChild(closeBtn)
 
@@ -554,31 +586,45 @@ export class ToolManager {
 
             // SPECIAL HANDLING: TEXT CATEGORY
             if (catName === 'Text') {
-                row.classList.add('text-cloud-row')
+                const r1 = document.createElement("div")
+                r1.className = "tools-row text-cloud-row row-1"
+                const r2 = document.createElement("div")
+                r2.className = "tools-row text-cloud-row row-2"
 
-                // 1. Render Default Tools (f, p, rit, etc.)
+                // 1. Sort Default Tools into Rows
                 group.tools.forEach(tool => {
-                    const pill = document.createElement("button")
-                    pill.className = `text-tool-pill ${this.app.activeStampType === tool.id ? "active" : ""}`
-                    pill.textContent = tool.label
-                    pill.style.color = rowColor // 使用動態顏色
-                    pill.onclick = (e) => {
+                    const btn = document.createElement("button")
+                    const isSelected = this.app.activeStampType === tool.id
+                    btn.className = `text-tool-pill ${isSelected ? "active" : ""}`
+                    btn.innerHTML = tool.icon || tool.label
+                    btn.style.color = isSelected ? '#ffffff' : rowColor
+                    
+                    btn.onclick = (e) => {
                         e.stopPropagation()
                         this.app.activeStampType = tool.id
                         this.app.lastUsedToolPerCategory[catName] = tool.id
                         this.updateActiveTools()
                     }
-                    row.appendChild(pill)
+                    if (tool.row === 1) {
+                        r1.appendChild(btn)
+                    } else {
+                        r2.appendChild(btn)
+                    }
                 })
 
-                // 2. Render User Custom Library
+                // 2. Render User Custom Library (Appended to Row 2)
                 this.app.userTextLibrary.forEach((text, idx) => {
-                    const pill = document.createElement("button")
+                    const btn = document.createElement("button")
                     const isSelected = this.app.activeStampType === `custom-text-${idx}`
-                    pill.className = `text-tool-pill user-custom ${isSelected ? "active" : ""}`
-                    pill.innerHTML = `${text}<span class="delete-text">&times;</span>`
+                    btn.className = `text-tool-pill user-custom ${isSelected ? "active" : ""}`
+                    btn.style.color = isSelected ? '#ffffff' : rowColor
+                    
+                    btn.innerHTML = `
+                        <span class="text-label">${text}</span>
+                        <span class="delete-text">&times;</span>
+                    `
 
-                    pill.onclick = (e) => {
+                    btn.onclick = (e) => {
                         e.stopPropagation()
                         if (e.target.classList.contains('delete-text')) {
                             this.app.userTextLibrary.splice(idx, 1)
@@ -586,21 +632,19 @@ export class ToolManager {
                             this.updateActiveTools()
                             return
                         }
-                        // Create a temporary tool object for this custom text
                         this.app.activeStampType = `custom-text-${idx}`
-                        this.app._activeCustomText = text // Internal ref for renderer
+                        this.app._activeCustomText = text
                         this.updateActiveTools()
                     }
-                    pill.style.color = rowColor // 使用動態顏色
-                    row.appendChild(pill)
+                    r2.appendChild(btn)
                 })
 
-                // 3. Render "Add New" Input
+                // 3. Render "Add New" Input (Appended to Row 2)
                 const addWrapper = document.createElement("div")
                 addWrapper.className = "add-text-wrapper"
                 addWrapper.innerHTML = `
-                    <input type="text" placeholder="Add term..." class="add-text-input" />
-                    <button class="add-text-btn">+</button>
+                    <input type="text" placeholder="New..." class="add-text-input" />
+                    <button class="add-text-btn" style="background:${rowColor}">+</button>
                 `
                 const input = addWrapper.querySelector('input')
                 const btn = addWrapper.querySelector('button')
@@ -613,32 +657,41 @@ export class ToolManager {
                             if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
                             this.app.saveToStorage()
                         }
-
-                        // Select the term (either existing or newly added)
                         const idx = this.app.userTextLibrary.indexOf(val)
                         this.app.activeStampType = `custom-text-${idx}`
                         this.app._activeCustomText = val
-
                         input.value = ''
                         this.updateActiveTools()
                     }
                 }
-
                 btn.onclick = (e) => { e.stopPropagation(); commit() }
                 input.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); commit() } }
                 input.onclick = (e) => e.stopPropagation()
-
-                row.appendChild(addWrapper)
+                r2.appendChild(addWrapper)
+                
+                // Append directly to container for cleaner column stacking
+                if (r1.children.length > 0) {
+                    container.appendChild(r1)
+                    this.enableClickToScroll(r1)
+                }
+                if (r2.children.length > 0) {
+                    container.appendChild(r2)
+                    this.enableClickToScroll(r2)
+                }
             } else {
-                // NORMAL TOOL GRID RENDERING
+                // NORMAL TOOL GRID RENDERING: Grouped by Row (Flex Row Layout)
+                const r1 = document.createElement("div")
+                r1.className = "tools-row"
+                const r2 = document.createElement("div")
+                r2.className = "tools-row"
+
                 group.tools.forEach(tool => {
-                    const wrapper = document.createElement("div")
-                    wrapper.className = "stamp-tool-wrapper"
                     const btn = document.createElement("button")
-                    btn.className = `stamp-tool ${this.app.activeStampType === tool.id ? "active" : ""}`
-                    btn.title = tool.label
-                    btn.dataset.tooltip = tool.label
-                    btn.innerHTML = this.getIcon(tool, 28, rowColor)
+                    const isSelected = this.app.activeStampType === tool.id
+                    btn.className = `stamp-tool ${isSelected ? "active" : ""}`
+                    
+                    btn.innerHTML = this.getIcon(tool, 28, isSelected ? '#ffffff' : rowColor)
+                    
                     btn.onclick = (e) => {
                         e.stopPropagation()
                         if (tool.id === 'erase-all') {
@@ -652,16 +705,19 @@ export class ToolManager {
                         this.app.activeStampType = tool.id
                         this.app.lastUsedToolPerCategory[catName] = tool.id
 
-                        // Update Recent Tools History
                         if (tool.id !== 'view' && tool.id !== 'select' && tool.id !== 'eraser') {
                             this.app.recentTools = [tool.id, ...this.app.recentTools.filter(id => id !== tool.id)].slice(0, 5)
                         }
-
                         this.updateActiveTools()
                     }
-                    wrapper.appendChild(btn)
-                    row.appendChild(wrapper)
+                    
+                    // Distribute to row 1 or 2 based on tool.row property
+                    if (tool.row === 1) r1.appendChild(btn)
+                    else r2.appendChild(btn)
                 })
+
+                if (r1.children.length > 0) row.appendChild(r1)
+                if (r2.children.length > 0) row.appendChild(r2)
             }
             container.appendChild(row)
         })
@@ -674,32 +730,37 @@ export class ToolManager {
         panel.innerHTML = `
             <div class="settings-header">
                 <h3>Stamp Settings</h3>
+                <button class="icon-back-top-right" id="btn-settings-back" title="Back to Tools">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
             </div>
             <div class="settings-content">
-                <div class="setting-item">
-                    <div class="setting-label">
-                        <span>Score Scale (Current)</span>
-                        <span class="setting-value" id="val-score-scale">${(this.app.scoreStampScale || 1.0).toFixed(1)}x</span>
-                    </div>
-                    <div class="slider-control-row">
-                        <button class="slider-adjust-btn" id="btn-scale-minus">−</button>
-                        <input type="range" class="setting-slider" id="slider-score-scale" min="0.5" max="3.0" step="0.1" value="${this.app.scoreStampScale || 1.0}" />
-                        <button class="slider-adjust-btn" id="btn-scale-plus">+</button>
+                <div class="setting-item mb-15">
+                    <div class="setting-row-compact">
+                        <label class="setting-label">Scale</label>
+                        <div class="slider-container">
+                            <button class="slider-adj-btn minus" id="btn-scale-minus">−</button>
+                            <input type="range" class="setting-slider" id="slider-score-scale" min="0.5" max="3.0" step="0.1" value="${this.app.scoreStampScale || 1.0}" />
+                            <button class="slider-adj-btn plus" id="btn-scale-plus">+</button>
+                        </div>
+                        <span id="val-score-scale" class="badge">${(this.app.scoreStampScale || 1.0).toFixed(1)}x</span>
+                        <button class="btn-reset-mini" id="btn-scale-reset">Reset</button>
                     </div>
                     <p class="setting-hint">Applies only to this specific score.</p>
                 </div>
 
-                <div class="setting-item">
-                    <div class="setting-label">
-                        <span>Default Font Size</span>
-                        <span class="setting-value" id="val-font-size">${this.app.defaultFontSize}px</span>
+                <div class="setting-item mb-15">
+                    <div class="setting-row-compact">
+                        <label class="setting-label">Font Size</label>
+                        <div class="slider-container">
+                            <button class="slider-adj-btn minus" id="btn-font-minus">−</button>
+                            <input type="range" class="setting-slider" id="slider-font-size" min="16" max="32" step="1" value="${this.app.defaultFontSize}" />
+                            <button class="slider-adj-btn plus" id="btn-font-plus">+</button>
+                        </div>
+                        <span id="val-font-size" class="badge">${this.app.defaultFontSize}px</span>
+                        <button class="btn-reset-mini" id="btn-font-reset">Reset</button>
                     </div>
-                    <div class="slider-control-row">
-                        <button class="slider-adjust-btn" id="btn-font-minus">−</button>
-                        <input type="range" class="setting-slider" id="slider-font-size" min="16" max="32" step="1" value="${this.app.defaultFontSize}" />
-                        <button class="slider-adjust-btn" id="btn-font-plus">+</button>
-                    </div>
-                    <p class="setting-hint">Adjustment for dynamic markings and text.</p>
+                    <p class="setting-hint">Adjustment for markings and text.</p>
                 </div>
 
                 <div class="setting-divider"></div>
@@ -708,25 +769,14 @@ export class ToolManager {
                     <div class="setting-label flex-space-between">
                         <span>Notation Categories</span>
                         <div class="flex-row-center gap-10">
-                            <button id="btn-erase-all-mini" class="btn-text-danger" title="Erase by Category">
+                            <button id="btn-erase-all-mini" class="btn-text-danger" title="Erase All Objects">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                Erase
-                            </button>
-                            <button id="btn-reset-layers-mini" class="btn-text-primary" title="Reset to Defaults">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-                                Reset
+                                Erase Objects
                             </button>
                         </div>
                     </div>
                     <div id="settings-layer-list" class="layer-list-mini mt-10"></div>
                 </div>
-
-                <button class="btn btn-primary btn-full mt-20" id="btn-settings-back">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="icon-mr-6">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                    Back to Tools
-                </button>
             </div>
         `
 
@@ -735,20 +785,20 @@ export class ToolManager {
         const sliderFont = panel.querySelector('#slider-font-size')
         const valFont = panel.querySelector('#val-font-size')
         const btnBack = panel.querySelector('#btn-settings-back')
-        const btnResetLayers = panel.querySelector('#btn-reset-layers-mini')
         const btnEraseAll = panel.querySelector('#btn-erase-all-mini')
 
-        // Micromanagement Buttons
-        const btnScaleMinus = panel.querySelector('#btn-scale-minus')
-        const btnScalePlus = panel.querySelector('#btn-scale-plus')
-        const btnFontMinus = panel.querySelector('#btn-font-minus')
-        const btnFontPlus = panel.querySelector('#btn-font-plus')
+        const btnScaleReset = panel.querySelector('#btn-scale-reset')
+        const btnFontReset = panel.querySelector('#btn-font-reset')
 
         const updateScore = (val) => {
             const num = Math.max(0.5, Math.min(3.0, parseFloat(val)))
             sliderScore.value = num
             valScore.textContent = `${num.toFixed(1)}x`
             this.app.updateScoreStampScale(num)
+            
+            // Dynamic track color
+            const percentage = ((num - 0.5) / (3.0 - 0.5)) * 100
+            sliderScore.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
         }
 
         const updateFont = (val) => {
@@ -757,29 +807,38 @@ export class ToolManager {
             valFont.textContent = `${num}px`
             this.app.defaultFontSize = num
             this.app.saveToStorage()
-
-            // Also update any active floating text editor
-            document.querySelectorAll('.floating-text-editor').forEach(el => {
-                el.style.fontSize = `${num}px`
-            })
-            this.app.redrawAllAnnotationLayers()
+            
+            // Dynamic track color
+            const percentage = ((num - 16) / (32 - 16)) * 100
+            sliderFont.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
+            
+            // Real-time Update
+            if (this.app.redrawAllAnnotationLayers) {
+                this.app.redrawAllAnnotationLayers()
+            }
         }
 
         sliderScore.oninput = (e) => updateScore(e.target.value)
         sliderFont.oninput = (e) => updateFont(e.target.value)
 
-        btnScaleMinus.onclick = (e) => { e.stopPropagation(); updateScore(parseFloat(sliderScore.value) - 0.1) }
-        btnScalePlus.onclick = (e) => { e.stopPropagation(); updateScore(parseFloat(sliderScore.value) + 0.1) }
-        btnFontMinus.onclick = (e) => { e.stopPropagation(); updateFont(parseInt(sliderFont.value) - 1) }
-        btnFontPlus.onclick = (e) => { e.stopPropagation(); updateFont(parseInt(sliderFont.value) + 1) }
+        btnScaleReset.onclick = () => updateScore(1.0)
+        btnFontReset.onclick = () => updateFont(20)
 
-        btnResetLayers.addEventListener('click', (e) => {
-            e.stopPropagation()
-            this.app.layerManager.resetLayers()
+        // General Slider Adjustment Buttons
+        panel.querySelectorAll('.slider-adj-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation()
+                const isPlus = btn.classList.contains('plus')
+                const isScale = btn.id.includes('scale')
+                const slider = isScale ? sliderScore : sliderFont
+                const step = parseFloat(slider.step) || 1
+                const current = parseFloat(slider.value)
+                const next = isPlus ? (current + step) : (current - step)
+                
+                if (isScale) updateScore(next)
+                else updateFont(next)
+            }
         })
-        btnResetLayers.addEventListener('touchstart', (e) => {
-            e.stopPropagation()
-        }, { passive: true })
 
         btnEraseAll.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -796,6 +855,10 @@ export class ToolManager {
         }
 
         this.app.activeToolsContainer.appendChild(panel)
+
+        // Initial track colors
+        updateScore(this.app.scoreStampScale || 1.0)
+        updateFont(this.app.defaultFontSize)
 
         // Render the layer list into the new container
         this.app.externalLayerList = panel.querySelector('#settings-layer-list')

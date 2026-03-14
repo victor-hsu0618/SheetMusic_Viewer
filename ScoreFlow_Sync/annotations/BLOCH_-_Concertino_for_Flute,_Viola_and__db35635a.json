@@ -1,0 +1,63 @@
+{
+  "stamps": [],
+  "bookmarks": [],
+  "sources": [
+    {
+      "id": "self",
+      "name": "Primary Interpretation",
+      "visible": true,
+      "opacity": 1,
+      "color": "#6366f1"
+    }
+  ],
+  "layers": [
+    {
+      "id": "draw",
+      "name": "Draw Objects",
+      "color": "#ff4757",
+      "visible": true,
+      "type": "draw"
+    },
+    {
+      "id": "fingering",
+      "name": "Bow/Fingering",
+      "color": "#3b82f6",
+      "visible": true,
+      "type": "fingering"
+    },
+    {
+      "id": "articulation",
+      "name": "Articulation",
+      "color": "#10b981",
+      "visible": true,
+      "type": "articulation"
+    },
+    {
+      "id": "text",
+      "name": "Text",
+      "color": "#f59e0b",
+      "visible": true,
+      "type": "text"
+    },
+    {
+      "id": "layout",
+      "name": "Others",
+      "color": "#64748b",
+      "visible": true,
+      "type": "layout"
+    }
+  ],
+  "scoreDetail": {
+    "name": "BLOCH_-_Concertino_for_Flute,_Viola_and_Piano_(score)",
+    "composer": "BLOCH",
+    "lastEdit": 1773319987988,
+    "lastAuthor": "Victor Hsu @NewMusic",
+    "mediaList": [],
+    "activeMediaId": null,
+    "stampScale": 1,
+    "lastScrollTop": 0
+  },
+  "version": 1773319999959,
+  "fingerprint": "db35635aa4f0ce4b640e100172de1a497ae2d744a6a4951f4ead8f70d1e1c453",
+  "dateImported": 1773318941679
+}

@@ -669,80 +669,80 @@
           </div>
 
           <div class="setting-item mb-15">
-            <div class="flex-row-center flex-space-between mb-5">
-              <label class="setting-label">Stamp Size Multiplier</label>
-              <button class="btn-reset-mini" data-reset="stamp-size" title="Reset to 1.0x">🔄 Reset</button>
-            </div>
-            <div class="slider-control-group">
-              <button class="slider-adj-btn minus" data-target="settings-stamp-size">-</button>
-              <input type="range" id="settings-stamp-size" min="0.5" max="3.0" step="0.1" value="1.0" class="w-full" />
-              <button class="slider-adj-btn plus" data-target="settings-stamp-size">+</button>
+            <div class="setting-row-compact">
+              <label class="setting-label">Stamp Size</label>
+              <div class="slider-container">
+                <button class="slider-adj-btn minus" data-target="settings-stamp-size">−</button>
+                <input type="range" id="settings-stamp-size" min="0.5" max="3.0" step="0.1" value="1.0" class="setting-slider" />
+                <button class="slider-adj-btn plus" data-target="settings-stamp-size">+</button>
+              </div>
               <span id="settings-stamp-size-value" class="badge">1.0x</span>
+              <button class="btn-reset-mini" data-reset="stamp-size" title="Reset to 1.0x">Reset</button>
             </div>
           </div>
 
           <div class="setting-item mb-15">
-            <div class="flex-row-center flex-space-between mb-5">
-              <label class="setting-label">Anchor Scroll Offset</label>
-              <button class="btn-reset-mini" data-reset="jump-offset" title="Reset to 40px">🔄 Reset</button>
-            </div>
-            <div class="slider-control-group">
-              <button class="slider-adj-btn minus" data-target="settings-jump-offset">-</button>
-              <input type="range" id="settings-jump-offset" min="0" max="800" step="5" value="40" class="w-full" />
-              <button class="slider-adj-btn plus" data-target="settings-jump-offset">+</button>
+            <div class="setting-row-compact">
+              <label class="setting-label">Anchor Offset</label>
+              <div class="slider-container">
+                <button class="slider-adj-btn minus" data-target="settings-jump-offset">−</button>
+                <input type="range" id="settings-jump-offset" min="0" max="800" step="5" value="40" class="setting-slider" />
+                <button class="slider-adj-btn plus" data-target="settings-jump-offset">+</button>
+              </div>
               <span id="settings-jump-offset-value" class="badge">40px</span>
+              <button class="btn-reset-mini" data-reset="jump-offset" title="Reset to 40px">Reset</button>
             </div>
           </div>
 
           <div class="setting-item mb-15">
-            <div class="flex-row-center flex-space-between mb-5">
-              <label class="setting-label">Jump Animation Speed (ms)</label>
-              <button class="btn-reset-mini" data-reset="jump-speed" title="Reset to 300ms">🔄 Reset</button>
-            </div>
-            <div class="slider-control-group">
-              <button class="slider-adj-btn minus" data-target="settings-jump-speed">-</button>
-              <input type="range" id="settings-jump-speed" min="50" max="1000" step="50" value="300" class="w-full" />
-              <button class="slider-adj-btn plus" data-target="settings-jump-speed">+</button>
+            <div class="setting-row-compact">
+              <label class="setting-label">Jump Speed</label>
+              <div class="slider-container">
+                <button class="slider-adj-btn minus" data-target="settings-jump-speed">−</button>
+                <input type="range" id="settings-jump-speed" min="50" max="1000" step="50" value="300" class="setting-slider" />
+                <button class="slider-adj-btn plus" data-target="settings-jump-speed">+</button>
+              </div>
               <span id="settings-jump-speed-value" class="badge">300ms</span>
+              <button class="btn-reset-mini" data-reset="jump-speed" title="Reset to 300ms">Reset</button>
             </div>
           </div>
 
           <div class="setting-item mb-15">
-            <div class="flex-row-center flex-space-between mb-5">
-              <label class="setting-label">Pointer Idle Lock (Sec)</label>
-              <button class="btn-reset-mini" data-reset="pointer-idle" title="Reset to 8s">🔄 Reset</button>
-            </div>
-            <div class="slider-control-group">
-              <button class="slider-adj-btn minus" data-target="settings-pointer-idle">-</button>
-              <input type="range" id="settings-pointer-idle" min="1" max="30" step="1" value="8" class="w-full" />
-              <button class="slider-adj-btn plus" data-target="settings-pointer-idle">+</button>
+            <div class="setting-row-compact">
+              <label class="setting-label">Idle Lock</label>
+              <div class="slider-container">
+                <button class="slider-adj-btn minus" data-target="settings-pointer-idle">−</button>
+                <input type="range" id="settings-pointer-idle" min="1" max="30" step="1" value="8" class="setting-slider" />
+                <button class="slider-adj-btn plus" data-target="settings-pointer-idle">+</button>
+              </div>
               <span id="settings-pointer-idle-value" class="badge">8s</span>
+              <button class="btn-reset-mini" data-reset="pointer-idle" title="Reset to 8s">Reset</button>
             </div>
           </div>
 
           <div class="setting-item mb-15">
-            <div class="flex-row-center flex-space-between mb-5">
-              <label class="setting-label">Interaction Offset - Touch (px)</label>
-              <button class="btn-reset-mini" data-reset="offset-touch" title="Reset to 65px">🔄 Reset</button>
-            </div>
-            <div class="slider-control-group">
-              <button class="slider-adj-btn minus" data-target="settings-offset-touch">-</button>
-              <input type="range" id="settings-offset-touch" min="0" max="200" step="5" value="65" class="w-full" />
-              <button class="slider-adj-btn plus" data-target="settings-offset-touch">+</button>
+            <div class="setting-row-compact">
+              <label class="setting-label">Touch Offset</label>
+              <div class="slider-container">
+                <button class="slider-adj-btn minus" data-target="settings-offset-touch">−</button>
+                <input type="range" id="settings-offset-touch" min="0" max="200" step="5" value="65" class="setting-slider" />
+                <button class="slider-adj-btn plus" data-target="settings-offset-touch">+</button>
+              </div>
               <span id="settings-offset-touch-value" class="badge">65px</span>
+              <button class="btn-reset-mini" data-reset="offset-touch" title="Reset to 65px">Reset</button>
             </div>
           </div>
 
           <div class="setting-item mb-15">
-            <div class="flex-row-center flex-space-between mb-5">
-              <label class="setting-label">Interaction Offset - Mouse (px)</label>
-              <button class="btn-reset-mini" data-reset="offset-mouse" title="Reset to 25px">🔄 Reset</button>
-            </div>
-            <div class="slider-control-group">
-              <button class="slider-adj-btn minus" data-target="settings-offset-mouse">-</button>
-              <input type="range" id="settings-offset-mouse" min="0" max="200" step="5" value="25" class="w-full" />
-              <button class="slider-adj-btn plus" data-target="settings-offset-mouse">+</button>
+            <div class="setting-row-compact">
+              <label class="setting-label">Mouse Offset</label>
+              <div class="slider-container">
+                <button class="slider-adj-btn minus" data-target="settings-offset-mouse">−</button>
+                <input type="range" id="settings-offset-mouse" min="0" max="200" step="5" value="25" class="setting-slider" />
+                <button class="slider-adj-btn plus" data-target="settings-offset-mouse">+</button>
+              </div>
               <span id="settings-offset-mouse-value" class="badge">25px</span>
+              <button class="btn-reset-mini" data-reset="offset-mouse" title="Reset to 25px">Reset</button>
             </div>
           </div>
 

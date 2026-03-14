@@ -1,0 +1,63 @@
+{
+  "stamps": [],
+  "bookmarks": [],
+  "sources": [
+    {
+      "id": "self",
+      "name": "Primary Interpretation",
+      "visible": true,
+      "opacity": 1,
+      "color": "#6366f1"
+    }
+  ],
+  "layers": [
+    {
+      "id": "draw",
+      "name": "Draw Objects",
+      "color": "#ff4757",
+      "visible": true,
+      "type": "draw"
+    },
+    {
+      "id": "fingering",
+      "name": "Bow/Fingering",
+      "color": "#3b82f6",
+      "visible": true,
+      "type": "fingering"
+    },
+    {
+      "id": "articulation",
+      "name": "Articulation",
+      "color": "#10b981",
+      "visible": true,
+      "type": "articulation"
+    },
+    {
+      "id": "text",
+      "name": "Text",
+      "color": "#f59e0b",
+      "visible": true,
+      "type": "text"
+    },
+    {
+      "id": "layout",
+      "name": "Others",
+      "color": "#64748b",
+      "visible": true,
+      "type": "layout"
+    }
+  ],
+  "scoreDetail": {
+    "name": "31-Asturias-Cello",
+    "composer": "Unknown",
+    "lastEdit": 1773313268579,
+    "lastAuthor": "Victor Hsu @NewMusic",
+    "mediaList": [],
+    "activeMediaId": null,
+    "stampScale": 1,
+    "lastScrollTop": 1050
+  },
+  "version": 1773314431847,
+  "fingerprint": "b7c4979ff73cb54fac570c85c638c62e09b839e0227767e3ec14b7973c80cfb9",
+  "dateImported": 1773313268421
+}

@@ -223,11 +223,14 @@ export class InteractionManager {
                     isInteracting = false;
                     this.app.isInteracting = false;
                 }
-            } else if (['pen', 'highlighter', 'line', 'slur'].includes(toolType)) {
+            } else if (['pen', 'highlighter', 'line', 'slur', 'green-pen', 'blue-pen', 'dashed-pen', 'arrow-pen', 'highlighter-red', 'highlighter-blue', 'highlighter-green'].includes(toolType)) {
+                const toolDef = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === toolType);
                 activeObject = {
                     type: toolType, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
                     points: [CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay)],
-                    color: this.app.activeColor,
+                    color: (toolDef && toolDef.draw && toolDef.draw.color) ? toolDef.draw.color : this.app.activeColor,
+                    dashed: toolDef?.draw?.dashed || false,
+                    arrow: toolDef?.draw?.arrow || false,
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
                     updatedAt: Date.now()
                 };

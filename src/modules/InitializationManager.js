@@ -59,6 +59,7 @@ export class InitializationManager {
         app.btnRulerToggle = document.getElementById('view-ruler-toggle')
         app.btnFullscreen = document.getElementById('view-fullscreen')
         app.systemDialog = document.getElementById('system-dialog')
+        app.eraseAllModal = document.getElementById('erase-all-modal')
         app.dialogTitle = document.getElementById('dialog-title')
         app.dialogMessage = document.getElementById('dialog-message')
         app.dialogIcon = document.getElementById('dialog-icon')

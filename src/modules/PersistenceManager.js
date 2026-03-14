@@ -70,7 +70,10 @@ export class PersistenceManager {
         }
         if (activeSourceData) this.app.activeSourceId = activeSourceData
         if (fingerprintData) this.app.pdfFingerprint = fingerprintData
-        if (activeCategoriesData) this.app.activeCategories = JSON.parse(activeCategoriesData)
+        if (activeCategoriesData) {
+            const parsed = JSON.parse(activeCategoriesData)
+            this.app.activeCategories = Array.isArray(parsed) && parsed.length > 0 ? [parsed[0]] : ['Pens']
+        }
         if (docBarCollapsedStr === 'true' && this.app.docBar) {
             this.app.docBar.classList.add('collapsed')
         } else if (docBarCollapsedStr === 'false' && this.app.docBar) {

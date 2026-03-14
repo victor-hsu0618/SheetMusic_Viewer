@@ -1,0 +1,63 @@
+{
+  "stamps": [],
+  "bookmarks": [],
+  "sources": [
+    {
+      "id": "self",
+      "name": "Primary Interpretation",
+      "visible": true,
+      "opacity": 1,
+      "color": "#6366f1"
+    }
+  ],
+  "layers": [
+    {
+      "id": "draw",
+      "name": "Draw Objects",
+      "color": "#ff4757",
+      "visible": true,
+      "type": "draw"
+    },
+    {
+      "id": "fingering",
+      "name": "Bow/Fingering",
+      "color": "#3b82f6",
+      "visible": true,
+      "type": "fingering"
+    },
+    {
+      "id": "articulation",
+      "name": "Articulation",
+      "color": "#10b981",
+      "visible": true,
+      "type": "articulation"
+    },
+    {
+      "id": "text",
+      "name": "Text",
+      "color": "#f59e0b",
+      "visible": true,
+      "type": "text"
+    },
+    {
+      "id": "layout",
+      "name": "Others",
+      "color": "#64748b",
+      "visible": true,
+      "type": "layout"
+    }
+  ],
+  "scoreDetail": {
+    "name": "Crossman---studies-for-developing-agility-for-cello",
+    "composer": "Crossman",
+    "lastEdit": 1773313017252,
+    "lastAuthor": "Default Musician",
+    "mediaList": [],
+    "activeMediaId": null,
+    "stampScale": 1,
+    "lastScrollTop": 0
+  },
+  "version": 1773315368806,
+  "fingerprint": "77e11a9a3f455a3aba95763c1a8716b937cde081ec5411da6f3d26157b1e3d97",
+  "dateImported": 1773310605595
+}

@@ -77,8 +77,8 @@ export class AnnotationRenderer {
             ctx.strokeStyle = '#6366f1' // Blue highlight
         }
 
-        // Dashed line for foreign (shared) annotations
-        if (isForeign) {
+        // Dashed line for foreign (shared) annotations or specialized pens
+        if (isForeign || path.dashed) {
             ctx.setLineDash([8 * (this.app.scale / 1.5), 6 * (this.app.scale / 1.5)])
         }
 
@@ -140,6 +140,26 @@ export class AnnotationRenderer {
             }
         }
         ctx.stroke()
+
+        // 矢印の描画 (Arrowhead rendering)
+        if (path.arrow && path.points.length >= 2) {
+            const p2 = path.points[path.points.length - 1]
+            const p1 = path.points[path.points.length - 2]
+            const x2 = p2.x * canvas.width, y2 = p2.y * canvas.height
+            const x1 = p1.x * canvas.width, y1 = p1.y * canvas.height
+            
+            const dx = x2 - x1, dy = y2 - y1
+            const angle = Math.atan2(dy, dx)
+            const headlen = 15 * (this.app.scale / 1.5) * pageFactor
+            
+            ctx.beginPath()
+            ctx.setLineDash([]) // Arrowhead should be solid
+            ctx.moveTo(x2, y2)
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6))
+            ctx.moveTo(x2, y2)
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6))
+            ctx.stroke()
+        }
 
         // GRACE RING for paths
         if (path === this.app._lastGraceObject) {
@@ -322,7 +342,8 @@ export class AnnotationRenderer {
                         else if (cmd === 'L') ctx.lineTo(parseFloat(pParts[++i]), parseFloat(pParts[++i]))
                         else if (cmd === 'C') ctx.bezierCurveTo(parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]), parseFloat(pParts[++i]))
                     }
-                    ctx.stroke()
+                    ctx.fillStyle = finalColor
+                    ctx.fill()
                     ctx.restore()
                     break
 

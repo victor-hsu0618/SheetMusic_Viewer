@@ -1,0 +1,40 @@
+{
+  "profile": {
+    "userName": "Victor Hsu @NewMusic",
+    "title": "Principal",
+    "email": "weider.hsu@gmail.com",
+    "note": "Always focus on the beat.",
+    "updatedAt": 1773313040584
+  },
+  "userTextLibrary": [
+    "dolce",
+    "espress.",
+    "marcato",
+    "tenuto"
+  ],
+  "setlists": [
+    {
+      "id": "setlist_1773308741576_4ol9c",
+      "title": "大稻埕-2026-下半年",
+      "dateCreated": 1773308741576,
+      "updatedAt": 1773312282350,
+      "scores": [
+        "db35635aa4f0ce4b640e100172de1a497ae2d744a6a4951f4ead8f70d1e1c453",
+        "70c6a944c44184c188148e6bbb03d73c023b09bb527808f7eaf383f34715102d",
+        "3d152269a14b8f80664473d764dbb150baf5c7e5e80f47739193280ce82c29e7",
+        "77e11a9a3f455a3aba95763c1a8716b937cde081ec5411da6f3d26157b1e3d97",
+        "698cf80f144719dbbc4e165cbfe6cbdef659bf5b8f523b1a4705847452c771dc"
+      ]
+    },
+    {
+      "id": "setlist_1773308761715_5xwc7",
+      "title": "MyCello 學習",
+      "dateCreated": 1773308761715,
+      "updatedAt": 1773310380673,
+      "scores": [
+        "698cf80f144719dbbc4e165cbfe6cbdef659bf5b8f523b1a4705847452c771dc"
+      ]
+    }
+  ],
+  "version": 1773320068812
+}

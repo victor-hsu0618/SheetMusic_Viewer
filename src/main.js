@@ -37,9 +37,9 @@ class ScoreFlow {
     window.app = this
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
-    this.activeCategories = ['Pens', 'Text']
+    this.activeCategories = ['Pens']
     this.activeCategory = 'Pens'
-    this.isMultiSelectMode = true
+    this.isMultiSelectMode = false
     this.activeColor = '#ff4757'
     this.defaultFontSize = 20
     this.toolbarWidth = 600
