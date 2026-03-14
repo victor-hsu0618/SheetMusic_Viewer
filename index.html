@@ -22,6 +22,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="/src/styles/playback.css" />
   <link rel="stylesheet" href="/src/styles/toast.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     /* Anti-FOUC: welcome-screen covers entire viewport at highest z-index */
     .welcome-screen:not(.hidden) {
@@ -1227,6 +1228,7 @@
         <div class="flex-row-center gap-10 mb-15">
           <button id="export-score-btn" class="btn btn-outline-sm w-full">Export Data</button>
           <button id="import-score-btn" class="btn btn-outline-sm w-full">Import Data</button>
+          <button id="btn-export-pdf" class="btn btn-primary w-full" title="匯出合併標記的完整 PDF">Export Merged PDF</button>
           <input type="file" id="import-score-file" class="hidden" accept=".json" title="Import JSON" />
         </div>
 

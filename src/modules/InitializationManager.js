@@ -45,6 +45,7 @@ export class InitializationManager {
         app.settingsStampSizeValue = document.getElementById('settings-stamp-size-value')
         app.exportBtn = document.getElementById('export-score-btn')
         app.importBtn = document.getElementById('import-score-btn')
+        app.exportPdfBtn = document.getElementById('btn-export-pdf')
         app.importFileInput = document.getElementById('import-score-file')
         app.globalExportBtn = document.getElementById('export-btn')
         app.globalImportBtn = document.getElementById('import-btn')
@@ -138,6 +139,7 @@ export class InitializationManager {
         }
 
         app.exportBtn?.addEventListener('click', () => app.exportProject())
+        app.exportPdfBtn?.addEventListener('click', () => app.pdfExportManager?.exportFlattenedPDF())
         app.importBtn?.addEventListener('click', () => app.importFileInput.click())
         app.importFileInput?.addEventListener('change', (e) => app.handleImport(e))
         app.globalExportBtn?.addEventListener('click', () => app.exportProject(true))

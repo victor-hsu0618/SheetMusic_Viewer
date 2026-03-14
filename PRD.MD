@@ -25,8 +25,9 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **圖層關聯隱藏**：註記與圖層深度綁定，隱藏圖層時所有專屬符號同步隱藏，支援專業分譜分享。
 - **數據持久化**：所有圖層及標記數據自動儲存於瀏覽器 localStorage，下次開啟時自動還原。
 - **專案交換與備份 (Project Exchange & JSON v1.3)**：
-  - **匯出 (Export)**：一鍵打包所有註解、圖層、演奏人格及樂譜指紋為單一 `.json` 檔案。
-  - **匯入 (Import)**：支援智慧合併 (Merge) 或 全量覆蓋 (Overwrite) 模式。
+  - **匯出原檔與註記 (Export to PDF) - *2026.03.14 新增***：一鍵將原始 PDF 與所有圖層標記「合併壓平 (Flattened)」，產生一份可供所有標準 PDF 閱讀器（如 iPad 內建、Adobe Reader）直接瀏覽的新 PDF 檔案（以圖片形式保存完美排版與筆觸）。
+  - **匯出專案檔 (Export JSON)**：一鍵打包所有註解、圖層、演奏人格及樂譜指紋為單一 `.json` 檔案。
+  - **匯入專案檔 (Import JSON)**：支援智慧合併 (Merge) 或 全量覆蓋 (Overwrite) 模式。
 
 ### 2.1 標記操作進化 (Annotation Workflow Evolution) - *2026.03.03 更新*
 

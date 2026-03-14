@@ -24,6 +24,7 @@ import { DriveSyncManager } from './modules/DriveSyncManager.js'
 import { SetlistManager } from './modules/SetlistManager.js'
 import { UIManager } from './modules/UIManager.js'
 import { InitializationManager } from './modules/InitializationManager.js'
+import { PdfExportManager } from './modules/PdfExportManager.js'
 import { applyAppProxies } from './modules/AppProxyHandler.js'
 
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
@@ -78,6 +79,7 @@ class ScoreFlow {
     this.driveSyncManager = new DriveSyncManager(this)
     this.setlistManager = new SetlistManager(this)
     this.uiManager = new UIManager(this)
+    this.pdfExportManager = new PdfExportManager(this)
     this.initManager = new InitializationManager(this)
 
     // Apply Proxies
