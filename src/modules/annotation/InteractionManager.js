@@ -116,6 +116,11 @@ export class InteractionManager {
                     };
                     window.addEventListener('pointermove', doPan);
                     window.addEventListener('mouseup', stopPan);
+                } else {
+                    // TOUCH in VIEW MODE: If this fires, it means pointer-events = 'none' 
+                    // didn't work. We MUST NOT absorb this touch.
+                    // By setting it to 'none' again here, we ensure subsequent touches are safe.
+                    overlay.style.pointerEvents = 'none';
                 }
                 return;
             }
@@ -665,6 +670,9 @@ export class InteractionManager {
      */
     updateAllOverlaysTouchAction() {
         const toolType = this.app.activeStampType;
+        // SYNC BODY DATASET: Crucial for CSS rules like touch-action: none !important
+        document.body.dataset.activeTool = toolType;
+
         // RELAXED: Use 'pan-x pan-y pinch-zoom' for view mode to allow full free movement.
         const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
