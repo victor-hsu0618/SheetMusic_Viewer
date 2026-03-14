@@ -51,9 +51,11 @@ export class InteractionManager {
             return 'mouse';
         };
 
-        const getWrapperPixels = (normX, normY) => {
-            const canvas = wrapper.querySelector('.pdf-canvas') || wrapper.querySelector('.annotation-layer:not(.virtual-canvas)');
-            if (!canvas) return { x: normX * width, y: normY * height };
+        const getPixelsForWrapper = (targetWrap, normX, normY) => {
+            const canvas = targetWrap.querySelector('.pdf-canvas') || targetWrap.querySelector('.annotation-layer:not(.virtual-canvas)');
+            const wrapWidth = targetWrap.offsetWidth || width;
+            const wrapHeight = targetWrap.offsetHeight || height;
+            if (!canvas) return { x: normX * wrapWidth, y: normY * wrapHeight };
             return {
                 x: canvas.offsetLeft + (normX * canvas.offsetWidth),
                 y: canvas.offsetTop + (normY * canvas.offsetHeight)
@@ -132,7 +134,7 @@ export class InteractionManager {
                     
                     // SHOW TRASH only when the user actually grabs the grace object
                     // SHOW TRASH Pop-up Portal (70px above the object)
-                    const wCenter = getWrapperPixels(center.x, center.y);
+                    const wCenter = getPixelsForWrapper(wrapper, center.x, center.y);
                     InteractionUI.showTrash(true, wrapper, wCenter.x, wCenter.y - 70);
                     
                     if (graceTimer) clearTimeout(graceTimer);
@@ -214,7 +216,7 @@ export class InteractionManager {
                         this.app._dragLastPos = pPos;
                         this.app.selectHoveredStamp = null;
                         const cent = CoordMapper.getGraceCenter(activeObject);
-                        const wCent = getWrapperPixels(cent.x, cent.y);
+                        const wCent = getPixelsForWrapper(wrapper, cent.x, cent.y);
                         InteractionUI.showTrash(true, wrapper, wCent.x, wCent.y - 70);
                         this.app.redrawStamps(pageNum);
                         InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
@@ -337,7 +339,7 @@ export class InteractionManager {
                         this.app.lastFocusedStamp = activeObject;
                         this.app._dragLastPos = pPos;
                         const cent = CoordMapper.getGraceCenter(activeObject);
-                        const wCent = getWrapperPixels(cent.x, cent.y); // This uses Page 1's wrapper still, might need fix but trash is fixed anyway
+                        const wCent = getPixelsForWrapper(currentWrapper, cent.x, cent.y);
                         InteractionUI.showTrash(true, currentWrapper, wCent.x, wCent.y - 70);
                         this.app.redrawStamps(currentPageNum);
                     }
@@ -415,7 +417,7 @@ export class InteractionManager {
             InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, currentWrapper, CoordMapper), currentWrapper);
             if (isMovingExisting) {
                 const cent = CoordMapper.getGraceCenter(activeObject);
-                const wCent = getWrapperPixels(cent.x, cent.y);
+                const wCent = getPixelsForWrapper(currentWrapper, cent.x, cent.y);
                 InteractionUI.showTrash(true, currentWrapper, wCent.x, wCent.y - 70);
             }
             
@@ -482,7 +484,15 @@ export class InteractionManager {
             if (!obj || obj.deleted) return;
             graceObject = obj;
             this.app._lastGraceObject = graceObject;
-            // REMOVED IMMEDIATE TRASH SHOW: Don't show trash until the user actually drags the object again.
+            
+            // RESTORE IMMEDIATE TRASH SHOW: Show trash immediately so user knows they can delete it
+            const targetWrapper = document.querySelector(`.page-container[data-page="${obj.page}"]`);
+            if (targetWrapper) {
+                const cent = CoordMapper.getGraceCenter(obj);
+                const wCent = getPixelsForWrapper(targetWrapper, cent.x, cent.y);
+                InteractionUI.showTrash(true, targetWrapper, wCent.x, wCent.y - 70);
+                this.updateAllOverlaysTouchAction(); // Sync pointer-events
+            }
             if (graceTimer) clearTimeout(graceTimer);
             graceTimer = setTimeout(() => {
                 if (graceObject === obj) { 
@@ -617,7 +627,9 @@ export class InteractionManager {
             el.style.touchAction = action;
             // DIRECT SYNC: If we are in view mode on touch, we MUST disable pointer events 
             // on the overlay to ensure the browser captures the first touch for panning.
-            if (isTouch && toolType === 'view') {
+            // EXCEPTION: If there is an active grace object or interaction, we NEED pointer events to grab it.
+            const hasActiveGrace = !!this.app._lastGraceObject;
+            if (isTouch && toolType === 'view' && !this.app.isInteracting && !hasActiveGrace) {
                 el.style.pointerEvents = 'none';
             } else {
                 el.style.pointerEvents = '';
