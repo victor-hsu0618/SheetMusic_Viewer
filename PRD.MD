@@ -48,6 +48,19 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - **快速刪除熱鍵**：在選擇模式下，按下 `Delete` 或 `Backspace` 即可移除目前焦點物件。
 - **類別狀態記憶 (Category Memory)**：
   - 切換不同選單類別（如 Pens 換到 Fingering）時，系統會自動選回到該類別「上次最後使用」的物件，減少重複點擊。
+- **觸控標記操作精化 (Touch Annotation Refinement) - *2026.03.14 更新***：
+  - **Edit 工具觸控零偏移 (Zero-Offset for Edit Tools)**：Select、Copy、Recycle-bin 三種工具在 iPad 觸控時不套用虛擬指針位移量（`stampOffsetTouchX/Y`），確保 1:1 指尖位置精準操作，虛擬指針不再出現錯位。
+  - **垃圾桶靜態定位 (Static Trash Bin During Drag)**：拖曳物件時垃圾桶保持固定位置，不再跟蹤物件移動，使用者可精確地將物件拖曳至刪除區而不會出現「目標逃走」的問題。
+  - **垃圾桶智慧位置 (Smart Trash Bin Placement)**：
+    - 一般物件（`x > 0.15`）：垃圾桶出現在物件中心**上方 70px**，向上拖曳即刪除。
+    - 左邊界鎖定物件（如小節數標記，`x < 0.15`）：垃圾桶出現在物件**下方 90px**，向下拖曳即刪除，避免圖示與物件重疊遮蔽。
+  - **猶豫期系統 (Grace Period Re-Grab)**：
+    - **時間維度**：放置物件後啟動 **1800ms** 計時器，在此期間可直接重新抓取並移動剛放置的物件，無需切換 Select 工具。
+    - **空間維度**：抓取半徑為 `getGraceObjectPixelSize × 2.0` 像素（預設 scale 1.5 時約 **28px**）。
+    - **筆畫路徑優化 (Path Segment Distance)**：筆畫類物件（pen、highlighter 等）改用**最近筆段距離**（segment-based distance）判斷，而非平均中心點距離，讓使用者可在筆畫的**任意位置**觸碰即可重新抓取，解決長筆畫只有中點附近才能抓到的問題。
+  - **相對位移移動 (Delta-Based Movement)**：所有物件（含路徑筆畫）的拖曳改用相對位移量 `(dx, dy)` 計算，而非絕對座標覆寫，消除首次移動時的「跳位 (Snap Jump)」問題。
+  - **小節數工具預覽對位修正 (Measure Tool Preview Fix)**：小節數工具的觸控預覽位置現正確鎖定在 `x: 0.05`（左邊界），y 軸不再套用觸控偏移量，消除舊版 preview 位置顯示在 Ruler 上方的問題。
+
 - **多重演奏風格引擎 (Multi-Style Interpretation Engine)**：
   - **數位疊加 (Digital Overlay)**：支援同時載入多個來源（如：自我研究、指揮詮釋、首席風格）。
   - **對比與透明度 (Compare & Ghosting)**：各個風格具備獨立的顯隱開關與透明度滑條 (Opacity)，實現「詮釋比對」讀譜流。
@@ -241,4 +254,4 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 
 ---
 
-*最後更新日期：2026-03-14 (跨頁拖曳支援與自由小節數工具更新)*
+*最後更新日期：2026-03-14 (觸控標記操作精化：垃圾桶靜態定位、猶豫期路徑距離、Edit 工具零偏移、小節數預覽修正)*
