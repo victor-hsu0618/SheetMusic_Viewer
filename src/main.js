@@ -38,7 +38,6 @@ class ScoreFlow {
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
     this.activeCategories = ['Pens']
-    this.activeCategory = 'Pens'
     this.isMultiSelectMode = false
     this.activeColor = '#ff4757'
     this.defaultFontSize = 20

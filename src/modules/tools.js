@@ -433,7 +433,7 @@ export class ToolManager {
                 
                 pill.onclick = (e) => {
                     e.stopPropagation()
-                    // Muscle Memory Optimization: Single category selection only
+                    // Fixed: Single category selection only - no toggle, no multi-select
                     this.app.activeCategories = [group.name]
                     
                     // Automatically switch active layer to match chosen category

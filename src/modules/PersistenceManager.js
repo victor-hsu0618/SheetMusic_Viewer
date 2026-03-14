@@ -73,6 +73,8 @@ export class PersistenceManager {
         if (activeCategoriesData) {
             const parsed = JSON.parse(activeCategoriesData)
             this.app.activeCategories = Array.isArray(parsed) && parsed.length > 0 ? [parsed[0]] : ['Pens']
+        } else {
+            this.app.activeCategories = ['Pens']
         }
         if (docBarCollapsedStr === 'true' && this.app.docBar) {
             this.app.docBar.classList.add('collapsed')
