@@ -28,6 +28,8 @@ export class InteractionManager {
         const resetPointerIdleTimer = () => {
             if (pointerIdleTimer) clearTimeout(pointerIdleTimer);
             
+            // AUTO-REVERT DISABLED: User requested to keep the current tool active indefinitely.
+            /*
             // If we are currently in "view" mode, "settings", or "recycle-bin", we don't need to auto-switch
             if (['view', 'settings', 'recycle-bin'].includes(this.app.activeStampType)) return;
 
@@ -37,6 +39,7 @@ export class InteractionManager {
                 if (this.app.toolManager) this.app.toolManager.updateActiveTools();
                 InteractionUI.syncVirtualPointer({ type: 'mousemove' }, 'view', overlay, virtualPointer, CoordMapper, this.app);
             }, this.app.pointerIdleTimeoutMs || 8000); 
+            */
         };
 
         // --- HELPERS ---
