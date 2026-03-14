@@ -413,6 +413,11 @@ export class InteractionManager {
                 }
             }
             InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, currentWrapper, CoordMapper), currentWrapper);
+            if (isMovingExisting) {
+                const cent = CoordMapper.getGraceCenter(activeObject);
+                const wCent = getWrapperPixels(cent.x, cent.y);
+                InteractionUI.showTrash(true, currentWrapper, wCent.x, wCent.y - 70);
+            }
             
             // Sync current virtual pointer and hide others
             document.querySelectorAll('.virtual-pointer.active').forEach(vp => {
