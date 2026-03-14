@@ -677,6 +677,7 @@ export class InteractionManager {
      * Globally update the touch-action of all active overlays based on current tool.
      */
     updateAllOverlaysTouchAction() {
+        const version = this.app.DEBUG_VERSION || 'unknown';
         if (!this._syncSeq) this._syncSeq = 0;
         const seq = ++this._syncSeq;
         
@@ -689,7 +690,7 @@ export class InteractionManager {
             const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-            console.log(`[TouchAction #${seq}] START - Tool: ${toolType}, Action: ${action}`);
+            console.log(`[TouchAction #${seq}] [V:${version}] START - Tool: ${toolType}, Action: ${action}`);
 
             // 1. Force release touch-action on the entire chain
             const scrollChain = [document.documentElement, document.body, this.app.viewer];
@@ -722,16 +723,16 @@ export class InteractionManager {
                         el.parentElement.style.setProperty('touch-action', action, 'important');
                     }
                 } catch (innerErr) {
-                    console.error(`[TouchAction #${seq}] Overlay sync error:`, innerErr);
+                    console.error(`[TouchAction #${seq}] [V:${version}] Overlay sync error:`, innerErr);
                 }
             });
 
             if (toolType === 'view') {
                 this.app.isInteracting = false;
             }
-            console.log(`[TouchAction #${seq}] FINISH`);
+            console.log(`[TouchAction #${seq}] [V:${version}] FINISH`);
         } catch (err) {
-            console.error(`[TouchAction #${seq}] GLOBAL CRASH:`, err);
+            console.error(`[TouchAction #${seq}] [V:${version}] GLOBAL CRASH:`, err);
         }
     }
 }
