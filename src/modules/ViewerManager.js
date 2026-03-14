@@ -613,9 +613,8 @@ export class ViewerManager {
         if (this.app.btnRulerToggle) this.app.btnRulerToggle.classList.toggle('active', this.app.rulerVisible)
 
         // Stamp palette starts collapsed — user opens via button or double-tap
-        if (this.app.activeToolsContainer) {
-            this.app.activeToolsContainer.classList.remove('expanded')
-            this.app.updateActiveTools()
+        if (this.app.toolManager) {
+            this.app.toolManager.toggleStampPalette(null, null, false)
         }
     }
 

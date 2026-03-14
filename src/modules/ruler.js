@@ -278,7 +278,7 @@ export class RulerManager {
         const maxScroll = Math.max(0, this.app.viewer.scrollHeight - this.app.viewer.clientHeight)
 
         if (delta > 0) {
-            if (effectiveScroll >= maxScroll - 2) return; // Prevent spamming past the bottom
+            if (effectiveScroll >= maxScroll - 2) return false; // Prevent spamming past the bottom
 
             this.computeNextTarget(effectiveScroll)
             if (this.nextTargetAnchor) {
@@ -297,6 +297,8 @@ export class RulerManager {
                         this.jumpHistory.push(effectiveScroll)
                         if (this.jumpHistory.length > 50) this.jumpHistory.shift()
                         this._executeJump(metrics[nextPageNum].top)
+                    } else {
+                        return false;
                     }
                 } else {
                     // Fallback: Scroll down by exactly ONE viewport height
@@ -307,12 +309,14 @@ export class RulerManager {
                     this._executeJump(targetScroll)
                 }
             }
+            return true;
         } else {
             if (this.jumpHistory.length > 0) {
                 const last = this.jumpHistory.pop()
                 this._executeJump(last)
+                return true;
             } else {
-                if (effectiveScroll <= 2) return; // Prevent spamming past the top
+                if (effectiveScroll <= 2) return false; // Prevent spamming past the top
 
                 if (this.app.viewerManager.isFitToHeight) {
                     const metrics = this.app.viewerManager._pageMetrics
@@ -323,12 +327,15 @@ export class RulerManager {
 
                     if (prevPageNum) {
                         this._executeJump(metrics[prevPageNum].top)
+                        return true;
                     }
                 } else {
                     const viewportHeight = this.app.viewer.clientHeight
                     const targetScroll = effectiveScroll - viewportHeight
                     this._executeJump(targetScroll)
+                    return true;
                 }
+                return false;
             }
         }
     }

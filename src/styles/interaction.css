@@ -508,6 +508,12 @@ body[data-active-tool="view"] {
   transform: scale(1.8);
 }
 
+.tap-zone-indicator.limit {
+  background: rgba(239, 68, 68, 0.5); /* Vivid Red */
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.7);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
 /* ─── Navigation Zone Dividers (Glass Glow) ─── */
 .nav-zone-divider {
   position: fixed;

@@ -141,23 +141,24 @@ export class GestureManager {
         if (firstPage) {
             const rect = firstPage.getBoundingClientRect()
             const relX = tapX - rect.left
+            let success = true
             if (tapY < vh * 0.35) {
-                this.app.jump(-1)
-                this.showZoneIndicator('up', tapX, tapY)
+                success = this.app.jump(-1)
+                this.showZoneIndicator('up', tapX, tapY, !success)
             } else if (relX < rect.width * 0.40) {
-                this.app.jump(-1)
-                this.showZoneIndicator('left', tapX, tapY)
+                success = this.app.jump(-1)
+                this.showZoneIndicator('left', tapX, tapY, !success)
             } else {
-                this.app.jump(1)
-                this.showZoneIndicator('right', tapX, tapY)
+                success = this.app.jump(1)
+                this.showZoneIndicator('right', tapX, tapY, !success)
             }
             this.inputManager.flashDividers()
         }
     }
 
-    showZoneIndicator(type, x, y) {
+    showZoneIndicator(type, x, y, isLimit = false) {
         const indicator = document.createElement('div')
-        indicator.className = `tap-zone-indicator ${type}`
+        indicator.className = `tap-zone-indicator ${type}${isLimit ? ' limit' : ''}`
         indicator.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
         indicator.style.left = `${x - 20}px`
         indicator.style.top = `${y - 20}px`
