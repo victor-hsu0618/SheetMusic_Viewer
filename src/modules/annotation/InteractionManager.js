@@ -670,40 +670,44 @@ export class InteractionManager {
      * Globally update the touch-action of all active overlays based on current tool.
      */
     updateAllOverlaysTouchAction() {
-        const toolType = this.app.activeStampType;
-        // SYNC BODY DATASET: Crucial for CSS rules like touch-action: none !important
-        document.body.dataset.activeTool = toolType;
+        try {
+            const toolType = this.app.activeStampType;
+            // SYNC BODY DATASET: Crucial for CSS rules like touch-action: none !important
+            document.body.dataset.activeTool = toolType;
 
-        // RELAXED: Use 'pan-x pan-y pinch-zoom' for view mode to allow full free movement.
-        const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
-        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
+            const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-        // SYNC VIEWER CONTAINER: Some iOS versions latch onto the container's touch-action
-        if (this.app.viewer) {
-            this.app.viewer.style.touchAction = action;
-        }
+            console.log(`[TouchAction] START - Tool: ${toolType}, Action: ${action}, isTouch: ${isTouch}`);
 
-        const overlays = document.querySelectorAll('.capture-overlay');
-        console.log(`[TouchAction] Tool: ${toolType}, isTouch: ${isTouch}, Overlays found: ${overlays.length}`);
-
-        overlays.forEach(el => {
-            el.style.touchAction = action;
-            // DIRECT SYNC: If we are in view mode on touch, we MUST disable pointer events
-            // on the overlay to ensure the browser captures the first touch for panning.
-            if (isTouch && toolType === 'view') {
-                el.style.pointerEvents = 'none';
-            } else {
-                el.style.pointerEvents = '';
+            // SYNC VIEWER CONTAINER: Use setProperty to override !important CSS
+            if (this.app.viewer) {
+                this.app.viewer.style.setProperty('touch-action', action, 'important');
             }
-            console.log(`[TouchAction] Overlay Page ${el.parentElement?.dataset.page}: pointer-events = "${el.style.pointerEvents}", touch-action = "${el.style.touchAction}"`);
-        });
 
-        // FORCE RESET INTERNAL STATE: If we just switched to view mode, 
-        // ensure no interaction flags are stuck from a previous tool session.
-        if (toolType === 'view') {
-            this.app.isInteracting = false;
-            // We can't reach the closure variables here easily, but we can signal startAction
-            // by ensuring the app-level flag is clear.
+            const overlays = document.querySelectorAll('.capture-overlay');
+            overlays.forEach(el => {
+                try {
+                    // FORCE OVERRIDE CSS !important
+                    el.style.setProperty('touch-action', action, 'important');
+                    
+                    if (isTouch && toolType === 'view') {
+                        el.style.pointerEvents = 'none';
+                    } else {
+                        el.style.pointerEvents = '';
+                    }
+                    console.log(`[TouchAction] Sync Overlay Page ${el.parentElement?.dataset?.page || '?'}: pointer-events=${el.style.pointerEvents}`);
+                } catch (innerErr) {
+                    console.error(`[TouchAction] Error syncing individual overlay:`, innerErr);
+                }
+            });
+
+            if (toolType === 'view') {
+                this.app.isInteracting = false;
+            }
+            console.log(`[TouchAction] FINISH`);
+        } catch (err) {
+            console.error(`[TouchAction] GLOBAL CRASH:`, err);
         }
     }
 }
