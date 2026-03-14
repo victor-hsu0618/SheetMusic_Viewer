@@ -712,19 +712,16 @@ export class InteractionManager {
                 }
             });
 
-            // 2. Sync all overlays AND their parent containers
+            // 2. Sync all overlays AND their parent containers AND the canvas itself
             const overlays = document.querySelectorAll('.capture-overlay');
             overlays.forEach(el => {
                 try {
                     if (toolType === 'view') {
-                        // THE ULTIMATE FIX FOR IPAD: Physical disappearance.
-                        // If it's a touch device and we are in view mode, HIDE the overlay completely.
-                        // This forces the browser to hit-test the underlying viewer immediately.
                         if (isTouch) {
                             el.style.display = 'none';
                         } else {
                             el.style.display = '';
-                            el.style.pointerEvents = 'none'; // Still let mouse through if needed
+                            el.style.pointerEvents = 'none';
                         }
                     } else {
                         el.style.display = '';
@@ -732,9 +729,13 @@ export class InteractionManager {
                         el.style.zIndex = '';
                     }
 
-                    // Force touch-action on the parent container (the scroll target)
                     if (el.parentElement) {
                         el.parentElement.style.setProperty('touch-action', action, 'important');
+                        // ALSO SYNC THE CANVAS (the actual hit target)
+                        const canvas = el.parentElement.querySelector('canvas');
+                        if (canvas) {
+                            canvas.style.setProperty('touch-action', action, 'important');
+                        }
                     }
                 } catch (innerErr) {
                     console.error(`[TouchAction #${seq}] [V:${version}] Overlay sync error:`, innerErr);
