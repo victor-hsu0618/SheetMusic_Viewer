@@ -151,13 +151,12 @@ export class InputManager {
         viewer.addEventListener('touchstart', (e) => {
             if (this.isEventInUI(e) || e.touches.length !== 1) return
 
-            // Reset long press flag immediately - the timer or current check will handle the rest
-            const wasLongPressActive = this.isLongPressActive
+            // Reset long press flag immediately - but only for the purpose of clearing state.
+            // We only block if the most recent long press was VERY recent (to prevent ghost clicks).
             this.isLongPressActive = false
 
-            // Ignore synthetic touchstart fired by iOS when pointer-events changes mid-touch
             const msSinceLongPress = this.lastLongPressAt ? Date.now() - this.lastLongPressAt : Infinity
-            if (wasLongPressActive || msSinceLongPress < 600) return
+            if (msSinceLongPress < 500) return
 
             const startX = e.touches[0].clientX
             const startY = e.touches[0].clientY

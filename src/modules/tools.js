@@ -170,6 +170,7 @@ export class ToolManager {
                 this.app.inputManager.isLongPressActive = false;
                 if (this.app.inputManager.longPressTimer) {
                     clearTimeout(this.app.inputManager.longPressTimer);
+                    this.app.inputManager.lastLongPressAt = 0; // Clear timing too
                     this.app.inputManager.longPressTimer = null;
                 }
             }
@@ -328,6 +329,9 @@ export class ToolManager {
             document.body.dataset.activeTool = toolType;
             
             this.app.redrawAllAnnotationLayers();
+
+            // SYNC TOUCH ACTIONS: Ensure overlays are updated to match the NEW active tool immediately
+            this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
         }
 
         // Sync Doc Bar
