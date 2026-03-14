@@ -37,10 +37,9 @@ export const CoordMapper = {
         const offsetX = Number(app.stampOffsetTouchX || 0);
         const offsetY = Number(app.stampOffsetTouchY || 0);
 
-        // 1. Standard Measure Lock: Always stay on the left margin (applies to ALL pointer types)
+        // 1. Standard Measure Lock: Always stay on the left margin, exact y (no offset)
         if (toolType === 'measure') {
-            const dyPx = (pointerType === 'touch') ? -offsetY : 0;
-            return { x: 0.05, y: Number(pos.y + dyPx / (rect.height || 1)) };
+            return { x: 0.05, y: Number(pos.y) };
         }
 
         // No offset for any tool if using Mouse or Pen (high precision)
@@ -91,6 +90,24 @@ export const CoordMapper = {
             return { x: avgX, y: avgY }
         }
         return { x: obj.x || 0, y: obj.y || 0 }
+    },
+
+    /**
+     * Get minimum normalized distance from point (px, py) to a path (series of segments).
+     * All coordinates should be in normalized (0-1) space.
+     */
+    getMinPathDist: (px, py, points) => {
+        if (!points || points.length === 0) return Infinity;
+        if (points.length === 1) return Math.sqrt((points[0].x - px) ** 2 + (points[0].y - py) ** 2);
+        let minDist = Infinity;
+        for (let i = 0; i < points.length - 1; i++) {
+            const a = points[i], b = points[i + 1];
+            const l2 = (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
+            const t = l2 < 1e-10 ? 0 : Math.max(0, Math.min(1, ((px - a.x) * (b.x - a.x) + (py - a.y) * (b.y - a.y)) / l2));
+            const cx = a.x + t * (b.x - a.x), cy = a.y + t * (b.y - a.y);
+            minDist = Math.min(minDist, Math.sqrt((px - cx) ** 2 + (py - cy) ** 2));
+        }
+        return minDist;
     },
 
     /**

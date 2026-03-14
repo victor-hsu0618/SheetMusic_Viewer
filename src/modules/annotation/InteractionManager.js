@@ -61,6 +61,16 @@ export class InteractionManager {
             };
         };
 
+        // Returns trash bin {x, y} for showTrash positioning.
+        // Left-locked stamps (measure, x<0.15): trash appears BELOW so the user drags down to delete.
+        // All other stamps: trash appears 70px ABOVE as usual.
+        const getTrashPos = (normX, wCentX, wCentY) => {
+            if (normX < 0.15) {
+                return { x: wCentX, y: wCentY + 90 };
+            }
+            return { x: wCentX, y: wCentY - 70 };
+        };
+
         const updateTouchAction = () => {
             const toolType = this.app.activeStampType;
             // Ensure body-level attribute is synced (redundant but safe)
@@ -119,22 +129,29 @@ export class InteractionManager {
             // 1. Grace Period Interaction
             if (graceObject) {
                 const offsetPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
-                const center = CoordMapper.getGraceCenter(graceObject);
-                const dx = (offsetPos.x - center.x) * width;
-                const dy = (offsetPos.y - center.y) * height;
-                const distSq = dx * dx + dy * dy;
-                const thresholdSq = Math.pow(CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 2.0, 2);
-                
-                if (distSq < thresholdSq) { 
+                const threshold = CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 2.0;
+                let distPx;
+                if (graceObject.points && graceObject.points.length > 0) {
+                    // Paths: measure distance to nearest segment so any point on stroke triggers re-grab
+                    distPx = CoordMapper.getMinPathDist(offsetPos.x, offsetPos.y, graceObject.points) * width;
+                } else {
+                    const center = CoordMapper.getGraceCenter(graceObject);
+                    const dx = (offsetPos.x - center.x) * width;
+                    const dy = (offsetPos.y - center.y) * height;
+                    distPx = Math.sqrt(dx * dx + dy * dy);
+                }
+
+                if (distPx < threshold) {
                     activeObject = graceObject;
                     isMovingExisting = true;
                     isInteracting = true;
                     this.app.isInteracting = true;
-                    
+
                     // SHOW TRASH only when the user actually grabs the grace object
-                    // SHOW TRASH Pop-up Portal (70px above the object)
-                    const wCenter = getPixelsForWrapper(wrapper, center.x, center.y);
-                    InteractionUI.showTrash(true, wrapper, wCenter.x, wCenter.y - 70);
+                    const graceCenter = CoordMapper.getGraceCenter(graceObject);
+                    const wCenter = getPixelsForWrapper(wrapper, graceCenter.x, graceCenter.y);
+                    const _tp0 = getTrashPos(graceCenter.x, wCenter.x, wCenter.y);
+                    InteractionUI.showTrash(true, wrapper, _tp0.x, _tp0.y);
                     
                     if (graceTimer) clearTimeout(graceTimer);
                     graceObject = null;
@@ -216,7 +233,8 @@ export class InteractionManager {
                         this.app.selectHoveredStamp = null;
                         const cent = CoordMapper.getGraceCenter(activeObject);
                         const wCent = getPixelsForWrapper(wrapper, cent.x, cent.y);
-                        InteractionUI.showTrash(true, wrapper, wCent.x, wCent.y - 70);
+                        const _tp1 = getTrashPos(cent.x, wCent.x, wCent.y);
+                        InteractionUI.showTrash(true, wrapper, _tp1.x, _tp1.y);
                         this.app.redrawStamps(pageNum);
                         const startSyncType = ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
                         InteractionUI.syncVirtualPointer(e, startSyncType, overlay, virtualPointer, CoordMapper, this.app);
@@ -347,7 +365,8 @@ export class InteractionManager {
                         this.app._dragLastPos = pPos;
                         const cent = CoordMapper.getGraceCenter(activeObject);
                         const wCent = getPixelsForWrapper(currentWrapper, cent.x, cent.y);
-                        InteractionUI.showTrash(true, currentWrapper, wCent.x, wCent.y - 70);
+                        const _tp2 = getTrashPos(cent.x, wCent.x, wCent.y);
+                        InteractionUI.showTrash(true, currentWrapper, _tp2.x, _tp2.y);
                         this.app.redrawStamps(currentPageNum);
                     }
                 }
@@ -504,7 +523,8 @@ export class InteractionManager {
             if (targetWrapper) {
                 const cent = CoordMapper.getGraceCenter(obj);
                 const wCent = getPixelsForWrapper(targetWrapper, cent.x, cent.y);
-                InteractionUI.showTrash(true, targetWrapper, wCent.x, wCent.y - 70);
+                const _tp3 = getTrashPos(cent.x, wCent.x, wCent.y);
+                InteractionUI.showTrash(true, targetWrapper, _tp3.x, _tp3.y);
                 this.updateAllOverlaysTouchAction(); // Sync pointer-events
             }
             
@@ -579,11 +599,18 @@ export class InteractionManager {
                 const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 let shouldPreview = true;
                 if (graceObject) {
-                    const center = CoordMapper.getGraceCenter(graceObject);
                     const canvas = wrapper.querySelector('.pdf-canvas') || wrapper.querySelector('.annotation-layer:not(.virtual-canvas)');
-                    const dx = (pPos.x - center.x) * (canvas?.offsetWidth || width);
-                    const dy = (pPos.y - center.y) * (canvas?.offsetHeight || height);
-                    if (Math.sqrt(dx*dx + dy*dy) < CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 0.7) {
+                    const cw = canvas?.offsetWidth || width;
+                    let hoverDist;
+                    if (graceObject.points && graceObject.points.length > 0) {
+                        hoverDist = CoordMapper.getMinPathDist(pPos.x, pPos.y, graceObject.points) * cw;
+                    } else {
+                        const center = CoordMapper.getGraceCenter(graceObject);
+                        const dx = (pPos.x - center.x) * cw;
+                        const dy = (pPos.y - center.y) * (canvas?.offsetHeight || height);
+                        hoverDist = Math.sqrt(dx * dx + dy * dy);
+                    }
+                    if (hoverDist < CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 0.7) {
                         this.app.redrawStamps(pageNum);
                         overlay.style.cursor = 'grab';
                         shouldPreview = false;
