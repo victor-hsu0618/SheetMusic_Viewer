@@ -164,6 +164,15 @@ export class ToolManager {
             
             // IMMEDIATE SYNC: Update touch-action immediately to restore scrolling responsiveness
             this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
+
+            // RESET INTERACTION FLAGS: Ensure no ghost interaction state persists
+            if (this.app.inputManager) {
+                this.app.inputManager.isLongPressActive = false;
+                if (this.app.inputManager.longPressTimer) {
+                    clearTimeout(this.app.inputManager.longPressTimer);
+                    this.app.inputManager.longPressTimer = null;
+                }
+            }
         }
 
         this.updateActiveTools()

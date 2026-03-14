@@ -595,8 +595,8 @@ export class InteractionManager {
         wrapper.appendChild(overlay);
         
         // Save reference for manual updates if needed
-        overlay._updateTouchAction = updateTouchAction;
-        updateTouchAction();
+        overlay._updateTouchAction = () => this.updateAllOverlaysTouchAction();
+        this.updateAllOverlaysTouchAction();
     }
 
     /**
@@ -606,8 +606,17 @@ export class InteractionManager {
         const toolType = this.app.activeStampType;
         // RELAXED: Use 'pan-x pan-y pinch-zoom' for view mode to allow full free movement.
         const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
+        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
         document.querySelectorAll('.capture-overlay').forEach(el => {
             el.style.touchAction = action;
+            // DIRECT SYNC: If we are in view mode on touch, we MUST disable pointer events 
+            // on the overlay to ensure the browser captures the first touch for panning.
+            if (isTouch && toolType === 'view') {
+                el.style.pointerEvents = 'none';
+            } else {
+                el.style.pointerEvents = '';
+            }
         });
     }
 }
