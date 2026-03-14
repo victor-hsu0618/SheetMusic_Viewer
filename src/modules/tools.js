@@ -165,6 +165,9 @@ export class ToolManager {
             // IMMEDIATE SYNC: Update touch-action immediately to restore scrolling responsiveness
             this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
 
+            // FORCE BLUR: To break any touch event capture chain on iPad
+            if (document.activeElement) document.activeElement.blur();
+
             // RESET INTERACTION FLAGS: Ensure no ghost interaction state persists
             if (this.app.inputManager) {
                 this.app.inputManager.isLongPressActive = false;

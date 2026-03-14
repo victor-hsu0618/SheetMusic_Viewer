@@ -677,6 +677,11 @@ export class InteractionManager {
         const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
+        // SYNC VIEWER CONTAINER: Some iOS versions latch onto the container's touch-action
+        if (this.app.viewer) {
+            this.app.viewer.style.touchAction = action;
+        }
+
         const overlays = document.querySelectorAll('.capture-overlay');
         console.log(`[TouchAction] Tool: ${toolType}, isTouch: ${isTouch}, Overlays found: ${overlays.length}`);
 
@@ -684,10 +689,6 @@ export class InteractionManager {
             el.style.touchAction = action;
             // DIRECT SYNC: If we are in view mode on touch, we MUST disable pointer events
             // on the overlay to ensure the browser captures the first touch for panning.
-            // In view mode on touch, ALWAYS set pointerEvents = 'none' so native scroll gets
-            // the first touch. The grace re-grab check never runs in view mode (startAction
-            // returns early), so keeping pointerEvents = '' when grace is active would just
-            // silently absorb the touch without doing anything useful.
             if (isTouch && toolType === 'view') {
                 el.style.pointerEvents = 'none';
             } else {
@@ -695,5 +696,13 @@ export class InteractionManager {
             }
             console.log(`[TouchAction] Overlay Page ${el.parentElement?.dataset.page}: pointer-events = "${el.style.pointerEvents}", touch-action = "${el.style.touchAction}"`);
         });
+
+        // FORCE RESET INTERNAL STATE: If we just switched to view mode, 
+        // ensure no interaction flags are stuck from a previous tool session.
+        if (toolType === 'view') {
+            this.app.isInteracting = false;
+            // We can't reach the closure variables here easily, but we can signal startAction
+            // by ensuring the app-level flag is clear.
+        }
     }
 }
