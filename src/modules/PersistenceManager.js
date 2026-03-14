@@ -72,9 +72,30 @@ export class PersistenceManager {
         if (fingerprintData) this.app.pdfFingerprint = fingerprintData
         if (activeCategoriesData) {
             const parsed = JSON.parse(activeCategoriesData)
-            this.app.activeCategories = Array.isArray(parsed) && parsed.length > 0 ? [parsed[0]] : ['Pens']
+            let activeCatName = Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : 'Pens';
+            
+            // Migration for active category string
+            if (activeCatName === 'Bow/Fingering' || activeCatName === 'Fingering' || activeCatName === 'F.Fingering') activeCatName = 'B.Fingering';
+            if (activeCatName === 'Draw Objects') activeCatName = 'Pens';
+            
+            this.app.activeCategories = [activeCatName];
+            
+            // SYNC: Ensure activeLayerId is kept in sync with the loaded category
+            // (Reusing the already declared activeCatName)
+            const group = this.app.toolsets.find(g => g.name === activeCatName);
+            if (group) {
+                const targetLayer = this.app.layers.find(l => l.name === group.name || l.type === group.type);
+                if (targetLayer) {
+                    this.app.activeLayerId = targetLayer.id;
+                    // If no active color was saved, default to the category's color
+                    if (!activeColorData) {
+                        this.app.activeColor = targetLayer.color;
+                    }
+                }
+            }
         } else {
             this.app.activeCategories = ['Pens']
+            this.app.activeLayerId = 'draw'
         }
         if (docBarCollapsedStr === 'true' && this.app.docBar) {
             this.app.docBar.classList.add('collapsed')
@@ -147,6 +168,27 @@ export class PersistenceManager {
             
             // --- Migration logic for legacy names/IDs ---
             storedLayers.forEach(l => {
+                if (l.name === 'Bow/Fingering' || l.name === 'Fingering' || l.name === 'F.Fingering') {
+                    l.name = 'B.Fingering';
+                    // Force migrate default color (Old Coral Red or Old Blue -> New Crimson)
+                    if (l.color === '#ff4757' || l.color === '#3b82f6') l.color = '#be123c';
+                }
+                if (l.id === 'draw' && l.name !== 'Pens') {
+                    l.name = 'Pens';
+                }
+                if (l.id === 'draw' && l.name === 'Pens') {
+                    // Force migrate default color (Old Red or Old Blue -> New Royal Blue)
+                    if (l.color === '#ff4757' || l.color === '#3b82f6') l.color = '#1d4ed8';
+                }
+                if (l.id === 'articulation' && l.color === '#10b981') {
+                    l.color = '#15803d'; // Old Green -> New Forest Green
+                }
+                if (l.id === 'text' && l.color === '#f59e0b') {
+                    l.color = '#b45309'; // Old Orange -> New Burnt Orange
+                }
+                if (l.id === 'layout' && l.color === '#64748b') {
+                    l.color = '#94a3b8'; // Old Slate -> Muted Grey (as requested)
+                }
                 if (l.id === 'performance') {
                     l.id = 'text'; 
                     l.name = 'Text';

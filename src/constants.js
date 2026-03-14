@@ -5,11 +5,11 @@
  */
 
 export const INITIAL_LAYERS = [
-    { id: 'draw', name: 'Draw Objects', color: '#ff4757', visible: true, type: 'draw' },
-    { id: 'fingering', name: 'Bow/Fingering', color: '#3b82f6', visible: true, type: 'fingering' },
-    { id: 'articulation', name: 'Articulation', color: '#10b981', visible: true, type: 'articulation' },
-    { id: 'text', name: 'Text', color: '#f59e0b', visible: true, type: 'text' },
-    { id: 'layout', name: 'Others', color: '#64748b', visible: true, type: 'layout' }
+    { id: 'draw', name: 'Pens', color: '#1d4ed8', visible: true, type: 'draw' },
+    { id: 'fingering', name: 'B.Fingering', color: '#be123c', visible: true, type: 'fingering' },
+    { id: 'articulation', name: 'Articulation', color: '#15803d', visible: true, type: 'articulation' },
+    { id: 'text', name: 'Text', color: '#b45309', visible: true, type: 'text' },
+    { id: 'layout', name: 'Others', color: '#94a3b8', visible: true, type: 'layout' }
 ];
 
 export const TOOLSETS = [
@@ -28,20 +28,21 @@ export const TOOLSETS = [
         type: 'draw',
         tools: [
             { id: 'pen', label: 'Pen', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M 1 0 L -1 0' } },
-            { id: 'green-pen', label: 'Green', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#10b981" stroke-width="2.5" />', draw: { type: 'path', color: '#10b981' } },
-            { id: 'blue-pen', label: 'Blue', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#3b82f6" stroke-width="2.5" />', draw: { type: 'path', color: '#3b82f6' } },
+            { id: 'red-pen', label: 'Red', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#be123c" stroke-width="2.5" />', draw: { type: 'path', color: '#be123c' } },
+            { id: 'green-pen', label: 'Green', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#15803d" stroke-width="2.5" />', draw: { type: 'path', color: '#15803d' } },
+            { id: 'blue-pen', label: 'Blue', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#1d4ed8" stroke-width="2.5" />', draw: { type: 'path', color: '#1d4ed8' } },
             { id: 'dashed-pen', label: 'Dashed', row: 1, icon: '<path d="M4 12h16" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3"/><path d="M12 19l7-7 M18 13L16.5 5.5L2 2l3.5 14.5L13 18" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4"/>', draw: { type: 'path', dashed: true } },
             { id: 'arrow-pen', label: 'Arrow', row: 1, icon: '<path d="M3 13h15 M14 9l4 4-4 4" stroke="currentColor" stroke-width="2.5" fill="none"/><path d="M12 19l7-7 M18 13L16.5 5.5L2 2l3.5 14.5L13 18" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4"/>', draw: { type: 'path', arrow: true } },
-            { id: 'highlighter', label: 'Highlighter', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#fde047" opacity="0.4" stroke="currentColor" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#fde047" stroke-width="4" opacity="0.6" />' },
-            { id: 'highlighter-red', label: 'H.Red', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#ff4757" opacity="0.3" stroke="#ff4757" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#ff4757" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#ff4757' } },
-            { id: 'highlighter-blue', label: 'H.Blue', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#3b82f6" opacity="0.3" stroke="#3b82f6" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#3b82f6" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#3b82f6' } },
-            { id: 'highlighter-green', label: 'H.Green', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#10b981" opacity="0.3" stroke="#10b981" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#10b981" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#10b981' } },
+            { id: 'highlighter', label: 'Highlighter', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#fde047" opacity="0.4" stroke="currentColor" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#fde047" stroke-width="4" opacity="0.6" />', draw: { type: 'highlighter', color: '#fde047' } },
+            { id: 'highlighter-red', label: 'H.Red', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#be123c" opacity="0.3" stroke="#be123c" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#be123c" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#be123c' } },
+            { id: 'highlighter-blue', label: 'H.Blue', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#1d4ed8" opacity="0.3" stroke="#1d4ed8" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#1d4ed8" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#1d4ed8' } },
+            { id: 'highlighter-green', label: 'H.Green', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#15803d" opacity="0.3" stroke="#15803d" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#15803d" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#15803d' } },
             { id: 'line', label: 'Line', row: 2, icon: '<line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2" />' },
             { id: 'slur', label: 'Slur', row: 2, icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />' }
         ]
     },
     {
-        name: 'Bow/Fingering',
+        name: 'B.Fingering',
         type: 'fingering',
         tools: [
             { id: 'thumb', label: 'Thumb', row: 1, icon: '<ellipse cx="12" cy="12" rx="1.9" ry="3.2" fill="none" stroke="currentColor" stroke-width="0.8" /><line x1="12" y1="15.2" x2="12" y2="18.4" stroke="currentColor" stroke-width="0.8" />', draw: { type: 'complex', variant: 'thumb', size: 15 } },
@@ -50,29 +51,31 @@ export const TOOLSETS = [
             { id: 'f3', label: '3', row: 1, icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">3</text>', draw: { type: 'text', content: '3', font: '300', size: 20 } },
             { id: 'f4', label: '4', row: 1, icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">4</text>', draw: { type: 'text', content: '4', font: '300', size: 20 } },
             { id: 'f5', label: '5', row: 1, icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">5</text>', draw: { type: 'text', content: '5', font: '300', size: 20 } },
-            { id: 'f0', label: '0', row: 1, icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">0</text>', draw: { type: 'text', content: '0', font: '300', size: 20 } },
+            { id: 'f0', label: '0', row: 1, icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" font-size="12" text-anchor="middle" fill="currentColor" stroke="none">0</text>', draw: { type: 'text', content: '0', font: '300', size: 14 } },
             { id: 'f-exp', label: 'x', row: 1, icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">x</text>', draw: { type: 'text', content: 'x', font: '300', size: 20 } },
             { id: 'f-shift', label: '+', row: 1, icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">+</text>', draw: { type: 'text', content: '+', font: '300', size: 20 } },
-            { id: 'down-bow', label: 'Down', row: 2, icon: '<path d="M8 11.5h8v4.3 M8 15.8v-4.3 M16 15.8v-4.3" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.26 0.17 L -0.26 -0.26 L 0.26 -0.26 L 0.26 0.17' } },
-            { id: 'up-bow', label: 'Up', row: 2, icon: '<path d="M8 9.5l4 7l4-7" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.26 -0.26 L 0 0.22 L 0.26 -0.26' } },
-            { id: 'open_string', label: 'o', row: 2, icon: '<circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="1.0" />', draw: { type: 'shape', shape: 'circle', radius: 0.5, fill: false } },
-            { id: 'i', label: 'I', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">I</text>', draw: { type: 'text', content: 'I', font: '300', size: 20, fontFace: 'serif' } },
-            { id: 'ii', label: 'II', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">II</text>', draw: { type: 'text', content: 'II', font: '300', size: 20, fontFace: 'serif' } },
-            { id: 'iii', label: 'III', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">III</text>', draw: { type: 'text', content: 'III', font: '300', size: 20, fontFace: 'serif' } },
-            { id: 'iv', label: 'IV', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" text-anchor="middle" fill="currentColor" stroke="none">IV</text>', draw: { type: 'text', content: 'IV', font: '300', size: 20, fontFace: 'serif' } }
+            { id: 'down-bow', label: 'Down', row: 2, icon: '<path d="M8 17 L8 8 L16 8 L16 17" fill="none" stroke="currentColor" stroke-width="1.6" />', draw: { type: 'path', data: 'M -0.25 0.35 L -0.25 -0.35 L 0.25 -0.35 L 0.25 0.35', size: 15, strokeWidth: 1.6, fill: 'none' } },
+            { id: 'up-bow', label: 'Up', row: 2, icon: '<path d="M8 17 L12 8 L16 17" fill="none" stroke="currentColor" stroke-width="1.6" />', draw: { type: 'path', data: 'M -0.28 -0.35 L 0 0.35 L 0.28 -0.35', size: 15, strokeWidth: 1.6, fill: 'none' } },
+            { id: 'open_string', label: 'o', row: 2, icon: '<circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="1.0" />', draw: { type: 'shape', shape: 'circle', radius: 0.2, fill: false, size: 20 } },
+            { id: 'i', label: 'I', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" font-size="12" text-anchor="middle" fill="currentColor" stroke="none">I</text>', draw: { type: 'text', content: 'I', font: 'italic 300', size: 14, fontFace: 'serif' } },
+            { id: 'ii', label: 'II', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" font-size="12" text-anchor="middle" fill="currentColor" stroke="none">II</text>', draw: { type: 'text', content: 'II', font: 'italic 300', size: 14, fontFace: 'serif' } },
+            { id: 'iii', label: 'III', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" font-size="12" text-anchor="middle" fill="currentColor" stroke="none">III</text>', draw: { type: 'text', content: 'III', font: 'italic 300', size: 14, fontFace: 'serif' } },
+            { id: 'iv', label: 'IV', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="300" font-style="italic" font-size="12" text-anchor="middle" fill="currentColor" stroke="none">IV</text>', draw: { type: 'text', content: 'IV', font: 'italic 300', size: 14, fontFace: 'serif' } }
         ]
     },
     {
         name: 'Articulation',
         type: 'articulation',
         tools: [
-            { id: 'accent', label: 'Accent', row: 1, icon: '<path d="M8 9l8 3-8 3" fill="none" stroke="currentColor" stroke-width="1.5"/>', draw: { type: 'path', data: 'M -0.4 -0.2 L 0.4 0 L -0.4 0.2' } },
-            { id: 'staccato', label: 'Staccato', row: 1, icon: '<circle cx="12" cy="12" r="1.5" fill="currentColor" />', draw: { type: 'shape', shape: 'circle', radius: 0.12, fill: true } },
-            { id: 'tenuto', label: 'Tenuto', row: 1, icon: '<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.8" />', draw: { type: 'path', data: 'M -0.4 0 L 0.4 0' } },
-            { id: 'fermata', label: 'Fermata', row: 1, icon: '<path d="M7 15a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13.5" r="1.2" fill="currentColor" />', draw: { type: 'complex', variant: 'fermata' } },
-            { id: 'sharp', label: 'Sharp', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♯</text>', draw: { type: 'text', content: '♯', font: '500', size: 20, fontFace: 'serif' } },
-            { id: 'flat', label: 'Flat', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♭</text>', draw: { type: 'text', content: '♭', font: '500', size: 20, fontFace: 'serif' } },
-            { id: 'natural', label: 'Natural', row: 2, icon: '<text x="12" y="17" font-family="serif" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">♮</text>', draw: { type: 'text', content: '♮', font: '500', size: 20, fontFace: 'serif' } }
+            { id: 'accent', label: 'Accent', row: 1, icon: '<path d="M6 10 L18 12 L6 14" fill="none" stroke="currentColor" stroke-width="1.2"/>', draw: { type: 'path', data: 'M -0.35 -0.15 L 0.35 0 L -0.35 0.15', size: 20, strokeWidth: 2, fill: 'none' } },
+            { id: 'staccato', label: 'Staccato', row: 1, icon: '<circle cx="12" cy="12" r="2.0" fill="currentColor" />', draw: { type: 'shape', shape: 'circle', radius: 0.15, fill: true, size: 20 } },
+            { id: 'tenuto', label: 'Tenuto', row: 1, icon: '<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.3 0 L 0.3 0', size: 20, strokeWidth: 2, fill: 'none' } },
+            { id: 'fermata', label: 'Fermata', row: 1, icon: '<path d="M4 16a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="12" r="1.3" fill="currentColor" />', draw: { type: 'complex', variant: 'fermata', size: 20 } },
+            { id: 'sharp', label: 'Sharp', row: 2, icon: '<text x="12" y="17" font-family="serif" font-size="15" font-weight="400" text-anchor="middle" fill="currentColor" stroke="none">♯</text>', draw: { type: 'text', content: '♯', font: '400', size: 17, fontFace: 'serif' } },
+            { id: 'flat', label: 'Flat', row: 2, icon: '<text x="12" y="18" font-family="serif" font-size="15" font-weight="400" text-anchor="middle" fill="currentColor" stroke="none">♭</text>', draw: { type: 'text', content: '♭', font: '400', size: 17, fontFace: 'serif' } },
+            { id: 'natural', label: 'Natural', row: 2, icon: '<text x="12" y="17" font-family="serif" font-size="15" font-weight="400" text-anchor="middle" fill="currentColor" stroke="none">♮</text>', draw: { type: 'text', content: '♮', font: '400', size: 17, fontFace: 'serif' } },
+            { id: 'double-sharp', label: 'D.Sharp', row: 2, icon: '<text x="12" y="17" font-family="Apple Symbols, Segoe UI Symbol, serif" font-size="15" font-weight="400" text-anchor="middle" fill="currentColor" stroke="none">𝄪</text>', draw: { type: 'text', content: '𝄪', font: '400', size: 17, fontFace: 'Apple Symbols, Segoe UI Symbol, serif' } },
+            { id: 'double-flat', label: 'D.Flat', row: 2, icon: '<text x="12" y="18" font-family="Apple Symbols, Segoe UI Symbol, serif" font-size="15" font-weight="400" text-anchor="middle" fill="currentColor" stroke="none">𝄫</text>', draw: { type: 'text', content: '𝄫', font: '400', size: 17, fontFace: 'Apple Symbols, Segoe UI Symbol, serif' } }
         ]
     },
     {
@@ -80,27 +83,27 @@ export const TOOLSETS = [
         type: 'text',
         tools: [
             // Row 1: Dynamics (Professional Musical Symbols using Text mode for stability)
-            { id: 'text-ppp', label: 'ppp', row: 1, icon: 'ppp', draw: { type: 'text', content: 'ppp', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            { id: 'text-pp', label: 'pp', row: 1, icon: 'pp', draw: { type: 'text', content: 'pp', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            { id: 'text-p', label: 'p', row: 1, icon: 'p', draw: { type: 'text', content: 'p', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            { id: 'text-mp', label: 'mp', row: 1, icon: 'mp', draw: { type: 'text', content: 'mp', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            { id: 'text-mf', label: 'mf', row: 1, icon: 'mf', draw: { type: 'text', content: 'mf', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            { id: 'text-f', label: 'f', row: 1, icon: 'f', draw: { type: 'text', content: 'f', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            { id: 'text-ff', label: 'ff', row: 1, icon: 'ff', draw: { type: 'text', content: 'ff', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            { id: 'text-fff', label: 'fff', row: 1, icon: 'fff', draw: { type: 'text', content: 'fff', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            { id: 'text-fp', label: 'fp', row: 1, icon: 'fp', draw: { type: 'text', content: 'fp', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            { id: 'text-sfp', label: 'sfp', row: 1, icon: 'sfp', draw: { type: 'text', content: 'sfp', font: 'italic 800', size: 24, fontFace: 'serif' } },
-            
+            { id: 'text-ppp', label: 'ppp', row: 1, icon: 'ppp', draw: { type: 'text', content: 'ppp', font: 'italic 800', size: 16, fontFace: 'serif' } },
+            { id: 'text-pp', label: 'pp', row: 1, icon: 'pp', draw: { type: 'text', content: 'pp', font: 'italic 800', size: 16, fontFace: 'serif' } },
+            { id: 'text-p', label: 'p', row: 1, icon: 'p', draw: { type: 'text', content: 'p', font: 'italic 800', size: 16, fontFace: 'serif' } },
+            { id: 'text-mp', label: 'mp', row: 1, icon: 'mp', draw: { type: 'text', content: 'mp', font: 'italic 800', size: 16, fontFace: 'serif' } },
+            { id: 'text-mf', label: 'mf', row: 1, icon: 'mf', draw: { type: 'text', content: 'mf', font: 'italic 800', size: 16, fontFace: 'serif' } },
+            { id: 'text-f', label: 'f', row: 1, icon: 'f', draw: { type: 'text', content: 'f', font: 'italic 800', size: 16, fontFace: 'serif' } },
+            { id: 'text-ff', label: 'ff', row: 1, icon: 'ff', draw: { type: 'text', content: 'ff', font: 'italic 800', size: 16, fontFace: 'serif' } },
+            { id: 'text-fff', label: 'fff', row: 1, icon: 'fff', draw: { type: 'text', content: 'fff', font: 'italic 800', size: 16, fontFace: 'serif' } },
+            { id: 'text-fp', label: 'fp', row: 1, icon: 'fp', draw: { type: 'text', content: 'fp', font: 'italic 800', size: 16, fontFace: 'serif' } },
+            { id: 'text-sfp', label: 'sfp', row: 1, icon: 'sfp', draw: { type: 'text', content: 'sfp', font: 'italic 800', size: 16, fontFace: 'serif' } },
+
             // Row 2: Sections & Reminders (Italic Text Labels)
-            { id: 'text-cond', label: '指揮', row: 2, draw: { type: 'text', content: '指揮', font: 'italic 500', size: 18 } },
-            { id: 'text-v1', label: '小提', row: 2, draw: { type: 'text', content: '小提', font: 'italic 500', size: 18 } },
-            { id: 'text-vlc', label: '大提', row: 2, draw: { type: 'text', content: '大提', font: 'italic 500', size: 18 } },
-            { id: 'text-wind', label: '管', row: 2, draw: { type: 'text', content: '管', font: 'italic 500', size: 18 } },
-            { id: 'text-perc', label: '打擊', row: 2, draw: { type: 'text', content: '打擊', font: 'italic 500', size: 18 } },
-            { id: 'text-solo', label: '獨奏', row: 2, draw: { type: 'text', content: '獨奏', font: 'italic 500', size: 18 } },
-            { id: 'text-page', label: '換頁', row: 2, draw: { type: 'text', content: '換頁', font: 'italic 500', size: 18, color: '#ef4444' } },
-            { id: 'text-score', label: '換譜', row: 2, draw: { type: 'text', content: '換譜', font: 'italic 500', size: 18, color: '#ef4444' } },
-            { id: 'text-breath', label: '呼吸', row: 2, draw: { type: 'text', content: '呼吸', font: 'italic 500', size: 18, color: '#3b82f6' } }
+            { id: 'text-cond', label: '指揮', row: 2, draw: { type: 'text', content: '指揮', font: 'italic 500', size: 16 } },
+            { id: 'text-v1', label: '小提', row: 2, draw: { type: 'text', content: '小提', font: 'italic 500', size: 16 } },
+            { id: 'text-vlc', label: '大提', row: 2, draw: { type: 'text', content: '大提', font: 'italic 500', size: 16 } },
+            { id: 'text-wind', label: '管', row: 2, draw: { type: 'text', content: '管', font: 'italic 500', size: 16 } },
+            { id: 'text-perc', label: '打擊', row: 2, draw: { type: 'text', content: '打擊', font: 'italic 500', size: 16 } },
+            { id: 'text-solo', label: '獨奏', row: 2, draw: { type: 'text', content: '獨奏', font: 'italic 500', size: 16 } },
+            { id: 'text-page', label: '換頁', row: 2, draw: { type: 'text', content: '換頁', font: 'italic 500', size: 16, color: '#ef4444' } },
+            { id: 'text-score', label: '換譜', row: 2, draw: { type: 'text', content: '換譜', font: 'italic 500', size: 16, color: '#ef4444' } },
+            { id: 'text-breath', label: '呼吸', row: 2, draw: { type: 'text', content: '呼吸', font: 'italic 500', size: 16, color: '#3b82f6' } }
         ]
     },
     {

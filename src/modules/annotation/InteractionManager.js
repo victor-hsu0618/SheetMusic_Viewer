@@ -269,8 +269,8 @@ export class InteractionManager {
                     activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 300', size: this.app.defaultFontSize, fontFace: 'serif' };
                 } else {
                     const tool = group?.tools.find(t => t.id === toolType);
-                    if (tool && tool.draw && tool.draw.type === 'text') {
-                        activeObject.draw = { ...tool.draw, size: this.app.defaultFontSize };
+                    if (tool && tool.draw) {
+                        activeObject.draw = { ...tool.draw };
                     }
                 }
                 this.app.lastFocusedStamp = activeObject;
@@ -377,11 +377,12 @@ export class InteractionManager {
                     } else if (activeObject.type === 'text' || activeObject.type === 'tempo-text') {
                         this.app.annotationManager.spawnTextEditor(wrapper, pageNum, activeObject);
                     } else if (activeObject.type === 'measure' && !isMovingExisting) {
+                        const targetObj = activeObject;
                         this.app.annotationManager.promptMeasureNumber(this.app.lastMeasureNum).then(num => {
-                            if (num) {
-                                activeObject.data = String(num); this.app.lastMeasureNum = String(num);
-                                this.app.stamps.push(activeObject); this.app.saveToStorage(true); this.app.updateRulerMarks();
-                                startGracePeriod(activeObject);
+                            if (num !== null && num !== undefined) {
+                                targetObj.data = String(num); this.app.lastMeasureNum = String(num);
+                                this.app.stamps.push(targetObj); this.app.saveToStorage(true); this.app.updateRulerMarks();
+                                startGracePeriod(targetObj);
                             }
                             this.app.redrawStamps(pageNum);
                         });

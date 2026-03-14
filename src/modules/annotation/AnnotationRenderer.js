@@ -83,8 +83,9 @@ export class AnnotationRenderer {
         }
 
         const pageFactor = this.app.pageScales[path.page] || 1.0
-        if (path.type === 'highlighter') {
-            ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : '#fde04788')
+        if (path.type && path.type.includes('highlighter')) {
+            const baseColor = path.color || '#fde047'
+            ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : baseColor + '88')
             ctx.lineWidth = (isHovered ? 18 : 14) * (this.app.scale / 1.5) * pageFactor
         } else {
             ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
@@ -243,16 +244,21 @@ export class AnnotationRenderer {
             }
         }
 
-        const toolSize = (toolDef?.draw?.type === 'text') ? (this.app.defaultFontSize || 24) : (toolDef?.draw?.size || 24);
+        const toolSize = toolDef?.draw?.size || 24;
 
         // Smart Sizing: baseSize * PageFactor * UserMultiplier * ScoreMultiplier * ZoomScale
         const pageFactor = this.app.pageScales[stamp.page] || 1.0
         const userMultiplier = this.app.stampSizeMultiplier || 1.0
         const scoreMultiplier = this.app.scoreStampScale || 1.0
-        const baseSize = 14 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * (toolSize / 24)
-
-        const size = isBow ? baseSize * 0.85 : baseSize
-        const textScale = size / 14 // Relative to the original baseline
+        
+        // Unified Scale Factor (Standardizing on zoom=1.5 as base)
+        const globalScale = (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier;
+        
+        // Final pixel size for paths/shapes
+        const size = toolSize * globalScale;
+        
+        // textScale is now simply the global multiplier, so d.size * textScale = final pixels
+        const textScale = globalScale;
 
         ctx.save()
 
@@ -310,7 +316,7 @@ export class AnnotationRenderer {
 
             switch (d.type) {
                 case 'text':
-                    ctx.font = `${d.font || ''} ${d.size * textScale}px ${d.fontFace || 'Outfit'}`
+                    ctx.font = `${d.font || ''} ${(d.size || 24) * textScale}px ${d.fontFace || 'Outfit'}`
                     ctx.fillStyle = finalColor
                     ctx.textAlign = 'center'
                     ctx.textBaseline = 'middle'
@@ -332,7 +338,8 @@ export class AnnotationRenderer {
                     ctx.scale(size, size)
                     
                     // Maintain standard line width despite internal coordinate space scaling
-                    const effectiveLineWidth = 2.5 * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier / size
+                    const baseStrokeWeight = d.strokeWidth || 2.5
+                    const effectiveLineWidth = baseStrokeWeight * globalScale / size
                     ctx.lineWidth = effectiveLineWidth
                     ctx.lineCap = 'round'
                     ctx.lineJoin = 'round'
@@ -353,28 +360,39 @@ export class AnnotationRenderer {
 
                 case 'special':
                     if (d.variant === 'input-text') {
-                        ctx.font = `bold ${22 * textScale}px Outfit`
+                        ctx.font = `bold ${15 * textScale}px Outfit`
                         ctx.fillStyle = color
                         const lines = (stamp.data || '').split('\n')
-                        const lineHeight = 20 * textScale
+                        const lineHeight = 15 * textScale
                         lines.forEach((line, i) => {
                             ctx.fillText(line, x, y + (i * lineHeight))
                         })
                     } else if (d.variant === 'measure') {
-                        const bw = 22 * textScale, bh = 18 * textScale
+                        const bw = 24 * textScale, bh = 22 * textScale
                         const bx = x - bw / 2, by = y - bh / 2
                         // Outline-only box (no fill)
-                        ctx.strokeStyle = isHovered ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.25)'
-                        ctx.lineWidth = 0.8 * textScale
+                        ctx.strokeStyle = isHovered ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.3)'
+                        ctx.lineWidth = 1.2 * textScale
                         ctx.beginPath()
-                        ctx.roundRect(bx, by, bw, bh, 3 * textScale)
+                        if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 3 * textScale)
+                        else ctx.rect(bx, by, bw, bh)
                         ctx.stroke()
                         // Light text
-                        ctx.font = `500 ${13 * textScale}px Outfit`
-                        ctx.fillStyle = isHovered ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.35)'
+                        ctx.font = `500 ${14 * textScale}px Outfit`
+                        ctx.fillStyle = isHovered ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.5)'
                         ctx.textAlign = 'center'
                         ctx.textBaseline = 'middle'
                         ctx.fillText(stamp.data || '#', x, y)
+                    } else if (d.variant === 'playback') {
+                        // Restore missing Music Anchor / Playback Head
+                        const s = size * 0.45 
+                        ctx.strokeStyle = color
+                        ctx.lineWidth = 1.2 * globalScale
+                        ctx.beginPath()
+                        ctx.moveTo(x, y - s)
+                        ctx.lineTo(x, y + s)
+                        ctx.arc(x, y - s, 6 * globalScale, 0, Math.PI * 2)
+                        ctx.stroke()
                     }
                     break
 

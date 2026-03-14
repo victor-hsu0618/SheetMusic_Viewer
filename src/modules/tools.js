@@ -78,7 +78,7 @@ export class ToolManager {
                 return `<svg${a} width="${size}" height="${size}" style="color: ${strokeColor};">`
             })
         }
-        return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="${strokeColor}" stroke-width="1.3" fill="none">${tool.icon}</svg>`
+        return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke="${strokeColor}" stroke-width="1.3" fill="none" style="color: ${strokeColor};">${tool.icon}</svg>`
     }
 
     toggleStampPalette(x = null, y = null, force = null) {
@@ -437,9 +437,11 @@ export class ToolManager {
                     this.app.activeCategories = [group.name]
                     
                     // Automatically switch active layer to match chosen category
-                    const layer = this.app.layers.find(l => l.name === group.name || l.type === group.type)
-                    if (layer && this.app.activeLayerId !== layer.id) {
-                        this.app.activeLayerId = layer.id
+                    const targetLayer = this.app.layers.find(l => l.name === group.name || l.type === group.type);
+                    if (targetLayer) {
+                        this.app.activeLayerId = targetLayer.id;
+                        // Fix "Jumping Color": Sync app.activeColor with the layer's own color when switching
+                        this.app.activeColor = targetLayer.color;
                     }
                     
                     this.app.saveToStorage()
@@ -479,10 +481,10 @@ export class ToolManager {
         ribbon.className = "color-picker-ribbon"
 
         const colors = [
-            { name: 'Red', value: '#ff4757' },
-            { name: 'Blue', value: '#3b82f6' },
-            { name: 'Green', value: '#10b981' },
-            { name: 'Orange', value: '#f59e0b' },
+            { name: 'Red', value: '#be123c' },
+            { name: 'Blue', value: '#1d4ed8' },
+            { name: 'Green', value: '#15803d' },
+            { name: 'Orange', value: '#b45309' },
             { name: 'Purple', value: '#8b5cf6' },
             { name: 'Black', value: '#2d3436' }
         ]
@@ -496,6 +498,13 @@ export class ToolManager {
             swatch.onclick = (e) => {
                 e.stopPropagation()
                 this.app.activeColor = color.value
+                
+                // Persist to active layer so it doesn't "jump" back when returning to this category
+                const layer = this.app.layers.find(l => l.id === this.app.activeLayerId)
+                if (layer) {
+                    layer.color = color.value
+                }
+                
                 this.updateActiveTools()
             }
             ribbon.appendChild(swatch)
