@@ -33,6 +33,7 @@ export class SettingsPanelManager {
 
         this.resizeHandle = this.panel?.querySelector('.panel-resize-handle')
         this.initSettings()
+        this.initStampSizes()
         // this.initResizable() // REQ: Disable resize function
         this.initTabs()
     }
@@ -422,5 +423,222 @@ export class SettingsPanelManager {
         const val = parseFloat(input.value)
         const percentage = ((val - min) / (max - min)) * 100
         input.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
+    }
+
+    initStampSizes() {
+        const container = document.getElementById('settings-pane-stamps')
+        if (!container) return
+
+        const STAMP_CATEGORIES = ['B.Fingering', 'Articulation', 'Text', 'Others']
+        const STAMP_TYPES = ['text', 'path', 'shape', 'complex']
+        const overrides = this.app.stampSizeOverrides || {}
+
+        // Build a toolId → tool map for quick lookup during event wiring
+        const toolMap = {}
+        STAMP_CATEGORIES.forEach(catName => {
+            this.app.toolsets?.find(g => g.name === catName)?.tools
+                .filter(t => t.draw && STAMP_TYPES.includes(t.draw.type))
+                .forEach(t => { toolMap[t.id] = t })
+        })
+
+        let html = `<div class="stamp-cal-header">
+            <span>Preview at default zoom (1.5×)</span>
+            <button id="btn-reset-all-stamp-sizes" class="btn-reset-all">Reset All</button>
+        </div>`
+
+        STAMP_CATEGORIES.forEach(catName => {
+            const group = this.app.toolsets?.find(g => g.name === catName)
+            if (!group) return
+            const tools = group.tools.filter(t => t.draw && STAMP_TYPES.includes(t.draw.type))
+            if (!tools.length) return
+
+            html += `<div class="tab-section-label">${catName}</div><div class="stamp-cal-list">`
+            tools.forEach(tool => {
+                const defaultSize = tool.draw.size ?? 24
+                const currentSize = overrides[tool.id] ?? defaultSize
+                const isOverridden = tool.id in overrides
+                html += `
+                <div class="stamp-cal-row" data-tool-id="${tool.id}" data-default="${defaultSize}">
+                    <div class="stamp-cal-preview">
+                        <canvas class="stamp-preview-canvas" width="64" height="36"></canvas>
+                    </div>
+                    <div class="stamp-cal-label">${tool.label}</div>
+                    <div class="stamp-cal-controls">
+                        <button class="stamp-cal-btn minus" aria-label="Decrease">−</button>
+                        <input type="number" class="stamp-cal-input" value="${currentSize}" min="6" max="80" step="1">
+                        <button class="stamp-cal-btn plus" aria-label="Increase">+</button>
+                        <button class="stamp-cal-reset ${isOverridden ? '' : 'invisible'}" title="Reset to default (${defaultSize})">↺</button>
+                    </div>
+                </div>`
+            })
+            html += `</div>`
+        })
+
+        container.innerHTML = html
+
+        // Initial preview render for all rows
+        container.querySelectorAll('.stamp-cal-row').forEach(row => {
+            const toolId = row.dataset.toolId
+            const tool = toolMap[toolId]
+            const currentSize = overrides[toolId] ?? (tool?.draw?.size ?? 24)
+            const canvas = row.querySelector('.stamp-preview-canvas')
+            if (tool && canvas) this._renderStampPreview(canvas, tool, currentSize)
+        })
+
+        // Wire events
+        container.querySelectorAll('.stamp-cal-row').forEach(row => {
+            const toolId = row.dataset.toolId
+            const tool = toolMap[toolId]
+            const defaultSize = parseInt(row.dataset.default)
+            const input = row.querySelector('.stamp-cal-input')
+            const resetBtn = row.querySelector('.stamp-cal-reset')
+            const canvas = row.querySelector('.stamp-preview-canvas')
+
+            const apply = (val) => {
+                val = Math.max(6, Math.min(80, Math.round(val)))
+                if (isNaN(val)) return
+                input.value = val
+                if (val === defaultSize) {
+                    delete this.app.stampSizeOverrides[toolId]
+                    resetBtn.classList.add('invisible')
+                } else {
+                    this.app.stampSizeOverrides[toolId] = val
+                    resetBtn.classList.remove('invisible')
+                }
+                if (tool && canvas) this._renderStampPreview(canvas, tool, val)
+                this.app.saveToStorage()
+                this._triggerAnnotationRerender()
+            }
+
+            row.querySelector('.stamp-cal-btn.minus').addEventListener('click', () => apply(parseInt(input.value) - 1))
+            row.querySelector('.stamp-cal-btn.plus').addEventListener('click', () => apply(parseInt(input.value) + 1))
+            input.addEventListener('change', () => apply(parseInt(input.value)))
+            resetBtn.addEventListener('click', () => apply(defaultSize))
+        })
+
+        // Reset All button
+        const resetAllBtn = container.querySelector('#btn-reset-all-stamp-sizes')
+        if (resetAllBtn) {
+            resetAllBtn.addEventListener('click', () => {
+                this.app.stampSizeOverrides = {}
+                this.app.saveToStorage()
+                this._triggerAnnotationRerender()
+                this.initStampSizes()
+            })
+        }
+    }
+
+    _renderStampPreview(canvas, tool, size) {
+        const dpr = window.devicePixelRatio || 1
+        const W = 64
+        const H = 36
+        canvas.width = W * dpr
+        canvas.height = H * dpr
+        canvas.style.width = W + 'px'
+        canvas.style.height = H + 'px'
+
+        const ctx = canvas.getContext('2d')
+        ctx.scale(dpr, dpr)
+        ctx.clearRect(0, 0, W, H)
+
+        const d = tool.draw
+        if (!d) return
+
+        // Use the panel's computed text color for theming
+        const color = getComputedStyle(this.panel).color || '#6366f1'
+        const x = W / 2
+        const y = H / 2
+
+        ctx.fillStyle = color
+        ctx.strokeStyle = color
+
+        switch (d.type) {
+            case 'text': {
+                const font = d.font || ''
+                const face = d.fontFace || 'Outfit'
+                ctx.font = `${font} ${size}px ${face}`
+                ctx.textAlign = 'center'
+                ctx.textBaseline = 'middle'
+                ctx.fillText(d.content || '', x, y)
+                break
+            }
+            case 'path': {
+                ctx.save()
+                ctx.translate(x, y)
+                ctx.scale(size, size)
+                ctx.lineWidth = (d.strokeWidth || 2.5) / size
+                ctx.strokeStyle = color
+                ctx.lineCap = 'round'
+                try {
+                    const p = new Path2D(d.data)
+                    ctx.stroke(p)
+                    if (d.fill !== 'none') { ctx.fillStyle = color; ctx.fill(p) }
+                } catch (e) { /* ignore malformed path */ }
+                ctx.restore()
+                break
+            }
+            case 'shape': {
+                if (d.shape === 'circle') {
+                    const r = d.radius * size
+                    ctx.beginPath()
+                    ctx.arc(x, y, r, 0, Math.PI * 2)
+                    if (d.fill) { ctx.fill() }
+                    else { ctx.lineWidth = 1.2; ctx.stroke() }
+                }
+                break
+            }
+            case 'complex': {
+                if (d.variant === 'fermata') {
+                    const fs = size * 0.45
+                    ctx.beginPath(); ctx.lineWidth = 1.5
+                    ctx.arc(x, y, fs, Math.PI, 0); ctx.stroke()
+                    ctx.beginPath()
+                    ctx.arc(x, y - fs * 0.3, fs * 0.15, 0, Math.PI * 2)
+                    ctx.fill()
+                } else if (d.variant === 'thumb') {
+                    ctx.lineWidth = 0.9
+                    ctx.beginPath()
+                    ctx.ellipse(x, y - size * 0.15, size * 0.12, size * 0.28, 0, 0, Math.PI * 2)
+                    ctx.stroke()
+                    ctx.beginPath()
+                    ctx.moveTo(x, y + size * 0.13)
+                    ctx.lineTo(x, y + size * 0.38)
+                    ctx.stroke()
+                } else if (d.variant === 'anchor') {
+                    const s = size * 0.65
+                    // 圓點
+                    ctx.beginPath()
+                    ctx.arc(x, y - s * 1.1, s * 0.18, 0, Math.PI * 2)
+                    ctx.fill()
+                    // 直棒
+                    ctx.lineWidth = s * 0.15
+                    ctx.beginPath()
+                    ctx.moveTo(x, y - s * 0.9)
+                    ctx.lineTo(x, y + s * 0.3)
+                    ctx.stroke()
+                    // 橫桿
+                    ctx.beginPath()
+                    ctx.moveTo(x - s * 0.6, y)
+                    ctx.lineTo(x + s * 0.6, y)
+                    ctx.stroke()
+                    // 弧形
+                    ctx.beginPath()
+                    ctx.arc(x, y, s * 0.6, 0, Math.PI, false)
+                    ctx.stroke()
+                }
+                break
+            }
+        }
+    }
+
+    _triggerAnnotationRerender() {
+        try {
+            const am = this.app.annotationManager
+            if (!am) return
+            if (am.renderAllPages) { am.renderAllPages(); return }
+            if (am.renderers) {
+                Object.values(am.renderers).forEach(r => r?.renderAnnotations?.() || r?.render?.())
+            }
+        } catch (e) { /* silent */ }
     }
 }

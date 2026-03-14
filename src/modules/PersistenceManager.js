@@ -27,6 +27,7 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_default_font_size', this.app.defaultFontSize)
         localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary))
         localStorage.setItem('scoreflow_stamp_size_multiplier', this.app.stampSizeMultiplier)
+        localStorage.setItem('scoreflow_stamp_size_overrides', JSON.stringify(this.app.stampSizeOverrides || {}))
         localStorage.setItem('scoreflow_stamp_offset_touch_y', this.app.stampOffsetTouchY)
         localStorage.setItem('scoreflow_stamp_offset_mouse_y', this.app.stampOffsetMouseY)
         localStorage.setItem('scoreflow_pointer_idle_timeout_ms', this.app.pointerIdleTimeoutMs || 8000)
@@ -114,6 +115,9 @@ export class PersistenceManager {
             if (slider) slider.value = this.app.defaultFontSize
             if (value) value.textContent = `${this.app.defaultFontSize}px`
         }
+        const stampSizeOverridesData = localStorage.getItem('scoreflow_stamp_size_overrides')
+        this.app.stampSizeOverrides = stampSizeOverridesData ? JSON.parse(stampSizeOverridesData) : {}
+
         if (stampSizeMultiplierData) {
             this.app.stampSizeMultiplier = parseFloat(stampSizeMultiplierData)
             if (this.app.settingsStampSizeInput) {

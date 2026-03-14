@@ -244,7 +244,7 @@ export class AnnotationRenderer {
             }
         }
 
-        const toolSize = toolDef?.draw?.size || 24;
+        const toolSize = this.app.stampSizeOverrides?.[toolDef?.id] ?? toolDef?.draw?.size ?? 24;
 
         // Smart Sizing: baseSize * PageFactor * UserMultiplier * ScoreMultiplier * ZoomScale
         const pageFactor = this.app.pageScales[stamp.page] || 1.0

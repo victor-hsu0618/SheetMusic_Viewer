@@ -46,6 +46,7 @@ class ScoreFlow {
     this.recentTools = []
     this.userTextLibrary = ['dolce', 'espress.', 'marcato', 'tenuto']
     this.stampSizeMultiplier = 1.0
+    this.stampSizeOverrides = {}   // per-tool size overrides: { toolId: sizeNumber }
     this.pageScales = {}
     this.sources = [{ id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }]
     this.activeSourceId = 'self'
