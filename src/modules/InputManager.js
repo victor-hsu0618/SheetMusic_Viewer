@@ -287,11 +287,9 @@ export class InputManager {
         viewer.addEventListener('scroll', () => {
             if (!this.scrollTicking) {
                 window.requestAnimationFrame(() => {
-                    this.app.updateRulerMarks()
+                    this.app.updateRulerMarks()  // already calls computeNextTarget internally
                     this.app.updateRulerClip()
-                    this.app.computeNextTarget()
                     if (this.app.jumpManager) this.app.jumpManager.updateDisplay()
-                    this.updateDividerPositions()
                     this.scrollTicking = false
                 })
                 this.scrollTicking = true

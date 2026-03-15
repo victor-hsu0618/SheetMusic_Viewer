@@ -101,6 +101,7 @@ export class RulerManager {
     }
 
     updateRulerPosition() {
+        this._cachedViewerOffset = undefined  // invalidate on zoom/resize
         const ruler = document.getElementById('jump-ruler')
         if (!ruler) return
         
@@ -495,8 +496,11 @@ export class RulerManager {
             }
         }
 
-        const viewerRect = this.app.viewer ? this.app.viewer.getBoundingClientRect() : { top: 0 }
-        const viewerOffset = viewerRect.top
+        // viewerOffset = viewer's top in viewport — stable during scroll, only changes on resize/zoom
+        if (this._cachedViewerOffset === undefined) {
+            this._cachedViewerOffset = this.app.viewer ? this.app.viewer.getBoundingClientRect().top : 0
+        }
+        const viewerOffset = this._cachedViewerOffset
         const fragment = document.createDocumentFragment()
 
         visualMarks.forEach((stamp) => {
