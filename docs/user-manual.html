@@ -634,7 +634,55 @@
     </div>
   </div>
 
-  <h3>6.3 小節數工具（Measure Number）</h3>
+  <h3>6.3 Edit 工具列</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:16px">
+    標記面板最上方的 Edit 工具列提供對已放置標記的操作功能。
+  </p>
+
+  <table class="shortcut-table" style="margin-bottom:24px">
+    <thead><tr><th>工具</th><th>功能</th><th>操作方式</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Select</strong> <span class="kbd">V</span></td>
+        <td>選取並拖曳移動標記</td>
+        <td>點擊標記後拖曳到新位置；放開後位置儲存</td>
+      </tr>
+      <tr>
+        <td><strong>Copy</strong></td>
+        <td>複製標記</td>
+        <td>點擊標記複製一份，複製品自動進入拖曳模式，拖到目標位置放開</td>
+      </tr>
+      <tr>
+        <td><strong>Cycle</strong></td>
+        <td>輪轉標記類型</td>
+        <td>點擊標記，自動切換到同組的下一個類型（見下方說明）</td>
+      </tr>
+      <tr>
+        <td><strong>Eraser</strong> <span class="kbd">E</span></td>
+        <td>刪除單個標記</td>
+        <td>點擊欲刪除的標記；靠近時顯示紅色陰影作為提示</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="tip" style="margin-bottom:16px">
+    <strong>Cycle 工具 — 支援的輪轉組合</strong>
+    <table class="shortcut-table" style="margin-top:10px">
+      <thead><tr><th>類型</th><th>輪轉順序</th></tr></thead>
+      <tbody>
+        <tr><td>弓法</td><td>上弓（Up Bow）↔ 下弓（Down Bow）</td></tr>
+        <tr><td>指法</td><td>拇指 → 1 → 2 → 3 → 4 → 5 → 拇指（循環）</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:8px">靠近標記時顯示<strong>藍色陰影</strong>，表示可點擊輪轉。每次點擊前進一格。</p>
+  </div>
+
+  <div class="tip">
+    <strong>💡 Select / Cycle 的懸停提示</strong>
+    <p>使用 Select、Copy 或 Cycle 工具，將游標移近標記時，標記會出現<strong>藍色發光</strong>效果，代表已定位到該標記。觸控裝置上直接點擊位置即可。</p>
+  </div>
+
+  <h3>6.4 小節數工具（Measure Number）</h3>
   <p style="font-size:13px;color:var(--slate-600);margin-bottom:14px">
     在樂譜左緣放置小節編號標籤，方便排練時快速對齊小節位置。小節數標籤會同時出現在<strong>樂譜上</strong>與<strong>左側尺規</strong>。
   </p>
@@ -675,7 +723,7 @@
     <p>小節數標籤的水平位置自動鎖定在樂譜左緣，確保所有編號整齊對齊，不需手動調整 X 軸。</p>
   </div>
 
-  <h3>6.4 圖層管理</h3>
+  <h3>6.5 圖層管理</h3>
   <p style="font-size:13px;color:var(--slate-600);margin-bottom:10px">
     每個類別可獨立顯示 / 隱藏：<strong>標記工具（T）→ 設定 → Categories</strong>。
   </p>
