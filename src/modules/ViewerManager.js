@@ -556,8 +556,12 @@ export class ViewerManager {
         const page = await this.pdf.getPage(1)
         const naturalWidth = page.getViewport({ scale: 1 }).width
 
-        // Accurate width calculation: Subtract padding/margins from the viewer container
-        const availW = this.app.viewer.clientWidth - 16 // 16px safety margin
+        // Subtract ruler width when visible so the PDF doesn't slide under it.
+        // clientWidth already excludes the scrollbar, so no extra safety margin needed.
+        const rulerW = (this.app.rulerManager?.rulerVisible)
+            ? (document.querySelector('.ruler-track')?.offsetWidth || 0)
+            : 0
+        const availW = this.app.viewer.clientWidth - rulerW
         this.scale = Math.min(Math.max(0.2, availW / naturalWidth), 4)
         this.isFitToHeight = false
         this.updateZoomDisplay()
