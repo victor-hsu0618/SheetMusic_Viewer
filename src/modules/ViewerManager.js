@@ -219,6 +219,9 @@ export class ViewerManager {
         this.app.stamps = savedStamps ? JSON.parse(savedStamps) : []
         this.app.jumpHistory = []
 
+        // Notify GistShareManager in case a share link is pending PDF upload
+        this.app.gistShareManager?.onPdfLoaded(newFingerprint)
+
         if (this.app.updateScoreDetailUI) {
             this.app.updateScoreDetailUI(newFingerprint)
         }

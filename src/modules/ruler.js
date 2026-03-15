@@ -305,6 +305,20 @@ export class RulerManager {
                 const metrics = this.app.viewerManager._pageMetrics
                 const viewportHeight = this.app.viewer.clientHeight
 
+                // In fit-to-height mode, skip system stamps and jump by page
+                if (this.app.viewerManager.isFitToHeight) {
+                    const nextPageNum = Object.keys(metrics)
+                        .map(Number)
+                        .sort((a, b) => a - b)
+                        .find(n => metrics[n].top > effectiveScroll + 10)
+                    if (nextPageNum) {
+                        this.jumpHistory.push(effectiveScroll)
+                        if (this.jumpHistory.length > 50) this.jumpHistory.shift()
+                        this._executeJump(metrics[nextPageNum].top)
+                    }
+                    return true
+                }
+
                 // Sort all system stamps by absolute Y position
                 const systemStamps = this.app.stamps
                     .filter(s => s.type === 'system' && !s.deleted)
@@ -347,27 +361,11 @@ export class RulerManager {
                     return true
                 }
 
-                // Fallback: Check for Fit to Height mode
-                if (this.app.viewerManager.isFitToHeight) {
-                    const nextPageNum = Object.keys(metrics)
-                        .map(Number)
-                        .sort((a, b) => a - b)
-                        .find(n => metrics[n].top > effectiveScroll + 10)
-
-                    if (nextPageNum) {
-                        this.jumpHistory.push(effectiveScroll)
-                        if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                        this._executeJump(metrics[nextPageNum].top)
-                    } else {
-                        return false;
-                    }
-                } else {
-                    // Fallback: scroll by one viewport minus jump offset for symmetric navigation
-                    const targetScroll = effectiveScroll + (viewportHeight - this.jumpOffsetPx)
-                    this.jumpHistory.push(effectiveScroll)
-                    if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                    this._executeJump(targetScroll)
-                }
+                // Fallback: scroll by one viewport minus jump offset for symmetric navigation
+                const targetScroll = effectiveScroll + (viewportHeight - this.jumpOffsetPx)
+                this.jumpHistory.push(effectiveScroll)
+                if (this.jumpHistory.length > 50) this.jumpHistory.shift()
+                this._executeJump(targetScroll)
             }
             return true;
         } else {

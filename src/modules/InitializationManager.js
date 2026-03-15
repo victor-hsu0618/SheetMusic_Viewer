@@ -206,6 +206,7 @@ export class InitializationManager {
             app.purgeAllCloudData();
         })
         document.getElementById('btn-drive-force-push')?.addEventListener('click', () => app.driveSyncManager.forcePushAll())
+        document.getElementById('btn-gist-share')?.addEventListener('click', () => app.gistShareManager?.share())
 
         // Activity tracking: record user presence for Drive sync idle detection
         const recordActivity = () => app.driveSyncManager?.recordActivity()

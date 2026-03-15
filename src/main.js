@@ -27,6 +27,7 @@ import { InitializationManager } from './modules/InitializationManager.js'
 import { PdfExportManager } from './modules/PdfExportManager.js'
 import { applyAppProxies } from './modules/AppProxyHandler.js'
 import { StaffDetector } from './modules/StaffDetector.js'
+import { GistShareManager } from './modules/GistShareManager.js'
 
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs/pdf.worker.min.mjs', baseUrl).href
@@ -63,11 +64,12 @@ class ScoreFlow {
     this.stampOffsetMouseY = 25
     this.stampOffsetMouseX = 0
     this.showSystemStamps = localStorage.getItem('scoreflow_show_systems') !== 'false'
+    this.showCloakBadge = localStorage.getItem('scoreflow_show_cloak_badge') !== 'false'
     this.systemJumpOverlap = parseInt(localStorage.getItem('scoreflow_system_jump_overlap') || '1')
     this.cloakVisible = {
         black: localStorage.getItem('scoreflow_cloak_visible_black') !== 'false',
         red:   localStorage.getItem('scoreflow_cloak_visible_red')   !== 'false',
-        gold:  localStorage.getItem('scoreflow_cloak_visible_gold')  !== 'false',
+        blue:  localStorage.getItem('scoreflow_cloak_visible_blue')  !== 'false',
     }
 
     // Managers Initialization
@@ -92,6 +94,7 @@ class ScoreFlow {
     this.pdfExportManager = new PdfExportManager(this)
     this.initManager = new InitializationManager(this)
     this.staffDetector = new StaffDetector(this)
+    this.gistShareManager = new GistShareManager(this)
 
     // Apply Proxies
     applyAppProxies(this)
@@ -114,6 +117,7 @@ class ScoreFlow {
     this.driveSyncManager.init()
     this.playbackManager.init()
     this.scoreManager.init()
+    this.gistShareManager.init()
     this.settingsPanelManager.init()
     this.setlistManager.init()
     this.toolManager.initDraggable()

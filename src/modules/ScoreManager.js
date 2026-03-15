@@ -45,6 +45,10 @@ export class ScoreManager {
         this._autoLoadOnStartup();
     }
 
+    findByFingerprint(fp) {
+        return this.registry.find(e => e.fingerprint === fp) || null
+    }
+
     async _autoLoadOnStartup() {
         // Find most recently accessed local score
         const localScores = this.registry

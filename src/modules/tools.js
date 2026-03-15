@@ -882,6 +882,16 @@ export class ToolManager {
                             </div>
                             <p class="setting-hint">Markings and text.</p>
                         </div>
+                        <div class="setting-item">
+                            <div class="setting-row-compact">
+                                <label class="setting-label">Cloak Badge</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="chk-cloak-badge" ${this.app.showCloakBadge !== false ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <p class="setting-hint">在斗篷標記右上角顯示彩色圓點。</p>
+                        </div>
                     </div>
 
                     <div class="vtab-pane" data-pane="touch">
@@ -960,7 +970,7 @@ export class ToolManager {
                             ${[
                                 { id: 'black', label: '黑色斗篷', color: '#374151' },
                                 { id: 'red',   label: '紅色斗篷', color: '#dc2626' },
-                                { id: 'gold',  label: '金色斗篷', color: '#d97706' },
+                                { id: 'blue',  label: '藍色斗篷', color: '#2563eb' },
                             ].map(c => `
                             <div class="setting-row-compact" style="margin-bottom:8px">
                                 <div style="display:flex;align-items:center;gap:8px">
@@ -1138,6 +1148,13 @@ export class ToolManager {
             this.app.updateRulerMarks()
             this.app.activeStampType = 'settings'
             this.updateActiveTools()
+        })
+
+        // Cloak Badge toggle
+        panel.querySelector('#chk-cloak-badge')?.addEventListener('change', e => {
+            this.app.showCloakBadge = e.target.checked
+            localStorage.setItem('scoreflow_show_cloak_badge', e.target.checked)
+            this.app.redrawAllAnnotationLayers()
         })
 
         // Cloak Labels toggles
