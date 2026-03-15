@@ -13,10 +13,10 @@ export class PdfExportManager {
         const cloakDefs = [
             { id: 'black', label: '黑色斗篷' },
             { id: 'red',   label: '紅色斗篷' },
-            { id: 'gold',  label: '金色斗篷' },
+            { id: 'blue',  label: '藍色斗篷' },
         ]
         const hasCloaked = this.app.stamps.some(s => s.hiddenGroup)
-        let pdfIncludeCloaks = { black: true, red: true, gold: true }
+        let pdfIncludeCloaks = { black: true, red: true, blue: true }
         if (hasCloaked) {
             const result = await this.app.showDialog({
                 title: 'PDF 斗篷標籤',

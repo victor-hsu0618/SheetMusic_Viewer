@@ -11,10 +11,10 @@ export class DocActionManager {
         const cloakDefs = [
             { id: 'black', label: '黑色斗篷' },
             { id: 'red',   label: '紅色斗篷' },
-            { id: 'gold',  label: '金色斗篷' },
+            { id: 'blue',  label: '藍色斗篷' },
         ]
         const hasCloaked = this.app.stamps.some(s => s.hiddenGroup)
-        let includeCloaks = { black: true, red: true, gold: true }
+        let includeCloaks = { black: true, red: true, blue: true }
         if (hasCloaked) {
             const result = await this.app.showDialog({
                 title: '匯出斗篷標籤',
@@ -225,7 +225,7 @@ export class DocActionManager {
                     cb.addEventListener('change', () => { include[c.id] = cb.checked })
                     const dot = document.createElement('span')
                     dot.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:50%;background:${
-                        c.id === 'black' ? '#374151' : c.id === 'red' ? '#dc2626' : '#d97706'}`
+                        c.id === 'black' ? '#374151' : c.id === 'red' ? '#dc2626' : '#2563eb'}`
                     const lbl = document.createElement('span')
                     lbl.textContent = c.label
                     row.append(cb, dot, lbl)

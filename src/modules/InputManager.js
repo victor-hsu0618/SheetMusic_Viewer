@@ -120,14 +120,7 @@ export class InputManager {
             // 5. Deletion (Grace Period)
             if ((key === 'delete' || key === 'backspace') && this.app._lastGraceObject) {
                 e.preventDefault()
-                const obj = this.app._lastGraceObject
-                obj.deleted = true
-                obj.updatedAt = Date.now()
-                this.app.saveToStorage(true)
-                this.app.redrawAllAnnotationLayers()
-                // Also remove the floating button if it exists
-                const btn = document.querySelector('.grace-delete-btn')
-                if (btn) btn.remove()
+                this.app.eraseStampTarget(this.app._lastGraceObject)
                 this.app._lastGraceObject = null
                 return
             }

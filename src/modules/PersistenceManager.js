@@ -232,7 +232,7 @@ export class PersistenceManager {
                 const scoreStamps = localStorage.getItem(`scoreflow_stamps_${fingerprintData}`)
                 if (scoreStamps) parsedStamps = JSON.parse(scoreStamps)
             }
-            this.app.stamps = parsedStamps
+            this.app.stamps = parsedStamps.filter(s => !s.deleted)
             this.app.stamps.forEach(s => {
                 // Migrate stamp layer IDs too
                 if (s.layerId === 'performance') s.layerId = 'text';

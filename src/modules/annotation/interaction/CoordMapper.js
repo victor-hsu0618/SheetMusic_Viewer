@@ -59,7 +59,7 @@ export const CoordMapper = {
         let dyPx = -offsetY
 
         // Disable horizontal offset for specific tools that need 1:1 finger placement
-        const noXOffsetTools = ['measure-free', 'view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle', 'cloak-black', 'cloak-red', 'cloak-gold'];
+        const noXOffsetTools = ['measure-free', 'view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle', 'cloak-black', 'cloak-red', 'cloak-blue'];
         if (noXOffsetTools.includes(toolType)) {
             dxPx = 0;
         }

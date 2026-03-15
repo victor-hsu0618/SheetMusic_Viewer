@@ -139,6 +139,15 @@ export class AnnotationManager {
     }
 
     /**
+     * Get the correct layer ID for a stamp, handling legacy migration for display.
+     */
+    getEffectiveLayerId(stamp) {
+        if (stamp.layerId === 'performance') return 'text'
+        if (stamp.layerId === 'other' || stamp.type === 'anchor' || stamp.type === 'measure' || stamp.type === 'measure-free') return 'layout'
+        return stamp.layerId || 'draw'
+    }
+
+    /**
      * Erase a specific annotation object.
      */
     eraseStampTarget(stamp) {
@@ -406,10 +415,9 @@ export class AnnotationManager {
         
         if (!confirmed) return
         
-        stampsToErase.forEach(s => {
-            s.deleted = true
-            s.updatedAt = Date.now()
-        })
+        // Physically remove stamps from the array
+        const idsToRemove = new Set(stampsToErase.map(s => s.id))
+        this.app.stamps = this.app.stamps.filter(s => !idsToRemove.has(s.id))
         
         this.app.updateRulerMarks()
         this.app.computeNextTarget()
@@ -422,35 +430,23 @@ export class AnnotationManager {
     }
 
     eraseAllByLayer(layerId) {
-        // Keeping this for backward compatibility if called from elsewhere, 
-        // but the main UI now uses confirmEraseSpecificStamps for better accuracy.
-        let removed = 0
+        const originalCount = this.app.stamps.length
         if (layerId === '__all__') {
-            this.app.stamps.forEach(s => {
-                if (!s.deleted) {
-                    s.deleted = true
-                    s.updatedAt = Date.now()
-                    removed++
-                }
-            })
+            this.app.stamps = []
         } else {
-            this.app.stamps.forEach(s => {
-                if (!s.deleted && s.layerId === layerId) {
-                    s.deleted = true
-                    s.updatedAt = Date.now()
-                    removed++
-                }
-            })
+            this.app.stamps = this.app.stamps.filter(s => s.layerId !== layerId)
         }
-        if (removed === 0) return
-        this.app.updateRulerMarks()
-        this.app.computeNextTarget()
-        document.querySelectorAll('.page-container[data-page]').forEach(wrapper => {
-            const page = parseInt(wrapper.dataset.page)
-            this.redrawStamps(page)
-        })
-        this.app.saveToStorage(true)
-        if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
+
+        if (this.app.stamps.length !== originalCount) {
+            this.app.updateRulerMarks()
+            this.app.computeNextTarget()
+            document.querySelectorAll('.page-container[data-page]').forEach(wrapper => {
+                const page = parseInt(wrapper.dataset.page)
+                this.redrawStamps(page)
+            })
+            this.app.saveToStorage(true)
+            if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
+        }
     }
 
     closeEraseAllModal() {
@@ -847,8 +843,14 @@ export class AnnotationManager {
             if (!measureInput) return
             this.app.lastMeasureNum = String(measureInput)
             data = String(measureInput)
-            const existingMeasure = this.app.stamps.find(s => s.type === 'measure' && s.page === page)
-            if (existingMeasure && type === 'measure') x = existingMeasure.x
+            if (type === 'measure') {
+                const existing = this.app.stamps.find(s => s.page === page && s.type === 'measure' && !s.deleted)
+                if (existing) {
+                    x = existing.x
+                } else {
+                    x = 0.05 // Standard left margin lock
+                }
+            }
         }
 
         const now = Date.now();

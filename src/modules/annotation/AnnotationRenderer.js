@@ -28,7 +28,8 @@ export class AnnotationRenderer {
 
             const sourceStamps = this.app.stamps.filter(s => s.page === page && s.sourceId === source.id && !s.deleted)
             sourceStamps.forEach(stamp => {
-                const layer = this.app.layers.find(l => l.id === stamp.layerId)
+                const effectiveLayerId = this.app.annotationManager.getEffectiveLayerId(stamp)
+                const layer = this.app.layers.find(l => l.id === effectiveLayerId)
                 if (!layer || !layer.visible) return
                 if (stamp.hiddenGroup && !this.app.cloakVisible?.[stamp.hiddenGroup]) return
 
@@ -555,7 +556,7 @@ export class AnnotationRenderer {
         }
 
         // Cloak badge: small dot at top-right corner of stamp
-        if (stamp.hiddenGroup && this.app.cloakVisible?.[stamp.hiddenGroup]) {
+        if (stamp.hiddenGroup && this.app.cloakVisible?.[stamp.hiddenGroup] && this.app.showCloakBadge !== false) {
             const cloakDef = CLOAK_GROUPS.find(c => c.id === stamp.hiddenGroup);
             if (cloakDef) {
                 const badgeR = 3.5 * (this.app.scale / 1.5);
