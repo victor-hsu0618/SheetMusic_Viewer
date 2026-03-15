@@ -38,6 +38,14 @@ export class DocBarManager {
         if (!this.app.docBar) return
         this.app.docBar.classList.toggle('collapsed')
         localStorage.setItem('scoreflow_doc_bar_collapsed', this.app.docBar.classList.contains('collapsed'))
+        this._updateGripTooltip()
+    }
+
+    _updateGripTooltip() {
+        const handle = this.app.docBar?.querySelector('.doc-drag-handle')
+        if (!handle) return
+        const collapsed = this.app.docBar.classList.contains('collapsed')
+        handle.dataset.tooltip = collapsed ? '快速工具' : '標準工具列'
     }
 
     toggleDocBarHidden(force = null) {
@@ -55,7 +63,10 @@ export class DocBarManager {
         const el = this.app.docBar
         if (!el) return
         const handle = el.querySelector('.doc-drag-handle')
-        if (handle) handle.addEventListener('click', () => this.toggleDocBar())
+        if (handle) {
+            handle.addEventListener('click', () => this.toggleDocBar())
+            this._updateGripTooltip() // set initial tooltip
+        }
 
         document.getElementById('btn-hide-docbar')
             ?.addEventListener('click', () => this.toggleDocBarHidden(true))
