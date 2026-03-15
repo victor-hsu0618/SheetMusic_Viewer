@@ -49,7 +49,7 @@ export const CoordMapper = {
 
         // 2. Direct Tools check: No offset for Pens and Edit tools
         const isPenTool = toolType && ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen'].includes(toolType);
-        const isEditTool = toolType && ['select', 'eraser', 'copy', 'recycle-bin', 'view', 'cycle'].includes(toolType);
+        const isEditTool = toolType && (['select', 'eraser', 'copy', 'recycle-bin', 'view', 'cycle'].includes(toolType) || toolType.startsWith('cloak-'));
         
         if (isPenTool || isEditTool) {
             return pos;
@@ -59,7 +59,7 @@ export const CoordMapper = {
         let dyPx = -offsetY
 
         // Disable horizontal offset for specific tools that need 1:1 finger placement
-        const noXOffsetTools = ['measure-free', 'view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle'];
+        const noXOffsetTools = ['measure-free', 'view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle', 'cloak-black', 'cloak-red', 'cloak-gold'];
         if (noXOffsetTools.includes(toolType)) {
             dxPx = 0;
         }

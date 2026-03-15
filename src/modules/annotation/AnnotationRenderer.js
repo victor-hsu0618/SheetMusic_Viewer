@@ -1,3 +1,5 @@
+import { CLOAK_GROUPS } from '../../constants.js';
+
 export class AnnotationRenderer {
     constructor(app) {
         this.app = app;
@@ -28,6 +30,7 @@ export class AnnotationRenderer {
             sourceStamps.forEach(stamp => {
                 const layer = this.app.layers.find(l => l.id === stamp.layerId)
                 if (!layer || !layer.visible) return
+                if (stamp.hiddenGroup && !this.app.cloakVisible?.[stamp.hiddenGroup]) return
 
                 const isHovered = stamp === this.app.hoveredStamp           // red (eraser)
                 const isSelectHovered = stamp === this.app.selectHoveredStamp // blue (select)
@@ -548,6 +551,24 @@ export class AnnotationRenderer {
         } else {
             if (stamp.type === 'circle') {
                 ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            }
+        }
+
+        // Cloak badge: small dot at top-right corner of stamp
+        if (stamp.hiddenGroup && this.app.cloakVisible?.[stamp.hiddenGroup]) {
+            const cloakDef = CLOAK_GROUPS.find(c => c.id === stamp.hiddenGroup);
+            if (cloakDef) {
+                const badgeR = 3.5 * (this.app.scale / 1.5);
+                const badgeX = x + size * 0.5 + badgeR;
+                const badgeY = y - size * 0.5 - badgeR;
+                ctx.save();
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
+                ctx.fillStyle = cloakDef.color;
+                ctx.globalAlpha = 0.9;
+                ctx.fill();
+                ctx.restore();
             }
         }
 

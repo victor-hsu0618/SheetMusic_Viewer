@@ -64,6 +64,11 @@ class ScoreFlow {
     this.stampOffsetMouseX = 0
     this.showSystemStamps = localStorage.getItem('scoreflow_show_systems') !== 'false'
     this.systemJumpOverlap = parseInt(localStorage.getItem('scoreflow_system_jump_overlap') || '1')
+    this.cloakVisible = {
+        black: localStorage.getItem('scoreflow_cloak_visible_black') !== 'false',
+        red:   localStorage.getItem('scoreflow_cloak_visible_red')   !== 'false',
+        gold:  localStorage.getItem('scoreflow_cloak_visible_gold')  !== 'false',
+    }
 
     // Managers Initialization
     this.toolManager = new ToolManager(this)

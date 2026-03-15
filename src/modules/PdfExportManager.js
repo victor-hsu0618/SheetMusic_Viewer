@@ -9,6 +9,30 @@ export class PdfExportManager {
             return;
         }
 
+        // Ask which cloaks to include in PDF
+        const cloakDefs = [
+            { id: 'black', label: '黑色斗篷' },
+            { id: 'red',   label: '紅色斗篷' },
+            { id: 'gold',  label: '金色斗篷' },
+        ]
+        const hasCloaked = this.app.stamps.some(s => s.hiddenGroup)
+        let pdfIncludeCloaks = { black: true, red: true, gold: true }
+        if (hasCloaked) {
+            const result = await this.app.showDialog({
+                title: 'PDF 斗篷標籤',
+                message: '選擇要包含在 PDF 中的斗篷標籤：',
+                icon: '👻',
+                type: 'cloak-export',
+                cloakDefs,
+                defaultInclude: pdfIncludeCloaks,
+            })
+            if (result === 'cancel') return
+            if (result && typeof result === 'object') pdfIncludeCloaks = result
+        }
+        // Temporarily override cloakVisible for rendering
+        const savedCloakVisible = { ...this.app.cloakVisible }
+        this.app.cloakVisible = pdfIncludeCloaks;
+
         if (!window.jspdf || !window.jspdf.jsPDF) {
             this.app.showMessage('PDF 匯出套件載入失敗，請檢查網路連線。', 'error');
             return;
@@ -312,6 +336,7 @@ export class PdfExportManager {
             this.app.showMessage(`PDF 匯出失敗: ${err.message || 'Unknown Error'}`, 'error');
         } finally {
             if (currentActiveTools) currentActiveTools.style.display = '';
+            this.app.cloakVisible = savedCloakVisible; // Restore cloak visibility
         }
     }
 }

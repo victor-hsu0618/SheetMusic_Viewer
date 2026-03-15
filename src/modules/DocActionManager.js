@@ -7,6 +7,31 @@ export class DocActionManager {
         const userName = this.app.profileManager?.data?.userName || 'Guest'
         const filename = this.app.scoreDetailManager.getExportFilename(isGlobal, userName)
 
+        // Cloak export options dialog
+        const cloakDefs = [
+            { id: 'black', label: '黑色斗篷' },
+            { id: 'red',   label: '紅色斗篷' },
+            { id: 'gold',  label: '金色斗篷' },
+        ]
+        const hasCloaked = this.app.stamps.some(s => s.hiddenGroup)
+        let includeCloaks = { black: true, red: true, gold: true }
+        if (hasCloaked) {
+            const result = await this.app.showDialog({
+                title: '匯出斗篷標籤',
+                message: '選擇要包含在 JSON 中的斗篷標籤：',
+                icon: '👻',
+                type: 'cloak-export',
+                cloakDefs,
+                defaultInclude: includeCloaks,
+            })
+            if (result === 'cancel') return
+            if (result && typeof result === 'object') includeCloaks = result
+        }
+
+        const exportStamps = this.app.stamps.filter(s =>
+            !s.hiddenGroup || includeCloaks[s.hiddenGroup]
+        )
+
         const exportData = {
             version: '2.0',
             exportType: isGlobal ? 'global_backup' : 'single_score',
@@ -15,7 +40,7 @@ export class DocActionManager {
             metadata: this.app.scoreDetailManager.getExportMetadata(),
             sources: this.app.sources,
             layers: this.app.layers,
-            stamps: this.app.stamps
+            stamps: exportStamps
         }
 
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
@@ -102,7 +127,7 @@ export class DocActionManager {
         location.reload()
     }
 
-    async showDialog({ title, message, icon = 'ℹ️', type = 'alert', actions = [], defaultValue = '', placeholder = '' }) {
+    async showDialog({ title, message, icon = 'ℹ️', type = 'alert', actions = [], defaultValue = '', placeholder = '', cloakDefs = [], defaultInclude = {} }) {
         if (!this.app.systemDialog) return
 
         this.app.dialogTitle.textContent = title
@@ -184,6 +209,40 @@ export class DocActionManager {
                         }
                     })
                 }
+            }
+
+            if (type === 'cloak-export') {
+                // Build checkboxes inline in dialogMessage area
+                const include = { ...defaultInclude }
+                const checkboxContainer = document.createElement('div')
+                checkboxContainer.style.cssText = 'margin-top:12px;display:flex;flex-direction:column;gap:8px'
+                cloakDefs.forEach(c => {
+                    const row = document.createElement('label')
+                    row.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px'
+                    const cb = document.createElement('input')
+                    cb.type = 'checkbox'
+                    cb.checked = include[c.id] !== false
+                    cb.addEventListener('change', () => { include[c.id] = cb.checked })
+                    const dot = document.createElement('span')
+                    dot.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:50%;background:${
+                        c.id === 'black' ? '#374151' : c.id === 'red' ? '#dc2626' : '#d97706'}`
+                    const lbl = document.createElement('span')
+                    lbl.textContent = c.label
+                    row.append(cb, dot, lbl)
+                    checkboxContainer.appendChild(row)
+                })
+                this.app.dialogMessage.appendChild(checkboxContainer)
+
+                const cancelBtn = document.createElement('button')
+                cancelBtn.className = 'btn btn-outline'
+                cancelBtn.textContent = '取消'
+                cancelBtn.onclick = () => { this.app.systemDialog.classList.remove('active'); resolve('cancel') }
+                const exportBtn = document.createElement('button')
+                exportBtn.className = 'btn btn-primary'
+                exportBtn.textContent = '匯出'
+                exportBtn.onclick = () => { this.app.systemDialog.classList.remove('active'); resolve(include) }
+                this.app.dialogActions.appendChild(cancelBtn)
+                this.app.dialogActions.appendChild(exportBtn)
             }
 
             this.app.systemDialog.classList.add('active')

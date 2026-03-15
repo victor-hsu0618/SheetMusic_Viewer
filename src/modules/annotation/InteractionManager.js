@@ -1,6 +1,6 @@
 import { CoordMapper } from './interaction/CoordMapper.js';
 import { InteractionUI } from './interaction/UIManager.js';
-import { CYCLE_GROUPS } from '../../constants.js';
+import { CYCLE_GROUPS, CLOAK_GROUPS } from '../../constants.js';
 
 export class InteractionManager {
     constructor(app) {
@@ -193,7 +193,8 @@ export class InteractionManager {
                 }
             }
 
-            const isSelectionTool = ['copy', 'select', 'recycle-bin', 'cycle'].includes(toolType);
+            const isCloakTool = toolType.startsWith('cloak-');
+            const isSelectionTool = ['copy', 'select', 'recycle-bin', 'cycle'].includes(toolType) || isCloakTool;
             const isSlurBending = (toolType === 'slur' && target && target.type === 'slur');
 
             if (isSelectionTool || isSlurBending) {
@@ -210,6 +211,14 @@ export class InteractionManager {
                             this.app.saveToStorage(true);
                             this.app.redrawAllAnnotationLayers();
                         }
+                        isInteracting = false;
+                        this.app.isInteracting = false;
+                    } else if (isCloakTool) {
+                        const cloakId = toolType.replace('cloak-', '');
+                        target.hiddenGroup = (target.hiddenGroup === cloakId) ? undefined : cloakId;
+                        target.updatedAt = Date.now();
+                        this.app.saveToStorage(true);
+                        this.app.redrawAllAnnotationLayers();
                         isInteracting = false;
                         this.app.isInteracting = false;
                     } else if (toolType === 'recycle-bin') {
@@ -604,7 +613,7 @@ export class InteractionManager {
                 }
             }
 
-            if (['select', 'copy', 'recycle-bin', 'cycle', 'text', 'tempo-text'].includes(toolType)) {
+            if (['select', 'copy', 'recycle-bin', 'cycle', 'text', 'tempo-text'].includes(toolType) || toolType.startsWith('cloak-')) {
                 const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 const found = this.app.findClosestStamp(pageNum, pPos.x, pPos.y, true);
                 if (found !== this.app.selectHoveredStamp) {

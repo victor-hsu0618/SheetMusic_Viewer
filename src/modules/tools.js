@@ -954,6 +954,26 @@ export class ToolManager {
                             </div>
                             <p id="system-detect-status" class="setting-hint" style="margin-top:6px">${statusText}</p>
                         </div>
+                        <div class="setting-divider"></div>
+                        <div class="setting-item mb-15" style="margin-top:10px">
+                            <div class="setting-label" style="margin-bottom:10px">斗篷標籤（Cloak Labels）</div>
+                            ${[
+                                { id: 'black', label: '黑色斗篷', color: '#374151' },
+                                { id: 'red',   label: '紅色斗篷', color: '#dc2626' },
+                                { id: 'gold',  label: '金色斗篷', color: '#d97706' },
+                            ].map(c => `
+                            <div class="setting-row-compact" style="margin-bottom:8px">
+                                <div style="display:flex;align-items:center;gap:8px">
+                                    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.color}"></span>
+                                    <span class="setting-label" style="margin:0">${c.label}</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" class="chk-cloak" data-cloak="${c.id}" ${this.app.cloakVisible?.[c.id] !== false ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>`).join('')}
+                            <p class="setting-hint">隱藏時，對應斗篷的標記不顯示（資料保留）。</p>
+                        </div>
                     </div>
 
                 </div>
@@ -1118,6 +1138,16 @@ export class ToolManager {
             this.app.updateRulerMarks()
             this.app.activeStampType = 'settings'
             this.updateActiveTools()
+        })
+
+        // Cloak Labels toggles
+        panel.querySelectorAll('.chk-cloak').forEach(chk => {
+            chk.addEventListener('change', e => {
+                const cloakId = e.target.dataset.cloak
+                this.app.cloakVisible[cloakId] = e.target.checked
+                localStorage.setItem(`scoreflow_cloak_visible_${cloakId}`, e.target.checked)
+                this.app.redrawAllAnnotationLayers()
+            })
         })
     }
 }
