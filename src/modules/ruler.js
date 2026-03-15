@@ -515,7 +515,6 @@ export class RulerManager {
                         mark.style.pointerEvents = 'auto'
                         mark.style.cursor = 'ns-resize'
                         mark.addEventListener('mousedown', (e) => this._startMeasureDrag(e, stamp, mark))
-                        mark.addEventListener('touchstart', (e) => this._startMeasureDrag(e, stamp, mark), { passive: false })
                     } else if (stamp.type === 'system') {
                         mark.className = stamp === nextSystemTarget
                             ? 'ruler-system-mark ruler-system-next-target'

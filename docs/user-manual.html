@@ -264,9 +264,10 @@
     <li><a href="#s3">Jump 導航系統</a></li>
     <li><a href="#s4">五線譜行偵測（Staff Detection）</a></li>
     <li><a href="#s5">Anchor 錨點</a></li>
-    <li><a href="#s6">標記與圖層</a></li>
+    <li><a href="#s6">標記與圖層（含小節數工具）</a></li>
     <li><a href="#s7">鍵盤快捷鍵</a></li>
     <li><a href="#s8">設定參考</a></li>
+    <li><a href="#s9">匯出與備份</a></li>
   </ol>
 </nav>
 
@@ -326,6 +327,23 @@
   <div class="divider"></div>
 
   <h3>浮動文件工具列（右側 Doc Bar）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:14px">Doc Bar 固定在畫面右側，有三種狀態：</p>
+
+  <table>
+    <thead><tr><th>狀態</th><th>外觀</th><th>切換方式</th></tr></thead>
+    <tbody>
+      <tr><td>縮起</td><td>只顯示 grip 把手 + 上/下頁快速按鈕</td><td>點擊展開狀態下的 ∨∨ 收合鍵</td></tr>
+      <tr><td>展開</td><td>顯示完整工具列（全部按鈕群組）</td><td>點擊 grip（三橫線圖示）</td></tr>
+      <tr><td>完全隱藏</td><td>Doc Bar 消失，右緣露出細縫可喚回</td><td>展開狀態下點擊右上角 ∨∨ 鍵</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <strong>💡 演奏時建議縮起</strong>
+    <p>縮起狀態只保留翻頁按鈕，佔用最小空間，不干擾閱譜視線。需要標記時再點 grip 展開。</p>
+  </div>
+
+  <h3>展開後的按鈕群組</h3>
   <table>
     <thead><tr><th>群組</th><th>按鈕</th><th>快捷鍵</th></tr></thead>
     <tbody>
@@ -616,7 +634,48 @@
     </div>
   </div>
 
-  <h3>6.3 圖層管理</h3>
+  <h3>6.3 小節數工具（Measure Number）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:14px">
+    在樂譜左緣放置小節編號標籤，方便排練時快速對齊小節位置。小節數標籤會同時出現在<strong>樂譜上</strong>與<strong>左側尺規</strong>。
+  </p>
+
+  <ul class="step-list">
+    <li>
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>選取工具</h4>
+        <p>在標記面板（T）選取小節數工具，或從 Anchor 類別中找到「Measure」。</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>設定起始編號與步距</h4>
+        <p>點擊樂譜，系統彈出數字鍵盤：輸入此處的<strong>起始小節號</strong>，並設定<strong>自動遞增步距</strong>（通常為 1）。確認後標籤放置完成。</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>繼續放置</h4>
+        <p>之後每次點擊，編號自動依步距遞增（例如 1、5、9…）。無需重新輸入。</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>尺規上拖曳調整位置</h4>
+        <p>尺規上的小節數標籤支援<strong>上下拖曳</strong>——直接在尺規上拖動標籤到正確的行，位置即時同步更新至樂譜。</p>
+      </div>
+    </li>
+  </ul>
+
+  <div class="tip">
+    <strong>💡 標籤固定在左緣</strong>
+    <p>小節數標籤的水平位置自動鎖定在樂譜左緣，確保所有編號整齊對齊，不需手動調整 X 軸。</p>
+  </div>
+
+  <h3>6.4 圖層管理</h3>
   <p style="font-size:13px;color:var(--slate-600);margin-bottom:10px">
     每個類別可獨立顯示 / 隱藏：<strong>標記工具（T）→ 設定 → Categories</strong>。
   </p>
@@ -715,6 +774,67 @@
 
   <h3>8.4 標記工具（T）→ 設定 → Categories</h3>
   <p style="font-size:13px;color:var(--slate-600)">各標記類別（Pens / Bowing / Fingering / Articulation / Tempo / Dynamic / Anchor）的個別顯示切換與批量清除。</p>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 9 — 匯出與備份
+════════════════════════════════════════════ -->
+<section id="s9">
+  <div class="section-num">Section 09</div>
+  <h2 class="section-title">匯出與備份</h2>
+  <p class="section-subtitle">將標記資料備份、分享給他人，或輸出含標記的合併 PDF。</p>
+  <div class="divider"></div>
+
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:16px">
+    入口：點擊 Score Detail 面板（側邊欄或 Doc Bar 中的樂譜名稱）→ <strong>System 分頁</strong> → <strong>Score Annotation Exchange</strong> 區塊。
+  </p>
+
+  <h3>9.1 匯出標記資料（Export Data）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:12px">
+    將目前樂譜的所有標記（stamps）、圖層設定、來源資訊匯出為 <code>.json</code> 檔案。
+  </p>
+  <table>
+    <thead><tr><th>包含內容</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td>Stamps</td><td>所有 Anchor、Measure、Pen、Bowing、Fingering 等標記的位置與資料</td></tr>
+      <tr><td>Layers</td><td>圖層顯示狀態與設定</td></tr>
+      <tr><td>Sources</td><td>協作來源（Persona）資訊</td></tr>
+      <tr><td>Metadata</td><td>樂譜名稱、作者、匯出時間戳</td></tr>
+    </tbody>
+  </table>
+  <div class="tip">
+    <strong>💡 定期備份</strong>
+    <p>標記資料儲存於本機 IndexedDB。清除瀏覽器資料或更換設備時，請務必先 Export Data 備份。</p>
+  </div>
+
+  <h3>9.2 匯入標記資料（Import Data）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:12px">
+    載入 <code>.json</code> 備份檔，系統會詢問匯入方式：
+  </p>
+  <table>
+    <thead><tr><th>選項</th><th>行為</th><th>適用情境</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Merge as New Persona</strong></td><td>將匯入的標記以新來源（新 Persona）加入，與現有標記並存</td><td>合併他人的標記、接收樂團同伴的詮釋</td></tr>
+      <tr><td><strong>Overwrite Current</strong></td><td>以匯入資料完全覆蓋目前的所有標記</td><td>從備份還原、換設備後恢復資料</td></tr>
+    </tbody>
+  </table>
+  <div class="warning">
+    <strong>⚠️ Overwrite 無法還原</strong>
+    <p>選擇 Overwrite 前，建議先 Export Data 備份現有標記，以防需要回復。</p>
+  </div>
+
+  <h3>9.3 匯出合併 PDF（Export Merged PDF）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:12px">
+    將所有<strong>可見標記</strong>直接燒錄進 PDF，輸出一份含標記的獨立 PDF 檔。
+  </p>
+  <table>
+    <thead><tr><th>特性</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td>標記渲染</td><td>所有可見圖層的標記（Pen、Bowing、Fingering 等）合併至 PDF 頁面</td></tr>
+      <tr><td>Anchor 排除</td><td>Anchor 錨點為純導航用途，不會出現在匯出的 PDF 中</td></tr>
+      <tr><td>用途</td><td>列印樂譜、與不使用 ScoreFlow 的合奏夥伴分享含標記的譜面</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <!-- ═══ FOOTER ═══ -->
