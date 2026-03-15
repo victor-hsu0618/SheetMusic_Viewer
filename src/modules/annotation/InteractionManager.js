@@ -71,12 +71,11 @@ export class InteractionManager {
         };
 
         // Returns trash bin {x, y} for showTrash positioning.
-        // Left-locked stamps (measure, x<0.15): trash appears BELOW so the user drags down to delete.
-        // All other stamps: trash appears 70px ABOVE as usual.
+        // Always place trash 70px ABOVE the stamp — with upward touch offset, the stamp
+        // arrives at the trash slightly before the finger reaches it (forgiving).
+        // Previously left-side stamps (x<0.15) had trash BELOW, but the upward offset
+        // meant the finger had to travel past the trash bin — unreachable in practice.
         const getTrashPos = (normX, wCentX, wCentY) => {
-            if (normX < 0.15) {
-                return { x: wCentX, y: wCentY + 90 };
-            }
             return { x: wCentX, y: wCentY - 70 };
         };
 
@@ -200,13 +199,25 @@ export class InteractionManager {
                 const threshold = CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 2.0;
                 let distPx;
                 if (graceObject.points && graceObject.points.length > 0) {
-                    // Paths: measure distance to nearest segment so any point on stroke triggers re-grab
-                    distPx = CoordMapper.getMinPathDist(offsetPos.x, offsetPos.y, graceObject.points) * width;
+                    // Accept grab from either raw finger pos OR offset pos — covers both:
+                    // (a) immediately after placement: finger is at offset position → offsetPos hits stroke
+                    // (b) grabbing an existing stroke visually: finger is on stroke → pos hits stroke
+                    const distFromPos = CoordMapper.getMinPathDist(pos.x, pos.y, graceObject.points) * width;
+                    const distFromOffset = CoordMapper.getMinPathDist(offsetPos.x, offsetPos.y, graceObject.points) * width;
+                    distPx = Math.min(distFromPos, distFromOffset);
                 } else {
                     const center = CoordMapper.getGraceCenter(graceObject);
-                    const dx = (offsetPos.x - center.x) * width;
-                    const dy = (offsetPos.y - center.y) * height;
-                    distPx = Math.sqrt(dx * dx + dy * dy);
+                    // Accept grab from either raw finger pos OR offset pos — covers both:
+                    // (a) immediately after placement: finger at offset pos → offsetPos ≈ center
+                    // (b) grabbing existing stamp visually (esp. left-side): finger at center → pos ≈ center
+                    const dxPos = (pos.x - center.x) * width;
+                    const dyPos = (pos.y - center.y) * height;
+                    const dxOff = (offsetPos.x - center.x) * width;
+                    const dyOff = (offsetPos.y - center.y) * height;
+                    distPx = Math.min(
+                        Math.sqrt(dxPos * dxPos + dyPos * dyPos),
+                        Math.sqrt(dxOff * dxOff + dyOff * dyOff)
+                    );
                 }
 
                 if (distPx < threshold) {
