@@ -283,6 +283,9 @@ export class RulerManager {
     }
 
     jump(delta) {
+        const _stack = new Error().stack?.split('\n').slice(1, 4).map(s => s.trim()).join(' | ')
+        console.log(`[jump] jump(${delta}) scrollTop=${this.app.viewer.scrollTop} | ${_stack}`)
+
         // Use expected target if jumping rapidly to allow queueing/skipping
         const effectiveScroll = (this._isJumping && this._expectedTargetY !== null)
             ? this._expectedTargetY
