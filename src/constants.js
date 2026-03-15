@@ -99,7 +99,7 @@ export const TOOLSETS = [
             { id: 'text-cond', label: '指揮', row: 2, draw: { type: 'text', content: '指揮', font: 'italic 500', size: 16 } },
             { id: 'text-v1', label: '小提', row: 2, draw: { type: 'text', content: '小提', font: 'italic 500', size: 16 } },
             { id: 'text-vlc', label: '大提', row: 2, draw: { type: 'text', content: '大提', font: 'italic 500', size: 16 } },
-            { id: 'text-wind', label: '管', row: 2, draw: { type: 'text', content: '管', font: 'italic 500', size: 16 } },
+            { id: 'text-wind', label: '管樂', row: 2, draw: { type: 'text', content: '管樂', font: 'italic 500', size: 16 } },
             { id: 'text-perc', label: '打擊', row: 2, draw: { type: 'text', content: '打擊', font: 'italic 500', size: 16 } },
             { id: 'text-solo', label: '獨奏', row: 2, draw: { type: 'text', content: '獨奏', font: 'italic 500', size: 16 } },
             { id: 'text-page', label: '換頁', row: 2, draw: { type: 'text', content: '換頁', font: 'italic 500', size: 16, color: '#ef4444' } },

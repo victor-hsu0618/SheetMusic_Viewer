@@ -901,6 +901,16 @@ export class ToolManager {
                     </div>
                     <div id="settings-layer-list" class="layer-list-mini mt-10"></div>
                 </div>
+
+                <div class="setting-divider"></div>
+
+                <div class="setting-item">
+                    <button id="btn-reload-app" class="btn btn-secondary btn-full" style="gap:8px;display:flex;align-items:center;justify-content:center;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        Reload App
+                    </button>
+                    <p class="setting-hint">Force-refresh the PWA. Useful after an update.</p>
+                </div>
             </div>
         `
 
@@ -915,6 +925,7 @@ export class ToolManager {
         const btnFontReset = panel.querySelector('#btn-font-reset')
         const btnOffsetReset = panel.querySelector('#btn-offset-reset')
         const btnOffsetXReset = panel.querySelector('#btn-offset-x-reset')
+        const btnReloadApp = panel.querySelector('#btn-reload-app')
 
         const sliderOffset = panel.querySelector('#settings-offset-touch')
         const valOffset = panel.querySelector('#settings-offset-touch-value')
@@ -982,6 +993,7 @@ export class ToolManager {
         btnFontReset.onclick = () => updateFont(20)
         btnOffsetReset.onclick = () => updateOffset(50)
         btnOffsetXReset.onclick = () => updateOffsetX(-30)
+        btnReloadApp.onclick = () => location.reload()
 
         // General Slider Adjustment Buttons
         panel.querySelectorAll('.slider-adj-btn').forEach(btn => {
