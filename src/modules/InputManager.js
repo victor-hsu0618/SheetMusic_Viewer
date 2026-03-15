@@ -44,7 +44,16 @@ export class InputManager {
     isEventInUI(e) {
         if (!e || !e.target) return false
         const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, .jump-sub-panel, .library-overlay, .sidebar-recent-item, .recent-score-card, .bookmark-item'
-        return !!e.target.closest(uiSelector)
+        if (e.target.closest(uiSelector)) return true
+
+        // On iOS, touch events can bleed through position:fixed overlays to the
+        // underlying viewer. Check the actual touch coordinates to catch this.
+        const touch = (e.changedTouches ?? e.touches)?.[0]
+        if (touch) {
+            const elAtPoint = document.elementFromPoint(touch.clientX, touch.clientY)
+            if (elAtPoint?.closest(uiSelector)) return true
+        }
+        return false
     }
 
     initKeyboardListeners() {
