@@ -153,6 +153,12 @@
   z-index: 5;
 }
 
+.ruler-measure-mark.dragging {
+  opacity: 0.6;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
 .measure-input-large {
   font-size: 24px;
   text-align: center;
