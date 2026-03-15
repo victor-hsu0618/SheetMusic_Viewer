@@ -65,6 +65,7 @@ class ScoreFlow {
     this.stampOffsetMouseX = 0
     this.showSystemStamps = localStorage.getItem('scoreflow_show_systems') !== 'false'
     this.showCloakBadge = localStorage.getItem('scoreflow_show_cloak_badge') !== 'false'
+    this.twoFingerPanEnabled = localStorage.getItem('scoreflow_two_finger_pan') === 'true' // default OFF
     this.systemJumpOverlap = parseInt(localStorage.getItem('scoreflow_system_jump_overlap') || '1')
     this.cloakVisible = {
         black: localStorage.getItem('scoreflow_cloak_visible_black') !== 'false',

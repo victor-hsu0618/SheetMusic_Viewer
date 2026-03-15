@@ -26,6 +26,14 @@ export class InteractionManager {
         let graceTimer = null;
         let pointerIdleTimer = null;
 
+        // Two-finger pan state (stamp mode only)
+        let activePointers = new Map(); // pointerId → {x, y}
+        let isTwoFingerPanning = false;
+        let twoFingerScrollStart = { top: 0, left: 0 };
+        let twoFingerCentroidStart = { x: 0, y: 0 };
+        let panCooldown = false;        // Brief post-pan window: suppress preview + stamp placement
+        let panCooldownTimer = null;
+
         const resetPointerIdleTimer = () => {
             if (pointerIdleTimer) clearTimeout(pointerIdleTimer);
             
@@ -78,14 +86,72 @@ export class InteractionManager {
             document.body.dataset.activeTool = toolType;
         };
 
+        // Two-finger pan handlers (stamp mode)
+        const doTwoFingerPan = (e) => {
+            if (!isTwoFingerPanning || e.pointerType !== 'touch') return;
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (activePointers.size < 2) return;
+            const pts = [...activePointers.values()];
+            const cx = (pts[0].x + pts[1].x) / 2;
+            const cy = (pts[0].y + pts[1].y) / 2;
+            this.app.viewer.scrollTop  = twoFingerScrollStart.top  - (cy - twoFingerCentroidStart.y);
+            this.app.viewer.scrollLeft = twoFingerScrollStart.left - (cx - twoFingerCentroidStart.x);
+        };
+
+        const stopTwoFingerPan = (e) => {
+            activePointers.delete(e.pointerId);
+            if (isTwoFingerPanning && activePointers.size < 2) {
+                isTwoFingerPanning = false;
+                window.removeEventListener('pointermove',   doTwoFingerPan);
+                window.removeEventListener('pointerup',     stopTwoFingerPan);
+                window.removeEventListener('pointercancel', stopTwoFingerPan);
+                // Cooldown: suppress stamp preview + placement for 400ms after pan ends
+                panCooldown = true;
+                virtualPointer?.classList.remove('active');
+                if (panCooldownTimer) clearTimeout(panCooldownTimer);
+                panCooldownTimer = setTimeout(() => { panCooldown = false; }, 400);
+            }
+        };
+
         // --- HANDLERS ---
 
         const startAction = (e) => {
-            if (isInteracting) return; 
-
-            const pos = CoordMapper.getPos(e, overlay);
             const toolType = this.app.activeStampType;
             const pointerType = getPointerType(e);
+
+            // Two-finger pan in any stamp mode (before isInteracting guard)
+            if (this.app.twoFingerPanEnabled && pointerType === 'touch' && toolType !== 'view') {
+                activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (activePointers.size >= 2) {
+                    // Cancel any in-progress single-finger stamp interaction
+                    if (isInteracting) {
+                        isInteracting = false;
+                        this.app.isInteracting = false;
+                        activeObject = null;
+                        isMovingExisting = false;
+                        InteractionUI.showTrash(false, wrapper);
+                        detachGlobalListeners();
+                    }
+                    if (!isTwoFingerPanning) {
+                        isTwoFingerPanning = true;
+                        twoFingerScrollStart = { top: this.app.viewer.scrollTop, left: this.app.viewer.scrollLeft };
+                        const pts = [...activePointers.values()];
+                        twoFingerCentroidStart = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+                        window.addEventListener('pointermove',   doTwoFingerPan);
+                        window.addEventListener('pointerup',     stopTwoFingerPan);
+                        window.addEventListener('pointercancel', stopTwoFingerPan);
+                        // Clear any stamp preview that appeared on first-finger down
+                        virtualPointer?.classList.remove('active');
+                        this.app.redrawStamps(pageNum);
+                    }
+                    return;
+                }
+            }
+
+            if (isInteracting) return;
+            if (panCooldown) return; // Post-pan cooldown: ignore taps until fingers settle
+
+            const pos = CoordMapper.getPos(e, overlay);
 
             // 1. View Mode Panning (Only for mouse/pen in view mode)
             if (toolType === 'view') {
@@ -123,9 +189,8 @@ export class InteractionManager {
                 return;
             }
 
-            // 2. Prevent Scroll for all other tools (Select, Pen, Stamp, etc.)
+            // 2. Prevent Scroll for single-touch stamp tools
             if (pointerType === 'touch') {
-                if (e.touches && e.touches.length > 1) return; // Allow multi-touch zoom
                 if (e.cancelable) e.preventDefault(); // Stop native scrolling
             }
 
@@ -578,6 +643,7 @@ export class InteractionManager {
             activeObject = null;
             this.isAdjustingCurvature = false;
             this.app._dragLastPos = null;
+            if (e?.pointerId !== undefined) activePointers.delete(e.pointerId);
             
             const pointerType = getPointerType(e || { type: 'mousemove' });
             overlay.style.cursor = this.app.isStampTool() ? (pointerType === 'mouse' ? 'none' : 'crosshair') : '';
@@ -592,6 +658,11 @@ export class InteractionManager {
 
         const hoverAction = (e) => {
             if (isInteracting) return;
+            // Suppress stamp preview when 2+ fingers are on screen (only when two-finger pan is enabled)
+            if (this.app.twoFingerPanEnabled && getPointerType(e) === 'touch' && (e.touches?.length >= 2 || panCooldown)) {
+                virtualPointer?.classList.remove('active');
+                return;
+            }
             const pos = CoordMapper.getPos(e, overlay);
             const pointerType = getPointerType(e);
             const toolType = this.app.activeStampType;
@@ -670,6 +741,10 @@ export class InteractionManager {
 
         overlay.addEventListener('pointerdown', startAction);
         overlay.addEventListener('pointermove', hoverAction);
+        // Clean up activePointers tracking when a touch pointer lifts on the overlay
+        // (covers single-tap lifts that don't go through endAction's global listener)
+        overlay.addEventListener('pointerup',     (e) => { activePointers.delete(e.pointerId); }, { passive: true });
+        overlay.addEventListener('pointercancel', (e) => { activePointers.delete(e.pointerId); }, { passive: true });
         overlay.addEventListener('mouseleave', () => {
             virtualPointer?.classList.remove('active');
             this.app.hoveredStamp = this.app.selectHoveredStamp = null;

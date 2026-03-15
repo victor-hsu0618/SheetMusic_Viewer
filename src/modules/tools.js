@@ -309,7 +309,7 @@ export class ToolManager {
                 const isInteractive = e.target.tagName === 'INPUT' || 
                                      e.target.tagName === 'BUTTON' || 
                                      e.target.closest('button')
-                const isScrollableRow = e.target.closest('.text-cloud-row, .tools-row, .recent-tools-ribbon, .category-ribbon')
+                const isScrollableRow = e.target.closest('.text-cloud-row, .tools-row, .recent-tools-ribbon, .category-ribbon, .settings-vtab-content')
                 if (!isInteractive && !isScrollableRow && el.style.overflowY !== 'auto') {
                     e.preventDefault()
                 }
@@ -984,6 +984,17 @@ export class ToolManager {
                             </div>`).join('')}
                             <p class="setting-hint">隱藏時，對應斗篷的標記不顯示（資料保留）。</p>
                         </div>
+                        <div class="setting-divider"></div>
+                        <div class="setting-item mb-15" style="margin-top:10px">
+                            <div class="setting-label flex-space-between">
+                                <span>兩指捲動（⚠️ 實驗性）</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="chk-two-finger-pan" ${this.app.twoFingerPanEnabled ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <p class="setting-hint">在標記模式下，用兩根手指拖曳捲動 PDF。已知限制：兩指跨頁時可能失效。</p>
+                        </div>
                     </div>
 
                 </div>
@@ -1148,6 +1159,12 @@ export class ToolManager {
             this.app.updateRulerMarks()
             this.app.activeStampType = 'settings'
             this.updateActiveTools()
+        })
+
+        // Two-finger pan toggle
+        panel.querySelector('#chk-two-finger-pan')?.addEventListener('change', e => {
+            this.app.twoFingerPanEnabled = e.target.checked
+            localStorage.setItem('scoreflow_two_finger_pan', e.target.checked)
         })
 
         // Cloak Badge toggle
