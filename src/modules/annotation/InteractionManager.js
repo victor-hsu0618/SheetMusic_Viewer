@@ -203,6 +203,9 @@ export class InteractionManager {
                         const group = CYCLE_GROUPS.find(g => g.includes(target.type));
                         if (group) {
                             target.type = group[(group.indexOf(target.type) + 1) % group.length];
+                            // Also update stamp.draw so Priority-1 rendering uses the new shape
+                            const newTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === target.type);
+                            if (newTool?.draw) target.draw = { ...newTool.draw };
                             target.updatedAt = Date.now();
                             this.app.saveToStorage(true);
                             this.app.redrawAllAnnotationLayers();
