@@ -218,6 +218,20 @@ export class SettingsPanelManager {
     }
 
     initSettings() {
+        // Edit Scrollbar
+        const editScrollbarToggle = document.getElementById('settings-edit-scrollbar')
+        if (editScrollbarToggle) {
+            const stored = localStorage.getItem('scoreflow_edit_scrollbar')
+            const enabled = stored === null ? true : stored === 'true'
+            editScrollbarToggle.checked = enabled
+            document.body.classList.toggle('edit-scrollbar-hidden', !enabled)
+
+            editScrollbarToggle.addEventListener('change', (e) => {
+                localStorage.setItem('scoreflow_edit_scrollbar', e.target.checked)
+                document.body.classList.toggle('edit-scrollbar-hidden', !e.target.checked)
+            })
+        }
+
         // Nav Dividers
         const navDividerToggle = document.getElementById('settings-show-nav-dividers')
         if (navDividerToggle) {

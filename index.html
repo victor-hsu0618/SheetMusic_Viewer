@@ -98,6 +98,10 @@
         </div>
       </div>
     </main>
+    <!-- Edit-mode scroll bar (visible in stamp tools, hidden in view mode) -->
+    <div id="edit-scrollbar" aria-hidden="true">
+      <div id="edit-scrollbar-thumb"></div>
+    </div>
     <!-- Navigation Zone Dividers (Overlay) -->
     <div id="nav-divider-h" class="nav-zone-divider nav-zone-divider-h"></div>
     <div id="nav-divider-v" class="nav-zone-divider nav-zone-divider-v"></div>
@@ -677,6 +681,17 @@
               </label>
             </div>
             <span class="setting-hint">在樂譜左側顯示小節編號標記。</span>
+          </div>
+
+          <div class="setting-item mb-15">
+            <div class="flex-row-center flex-space-between w-full">
+              <label class="setting-label" for="settings-edit-scrollbar">Edit Mode Scroll Bar</label>
+              <label class="switch">
+                <input type="checkbox" id="settings-edit-scrollbar" checked>
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <span class="setting-hint">在 Stamp 編輯模式下顯示右側捲軸，方便不切換工具直接捲動樂譜。</span>
           </div>
 
           <div class="setting-item mb-15">

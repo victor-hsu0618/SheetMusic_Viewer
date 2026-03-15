@@ -28,6 +28,7 @@ import { PdfExportManager } from './modules/PdfExportManager.js'
 import { applyAppProxies } from './modules/AppProxyHandler.js'
 import { StaffDetector } from './modules/StaffDetector.js'
 import { GistShareManager } from './modules/GistShareManager.js'
+import { EditScrollbarManager } from './modules/EditScrollbarManager.js'
 
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs/pdf.worker.min.mjs', baseUrl).href
@@ -78,6 +79,7 @@ class ScoreFlow {
     this.rulerManager = new RulerManager(this)
     this.docBarManager = new DocBarManager(this)
     this.viewerManager = new ViewerManager(this)
+    this.editScrollbarManager = new EditScrollbarManager(this)
     this.profileManager = new ProfileManager(this)
     this.scoreDetailManager = new ScoreDetailManager(this)
     this.annotationManager = new AnnotationManager(this)
@@ -110,6 +112,7 @@ class ScoreFlow {
     this.layerManager.init()
     this.initManager.initEventListeners()
     this.viewerManager.init()
+    this.editScrollbarManager.init()
     this.rulerManager.init()
     this.docBarManager.init()
     this.inputManager.init()
