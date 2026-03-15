@@ -267,6 +267,12 @@ export class InputManager {
         })
 
         viewer.addEventListener('click', (e) => {
+            // Suppress iOS synthetic click that fires after touchend zone tap
+            if (this._suppressNextClick) {
+                this._suppressNextClick = false
+                return
+            }
+
             // Ignore if this is part of a long press OR if we just finished panning
             if (this.isMouseLongPressActive || this.app._wasPanning) {
                 this.isMouseLongPressActive = false
