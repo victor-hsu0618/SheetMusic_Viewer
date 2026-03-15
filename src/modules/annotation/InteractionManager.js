@@ -1,5 +1,6 @@
 import { CoordMapper } from './interaction/CoordMapper.js';
 import { InteractionUI } from './interaction/UIManager.js';
+import { CYCLE_GROUPS } from '../../constants.js';
 
 export class InteractionManager {
     constructor(app) {
@@ -192,13 +193,23 @@ export class InteractionManager {
                 }
             }
 
-            const isSelectionTool = ['copy', 'select', 'recycle-bin'].includes(toolType);
+            const isSelectionTool = ['copy', 'select', 'recycle-bin', 'cycle'].includes(toolType);
             const isSlurBending = (toolType === 'slur' && target && target.type === 'slur');
 
             if (isSelectionTool || isSlurBending) {
                 if (target) {
-                    overlay.style.cursor = pointerType === 'mouse' ? 'none' : (toolType === 'recycle-bin' ? 'none' : 'none'); 
-                    if (toolType === 'recycle-bin') {
+                    overlay.style.cursor = pointerType === 'mouse' ? 'none' : (toolType === 'recycle-bin' ? 'none' : 'none');
+                    if (toolType === 'cycle') {
+                        const group = CYCLE_GROUPS.find(g => g.includes(target.type));
+                        if (group) {
+                            target.type = group[(group.indexOf(target.type) + 1) % group.length];
+                            target.updatedAt = Date.now();
+                            this.app.saveToStorage(true);
+                            this.app.redrawAllAnnotationLayers();
+                        }
+                        isInteracting = false;
+                        this.app.isInteracting = false;
+                    } else if (toolType === 'recycle-bin') {
                         this.app.annotationManager.eraseStampTarget(target);
                         isInteracting = false;
                         this.app.isInteracting = false;
