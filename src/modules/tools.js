@@ -157,43 +157,35 @@ export class ToolManager {
         } else {
             el.classList.remove('expanded')
             this.isStampPaletteOpen = false
-            
-            // FORCE VIEW MODE: When closing the palette, revert to pan/view mode to prevent accidental stamps.
-            this.app.activeStampType = 'view'
-            this.app.saveToStorage() // Persist this change
-            
-            console.log(`[PaletteDebug] Closing Palette. ActiveStampType set to: ${this.app.activeStampType}`);
 
-            // IMMEDIATE SYNC: Update touch-action immediately to restore scrolling responsiveness
+            // Revert to view/navigation mode when palette closes
+            this.app.activeStampType = 'view'
+
+            // Sync data-active-tool and reset isInteracting immediately
             const interaction = this.app.annotationManager?.interaction;
             if (interaction) {
-                console.log(`[PaletteDebug] Closing Palette. Found interaction manager, calling sync...`);
                 interaction.updateAllOverlaysTouchAction();
-                // DEFENSIVE: Sync again after a slight delay to ensure iOS Safari picks up the changes
-                setTimeout(() => {
-                    console.log(`[PaletteDebug] Delayed (50ms) sync...`);
-                    interaction.updateAllOverlaysTouchAction();
-                    // FORCE VIEWER REFLOW
-                    if (this.app.viewer) {
-                        const _ = this.app.viewer.offsetHeight;
-                    }
-                }, 50);
-            } else {
-                console.warn(`[PaletteDebug] Interaction manager NOT FOUND during palette close!`);
             }
 
-            // FORCE BLUR: To break any touch event capture chain on iPad
-            if (document.activeElement) document.activeElement.blur();
-
-            // RESET INTERACTION FLAGS: Ensure no ghost interaction state persists
-            if (this.app.inputManager) {
-                this.app.inputManager.isLongPressActive = false;
-                if (this.app.inputManager.longPressTimer) {
-                    clearTimeout(this.app.inputManager.longPressTimer);
-                    this.app.inputManager.lastLongPressAt = 0; // Clear timing too
-                    this.app.inputManager.longPressTimer = null;
+            // Deferred cleanup for lingering interaction state
+            setTimeout(() => {
+                if (this.app.rulerManager) {
+                    this.app.rulerManager.stopJump();
                 }
-            }
+                if (interaction) {
+                    interaction.updateAllOverlaysTouchAction();
+                }
+                if (document.activeElement) document.activeElement.blur();
+                if (this.app.inputManager) {
+                    this.app.inputManager.isLongPressActive = false;
+                    if (this.app.inputManager.longPressTimer) {
+                        clearTimeout(this.app.inputManager.longPressTimer);
+                        this.app.inputManager.lastLongPressAt = 0;
+                        this.app.inputManager.longPressTimer = null;
+                    }
+                }
+                this.updateActiveTools();
+            }, 50);
         }
 
         this.updateActiveTools()
@@ -347,13 +339,19 @@ export class ToolManager {
             // Set on both viewer and body for maximum compatibility with CSS selectors
             this.app.viewer.dataset.activeTool = toolType;
             document.body.dataset.activeTool = toolType;
-            
-            this.app.redrawAllAnnotationLayers();
+
+            // PERFORMANCE FIX: Don't block the main thread with heavy redraws when switching to view mode
+            // This is likely what kills the first touch responsiveness on iPad.
+            if (toolType !== 'view') {
+                this.app.redrawAllAnnotationLayers();
+            } else {
+                // In view mode, we can afford to wait or skip redraw if nothing changed
+                requestAnimationFrame(() => this.app.redrawAllAnnotationLayers());
+            }
 
             // SYNC TOUCH ACTIONS: Ensure overlays are updated to match the NEW active tool immediately
             this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
         }
-
         // Sync Doc Bar
         if (this.app.btnModeHand) this.app.btnModeHand.classList.toggle('active', this.app.activeStampType === 'view')
         if (this.app.btnModeEraser) this.app.btnModeEraser.classList.toggle('active', this.app.activeStampType === 'eraser')

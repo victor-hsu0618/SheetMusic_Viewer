@@ -79,14 +79,6 @@ export class InteractionManager {
 
         // --- HANDLERS ---
 
-        // GLOBAL TOUCH MONITOR: Let's see what is actually being hit
-        document.body.addEventListener('touchstart', (e) => {
-            const seq = this._syncSeq || 0;
-            const target = e.target;
-            const tool = this.app.activeStampType;
-            console.log(`[GlobalTouch #${seq}] Touch on <${target.tagName}>.${target.className}, Tool: ${tool}`);
-        }, { passive: true });
-
         const startAction = (e) => {
             if (isInteracting) return; 
 
@@ -96,42 +88,39 @@ export class InteractionManager {
 
             // 1. View Mode Panning (Only for mouse/pen in view mode)
             if (toolType === 'view') {
+                // Only handle single-touch; ignore if already panning
+                if (isPanning) return;
+
+                isPanning = true;
+                const startX = e.clientX, startY = e.clientY;
+                const startScrollTop = this.app.viewer.scrollTop;
+                const startScrollLeft = this.app.viewer.scrollLeft;
                 if (pointerType !== 'touch') {
-                    isPanning = true;
-                    const startX = e.clientX, startY = e.clientY;
-                    const startScrollTop = this.app.viewer.scrollTop;
-                    const startScrollLeft = this.app.viewer.scrollLeft;
                     overlay.style.cursor = 'grabbing';
                     this.app.viewer.style.scrollBehavior = 'auto';
-                    const doPan = (ev) => {
-                        if (!isPanning) return;
-                        const dx = ev.clientX - startX;
-                        const dy = ev.clientY - startY;
-                        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                            this.app._wasPanning = true;
-                        }
-                        this.app.viewer.scrollTop = startScrollTop - dy;
-                        this.app.viewer.scrollLeft = startScrollLeft - dx;
-                    };
-                    const stopPan = () => {
-                        isPanning = false;
-                        overlay.style.cursor = '';
-                        this.app.viewer.style.scrollBehavior = '';
-                        // Clear the panning flag slightly later to allow click event to be swallowed
-                        setTimeout(() => { this.app._wasPanning = false; }, 50);
-                        window.removeEventListener('pointermove', doPan);
-                        window.removeEventListener('mouseup', stopPan);
-                    };
-                    window.addEventListener('pointermove', doPan);
-                    window.addEventListener('mouseup', stopPan);
-                } else {
-                    // TOUCH in VIEW MODE: This SHOULD NOT HAPPEN if display is 'none'
-                    console.warn(`[TouchDebug #${this._syncSeq || 0}] Overlay CAPTURED touch in VIEW mode! Page: ${pageNum}`);
                 }
+                const doPan = (ev) => {
+                    if (!isPanning) return;
+                    const dx = ev.clientX - startX;
+                    const dy = ev.clientY - startY;
+                    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                        this.app._wasPanning = true;
+                    }
+                    this.app.viewer.scrollTop = startScrollTop - dy;
+                    this.app.viewer.scrollLeft = startScrollLeft - dx;
+                };
+                const stopPan = () => {
+                    isPanning = false;
+                    overlay.style.cursor = '';
+                    this.app.viewer.style.scrollBehavior = '';
+                    setTimeout(() => { this.app._wasPanning = false; }, 50);
+                    window.removeEventListener('pointermove', doPan);
+                    window.removeEventListener('pointerup', stopPan);
+                };
+                window.addEventListener('pointermove', doPan);
+                window.addEventListener('pointerup', stopPan);
                 return;
             }
-
-            console.log(`[TouchDebug #${this._syncSeq || 0}] startAction triggered. Tool: ${toolType}, Pointer: ${pointerType}, Page: ${pageNum}`);
 
             // 2. Prevent Scroll for all other tools (Select, Pen, Stamp, etc.)
             if (pointerType === 'touch') {
@@ -667,7 +656,7 @@ export class InteractionManager {
 
         InteractionUI.ensureTrashBin(wrapper);
         wrapper.appendChild(overlay);
-        
+
         // Save reference for manual updates if needed
         overlay._updateTouchAction = () => this.updateAllOverlaysTouchAction();
         this.updateAllOverlaysTouchAction();
@@ -677,77 +666,25 @@ export class InteractionManager {
      * Globally update the touch-action of all active overlays based on current tool.
      */
     updateAllOverlaysTouchAction() {
-        const version = this.app.DEBUG_VERSION || 'unknown';
-        if (!this._syncSeq) this._syncSeq = 0;
-        const seq = ++this._syncSeq;
-        
-        try {
-            const toolType = this.app.activeStampType;
-            // SYNC ALL SCROLL PARENTS: html, body, and viewer
-            document.documentElement.dataset.activeTool = toolType;
-            document.body.dataset.activeTool = toolType;
+        const toolType = this.app.activeStampType;
 
-            const action = (toolType === 'view') ? 'pan-x pan-y pinch-zoom' : 'none';
-            const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        // Sync data-active-tool for CSS selectors (cursor, etc.)
+        document.documentElement.dataset.activeTool = toolType;
+        document.body.dataset.activeTool = toolType;
+        if (this.app.viewer) this.app.viewer.dataset.activeTool = toolType;
 
-            console.log(`[TouchAction #${seq}] [V:${version}] START - Tool: ${toolType}, Action: ${action}`);
-
-            // 1. Force release touch-action on the entire chain
-            const scrollChain = [document.documentElement, document.body, this.app.viewer];
-            scrollChain.forEach(el => {
-                if (el) {
-                    el.style.setProperty('touch-action', action, 'important');
-                    
-                    // SPECIAL IPAD WAKE-UP: If entering view mode, force-reset scroll container
-                    if (toolType === 'view' && el === this.app.viewer && isTouch) {
-                        const originalOverflow = el.style.overflow;
-                        el.style.overflow = 'hidden';
-                        const _reflow = el.offsetHeight;
-                        el.style.overflow = originalOverflow;
-                        
-                        // Micro-scroll to kickstart the scroll engine
-                        el.scrollTop += 1;
-                        el.scrollTop -= 1;
-                    }
-                }
+        // Overlays are always visible and always receive pointer events.
+        // View-mode panning is handled in startAction via JS scroll (same as mouse),
+        // so we never need to hide or disable overlays — no display/pointer-events toggling,
+        // no iOS hit-testing cache problems.
+        //
+        // touch-action: none stays on overlays at all times (set in CSS).
+        // We only need to clear any inline zIndex from previous interactions.
+        if (toolType === 'view') {
+            this.app.isInteracting = false;
+            document.querySelectorAll('.capture-overlay').forEach(el => {
+                el.style.zIndex = '';
             });
-
-            // 2. Sync all overlays AND their parent containers AND the canvas itself
-            const overlays = document.querySelectorAll('.capture-overlay');
-            overlays.forEach(el => {
-                try {
-                    if (toolType === 'view') {
-                        if (isTouch) {
-                            el.style.display = 'none';
-                        } else {
-                            el.style.display = '';
-                            el.style.pointerEvents = 'none';
-                        }
-                    } else {
-                        el.style.display = '';
-                        el.style.pointerEvents = '';
-                        el.style.zIndex = '';
-                    }
-
-                    if (el.parentElement) {
-                        el.parentElement.style.setProperty('touch-action', action, 'important');
-                        // ALSO SYNC THE CANVAS (the actual hit target)
-                        const canvas = el.parentElement.querySelector('canvas');
-                        if (canvas) {
-                            canvas.style.setProperty('touch-action', action, 'important');
-                        }
-                    }
-                } catch (innerErr) {
-                    console.error(`[TouchAction #${seq}] [V:${version}] Overlay sync error:`, innerErr);
-                }
-            });
-
-            if (toolType === 'view') {
-                this.app.isInteracting = false;
-            }
-            console.log(`[TouchAction #${seq}] [V:${version}] FINISH`);
-        } catch (err) {
-            console.error(`[TouchAction #${seq}] [V:${version}] GLOBAL CRASH:`, err);
         }
     }
 }

@@ -206,40 +206,16 @@
   gap: 8px;
 }
 
-/* Final Correct Overlay Styling */
+/* Overlay Styling */
 .capture-overlay {
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
   z-index: 50 !important;
   cursor: crosshair;
-  /* Default touch action, will be overridden by tool-specific rules below */
-  touch-action: pan-x pan-y pinch-zoom;
+  /* Always block native gestures — JS handles all panning (view mode) and drawing (stamp mode). */
+  touch-action: none;
 }
-
-/* Global Scroll Lock - Proactively disable touch actions when an annotation tool is active */
-/* We target the body attribute for the most reliable global enforcement */
-body[data-active-tool]:not([data-active-tool="view"]) .capture-overlay {
-  touch-action: none !important;
-}
-
-/* Ensure the viewer allows full free panning and zooming in view mode */
-body[data-active-tool="view"] {
-  touch-action: pan-x pan-y pinch-zoom !important;
-}
-
-/* 
- * UI RESPONSIVENESS FIX: On touch devices, if we are in view mode, 
- * we let pointer events pass through the overlay entirely.
- * This ensures the browser starts scrolling/panning IMMEDIATELY on the first touch,
- * without waiting for JS listeners on the overlay to resolve.
- */
-@media (pointer: coarse) {
-  body[data-active-tool="view"] .capture-overlay {
-    pointer-events: none !important;
-  }
-}
-
 /* Category Navigator & Dropdown (Premium UI) */
 .category-nav {
   position: relative;

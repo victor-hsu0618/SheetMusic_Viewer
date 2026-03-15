@@ -235,12 +235,23 @@ export class RulerManager {
         }
     }
 
+    stopJump() {
+        this._isJumping = false;
+        if (this._jumpTimer) {
+            cancelAnimationFrame(this._jumpTimer);
+            this._jumpTimer = null;
+        }
+        this._expectedTargetY = null;
+    }
+
     _executeJump(targetScroll) {
         const maxScroll = Math.max(0, this.app.viewer.scrollHeight - this.app.viewer.clientHeight)
         const clampedTarget = Math.max(0, Math.min(targetScroll, maxScroll))
 
         // Prevent unnecessary jumps to identical positions
         if (Math.abs(clampedTarget - this.app.viewer.scrollTop) < 2) return;
+
+        this.stopJump();
 
         this._isJumping = true
         this._expectedTargetY = clampedTarget
@@ -268,7 +279,6 @@ export class RulerManager {
             }
         }
 
-        if (this._jumpTimer) cancelAnimationFrame(this._jumpTimer)
         this._jumpTimer = requestAnimationFrame(animateScroll)
     }
 
