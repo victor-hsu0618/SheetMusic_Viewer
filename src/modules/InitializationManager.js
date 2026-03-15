@@ -156,7 +156,12 @@ export class InitializationManager {
         app.closeSidebarBtn?.addEventListener('click', () => document.getElementById('sidebar')?.classList.remove('open'))
         app.settingsJumpOffsetInput?.addEventListener('input', (e) => app.updateJumpOffset(parseInt(e.target.value)))
         app.resetLayersBtn?.addEventListener('click', () => app.resetLayers())
-        app.btnFullscreen?.addEventListener('click', () => app.toggleFullscreen())
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+            app.btnFullscreen?.setAttribute('disabled', '')
+            app.btnFullscreen?.setAttribute('title', 'PWA 模式已是全螢幕')
+        } else {
+            app.btnFullscreen?.addEventListener('click', () => app.toggleFullscreen())
+        }
         app.btnRulerToggle?.addEventListener('click', () => app.rulerManager?.toggleRuler())
 
         // Measure number visibility toggle

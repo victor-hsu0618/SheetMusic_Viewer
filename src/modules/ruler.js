@@ -124,8 +124,10 @@ export class RulerManager {
         const firstPage = document.querySelector('.page-container')
         if (!firstPage) return
         const pageRect = firstPage.getBoundingClientRect()
-        let rulerLeft = Math.floor(pageRect.left)
-        if (rulerLeft === 0 && window.innerWidth > pageRect.width) {
+        const rawLeft = Math.floor(pageRect.left)
+        let rulerLeft = Math.max(0, rawLeft)
+        // When page is narrower than viewport and starts at x=0, center the ruler
+        if (rawLeft === 0 && window.innerWidth > pageRect.width) {
             rulerLeft = Math.floor((window.innerWidth - pageRect.width) / 2)
         }
 
@@ -140,10 +142,10 @@ export class RulerManager {
         const indicator = ruler.querySelector('.jump-line-indicator')
 
         if (beam) {
-            // Beam starts exactly at page left edge
+            // Beam spans the visible portion of the page (clamped to viewport)
             beam.style.left = `${rulerLeft}px`
-            const safeWidth = Math.min(pageRect.width, window.innerWidth - pageRect.left - 1)
-            beam.style.width = `${Math.floor(safeWidth)}px`
+            const safeWidth = Math.floor(Math.min(pageRect.right, window.innerWidth) - rulerLeft)
+            beam.style.width = `${Math.max(0, safeWidth)}px`
         }
 
         if (indicator) {
