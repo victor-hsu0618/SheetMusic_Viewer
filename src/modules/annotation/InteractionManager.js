@@ -601,7 +601,7 @@ export class InteractionManager {
                 }
             }
 
-            if (['select', 'copy', 'recycle-bin', 'text', 'tempo-text'].includes(toolType)) {
+            if (['select', 'copy', 'recycle-bin', 'cycle', 'text', 'tempo-text'].includes(toolType)) {
                 const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 const found = this.app.findClosestStamp(pageNum, pPos.x, pPos.y, true);
                 if (found !== this.app.selectHoveredStamp) {
