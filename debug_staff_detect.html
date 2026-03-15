@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Line Detector — Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #1a1a1a; color: #eee; display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── Left Panel ── */
+  #panel {
+    width: 320px; min-width: 320px; background: #252525; display: flex;
+    flex-direction: column; gap: 0; border-right: 1px solid #3a3a3a; overflow-y: auto;
+  }
+  .section { padding: 16px; border-bottom: 1px solid #333; }
+  .section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 12px; }
+
+  input[type=file] { display: none; }
+  .btn {
+    display: block; width: 100%; padding: 10px; border-radius: 6px;
+    border: none; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .btn-primary { background: #4a9eff; color: #fff; }
+  .btn-secondary { background: #333; color: #ccc; margin-top: 8px; }
+  .btn:hover { opacity: 0.85; }
+
+  label { font-size: 12px; color: #aaa; display: block; margin-bottom: 4px; margin-top: 10px; }
+  input[type=range] { width: 100%; accent-color: #4a9eff; }
+  .param-row { display: flex; justify-content: space-between; align-items: center; }
+  .param-val { font-size: 12px; color: #4a9eff; font-weight: 600; min-width: 36px; text-align: right; }
+
+  select { width: 100%; background: #333; color: #eee; border: 1px solid #444; border-radius: 4px; padding: 6px; font-size: 13px; }
+
+  /* Results */
+  #results { flex: 1; overflow-y: auto; padding: 16px; }
+  .system-card {
+    background: #2e2e2e; border-radius: 6px; padding: 10px 12px;
+    margin-bottom: 8px; border-left: 3px solid #4a9eff; cursor: pointer;
+  }
+  .system-card:hover { background: #383838; }
+  .system-card.highlighted { border-left-color: #ff9e4a; background: #332c20; }
+  .system-title { font-size: 12px; font-weight: 700; color: #eee; margin-bottom: 4px; }
+  .system-info { font-size: 11px; color: #888; line-height: 1.6; }
+  .system-info span { color: #ccc; }
+
+  .stat-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; }
+  .stat-label { color: #888; }
+  .stat-val { color: #4a9eff; font-weight: 600; }
+
+  .empty-msg { color: #555; font-size: 13px; text-align: center; padding: 24px 0; }
+
+  /* ── Canvas Area ── */
+  #canvas-area {
+    flex: 1; overflow: auto; position: relative; background: #111;
+    display: flex; align-items: flex-start; justify-content: center; padding: 24px;
+  }
+  #canvas-wrap { position: relative; display: inline-block; }
+  #pdf-canvas { display: block; }
+  #overlay-canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+  /* Status bar */
+  #status {
+    position: fixed; bottom: 0; left: 320px; right: 0;
+    background: #1e1e1e; border-top: 1px solid #333;
+    font-size: 11px; color: #666; padding: 5px 16px;
+    display: flex; gap: 24px;
+  }
+  #status span { color: #aaa; }
+</style>
+</head>
+<body>
+
+<!-- ── Left Panel ── -->
+<div id="panel">
+  <div class="section">
+    <h3>載入 PDF</h3>
+    <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">選擇 PDF 檔案</button>
+    <input type="file" id="file-input" accept=".pdf">
+    <div style="margin-top:10px;">
+      <label>頁面</label>
+      <select id="page-select" disabled onchange="loadPage(parseInt(this.value))">
+        <option>— 尚未載入 —</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:6px; margin-top:10px;">
+      <button class="btn btn-secondary" style="margin-top:0; flex:1" onclick="fitToHeight()">⬛ Fit to Height</button>
+      <button class="btn btn-secondary" style="margin-top:0; flex:1" onclick="fitToWidth()">↔ Fit to Width</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>偵測參數</h3>
+
+    <label>渲染解析度（scale）</label>
+    <div class="param-row">
+      <input type="range" id="p-scale" min="1" max="3" step="0.5" value="2" oninput="updateParam('scale',this.value)">
+      <span class="param-val" id="v-scale">2×</span>
+    </div>
+
+    <label>深色像素門檻（亮度 &lt; 此值視為深色）</label>
+    <div class="param-row">
+      <input type="range" id="p-dark" min="50" max="200" step="5" value="128" oninput="updateParam('dark',this.value)">
+      <span class="param-val" id="v-dark">128</span>
+    </div>
+
+    <label>行密度門檻（深色像素比率 &gt;）</label>
+    <div class="param-row">
+      <input type="range" id="p-density" min="0.1" max="0.9" step="0.05" value="0.35" oninput="updateParam('density',this.value)">
+      <span class="param-val" id="v-density">35%</span>
+    </div>
+
+    <label>最大線條厚度（px，超過視為非五線）</label>
+    <div class="param-row">
+      <input type="range" id="p-maxthick" min="2" max="20" step="1" value="8" oninput="updateParam('maxthick',this.value)">
+      <span class="param-val" id="v-maxthick">8px</span>
+    </div>
+
+    <label>System 間距門檻（px，超過視為換行）</label>
+    <div class="param-row">
+      <input type="range" id="p-sysgap" min="10" max="100" step="5" value="30" oninput="updateParam('sysgap',this.value)">
+      <span class="param-val" id="v-sysgap">30px</span>
+    </div>
+
+    <label>左右邊距排除（%）</label>
+    <div class="param-row">
+      <input type="range" id="p-margin" min="0" max="30" step="1" value="3" oninput="updateParam('margin',this.value)">
+      <span class="param-val" id="v-margin">3%</span>
+    </div>
+
+    <button class="btn btn-secondary" onclick="runDetection()">▶ 重新偵測</button>
+  </div>
+
+  <div class="section">
+    <h3>偵測統計</h3>
+    <div id="stats"><p class="empty-msg">尚未偵測</p></div>
+  </div>
+
+  <div class="section" style="flex:1">
+    <h3>偵測到的樂譜行（Systems）</h3>
+    <div id="results"><p class="empty-msg">尚未偵測</p></div>
+  </div>
+</div>
+
+<!-- ── Canvas Area ── -->
+<div id="canvas-area">
+  <div id="canvas-wrap">
+    <canvas id="pdf-canvas"></canvas>
+    <canvas id="overlay-canvas"></canvas>
+  </div>
+</div>
+
+<div id="status">
+  <div>檔案：<span id="s-file">—</span></div>
+  <div>頁數：<span id="s-pages">—</span></div>
+  <div>Canvas：<span id="s-size">—</span></div>
+  <div>偵測耗時：<span id="s-time">—</span></div>
+</div>
+
+<script type="module">
+import * as pdfjsLib from 'https://unpkg.com/pdfjs-dist@5.5.207/build/pdf.mjs'
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@5.5.207/build/pdf.worker.mjs'
+
+// ── State ──
+const state = {
+  pdf: null,
+  currentPage: 1,
+  renderScale: 2,     // actual render scale (may differ from slider when using fit buttons)
+  params: {
+    scale: 2,
+    dark: 128,
+    density: 0.35,
+    maxthick: 8,
+    sysgap: 30,
+    margin: 3,
+  },
+  systems: [],
+  highlightedSystem: null,
+}
+
+window.updateParam = (key, val) => {
+  state.params[key] = parseFloat(val)
+  // Update label
+  const labels = {
+    scale: v => `${v}×`,
+    dark: v => `${v}`,
+    density: v => `${Math.round(v*100)}%`,
+    maxthick: v => `${v}px`,
+    sysgap: v => `${v}px`,
+    margin: v => `${v}%`,
+  }
+  document.getElementById(`v-${key}`).textContent = labels[key](val)
+}
+
+// ── File Loading ──
+document.getElementById('file-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  document.getElementById('s-file').textContent = file.name
+  const arrayBuffer = await file.arrayBuffer()
+  state.pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const numPages = state.pdf.numPages
+  document.getElementById('s-pages').textContent = numPages
+  const sel = document.getElementById('page-select')
+  sel.disabled = false
+  sel.innerHTML = ''
+  for (let i = 1; i <= numPages; i++) {
+    const opt = document.createElement('option')
+    opt.value = i; opt.textContent = `第 ${i} 頁`
+    sel.appendChild(opt)
+  }
+  await loadPage(1)
+})
+
+window.fitToHeight = async () => {
+  if (!state.pdf) return
+  const page = await state.pdf.getPage(state.currentPage)
+  const naturalViewport = page.getViewport({ scale: 1 })
+  const availH = document.getElementById('canvas-area').clientHeight - 48
+  state.renderScale = availH / naturalViewport.height
+  document.getElementById('p-scale').value = Math.min(3, Math.max(1, state.renderScale)).toFixed(1)
+  document.getElementById('v-scale').textContent = `${state.renderScale.toFixed(2)}×`
+  await renderPage(state.currentPage, state.renderScale)
+}
+
+window.fitToWidth = async () => {
+  if (!state.pdf) return
+  const page = await state.pdf.getPage(state.currentPage)
+  const naturalViewport = page.getViewport({ scale: 1 })
+  const availW = document.getElementById('canvas-area').clientWidth - 48
+  state.renderScale = availW / naturalViewport.width
+  document.getElementById('p-scale').value = Math.min(3, Math.max(1, state.renderScale)).toFixed(1)
+  document.getElementById('v-scale').textContent = `${state.renderScale.toFixed(2)}×`
+  await renderPage(state.currentPage, state.renderScale)
+}
+
+window.loadPage = async (pageNum) => {
+  if (!state.pdf) return
+  state.currentPage = pageNum
+  state.renderScale = state.params.scale
+  await renderPage(pageNum, state.renderScale)
+}
+
+async function renderPage(pageNum, scale) {
+  const page = await state.pdf.getPage(pageNum)
+  const viewport = page.getViewport({ scale })
+
+  const pdfCanvas = document.getElementById('pdf-canvas')
+  const overlayCanvas = document.getElementById('overlay-canvas')
+  pdfCanvas.width = overlayCanvas.width = viewport.width
+  pdfCanvas.height = overlayCanvas.height = viewport.height
+  document.getElementById('s-size').textContent = `${viewport.width} × ${viewport.height}`
+
+  const ctx = pdfCanvas.getContext('2d')
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, viewport.width, viewport.height)
+  await page.render({ canvasContext: ctx, viewport }).promise
+
+  await runDetection()
+}
+
+// ── Detection ──
+window.runDetection = async () => {
+  const pdfCanvas = document.getElementById('pdf-canvas')
+  const ctx = pdfCanvas.getContext('2d')
+  const { width, height } = pdfCanvas
+
+  if (!width || !height) return
+
+  const t0 = performance.now()
+  document.getElementById('s-size').textContent = `${width} × ${height}  (scale ${state.renderScale.toFixed(2)}×)`
+  const imageData = ctx.getImageData(0, 0, width, height)
+  const data = imageData.data
+  const p = state.params
+
+  const marginPx = Math.floor(width * (p.margin / 100))
+  const scanLeft = marginPx
+  const scanRight = width - marginPx
+  const sampleStep = 2  // sample every 2px for speed
+
+  // Step 1: Row density scan
+  const rowDensity = new Float32Array(height)
+  for (let y = 0; y < height; y++) {
+    let darkCount = 0
+    let total = 0
+    for (let x = scanLeft; x < scanRight; x += sampleStep) {
+      const idx = (y * width + x) * 4
+      const lum = (data[idx] * 0.299 + data[idx+1] * 0.587 + data[idx+2] * 0.114)
+      if (lum < p.dark) darkCount++
+      total++
+    }
+    rowDensity[y] = darkCount / total
+  }
+
+  // Step 2: Find candidate rows
+  const candidates = []
+  for (let y = 0; y < height; y++) {
+    if (rowDensity[y] >= p.density) candidates.push(y)
+  }
+
+  // Step 3: Cluster consecutive rows into line segments
+  const segments = []
+  let i = 0
+  while (i < candidates.length) {
+    let start = candidates[i]
+    let end = start
+    while (i < candidates.length && candidates[i] <= end + 2) {
+      end = candidates[i]; i++
+    }
+    const thickness = end - start + 1
+    if (thickness <= p.maxthick) {
+      segments.push({ top: start, bottom: end, midY: Math.round((start + end) / 2), thickness })
+    // Do NOT i++ here — inner loop already advanced i past this segment.
+    }
+  }
+
+  // Step 4: Group segments into systems
+  // Gap between lines WITHIN a system is small; gap BETWEEN systems is large
+  const systems = []
+  let currentGroup = []
+  for (let j = 0; j < segments.length; j++) {
+    if (currentGroup.length === 0) {
+      currentGroup.push(segments[j])
+    } else {
+      const gap = segments[j].top - currentGroup[currentGroup.length - 1].bottom
+      if (gap > p.sysgap) {
+        if (currentGroup.length >= 2) systems.push(buildSystem(currentGroup))
+        currentGroup = [segments[j]]
+      } else {
+        currentGroup.push(segments[j])
+      }
+    }
+  }
+  if (currentGroup.length >= 2) systems.push(buildSystem(currentGroup))
+
+  state.systems = systems
+  const elapsed = (performance.now() - t0).toFixed(1)
+  document.getElementById('s-time').textContent = `${elapsed} ms`
+
+  drawOverlay(systems, width, height)
+  renderResults(systems, segments)
+}
+
+function buildSystem(lines) {
+  const top = lines[0].top
+  const bottom = lines[lines.length - 1].bottom
+  const gaps = []
+  for (let i = 1; i < lines.length; i++) {
+    gaps.push(lines[i].top - lines[i-1].bottom)
+  }
+  const avgGap = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : 0
+  return {
+    top,
+    bottom,
+    midY: Math.round((top + bottom) / 2),
+    height: bottom - top,
+    lineCount: lines.length,
+    lines,
+    avgLineGap: avgGap.toFixed(1),
+  }
+}
+
+// ── Overlay Drawing ──
+function drawOverlay(systems, width, height) {
+  const canvas = document.getElementById('overlay-canvas')
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, width, height)
+
+  systems.forEach((sys, idx) => {
+    const isHL = state.highlightedSystem === idx
+    // Background fill
+    ctx.fillStyle = isHL ? 'rgba(255,158,74,0.12)' : 'rgba(74,158,255,0.07)'
+    ctx.fillRect(0, sys.top - 4, width, sys.height + 8)
+
+    // Top/bottom border
+    ctx.strokeStyle = isHL ? '#ff9e4a' : '#4a9eff'
+    ctx.lineWidth = isHL ? 2 : 1.5
+    ctx.setLineDash([6, 4])
+    ctx.beginPath()
+    ctx.moveTo(0, sys.top); ctx.lineTo(width, sys.top)
+    ctx.moveTo(0, sys.bottom); ctx.lineTo(width, sys.bottom)
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Label
+    ctx.fillStyle = isHL ? '#ff9e4a' : '#4a9eff'
+    ctx.font = 'bold 12px system-ui'
+    ctx.fillText(`System ${idx + 1}  (${sys.lineCount} lines)`, 8, sys.top - 6)
+
+    // Individual staff lines
+    sys.lines.forEach(line => {
+      ctx.fillStyle = 'rgba(255,80,80,0.5)'
+      ctx.fillRect(0, line.midY, width, 1)
+    })
+  })
+}
+
+// ── Results Panel ──
+function renderResults(systems, allSegments) {
+  const statsEl = document.getElementById('stats')
+  statsEl.innerHTML = `
+    <div class="stat-row"><span class="stat-label">偵測到線段</span><span class="stat-val">${allSegments.length} 條</span></div>
+    <div class="stat-row"><span class="stat-label">樂譜行（Systems）</span><span class="stat-val">${systems.length} 行</span></div>
+  `
+
+  const resultsEl = document.getElementById('results')
+  if (systems.length === 0) {
+    resultsEl.innerHTML = '<p class="empty-msg">未偵測到樂譜行<br>請調整參數後重新偵測</p>'
+    return
+  }
+
+  resultsEl.innerHTML = ''
+  systems.forEach((sys, idx) => {
+    const card = document.createElement('div')
+    card.className = 'system-card'
+    card.innerHTML = `
+      <div class="system-title">System ${idx + 1}</div>
+      <div class="system-info">
+        頂部 Y：<span>${sys.top} px</span><br>
+        底部 Y：<span>${sys.bottom} px</span><br>
+        高度：<span>${sys.height} px</span><br>
+        偵測到線條：<span>${sys.lineCount} 條</span><br>
+        平均線間距：<span>${sys.avgLineGap} px</span>
+      </div>
+    `
+    card.addEventListener('click', () => {
+      state.highlightedSystem = state.highlightedSystem === idx ? null : idx
+      document.querySelectorAll('.system-card').forEach((c, i) => {
+        c.classList.toggle('highlighted', i === state.highlightedSystem)
+      })
+      drawOverlay(systems, document.getElementById('pdf-canvas').width, document.getElementById('pdf-canvas').height)
+      // Scroll canvas to system
+      const pdfCanvas = document.getElementById('pdf-canvas')
+      const scale = pdfCanvas.getBoundingClientRect().width / pdfCanvas.width
+      const canvasArea = document.getElementById('canvas-area')
+      canvasArea.scrollTo({ top: sys.top * scale - 100, behavior: 'smooth' })
+    })
+    resultsEl.appendChild(card)
+  })
+}
+</script>
+</body>
+</html>

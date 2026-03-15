@@ -820,3 +820,88 @@
   border-color: #64748b;
   color: white;
 }
+
+/* Vertical-tab layout for Settings Panel */
+.settings-vtab-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  width: 100%;
+  min-height: 160px;
+}
+
+.settings-vtab-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 52px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  padding: 2px 4px 2px 0;
+}
+
+.settings-vtab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  padding: 8px 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.settings-vtab-btn.active {
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+}
+
+.settings-vtab-btn:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.settings-vtab-content {
+  flex: 1;
+  padding: 0 2px 0 10px;
+  overflow-y: auto;
+  max-height: 300px;
+  min-width: 0;
+}
+
+.settings-vtab-content::-webkit-scrollbar {
+  width: 3px;
+}
+
+.settings-vtab-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.vtab-pane {
+  padding: 2px 0 8px;
+}
+
+.ruler-system-mark {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: rgba(74, 158, 255, 0.4);
+  border-top: 1px dashed rgba(74, 158, 255, 0.7);
+  pointer-events: none;
+  transition: top 0.1s linear;
+}
+
+.ruler-system-mark.ruler-system-next-target {
+  background: rgba(245, 158, 11, 0.7);
+  border-top: 2px solid #f59e0b;
+  height: 3px;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}

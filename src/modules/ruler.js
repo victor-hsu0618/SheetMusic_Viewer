@@ -111,21 +111,28 @@ export class RulerManager {
             return
         }
 
-        ruler.style.display = this.rulerVisible ? 'block' : 'none'
+        // Manage both the hidden CSS class (controls children visibility) and display.
+        if (this.rulerVisible) {
+            ruler.classList.remove('hidden')
+            ruler.style.display = 'block'
+        } else {
+            ruler.classList.add('hidden')
+            ruler.style.display = ''
+            return  // no need to reposition when not visible
+        }
 
         const firstPage = document.querySelector('.page-container')
         if (!firstPage) return
         const pageRect = firstPage.getBoundingClientRect()
-        // If layout isn't ready yet, we might get 0. Try to fallback to center calculation.
         let rulerLeft = Math.floor(pageRect.left)
         if (rulerLeft === 0 && window.innerWidth > pageRect.width) {
             rulerLeft = Math.floor((window.innerWidth - pageRect.width) / 2)
         }
 
-        // Position internal parts within the full-width transparent overlay
+        // Track and marks sit on the left edge of the PDF page (uses white PDF background
+        // for the backdrop-filter blur — keep at rulerLeft, not rulerLeft-rulerW).
         const track = ruler.querySelector('.ruler-track')
         const marksContainer = document.getElementById('ruler-marks')
-
         if (track) track.style.left = `${rulerLeft}px`
         if (marksContainer) marksContainer.style.left = `${rulerLeft}px`
 
@@ -133,14 +140,12 @@ export class RulerManager {
         const indicator = ruler.querySelector('.jump-line-indicator')
 
         if (beam) {
-            // Beam starts exactly where page starts
+            // Beam starts exactly at page left edge
             beam.style.left = `${rulerLeft}px`
-            // Ensure width doesn't spill past viewport right edge
             const safeWidth = Math.min(pageRect.width, window.innerWidth - pageRect.left - 1)
             beam.style.width = `${Math.floor(safeWidth)}px`
         }
 
-        // Ensure the handle stays with the track
         if (indicator) {
             indicator.style.left = `${rulerLeft}px`
         }
@@ -297,10 +302,53 @@ export class RulerManager {
             if (this.nextTargetAnchor) {
                 this.scrollToNextTarget(effectiveScroll)
             } else {
+                const metrics = this.app.viewerManager._pageMetrics
+                const viewportHeight = this.app.viewer.clientHeight
+
+                // Sort all system stamps by absolute Y position
+                const systemStamps = this.app.stamps
+                    .filter(s => s.type === 'system' && !s.deleted)
+                    .sort((a, b) => {
+                        const ma = metrics[a.page], mb = metrics[b.page]
+                        return (ma?.top + a.y * ma?.height) - (mb?.top + b.y * mb?.height)
+                    })
+
+                // Primary: jump so the Nth-from-last visible system lands at the jump line
+                const overlap = this.app.systemJumpOverlap ?? 1
+                const visibleSystems = systemStamps.filter(sys => {
+                    const m = metrics[sys.page]
+                    if (!m) return false
+                    const absY = m.top + sys.y * m.height
+                    return absY > effectiveScroll && absY < effectiveScroll + viewportHeight
+                })
+                const overlapSystem = visibleSystems[Math.max(0, visibleSystems.length - overlap)]
+                if (overlapSystem) {
+                    const m = metrics[overlapSystem.page]
+                    const targetY = m.top + overlapSystem.y * m.height
+                    if (targetY > effectiveScroll + this.jumpOffsetPx + 10) {
+                        this.jumpHistory.push(effectiveScroll)
+                        if (this.jumpHistory.length > 50) this.jumpHistory.shift()
+                        this._executeJump(targetY - this.jumpOffsetPx)
+                        return true
+                    }
+                }
+
+                // Secondary: next system after the jump line
+                const nextSystem = systemStamps.find(sys => {
+                    const m = metrics[sys.page]
+                    if (!m) return false
+                    return m.top + sys.y * m.height > effectiveScroll + this.jumpOffsetPx + 2
+                })
+                if (nextSystem) {
+                    const m = metrics[nextSystem.page]
+                    this.jumpHistory.push(effectiveScroll)
+                    if (this.jumpHistory.length > 50) this.jumpHistory.shift()
+                    this._executeJump(m.top + nextSystem.y * m.height - this.jumpOffsetPx)
+                    return true
+                }
+
                 // Fallback: Check for Fit to Height mode
                 if (this.app.viewerManager.isFitToHeight) {
-                    const metrics = this.app.viewerManager._pageMetrics
-                    // Find next page from metrics
                     const nextPageNum = Object.keys(metrics)
                         .map(Number)
                         .sort((a, b) => a - b)
@@ -314,9 +362,8 @@ export class RulerManager {
                         return false;
                     }
                 } else {
-                    // Fallback: Scroll down by exactly ONE viewport height
-                    const viewportHeight = this.app.viewer.clientHeight
-                    const targetScroll = effectiveScroll + viewportHeight
+                    // Fallback: scroll by one viewport minus jump offset for symmetric navigation
+                    const targetScroll = effectiveScroll + (viewportHeight - this.jumpOffsetPx)
                     this.jumpHistory.push(effectiveScroll)
                     if (this.jumpHistory.length > 50) this.jumpHistory.shift()
                     this._executeJump(targetScroll)
@@ -344,7 +391,7 @@ export class RulerManager {
                     }
                 } else {
                     const viewportHeight = this.app.viewer.clientHeight
-                    const targetScroll = effectiveScroll - viewportHeight
+                    const targetScroll = effectiveScroll - (viewportHeight - this.jumpOffsetPx)
                     this._executeJump(targetScroll)
                     return true;
                 }
@@ -358,10 +405,45 @@ export class RulerManager {
         const marksContainer = document.getElementById('ruler-marks')
         if (!marksContainer) return
 
-        const visualMarks = this.app.stamps.filter(s => s.type === 'anchor' || s.type === 'measure' || s.type === 'measure-free')
+        const visualMarks = this.app.stamps.filter(s =>
+            s.type === 'anchor' || s.type === 'measure' || s.type === 'measure-free' ||
+            (s.type === 'system' && this.app.showSystemStamps)
+        )
         const viewportHeight = window.innerHeight
         const scrollY = this.app.viewer.scrollTop
         const metrics = this.app.viewerManager._pageMetrics
+
+        // Compute which system stamp is the next jump target (mirrors jump() logic)
+        let nextSystemTarget = null
+        const vH = this.app.viewer?.clientHeight ?? window.innerHeight
+        const sortedSystems = this.app.stamps
+            .filter(s => s.type === 'system' && !s.deleted)
+            .sort((a, b) => {
+                const ma = metrics[a.page], mb = metrics[b.page]
+                return (ma?.top + a.y * ma?.height) - (mb?.top + b.y * mb?.height)
+            })
+        if (sortedSystems.length) {
+            const overlap = this.app.systemJumpOverlap ?? 1
+            const visibleSystems = sortedSystems.filter(sys => {
+                const m = metrics[sys.page]
+                if (!m) return false
+                const absY = m.top + sys.y * m.height
+                return absY > scrollY && absY < scrollY + vH
+            })
+            const candidate = visibleSystems[Math.max(0, visibleSystems.length - overlap)]
+            if (candidate) {
+                const m = metrics[candidate.page]
+                if (m && m.top + candidate.y * m.height > scrollY + this.jumpOffsetPx + 10) {
+                    nextSystemTarget = candidate
+                }
+            }
+            if (!nextSystemTarget) {
+                nextSystemTarget = sortedSystems.find(sys => {
+                    const m = metrics[sys.page]
+                    return m && m.top + sys.y * m.height > scrollY + this.jumpOffsetPx + 2
+                }) ?? null
+            }
+        }
 
         const viewerRect = this.app.viewer ? this.app.viewer.getBoundingClientRect() : { top: 0 }
         const viewerOffset = viewerRect.top
@@ -380,6 +462,10 @@ export class RulerManager {
                     } else if (stamp.type === 'measure' || stamp.type === 'measure-free') {
                         mark.className = 'ruler-measure-mark'
                         mark.textContent = stamp.data
+                    } else if (stamp.type === 'system') {
+                        mark.className = stamp === nextSystemTarget
+                            ? 'ruler-system-mark ruler-system-next-target'
+                            : 'ruler-system-mark'
                     }
                     mark.style.top = `${absY}px`
                     fragment.appendChild(mark)

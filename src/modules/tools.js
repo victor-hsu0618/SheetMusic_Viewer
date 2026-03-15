@@ -822,6 +822,9 @@ export class ToolManager {
     }
 
     renderSettingsPanel() {
+        const systemCount = this.app.stamps.filter(s => s.type === 'system' && !s.deleted).length
+        const statusText = systemCount > 0 ? `已偵測 ${systemCount} 個 System` : '尚未偵測'
+
         const panel = document.createElement("div")
         panel.className = "palette-settings-panel"
         panel.innerHTML = `
@@ -831,86 +834,128 @@ export class ToolManager {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
             </div>
-            <div class="settings-content">
-                <div class="setting-item mb-15">
-                    <div class="setting-row-compact">
-                        <label class="setting-label">Scale</label>
-                        <div class="slider-container">
-                            <button class="slider-adj-btn minus" id="btn-scale-minus">−</button>
-                            <input type="range" class="setting-slider" id="slider-score-scale" min="0.5" max="3.0" step="0.1" value="${this.app.scoreStampScale || 1.0}" />
-                            <button class="slider-adj-btn plus" id="btn-scale-plus">+</button>
-                        </div>
-                        <span id="val-score-scale" class="badge">${(this.app.scoreStampScale || 1.0).toFixed(1)}x</span>
-                        <button class="btn-reset-mini" id="btn-scale-reset">Reset</button>
-                    </div>
-                    <p class="setting-hint">Applies only to this specific score.</p>
-                </div>
-
-                <div class="setting-item mb-15">
-                    <div class="setting-row-compact">
-                        <label class="setting-label">Font Size</label>
-                        <div class="slider-container">
-                            <button class="slider-adj-btn minus" id="btn-font-minus">−</button>
-                            <input type="range" class="setting-slider" id="slider-font-size" min="16" max="32" step="1" value="${this.app.defaultFontSize}" />
-                            <button class="slider-adj-btn plus" id="btn-font-plus">+</button>
-                        </div>
-                        <span id="val-font-size" class="badge">${this.app.defaultFontSize}px</span>
-                        <button class="btn-reset-mini" id="btn-font-reset">Reset</button>
-                    </div>
-                    <p class="setting-hint">Adjustment for markings and text.</p>
-                </div>
-
-                <div class="setting-item mb-15">
-                    <div class="setting-row-compact">
-                        <label class="setting-label">Touch Offset (Y)</label>
-                        <div class="slider-container">
-                            <button class="slider-adj-btn minus" id="btn-offset-minus">−</button>
-                            <input type="range" class="setting-slider" id="settings-offset-touch" min="0" max="150" step="5" value="${this.app.stampOffsetTouchY}" />
-                            <button class="slider-adj-btn plus" id="btn-offset-plus">+</button>
-                        </div>
-                        <span id="settings-offset-touch-value" class="badge">${this.app.stampOffsetTouchY}px</span>
-                        <button class="btn-reset-mini" id="btn-offset-reset">Reset</button>
-                    </div>
-                    <p class="setting-hint">Up/Down distance.</p>
-                </div>
-
-                <div class="setting-item mb-15">
-                    <div class="setting-row-compact">
-                        <label class="setting-label">Touch Offset (X)</label>
-                        <div class="slider-container">
-                            <button class="slider-adj-btn minus" id="btn-offset-x-minus">−</button>
-                            <input type="range" class="setting-slider" id="settings-offset-touch-x" min="-150" max="150" step="5" value="${this.app.stampOffsetTouchX}" />
-                            <button class="slider-adj-btn plus" id="btn-offset-x-plus">+</button>
-                        </div>
-                        <span id="settings-offset-touch-x-value" class="badge">${this.app.stampOffsetTouchX}px</span>
-                        <button class="btn-reset-mini" id="btn-offset-x-reset">Reset</button>
-                    </div>
-                    <p class="setting-hint">Left/Right distance.</p>
-                </div>
-
-                <div class="setting-divider"></div>
-
-                <div class="setting-item">
-                    <div class="setting-label flex-space-between">
-                        <span>Notation Categories</span>
-                        <div class="flex-row-center gap-10">
-                            <button id="btn-erase-all-mini" class="btn-text-danger" title="Erase All Objects">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                Erase Objects
-                            </button>
-                        </div>
-                    </div>
-                    <div id="settings-layer-list" class="layer-list-mini mt-10"></div>
-                </div>
-
-                <div class="setting-divider"></div>
-
-                <div class="setting-item">
-                    <button id="btn-reload-app" class="btn btn-secondary btn-full" style="gap:8px;display:flex;align-items:center;justify-content:center;">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                        Reload App
+            <div class="settings-vtab-layout">
+                <nav class="settings-vtab-nav">
+                    <button class="settings-vtab-btn" data-tab="display">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                        <span>Size</span>
                     </button>
-                    <p class="setting-hint">Force-refresh the PWA. Useful after an update.</p>
+                    <button class="settings-vtab-btn" data-tab="touch">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v0a2 2 0 0 0-2-2 2 2 0 0 0-2 2v3"></path><path d="M14 11a2 2 0 0 1 4 0v2a6 6 0 1 1-12 0V7a2 2 0 0 1 2-2 2 2 0 0 1 2 2v4"></path></svg>
+                        <span>Touch</span>
+                    </button>
+                    <button class="settings-vtab-btn" data-tab="layers">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                        <span>Categ.</span>
+                    </button>
+                    <button class="settings-vtab-btn" data-tab="more">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"></path></svg>
+                        <span>More</span>
+                    </button>
+                </nav>
+                <div class="settings-vtab-content">
+
+                    <div class="vtab-pane" data-pane="display">
+                        <div class="setting-item mb-15">
+                            <div class="setting-row-compact">
+                                <label class="setting-label">Scale</label>
+                                <div class="slider-container">
+                                    <button class="slider-adj-btn minus" id="btn-scale-minus">−</button>
+                                    <input type="range" class="setting-slider" id="slider-score-scale" min="0.5" max="3.0" step="0.1" value="${this.app.scoreStampScale || 1.0}" />
+                                    <button class="slider-adj-btn plus" id="btn-scale-plus">+</button>
+                                </div>
+                                <span id="val-score-scale" class="badge">${(this.app.scoreStampScale || 1.0).toFixed(1)}x</span>
+                                <button class="btn-reset-mini" id="btn-scale-reset">Reset</button>
+                            </div>
+                            <p class="setting-hint">Applies only to this specific score.</p>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-row-compact">
+                                <label class="setting-label">Font Size</label>
+                                <div class="slider-container">
+                                    <button class="slider-adj-btn minus" id="btn-font-minus">−</button>
+                                    <input type="range" class="setting-slider" id="slider-font-size" min="16" max="32" step="1" value="${this.app.defaultFontSize}" />
+                                    <button class="slider-adj-btn plus" id="btn-font-plus">+</button>
+                                </div>
+                                <span id="val-font-size" class="badge">${this.app.defaultFontSize}px</span>
+                                <button class="btn-reset-mini" id="btn-font-reset">Reset</button>
+                            </div>
+                            <p class="setting-hint">Markings and text.</p>
+                        </div>
+                    </div>
+
+                    <div class="vtab-pane" data-pane="touch">
+                        <div class="setting-item mb-15">
+                            <div class="setting-row-compact">
+                                <label class="setting-label">Offset Y</label>
+                                <div class="slider-container">
+                                    <button class="slider-adj-btn minus" id="btn-offset-minus">−</button>
+                                    <input type="range" class="setting-slider" id="settings-offset-touch" min="0" max="150" step="5" value="${this.app.stampOffsetTouchY}" />
+                                    <button class="slider-adj-btn plus" id="btn-offset-plus">+</button>
+                                </div>
+                                <span id="settings-offset-touch-value" class="badge">${this.app.stampOffsetTouchY}px</span>
+                                <button class="btn-reset-mini" id="btn-offset-reset">Reset</button>
+                            </div>
+                            <p class="setting-hint">Up/Down distance.</p>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-row-compact">
+                                <label class="setting-label">Offset X</label>
+                                <div class="slider-container">
+                                    <button class="slider-adj-btn minus" id="btn-offset-x-minus">−</button>
+                                    <input type="range" class="setting-slider" id="settings-offset-touch-x" min="-150" max="150" step="5" value="${this.app.stampOffsetTouchX}" />
+                                    <button class="slider-adj-btn plus" id="btn-offset-x-plus">+</button>
+                                </div>
+                                <span id="settings-offset-touch-x-value" class="badge">${this.app.stampOffsetTouchX}px</span>
+                                <button class="btn-reset-mini" id="btn-offset-x-reset">Reset</button>
+                            </div>
+                            <p class="setting-hint">Left/Right distance.</p>
+                        </div>
+                    </div>
+
+                    <div class="vtab-pane" data-pane="layers">
+                        <div class="setting-item">
+                            <div class="setting-label flex-space-between">
+                                <span>Notation Categories</span>
+                                <button id="btn-erase-all-mini" class="btn-text-danger" title="Erase All Objects">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    Erase All
+                                </button>
+                            </div>
+                            <div id="settings-layer-list" class="layer-list-mini mt-10"></div>
+                        </div>
+                    </div>
+
+                    <div class="vtab-pane" data-pane="more">
+                        <div class="setting-item mb-15">
+                            <div class="setting-row-compact">
+                                <label class="setting-label">頁面重疊</label>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <button class="slider-adj-btn minus" id="btn-overlap-minus">−</button>
+                                    <span id="val-overlap" class="badge" style="min-width:26px;text-align:center">${this.app.systemJumpOverlap ?? 1}</span>
+                                    <button class="slider-adj-btn plus" id="btn-overlap-plus">+</button>
+                                </div>
+                            </div>
+                            <p class="setting-hint">Jump 時，以倒數第 N 個 System 為起點。</p>
+                        </div>
+                        <div class="setting-divider"></div>
+                        <div class="setting-item mb-15" style="margin-top:10px">
+                            <div class="setting-label flex-space-between">
+                                <span>System Detection</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="chk-show-systems" ${this.app.showSystemStamps ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <p class="setting-hint">自動偵測五線譜行位置，用於 Jump 導航。</p>
+                            <div style="display:flex;gap:8px;margin-top:10px">
+                                <button id="btn-detect-systems" class="btn btn-secondary" style="flex:1">Detect</button>
+                                <button id="btn-clear-systems" class="btn btn-secondary" style="flex:1;color:#f66">刪除全部</button>
+                            </div>
+                            <p id="system-detect-status" class="setting-hint" style="margin-top:6px">${statusText}</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         `
@@ -926,7 +971,6 @@ export class ToolManager {
         const btnFontReset = panel.querySelector('#btn-font-reset')
         const btnOffsetReset = panel.querySelector('#btn-offset-reset')
         const btnOffsetXReset = panel.querySelector('#btn-offset-x-reset')
-        const btnReloadApp = panel.querySelector('#btn-reload-app')
 
         const sliderOffset = panel.querySelector('#settings-offset-touch')
         const valOffset = panel.querySelector('#settings-offset-touch-value')
@@ -938,8 +982,6 @@ export class ToolManager {
             sliderScore.value = num
             valScore.textContent = `${num.toFixed(1)}x`
             this.app.updateScoreStampScale(num)
-            
-            // Dynamic track color
             const percentage = ((num - 0.5) / (3.0 - 0.5)) * 100
             sliderScore.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
         }
@@ -950,15 +992,9 @@ export class ToolManager {
             valFont.textContent = `${num}px`
             this.app.defaultFontSize = num
             this.app.saveToStorage()
-            
-            // Dynamic track color
             const percentage = ((num - 16) / (32 - 16)) * 100
             sliderFont.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
-            
-            // Real-time Update
-            if (this.app.redrawAllAnnotationLayers) {
-                this.app.redrawAllAnnotationLayers()
-            }
+            if (this.app.redrawAllAnnotationLayers) this.app.redrawAllAnnotationLayers()
         }
 
         const updateOffset = (val) => {
@@ -967,8 +1003,6 @@ export class ToolManager {
             valOffset.textContent = `${num}px`
             this.app.stampOffsetTouchY = num
             this.app.saveToStorage()
-            
-            // Dynamic track color
             const percentage = (num / 150) * 100
             sliderOffset.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
         }
@@ -979,8 +1013,6 @@ export class ToolManager {
             valOffsetX.textContent = `${num}px`
             this.app.stampOffsetTouchX = num
             this.app.saveToStorage()
-            
-            // Dynamic track color (handle -150 to 150)
             const percentage = ((num + 150) / 300) * 100
             sliderOffsetX.style.background = `linear-gradient(to right, var(--primary) ${percentage}%, rgba(0,0,0,0.1) ${percentage}%)`
         }
@@ -994,7 +1026,6 @@ export class ToolManager {
         btnFontReset.onclick = () => updateFont(20)
         btnOffsetReset.onclick = () => updateOffset(50)
         btnOffsetXReset.onclick = () => updateOffsetX(-30)
-        btnReloadApp.onclick = () => location.reload()
 
         // General Slider Adjustment Buttons
         panel.querySelectorAll('.slider-adj-btn').forEach(btn => {
@@ -1008,7 +1039,6 @@ export class ToolManager {
                 const step = parseFloat(slider.step) || 1
                 const current = parseFloat(slider.value)
                 const next = isPlus ? (current + step) : (current - step)
-                
                 if (isScale) updateScore(next)
                 else if (isFont) updateFont(next)
                 else if (isOffsetX) updateOffsetX(next)
@@ -1031,9 +1061,20 @@ export class ToolManager {
             this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
         }
 
+        // Vertical tab switching
+        const vtabBtns = panel.querySelectorAll('.settings-vtab-btn')
+        const vtabPanes = panel.querySelectorAll('.vtab-pane')
+        const switchTab = (tabId) => {
+            this._settingsTab = tabId
+            vtabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabId))
+            vtabPanes.forEach(p => { p.style.display = p.dataset.pane === tabId ? '' : 'none' })
+        }
+        vtabBtns.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)))
+        switchTab(this._settingsTab || 'display')
+
         this.app.activeToolsContainer.appendChild(panel)
 
-        // Initial track colors
+        // Initial track colors (all panes initialized so sliders work immediately on tab switch)
         updateScore(this.app.scoreStampScale || 1.0)
         updateFont(this.app.defaultFontSize)
         updateOffset(this.app.stampOffsetTouchY)
@@ -1042,5 +1083,41 @@ export class ToolManager {
         // Render the layer list into the new container
         this.app.externalLayerList = panel.querySelector('#settings-layer-list')
         if (this.app.layerManager) this.app.layerManager.renderLayerUI()
+
+        // Overlap stepper
+        const updateOverlap = (val) => {
+            const num = Math.max(1, Math.min(8, Math.round(val)))
+            this.app.systemJumpOverlap = num
+            localStorage.setItem('scoreflow_system_jump_overlap', num)
+            panel.querySelector('#val-overlap').textContent = num
+        }
+        panel.querySelector('#btn-overlap-minus')?.addEventListener('click', () => updateOverlap((this.app.systemJumpOverlap ?? 1) - 1))
+        panel.querySelector('#btn-overlap-plus')?.addEventListener('click', () => updateOverlap((this.app.systemJumpOverlap ?? 1) + 1))
+
+        // System Detection events
+        panel.querySelector('#chk-show-systems')?.addEventListener('change', e => {
+            this.app.showSystemStamps = e.target.checked
+            localStorage.setItem('scoreflow_show_systems', e.target.checked)
+            this.app.updateRulerMarks()
+        })
+
+        panel.querySelector('#btn-detect-systems')?.addEventListener('click', async () => {
+            this.app.stamps = this.app.stamps.filter(s => !(s.type === 'system' && s.auto))
+            const statusEl = panel.querySelector('#system-detect-status')
+            if (statusEl) statusEl.textContent = '偵測中...'
+            await this.app.staffDetector?.autoDetect(this.app.viewerManager.pdf, (p, total) => {
+                if (statusEl) statusEl.textContent = `偵測中... ${p} / ${total}`
+            })
+            const count = this.app.stamps.filter(s => s.type === 'system' && !s.deleted).length
+            if (statusEl) statusEl.textContent = `已偵測 ${count} 個 System`
+        })
+
+        panel.querySelector('#btn-clear-systems')?.addEventListener('click', () => {
+            this.app.stamps = this.app.stamps.filter(s => s.type !== 'system')
+            this.app.saveToStorage(true)
+            this.app.updateRulerMarks()
+            this.app.activeStampType = 'settings'
+            this.updateActiveTools()
+        })
     }
 }

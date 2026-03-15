@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScoreFlow 使用手冊 · v3.0</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --indigo: #6366f1;
+    --indigo-dark: #4338ca;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+    --amber: #f59e0b;
+    --green: #10b981;
+    --blue: #3b82f6;
+    --red: #ef4444;
+    --radius: 10px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, 'Helvetica Neue', 'PingFang TC', 'Microsoft JhengHei', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--slate-800);
+    background: #fff;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ── Cover ── */
+  .cover {
+    min-height: 240px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
+    border-radius: 0 0 24px 24px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding: 48px 52px;
+    margin: 0 -24px 56px;
+    color: #fff;
+  }
+  .cover-logo {
+    width: 72px; height: 72px; flex-shrink: 0;
+    background: var(--indigo);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+  }
+  .cover-text h1 { font-size: 38px; font-weight: 800; letter-spacing: -1px; }
+  .cover-text h2 { font-size: 16px; font-weight: 400; opacity: 0.65; margin-top: 4px; }
+  .cover-text .meta {
+    margin-top: 16px;
+    font-size: 12px; opacity: 0.4;
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 56px;
+  }
+  .toc h2 { font-size: 13px; font-weight: 700; color: var(--slate-500); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; }
+  .toc a { color: var(--indigo); text-decoration: none; font-weight: 500; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* ── Section ── */
+  section { margin-bottom: 64px; scroll-margin-top: 24px; }
+  .section-num {
+    font-size: 11px; font-weight: 700; color: var(--indigo);
+    letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px;
+  }
+  h2.section-title {
+    font-size: 28px; font-weight: 800; color: var(--slate-900);
+    margin-bottom: 6px; letter-spacing: -0.5px;
+  }
+  .section-subtitle {
+    font-size: 14px; color: var(--slate-500); margin-bottom: 28px; line-height: 1.6;
+  }
+  .divider {
+    height: 3px; width: 56px;
+    background: linear-gradient(90deg, var(--indigo), transparent);
+    border-radius: 2px; margin-bottom: 28px;
+  }
+
+  /* ── h3 ── */
+  h3 {
+    font-size: 16px; font-weight: 700; color: var(--slate-800);
+    margin: 24px 0 10px;
+  }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+  thead tr { background: var(--indigo); color: #fff; }
+  thead th { padding: 9px 14px; text-align: left; font-weight: 600; }
+  tbody tr:nth-child(even) { background: var(--slate-50); }
+  tbody td { padding: 8px 14px; border-bottom: 1px solid var(--slate-200); color: var(--slate-700); vertical-align: top; line-height: 1.55; }
+  tbody td:first-child { font-weight: 600; white-space: nowrap; }
+  .kbd { display: inline-block; font-family: monospace; background: var(--slate-100); border: 1px solid var(--slate-200); border-radius: 4px; padding: 1px 6px; font-size: 12px; white-space: nowrap; }
+
+  /* ── Cards ── */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .card {
+    background: var(--slate-50); border: 1px solid var(--slate-200);
+    border-radius: var(--radius); padding: 18px 20px;
+  }
+  .card .card-icon { font-size: 24px; margin-bottom: 8px; }
+  .card h3 { font-size: 13px; font-weight: 700; margin: 0 0 4px; color: var(--slate-800); }
+  .card p  { font-size: 12px; color: var(--slate-500); line-height: 1.55; margin: 0; }
+
+  /* ── Steps ── */
+  .step-list { list-style: none; display: flex; flex-direction: column; gap: 18px; margin-bottom: 20px; }
+  .step-list li { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num {
+    width: 28px; height: 28px; flex-shrink: 0;
+    background: var(--indigo); color: #fff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+  }
+  .step-content h4 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+  .step-content p  { font-size: 13px; color: var(--slate-500); line-height: 1.6; margin: 0; }
+
+  /* ── Tips & Callouts ── */
+  .tip {
+    background: #eef2ff; border-left: 3px solid var(--indigo);
+    border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 14px;
+  }
+  .tip strong { color: var(--indigo-dark); font-size: 12px; }
+  .tip p { font-size: 12px; color: #3730a3; margin-top: 3px; line-height: 1.5; }
+  .warning {
+    background: #fff7ed; border-left: 3px solid var(--amber);
+    border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 14px;
+  }
+  .warning strong { color: #92400e; font-size: 12px; }
+  .warning p { font-size: 12px; color: #78350f; margin-top: 3px; line-height: 1.5; }
+
+  /* ── Priority chain ── */
+  .priority-chain { display: flex; flex-direction: column; gap: 0; }
+  .priority-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 16px;
+    background: #fff; border: 1px solid var(--slate-200);
+    border-bottom: none;
+  }
+  .priority-item:first-child { border-radius: 10px 10px 0 0; }
+  .priority-item:last-child  { border-radius: 0 0 10px 10px; border-bottom: 1px solid var(--slate-200); }
+  .priority-badge {
+    width: 24px; height: 24px; flex-shrink: 0;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+  }
+  .priority-badge.active   { background: var(--indigo); }
+  .priority-badge.inactive { background: var(--slate-400); }
+  .priority-item h4 { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .priority-item p  { font-size: 12px; color: var(--slate-500); line-height: 1.5; margin: 0; }
+
+  /* ── Overlap diagram ── */
+  .overlap-demo {
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
+    background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 10px;
+    padding: 20px 24px; margin: 16px 0 20px; font-size: 12px;
+  }
+  .overlap-screen {
+    border: 1.5px solid var(--slate-400); border-radius: 6px;
+    overflow: hidden; background: #fff;
+  }
+  .overlap-screen .screen-title {
+    background: var(--slate-800); color: #fff;
+    font-size: 11px; font-weight: 600; padding: 4px 8px;
+  }
+  .overlap-row {
+    padding: 5px 8px; font-size: 12px; color: var(--slate-600);
+    border-bottom: 1px solid var(--slate-100);
+  }
+  .overlap-row.jump-line {
+    background: #fefce8; color: var(--slate-500);
+    font-style: italic; font-size: 11px; letter-spacing: 0.3px;
+    border-bottom: 1px dashed var(--amber);
+  }
+  .overlap-row.highlight { background: #ede9fe; font-weight: 600; color: var(--indigo-dark); }
+  .overlap-row.highlight-after { background: #ede9fe; font-weight: 600; color: var(--indigo-dark); }
+  .overlap-arrow { font-size: 22px; color: var(--indigo); }
+
+  /* ── Ruler legend ── */
+  .ruler-legend { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .ruler-legend-item { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+  .ruler-swatch {
+    width: 32px; height: 3px; flex-shrink: 0;
+    border-radius: 2px; display: inline-block;
+  }
+
+  /* ── Algorithm params ── */
+  .param-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
+  }
+  .param-card {
+    background: var(--slate-50); border: 1px solid var(--slate-200);
+    border-radius: 8px; padding: 12px 14px;
+  }
+  .param-card .param-name { font-size: 12px; font-weight: 700; color: var(--slate-800); margin-bottom: 3px; }
+  .param-card .param-val  { font-size: 11px; font-family: monospace; color: var(--indigo-dark); margin-bottom: 4px; }
+  .param-card .param-desc { font-size: 11px; color: var(--slate-500); line-height: 1.5; }
+
+  /* ── Code ── */
+  code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px; background: var(--slate-100);
+    border-radius: 4px; padding: 2px 5px;
+    color: var(--indigo-dark);
+  }
+
+  /* ── Print ── */
+  @media print {
+    body { max-width: 100%; padding: 0 20mm; }
+    .cover { margin: 0 -20mm 40px; border-radius: 0; }
+    section { page-break-inside: avoid; }
+    .toc { page-break-after: always; }
+    h2.section-title { page-break-before: always; }
+    h2.section-title:first-of-type { page-break-before: avoid; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .cover { flex-direction: column; padding: 32px 24px; gap: 16px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .param-grid { grid-template-columns: 1fr; }
+    .overlap-demo { grid-template-columns: 1fr; }
+    .overlap-arrow { transform: rotate(90deg); align-self: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ COVER ═══ -->
+<div class="cover">
+  <div class="cover-logo">🎵</div>
+  <div class="cover-text">
+    <h1>ScoreFlow</h1>
+    <h2>Elite Sheet Music Viewer &nbsp;·&nbsp; 使用手冊</h2>
+    <div class="meta">User Guide &nbsp;·&nbsp; v3.0 &nbsp;·&nbsp; 2026-03</div>
+  </div>
+</div>
+
+<!-- ═══ TOC ═══ -->
+<nav class="toc">
+  <h2>目錄</h2>
+  <ol>
+    <li><a href="#s1">快速開始</a></li>
+    <li><a href="#s2">閱讀介面（Doc Bar 與工具列）</a></li>
+    <li><a href="#s3">Jump 導航系統</a></li>
+    <li><a href="#s4">五線譜行偵測（Staff Detection）</a></li>
+    <li><a href="#s5">Anchor 錨點</a></li>
+    <li><a href="#s6">標記與圖層</a></li>
+    <li><a href="#s7">鍵盤快捷鍵</a></li>
+    <li><a href="#s8">設定參考</a></li>
+  </ol>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 1 — 快速開始
+════════════════════════════════════════════ -->
+<section id="s1">
+  <div class="section-num">Section 01</div>
+  <h2 class="section-title">快速開始</h2>
+  <p class="section-subtitle">三步驟讓你立刻開始使用 ScoreFlow。</p>
+  <div class="divider"></div>
+
+  <ul class="step-list">
+    <li>
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>匯入樂譜 PDF</h4>
+        <p>點擊「+ Score」按鈕或拖曳 PDF 至視窗。系統計算 SHA-256 指紋，確保標記與正確樂譜版本綁定。</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>自動五線譜偵測</h4>
+        <p>PDF 載入後，系統在背景自動分析每頁像素，找出所有樂譜行（System）的位置，供 Jump 導航使用。無需任何設定。</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>按 Space 翻頁</h4>
+        <p>直接按 <span class="kbd">Space</span> 或 <span class="kbd">→</span> 跳至下一個樂譜行。系統依序以 Anchor → System → Fallback 三段邏輯決定落點。</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>（可選）放置 Anchor 精準控制</h4>
+        <p>按 <span class="kbd">A</span> 鍵進入 Anchor 模式，在需要精準停靠的位置點擊。Anchor 優先於自動偵測的 System。</p>
+      </div>
+    </li>
+  </ul>
+
+  <div class="tip">
+    <strong>💡 PWA 離線支援</strong>
+    <p>安裝到 iPad 主畫面後，即使沒有 WiFi（音樂廳、排練室）也能完全正常使用。</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 2 — 介面
+════════════════════════════════════════════ -->
+<section id="s2">
+  <div class="section-num">Section 02</div>
+  <h2 class="section-title">閱讀介面</h2>
+  <p class="section-subtitle">ScoreFlow 的主要介面元素說明。</p>
+  <div class="divider"></div>
+
+  <h3>浮動文件工具列（右側 Doc Bar）</h3>
+  <table>
+    <thead><tr><th>群組</th><th>按鈕</th><th>快捷鍵</th></tr></thead>
+    <tbody>
+      <tr><td>跳躍控制</td><td>跳至頭部、跳至尾部、尺規開關</td><td><span class="kbd">Home</span> <span class="kbd">End</span> <span class="kbd">R</span></td></tr>
+      <tr><td>互動模式</td><td>瀏覽（Pan）、選取、橡皮擦、錨點</td><td><span class="kbd">V</span> <span class="kbd">E</span> <span class="kbd">A</span></td></tr>
+      <tr><td>縮放</td><td>放大、縮小、適合寬度、適合高度</td><td><span class="kbd">+</span> <span class="kbd">-</span> <span class="kbd">W</span> <span class="kbd">F</span></td></tr>
+      <tr><td>標記工具</td><td>開啟標記面板</td><td><span class="kbd">T</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>左側尺規（Jump Ruler）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:16px">尺規是 Jump 系統的視覺核心，顯示各種導航標記的位置。可用 <span class="kbd">R</span> 切換顯示。</p>
+
+  <div class="ruler-legend">
+    <div class="ruler-legend-item">
+      <span class="ruler-swatch" style="background:#3b82f6"></span>
+      <span><strong>藍色短橫條</strong> — Anchor 錨點位置</span>
+    </div>
+    <div class="ruler-legend-item">
+      <span class="ruler-swatch" style="background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,0.5);height:4px"></span>
+      <span><strong>橘色粗橫條（光暈）</strong> — <em>下一個 Jump 目標</em>（Anchor 或 System）</span>
+    </div>
+    <div class="ruler-legend-item">
+      <span class="ruler-swatch" style="background:transparent;border-top:1px dashed rgba(74,158,255,0.7);height:1px"></span>
+      <span><strong>藍色虛線</strong> — System 行位置（需在設定中開啟顯示）</span>
+    </div>
+    <div class="ruler-legend-item">
+      <span class="ruler-swatch" style="background:transparent;border-top:2px solid #f59e0b;height:1px;box-shadow:0 0 4px rgba(245,158,11,0.5)"></span>
+      <span><strong>橘色虛線（光暈）</strong> — <em>下一個 Jump 目標</em> System 行</span>
+    </div>
+    <div class="ruler-legend-item">
+      <span class="ruler-swatch" style="background:#10b981;box-shadow:0 0 4px rgba(16,185,129,0.4)"></span>
+      <span><strong>綠色短橫條</strong> — Viewport fallback 位置（無任何標記時）</span>
+    </div>
+  </div>
+
+  <div class="tip">
+    <strong>💡 橘色 = 下次 Space 的落點</strong>
+    <p>尺規上的橘色標記精確指示「下次按 Space 會跳到哪裡」，可用來預判翻頁位置。</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 3 — Jump 導航系統
+════════════════════════════════════════════ -->
+<section id="s3">
+  <div class="section-num">Section 03</div>
+  <h2 class="section-title">Jump 導航系統</h2>
+  <p class="section-subtitle">ScoreFlow 最核心的功能，專為演奏中或練習時快速翻頁設計。</p>
+  <div class="divider"></div>
+
+  <h3>3.1 跳躍線（Jump Line）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:14px">
+    視窗中有一條水平虛線，稱為<strong>跳躍線</strong>。它定義了視線焦點的位置——Jump 後，目標內容會對齊在這條線上。
+  </p>
+  <table>
+    <thead><tr><th>屬性</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td>預設位置</td><td>距視窗頂部 40px</td></tr>
+      <tr><td>調整方式</td><td>Global Settings → System Settings → Jump Offset</td></tr>
+      <tr><td>視覺提示</td><td>水平虛線（可開關），尺規橘色標記指示下一目標</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 Jump 前進邏輯（按 Space 或 →）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:16px">系統依以下優先順序決定跳躍目標（連續捲動模式下會有額外的頁跳邏輯，此處為標準模式）：</p>
+
+  <div class="priority-chain">
+    <div class="priority-item">
+      <div class="priority-badge active">1</div>
+      <div>
+        <h4>Anchor 存在</h4>
+        <p>跳至跳躍線下方最近的 Anchor（精準控制）。尺規上橘色標記指示目標位置。</p>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="priority-badge active">2</div>
+      <div>
+        <h4>System 存在（五線譜自動偵測）</h4>
+        <p>依「頁面重疊」設定，取畫面中<strong>倒數第 N 個可見 System</strong>，跳至它對齊跳躍線的位置。詳見 3.3。</p>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="priority-badge inactive">3</div>
+      <div>
+        <h4>最終 Fallback</h4>
+        <p>捲動 <code>(視窗高度 − 跳躍線偏移量)</code>，使原畫面底部對齊新畫面的跳躍線。</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>3.3 頁面重疊（Page Overlap）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:12px">
+    這是 System-based 跳躍的核心設定。翻譜時，你希望「保留畫面中倒數第 N 個 System 作為過渡銜接」——它會出現在新畫面的跳躍線位置。
+  </p>
+
+  <!-- Overlap diagram -->
+  <div class="overlap-demo">
+    <div class="overlap-screen">
+      <div class="screen-title">跳躍前</div>
+      <div class="overlap-row jump-line">── 跳躍線 ──────────────</div>
+      <div class="overlap-row">System B</div>
+      <div class="overlap-row">System C</div>
+      <div class="overlap-row highlight">System D　←── 倒數第 1</div>
+    </div>
+    <div class="overlap-arrow">→</div>
+    <div class="overlap-screen">
+      <div class="screen-title">跳躍後（N = 1）</div>
+      <div class="overlap-row jump-line">── 跳躍線 ──────────────</div>
+      <div class="overlap-row highlight-after">System D　←── 對齊跳躍線</div>
+      <div class="overlap-row">System E</div>
+      <div class="overlap-row">System F</div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--slate-400);margin-bottom:16px">System D 是原畫面最後一行，跳躍後它出現在新畫面的跳躍線上，作為翻頁銜接。</p>
+
+  <table>
+    <thead><tr><th>設定值 N</th><th>效果</th></tr></thead>
+    <tbody>
+      <tr><td>1（預設）</td><td>最後一個 System 對齊跳躍線 → 最大跳躍距離</td></tr>
+      <tr><td>2</td><td>倒數第二個 System 對齊跳躍線 → 多保留一行上下文</td></tr>
+      <tr><td>3+</td><td>保留更多銜接上下文，跳躍距離更短</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--slate-400);margin-bottom:20px">設定路徑：標記工具（T）→ 設定 → More → 頁面重疊 [−] N [+]</p>
+
+  <h3>3.4 Jump 後退（按 ←）</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:10px">
+    每次 Jump 前進都會記錄位置到<strong>歷史堆疊</strong>（最多 50 筆）。按 <span class="kbd">←</span> 精確回到上一個位置，與跳躍距離無關。
+  </p>
+  <p style="font-size:13px;color:var(--slate-600)">
+    若歷史堆疊為空（剛開啟樂譜後的第一次後退），會往上捲動一個等距。
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 4 — 五線譜行偵測
+════════════════════════════════════════════ -->
+<section id="s4">
+  <div class="section-num">Section 04</div>
+  <h2 class="section-title">五線譜行偵測</h2>
+  <p class="section-subtitle">Staff Detection 透過畫面像素分析，自動找出每一頁的樂譜行（System）位置，讓 Jump 在沒有手動 Anchor 的情況下也能精準導航。</p>
+  <div class="divider"></div>
+
+  <h3>4.1 自動偵測</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:10px">
+    開啟任何<strong>新</strong> PDF 後，系統在背景自動執行偵測，並在畫面顯示進度提示：
+  </p>
+  <div style="background:var(--slate-800);color:#e2e8f0;font-family:monospace;font-size:13px;padding:12px 16px;border-radius:8px;margin-bottom:14px;">
+    正在分析樂譜結構... 2 / 8
+  </div>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:14px">
+    偵測完成後，結果儲存於本機（IndexedDB），下次開啟同一份 PDF 不會重複偵測。
+  </p>
+  <div class="tip">
+    <strong>📄 支援掃描版 PDF</strong>
+    <p>演算法採用<strong>自適應背景門檻</strong>，取樣頁面邊緣估算背景亮度，可正確處理泛黃、陰影等掃描背景。</p>
+  </div>
+
+  <h3>4.2 在尺規上顯示 System 位置</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:14px">
+    前往 <strong>標記工具（T）→ 設定 → More → System Detection</strong>，開啟最上方的顯示開關：
+  </p>
+  <ul style="font-size:13px;color:var(--slate-600);padding-left:20px;margin-bottom:14px;line-height:1.8">
+    <li>開啟 → 尺規上顯示<strong>淡藍色虛線</strong>，標示每個 System 的頂部位置</li>
+    <li>其中「下一個 Jump 目標」以<strong>橘色</strong>顯示（光暈效果）</li>
+    <li>預設關閉（不影響導航，純視覺輔助）</li>
+  </ul>
+
+  <h3>4.3 手動重新偵測</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:12px">若偵測結果不準確（例如特殊版面），可手動重新執行：</p>
+  <table>
+    <thead><tr><th>按鈕</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td>Detect</td><td>清除舊結果，對目前 PDF 重新偵測全部頁面</td></tr>
+      <tr><td>刪除全部</td><td>清除所有 System 標記，Jump 退回 Fallback 模式</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--slate-400);margin-bottom:20px">路徑：標記工具（T）→ 設定 → More → System Detection</p>
+
+  <h3>4.4 偵測演算法參數</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:16px">偵測結果以<strong>比率（ratio）</strong>儲存（System 頂部 Y ÷ 頁面高度），與縮放比例無關。</p>
+
+  <div class="param-grid">
+    <div class="param-card">
+      <div class="param-name">自適應背景門檻</div>
+      <div class="param-val">邊緣 6 區塊取樣 × 0.75</div>
+      <div class="param-desc">估算頁面背景亮度，避免掃描版誤判深色背景。</div>
+    </div>
+    <div class="param-card">
+      <div class="param-name">行密度門檻</div>
+      <div class="param-val">≥ 30% 橫向像素</div>
+      <div class="param-desc">超過此比例的橫向深色像素，才認定為樂譜線行。</div>
+    </div>
+    <div class="param-card">
+      <div class="param-name">最大線條厚度</div>
+      <div class="param-val">≤ 8px</div>
+      <div class="param-desc">超過 8px 的深色帶視為文字或樑線（beam），排除。</div>
+    </div>
+    <div class="param-card">
+      <div class="param-name">System 分群間距</div>
+      <div class="param-val">> 25px</div>
+      <div class="param-desc">線條群組間距超過此值，認定為不同的 System。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 5 — Anchor 錨點
+════════════════════════════════════════════ -->
+<section id="s5">
+  <div class="section-num">Section 05</div>
+  <h2 class="section-title">Anchor 錨點</h2>
+  <p class="section-subtitle">Anchor 是使用者手動放置的跳躍目標，優先順序高於 System 自動偵測。</p>
+  <div class="divider"></div>
+
+  <h3>5.1 放置 Anchor</h3>
+  <ol style="font-size:13px;color:var(--slate-600);padding-left:20px;margin-bottom:16px;line-height:1.9">
+    <li>按 <span class="kbd">A</span> 鍵，或點擊工具列的錨點按鈕，進入 Anchor 模式</li>
+    <li>點擊樂譜中的任意位置，放置錨點標記（尺規上顯示藍色短橫條）</li>
+    <li>再按 <span class="kbd">A</span> 或 <span class="kbd">V</span> 退出 Anchor 模式</li>
+  </ol>
+
+  <h3>5.2 Anchor vs System 的使用情境</h3>
+  <table>
+    <thead><tr><th>情境</th><th>建議</th></tr></thead>
+    <tbody>
+      <tr><td>一般練習 / 表演瀏覽</td><td>使用 System（自動，零設定）</td></tr>
+      <tr><td>需要在特定段落精準停靠</td><td>放置 Anchor（手動，完全控制）</td></tr>
+      <tr><td>混用</td><td>Anchor 優先；Anchor 用完後自動切換至 System</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <strong>💡 尺規橘色標記</strong>
+    <p>尺規上的橘色標記始終指向「下次按 Space 的落點」——無論是 Anchor 還是 System，視覺反饋完全一致。</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 6 — 標記與圖層
+════════════════════════════════════════════ -->
+<section id="s6">
+  <div class="section-num">Section 06</div>
+  <h2 class="section-title">標記與圖層</h2>
+  <p class="section-subtitle">專為職業樂手設計的分層標記架構。</p>
+  <div class="divider"></div>
+
+  <h3>6.1 開啟標記工具</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:16px">按 <span class="kbd">T</span> 或點擊工具列的 T 按鈕，開啟標記面板。</p>
+
+  <h3>6.2 標記類別</h3>
+  <div class="card-grid">
+    <div class="card" style="border-top:3px solid var(--indigo)">
+      <div class="card-icon">🖊️</div>
+      <h3>Pens</h3>
+      <p>手繪線條、高亮標記。</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-icon">🏹</div>
+      <h3>Bowing</h3>
+      <p>上弓、下弓、連弓等弓法記號。</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-icon">🖐️</div>
+      <h3>Fingering</h3>
+      <p>指法數字、把位標記。</p>
+    </div>
+    <div class="card" style="border-top:3px solid #ec4899">
+      <div class="card-icon">🎼</div>
+      <h3>Articulation</h3>
+      <p>奏法記號。</p>
+    </div>
+    <div class="card" style="border-top:3px solid #8b5cf6">
+      <div class="card-icon">♩</div>
+      <h3>Tempo</h3>
+      <p>速度標記。</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--red)">
+      <div class="card-icon">𝑓</div>
+      <h3>Dynamic</h3>
+      <p>力度標記（p、f、ff…）。</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--blue)">
+      <div class="card-icon">⚓</div>
+      <h3>Anchor</h3>
+      <p>跳躍目標錨點。</p>
+    </div>
+  </div>
+
+  <h3>6.3 圖層管理</h3>
+  <p style="font-size:13px;color:var(--slate-600);margin-bottom:10px">
+    每個類別可獨立顯示 / 隱藏：<strong>標記工具（T）→ 設定 → Categories</strong>。
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 7 — 鍵盤快捷鍵
+════════════════════════════════════════════ -->
+<section id="s7">
+  <div class="section-num">Section 07</div>
+  <h2 class="section-title">鍵盤快捷鍵</h2>
+  <p class="section-subtitle">熟練快捷鍵，讓演奏時的操作流暢如第二天性。</p>
+  <div class="divider"></div>
+
+  <h3>導航</h3>
+  <table>
+    <thead><tr><th>按鍵</th><th>功能</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="kbd">Space</span></td><td>Jump Forward</td><td>跳至下一個 Anchor 或 System</td></tr>
+      <tr><td><span class="kbd">→</span></td><td>Jump Forward</td><td>同 Space</td></tr>
+      <tr><td><span class="kbd">←</span></td><td>Jump Back</td><td>回到上一個跳躍位置（歷史堆疊）</td></tr>
+      <tr><td><span class="kbd">Home</span></td><td>Jump to Head</td><td>跳至樂譜開頭</td></tr>
+      <tr><td><span class="kbd">End</span></td><td>Jump to End</td><td>跳至樂譜結尾</td></tr>
+    </tbody>
+  </table>
+
+  <h3>縮放</h3>
+  <table>
+    <thead><tr><th>按鍵</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="kbd">+</span> / <span class="kbd">=</span></td><td>放大</td></tr>
+      <tr><td><span class="kbd">-</span></td><td>縮小</td></tr>
+      <tr><td><span class="kbd">W</span></td><td>適合寬度（Fit to Width）</td></tr>
+      <tr><td><span class="kbd">F</span></td><td>適合高度（Fit to Height）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>介面與模式</h3>
+  <table>
+    <thead><tr><th>按鍵</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="kbd">V</span></td><td>瀏覽模式（Pan）——演奏時防止誤觸標記</td></tr>
+      <tr><td><span class="kbd">E</span></td><td>橡皮擦模式</td></tr>
+      <tr><td><span class="kbd">A</span></td><td>Anchor 放置模式</td></tr>
+      <tr><td><span class="kbd">T</span></td><td>切換標記面板</td></tr>
+      <tr><td><span class="kbd">R</span></td><td>切換尺規顯示</td></tr>
+      <tr><td><span class="kbd">S</span></td><td>切換側邊欄</td></tr>
+      <tr><td><span class="kbd">H</span> / <span class="kbd">?</span></td><td>快捷鍵說明</td></tr>
+      <tr><td><span class="kbd">Esc</span></td><td>關閉所有面板，回到瀏覽模式</td></tr>
+      <tr><td><span class="kbd">Delete</span> / <span class="kbd">⌫</span></td><td>刪除已選取的標記符號</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 8 — 設定參考
+════════════════════════════════════════════ -->
+<section id="s8">
+  <div class="section-num">Section 08</div>
+  <h2 class="section-title">設定參考</h2>
+  <p class="section-subtitle">所有設定項目的完整說明。</p>
+  <div class="divider"></div>
+
+  <h3>8.1 Global Settings → System Settings</h3>
+  <table>
+    <thead><tr><th>設定</th><th>類型</th><th>說明</th><th>預設</th></tr></thead>
+    <tbody>
+      <tr><td>Jump Offset</td><td>數值 (px)</td><td>跳躍線距視窗頂部距離。數值越大，停靠位置越低。</td><td>40px</td></tr>
+      <tr><td>Jump Speed</td><td>滑桿 (ms)</td><td>跳躍動畫時長。數值越小越快；建議演奏時 150–300ms。</td><td>300ms</td></tr>
+      <tr><td>Stamp Size</td><td>滑桿 0.5–3×</td><td>所有標記符號的整體縮放倍率。</td><td>1×</td></tr>
+      <tr><td>Idle Lock</td><td>滑桿 (s)</td><td>滑鼠靜止多久後自動鎖定互動，防止演奏時誤觸。</td><td>—</td></tr>
+      <tr><td>Touch Offset Y/X</td><td>滑桿 (px)</td><td>觸控點擊時標記相對手指的偏移，避免手指遮擋落點。</td><td>—</td></tr>
+      <tr><td>Page Turner Mode</td><td>下拉</td><td>外接踏板 / 翻譜器按鍵映射模式。</td><td>Default</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.2 標記工具（T）→ 設定 → More</h3>
+  <table>
+    <thead><tr><th>設定</th><th>類型</th><th>說明</th><th>預設</th></tr></thead>
+    <tbody>
+      <tr><td>頁面重疊</td><td>整數 1–10</td><td>Jump 時以畫面中倒數第 N 個 System 為跳躍起點。N=1 最大跳躍距離，N 越大銜接越多。</td><td>1</td></tr>
+      <tr><td>System Detection 顯示開關</td><td>開關</td><td>在尺規上顯示 System 行位置（淡藍虛線）。不影響 Jump 導航。</td><td>關閉</td></tr>
+      <tr><td>Detect 按鈕</td><td>按鈕</td><td>清除舊結果，對目前 PDF 重新偵測所有頁面的 System 位置。</td><td>—</td></tr>
+      <tr><td>刪除全部 按鈕</td><td>按鈕</td><td>清除所有 System 標記，Jump 退回 Fallback 模式。</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.3 標記工具（T）→ 設定 → Size</h3>
+  <table>
+    <thead><tr><th>設定</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td>Scale</td><td>此份樂譜的標記縮放比例（0.5–3.0×）</td></tr>
+      <tr><td>Font Size</td><td>文字標記的字體大小（16–32px）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.4 標記工具（T）→ 設定 → Categories</h3>
+  <p style="font-size:13px;color:var(--slate-600)">各標記類別（Pens / Bowing / Fingering / Articulation / Tempo / Dynamic / Anchor）的個別顯示切換與批量清除。</p>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<div style="margin-top:80px;padding-top:20px;border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;font-size:12px;color:var(--slate-400)">
+  <span>ScoreFlow User Guide · v3.0</span>
+  <span>© 2026 ScoreFlow</span>
+</div>
+
+</body>
+</html>

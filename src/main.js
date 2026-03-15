@@ -26,6 +26,7 @@ import { UIManager } from './modules/UIManager.js'
 import { InitializationManager } from './modules/InitializationManager.js'
 import { PdfExportManager } from './modules/PdfExportManager.js'
 import { applyAppProxies } from './modules/AppProxyHandler.js'
+import { StaffDetector } from './modules/StaffDetector.js'
 
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs/pdf.worker.min.mjs', baseUrl).href
@@ -61,6 +62,8 @@ class ScoreFlow {
     this.stampOffsetTouchX = -30
     this.stampOffsetMouseY = 25
     this.stampOffsetMouseX = 0
+    this.showSystemStamps = localStorage.getItem('scoreflow_show_systems') !== 'false'
+    this.systemJumpOverlap = parseInt(localStorage.getItem('scoreflow_system_jump_overlap') || '1')
 
     // Managers Initialization
     this.toolManager = new ToolManager(this)
@@ -83,6 +86,7 @@ class ScoreFlow {
     this.uiManager = new UIManager(this)
     this.pdfExportManager = new PdfExportManager(this)
     this.initManager = new InitializationManager(this)
+    this.staffDetector = new StaffDetector(this)
 
     // Apply Proxies
     applyAppProxies(this)

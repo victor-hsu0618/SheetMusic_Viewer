@@ -294,6 +294,12 @@ export class SettingsPanelManager {
             turnerSelect.addEventListener('change', () => this.app.saveToStorage())
         }
 
+        // Reload App
+        const reloadAppBtn = document.getElementById('btn-reload-app')
+        if (reloadAppBtn) {
+            reloadAppBtn.addEventListener('click', () => location.reload())
+        }
+
         // Refresh Cloud Stats button
         const refreshStatsBtn = document.getElementById('btn-refresh-cloud-stats')
         if (refreshStatsBtn) {

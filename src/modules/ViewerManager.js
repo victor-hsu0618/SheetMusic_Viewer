@@ -243,6 +243,14 @@ export class ViewerManager {
             }
             this.pdf = pdf;
             console.log(`[ViewerManager] PDF.js success. Pages: ${this.pdf.numPages}`);
+
+            // Auto-detect system stamps in background if none exist
+            const hasSystems = this.app.stamps.some(s => s.type === 'system' && !s.deleted)
+            if (!hasSystems && this.app.staffDetector) {
+                this.app.staffDetector.autoDetect(this.pdf, (page, total) => {
+                    this.app.showToast?.(`正在分析樂譜結構... ${page} / ${total}`)
+                })
+            }
         } catch (err) {
             if (loadingId !== this.latestLoadingId) return;
             console.error('[ViewerManager] PDF.js failed to load document:', err);
@@ -558,12 +566,9 @@ export class ViewerManager {
         const page = await this.pdf.getPage(1)
         const naturalWidth = page.getViewport({ scale: 1 }).width
 
-        // Subtract ruler width when visible so the PDF doesn't slide under it.
-        // clientWidth already excludes the scrollbar, so no extra safety margin needed.
-        const rulerW = (this.app.rulerManager?.rulerVisible)
-            ? (document.querySelector('.ruler-track')?.offsetWidth || 0)
-            : 0
-        const availW = this.app.viewer.clientWidth - rulerW
+        // Use full viewer width — the ruler is an overlay on the PDF left margin,
+        // not a layout element, so it doesn't reduce available content width.
+        const availW = this.app.viewer.clientWidth
         this.scale = Math.min(Math.max(0.2, availW / naturalWidth), 4)
         this.isFitToHeight = false
         this.updateZoomDisplay()
@@ -638,17 +643,8 @@ export class ViewerManager {
             const el = document.getElementById(id)
             if (el) el.classList.remove('hidden')
         })
-        // Ruler respects the saved toggle state
-        const ruler = document.getElementById('jump-ruler')
-        if (ruler) {
-            if (this.app.rulerVisible) {
-                ruler.classList.remove('hidden')
-                ruler.style.display = 'block'
-            } else {
-                ruler.classList.add('hidden')
-                ruler.style.display = ''
-            }
-        }
+        // Ruler respects the saved toggle state — delegate to rulerManager to avoid duplication
+        this.app.updateRulerPosition()
         if (this.app.btnRulerToggle) this.app.btnRulerToggle.classList.toggle('active', this.app.rulerVisible)
 
         // Stamp palette starts collapsed — user opens via button or double-tap
