@@ -192,16 +192,26 @@
 /* Grip — default left */
 .doc-drag-handle {
   order: -1;
-  width: 18px;
+  width: 26px;
   height: 100%;
   padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  cursor: default;
+  cursor: grab;
   border-right: 1px solid var(--border);
   margin-right: 4px;
+  transition: color 0.15s;
+}
+
+.doc-drag-handle:hover {
+  color: var(--primary);
+}
+
+.floating-doc-bar.collapsed .doc-drag-handle {
+  color: var(--primary);
+  cursor: pointer;
 }
 
 /* Hide button — default right */
@@ -294,6 +304,18 @@
 .hero-btn:hover {
   transform: scale(1.2) !important;
   background: var(--primary-dark) !important;
+}
+
+#btn-library-toggle {
+  color: var(--primary) !important;
+  background: rgba(var(--primary-rgb, 99, 102, 241), 0.1) !important;
+  border-color: rgba(var(--primary-rgb, 99, 102, 241), 0.25) !important;
+}
+
+#btn-library-toggle.active {
+  color: #fff !important;
+  background: var(--primary) !important;
+  border-color: transparent !important;
 }
 
 @keyframes heroPulse {

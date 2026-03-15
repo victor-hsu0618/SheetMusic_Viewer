@@ -40,10 +40,43 @@ export class ScoreManager {
         this.initLibraryHeader();
         this.initBatchBar();
         this.initSearch();
+
+        // Auto-load last score (or User Guide if library is empty)
+        this._autoLoadOnStartup();
+    }
+
+    async _autoLoadOnStartup() {
+        // Find most recently accessed local score
+        const localScores = this.registry
+            .filter(s => s.storageMode !== 'cloud')
+            .sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
+
+        if (localScores.length > 0) {
+            await this.loadScore(localScores[0].fingerprint);
+            return;
+        }
+
+        // No local scores — load bundled User Guide
+        await this.loadUserGuide();
+    }
+
+    async loadUserGuide() {
+        try {
+            const base = import.meta.env.BASE_URL || '/';
+            const url = `${base}assets/ScoreFlow_UserGuide.pdf`;
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const buf = new Uint8Array(await res.arrayBuffer());
+            this.toggleOverlay(false);
+            await this.app.loadPDF(buf, 'ScoreFlow User Guide');
+        } catch (e) {
+            console.warn('[ScoreManager] User Guide not available:', e);
+        }
     }
 
     initLibraryHeader() {
         document.getElementById('btn-library-select')?.addEventListener('click', () => this.toggleSelectionMode());
+        document.getElementById('btn-open-user-guide')?.addEventListener('click', () => this.loadUserGuide());
         const sortSelect = document.getElementById('library-sort-select');
         if (sortSelect) {
             sortSelect.value = this.sortMode;
@@ -307,8 +340,11 @@ export class ScoreManager {
         if (!this.overlay) return;
         const active = force !== undefined ? force : !this.overlay.classList.contains('active');
         this.overlay.classList.toggle('active', active);
-        
+        this.app.btnLibraryToggle?.classList.toggle('active', active);
+
         if (active) {
+            // Close all other panels first (mutual exclusion)
+            this.app.uiManager?.closeAllActivePanels('ScoreManager');
             // Ensure header and toolbar are visible when opening library
             document.querySelector('.library-header')?.classList.remove('hidden-important');
             document.querySelector('.library-toolbar')?.classList.remove('hidden-important');

@@ -108,5 +108,10 @@ export class UIManager {
         if (exceptManagerName !== 'ToolManager' && this.app.toolManager?.isStampPaletteOpen) {
             this.app.toolManager.toggleStampPalette(null, null, false);
         }
+
+        // Also close Library overlay
+        if (exceptManagerName !== 'ScoreManager') {
+            this.app.scoreManager?.toggleOverlay(false);
+        }
     }
 }

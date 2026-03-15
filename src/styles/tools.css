@@ -2,7 +2,7 @@
 .floating-stamp-bar {
   position: fixed;
   left: 50%;
-  bottom: 80px;
+  bottom: 110px;
   transform: translateX(-50%);
   width: 320px; /* Fixed default for stability */
   min-width: 280px;
@@ -283,6 +283,7 @@
   padding: 4px;
   outline: none;
   color: var(--text-main);
+  touch-action: auto;
 }
 
 .add-text-btn {

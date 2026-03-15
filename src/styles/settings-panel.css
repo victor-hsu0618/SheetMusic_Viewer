@@ -1,12 +1,12 @@
 /* Global Settings Sub-Panel (Calculator Style) */
 #settings-panel {
     position: fixed !important;
-    bottom: 76px !important;
+    bottom: 110px !important;
     left: 50% !important;
     top: auto !important;
     transform: translate(-50%, 100%) !important; /* Initial: Slide down */
     width: 650px;
-    max-height: 80vh;
+    max-height: calc(100vh - 180px);
     display: flex;
     flex-direction: column;
     z-index: 10000;
@@ -103,6 +103,14 @@
 .setting-item {
     display: flex;
     flex-direction: column;
+}
+
+.setting-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.7;
+    margin-top: 3px;
+    line-height: 1.4;
 }
 
 .setting-label {

@@ -211,6 +211,7 @@ export class ViewerManager {
 
         console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
         this.pdfFingerprint = newFingerprint
+        this.app.btnScoreDetailToggle?.removeAttribute('disabled')
         this.app.jumpManager?.loadBookmarks()
 
         const savedStamps = localStorage.getItem(`scoreflow_stamps_${newFingerprint}`)

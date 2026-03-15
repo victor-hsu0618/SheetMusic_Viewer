@@ -116,6 +116,20 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - **設定面板轉型 (Sub-Panel Transition)**：為了極大化樂譜顯示面積，傳統側邊欄已移除。所有全域設定（如：全域圖章縮放比例、導航線顯示、翻頁模式）均整合至專屬的彈出式「全域設定面板 (Global Settings Panel)」，其風格與 View Inspector 統一，支援自由拖拉。
   - **圖層管理整合 (Notation Categories)**：圖層控制功能已完全整合至「Stamp Panel (印章工具箱)」的設定子頁面中。
   - **樂譜專屬設定**：原側邊欄之樂譜比例修正、媒體連結等資訊已移至書庫系統 (Score Library) 或專屬 Inspector 面板中。
+  - **System Settings 分頁控制項規格 - *2026.03.15 更新***：
+
+    | 控制項 | 類型 | 說明 |
+    |---|---|---|
+    | **Show Measure Numbers** | 開關 | 在樂譜左側顯示小節編號標記。 |
+    | **顯示導航觸發區提示線** | 開關 | 在畫面上顯示 Jump 目標基準線，方便確認翻頁停靠位置。 |
+    | **Stamp Size** | 滑桿 (0.5×–3.0×) | 所有標記符號的整體縮放倍率。個別符號可在 Stamp Sizes 分頁微調。 |
+    | **Anchor Offset** | 滑桿 (0–800px) | Jump 停靠後，Anchor 距畫面頂端的距離。數值越大，停靠位置越低。 |
+    | **Jump Speed** | 滑桿 (50–1000ms) | 按下 Jump 鍵後的捲動動畫時長。演奏時建議設為 150–300ms。 |
+    | **Idle Lock** | 滑桿 (1–30s) | 滑鼠靜止多久後自動鎖定互動，防止演奏時誤觸。觸控裝置不受影響。 |
+    | **Touch Offset** | 滑桿 (0–200px) | 觸控點擊時，標記符號相對手指的垂直偏移量，避免手指遮擋落點。 |
+    | **Mouse Offset** | 滑桿 (0–200px) | 滑鼠點擊時，標記符號相對游標的垂直偏移量。 |
+    | **Toolbar Grip Position** | 選段 (Left / Right) | Doc Bar 的拖曳把手位置。慣用右手建議 Left，慣用左手建議 Right。 |
+    | **Page Turner Mode** | 下拉選單 | 外接踏板或翻譜器的按鍵對應模式。Default 使用 Space/方向鍵，其餘模式對應特定硬體。 |
 
 ### 4.1 iPad 手勢效能優化 (iPad Gesture Performance Optimization) - *2026.03.08 更新*
 

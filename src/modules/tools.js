@@ -228,8 +228,8 @@ export class ToolManager {
         el.addEventListener("touchstart", handleMouseDown, { passive: false })
         document.addEventListener("mousemove", handleMouseMove)
         document.addEventListener("touchmove", handleMouseMove, { passive: false })
-        el.addEventListener("mouseup", handleMouseUp)
-        el.addEventListener("touchend", handleMouseUp)
+        document.addEventListener("mouseup", handleMouseUp)
+        document.addEventListener("touchend", handleMouseUp)
     }
 
     _startExternalDrag(clientX, clientY, el) {
@@ -756,6 +756,7 @@ export class ToolManager {
                         this.updateActiveTools()
                     }
                 }
+                btn.addEventListener('pointerdown', (e) => { e.stopPropagation(); input.focus() })
                 btn.onclick = (e) => { e.stopPropagation(); commit() }
                 input.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); commit() } }
                 input.onclick = (e) => e.stopPropagation()

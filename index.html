@@ -108,19 +108,17 @@
     <div id="floating-doc-bar" class="floating-doc-bar collapsed">
       <div class="doc-drag-handle">
         <!-- Expanded state: 6-dot grip -->
-        <svg class="grip-icon-expanded" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="5" cy="9" r="1.5" />
-          <circle cx="12" cy="9" r="1.5" />
-          <circle cx="19" cy="9" r="1.5" />
-          <circle cx="5" cy="15" r="1.5" />
-          <circle cx="12" cy="15" r="1.5" />
-          <circle cx="19" cy="15" r="1.5" />
+        <svg class="grip-icon-expanded" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="8" cy="8" r="2" />
+          <circle cx="16" cy="8" r="2" />
+          <circle cx="8" cy="16" r="2" />
+          <circle cx="16" cy="16" r="2" />
         </svg>
-        <!-- Collapsed state: hamburger (tap to expand) -->
-        <svg class="grip-icon-collapsed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <line x1="3" y1="6" x2="21" y2="6" />
+        <!-- Collapsed state: menu + expand cue -->
+        <svg class="grip-icon-collapsed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="3" y1="7" x2="21" y2="7" />
           <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="17" x2="21" y2="17" />
         </svg>
       </div>
 
@@ -159,8 +157,11 @@
         </button>
         <div class="suite-divider"></div>
         <button id="quick-open-library" class="zoom-btn-mini" title="Score Library (O)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <rect x="3" y="3" width="4" height="15" rx="1.5"/>
+            <rect x="10" y="6" width="4" height="12" rx="1.5"/>
+            <rect x="17" y="4.5" width="4" height="13.5" rx="1.5"/>
+            <rect x="2" y="19" width="20" height="2" rx="1"/>
           </svg>
         </button>
       </div>
@@ -168,10 +169,13 @@
       <!-- Unified Core Triggers: Settings & Score Tools -->
       <div class="core-trigger-suite">
         <button id="btn-settings-toggle" class="zoom-btn-mini navigation-btn" title="Global Settings (S)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3" />
-            <path
-              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <circle cx="10" cy="6" r="2" fill="currentColor" stroke="none"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>
+            <line x1="4" y1="18" x2="20" y2="18"/>
+            <circle cx="8" cy="18" r="2" fill="currentColor" stroke="none"/>
           </svg>
         </button>
       </div>
@@ -179,20 +183,20 @@
       <div class="suite-divider"></div>
 
       <div class="score-trigger-suite">
-        <button id="btn-library-toggle" class="zoom-btn-mini navigation-btn hero-btn" title="Score Library (O)">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-            <line x1="12" y1="11" x2="12" y2="17"></line>
-            <line x1="9" y1="14" x2="15" y2="14"></line>
+        <button id="btn-library-toggle" class="zoom-btn-mini navigation-btn" title="Score Library (O)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <rect x="3" y="3" width="4" height="15" rx="1.5"/>
+            <rect x="10" y="6" width="4" height="12" rx="1.5"/>
+            <rect x="17" y="4.5" width="4" height="13.5" rx="1.5"/>
+            <rect x="2" y="19" width="20" height="2" rx="1"/>
           </svg>
         </button>
-        <button id="btn-score-detail-toggle" class="zoom-btn-mini navigation-btn" title="Score Info (I)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <path d="M9 17V12l4-1v5.5"></path>
-            <circle cx="8" cy="17" r="1.5"></circle>
-            <circle cx="12" cy="16" r="1.5"></circle>
+        <button id="btn-score-detail-toggle" class="zoom-btn-mini navigation-btn" title="Score Info (I)" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="8" y1="13" x2="16" y2="13"/>
+            <line x1="8" y1="17" x2="13" y2="17"/>
           </svg>
         </button>
       </div>
@@ -201,12 +205,8 @@
 
       <!-- Navigation & Jump -->
       <button id="btn-jump-panel-toggle" class="zoom-btn-mini navigation-btn" title="Go To (G)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 22V12"></path>
-          <path d="M12 12l-4 4"></path>
-          <path d="M12 12l4 4"></path>
-          <path d="M2 7l10-5 10 5-10 5z"></path>
-          <path d="M2 17l10-5 10 5-10 5z"></path>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="3 11 22 2 13 21 11 13 3 11" fill="currentColor" stroke="none"/>
         </svg>
       </button>
 
@@ -220,11 +220,9 @@
 
       <!-- Annotation & Visibility -->
       <button id="btn-stamp-palette" class="zoom-btn-mini mode-btn" title="Stamp Palette (T)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path
-            d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4A2 2 0 0 0 12 22l7-4A2 2 0 0 0 21 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
         </svg>
       </button>
 
@@ -349,7 +347,7 @@
       <div class="jump-main-content">
         <!-- Left Side: Tabs -->
         <div class="jump-tabs-side">
-          <button class="jump-tab-btn active" data-tab="keypad">Keypad</button>
+          <button class="jump-tab-btn active" data-tab="keypad">Page</button>
           <button class="jump-tab-btn" data-tab="bookmarks">Bookmarks</button>
           <button class="jump-tab-btn" data-tab="measures">Measures</button>
         </div>
@@ -468,7 +466,8 @@
         </div>
         <div class="library-stats-bar">
           <span id="library-score-count">All Scores: 0</span>
-          
+          <button id="btn-open-user-guide" class="btn-user-guide-link">📖 User Guide</button>
+
           <!-- Unified Action Area -->
           <div class="library-stats-actions">
             <div id="score-actions-area" class="btn-import-wrapper btn-primary btn-mini-inline">
@@ -662,12 +661,25 @@
         <div class="settings-tab-pane" id="settings-pane-system">
           <div class="tab-section-label">App Preferences</div>
           <div class="setting-item mb-15">
-            <label class="setting-label" for="turner-mode-select">Page Turner Mode</label>
-            <select id="turner-mode-select" class="form-select mini-select w-full mt-5">
-              <option value="default">Default</option>
-              <option value="pgupdn">PageUp / PageDown</option>
-              <option value="arrows">Arrow Keys</option>
-            </select>
+            <div class="flex-row-center flex-space-between w-full">
+              <label class="setting-label" for="toggle-measure-visibility">Show Measure Numbers</label>
+              <label class="switch">
+                <input type="checkbox" id="toggle-measure-visibility" checked>
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <span class="setting-hint">在樂譜左側顯示小節編號標記。</span>
+          </div>
+
+          <div class="setting-item mb-15">
+            <div class="flex-row-center flex-space-between w-full">
+              <label class="setting-label">顯示導航觸發區提示線</label>
+              <label class="switch">
+                <input type="checkbox" id="settings-show-nav-dividers">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <span class="setting-hint">在畫面上顯示 Jump 目標基準線，方便確認翻頁停靠位置。</span>
           </div>
 
           <div class="setting-item mb-15">
@@ -681,16 +693,7 @@
               <span id="settings-stamp-size-value" class="badge">1.0x</span>
               <button class="btn-reset-mini" data-reset="stamp-size" title="Reset to 1.0x">Reset</button>
             </div>
-          </div>
-
-          <div class="setting-item mb-15">
-            <div class="setting-row-compact">
-              <label class="setting-label" for="toggle-measure-visibility">Show Measure Numbers</label>
-              <label class="switch">
-                <input type="checkbox" id="toggle-measure-visibility" checked>
-                <span class="slider round"></span>
-              </label>
-            </div>
+            <span class="setting-hint">所有標記符號的整體縮放倍率。個別符號可在 Stamp Sizes 分頁微調。</span>
           </div>
 
           <div class="setting-item mb-15">
@@ -704,6 +707,7 @@
               <span id="settings-jump-offset-value" class="badge">40px</span>
               <button class="btn-reset-mini" data-reset="jump-offset" title="Reset to 40px">Reset</button>
             </div>
+            <span class="setting-hint">Jump 停靠後，Anchor 距畫面頂端的距離。數值越大，Anchor 停靠位置越低。</span>
           </div>
 
           <div class="setting-item mb-15">
@@ -717,6 +721,7 @@
               <span id="settings-jump-speed-value" class="badge">300ms</span>
               <button class="btn-reset-mini" data-reset="jump-speed" title="Reset to 300ms">Reset</button>
             </div>
+            <span class="setting-hint">按下 Jump 鍵後的捲動動畫時長。數值越小越快，演奏時建議設為 150–300ms。</span>
           </div>
 
           <div class="setting-item mb-15">
@@ -730,6 +735,7 @@
               <span id="settings-pointer-idle-value" class="badge">8s</span>
               <button class="btn-reset-mini" data-reset="pointer-idle" title="Reset to 8s">Reset</button>
             </div>
+            <span class="setting-hint">滑鼠靜止多久後自動鎖定互動，防止演奏時誤觸。觸控裝置不受影響。</span>
           </div>
 
           <div class="setting-item mb-15">
@@ -743,6 +749,7 @@
               <span id="settings-offset-touch-value" class="badge">65px</span>
               <button class="btn-reset-mini" data-reset="offset-touch" title="Reset to 65px">Reset</button>
             </div>
+            <span class="setting-hint">觸控點擊時，標記符號相對手指的垂直偏移量，避免手指遮擋落點。</span>
           </div>
 
           <div class="setting-item mb-15">
@@ -756,16 +763,7 @@
               <span id="settings-offset-mouse-value" class="badge">25px</span>
               <button class="btn-reset-mini" data-reset="offset-mouse" title="Reset to 25px">Reset</button>
             </div>
-          </div>
-
-          <div class="setting-item mb-15">
-            <div class="flex-row-center flex-space-between w-full">
-              <label class="setting-label">顯示導航觸發區提示線</label>
-              <label class="switch">
-                <input type="checkbox" id="settings-show-nav-dividers">
-                <span class="slider round"></span>
-              </label>
-            </div>
+            <span class="setting-hint">滑鼠點擊時，標記符號相對游標的垂直偏移量。</span>
           </div>
 
           <div class="setting-item mb-15">
@@ -774,6 +772,17 @@
               <button class="segment-btn" data-grip="left">Left</button>
               <button class="segment-btn" data-grip="right">Right</button>
             </div>
+            <span class="setting-hint">Doc Bar 的拖曳把手位置。慣用右手建議 Left，慣用左手建議 Right。</span>
+          </div>
+
+          <div class="setting-item mb-15">
+            <label class="setting-label" for="turner-mode-select">Page Turner Mode</label>
+            <select id="turner-mode-select" class="form-select mini-select w-full mt-5">
+              <option value="default">Default</option>
+              <option value="pgupdn">PageUp / PageDown</option>
+              <option value="arrows">Arrow Keys</option>
+            </select>
+            <span class="setting-hint">外接踏板或翻譜器的按鍵對應模式。Default 使用 Space/方向鍵，其餘模式對應特定硬體。</span>
           </div>
 
           <div class="tab-divider"></div>
