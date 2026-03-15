@@ -584,7 +584,8 @@ export class ViewerManager {
 
         const page = await this.pdf.getPage(1)
         const naturalHeight = page.getViewport({ scale: 1 }).height
-        const availH = this.app.viewer.clientHeight - 20 // 20px safety margin
+
+        const availH = this.app.viewer.clientHeight
         this.scale = Math.min(Math.max(0.2, availH / naturalHeight), 4)
         this.isFitToHeight = true
         this.updateZoomDisplay()
