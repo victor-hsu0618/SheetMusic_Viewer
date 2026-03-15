@@ -952,6 +952,13 @@ export class DriveSyncManager {
                 let shouldPush = false;
 
                 if (remoteData && remoteData.version > (this.lastProfileSyncTime || 0)) {
+                    // 0. Sync GitHub token — pull from Drive if local is missing
+                    if (remoteData.githubToken && !localStorage.getItem('scoreflow_github_token')) {
+                        localStorage.setItem('scoreflow_github_token', remoteData.githubToken);
+                        if (this.app.gistShareManager) this.app.gistShareManager._token = remoteData.githubToken;
+                        console.log('[DriveSync] GitHub token synced from Drive.');
+                    }
+
                     // 1. Merge Profile (LWW)
                     const remoteProfile = remoteData.profile;
                     if (remoteProfile && (remoteProfile.updatedAt || 0) > (localProfile.updatedAt || 0)) {
@@ -1019,6 +1026,7 @@ export class DriveSyncManager {
                         profile: localProfile,
                         userTextLibrary: this.app.userTextLibrary,
                         setlists: localSetlists,
+                        githubToken: localStorage.getItem('scoreflow_github_token') || undefined,
                         version: Date.now()
                     };
                     await this.updateFile(fileId, payload);
@@ -1030,6 +1038,7 @@ export class DriveSyncManager {
                     profile: localProfile,
                     userTextLibrary: this.app.userTextLibrary,
                     setlists: localSetlists,
+                    githubToken: localStorage.getItem('scoreflow_github_token') || undefined,
                     version: Date.now()
                 };
                 await this.createFile(fileName, payload);
