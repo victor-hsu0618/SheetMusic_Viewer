@@ -87,8 +87,11 @@ export class GestureManager {
      */
     initNavigationGestures(viewer) {
         viewer.addEventListener('touchstart', (e) => {
-            if (this.inputManager.isEventInUI(e)) return
-            if (this.app.viewerManager?.isApplyingZoom) return
+            const inUI = this.inputManager.isEventInUI(e)
+            const applyingZoom = this.app.viewerManager?.isApplyingZoom
+            console.log(`[GestureManager] touchstart | inUI=${inUI} applyingZoom=${applyingZoom} target=${e.target?.className || e.target?.id || e.target?.tagName}`)
+            if (inUI) return
+            if (applyingZoom) return
 
             // Reset long press flag for safety, but check timing for blocking ghost clicks
             this.inputManager.isLongPressActive = false
@@ -102,14 +105,19 @@ export class GestureManager {
                 this._startX = e.touches[0].clientX
                 this._startY = e.touches[0].clientY
                 this._startTime = Date.now()
+                console.log(`[GestureManager] touchstart recorded at (${Math.round(this._startX)}, ${Math.round(this._startY)})`)
             }
         }, { passive: true })
 
         viewer.addEventListener('touchend', (e) => {
-            if (this.inputManager.isEventInUI(e)) return
+            const inUI = this.inputManager.isEventInUI(e)
+            const applyingZoom = this.app.viewerManager?.isApplyingZoom
+            const touch = e.changedTouches[0]
+            console.log(`[GestureManager] touchend | inUI=${inUI} applyingZoom=${applyingZoom} target=${e.target?.className || e.target?.id || e.target?.tagName} pos=(${Math.round(touch?.clientX)},${Math.round(touch?.clientY)})`)
+            if (inUI) return
 
             // Block gestures while a zoom/re-render is in progress (prevents iOS ghost-tap jumps)
-            if (this.app.viewerManager?.isApplyingZoom) return
+            if (applyingZoom) { console.log('[GestureManager] touchend blocked: isApplyingZoom'); return }
 
             // Block navigation if a long press fired (boolean) or fired very recently (timestamp guard)
             const msSinceLongPress = this.inputManager.lastLongPressAt
@@ -125,14 +133,18 @@ export class GestureManager {
                 const dx = this._startX - e.changedTouches[0].clientX
                 const dt = Date.now() - this._startTime
 
+                console.log(`[GestureManager] touchend gesture | dx=${Math.round(dx)} dy=${Math.round(dy)} dt=${dt}ms`)
+
                 // Page Swipes
                 if (dt < 400 && Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    console.log(`[GestureManager] swipe detected → jump(${dx > 0 ? 1 : -1})`)
                     dx > 0 ? this.app.jump(1) : this.app.jump(-1)
                     return
                 }
 
                 // Zone Tapping
                 if (this.app.activeStampType === 'view' && dt < 300 && Math.abs(dx) < 30 && Math.abs(dy) < 30) {
+                    console.log(`[GestureManager] zone tap → handleZoneTap(${Math.round(e.changedTouches[0].clientX)}, ${Math.round(e.changedTouches[0].clientY)})`)
                     this.handleZoneTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
                 }
             }

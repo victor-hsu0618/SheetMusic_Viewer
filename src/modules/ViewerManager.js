@@ -604,20 +604,29 @@ export class ViewerManager {
 
         // Block touch gestures during the re-render window (prevents iOS ghost-tap jumps)
         this.isApplyingZoom = true
+        console.log(`[fitToHeight] starting | scale=${this.scale.toFixed(3)} targetPage=${targetPage} scrollTop=${this.app.viewer.scrollTop}`)
         await this.renderPDF(isInitialLoad)
 
         if (!isInitialLoad) {
             this.updatePageMetrics()
             const m = this._pageMetrics[targetPage]
+            console.log(`[fitToHeight] after render | scrollTop=${this.app.viewer.scrollTop} targetPage=${targetPage} m.top=${m?.top}`)
             if (m) {
                 // Briefly disable overflow to stop any iOS momentum scroll, then snap to page top
                 this.app.viewer.style.overflowY = 'hidden'
                 this.app.viewer.scrollTop = m.top
-                requestAnimationFrame(() => { this.app.viewer.style.overflowY = '' })
+                console.log(`[fitToHeight] scrollTop set to ${m.top}, actual=${this.app.viewer.scrollTop}`)
+                requestAnimationFrame(() => {
+                    this.app.viewer.style.overflowY = ''
+                    console.log(`[fitToHeight] overflow restored | scrollTop now=${this.app.viewer.scrollTop}`)
+                })
             }
         }
 
-        setTimeout(() => { this.isApplyingZoom = false }, 400)
+        setTimeout(() => {
+            this.isApplyingZoom = false
+            console.log(`[fitToHeight] isApplyingZoom cleared | scrollTop=${this.app.viewer.scrollTop}`)
+        }, 400)
 
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
