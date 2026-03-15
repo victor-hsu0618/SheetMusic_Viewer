@@ -14,6 +14,7 @@ export class ViewerManager {
         this._pageViewports = {} // Cache viewports for placeholder sizing
         this._pageMetrics = {}   // Cache offsetTop and clientHeight to avoid layout thrashing
         this.isFitToHeight = false
+        this.isApplyingZoom = false  // blocks touch gestures during zoom/re-render
         this.latestLoadingId = 0 // Race condition protection
         this.baseNaturalWidth = 0 // Reference width for uniform rendering
     }
@@ -580,7 +581,18 @@ export class ViewerManager {
 
     async fitToHeight(isInitialLoad = false) {
         if (!this.pdf) return
-        const focalPoint = isInitialLoad ? null : this._captureFocalPoint()
+
+        // Capture current page BEFORE re-render (scale-independent)
+        let targetPage = 1
+        if (!isInitialLoad) {
+            const scrollTop = this.app.viewer.scrollTop
+            for (const [num, m] of Object.entries(this._pageMetrics)) {
+                if (scrollTop >= m.top && scrollTop < m.top + m.height) {
+                    targetPage = parseInt(num)
+                    break
+                }
+            }
+        }
 
         const page = await this.pdf.getPage(1)
         const naturalHeight = page.getViewport({ scale: 1 }).height
@@ -590,11 +602,22 @@ export class ViewerManager {
         this.isFitToHeight = true
         this.updateZoomDisplay()
 
+        // Block touch gestures during the re-render window (prevents iOS ghost-tap jumps)
+        this.isApplyingZoom = true
         await this.renderPDF(isInitialLoad)
 
         if (!isInitialLoad) {
-            this._restoreFocalPoint(focalPoint)
+            this.updatePageMetrics()
+            const m = this._pageMetrics[targetPage]
+            if (m) {
+                // Briefly disable overflow to stop any iOS momentum scroll, then snap to page top
+                this.app.viewer.style.overflowY = 'hidden'
+                this.app.viewer.scrollTop = m.top
+                requestAnimationFrame(() => { this.app.viewer.style.overflowY = '' })
+            }
         }
+
+        setTimeout(() => { this.isApplyingZoom = false }, 400)
 
         this.app.updateRulerPosition()
         this.app.computeNextTarget()

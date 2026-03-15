@@ -88,6 +88,7 @@ export class GestureManager {
     initNavigationGestures(viewer) {
         viewer.addEventListener('touchstart', (e) => {
             if (this.inputManager.isEventInUI(e)) return
+            if (this.app.viewerManager?.isApplyingZoom) return
 
             // Reset long press flag for safety, but check timing for blocking ghost clicks
             this.inputManager.isLongPressActive = false
@@ -106,6 +107,9 @@ export class GestureManager {
 
         viewer.addEventListener('touchend', (e) => {
             if (this.inputManager.isEventInUI(e)) return
+
+            // Block gestures while a zoom/re-render is in progress (prevents iOS ghost-tap jumps)
+            if (this.app.viewerManager?.isApplyingZoom) return
 
             // Block navigation if a long press fired (boolean) or fired very recently (timestamp guard)
             const msSinceLongPress = this.inputManager.lastLongPressAt
