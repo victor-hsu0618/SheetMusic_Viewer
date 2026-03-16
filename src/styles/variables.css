@@ -33,12 +33,34 @@
 
 /* Environment-Specific Themes */
 .env-dev {
-  --primary: #10b981; /* Emerald/Green for Dev */
+  --primary: #10b981; /* Emerald for Local/Dev */
   --primary-rgb: 16, 185, 129;
   --primary-hover: #059669;
 }
 
-.env-dev .welcome-header h2 {
+.env-stable {
+  --primary: #8b5cf6; /* Royal Purple for Stable */
+  --primary-rgb: 139, 92, 246;
+  --primary-hover: #7c3aed;
+}
+
+.env-main {
+  --primary: #6366f1; /* Indigo for Current/Main */
+  --primary-rgb: 99, 102, 241;
+  --primary-hover: #4f46e5;
+}
+
+/* Visual cues for different versions */
+.env-stable .floating-doc-bar {
+  border-top: 2px solid var(--primary);
+}
+
+.env-stable .welcome-header .welcome-icon {
+  filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.4));
+}
+
+.env-dev .welcome-header h2,
+.env-stable .welcome-header h2 {
   background: linear-gradient(135deg, var(--primary), #3b82f6);
   -webkit-background-clip: text;
   background-clip: text;
