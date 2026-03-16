@@ -56,6 +56,10 @@ export class DriveSyncManager {
         this.MANIFEST_NAME = 'cloud_manifest_v3.json';
         this.hasScanned = false;
 
+        // --- Profile Sync ---
+        this.profileFileId = null;
+        this.isProfileSyncing = false;
+
         // --- UI state ---
         this.cloudStats = { totalAnnotations: 0, totalPDFs: 0 };
         this.uploadStatus = {
@@ -68,6 +72,8 @@ export class DriveSyncManager {
         this.file = new DriveFileManager(this);
         this.manifest_mgr = new DriveManifestManager(this);
         this.log = new DriveLogManager(this);
+        this._pushLocks = new Set();
+        this._pdfLocks = new Set();
     }
 
     // =========================================================
@@ -143,9 +149,16 @@ export class DriveSyncManager {
         } else {
             // 2. Idle Skip: If already scanned and no PDF is open, skip periodic sync
             if (!this.app.pdfFingerprint) {
-                // console.log('[DriveSync] Idle on Welcome screen, skipping periodic sync.');
                 return;
             }
+        }
+
+        const fingerprint = this.app.pdfFingerprint;
+
+        // --- NEW: Verify active score hasn't been deleted on another device or purged ---
+        if (fingerprint && this.manifest[fingerprint]?.deleted) {
+            console.log(`[DriveSync] Active score is tombstoned in manifest. Skipping sync cycle for ${fingerprint.slice(0,8)}.`);
+            return;
         }
 
         const now = Date.now();
@@ -193,14 +206,14 @@ export class DriveSyncManager {
             if (this.app.pdfFingerprint) {
                 const fingerprint = this.app.pdfFingerprint;
 
-                if (this.manifest[fingerprint]?.deleted) {
+                const entry = this.manifest[fingerprint];
+                if (entry?.deleted) {
                     console.log(`[DriveSync] Active score is tombstoned, skipping sync.`);
                 } else {
                     const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
                     const title = score ? score.title : 'Unknown';
                     console.log(`[DriveSync] Prioritizing active score: ${title} (${fingerprint})`);
 
-                    const entry = this.manifest[fingerprint];
                     const needsPDF = !entry || !entry.pdfId;
 
                     if (needsPDF) {
@@ -301,6 +314,9 @@ export class DriveSyncManager {
             const fp = score.fingerprint;
             const entry = this.manifest[fp];
 
+            // --- SKIP: Tombstoned scores ---
+            if (entry?.deleted) continue;
+
             if (!entry && score.isCloudOnly) continue;
 
             const isGeneric = !score.title || score.title === 'Unknown' || score.title.includes('score_buf_');
@@ -333,6 +349,12 @@ export class DriveSyncManager {
             const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
             if (!score) return;
             const entry = this.manifest[fingerprint];
+            
+            // --- SKIP: Tombstoned scores ---
+            if (entry?.deleted) {
+                console.log(`[DriveSync] SyncScore aborted: ${fingerprint.slice(0,8)} is tombstoned.`);
+                return;
+            }
 
             // --- 1. Determine the "Truth" Title (LWW) ---
             const localDetail = await this.app.scoreDetailManager?.getMetadata(fingerprint);
@@ -420,24 +442,32 @@ export class DriveSyncManager {
             }
 
             if (needsPush) {
-                const data = await this.gatherLocalData(fingerprint);
-                const fileId = entry ? entry.syncId : null;
-                const annotParent = this.annotationsFolderId || this.folderId;
+                // LOCK during push to prevent background batch overlapping with manual/timer sync
+                if (this._pushLocks.has(fingerprint)) return;
+                this._pushLocks.add(fingerprint);
 
-                if (fileId) {
-                    await this.updateFile(fileId, data);
-                } else {
-                    const newId = await this.createFile(`${prefix}${hash}.json`, data, annotParent);
-                    if (newId) await this.updateManifestEntry(fingerprint, { syncId: newId });
+                try {
+                   const data = await this.gatherLocalData(fingerprint);
+                   const fileId = entry ? entry.syncId : null;
+                   const annotParent = this.annotationsFolderId || this.folderId;
+
+                   if (fileId) {
+                       await this.updateFile(fileId, data);
+                   } else {
+                       const newId = await this.createFile(`${prefix}${hash}.json`, data, annotParent);
+                       if (newId) await this.updateManifestEntry(fingerprint, { syncId: newId });
+                   }
+
+                   await this.updateManifestEntry(fingerprint, {
+                       name: targetTitle,
+                       updated: Math.max(localUpdateTs, Date.now())
+                   });
+
+                   score.isSynced = true;
+                   await this.app.scoreManager.saveRegistry();
+                } finally {
+                   this._pushLocks.delete(fingerprint);
                 }
-
-                await this.updateManifestEntry(fingerprint, {
-                    name: targetTitle,
-                    updated: Math.max(localUpdateTs, Date.now())
-                });
-
-                score.isSynced = true;
-                await this.app.scoreManager.saveRegistry();
             }
 
             this.updateCloudStatsUI();
@@ -592,15 +622,29 @@ export class DriveSyncManager {
     async push(remoteVersion = 0) {
         if (!this.folderId) return;
 
+        const fingerprint = this.app.pdfFingerprint;
+        if (!fingerprint) return;
+
+        // --- CONCURRENCY LOCK: Prevent duplicate creation/update if sync and debounce overlap ---
+        if (this._pushLocks.has(fingerprint)) {
+            console.log(`[DriveSync] Push for ${fingerprint.slice(0, 8)} is already in progress. Skipping duplicate request.`);
+            return;
+        }
+        this._pushLocks.add(fingerprint);
+
         this.uploadStatus.json.active = true;
         this.updateCloudStatsUI();
 
         try {
-            const fingerprint = this.app.pdfFingerprint;
-            if (!fingerprint) return;
-
             const score = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
             if (!score) return;
+
+            // --- SKIP: Tombstoned scores ---
+            const entry = this.manifest[fingerprint];
+            if (entry?.deleted) {
+                console.log(`[DriveSync] Push aborted: ${fingerprint.slice(0,8)} is tombstoned.`);
+                return;
+            }
 
             // --- FIXED: Use safe getMetadata instead of stale currentInfo ---
             const metadata = await this.app.scoreDetailManager?.getMetadata(fingerprint);
@@ -661,15 +705,22 @@ export class DriveSyncManager {
             const prefix = this.safeTitle(scoreEntry?.title);
             const fileName = `${prefix}${this.shortHash(fingerprint)}.json`;
             const annotParent = this.annotationsFolderId || this.folderId;
-            const fileId = await this.findSyncFile(fingerprint, 'sync');
+            
+            // --- ID LOOKUP STRATEGY: Manifest First -> Sync Search -> Create ---
+            let activeSyncId = entry?.syncId;
+            
+            if (!activeSyncId) {
+                activeSyncId = await this.findSyncFile(fingerprint, 'sync');
+            }
 
-            let activeSyncId = fileId;
             if (activeSyncId) {
                 await this.updateFile(activeSyncId, data);
             } else {
-                await this.createFile(fileName, data, annotParent);
-                activeSyncId = await this.findSyncFile(fingerprint, 'sync');
+                console.log(`[DriveSync] 🆕 Creating new cloud file for: ${fileName}`);
+                activeSyncId = await this.createFile(fileName, data, annotParent);
             }
+
+            if (!activeSyncId) throw new Error('Failed to obtain or create Sync File ID');
 
             // Only set filename on first creation; preserve existing filename if file already existed
             const existingFilename = this.manifest[fingerprint]?.filename;
@@ -697,6 +748,7 @@ export class DriveSyncManager {
             console.error('[DriveSync] Push failed:', err);
             this.addLog('上傳資料失敗: ' + err.message, 'error');
         } finally {
+            this._pushLocks.delete(fingerprint);
             this.uploadStatus.json.active = false;
             this.updateCloudStatsUI();
         }
@@ -975,14 +1027,21 @@ export class DriveSyncManager {
      * Sync Global User Profile & Setlists.
      */
     async syncProfile() {
-        if (!this.folderId) return;
-        const fileName = 'user_profile_sync.json';
-        const fileId = await this.findFileByName(fileName);
-        const localProfile = this.app.profileManager?.data;
-        const localSetlists = this.app.setlistManager?.setlists || [];
-        if (!localProfile) return;
+        if (!this.folderId || this.isProfileSyncing) return;
+        this.isProfileSyncing = true;
 
         try {
+            const fileName = 'user_profile_sync.json';
+            
+            if (!this.profileFileId) {
+                this.profileFileId = await this.findFileByName(fileName);
+            }
+            
+            const fileId = this.profileFileId;
+            const localProfile = this.app.profileManager?.data;
+            const localSetlists = this.app.setlistManager?.setlists || [];
+            if (!localProfile) return;
+
             if (fileId) {
                 const remoteData = await this.getFileContent(fileId);
                 let shouldPush = false;
@@ -1077,12 +1136,15 @@ export class DriveSyncManager {
                     githubToken: localStorage.getItem('scoreflow_github_token') || undefined,
                     version: Date.now()
                 };
-                await this.createFile(fileName, payload);
+                console.log(`[DriveSync] 🆕 Creating new profile sync file.`);
+                this.profileFileId = await this.createFile(fileName, payload);
                 this.lastProfileSyncTime = payload.version;
                 this.addLog('首次上傳雲端設定與歌單', 'success');
             }
         } catch (err) {
             console.error('[DriveSync] Profile/Setlist sync failed:', err);
+        } finally {
+            this.isProfileSyncing = false;
         }
     }
 }

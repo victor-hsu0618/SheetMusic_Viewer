@@ -119,11 +119,15 @@ export class ScoreManager {
         const wrapper = document.getElementById('library-search-wrapper');
 
         const focusInput = (e) => {
+            // Guard: On touch devices, clicking the library button sometimes 
+            // causes the opening animation to slide the search box under the finger.
+            // We prevent focus unless it's a deliberate click when stable.
+            if (e && e.pointerType === 'touch') return; 
+
             if (e) e.preventDefault();
             input?.focus();
         };
 
-        wrapper?.addEventListener('click', focusInput);
         wrapper?.addEventListener('mousedown', focusInput);
 
         input?.addEventListener('input', (e) => {

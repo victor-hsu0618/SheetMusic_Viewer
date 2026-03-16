@@ -33,9 +33,9 @@
 
 /* Environment-Specific Themes */
 .env-dev {
-  --primary: #10b981; /* Emerald for Local/Dev */
-  --primary-rgb: 16, 185, 129;
-  --primary-hover: #059669;
+  --primary: #3b82f6; /* Blue for Local/Dev */
+  --primary-rgb: 59, 130, 246;
+  --primary-hover: #2563eb;
 }
 
 .env-stable {

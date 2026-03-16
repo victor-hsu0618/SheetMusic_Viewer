@@ -207,39 +207,56 @@ export class DriveFileManager {
     async uploadPDF(fingerprint, buffer, originalFileName) {
         if (!this.sync.folderId) return;
 
-        const scoreEntry = this.sync.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
-        const prefix = this.safeTitle(scoreEntry?.title || originalFileName?.replace(/\.pdf$/i, ''));
-        const fileName = `${prefix}${this.shortHash(fingerprint)}.pdf`;
-        const targetParent = this.sync.pdfsFolderId || this.sync.folderId;
-
-        // Check if PDF exists
-        const hash = this.shortHash(fingerprint);
-        const parentId = targetParent;
-        const searchResp = await this.sync.gdriveFetch(
-            `https://www.googleapis.com/drive/v3/files?q=name contains '${hash}' and '${parentId}' in parents and trashed=false&fields=files(id,name)&orderBy=createdTime desc`
-        );
-        const searchData = await searchResp.json();
-        const existingFile = searchData.files && searchData.files.length > 0 ? searchData.files[0] : null;
-
-        if (existingFile) {
-            console.log(`[DriveSync] PDF for ${fingerprint} already exists: "${existingFile.name}"`);
-            // Rename if necessary to match current title
-            if (existingFile.name !== fileName) {
-                try {
-                    console.log(`[DriveSync] Renaming cloud PDF to match title: "${existingFile.name}" -> "${fileName}"`);
-                    await this.renameFile(existingFile.id, fileName);
-                } catch (e) {
-                    console.warn(`[DriveSync] Failed to rename PDF: ${e.message}`);
-                }
-            }
-            await this.sync.updateManifestEntry(fingerprint, { pdfId: existingFile.id, pdfFilename: fileName });
+        // --- CONCURRENCY LOCK: Prevent duplicate PDF uploads ---
+        if (this.sync._pdfLocks.has(fingerprint)) {
+            console.log(`[DriveSync] PDF upload for ${fingerprint.slice(0, 8)} is already in progress. Skipping duplicate.`);
             return;
         }
-
-        console.log(`[DriveSync] Uploading PDF ${fileName} (Resumable)...`);
-        this.sync.addLog(`準備上傳大檔案: ${originalFileName}...`, 'system');
+        this.sync._pdfLocks.add(fingerprint);
 
         try {
+            const scoreEntry = this.sync.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
+            const prefix = this.safeTitle(scoreEntry?.title || originalFileName?.replace(/\.pdf$/i, ''));
+            const fileName = `${prefix}${this.shortHash(fingerprint)}.pdf`;
+            const targetParent = this.sync.pdfsFolderId || this.sync.folderId;
+
+            // --- ID LOOKUP STRATEGY: Manifest First -> Sync Search -> Upload ---
+            const entry = this.sync.manifest[fingerprint];
+            let existingFileId = entry?.pdfId;
+            let existingFileNameFound = entry?.pdfFilename;
+
+            if (!existingFileId) {
+                const hash = this.shortHash(fingerprint);
+                const parentId = targetParent;
+                const searchResp = await this.sync.gdriveFetch(
+                    `https://www.googleapis.com/drive/v3/files?q=name contains '${hash}' and '${parentId}' in parents and trashed=false&fields=files(id,name)&orderBy=createdTime desc`
+                );
+                const searchData = await searchResp.json();
+                const found = searchData.files && searchData.files.length > 0 ? searchData.files[0] : null;
+                if (found) {
+                    existingFileId = found.id;
+                    existingFileNameFound = found.name;
+                }
+            }
+
+            if (existingFileId) {
+                console.log(`[DriveSync] PDF for ${fingerprint} already exists: "${existingFileNameFound || 'unknown'}"`);
+                // Rename if necessary to match current title
+                if (existingFileNameFound && existingFileNameFound !== fileName) {
+                    try {
+                        console.log(`[DriveSync] Renaming cloud PDF to match title: "${existingFileNameFound}" -> "${fileName}"`);
+                        await this.renameFile(existingFileId, fileName);
+                    } catch (e) {
+                        console.warn(`[DriveSync] Failed to rename PDF: ${e.message}`);
+                    }
+                }
+                await this.sync.updateManifestEntry(fingerprint, { pdfId: existingFileId, pdfFilename: fileName });
+                return;
+            }
+
+            console.log(`[DriveSync] Uploading PDF ${fileName} (Resumable)...`);
+            this.sync.addLog(`準備上傳大檔案: ${originalFileName}...`, 'system');
+
             const metadata = {
                 name: fileName,
                 parents: [targetParent],
@@ -333,6 +350,7 @@ export class DriveFileManager {
             this.sync.addLog(`樂譜二進位檔案備份失敗: ${err.message}`, 'error');
             if (this.sync.app.showMessage) this.sync.app.showMessage('雲端備份失敗', 'error');
         } finally {
+            this.sync._pdfLocks.delete(fingerprint);
             this.sync.uploadStatus.pdf.active = false;
             this.sync.updateCloudStatsUI();
         }

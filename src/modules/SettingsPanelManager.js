@@ -386,6 +386,24 @@ export class SettingsPanelManager {
             })
         }
 
+        // Manual Token Management (LAN Debugging)
+        const btnCopyToken = document.getElementById('btn-drive-copy-token');
+        if (btnCopyToken) {
+            btnCopyToken.addEventListener('click', () => {
+                this.app.driveSyncManager?.auth?.copyTokenToClipboard();
+            });
+        }
+
+        const btnApplyToken = document.getElementById('btn-drive-apply-token');
+        const inputManualToken = document.getElementById('input-manual-token');
+        if (btnApplyToken && inputManualToken) {
+            btnApplyToken.addEventListener('click', () => {
+                const token = inputManualToken.value;
+                this.app.driveSyncManager?.auth?.applyManualToken(token);
+                inputManualToken.value = ''; // Clear after apply
+            });
+        }
+
         // Initialize adjustment buttons for ALL sliders in this panel
         this.panel.querySelectorAll('.slider-adj-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {

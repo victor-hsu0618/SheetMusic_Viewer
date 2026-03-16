@@ -457,10 +457,32 @@ export class RulerManager {
         const marksContainer = document.getElementById('ruler-marks')
         if (!marksContainer) return
 
-        const visualMarks = this.app.stamps.filter(s =>
-            s.type === 'anchor' || s.type === 'measure' || s.type === 'measure-free' ||
-            (s.type === 'system' && this.app.showSystemStamps)
-        )
+        const visualMarks = this.app.stamps.filter(s => {
+            if (s.deleted) return false;
+            
+            // Basic type filter
+            const isAnchor = s.type === 'anchor';
+            const isMeasure = s.type === 'measure';
+            const isFreeMeasure = s.type === 'measure-free';
+            const isSystem = s.type === 'system';
+            
+            if (!isAnchor && !isMeasure && !isFreeMeasure && !isSystem) return false;
+            if (isSystem && !this.app.showSystemStamps) return false;
+
+            // Visibility checks (Strict symmetry with AnnotationRenderer.js)
+            const sourceId = s.sourceId || 'self';
+            const source = this.app.sources.find(src => src.id === sourceId);
+            if (!source || !source.visible) return false;
+
+            const layerId = this.app.annotationManager?.getEffectiveLayerId(s);
+            const layer = this.app.layers.find(l => l.id === layerId);
+            if (!layer || !layer.visible) return false;
+            
+            // Global Measure visibility (Note: measure-free ignores this toggle)
+            if (isMeasure && this.app.hideMeasureNumbers) return false;
+            
+            return true;
+        })
         const viewportHeight = window.innerHeight
         const scrollY = this.app.viewer.scrollTop
         const metrics = this.app.viewerManager._pageMetrics

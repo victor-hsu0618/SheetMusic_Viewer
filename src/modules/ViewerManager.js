@@ -183,7 +183,9 @@ export class ViewerManager {
         this.isFitToHeight = false;
         this._pageMetrics = {};
 
-        if (this.pdfFingerprint) {
+        // Only save current session data if a PDF was actually active.
+        // This prevents wiping out IndexedDB data if we have a fingerprint but haven't loaded stamps yet (e.g., after refresh).
+        if (this.pdf && this.pdfFingerprint) {
             await this.app.saveToStorage()
         }
 
@@ -217,12 +219,20 @@ export class ViewerManager {
         this.app.jumpManager?.loadBookmarks()
 
         const rawStamps = (await db.get(`stamps_${newFingerprint}`)) || []
-        this.app.stamps = rawStamps.filter(s => !s.deleted)
-        this.app.stamps.forEach(s => {
-            if (s.layerId === 'performance') s.layerId = 'text'
-            if (s.layerId === 'other' || s.layerId === 'anchor') s.layerId = 'layout'
-            if (!this.app.layers.find(l => l.id === s.layerId)) s.layerId = 'draw'
-            if (!s.sourceId) s.sourceId = this.app.activeSourceId
+        const now = Date.now()
+        this.app.stamps = rawStamps.filter(s => !s.deleted).map(s => {
+            const sNew = { ...s };
+            if (sNew.layerId === 'performance') sNew.layerId = 'text'
+            if (sNew.layerId === 'other' || sNew.layerId === 'anchor' || sNew.layerId === 'layout') sNew.layerId = 'others'
+            if (!this.app.layers.find(l => l.id === sNew.layerId)) sNew.layerId = 'draw'
+            if (!sNew.sourceId) sNew.sourceId = this.app.activeSourceId
+            
+            // Critical healing for Cloud Merge support
+            if (!sNew.id) sNew.id = `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`;
+            if (!sNew.createdAt) sNew.createdAt = now;
+            if (!sNew.updatedAt) sNew.updatedAt = now;
+            
+            return sNew;
         })
         this.app.jumpHistory = []
 

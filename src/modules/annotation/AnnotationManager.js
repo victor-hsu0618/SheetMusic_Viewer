@@ -139,15 +139,6 @@ export class AnnotationManager {
     }
 
     /**
-     * Get the correct layer ID for a stamp, handling legacy migration for display.
-     */
-    getEffectiveLayerId(stamp) {
-        if (stamp.layerId === 'performance') return 'text'
-        if (stamp.layerId === 'other' || stamp.type === 'anchor' || stamp.type === 'measure' || stamp.type === 'measure-free') return 'layout'
-        return stamp.layerId || 'draw'
-    }
-
-    /**
      * Erase a specific annotation object.
      */
     async eraseStampTarget(stamp) {
@@ -256,15 +247,15 @@ export class AnnotationManager {
         let lid = stamp.layerId;
         
         // 1. Direct matches
-        const coreIds = ['draw', 'fingering', 'articulation', 'text', 'layout'];
+        const coreIds = ['draw', 'fingering', 'articulation', 'text', 'others'];
         if (lid && coreIds.includes(lid)) return lid;
 
         // 2. Legacy ID Mapping
         if (lid === 'performance' || stamp.type.startsWith('text-') || stamp.type.startsWith('custom-text-')) {
             return 'text';
         }
-        if (lid === 'anchor' || lid === 'other' || ['anchor', 'music-anchor', 'measure', 'measure-free'].includes(stamp.type)) {
-            return 'layout';
+        if (lid === 'anchor' || lid === 'other' || lid === 'layout' || ['anchor', 'music-anchor', 'measure', 'measure-free'].includes(stamp.type)) {
+            return 'others';
         }
         if (lid === 'articulations') {
             return 'articulation';
@@ -869,9 +860,9 @@ export class AnnotationManager {
                 y,
                 data,
                 draw,
-            createdAt: now,
-            updatedAt: now
-        })
+                createdAt: now,
+                updatedAt: now
+            })
 
         if (type === 'anchor' || type === 'measure' || type === 'measure-free') {
             this.app.updateRulerMarks()

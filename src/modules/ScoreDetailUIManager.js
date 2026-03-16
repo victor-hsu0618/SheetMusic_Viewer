@@ -58,18 +58,20 @@ export class ScoreDetailUIManager {
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
         document.getElementById('btn-reset-score-all')?.addEventListener('click', () => this.manager.handleResetAll())
 
-        document.getElementById('btn-toggle-keep-offline')?.addEventListener('click', async () => {
+        document.getElementById('btn-toggle-keep-offline')?.addEventListener('change', async (e) => {
             const fp = this.manager.currentFp || this.app.pdfFingerprint
             if (!fp) return
             const score = this.app.scoreManager?.registry.find(s => s.fingerprint === fp)
             if (!score) return
-            const newMode = score.storageMode === 'pinned' ? 'cached' : 'pinned'
+            
+            const isChecked = e.target.checked
+            const newMode = isChecked ? 'pinned' : 'cached'
+            
             await this.app.scoreManager?.setStorageMode(fp, newMode)
             if (newMode === 'pinned') {
                 const hasLocal = await import('../db.js').then(db => db.get(`score_buf_${fp}`))
                 if (!hasLocal) this.app.driveSyncManager?.downloadAndCacheScore(fp)
             }
-            this.updateKeepOfflineBtn(fp)
             this.app.scoreManager?.render()
         })
 
@@ -185,14 +187,12 @@ export class ScoreDetailUIManager {
     }
 
     updateKeepOfflineBtn(fingerprint) {
-        const btn = document.getElementById('btn-toggle-keep-offline')
-        if (!btn) return
+        const input = document.getElementById('btn-toggle-keep-offline')
+        if (!input) return
         const score = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint)
         if (!score) return
         const isPinned = score.storageMode === 'pinned'
-        btn.textContent = isPinned ? '📌 Pinned Offline' : 'Pin Offline'
-        btn.classList.toggle('btn-primary-sm', isPinned)
-        btn.classList.toggle('btn-outline-sm', !isPinned)
+        input.checked = isPinned
     }
 
     render(fingerprint, info) {

@@ -9,7 +9,7 @@ export const INITIAL_LAYERS = [
     { id: 'fingering', name: 'B.Fingering', color: '#be123c', visible: true, type: 'fingering' },
     { id: 'articulation', name: 'Articulation', color: '#15803d', visible: true, type: 'articulation' },
     { id: 'text', name: 'Text', color: '#b45309', visible: true, type: 'text' },
-    { id: 'layout', name: 'Others', color: '#94a3b8', visible: true, type: 'layout' }
+    { id: 'others', name: 'Others', color: '#94a3b8', visible: true, type: 'others' }
 ];
 
 // Cycle tool groups: clicking a stamp cycles it to the next type in the group
@@ -123,7 +123,7 @@ export const TOOLSETS = [
     },
     {
         name: 'Others',
-        type: 'layout',
+        type: 'others',
         tools: [
             { id: 'cloak-black', label: '黑斗篷', icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#374151" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="1" fill="#374151"/><circle cx="14" cy="10" r="1" fill="#374151"/>' },
             { id: 'cloak-red',   label: '紅斗篷', icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#dc2626" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="1" fill="#dc2626"/><circle cx="14" cy="10" r="1" fill="#dc2626"/>' },

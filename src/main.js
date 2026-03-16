@@ -40,11 +40,11 @@ class ScoreFlow {
   constructor() {
     window.app = this
     this.DEBUG_VERSION = '2026.03.16.v5'
-    this.isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    this.isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.0.200'
     if (this.isDev) {
         document.body.classList.add('env-dev')
     }
-    console.log(`%c [ScoreFlow] Initializing Version: ${this.DEBUG_VERSION} (${this.isDev ? 'Dev' : 'Prod'})`, 'background: #222; color: #bada55');
+    console.log(`%c [ScoreFlow] Initializing Version: ${this.DEBUG_VERSION} (${this.isDev ? 'Dev' : 'Prod'}) on ${window.location.hostname}`, 'background: #222; color: #bada55');
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
     this.activeCategories = ['Pens']
@@ -149,8 +149,10 @@ class ScoreFlow {
     if (branchEl) {
         branchEl.textContent = APP_BRANCH + (this.isDev ? ' (LOCAL)' : '')
         if (mode === 'stable') {
-            branchEl.style.color = '#10b981' // Green for stable
+            branchEl.style.color = '#8b5cf6' // Purple for stable
             branchEl.textContent += ' [STABLE]'
+        } else if (this.isDev) {
+            branchEl.style.color = '#3b82f6' // Blue for dev
         }
     }
     if (timeEl) timeEl.textContent = BUILD_TIME
@@ -164,7 +166,7 @@ class ScoreFlow {
         console.log('[ScoreFlow] Mode: CURRENT (Amber)')
     } else if (this.isDev) {
         document.body.classList.add('env-dev')
-        console.log('[ScoreFlow] Mode: DEV (Emerald)')
+        console.log('[ScoreFlow] Mode: DEV (Blue)')
     }
   }
 

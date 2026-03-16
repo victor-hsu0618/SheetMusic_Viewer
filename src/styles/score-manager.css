@@ -3,7 +3,7 @@
     position: fixed;
     bottom: 110px; /* Doc bar top ~64px + 46px gap */
     left: 50%;
-    transform: translate(-50%, 100%); /* Start hidden below */
+    transform: translate(-50%, 30px) scale(0.98); /* Start slightly below and smaller */
     width: 650px; /* Consistent with other panels */
     height: 600px;
     max-width: 95vw;
@@ -20,14 +20,14 @@
     color: var(--text-main);
     opacity: 0;
     pointer-events: none;
-    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.2s ease;
     box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
 }
 
 .library-overlay.active {
     opacity: 1;
     pointer-events: auto;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, 0) scale(1);
 }
 
 .library-header {
@@ -190,10 +190,6 @@
     font-family: inherit;
     display: block;
     pointer-events: auto !important;
-}
-    outline: none;
-    font-family: inherit;
-    padding: 4px 0;
 }
 
 #library-search-input::placeholder {

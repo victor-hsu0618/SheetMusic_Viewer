@@ -28,15 +28,22 @@ export class DocActionManager {
             if (result && typeof result === 'object') includeCloaks = result
         }
 
-        const exportStamps = this.app.stamps.filter(s =>
-            !s.hiddenGroup || includeCloaks[s.hiddenGroup]
-        )
+        const now = Date.now()
+        const exportStamps = this.app.stamps
+            .filter(s => !s.hiddenGroup || includeCloaks[s.hiddenGroup])
+            .map(s => {
+                const sNew = { ...s };
+                if (!sNew.id) sNew.id = `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`;
+                if (!sNew.createdAt) sNew.createdAt = now;
+                if (!sNew.updatedAt) sNew.updatedAt = now;
+                return sNew;
+            });
 
         const exportData = {
             version: '3.0',
             exportType: isGlobal ? 'global_backup' : 'single_score',
             author: userName,
-            timestamp: Date.now(),
+            timestamp: now,
             pdfFingerprint: this.app.pdfFingerprint || null,
             pdfFileName: this.app.activeScoreName || null,
             metadata: this.app.scoreDetailManager.getExportMetadata(),
@@ -64,11 +71,9 @@ export class DocActionManager {
             const text = await file.text()
             let data = JSON.parse(text)
 
-            // Auto-Migration for Legacy Formats
-            if (data.version !== '3.0') {
-                console.log('[DocAction] Legacy format detected, migrating...');
-                data = this.migrateLegacyData(data);
-            }
+            // Perform Sanitization & Normalization on ALL imports
+            console.log(`[DocAction] Normalizing import data (current version: ${data.version || '1.0'})...`);
+            data = this.migrateLegacyData(data);
 
             // Basic validation after migration
             if (!data.stamps || !data.sources || !Array.isArray(data.stamps)) {
@@ -293,12 +298,12 @@ export class DocActionManager {
     }
 
     migrateLegacyData(data) {
-        console.log('[DocAction] Migrating data:', {
+        console.log('[DocAction] Migrating & Healing data:', {
             hasStamps: !!data.stamps,
-            hasAnnotations: !!data.annotations,
-            hasMarks: !!data.marks,
+            version: data.version,
             sourceCount: data.sources?.length || 0
         });
+
         const migrated = {
             version: '3.0',
             exportType: data.exportType || 'single_score',
@@ -311,35 +316,104 @@ export class DocActionManager {
                 { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
             ],
             layers: data.layers || [],
-            stamps: (data.stamps || data.annotations || data.marks || []).map(s => {
-                // Ensure every stamp has a sourceId
-                const sourceId = (data.sources && data.sources[0]?.id) || data.activeSourceId || 'self';
-                if (!s.sourceId) s.sourceId = sourceId;
-                
-                // Legacy layer remapping
-                if (s.layerId === 'performance') s.layerId = 'text';
-                
-                // Ensure page is number
-                if (typeof s.page === 'string') s.page = parseInt(s.page, 10);
-                
-                return s;
-            })
+            stamps: []
         };
 
-        // Migrate Layers
+        const primarySourceId = (migrated.sources && migrated.sources[0]?.id) || 'self';
+        const rawStamps = data.stamps || data.annotations || data.marks || [];
+        
+        // 1. Repair & Normalize
+        const repaired = rawStamps.map(s => {
+            const sNew = { ...s };
+            
+            // FIX: Ensure sourceId exists in the current project, otherwise map to primary
+            if (!sNew.sourceId || !migrated.sources.some(src => src.id === sNew.sourceId)) {
+                sNew.sourceId = primarySourceId;
+            }
+
+            if (sNew.layerId === 'performance') sNew.layerId = 'text';
+            if (sNew.layerId === 'other' || sNew.layerId === 'layout') sNew.layerId = 'others';
+            if (typeof sNew.page === 'string') sNew.page = parseInt(sNew.page, 10);
+            
+            // ENSURE: id, createdAt, updatedAt exist for Cloud Merge stability
+            const now = Date.now();
+            if (!sNew.id) {
+                // If it's a legacy system stamp or something from very old SF
+                sNew.id = `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`;
+            }
+            if (!sNew.createdAt) sNew.createdAt = now;
+            if (!sNew.updatedAt) sNew.updatedAt = now;
+
+            // Critical Fix: Type-to-Layer mapping and Draw logic for system items
+            if (sNew.type === 'anchor' || sNew.type === 'measure' || sNew.type === 'measure-free') {
+                sNew.layerId = 'others';
+                // Ensure draw variant is present for measures to prevent rendering failures
+                if (sNew.type.startsWith('measure') && (!sNew.draw || sNew.draw.variant !== 'measure')) {
+                    sNew.draw = { type: 'special', variant: 'measure' };
+                }
+            }
+            return sNew;
+        });
+
+        // 2. Intelligent Deduplication (Consolidate overlapping measures)
+        const uniqueStamps = [];
+        repaired.forEach(s => {
+            if (s.deleted) return;
+
+            const isDuplicate = uniqueStamps.some(existing => {
+                if (existing.type !== s.type || existing.page !== s.page) return false;
+                
+                // For measures, if the data (label) is the same, deduplicate more aggressively
+                if ((s.type === 'measure' || s.type === 'measure-free') && s.data === existing.data) {
+                    const dx = Math.abs((existing.x || 0) - (s.x || 0));
+                    const dy = Math.abs((existing.y || 0) - (s.y || 0));
+                    return dx < 0.01 && dy < 0.01; // 1% tolerance for same-number measures
+                }
+
+                // For other types, require very close proximity
+                const dx = Math.abs((existing.x || 0) - (s.x || 0));
+                const dy = Math.abs((existing.y || 0) - (s.y || 0));
+                return dx < 0.005 && dy < 0.005; 
+            });
+
+            if (!isDuplicate) uniqueStamps.push(s);
+        });
+
+        migrated.stamps = uniqueStamps;
+
+        // 3. Migrate & Normalize Layers
+        if (migrated.layers.length === 0) {
+            migrated.layers = JSON.parse(JSON.stringify(this.app.layers)); 
+        }
+        
         migrated.layers.forEach(l => {
+            // Normalize legacy IDs to modern standards
+            if (l.id === 'other' || l.id === 'layout' || l.type === 'layout') {
+                l.id = 'others';
+                l.type = 'others';
+            }
+            if (l.id === 'performance') l.id = 'text';
+
+            if (l.id === 'text' && l.name !== 'Text') l.name = 'Text';
+            if (l.id === 'others' && l.name !== 'Others') l.name = 'Others';
+
             if (l.name === 'Bow/Fingering' || l.name === 'Fingering' || l.name === 'F.Fingering') {
                 l.name = 'B.Fingering';
                 if (l.color === '#ff4757' || l.color === '#3b82f6') l.color = '#be123c';
             }
             if (l.id === 'draw' && l.name !== 'Pens') l.name = 'Pens';
-            if (l.id === 'draw' && l.name === 'Pens') {
-                if (l.color === '#ff4757' || l.color === '#3b82f6') l.color = '#1d4ed8';
-            }
-            if (l.id === 'performance') { l.id = 'text'; l.name = 'Text'; }
-            if (l.id === 'layout' && l.name !== 'Others') l.name = 'Others';
+            if (l.id === 'draw' && (l.color === '#ff4757' || l.color === '#3b82f6')) l.color = '#1d4ed8';
         });
 
+        // Final safety: Ensure others layer exists in the layers array
+        if (!migrated.layers.some(l => l.id === 'others')) {
+            migrated.layers.push({ id: 'others', name: 'Others', color: '#94a3b8', visible: true, type: 'others' });
+        }
+        if (!migrated.layers.some(l => l.id === 'text')) {
+             migrated.layers.push({ id: 'text', name: 'Text', color: '#b45309', visible: true, type: 'text' });
+        }
+
+        console.log(`[DocAction] Migration complete. Deduplicated ${rawStamps.length - uniqueStamps.length} stamps.`);
         return migrated;
     }
 }

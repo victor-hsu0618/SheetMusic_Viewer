@@ -132,9 +132,9 @@ body.edit-scrollbar-hidden #edit-scrollbar {
   /* Cancel the coarse-pointer zoom that was designed for iPad */
   .floating-doc-bar,
   .floating-doc-bar.collapsed {
-    zoom: 1.1;
-    padding: 5px 8px;
-    gap: 4px;
+    zoom: 1.05;
+    padding: 5px 6px;
+    gap: 2px;
   }
 
   .floating-doc-bar button {
@@ -503,9 +503,10 @@ body.edit-scrollbar-hidden #edit-scrollbar {
 
 /* Floating Score Title */
 .floating-score-title {
-  position: fixed;
-  top: 15px;
-  right: 15px;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
   padding: 6px 14px;
   background: rgba(15, 15, 19, 0.65);
   -webkit-backdrop-filter: blur(8px);
@@ -520,7 +521,7 @@ body.edit-scrollbar-hidden #edit-scrollbar {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s ease;
-  max-width: 250px;
+  max-width: 350px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -533,9 +534,8 @@ body.edit-scrollbar-hidden #edit-scrollbar {
 
 @media (max-width: 600px) {
   .floating-score-title {
-    top: 10px;
-    right: 10px;
     font-size: 11px;
-    max-width: 150px;
+    max-width: 200px;
+    bottom: calc(100% + 8px);
   }
 }

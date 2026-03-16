@@ -204,14 +204,18 @@ export class PersistenceManager {
                 if (l.id === 'text' && l.color === '#f59e0b') {
                     l.color = '#b45309'; // Old Orange -> New Burnt Orange
                 }
-                if (l.id === 'layout' && l.color === '#64748b') {
+                if ((l.id === 'layout' || l.id === 'others') && l.color === '#64748b') {
                     l.color = '#94a3b8'; // Old Slate -> Muted Grey (as requested)
                 }
                 if (l.id === 'performance') {
                     l.id = 'text'; 
                     l.name = 'Text';
                 }
-                if (l.id === 'layout' && l.name !== 'Others') {
+                if (l.id === 'layout') {
+                    l.id = 'others';
+                    l.name = 'Others';
+                }
+                if (l.id === 'others' && l.name !== 'Others') {
                     l.name = 'Others';
                 }
             });

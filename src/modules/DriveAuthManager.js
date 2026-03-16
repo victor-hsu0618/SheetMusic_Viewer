@@ -422,6 +422,57 @@ export class DriveAuthManager {
         this.refreshUI();
     }
 
+    /**
+     * Copy current access token to clipboard for LAN debugging.
+     */
+    async copyTokenToClipboard() {
+        if (!this.sync.accessToken) {
+            this.addLog('請先連線以取得 Token', 'warn');
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(this.sync.accessToken);
+            this.addLog('Token 已拷貝至剪貼簿', 'success');
+            if (this.sync.app.showMessage) this.sync.app.showMessage('Token copied!', 'success');
+        } catch (err) {
+            console.error('Clipboard failed:', err);
+            this.addLog('拷貝失敗，請手動複製 console 中的 Token', 'error');
+            console.log('[DriveSync] Current Token:', this.sync.accessToken);
+        }
+    }
+
+    /**
+     * Manually apply an access token (for LAN debugging).
+     */
+    async applyManualToken(token) {
+        if (!token || token.trim().length < 20) {
+            this.addLog('無效的 Token 格式', 'error');
+            return;
+        }
+
+        const cleanToken = token.trim();
+        this.sync.accessToken = cleanToken;
+        this.sync.isEnabled = true;
+        
+        // Save to local storage with a 1-hour default expiry
+        const expiry = Date.now() + (3600 * 1000);
+        localStorage.setItem('scoreflow_drive_sync_enabled', 'true');
+        localStorage.setItem('scoreflow_drive_access_token', cleanToken);
+        localStorage.setItem('scoreflow_drive_token_expiry', expiry.toString());
+
+        this.addLog('手動 Token 已套用', 'success');
+        if (this.sync.app.showMessage) this.sync.app.showMessage('Manual token applied!', 'success');
+
+        try {
+            this.sync.folderId = await this.sync.findOrCreateSyncFolder();
+            this.refreshUI();
+            this.startAutoSync();
+        } catch (err) {
+            console.error('[DriveSync] Folder setup with manual token failed:', err);
+            this.addLog('資料夾對接失敗', 'error');
+        }
+    }
+
     startAutoSync() {
         this.stopAutoSync();
         this.sync.syncTimer = setInterval(() => this.sync.sync(), this.sync.syncInterval);
