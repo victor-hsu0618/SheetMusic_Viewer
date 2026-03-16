@@ -2,6 +2,7 @@ import * as db from '../db.js';
 import { DriveAuthManager } from './DriveAuthManager.js';
 import { DriveFileManager } from './DriveFileManager.js';
 import { DriveManifestManager } from './DriveManifestManager.js';
+import { DriveLogManager } from './DriveLogManager.js';
 
 /**
  * DriveSyncManager — coordinator for all Google Drive sync operations.
@@ -52,7 +53,7 @@ export class DriveSyncManager {
         this.manifest = {};
         this.manifestFileId = null;
         this.isManifestSaving = false;
-        this.MANIFEST_NAME = 'cloud_manifest_v2.json';
+        this.MANIFEST_NAME = 'manifest.json';
         this.hasScanned = false;
 
         // --- UI state ---
@@ -66,6 +67,7 @@ export class DriveSyncManager {
         this.auth = new DriveAuthManager(this);
         this.file = new DriveFileManager(this);
         this.manifest_mgr = new DriveManifestManager(this);
+        this.log = new DriveLogManager(this);
     }
 
     // =========================================================
@@ -111,6 +113,7 @@ export class DriveSyncManager {
     scanRemoteSyncFiles()                           { return this.manifest_mgr.scanRemoteSyncFiles(); }
     fetchCloudScoreDetails(fileId, fingerprint)     { return this.manifest_mgr.fetchCloudScoreDetails(fileId, fingerprint); }
     resetCloudIndex()                               { return this.manifest_mgr.resetCloudIndex(); }
+    healManifestNames()                             { return this.manifest_mgr.healManifestNames(); }
     forcePushAll()                                  { return this.manifest_mgr.forcePushAll(); }
 
     // =========================================================
@@ -219,6 +222,7 @@ export class DriveSyncManager {
             this.isSyncing = false;
             this.updateCloudStatsUI();
             this.refreshUI();
+            this.log.flush().catch(e => console.warn('[DriveLog] flush error:', e.message));
         }
     }
 
@@ -330,19 +334,59 @@ export class DriveSyncManager {
             if (!score) return;
             const entry = this.manifest[fingerprint];
 
-            // 1. Handle PDF upload if needed
-            if (needsPDF) {
-                const pdfData = await db.get(`score_buf_${fingerprint}`);
-                if (pdfData) await this.uploadPDF(fingerprint, pdfData, score.title || 'Unknown');
+            // --- 1. Determine the "Truth" Title (LWW) ---
+            const localDetail = await this.app.scoreDetailManager?.getMetadata(fingerprint);
+            const localUpdateTs = localDetail?.lastEdit || 0;
+            const cloudUpdateTs = entry?.updated || 0;
+            
+            // Use whichever title is newer for filename generation
+            const isLocalNewer = localUpdateTs >= cloudUpdateTs;
+            const targetTitle = isLocalNewer ? (localDetail?.name || score.title) : (entry?.name || score.title);
+            const prefix = this.safeTitle(targetTitle);
+            const hash = this.shortHash(fingerprint);
+
+            // --- 2. Correct Cloud Filenames (PDF & JSON) ---
+            // This ensures "Duport" doesn't stay named "Concerto" on Drive
+            if (entry) {
+                // Check PDF
+                if (entry.pdfId) {
+                    const expectedPdfName = `${prefix}${hash}.pdf`;
+                    if (entry.pdfFilename !== expectedPdfName) {
+                        try {
+                            console.log(`[DriveSync] Fixing mismatched PDF filename: "${entry.pdfFilename}" -> "${expectedPdfName}"`);
+                            await this.renameFile(entry.pdfId, expectedPdfName);
+                            await this.updateManifestEntry(fingerprint, { pdfFilename: expectedPdfName });
+                        } catch (e) { console.warn(`[DriveSync] PDF rename failed: ${e.message}`); }
+                    }
+                }
+                // Check JSON
+                if (entry.syncId) {
+                    const expectedJsonName = `${prefix}${hash}.json`;
+                    if (entry.filename !== expectedJsonName) {
+                        try {
+                            console.log(`[DriveSync] Fixing mismatched JSON filename: "${entry.filename}" -> "${expectedJsonName}"`);
+                            await this.renameFile(entry.syncId, expectedJsonName);
+                            await this.updateManifestEntry(fingerprint, { filename: expectedJsonName });
+                        } catch (e) { console.warn(`[DriveSync] JSON rename failed: ${e.message}`); }
+                    }
+                }
             }
 
-            // 1b. Auto-download PDF from cloud if missing locally
-            const hasPdfInCloud = !!(entry && entry.pdfId);
+            // --- 3. Handle PDF Data Sync ---
             const hasLocalPdf = !!(await db.get(`score_buf_${fingerprint}`));
+            if (needsPDF || (this.app.pdfFingerprint === fingerprint)) {
+                if (hasLocalPdf) {
+                    const pdfData = await db.get(`score_buf_${fingerprint}`);
+                    await this.uploadPDF(fingerprint, pdfData, targetTitle);
+                }
+            }
+
+            // Auto-download PDF from cloud if missing locally
+            const hasPdfInCloud = !!(entry && entry.pdfId);
             if (hasPdfInCloud && !hasLocalPdf) {
                 try {
-                    console.log(`[DriveSync] ↓ Auto-downloading PDF for "${score.title || fingerprint.slice(0, 8)}"...`);
-                    this.addLog(`正在下載雲端 PDF: ${score.title || '...'}`, 'system');
+                    console.log(`[DriveSync] ↓ Auto-downloading PDF for "${targetTitle}"...`);
+                    this.addLog(`正在下載雲端 PDF: ${targetTitle}`, 'system');
                     const buffer = await this.downloadPDF(fingerprint);
                     await db.set(`score_buf_${fingerprint}`, buffer);
 
@@ -350,64 +394,55 @@ export class DriveSyncManager {
                     score.thumbnail = thumbnail;
                     score.isCloudOnly = false;
                     score.isPdfAvailable = true;
-                    if (!score.fileName) score.fileName = (score.title || fingerprint.slice(0, 8)) + '.pdf';
+                    if (!score.fileName) score.fileName = `${prefix}${hash}.pdf`;
                     await this.app.scoreManager.saveRegistry();
                     this.app.scoreManager.render();
-                    console.log(`[DriveSync] ✓ PDF downloaded: "${score.title}" (${(buffer.byteLength / 1024 / 1024).toFixed(1)} MB)`);
-                    this.addLog(`PDF 下載完成: ${score.title}`, 'success');
-                } catch (err) {
-                    console.warn(`[DriveSync] PDF auto-download failed for ${fingerprint.slice(0, 8)}:`, err.message);
+                } catch (err) { console.warn(`[DriveSync] PDF download failed:`, err.message); }
+            }
+
+            // --- 4. Metadata & Content Sync ---
+            const isLocalNameGeneric = !localDetail?.name || localDetail.name === 'Unknown' || localDetail.name.includes('score_buf_');
+            const hasRemoteRealName = entry?.name && entry.name !== 'Unknown' && !entry.name.includes('score_buf_');
+
+            if (cloudUpdateTs > localUpdateTs || (isLocalNameGeneric && hasRemoteRealName)) {
+                if (entry?.syncId && fingerprint !== this.app.pdfFingerprint) {
+                    canPull = true;
+                }
+            } else if (localUpdateTs > cloudUpdateTs) {
+                if (!score.isCloudOnly) {
+                    needsPush = true;
                 }
             }
 
-            // 1c. Generate thumbnail if missing
-            if (!score.isCloudOnly && !score.thumbnail) {
-                try {
-                    const buffer = await db.get(`score_buf_${fingerprint}`);
-                    if (buffer) {
-                        const thumbnail = await this.app.scoreManager.helper.generateThumbnail(buffer.slice(0));
-                        if (thumbnail) {
-                            score.thumbnail = thumbnail;
-                            await this.app.scoreManager.saveRegistry();
-                            this.app.scoreManager.render();
-                        }
-                    }
-                } catch (err) {
-                    console.warn(`[DriveSync] Thumbnail generation failed for ${fingerprint.slice(0, 8)}:`, err.message);
-                }
-            }
-
-            // 2. Background PULL
-            let remoteVersion = 0;
+            // 5. Execute PULL/PUSH
             if (canPull && fingerprint !== this.app.pdfFingerprint) {
-                remoteVersion = await this.pullBackground(fingerprint, entry.syncId);
+                await this.pullBackground(fingerprint, entry.syncId);
             }
 
-            // 3. Handle PUSH
             if (needsPush) {
                 const data = await this.gatherLocalData(fingerprint);
-                const prefix = this.safeTitle(score.title);
-                const fileName = `${prefix}${this.shortHash(fingerprint)}.json`;
-                const annotParent = this.annotationsFolderId || this.folderId;
                 const fileId = entry ? entry.syncId : null;
+                const annotParent = this.annotationsFolderId || this.folderId;
 
                 if (fileId) {
                     await this.updateFile(fileId, data);
                 } else {
-                    await this.createFile(fileName, data, annotParent);
-                    const newId = await this.findSyncFile(fingerprint, 'sync');
-                    if (newId) {
-                        await this.updateManifestEntry(fingerprint, { syncId: newId, name: prefix.replace(/_$/, ''), filename: fileName });
-                    }
+                    const newId = await this.createFile(`${prefix}${hash}.json`, data, annotParent);
+                    if (newId) await this.updateManifestEntry(fingerprint, { syncId: newId });
                 }
+
+                await this.updateManifestEntry(fingerprint, {
+                    name: targetTitle,
+                    updated: Math.max(localUpdateTs, Date.now())
+                });
+
                 score.isSynced = true;
                 await this.app.scoreManager.saveRegistry();
             }
 
             this.updateCloudStatsUI();
-
         } catch (err) {
-            console.error(`[Sync] Failed to sync score ${fingerprint}:`, err);
+            console.error(`[Sync] Failed sync score ${fingerprint}:`, err);
         }
     }
 
@@ -425,7 +460,7 @@ export class DriveSyncManager {
             const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
             if (!score) return 0;
 
-            const localDetail = await db.get(`score_detail_${fingerprint}`);
+            const localDetail = await db.get(`detail_${fingerprint}`);
             const remoteDetail = remoteData.scoreDetail;
 
             let needsSave = false;
@@ -435,11 +470,11 @@ export class DriveSyncManager {
             // 1. Merge Metadata — per-field to avoid stamp edits overwriting name
             if (remoteDetail) {
                 const isLocalGeneric = !score.title || score.title === 'Unknown' || score.title.includes('score_buf_');
-                const remoteNameTs = remoteDetail.nameEditedAt || remoteDetail.lastEdit || 0;
-                const localNameTs  = localDetail?.nameEditedAt  || localDetail?.lastEdit  || 0;
+                const remoteNameTs = remoteDetail.nameEditedAt || 0;
+                const localNameTs  = localDetail?.nameEditedAt  || 0;
                 const shouldUpdateName = isLocalGeneric || (remoteNameTs > localNameTs);
-                const remoteComposerTs = remoteDetail.composerEditedAt || remoteDetail.lastEdit || 0;
-                const localComposerTs  = localDetail?.composerEditedAt  || localDetail?.lastEdit  || 0;
+                const remoteComposerTs = remoteDetail.composerEditedAt || 0;
+                const localComposerTs  = localDetail?.composerEditedAt  || 0;
                 const shouldUpdateMeta = shouldUpdateName || (remoteDetail.lastEdit > (localDetail?.lastEdit || 0));
 
                 if (shouldUpdateMeta) {
@@ -452,7 +487,7 @@ export class DriveSyncManager {
                         merged.composer = localDetail?.composer || score.composer;
                         merged.composerEditedAt = localComposerTs;
                     }
-                    await db.set(`score_detail_${fingerprint}`, merged);
+                    await db.set(`detail_${fingerprint}`, merged);
                     await this.app.scoreManager.updateMetadata(fingerprint, {
                         title: merged.name || score.title,
                         composer: merged.composer || 'Unknown'
@@ -473,7 +508,7 @@ export class DriveSyncManager {
 
             // 2. Merge Stamps
             if (Array.isArray(remoteData.stamps)) {
-                const localStamps = await db.get(`score_stamps_${fingerprint}`) || [];
+                const localStamps = await db.get(`stamps_${fingerprint}`) || [];
                 const localMap = new Map(localStamps.map(s => [s.id, s]));
                 let newCount = 0;
                 let updCount = 0;
@@ -494,7 +529,7 @@ export class DriveSyncManager {
                 });
 
                 if (newCount > 0 || updCount > 0) {
-                    await db.set(`score_stamps_${fingerprint}`, Array.from(localMap.values()));
+                    await db.set(`stamps_${fingerprint}`, Array.from(localMap.values()));
                     needsSave = true;
                     if (newCount > 0) {
                         const typeStr = Object.entries(newByType).map(([t, n]) => `${t}×${n}`).join(', ');
@@ -507,6 +542,7 @@ export class DriveSyncManager {
             if (bgChanges.length > 0) {
                 const label = score.isCloudOnly ? 'new file in cloud' : 'bg pull';
                 console.log(`[DriveSync] ↓ ${label} "${scoreName}" — ${bgChanges.join(' | ')}`);
+                this.log.record('pull', `${scoreName} — ${bgChanges.join(' | ')}`);
             }
 
             // 3. Mark as synced
@@ -528,14 +564,13 @@ export class DriveSyncManager {
     async gatherLocalData(fp) {
         let stamps = [];
         try {
-            const stampsRaw = localStorage.getItem(`scoreflow_stamps_${fp}`);
-            stamps = stampsRaw ? JSON.parse(stampsRaw) : [];
-        } catch (e) { console.error('Failed to parse stamps for sync', e); }
+            stamps = (await db.get(`stamps_${fp}`)) || [];
+        } catch (e) { console.error('Failed to load stamps for sync', e); }
 
         const bookmarks = await db.get(`bookmarks_${fp}`) || [];
 
         // --- FIXED: Use safe getMetadata instead of stale currentInfo ---
-        const scoreDetail = this.app.scoreDetailManager?.getMetadata(fp);
+        const scoreDetail = await this.app.scoreDetailManager?.getMetadata(fp);
 
         const score = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
 
@@ -568,7 +603,7 @@ export class DriveSyncManager {
             if (!score) return;
 
             // --- FIXED: Use safe getMetadata instead of stale currentInfo ---
-            const metadata = this.app.scoreDetailManager?.getMetadata(fingerprint);
+            const metadata = await this.app.scoreDetailManager?.getMetadata(fingerprint);
             
             const latestStampTime = this.app.stamps.length > 0
                 ? Math.max(...this.app.stamps.map(s => s.updatedAt || 0))
@@ -645,6 +680,7 @@ export class DriveSyncManager {
             });
 
             this.addLog(`已上傳: ${stampsCount} 劃記, ${bookmarksCount} 書籤, ${sourcesCount} 詮釋`, 'success');
+            this.log.record('push', `${score.title} — ${stampsCount} stamps, ${bookmarksCount} bookmarks`);
             this.lastSyncTime = data.version;
             localStorage.setItem(`scoreflow_sync_time_${fingerprint}`, data.version);
 

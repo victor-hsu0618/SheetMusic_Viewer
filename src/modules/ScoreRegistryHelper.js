@@ -90,8 +90,8 @@ export class ScoreRegistryHelper {
                 await db.set(`score_buf_${newFp}`, buffer);
                 await db.remove(`score_buf_${oldFp}`);
                 // Move other related data...
-                const stamps = await db.get(`score_stamps_${oldFp}`);
-                if (stamps) { await db.set(`score_stamps_${newFp}`, stamps); await db.remove(`score_stamps_${oldFp}`); }
+                const stamps = await db.get(`stamps_${oldFp}`);
+                if (stamps) { await db.set(`stamps_${newFp}`, stamps); await db.remove(`stamps_${oldFp}`); }
             }
             changed = true;
         }
@@ -110,23 +110,12 @@ export class ScoreRegistryHelper {
         const score = this.manager.registry.find(s => s.fingerprint === fp);
         let stamps = [];
         try {
-            const storedStamps = await db.get(`score_stamps_${fp}`);
-            if (storedStamps) stamps = storedStamps;
-            else {
-                // Fallback to localStorage if needed
-                const local = localStorage.getItem(`scoreflow_stamps_${fp}`);
-                if (local) stamps = JSON.parse(local);
-            }
+            stamps = (await db.get(`stamps_${fp}`)) || [];
         } catch (e) { console.error('Export stamps failed:', e); }
 
         let detail = null;
         try {
-            const storedDetail = await db.get(`score_detail_${fp}`);
-            if (storedDetail) detail = storedDetail;
-            else {
-                const local = localStorage.getItem(`scoreflow_detail_${fp}`);
-                if (local) detail = JSON.parse(local);
-            }
+            detail = await db.get(`detail_${fp}`) || null;
         } catch (e) { console.error('Export detail failed:', e); }
 
         return {
@@ -170,7 +159,7 @@ export class ScoreRegistryHelper {
                 if (!buffer) continue;
 
                 // Recover metadata if possible
-                const detail = await db.get(`score_detail_${fp}`) || await db.get(`score_detail_${fp}`);
+                const detail = await db.get(`detail_${fp}`);
                 const score = this.manager.registry.find(s => s.fingerprint === fp);
                 const thumbnail = await this.generateThumbnail(buffer.slice(0)).catch(() => null);
 

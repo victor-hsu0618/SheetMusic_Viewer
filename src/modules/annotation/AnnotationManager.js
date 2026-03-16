@@ -576,6 +576,7 @@ export class AnnotationManager {
             const val = editor.value.trim()
             if (val) {
                 stamp.data = val
+                stamp.updatedAt = Date.now()
                 // Auto-save to library if it's new
                 if (!this.app.userTextLibrary.includes(val)) {
                     this.app.userTextLibrary.push(val)

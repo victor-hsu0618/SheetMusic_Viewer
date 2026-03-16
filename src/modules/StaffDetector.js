@@ -1,18 +1,21 @@
 export class StaffDetector {
   constructor(app) {
     this.app = app
-    this.params = { scale: 1.5, density: 0.30, maxthick: 8, sysgap: 25, margin: 3 }
+    this.params = { scale: 1.0, density: 0.30, maxthick: 5, sysgap: 17, margin: 3 }
   }
 
   // Auto-detect all pages, push results to app.stamps, save
   async autoDetect(pdf, onProgress) {
+    const fp = this.app.pdfFingerprint  // capture fingerprint at start
     const results = []
     for (let p = 1; p <= pdf.numPages; p++) {
+      if (this.app.pdfFingerprint !== fp) return  // PDF changed mid-detection, discard
       const page = await pdf.getPage(p)
       const systems = await this.detectPage(page, p)
       results.push(...systems)
       if (onProgress) onProgress(p, pdf.numPages)
     }
+    if (this.app.pdfFingerprint !== fp) return  // discard if switched after last page
     this.app.stamps.push(...results)
     this.app.saveToStorage(true)
     this.app.updateRulerMarks()
@@ -87,14 +90,18 @@ export class StaffDetector {
     const naturalH = pdfPage.getViewport({ scale: 1 }).height
     const toRatio = px => px / (naturalH * scale)
 
+    const now = Date.now()
     return systems.map(lines => ({
       type: 'system',
+      id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `sys-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       page: pageNum,
       y: toRatio(lines[0].top),
       yBottom: toRatio(lines[lines.length - 1].bottom),
       lineCount: lines.length,
       auto: true,
-      deleted: false
+      deleted: false,
+      createdAt: now,
+      updatedAt: now
     }))
   }
 }

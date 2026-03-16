@@ -304,6 +304,7 @@ export class InteractionManager {
                     } else if (toolType === 'copy') {
                         const clone = JSON.parse(JSON.stringify(target));
                         clone.id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`;
+                        clone.createdAt = Date.now();
                         clone.updatedAt = Date.now();
                         this.app.stamps.push(clone);
                         this.app.activeStampType = 'select';
@@ -363,7 +364,7 @@ export class InteractionManager {
                     dashed: toolDef?.draw?.dashed || false,
                     arrow: toolDef?.draw?.arrow || false,
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
-                    updatedAt: Date.now()
+                    createdAt: Date.now(), updatedAt: Date.now()
                 };
                 if (toolType === 'slur') activeObject.curvature = -0.28;
                 attachGlobalListeners();
@@ -387,9 +388,9 @@ export class InteractionManager {
                 const fPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 activeObject = {
                     page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
-                    x: fPos.x, 
-                    y: fPos.y, color: this.app.activeColor, data: null, updatedAt: Date.now(),
-                    id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`
+                    x: fPos.x, y: fPos.y, color: this.app.activeColor, data: null,
+                    id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
+                    createdAt: Date.now(), updatedAt: Date.now()
                 };
                 const group = this.app.toolsets.find(g => g.tools.some(t => t.id === toolType));
                 if (group) {
@@ -584,7 +585,8 @@ export class InteractionManager {
                         const targetObj = activeObject;
                         this.app.annotationManager.promptMeasureNumber().then(numStr => {
                             if (numStr !== null && numStr !== undefined && numStr !== '') {
-                                targetObj.data = numStr; 
+                                targetObj.data = numStr;
+                                targetObj.updatedAt = Date.now();
                                 this.app.stamps.push(targetObj); 
                                 this.app.saveToStorage(true); 
                                 this.app.updateRulerMarks();
@@ -597,6 +599,7 @@ export class InteractionManager {
                         });
                         return;
                     } else {
+                        activeObject.updatedAt = Date.now();
                         if (!isMovingExisting && activeObject.type !== 'view') this.app.stamps.push(activeObject);
                         if (activeObject.type === 'anchor') this.app.updateRulerMarks();
                         this.app.saveToStorage(true);

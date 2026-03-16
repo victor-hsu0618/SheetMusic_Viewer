@@ -1,0 +1,4074 @@
+{
+  "version": "2.0",
+  "exportType": "single_score",
+  "author": "Default Musician",
+  "timestamp": 1773580837188,
+  "metadata": {
+    "name": "31-Asturias-Cello",
+    "composer": "Unknown",
+    "fingerprint": "b7c4979ff73cb54fac570c85c638c62e09b839e0227767e3ec14b7973c80cfb9"
+  },
+  "sources": [
+    {
+      "id": "self",
+      "name": "Primary Interpretation",
+      "visible": true,
+      "opacity": 1,
+      "color": "#6366f1",
+      "updatedAt": 1773580780838
+    }
+  ],
+  "layers": [
+    {
+      "id": "draw",
+      "name": "Pens",
+      "color": "#1d4ed8",
+      "visible": true,
+      "type": "draw",
+      "updatedAt": 1773580714718
+    },
+    {
+      "id": "fingering",
+      "name": "B.Fingering",
+      "color": "#be123c",
+      "visible": true,
+      "type": "fingering"
+    },
+    {
+      "id": "articulation",
+      "name": "Articulations",
+      "color": "#15803d",
+      "visible": true,
+      "type": "articulation"
+    },
+    {
+      "id": "text",
+      "name": "Text",
+      "color": "#b45309",
+      "visible": true,
+      "type": "performance"
+    },
+    {
+      "id": "other",
+      "name": "Other (Layout)",
+      "color": "#64748b",
+      "visible": false,
+      "type": "layout",
+      "updatedAt": 1773580738072
+    },
+    {
+      "id": "layout",
+      "name": "Others",
+      "color": "#94a3b8",
+      "visible": true,
+      "type": "layout",
+      "updatedAt": 1773580731351
+    }
+  ],
+  "stamps": [
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.42567386693573295,
+      "y": 0.17601094247922822,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.392726973210057,
+      "y": 0.283107547691457,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.6958383954862756,
+      "y": 0.3827539542802264,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.5284681753598419,
+      "y": 0.4321115201606449,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.532421802606923,
+      "y": 0.3855477787640237,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.14364845664394704,
+      "y": 0.18439241593062003,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.641805489776167,
+      "y": 0.17973604179095792,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.6194016020427074,
+      "y": 0.2821762728635246,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.674752383501843,
+      "y": 0.2821762728635246,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f0",
+      "x": 0.6681630047567079,
+      "y": 0.3855477787640237,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.5759117023248153,
+      "y": 0.48053781121313094,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.7630500586866544,
+      "y": 0.4824003608689958,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.13310545065173074,
+      "y": 0.5801842178019004,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.13310545065173074,
+      "y": 0.5801842178019004,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.15550933838519038,
+      "y": 0.6863495481861968,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.4454420031711385,
+      "y": 0.664930227143751,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.9066985153306014,
+      "y": 0.6630676774878862,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.33474044025286737,
+      "y": 0.7673704582163178,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.9066985153306014,
+      "y": 0.7627140840766556,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.7221959104668163,
+      "y": 0.7645766337325205,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.20822436834627187,
+      "y": 0.1527290717809176,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.43621687292794925,
+      "y": 0.15086652212505275,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.7011098984823837,
+      "y": 0.26355077630487606,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.1278339476556226,
+      "y": 0.4926443839762525,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.6800238864979512,
+      "y": 0.5876344164253599,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.8724337458558985,
+      "y": 0.5904282409091571,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.8697979943578444,
+      "y": 0.6397858067895755,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.16473446862837965,
+      "y": 0.8972832967128909,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.6483948685213022,
+      "y": 0.7720268323559798,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.5851368325680045,
+      "y": 0.7599202595928584,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.7169244074707082,
+      "y": 0.7738893820118447,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.5745938265757882,
+      "y": 0.862360490665425,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.12915182340464965,
+      "y": 0.08940238348151273,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.11465519016535222,
+      "y": 0.12479082694294487,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.12256244465951446,
+      "y": 0.06798306243906697,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.28466116178983997,
+      "y": 0.14248504867366094,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.31497230401746185,
+      "y": 0.14248504867366094,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.12915182340464965,
+      "y": 0.2654133259607409,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.12915182340464965,
+      "y": 0.3147708918411594,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.33849972225189445,
+      "y": 0.6641362671780108,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.35846220373535403,
+      "y": 0.6602738530040889,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.5574614418384367,
+      "y": 0.7664391833883853,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.781500319173033,
+      "y": 0.8651543151492223,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.6088585960504912,
+      "y": 0.06332668829940485,
+      "data": null,
+      "draw": {
+        "type": "text",
+        "content": "1",
+        "font": "300",
+        "size": 20
+      },
+      "updatedAt": 1773577423330
+    },
+    {
+      "page": 5,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.7116529044746001,
+      "y": 0.5801842178019004,
+      "data": null
+    },
+    {
+      "page": 5,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.24776064081708296,
+      "y": 0.7804083058073716,
+      "data": null
+    },
+    {
+      "page": 5,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.6839775137450322,
+      "y": 0.8791234375682087,
+      "data": null
+    },
+    {
+      "page": 6,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.40063422770421925,
+      "y": 0.7729581071839122,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.17889447236180905,
+      "data": "1",
+      "id": "f509d2de-207a-41ec-9b43-39ef7a2611e2",
+      "updatedAt": 1773038478548
+    },
+    {
+      "page": 1,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.27437185929648245,
+      "data": "4",
+      "id": "bc4c68af-6c23-47d3-8deb-645799f3ca54",
+      "updatedAt": 1773038490381
+    },
+    {
+      "page": 1,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.3678391959798995,
+      "data": "7",
+      "id": "dc1c9a39-b6b9-4765-8aae-b7fda550f0b1",
+      "updatedAt": 1773038505603
+    },
+    {
+      "page": 1,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.4753768844221106,
+      "data": "10",
+      "id": "075a50e1-e5e9-4aa0-8731-d8ce17c97036",
+      "updatedAt": 1773038513490
+    },
+    {
+      "page": 1,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.5738693467336683,
+      "data": "13",
+      "id": "22ad1f72-7190-4113-8aa3-0ae4fa6f89e8",
+      "updatedAt": 1773038519227
+    },
+    {
+      "page": 1,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.678894472361809,
+      "data": "16",
+      "id": "38cd5e58-8a77-4d43-b0ef-45cafcdb4720",
+      "updatedAt": 1773038523750
+    },
+    {
+      "page": 1,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.7763819095477387,
+      "data": "19",
+      "id": "7b96bde7-ea44-4eca-b374-5501d40cf104",
+      "updatedAt": 1773038527024
+    },
+    {
+      "page": 1,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.878894472361809,
+      "data": "22",
+      "id": "294e704f-f88e-46ca-96b7-0a5448cbf0d4",
+      "updatedAt": 1773038530231
+    },
+    {
+      "page": 2,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.06080402010050251,
+      "data": "25",
+      "id": "c13445a4-8c16-4497-93d9-689e2ae34c82",
+      "updatedAt": 1773038534899
+    },
+    {
+      "page": 2,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.16331658291457285,
+      "data": "28",
+      "id": "c50f6413-4f75-48f9-955c-ec3b596e346d",
+      "updatedAt": 1773038537858
+    },
+    {
+      "page": 2,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.26884422110552764,
+      "data": "31",
+      "id": "016fa5a0-99dc-42be-95cd-01f6dab0ba2d",
+      "updatedAt": 1773038544518
+    },
+    {
+      "page": 2,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.38040201005025126,
+      "data": "34",
+      "id": "58091c41-de4e-44f2-af04-0cb717d36a99",
+      "updatedAt": 1773038546948
+    },
+    {
+      "page": 2,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.48592964824120605,
+      "data": "37",
+      "id": "724b1186-c59c-40dd-b6d2-2be8398e2596",
+      "updatedAt": 1773038550560
+    },
+    {
+      "page": 2,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.5814070351758793,
+      "data": "40",
+      "id": "84523f38-5c38-4699-8b83-fe138da20c29",
+      "updatedAt": 1773038553699
+    },
+    {
+      "page": 2,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.6909547738693467,
+      "data": "43",
+      "id": "cb8ebd6a-b81f-46b7-8585-2c27ba74d337",
+      "updatedAt": 1773038559886
+    },
+    {
+      "page": 2,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.7874371859296482,
+      "data": "46",
+      "id": "121c4267-3dc3-48a8-85b2-88632d8745dc",
+      "updatedAt": 1773038564285
+    },
+    {
+      "page": 2,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.8919597989949748,
+      "data": "49",
+      "id": "ad2a8382-71af-47ee-9f67-3e8071a7e8cd",
+      "updatedAt": 1773038566693
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.0864321608040201,
+      "data": "52",
+      "id": "e5120353-8f8b-476c-a4c8-1794d17320ef",
+      "updatedAt": 1773038569956
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.17939698492462314,
+      "data": "55",
+      "id": "b45edea7-c09b-4dec-a175-c6d9bfdfb106",
+      "updatedAt": 1773038573218
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.2788944723618091,
+      "data": "58",
+      "id": "e2600496-8f9a-42cd-8f8f-e05b909c4518",
+      "updatedAt": 1773038576268
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.3748743718592965,
+      "data": "61",
+      "id": "fb267551-dd02-4e28-81f7-c457d3020a6c",
+      "updatedAt": 1773038579203
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.4763819095477387,
+      "data": "64",
+      "id": "69560bcd-828c-4e59-bdaa-a88169eb12eb",
+      "updatedAt": 1773038606700,
+      "deleted": true
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.47437185929648246,
+      "data": "70",
+      "id": "b4e639b1-570e-40f2-aeb3-5b6a218394e9",
+      "updatedAt": 1773038623282
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.5778894472361809,
+      "data": "79",
+      "id": "52b0305d-74da-4b1a-9efb-78d30f5b5ac6",
+      "updatedAt": 1773038644230
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.6743718592964824,
+      "data": "86",
+      "id": "3c862fa0-ca5a-4e72-91d8-072d160d266e",
+      "updatedAt": 1773038655728
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.7728643216080402,
+      "data": "92",
+      "id": "67afaf6a-baf1-4f16-a143-a44decadd23f",
+      "updatedAt": 1773038663032
+    },
+    {
+      "page": 3,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.8738693467336683,
+      "data": "98",
+      "id": "d6a4bdb4-0f9c-486f-9ec5-e5d8925d4443",
+      "updatedAt": 1773038670365
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.06231155778894473,
+      "data": "103",
+      "id": "9ba40eeb-ec8e-4ab7-95a1-005738eb16e0",
+      "updatedAt": 1773038679185
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.16180904522613065,
+      "data": "107",
+      "id": "d3f1da12-00fb-49da-8353-741bc8aa8e2e",
+      "updatedAt": 1773038686297
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.25829145728643216,
+      "data": "112",
+      "id": "062e183b-0bf3-48c9-bec9-1b5c53df8616",
+      "updatedAt": 1773038694249
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.3597989949748744,
+      "data": "115",
+      "id": "c2bb7ebb-d4f9-4e54-8d98-badb20b9c84a",
+      "updatedAt": 1773038715502
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.4613065326633166,
+      "data": "118",
+      "id": "8bc3f783-2934-407e-af14-2af9fa94a210",
+      "updatedAt": 1773038752717,
+      "deleted": true
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.5653266331658291,
+      "data": "127",
+      "id": "8a33d95c-3f54-4961-994f-3236bc37a2d0",
+      "updatedAt": 1773038886023,
+      "deleted": true
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.562311557625949,
+      "data": "127",
+      "id": "f6935148-99bc-48c5-b892-e1d828779ecb",
+      "updatedAt": 1773038902854,
+      "deleted": true
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.6658291457286432,
+      "data": "130",
+      "id": "b688d684-c71d-4ba7-b2ca-0b53d55e1b76",
+      "updatedAt": 1773038924162,
+      "deleted": true
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07950770308038146,
+      "y": 0.6590787853068297,
+      "data": "129",
+      "id": "255aafe5-d296-4b09-8ec0-409e22272b2d",
+      "updatedAt": 1773038933994
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.7683417085427136,
+      "data": "132",
+      "id": "f6414adb-bff7-4a33-96c8-099425b03942",
+      "updatedAt": 1773038948013
+    },
+    {
+      "page": 4,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.8618090452261307,
+      "data": "135",
+      "id": "70afebec-9be3-4376-a8d1-87a714cecf09",
+      "updatedAt": 1773038962997
+    },
+    {
+      "page": 5,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.10050251256281408,
+      "data": "138",
+      "id": "3fac3da9-05f1-426f-9c06-a884399ad673",
+      "updatedAt": 1773038987332
+    },
+    {
+      "page": 5,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.18693467336683417,
+      "data": "141",
+      "id": "7f851736-7188-49a7-b28c-d82121b2eb49",
+      "updatedAt": 1773038990730
+    },
+    {
+      "page": 5,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.2934673366834171,
+      "data": "144",
+      "id": "0a2d93a0-58fe-42ab-a641-c847575d0624",
+      "updatedAt": 1773038993947
+    },
+    {
+      "page": 5,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.3899497487437186,
+      "data": "147",
+      "id": "5eed5713-24fe-4d86-8a81-d34fd4afcd8b",
+      "updatedAt": 1773038996152
+    },
+    {
+      "page": 5,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.49145728643216086,
+      "data": "150",
+      "id": "c3fbb97c-f1cb-4253-a799-0744c6330a44",
+      "updatedAt": 1773038999426
+    },
+    {
+      "page": 5,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.5909547738693467,
+      "data": "153",
+      "id": "a11d1d3d-0663-4cc4-af44-19fccb5fc511",
+      "updatedAt": 1773039003105
+    },
+    {
+      "page": 5,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.6839195979899497,
+      "data": "156",
+      "id": "c5075b1b-07bb-4d3f-b82d-50ce92a3e944",
+      "updatedAt": 1773039005783
+    },
+    {
+      "page": 5,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.78643216080402,
+      "data": "159",
+      "id": "fe921f9e-a64d-4530-8df7-41ae858d8c71",
+      "updatedAt": 1773039009372
+    },
+    {
+      "page": 5,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.8834170854271356,
+      "data": "162",
+      "id": "8826e369-f1b5-40b5-aecb-df6db0a83378",
+      "updatedAt": 1773039012004
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.0949748743718593,
+      "data": "165",
+      "id": "cfd7c1ed-cf6a-492c-b7b6-f8b53d110943",
+      "updatedAt": 1773039016302
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.18542713567839197,
+      "data": "168",
+      "id": "bdad467f-f1f9-4f60-b3eb-d4715424e087",
+      "updatedAt": 1773039018788
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.2869346733668342,
+      "data": "171",
+      "id": "50414a3e-dd9c-4d98-bb6a-ac3b0d6b52bc",
+      "updatedAt": 1773039021173
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.3849246231155779,
+      "data": "174",
+      "id": "ec675cf9-b584-43f2-a39e-c8e106e3c0ed",
+      "updatedAt": 1773039025133
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.47738693467336685,
+      "data": "177",
+      "id": "4f1e0b2d-b20d-4f30-b1b6-8966eac84547",
+      "updatedAt": 1773039028193
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.5748743718592965,
+      "data": "180",
+      "id": "9e65e8d8-163e-4fe5-84af-a0be55bde8cd",
+      "updatedAt": 1773039031164
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.6763819095477387,
+      "data": "183",
+      "id": "5adc3d4a-4ff4-468c-9560-e633232aea0c",
+      "updatedAt": 1773039036069
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.7748743718592964,
+      "data": "186",
+      "id": "5665f20a-6dfc-43af-8b51-f812be636ae3",
+      "updatedAt": 1773039067558,
+      "deleted": true
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.771859296482412,
+      "data": "190",
+      "id": "6c977ac3-4539-4316-85f5-4afe134cd7eb",
+      "updatedAt": 1773039074849
+    },
+    {
+      "page": 6,
+      "layerId": "layout",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.8613065326633166,
+      "data": "195",
+      "id": "20ac95e9-d0cd-47f4-8aa8-563568ebad1b",
+      "updatedAt": 1773039087002
+    },
+    {
+      "type": "system",
+      "page": 1,
+      "y": 0.19873317498020585,
+      "yBottom": 0.22169437846397466,
+      "lineCount": 3,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 1,
+      "y": 0.3000791765637371,
+      "yBottom": 0.3072050673000792,
+      "lineCount": 2,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 1,
+      "y": 0.4006334125098971,
+      "yBottom": 0.4172604908946952,
+      "lineCount": 4,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 1,
+      "y": 0.501187648456057,
+      "yBottom": 0.5075217735550277,
+      "lineCount": 2,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 1,
+      "y": 0.6737925574030087,
+      "yBottom": 0.714172604908947,
+      "lineCount": 7,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 1,
+      "y": 0.7909738717339667,
+      "yBottom": 0.8131433095803642,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 1,
+      "y": 0.8741092636579573,
+      "yBottom": 0.9136975455265242,
+      "lineCount": 7,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 2,
+      "y": 0.07442596991290577,
+      "yBottom": 0.09897070467141726,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 2,
+      "y": 0.17577197149643706,
+      "yBottom": 0.19873317498020585,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 2,
+      "y": 0.2850356294536817,
+      "yBottom": 0.3079968329374505,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 2,
+      "y": 0.3927157561361837,
+      "yBottom": 0.41488519398258117,
+      "lineCount": 3,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 2,
+      "y": 0.498812351543943,
+      "yBottom": 0.5201900237529691,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 2,
+      "y": 0.601741884402217,
+      "yBottom": 0.6231195566112431,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 2,
+      "y": 0.7046714172604909,
+      "yBottom": 0.7149643705463183,
+      "lineCount": 3,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 2,
+      "y": 0.8060174188440221,
+      "yBottom": 0.8305621536025336,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 2,
+      "y": 0.9065716547901821,
+      "yBottom": 0.9216152019002375,
+      "lineCount": 4,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 3,
+      "y": 0.08630245447347586,
+      "yBottom": 0.13222486144101345,
+      "lineCount": 7,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 3,
+      "y": 0.17814726840855108,
+      "yBottom": 0.21060965954077593,
+      "lineCount": 4,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 3,
+      "y": 0.391132224861441,
+      "yBottom": 0.41092636579572445,
+      "lineCount": 3,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 3,
+      "y": 0.4901029295328583,
+      "yBottom": 0.5106888361045131,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 3,
+      "y": 0.5882818685669042,
+      "yBottom": 0.6080760095011877,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 3,
+      "y": 0.6864608076009501,
+      "yBottom": 0.7070467141726049,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 3,
+      "y": 0.784639746634996,
+      "yBottom": 0.8036421219319082,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 3,
+      "y": 0.882818685669042,
+      "yBottom": 0.9026128266033254,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 4,
+      "y": 0.1702296120348377,
+      "yBottom": 0.19239904988123516,
+      "lineCount": 3,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 4,
+      "y": 0.27315914489311166,
+      "yBottom": 0.2850356294536817,
+      "lineCount": 3,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 4,
+      "y": 0.3752969121140142,
+      "yBottom": 0.39588281868566905,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 4,
+      "y": 0.4766429136975455,
+      "yBottom": 0.5043547110055424,
+      "lineCount": 4,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 4,
+      "y": 0.5851148060174188,
+      "yBottom": 0.6025336500395883,
+      "lineCount": 2,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 5,
+      "y": 0.20506730007917656,
+      "yBottom": 0.22644497228820268,
+      "lineCount": 3,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 5,
+      "y": 0.41250989707046715,
+      "yBottom": 0.4243863816310372,
+      "lineCount": 3,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 5,
+      "y": 0.5019794140934284,
+      "yBottom": 0.5225653206650831,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 5,
+      "y": 0.5985748218527316,
+      "yBottom": 0.6191607284243864,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 5,
+      "y": 0.6967537608867775,
+      "yBottom": 0.7260490894695171,
+      "lineCount": 7,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 5,
+      "y": 0.7949326999208234,
+      "yBottom": 0.8139350752177356,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 5,
+      "y": 0.8915281076801267,
+      "yBottom": 0.9121140142517815,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 6,
+      "y": 0.3847980997624703,
+      "yBottom": 0.4140934283452098,
+      "lineCount": 6,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 6,
+      "y": 0.4806017418844022,
+      "yBottom": 0.5106888361045131,
+      "lineCount": 6,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 6,
+      "y": 0.5874901029295329,
+      "yBottom": 0.6064924782264449,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 6,
+      "y": 0.6848772763262074,
+      "yBottom": 0.7038796516231196,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 6,
+      "y": 0.7806809184481394,
+      "yBottom": 0.8004750593824228,
+      "lineCount": 5,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "type": "system",
+      "page": 6,
+      "y": 0.8669833729216152,
+      "yBottom": 0.9152810768012668,
+      "lineCount": 8,
+      "auto": true,
+      "deleted": false,
+      "layerId": "draw",
+      "sourceId": "self"
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.90966796875,
+      "y": 0.17321357328473921,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773574398893,
+      "id": "stamp-1773574398893",
+      "draw": {
+        "type": "text",
+        "content": "1",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.107421875,
+      "y": 0.38162193636040154,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773574417810,
+      "id": "stamp-1773574417810",
+      "draw": {
+        "type": "text",
+        "content": "3",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.7646484375,
+      "y": 0.5814041254677004,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773574492060,
+      "id": "stamp-1773574492060",
+      "draw": {
+        "type": "text",
+        "content": "1",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.40283203125,
+      "y": 0.6631802546877864,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575032928,
+      "id": "stamp-1773574563910",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.6259765625,
+      "y": 0.6638703486052556,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575032160,
+      "id": "stamp-1773574566577",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.89892578125,
+      "y": 0.6524837989670156,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575031161,
+      "id": "stamp-1773574569878",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.396484375,
+      "y": 0.7756655632352466,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773574804477,
+      "id": "stamp-1773574599727",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.84130859375,
+      "y": 0.0434220032132498,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773574722528,
+      "id": "stamp-1773574722528",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.333984375,
+      "y": 0.7518573230825633,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575035595,
+      "id": "stamp-1773574826494",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.39111328125,
+      "y": 0.14831627866855004,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575185644,
+      "id": "stamp-1773574859990",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.41357421875,
+      "y": 0.14797123170981552,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575186161,
+      "id": "stamp-1773574861462",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.671875,
+      "y": 0.15211179521463,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575187214,
+      "id": "stamp-1773574871361",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.6904296875,
+      "y": 0.1531469360908336,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575187627,
+      "id": "stamp-1773574873046",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "type": "highlighter",
+      "page": 2,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.38818359375,
+          "y": 0.19558771201518207
+        },
+        {
+          "x": 0.392578125,
+          "y": 0.19696789985012023
+        },
+        {
+          "x": 0.392578125,
+          "y": 0.19696789985012023
+        },
+        {
+          "x": 0.39697265625,
+          "y": 0.19696789985012023
+        },
+        {
+          "x": 0.40234375,
+          "y": 0.19696789985012023
+        },
+        {
+          "x": 0.40771484375,
+          "y": 0.19696789985012023
+        },
+        {
+          "x": 0.4130859375,
+          "y": 0.19696789985012023
+        },
+        {
+          "x": 0.41748046875,
+          "y": 0.19696789985012023
+        },
+        {
+          "x": 0.42138671875,
+          "y": 0.19696789985012023
+        },
+        {
+          "x": 0.423828125,
+          "y": 0.19696789985012023
+        },
+        {
+          "x": 0.4267578125,
+          "y": 0.1976579937675893
+        },
+        {
+          "x": 0.42919921875,
+          "y": 0.19800304072632385
+        },
+        {
+          "x": 0.4326171875,
+          "y": 0.19869313464379293
+        },
+        {
+          "x": 0.435546875,
+          "y": 0.19903818160252748
+        },
+        {
+          "x": 0.43798828125,
+          "y": 0.199383228561262
+        },
+        {
+          "x": 0.43896484375,
+          "y": 0.19972827551999656
+        },
+        {
+          "x": 0.439453125,
+          "y": 0.19972827551999656
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773575099877",
+      "updatedAt": 1773575099877
+    },
+    {
+      "type": "highlighter",
+      "page": 2,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.65869140625,
+          "y": 0.19627780593265115
+        },
+        {
+          "x": 0.65869140625,
+          "y": 0.19800304072632385
+        },
+        {
+          "x": 0.65869140625,
+          "y": 0.19800304072632385
+        },
+        {
+          "x": 0.66357421875,
+          "y": 0.19800304072632385
+        },
+        {
+          "x": 0.66845703125,
+          "y": 0.19834808768505838
+        },
+        {
+          "x": 0.67431640625,
+          "y": 0.19903818160252748
+        },
+        {
+          "x": 0.67919921875,
+          "y": 0.199383228561262
+        },
+        {
+          "x": 0.6826171875,
+          "y": 0.199383228561262
+        },
+        {
+          "x": 0.68359375,
+          "y": 0.199383228561262
+        },
+        {
+          "x": 0.6845703125,
+          "y": 0.19972827551999656
+        },
+        {
+          "x": 0.685546875,
+          "y": 0.19972827551999656
+        },
+        {
+          "x": 0.68701171875,
+          "y": 0.19972827551999656
+        },
+        {
+          "x": 0.6875,
+          "y": 0.20007332247873108
+        },
+        {
+          "x": 0.689453125,
+          "y": 0.20041836943746563
+        },
+        {
+          "x": 0.69091796875,
+          "y": 0.20076341639620018
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773575101129",
+      "updatedAt": 1773575101129
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.3525390625,
+      "y": 0.15211179521463,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575181811,
+      "id": "stamp-1773575181811",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.61181640625,
+      "y": 0.1555622648019754,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575208112,
+      "id": "stamp-1773575189747",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.8876953125,
+      "y": 0.1514217012971609,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575250043,
+      "id": "stamp-1773575250043",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.1259765625,
+      "y": 0.26390700984462107,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575253312,
+      "id": "stamp-1773575253312",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.146484375,
+      "y": 0.2652871976795592,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575255714,
+      "id": "stamp-1773575255714",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.66259765625,
+      "y": 0.27287823077171913,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575280061,
+      "id": "stamp-1773575280061",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.87841796875,
+      "y": 0.26632233855576287,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575312813,
+      "id": "stamp-1773575312813",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.90234375,
+      "y": 0.26977280814310817,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575314912,
+      "id": "stamp-1773575314912",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.8935546875,
+      "y": 0.3808779288556302,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575339396,
+      "id": "stamp-1773575339396",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.87060546875,
+      "y": 0.37777250622701936,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575342330,
+      "id": "stamp-1773575342330",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "type": "highlighter",
+      "page": 2,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.0771484375,
+          "y": 0.5230372758542607
+        },
+        {
+          "x": 0.0693359375,
+          "y": 0.5209669941018535
+        },
+        {
+          "x": 0.0693359375,
+          "y": 0.5209669941018535
+        },
+        {
+          "x": 0.0693359375,
+          "y": 0.5157912897208354
+        },
+        {
+          "x": 0.06982421875,
+          "y": 0.5102705383810828
+        },
+        {
+          "x": 0.0712890625,
+          "y": 0.5047497870413301
+        },
+        {
+          "x": 0.072265625,
+          "y": 0.5002641765777811
+        },
+        {
+          "x": 0.0732421875,
+          "y": 0.4964686600317012
+        },
+        {
+          "x": 0.07470703125,
+          "y": 0.49370828436182485
+        },
+        {
+          "x": 0.07568359375,
+          "y": 0.49198304956815214
+        },
+        {
+          "x": 0.07666015625,
+          "y": 0.49198304956815214
+        },
+        {
+          "x": 0.0771484375,
+          "y": 0.49198304956815214
+        },
+        {
+          "x": 0.07763671875,
+          "y": 0.4940533313205594
+        },
+        {
+          "x": 0.07861328125,
+          "y": 0.4975038009079048
+        },
+        {
+          "x": 0.0791015625,
+          "y": 0.5016443644127193
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5064750218350028
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.51234082013349
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5178615714732426
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5230372758542607
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5264877454416061
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5275228863178099
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5271778393590753
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5264877454416061
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5247625106479334
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5216570880193226
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5182066184319772
+        },
+        {
+          "x": 0.080078125,
+          "y": 0.5140660549271627
+        },
+        {
+          "x": 0.080078125,
+          "y": 0.5106155853398173
+        },
+        {
+          "x": 0.08056640625,
+          "y": 0.5092353975048792
+        },
+        {
+          "x": 0.08056640625,
+          "y": 0.5088903505461446
+        },
+        {
+          "x": 0.08056640625,
+          "y": 0.5099254914223482
+        },
+        {
+          "x": 0.080078125,
+          "y": 0.5151011958033663
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5202769001843844
+        },
+        {
+          "x": 0.07958984375,
+          "y": 0.5223471819367917
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773575350881",
+      "updatedAt": 1773575350881
+    },
+    {
+      "type": "highlighter",
+      "page": 2,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.63525390625,
+          "y": 0.29565133004819877
+        },
+        {
+          "x": 0.638671875,
+          "y": 0.29151076654338426
+        },
+        {
+          "x": 0.638671875,
+          "y": 0.29151076654338426
+        },
+        {
+          "x": 0.6396484375,
+          "y": 0.2884053439147734
+        },
+        {
+          "x": 0.64111328125,
+          "y": 0.2856449682448971
+        },
+        {
+          "x": 0.64208984375,
+          "y": 0.28357468649248985
+        },
+        {
+          "x": 0.642578125,
+          "y": 0.2825395456162862
+        },
+        {
+          "x": 0.642578125,
+          "y": 0.2821944986575517
+        },
+        {
+          "x": 0.6435546875,
+          "y": 0.2821944986575517
+        },
+        {
+          "x": 0.64453125,
+          "y": 0.2825395456162862
+        },
+        {
+          "x": 0.64599609375,
+          "y": 0.2856449682448971
+        },
+        {
+          "x": 0.64697265625,
+          "y": 0.289440484790977
+        },
+        {
+          "x": 0.64697265625,
+          "y": 0.29392609525452607
+        },
+        {
+          "x": 0.646484375,
+          "y": 0.2991017996355442
+        },
+        {
+          "x": 0.6435546875,
+          "y": 0.3046225509752968
+        },
+        {
+          "x": 0.6416015625,
+          "y": 0.30910816143884584
+        },
+        {
+          "x": 0.640625,
+          "y": 0.31290367798492574
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.3156640536548021
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.31635414757227115
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.3166991945310057
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.3156640536548021
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.31290367798492574
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.31014330231504944
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.30669283272770403
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.30324236314035863
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.2997918935530132
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.29668647092440237
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.29427114221326056
+        },
+        {
+          "x": 0.64013671875,
+          "y": 0.2935810482957915
+        },
+        {
+          "x": 0.640625,
+          "y": 0.2935810482957915
+        },
+        {
+          "x": 0.640625,
+          "y": 0.29565133004819877
+        },
+        {
+          "x": 0.640625,
+          "y": 0.2991017996355442
+        },
+        {
+          "x": 0.64111328125,
+          "y": 0.30324236314035863
+        },
+        {
+          "x": 0.6416015625,
+          "y": 0.3080730205626422
+        },
+        {
+          "x": 0.6416015625,
+          "y": 0.3142838658198639
+        },
+        {
+          "x": 0.6416015625,
+          "y": 0.3211848049945547
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773575355546",
+      "updatedAt": 1773575355546
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.12255859375,
+      "y": 0.5285580271940133,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575422426,
+      "id": "stamp-1773575422426",
+      "draw": {
+        "type": "text",
+        "content": "II",
+        "font": "italic 300",
+        "size": 14,
+        "fontFace": "serif"
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.1357421875,
+      "y": 0.5941169493535761,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575486345,
+      "id": "stamp-1773575486345",
+      "draw": {
+        "type": "text",
+        "content": "4",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.21923828125,
+      "y": 0.5941169493535761,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575495229,
+      "id": "stamp-1773575495229",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f-shift",
+      "x": 0.1259765625,
+      "y": 0.5892862919312924,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575498528,
+      "id": "stamp-1773575498528",
+      "draw": {
+        "type": "text",
+        "content": "+",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.3037109375,
+      "y": 0.5923917145599034,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575553245,
+      "id": "stamp-1773575553245",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f-shift",
+      "x": 0.67041015625,
+      "y": 0.5806601179629289,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773575578077,
+      "id": "stamp-1773575578077",
+      "draw": {
+        "type": "text",
+        "content": "+",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "type": "highlighter",
+      "page": 3,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.390625,
+          "y": 0.08304848988041966
+        },
+        {
+          "x": 0.392578125,
+          "y": 0.08787914730270323
+        },
+        {
+          "x": 0.392578125,
+          "y": 0.08787914730270323
+        },
+        {
+          "x": 0.39404296875,
+          "y": 0.09201971080751771
+        },
+        {
+          "x": 0.3955078125,
+          "y": 0.09650532127106673
+        },
+        {
+          "x": 0.39599609375,
+          "y": 0.10168102565208484
+        },
+        {
+          "x": 0.39599609375,
+          "y": 0.1065116830743684
+        },
+        {
+          "x": 0.3955078125,
+          "y": 0.1116873874553865
+        },
+        {
+          "x": 0.39306640625,
+          "y": 0.11720813879513915
+        },
+        {
+          "x": 0.390625,
+          "y": 0.12238384317615726
+        },
+        {
+          "x": 0.388671875,
+          "y": 0.12755954755717536
+        },
+        {
+          "x": 0.38671875,
+          "y": 0.1320451580207244
+        },
+        {
+          "x": 0.38525390625,
+          "y": 0.1354956276080698
+        },
+        {
+          "x": 0.3837890625,
+          "y": 0.1382560032779461
+        },
+        {
+          "x": 0.38232421875,
+          "y": 0.14067133198908788
+        },
+        {
+          "x": 0.380859375,
+          "y": 0.1417064728652915
+        },
+        {
+          "x": 0.380859375,
+          "y": 0.14239656678276058
+        },
+        {
+          "x": 0.380859375,
+          "y": 0.14205151982402606
+        },
+        {
+          "x": 0.380859375,
+          "y": 0.14067133198908788
+        },
+        {
+          "x": 0.38037109375,
+          "y": 0.13894609719541517
+        },
+        {
+          "x": 0.3798828125,
+          "y": 0.13618572152553887
+        },
+        {
+          "x": 0.37939453125,
+          "y": 0.13273525193819347
+        },
+        {
+          "x": 0.37890625,
+          "y": 0.12859468843337898
+        },
+        {
+          "x": 0.37841796875,
+          "y": 0.12376403101109541
+        },
+        {
+          "x": 0.3779296875,
+          "y": 0.11858832663007732
+        },
+        {
+          "x": 0.37744140625,
+          "y": 0.11306757529032467
+        },
+        {
+          "x": 0.376953125,
+          "y": 0.10754682395057202
+        },
+        {
+          "x": 0.37646484375,
+          "y": 0.1013359786933503
+        },
+        {
+          "x": 0.37646484375,
+          "y": 0.09581522735359765
+        },
+        {
+          "x": 0.37646484375,
+          "y": 0.09063952297257954
+        },
+        {
+          "x": 0.376953125,
+          "y": 0.08580886555029599
+        },
+        {
+          "x": 0.37939453125,
+          "y": 0.0816683020454815
+        },
+        {
+          "x": 0.3828125,
+          "y": 0.07925297333433973
+        },
+        {
+          "x": 0.38427734375,
+          "y": 0.07890792637560518
+        },
+        {
+          "x": 0.38671875,
+          "y": 0.07925297333433973
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773576759870",
+      "updatedAt": 1773576759870
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.419921875,
+      "y": 0.0782178324581361,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576812885,
+      "id": "stamp-1773576812885",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.7080078125,
+      "y": 0.07304212807711799,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576863001,
+      "id": "stamp-1773576820834",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.75146484375,
+      "y": 0.07407726895332162,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576822453,
+      "id": "stamp-1773576822453",
+      "draw": {
+        "type": "text",
+        "content": "1",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.66845703125,
+      "y": 0.0747673628707907,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576857321,
+      "id": "stamp-1773576857321",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.66943359375,
+      "y": 0.16758499477038202,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576879187,
+      "id": "stamp-1773576879187",
+      "draw": {
+        "type": "text",
+        "content": "1",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.4130859375,
+      "y": 0.16931022956405473,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576883685,
+      "id": "stamp-1773576883685",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.1435546875,
+      "y": 0.26523328409225694,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576917799,
+      "id": "stamp-1773576917799",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.38720703125,
+      "y": 0.2745495519780895,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576922717,
+      "id": "stamp-1773576922717",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.62744140625,
+      "y": 0.2638530962573188,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576965149,
+      "id": "stamp-1773576965149",
+      "draw": {
+        "type": "text",
+        "content": "3",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "thumb",
+      "x": 0.5869140625,
+      "y": 0.26833870672086774,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773576970252,
+      "id": "stamp-1773576970252",
+      "draw": {
+        "type": "complex",
+        "variant": "thumb",
+        "size": 15
+      }
+    },
+    {
+      "type": "highlighter",
+      "page": 3,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.08740234375,
+          "y": 0.4122232885131711
+        },
+        {
+          "x": 0.0830078125,
+          "y": 0.40152683279240037
+        },
+        {
+          "x": 0.0830078125,
+          "y": 0.40152683279240037
+        },
+        {
+          "x": 0.0830078125,
+          "y": 0.39324570578277135
+        },
+        {
+          "x": 0.08447265625,
+          "y": 0.3846195318144079
+        },
+        {
+          "x": 0.08642578125,
+          "y": 0.3784086865571861
+        },
+        {
+          "x": 0.08837890625,
+          "y": 0.37530326392857527
+        },
+        {
+          "x": 0.08984375,
+          "y": 0.3746131700111062
+        },
+        {
+          "x": 0.0927734375,
+          "y": 0.3746131700111062
+        },
+        {
+          "x": 0.095703125,
+          "y": 0.3763384048047789
+        },
+        {
+          "x": 0.09716796875,
+          "y": 0.3822042031032661
+        },
+        {
+          "x": 0.09765625,
+          "y": 0.3908303770716296
+        },
+        {
+          "x": 0.09619140625,
+          "y": 0.4011817858336658
+        },
+        {
+          "x": 0.0908203125,
+          "y": 0.41256833547190563
+        },
+        {
+          "x": 0.0859375,
+          "y": 0.4225746972752073
+        },
+        {
+          "x": 0.08251953125,
+          "y": 0.42913058949116356
+        },
+        {
+          "x": 0.08056640625,
+          "y": 0.4329261060372435
+        },
+        {
+          "x": 0.08056640625,
+          "y": 0.43361619995471257
+        },
+        {
+          "x": 0.08056640625,
+          "y": 0.42671526078002175
+        },
+        {
+          "x": 0.08154296875,
+          "y": 0.419814321605331
+        },
+        {
+          "x": 0.0830078125,
+          "y": 0.4122232885131711
+        },
+        {
+          "x": 0.08447265625,
+          "y": 0.403252067586073
+        },
+        {
+          "x": 0.08642578125,
+          "y": 0.3935907527415059
+        },
+        {
+          "x": 0.0888671875,
+          "y": 0.38427448485567334
+        },
+        {
+          "x": 0.091796875,
+          "y": 0.3773735456809825
+        },
+        {
+          "x": 0.09423828125,
+          "y": 0.373232982176168
+        },
+        {
+          "x": 0.09521484375,
+          "y": 0.3728879352174335
+        },
+        {
+          "x": 0.09619140625,
+          "y": 0.3756483108873098
+        },
+        {
+          "x": 0.09619140625,
+          "y": 0.381514109185797
+        },
+        {
+          "x": 0.09521484375,
+          "y": 0.3908303770716296
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773576985998",
+      "updatedAt": 1773576985998
+    },
+    {
+      "type": "highlighter",
+      "page": 3,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.2197265625,
+          "y": 0.6730787893164836
+        },
+        {
+          "x": 0.22412109375,
+          "y": 0.6730787893164836
+        },
+        {
+          "x": 0.22412109375,
+          "y": 0.6730787893164836
+        },
+        {
+          "x": 0.2333984375,
+          "y": 0.6730787893164836
+        },
+        {
+          "x": 0.2421875,
+          "y": 0.6730787893164836
+        },
+        {
+          "x": 0.24658203125,
+          "y": 0.6730787893164836
+        },
+        {
+          "x": 0.248046875,
+          "y": 0.6737688832339527
+        },
+        {
+          "x": 0.248046875,
+          "y": 0.6748040241101563
+        },
+        {
+          "x": 0.24560546875,
+          "y": 0.6761842119450944
+        },
+        {
+          "x": 0.24365234375,
+          "y": 0.676529258903829
+        },
+        {
+          "x": 0.24267578125,
+          "y": 0.677219352821298
+        },
+        {
+          "x": 0.24169921875,
+          "y": 0.677219352821298
+        },
+        {
+          "x": 0.23974609375,
+          "y": 0.677219352821298
+        },
+        {
+          "x": 0.23876953125,
+          "y": 0.677219352821298
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773577098913",
+      "updatedAt": 1773577098913
+    },
+    {
+      "type": "highlighter",
+      "page": 3,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.517578125,
+          "y": 0.6547913005035529
+        },
+        {
+          "x": 0.52587890625,
+          "y": 0.6509957839574729
+        },
+        {
+          "x": 0.52587890625,
+          "y": 0.6509957839574729
+        },
+        {
+          "x": 0.53515625,
+          "y": 0.6499606430812693
+        },
+        {
+          "x": 0.54052734375,
+          "y": 0.6499606430812693
+        },
+        {
+          "x": 0.54248046875,
+          "y": 0.6499606430812693
+        },
+        {
+          "x": 0.54248046875,
+          "y": 0.6513408309162075
+        },
+        {
+          "x": 0.5419921875,
+          "y": 0.6534111126686147
+        },
+        {
+          "x": 0.537109375,
+          "y": 0.6565165352972256
+        },
+        {
+          "x": 0.52978515625,
+          "y": 0.659276910967102
+        },
+        {
+          "x": 0.52294921875,
+          "y": 0.6620372866369783
+        },
+        {
+          "x": 0.5185546875,
+          "y": 0.6641075683893854
+        },
+        {
+          "x": 0.51806640625,
+          "y": 0.6647976623068546
+        },
+        {
+          "x": 0.5185546875,
+          "y": 0.6647976623068546
+        },
+        {
+          "x": 0.52587890625,
+          "y": 0.6647976623068546
+        },
+        {
+          "x": 0.5341796875,
+          "y": 0.6647976623068546
+        },
+        {
+          "x": 0.5400390625,
+          "y": 0.6654877562243237
+        },
+        {
+          "x": 0.5419921875,
+          "y": 0.6665228971005273
+        },
+        {
+          "x": 0.5419921875,
+          "y": 0.6682481318942
+        },
+        {
+          "x": 0.5380859375,
+          "y": 0.6706634606053418
+        },
+        {
+          "x": 0.53369140625,
+          "y": 0.6730787893164836
+        },
+        {
+          "x": 0.53076171875,
+          "y": 0.6754941180276253
+        },
+        {
+          "x": 0.529296875,
+          "y": 0.677219352821298
+        },
+        {
+          "x": 0.529296875,
+          "y": 0.6782544936975017
+        },
+        {
+          "x": 0.52978515625,
+          "y": 0.6789445876149707
+        },
+        {
+          "x": 0.53515625,
+          "y": 0.6796346815324398
+        },
+        {
+          "x": 0.5400390625,
+          "y": 0.6796346815324398
+        },
+        {
+          "x": 0.54296875,
+          "y": 0.6796346815324398
+        },
+        {
+          "x": 0.5439453125,
+          "y": 0.6796346815324398
+        },
+        {
+          "x": 0.54443359375,
+          "y": 0.6799797284911744
+        },
+        {
+          "x": 0.54443359375,
+          "y": 0.6803247754499089
+        },
+        {
+          "x": 0.54443359375,
+          "y": 0.6806698224086434
+        },
+        {
+          "x": 0.54443359375,
+          "y": 0.6813599163261125
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773577150346",
+      "updatedAt": 1773577150346
+    },
+    {
+      "type": "highlighter",
+      "page": 3,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.78955078125,
+          "y": 0.6685931788529346
+        },
+        {
+          "x": 0.79443359375,
+          "y": 0.6689382258116691
+        },
+        {
+          "x": 0.79443359375,
+          "y": 0.6689382258116691
+        },
+        {
+          "x": 0.80419921875,
+          "y": 0.6689382258116691
+        },
+        {
+          "x": 0.81982421875,
+          "y": 0.6689382258116691
+        },
+        {
+          "x": 0.83349609375,
+          "y": 0.6689382258116691
+        },
+        {
+          "x": 0.83740234375,
+          "y": 0.6689382258116691
+        },
+        {
+          "x": 0.833984375,
+          "y": 0.6696283197291382
+        },
+        {
+          "x": 0.8232421875,
+          "y": 0.6716986014815454
+        },
+        {
+          "x": 0.8125,
+          "y": 0.6737688832339527
+        },
+        {
+          "x": 0.8017578125,
+          "y": 0.6754941180276253
+        },
+        {
+          "x": 0.7939453125,
+          "y": 0.676529258903829
+        },
+        {
+          "x": 0.79296875,
+          "y": 0.6768743058625635
+        },
+        {
+          "x": 0.79638671875,
+          "y": 0.6761842119450944
+        },
+        {
+          "x": 0.806640625,
+          "y": 0.6741139301926872
+        },
+        {
+          "x": 0.81787109375,
+          "y": 0.672733742357749
+        },
+        {
+          "x": 0.82666015625,
+          "y": 0.672733742357749
+        },
+        {
+          "x": 0.8291015625,
+          "y": 0.672733742357749
+        },
+        {
+          "x": 0.82080078125,
+          "y": 0.6734238362752181
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773577151364",
+      "updatedAt": 1773577151364
+    },
+    {
+      "type": "highlighter",
+      "page": 3,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.61181640625,
+          "y": 0.6779094467387671
+        },
+        {
+          "x": 0.61474609375,
+          "y": 0.6782544936975017
+        },
+        {
+          "x": 0.61474609375,
+          "y": 0.6782544936975017
+        },
+        {
+          "x": 0.62109375,
+          "y": 0.6785995406562362
+        },
+        {
+          "x": 0.626953125,
+          "y": 0.6796346815324398
+        },
+        {
+          "x": 0.63037109375,
+          "y": 0.6799797284911744
+        },
+        {
+          "x": 0.63134765625,
+          "y": 0.6803247754499089
+        },
+        {
+          "x": 0.6318359375,
+          "y": 0.6803247754499089
+        },
+        {
+          "x": 0.63037109375,
+          "y": 0.6803247754499089
+        },
+        {
+          "x": 0.62548828125,
+          "y": 0.6803247754499089
+        },
+        {
+          "x": 0.61962890625,
+          "y": 0.6799797284911744
+        },
+        {
+          "x": 0.61279296875,
+          "y": 0.6799797284911744
+        },
+        {
+          "x": 0.60888671875,
+          "y": 0.6796346815324398
+        },
+        {
+          "x": 0.60693359375,
+          "y": 0.6796346815324398
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773577156447",
+      "updatedAt": 1773577156447
+    },
+    {
+      "type": "highlighter",
+      "page": 3,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.32421875,
+          "y": 0.6768743058625635
+        },
+        {
+          "x": 0.322265625,
+          "y": 0.6782544936975017
+        },
+        {
+          "x": 0.322265625,
+          "y": 0.6782544936975017
+        },
+        {
+          "x": 0.330078125,
+          "y": 0.6782544936975017
+        },
+        {
+          "x": 0.33984375,
+          "y": 0.6782544936975017
+        },
+        {
+          "x": 0.3505859375,
+          "y": 0.677219352821298
+        },
+        {
+          "x": 0.359375,
+          "y": 0.6758391649863599
+        },
+        {
+          "x": 0.36279296875,
+          "y": 0.6748040241101563
+        },
+        {
+          "x": 0.36328125,
+          "y": 0.6748040241101563
+        },
+        {
+          "x": 0.36083984375,
+          "y": 0.6751490710688908
+        },
+        {
+          "x": 0.35693359375,
+          "y": 0.6768743058625635
+        },
+        {
+          "x": 0.3515625,
+          "y": 0.6792896345737053
+        },
+        {
+          "x": 0.345703125,
+          "y": 0.681014869367378
+        },
+        {
+          "x": 0.3427734375,
+          "y": 0.6820500102435816
+        },
+        {
+          "x": 0.34130859375,
+          "y": 0.6827401041610507
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773577157727",
+      "updatedAt": 1773577157727
+    },
+    {
+      "type": "highlighter",
+      "page": 3,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.43212890625,
+          "y": 0.7662414681748094
+        },
+        {
+          "x": 0.43359375,
+          "y": 0.7693468908034202
+        },
+        {
+          "x": 0.43359375,
+          "y": 0.7693468908034202
+        },
+        {
+          "x": 0.4404296875,
+          "y": 0.771762219514562
+        },
+        {
+          "x": 0.44921875,
+          "y": 0.7741775482257038
+        },
+        {
+          "x": 0.45849609375,
+          "y": 0.7759027830193765
+        },
+        {
+          "x": 0.46630859375,
+          "y": 0.7772829708543147
+        },
+        {
+          "x": 0.4716796875,
+          "y": 0.7776280178130492
+        },
+        {
+          "x": 0.4755859375,
+          "y": 0.7776280178130492
+        },
+        {
+          "x": 0.478515625,
+          "y": 0.7776280178130492
+        },
+        {
+          "x": 0.48046875,
+          "y": 0.7776280178130492
+        },
+        {
+          "x": 0.48193359375,
+          "y": 0.7776280178130492
+        },
+        {
+          "x": 0.47900390625,
+          "y": 0.7776280178130492
+        },
+        {
+          "x": 0.47314453125,
+          "y": 0.7776280178130492
+        },
+        {
+          "x": 0.46630859375,
+          "y": 0.7776280178130492
+        },
+        {
+          "x": 0.4599609375,
+          "y": 0.7776280178130492
+        },
+        {
+          "x": 0.45458984375,
+          "y": 0.7765928769368456
+        },
+        {
+          "x": 0.4521484375,
+          "y": 0.7741775482257038
+        },
+        {
+          "x": 0.4521484375,
+          "y": 0.7738325012669693
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773577179998",
+      "updatedAt": 1773577179998
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.83154296875,
+      "y": 0.7551999654953041,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577200197,
+      "id": "stamp-1773577200197",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.6650390625,
+      "y": 0.6616922396782438,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577259728,
+      "id": "stamp-1773577259728",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.69091796875,
+      "y": 0.6603120518433055,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577261834,
+      "id": "stamp-1773577261834",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.75048828125,
+      "y": 0.6634174744719165,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577266428,
+      "id": "stamp-1773577266428",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.322265625,
+      "y": 0.07436840232475389,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577329280,
+      "id": "stamp-1773577329280",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.4892578125,
+      "y": 0.85215816089971,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577343662,
+      "id": "stamp-1773577343662",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.64013671875,
+      "y": 0.8638897574966843,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577345314,
+      "id": "stamp-1773577345314",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.77783203125,
+      "y": 0.861129381826808,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577348314,
+      "id": "stamp-1773577348314",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.318359375,
+      "y": 0.05435567871815055,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577409663,
+      "id": "stamp-1773577409663",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.46435546875,
+      "y": 0.04572950474978705,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577412299,
+      "id": "stamp-1773577412299",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "up-bow",
+      "x": 0.7705078125,
+      "y": 0.05849624222296503,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577414033,
+      "id": "stamp-1773577414033",
+      "draw": {
+        "type": "path",
+        "data": "M -0.28 -0.35 L 0 0.35 L 0.28 -0.35",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "down-bow",
+      "x": 0.6083984375,
+      "y": 0.04089884732750348,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577417281,
+      "id": "stamp-1773577417281",
+      "draw": {
+        "type": "path",
+        "data": "M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3",
+        "size": 15,
+        "strokeWidth": 1.6,
+        "fill": "none"
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f0",
+      "x": 0.64111328125,
+      "y": 0.06815755706753215,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577454131,
+      "id": "stamp-1773577454131",
+      "draw": {
+        "type": "text",
+        "content": "0",
+        "font": "300",
+        "size": 14
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.71728515625,
+      "y": 0.05539081959435417,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577464282,
+      "id": "stamp-1773577464282",
+      "draw": {
+        "type": "text",
+        "content": "2",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.55126953125,
+      "y": 0.15648957850357448,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577524964,
+      "id": "stamp-1773577524964",
+      "draw": {
+        "type": "text",
+        "content": "3",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.54541015625,
+      "y": 0.20065558922159563,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577527049,
+      "id": "stamp-1773577527049",
+      "draw": {
+        "type": "text",
+        "content": "II",
+        "font": "italic 300",
+        "size": 14,
+        "fontFace": "serif"
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.17431640625,
+      "y": 0.26448927658748556,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577600413,
+      "id": "stamp-1773577600413",
+      "draw": {
+        "type": "text",
+        "content": "1",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.21533203125,
+      "y": 0.2672496522573619,
+      "color": "#be123c",
+      "data": null,
+      "updatedAt": 1773577602637,
+      "id": "stamp-1773577602637",
+      "draw": {
+        "type": "text",
+        "content": "1",
+        "font": "300",
+        "size": 20
+      }
+    },
+    {
+      "type": "highlighter",
+      "page": 4,
+      "layerId": "draw",
+      "sourceId": "self",
+      "points": [
+        {
+          "x": 0.375,
+          "y": 0.289677704575107
+        },
+        {
+          "x": 0.375,
+          "y": 0.2845020001940889
+        },
+        {
+          "x": 0.375,
+          "y": 0.2845020001940889
+        },
+        {
+          "x": 0.375,
+          "y": 0.280706483648009
+        },
+        {
+          "x": 0.375,
+          "y": 0.27691096710192903
+        },
+        {
+          "x": 0.375,
+          "y": 0.27311545055584907
+        },
+        {
+          "x": 0.3759765625,
+          "y": 0.26966498096850366
+        },
+        {
+          "x": 0.376953125,
+          "y": 0.2672496522573619
+        },
+        {
+          "x": 0.3779296875,
+          "y": 0.26517937050495466
+        },
+        {
+          "x": 0.37841796875,
+          "y": 0.2648343235462201
+        },
+        {
+          "x": 0.37841796875,
+          "y": 0.2658694644224237
+        },
+        {
+          "x": 0.37841796875,
+          "y": 0.26966498096850366
+        },
+        {
+          "x": 0.37939453125,
+          "y": 0.27415059143205267
+        },
+        {
+          "x": 0.3798828125,
+          "y": 0.2800163897305399
+        },
+        {
+          "x": 0.38134765625,
+          "y": 0.28829751674016885
+        },
+        {
+          "x": 0.38232421875,
+          "y": 0.2976137846260014
+        },
+        {
+          "x": 0.3828125,
+          "y": 0.3055498646768959
+        },
+        {
+          "x": 0.3828125,
+          "y": 0.3090003342642413
+        }
+      ],
+      "color": "#fde047",
+      "dashed": false,
+      "arrow": false,
+      "id": "stamp-1773577642065",
+      "updatedAt": 1773577642065
+    },
+    {
+      "page": 4,
+      "layerId": "draw",
+      "sourceId": "self",
+      "type": "settings",
+      "x": 0.91064453125,
+      "y": 0.622302972795204,
+      "color": "#1d4ed8",
+      "data": null,
+      "updatedAt": 1773578741795,
+      "id": "stamp-1773578741795"
+    },
+    {
+      "page": 4,
+      "layerId": "draw",
+      "sourceId": "self",
+      "type": "settings",
+      "x": 0.8916015625,
+      "y": 0.8286410541184589,
+      "color": "#1d4ed8",
+      "data": null,
+      "updatedAt": 1773578742653,
+      "id": "stamp-1773578742653"
+    },
+    {
+      "page": 4,
+      "layerId": "draw",
+      "sourceId": "self",
+      "type": "settings",
+      "x": 0.90283203125,
+      "y": 0.7548010049492673,
+      "color": "#1d4ed8",
+      "data": null,
+      "updatedAt": 1773578745201,
+      "id": "stamp-1773578745201"
+    },
+    {
+      "page": 4,
+      "layerId": "draw",
+      "sourceId": "self",
+      "type": "settings",
+      "x": 0.9072265625,
+      "y": 0.8424429324678405,
+      "color": "#1d4ed8",
+      "data": null,
+      "updatedAt": 1773578746819,
+      "id": "stamp-1773578746819"
+    }
+  ]
+}

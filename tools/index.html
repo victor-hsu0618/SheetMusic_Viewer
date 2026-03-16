@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreFlow Developer Portal</title>
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --primary: #4361ee;
+            --text: #1f2937;
+            --text-light: #6b7280;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #4361ee, #4cc9f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .tool-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: var(--primary);
+        }
+        .icon {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+        .title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+        .desc {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            flex-grow: 1;
+        }
+        .badge {
+            margin-top: 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            align-self: flex-start;
+        }
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        @media (max-width: 640px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ScoreFlow Developer Portal</h1>
+            <p>集中式的診斷、偵錯與數據分析工具入口</p>
+        </header>
+
+        <div class="grid">
+            <!-- Data & Sync -->
+            <a href="sync-analyzer.html" class="tool-card">
+                <div class="icon">🔄</div>
+                <div class="title">Sync Analyzer</div>
+                <div class="desc">分析本地與雲端 Manifest 的一致性，檢測曲名衝突、檔名不符與同步版本。</div>
+                <div class="badge">Data / Sync</div>
+            </a>
+
+            <a href="annotation-analyzer.html" class="tool-card">
+                <div class="icon">✍️</div>
+                <div class="title">Annotation Analyzer</div>
+                <div class="desc">深入檢視 IndexedDB 中的劃記數據結構、圖章路徑與坐標系統。</div>
+                <div class="badge">Data / UI</div>
+            </a>
+
+            <!-- Hardware & UX -->
+            <a href="../debug_touch.html" class="tool-card">
+                <div class="icon">🖐️</div>
+                <div class="title">Touch Debugger</div>
+                <div class="desc">即時監測觸控事件 (Pointer Events)，解決 iPad 或平板上的手勢衝突問題。</div>
+                <div class="badge">UX / Hardware</div>
+            </a>
+
+            <!-- System Assets -->
+            <a href="../debug_icons.html" class="tool-card">
+                <div class="icon">🎨</div>
+                <div class="title">Icon Library</div>
+                <div class="desc">瀏覽並預覽系統中使用的所有 Lucide-Static 圖示與 SVG 資產。</div>
+                <div class="badge">Assets / UI</div>
+            </a>
+
+            <!-- Experimental -->
+            <a href="../debug_staff_detect.html" class="tool-card">
+                <div class="icon">🎼</div>
+                <div class="title">Staff Detector</div>
+                <div class="desc">實驗性的五線譜自動偵測工具，用於計算樂譜間距與自動對齊功能。</div>
+                <div class="badge">Experimental</div>
+            </a>
+
+            <!-- Documentation -->
+            <a href="../docs/user-manual.html" class="tool-card">
+                <div class="icon">📖</div>
+                <div class="title">User Manual</div>
+                <div class="desc">快速檢視產生的使用者指南 HTML 版本，檢查文件渲染效果。</div>
+                <div class="badge">Docs</div>
+            </a>
+        </div>
+
+        <div class="footer">
+            ScoreFlow v3.0 Internal Tools &bull; 2026 Developer Edition
+        </div>
+    </div>
+</body>
+</html>

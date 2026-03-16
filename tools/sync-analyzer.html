@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreFlow Sync Integrity Analyzer</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.5; color: #333; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f7f9; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 20px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: #edf2f7; padding: 15px; border-radius: 6px; text-align: center; }
+        .stat-box .value { font-size: 24px; font-weight: bold; color: #2d3748; }
+        .stat-box .label { font-size: 12px; color: #718096; text-transform: uppercase; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th { text-align: left; background: #f8fafc; padding: 10px; border-bottom: 2px solid #e2e8f0; color: #4a5568; }
+        td { padding: 10px; border-bottom: 1px solid #edf2f7; vertical-align: top; }
+        tr:hover { background: #f7fafc; }
+        
+        .status-pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
+        .status-ok { background: #c6f6d5; color: #22543d; }
+        .status-warn { background: #feebc8; color: #744210; }
+        .status-error { background: #fed7d7; color: #822727; }
+        .status-info { background: #bee3f8; color: #2a4365; }
+        
+        .diff-tag { font-family: monospace; background: #fefcbf; padding: 1px 4px; border-radius: 3px; font-size: 11px; display: block; margin-top: 2px; }
+        .hash { font-family: monospace; color: #718096; font-size: 11px; }
+        .controls { margin-bottom: 20px; }
+        button { background: #4299e1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #3182ce; }
+        pre { background: #1a202c; color: #a0aec0; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px; max-height: 300px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>🎼 ScoreFlow Sync Integrity Analyzer</h1>
+    <p>此工具將讀取本地 LocalStorage 與 IndexedDB，並與目前快取的雲端 Manifest 進行比對分析。</p>
+
+    <div class="controls">
+        <button id="btn-analyze">Run Analysis (Local Cache)</button>
+        <button id="btn-toggle-external">Load External Manifest (JSON)</button>
+        <button id="btn-export" class="hidden">Export JSON Report</button>
+    </div>
+
+    <div id="external-input-area" class="hidden card">
+        <h3>Load External Manifest JSON</h3>
+        <p style="font-size: 12px; color: #666;">將雲端下載的 cloud_manifest_v2.json <b>拖放到下方框內</b> 或貼上內容：</p>
+        <div id="drop-zone" style="border: 2px dashed #4299e1; border-radius: 8px; padding: 20px; text-align: center; background: #ebf8ff; margin-bottom: 10px; transition: all 0.2s;">
+            <span id="drop-text" style="color: #2b6cb0; font-weight: bold;">Drop manifest file here</span>
+            <textarea id="external-manifest-json" style="width: 100%; height: 150px; font-family: monospace; font-size: 12px; margin-top: 15px; border: 1px solid #cbd5e0; border-radius: 4px;"></textarea>
+        </div>
+        <button id="btn-analyze-external" style="background: #48bb78;">Run Analysis (Against External JSON)</button>
+    </div>
+
+    <div id="results-area" class="hidden">
+        <div class="card">
+            <h3>Summary Statistics</h3>
+            <div class="stats-grid" id="stats-container">
+                <!-- Stats go here -->
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Detailed Score Analysis</h3>
+            <table id="analysis-table">
+                <thead>
+                    <tr>
+                        <th>Score Info</th>
+                        <th>Sync Status</th>
+                        <th>File Consistency</th>
+                        <th>Timeline (LWW)</th>
+                        <th>Actions Needed</th>
+                    </tr>
+                </thead>
+                <tbody id="analysis-body">
+                    <!-- Rows go here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Raw Manifest Snapshot</h3>
+            <pre id="raw-manifest"></pre>
+        </div>
+    </div>
+
+    <script type="module">
+        // Minimal IndexedDB wrapper for diagnosis
+        const dbName = 'ScoreFlowStorage';
+        const dbVersion = 1;
+
+        async function getDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, dbVersion);
+                request.onerror = () => reject('IDB Failed');
+                request.onsuccess = () => resolve(request.result);
+            });
+        }
+
+        async function getAllFromStore(storeName) {
+            const db = await getDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(storeName, 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                const keyRequest = store.getAllKeys();
+                
+                request.onsuccess = () => {
+                    const results = {};
+                    keyRequest.onsuccess = () => {
+                        keyRequest.result.forEach((key, i) => {
+                            results[key] = request.result[i];
+                        });
+                        resolve(results);
+                    };
+                };
+                request.onerror = () => reject('Store error');
+            });
+        }
+
+        const dropZone = document.getElementById('drop-zone');
+        const externalTextarea = document.getElementById('external-manifest-json');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+            dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+        
+        dropZone.addEventListener('dragover', () => dropZone.style.background = '#bee3f8');
+        dropZone.addEventListener('dragleave', () => dropZone.style.background = '#ebf8ff');
+        
+        dropZone.addEventListener('drop', e => {
+            dropZone.style.background = '#ebf8ff';
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.json') || file.type === 'application/json')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    externalTextarea.value = e.target.result;
+                    document.getElementById('btn-analyze-external').click();
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        document.getElementById('btn-toggle-external').addEventListener('click', () => {
+            document.getElementById('external-input-area').classList.toggle('hidden');
+        });
+
+        document.getElementById('btn-analyze-external').addEventListener('click', async () => {
+            const raw = document.getElementById('external-manifest-json').value.trim();
+            if (!raw) return alert('請先貼上 JSON 內容');
+            try {
+                const manifest = JSON.parse(raw);
+                const allData = await getAllFromStore('store');
+                const registry = allData['score_registry'] || [];
+                renderAnalysis(registry, manifest, allData);
+                document.getElementById('results-area').classList.remove('hidden');
+                document.getElementById('raw-manifest').textContent = JSON.stringify(manifest, null, 2);
+            } catch (e) { alert('JSON 格式錯誤：' + e.message); }
+        });
+
+        document.getElementById('btn-analyze').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-analyze');
+            btn.textContent = 'Analyzing...';
+            btn.disabled = true;
+
+            try {
+                // 1. Gather all data from IndexedDB (Store name is 'store')
+                const allData = await getAllFromStore('store');
+                
+                // 2. Extract Specific Keys
+                const registry = allData['score_registry'] || [];
+                const manifest = JSON.parse(localStorage.getItem('scoreflow_sync_manifest_v3') || '{}');
+                
+                if (registry.length === 0 && Object.keys(manifest).length === 0) {
+                    alert('未在儲存中找到樂譜資料。請確保您已匯入樂譜且在正確的網域開啟。');
+                }
+                
+                renderAnalysis(registry, manifest, allData);
+                
+                document.getElementById('results-area').classList.remove('hidden');
+                document.getElementById('btn-export').classList.remove('hidden');
+                document.getElementById('raw-manifest').textContent = JSON.stringify(manifest, null, 2);
+            } catch (err) {
+                alert('Analysis failed: ' + err.message);
+                console.error(err);
+            } finally {
+                btn.textContent = 'Run Analysis (Local Cache)';
+                btn.disabled = false;
+            }
+        });
+
+        function renderAnalysis(registry, manifest, allDetails) {
+            const tbody = document.getElementById('analysis-body');
+            tbody.innerHTML = '';
+            
+            const stats = { total: 0, mismatched: 0, synced: 0, cloudOnly: 0, issues: 0 };
+            const fingerprints = new Set([...registry.map(s => s.fingerprint), ...Object.keys(manifest)]);
+            
+            fingerprints.forEach(fp => {
+                const score = registry.find(s => s.fingerprint === fp);
+                const entry = manifest[fp];
+                const detail = allDetails[`detail_${fp}`];
+                
+                stats.total++;
+                if (score && score.isSynced) stats.synced++;
+                if (score && score.isCloudOnly) stats.cloudOnly++;
+
+                const row = document.createElement('tr');
+                
+                // Column 1: Score Info
+                const title = score?.title || entry?.name || 'Unknown';
+                const hash = fp.slice(0, 8);
+                let infoHtml = `<b>${title}</b><br><span class="hash">${hash}</span>`;
+                
+                // Column 2: Sync Status
+                let syncStatus = '';
+                if (!entry) {
+                    syncStatus = '<span class="status-pill status-warn">Local Only (No Cloud)</span>';
+                    stats.issues++;
+                } else if (!score) {
+                    syncStatus = '<span class="status-pill status-info">Cloud Only</span>';
+                } else {
+                    syncStatus = '<span class="status-pill status-ok">Synced (v3)</span>';
+                }
+                
+                // Column 3: Consistency
+                let consistHtml = '';
+                const issues = [];
+                
+                if (entry && score) {
+                    // Check Name Mismatch
+                    if (entry.name && entry.name !== score.title) {
+                        issues.push(`Title Mismatch: Cloud="${entry.name}" vs Local="${score.title}"`);
+                        stats.mismatched++;
+                    }
+                    
+                    // Check Filenames
+                    const safeTitle = (title || 'Untitled').replace(/[/\\?*:|"<>]/g, '_').trim().slice(0, 100);
+                    const expectedBase = safeTitle ? safeTitle + '_' + hash : hash;
+                    
+                    if (entry.pdfFilename && !entry.pdfFilename.includes(hash)) {
+                        issues.push(`PDF Hash Mismatch!`);
+                    }
+                    if (entry.pdfFilename && !entry.pdfFilename.startsWith(safeTitle) && !title.includes('score_buf')) {
+                        issues.push(`PDF Title Stale: "${entry.pdfFilename}"`);
+                    }
+                }
+
+                if (issues.length > 0) {
+                    consistHtml = issues.map(i => `<span class="status-pill status-error">${i}</span>`).join('<br>');
+                    stats.issues++;
+                } else {
+                    consistHtml = '<span class="status-pill status-ok">Filenames consistent</span>';
+                }
+
+                // Column 4: Timeline
+                const localEdit = detail?.lastEdit || 0;
+                const cloudUpdate = entry?.updated || 0;
+                let timelineHtml = `Local: ${localEdit ? new Date(localEdit).toLocaleString() : 'Never'}<br>`;
+                timelineHtml += `Cloud: ${cloudUpdate ? new Date(cloudUpdate).toLocaleString() : 'Never'}`;
+                
+                if (localEdit > cloudUpdate && cloudUpdate > 0) {
+                    timelineHtml += '<br><span class="diff-tag">Local is NEWER (+'+ Math.round((localEdit-cloudUpdate)/1000) +'s)</span>';
+                } else if (cloudUpdate > localEdit && localEdit > 0) {
+                    timelineHtml += '<br><span class="diff-tag">Cloud is NEWER (+'+ Math.round((cloudUpdate-localEdit)/1000) +'s)</span>';
+                }
+
+                // Column 5: Actions
+                let actions = [];
+                if (issues.length > 0) actions.push('Needs Sync Rename');
+                if (!entry) actions.push('Push to Cloud');
+                if (score?.isCloudOnly) actions.push('Download PDF');
+                
+                row.innerHTML = `
+                    <td>${infoHtml}</td>
+                    <td>${syncStatus}</td>
+                    <td>${consistHtml}</td>
+                    <td>${timelineHtml}</td>
+                    <td>${actions.join(', ') || 'None'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update Stats UI
+            const statsContainer = document.getElementById('stats-container');
+            statsContainer.innerHTML = `
+                <div class="stat-box"><div class="value">${stats.total}</div><div class="label">Total Scores</div></div>
+                <div class="stat-box"><div class="value">${stats.synced}</div><div class="label">Synced</div></div>
+                <div class="stat-box"><div class="value">${stats.mismatched}</div><div class="label">Title Mismatches</div></div>
+                <div class="stat-box"><div class="value" style="color: #e53e3e">${stats.issues}</div><div class="label">Consistency Issues</div></div>
+            `;
+        }
+    </script>
+</body>
+</html>

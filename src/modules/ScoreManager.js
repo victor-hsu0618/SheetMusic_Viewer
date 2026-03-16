@@ -249,9 +249,14 @@ export class ScoreManager {
     }
 
     async importScore(file, buffer) {
+        this.app.showMessage('正在計算指紋...', 'system')
         const fp = await this.helper.calculateFingerprint(buffer);
-        if (this.registry.find(s => s.fingerprint === fp)) return this.app.showMessage('Score already exists', 'info');
+        if (this.registry.find(s => s.fingerprint === fp)) {
+            this.app.showMessage('此樂譜已存在於樂譜庫中。', 'info')
+            return
+        }
 
+        this.app.showMessage('正在生成縮略圖...', 'system')
         const thumbnail = await this.helper.generateThumbnail(buffer.slice(0));
         const entry = {
             fingerprint: fp,
@@ -265,6 +270,7 @@ export class ScoreManager {
             storageMode: 'cached'
         };
 
+        this.app.showMessage('正在儲存...', 'system')
         this.registry.push(entry);
         await this.helper.saveRegistry(this.registry);
         await db.set(`score_buf_${fp}`, buffer);
@@ -275,7 +281,7 @@ export class ScoreManager {
         }
 
         this.render();
-        this.app.showMessage(`Imported: ${file.name}`, 'success');
+        this.app.showMessage(`✓ 已匯入：${file.name.replace(/\.pdf$/i, '')}`, 'success');
         return entry;
     }
 

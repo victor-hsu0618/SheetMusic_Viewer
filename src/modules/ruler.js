@@ -440,6 +440,7 @@ export class RulerManager {
 
             stamp.page = newPage
             stamp.y = newY
+            stamp.updatedAt = Date.now()
             this.app.saveToStorage(true)
             this.app.redrawAllAnnotationLayers()
             this.updateRulerMarks()

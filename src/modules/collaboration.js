@@ -34,7 +34,7 @@ export class CollaborationManager {
            </div>`
         : '';
 
-      const stampCount = this.app.stamps.filter(s => s.sourceId === source.id).length;
+      const stampCount = this.app.stamps.filter(s => s.sourceId === source.id && s.type !== 'system' && s.type !== 'settings').length;
 
       item.innerHTML = `
         <div class="source-header">

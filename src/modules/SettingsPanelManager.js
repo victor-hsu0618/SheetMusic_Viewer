@@ -324,6 +324,58 @@ export class SettingsPanelManager {
             })
         }
 
+        // Cloud Log viewer button
+        const loadLogBtn = document.getElementById('btn-load-cloud-log')
+        if (loadLogBtn) {
+            loadLogBtn.addEventListener('click', async () => {
+                const viewer = document.getElementById('cloud-log-viewer')
+                const entries = document.getElementById('cloud-log-entries')
+                if (!viewer || !entries) return
+
+                loadLogBtn.textContent = '載入中...'
+                loadLogBtn.disabled = true
+
+                const log = this.app.driveSyncManager?.log
+                const data = log ? await log.fetchAll() : null
+
+                loadLogBtn.textContent = '載入雲端歷史紀錄'
+                loadLogBtn.disabled = false
+
+                if (!data) {
+                    entries.innerHTML = '<div style="color:#ef4444;padding:4px">無法讀取 (未連接或發生錯誤)</div>'
+                    viewer.classList.remove('hidden')
+                    return
+                }
+                if (data.length === 0) {
+                    entries.innerHTML = '<div style="opacity:0.5;padding:4px">尚無紀錄</div>'
+                    viewer.classList.remove('hidden')
+                    return
+                }
+
+                const actionIcon = { push: '↑', pull: '↓', signin: '🔑', signout: '🔒', scan: '🔍', pdf_upload: '📤', pdf_download: '📥' }
+                const now = Date.now()
+                const fmt = ts => {
+                    const diff = now - ts
+                    if (diff < 60000) return `${Math.floor(diff/1000)}s ago`
+                    if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`
+                    if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`
+                    return new Date(ts).toLocaleDateString()
+                }
+                entries.innerHTML = data.map(e => {
+                    const icon = actionIcon[e.action] || '•'
+                    const color = e.action === 'push' ? '#6ee7b7' : e.action === 'pull' ? '#93c5fd' : e.action.startsWith('sign') ? '#fde68a' : '#d1d5db'
+                    return `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:${color}">`
+                        + `<span style="opacity:0.45;margin-right:6px">${fmt(e.ts)}</span>`
+                        + `<span style="margin-right:4px">${icon}</span>`
+                        + `<span style="opacity:0.7;margin-right:4px">${e.user}@${e.device}</span>`
+                        + `<span>${e.detail || ''}</span>`
+                        + `</div>`
+                }).join('')
+
+                viewer.classList.remove('hidden')
+            })
+        }
+
         // Reset Cloud Index button
         const resetCloudBtn = document.getElementById('btn-reset-cloud-index')
         if (resetCloudBtn) {

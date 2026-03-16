@@ -19,7 +19,7 @@ export class DriveFileManager {
      */
     safeTitle(title) {
         if (!title || title.trim() === '' || title === 'Unknown') return '';
-        const safe = title.replace(/[/\\?*:|"<>]/g, '_').trim().slice(0, 40);
+        const safe = title.replace(/[/\\?*:|"<>]/g, '_').trim().slice(0, 100);
         return safe ? safe + '_' : '';
     }
 
@@ -85,25 +85,29 @@ export class DriveFileManager {
             console.log(`[DriveSync] 📁 Root folder created in ${Date.now() - t2}ms`);
         }
 
-        // Resolve subfolders in parallel
+        // Resolve v3/ version subfolder first
+        const v3Id = await this.findOrCreateSubfolder('v3', rootId);
+        console.log(`[DriveSync] 📁 v3 subfolder ready`);
+
+        // Resolve pdfs + annotations inside v3/ in parallel
         console.log('[DriveSync] 📁 Resolving pdfs + annotations subfolders in parallel...');
         const t3 = Date.now();
         const [pdfsFolderId, annotationsFolderId] = await Promise.all([
-            this.findOrCreateSubfolder('pdfs', rootId),
-            this.findOrCreateSubfolder('annotations', rootId)
+            this.findOrCreateSubfolder('pdfs', v3Id),
+            this.findOrCreateSubfolder('annotations', v3Id)
         ]);
         console.log(`[DriveSync] 📁 Subfolders ready in ${Date.now() - t3}ms`);
         this.sync.pdfsFolderId = pdfsFolderId;
         this.sync.annotationsFolderId = annotationsFolderId;
 
-        this._saveCachedFolderIds(rootId, pdfsFolderId, annotationsFolderId);
+        this._saveCachedFolderIds(v3Id, pdfsFolderId, annotationsFolderId);
         console.log(`[DriveSync] 📁 Total folder setup: ${Date.now() - t0}ms`);
-        return rootId;
+        return v3Id;
     }
 
     _loadCachedFolderIds() {
         try {
-            const raw = localStorage.getItem('scoreflow_drive_folder_ids');
+            const raw = localStorage.getItem('scoreflow_drive_folder_ids_v3');
             if (!raw) return null;
             const { root, pdfs, annotations, savedAt } = JSON.parse(raw);
             // Cache valid for 7 days — folders almost never change
@@ -116,7 +120,7 @@ export class DriveFileManager {
 
     _saveCachedFolderIds(root, pdfs, annotations) {
         try {
-            localStorage.setItem('scoreflow_drive_folder_ids', JSON.stringify({ root, pdfs, annotations, savedAt: Date.now() }));
+            localStorage.setItem('scoreflow_drive_folder_ids_v3', JSON.stringify({ root, pdfs, annotations, savedAt: Date.now() }));
         } catch (e) { /* ignore */ }
     }
 
@@ -165,10 +169,12 @@ export class DriveFileManager {
         form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
         form.append('file', new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' }));
 
-        await this.sync.gdriveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        const resp = await this.sync.gdriveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
             method: 'POST',
             body: form
         });
+        const data = await resp.json();
+        return data.id || null;
     }
 
     async updateFile(fileId, content) {
@@ -201,17 +207,34 @@ export class DriveFileManager {
     async uploadPDF(fingerprint, buffer, originalFileName) {
         if (!this.sync.folderId) return;
 
-        const fileId = await this.findSyncFile(fingerprint, 'pdf');
-        if (fileId) {
-            console.log(`[DriveSync] PDF for ${fingerprint} already exists on Drive. Updating manifest.`);
-            await this.sync.updateManifestEntry(fingerprint, { pdfId: fileId });
-            return;
-        }
-
         const scoreEntry = this.sync.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
         const prefix = this.safeTitle(scoreEntry?.title || originalFileName?.replace(/\.pdf$/i, ''));
         const fileName = `${prefix}${this.shortHash(fingerprint)}.pdf`;
         const targetParent = this.sync.pdfsFolderId || this.sync.folderId;
+
+        // Check if PDF exists
+        const hash = this.shortHash(fingerprint);
+        const parentId = targetParent;
+        const searchResp = await this.sync.gdriveFetch(
+            `https://www.googleapis.com/drive/v3/files?q=name contains '${hash}' and '${parentId}' in parents and trashed=false&fields=files(id,name)&orderBy=createdTime desc`
+        );
+        const searchData = await searchResp.json();
+        const existingFile = searchData.files && searchData.files.length > 0 ? searchData.files[0] : null;
+
+        if (existingFile) {
+            console.log(`[DriveSync] PDF for ${fingerprint} already exists: "${existingFile.name}"`);
+            // Rename if necessary to match current title
+            if (existingFile.name !== fileName) {
+                try {
+                    console.log(`[DriveSync] Renaming cloud PDF to match title: "${existingFile.name}" -> "${fileName}"`);
+                    await this.renameFile(existingFile.id, fileName);
+                } catch (e) {
+                    console.warn(`[DriveSync] Failed to rename PDF: ${e.message}`);
+                }
+            }
+            await this.sync.updateManifestEntry(fingerprint, { pdfId: existingFile.id, pdfFilename: fileName });
+            return;
+        }
 
         console.log(`[DriveSync] Uploading PDF ${fileName} (Resumable)...`);
         this.sync.addLog(`準備上傳大檔案: ${originalFileName}...`, 'system');

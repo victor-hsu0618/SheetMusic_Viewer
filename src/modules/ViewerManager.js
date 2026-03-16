@@ -212,11 +212,18 @@ export class ViewerManager {
 
         console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
         this.pdfFingerprint = newFingerprint
+        this.app.stamps = []  // clear immediately — prevents stale stamps being saved under new fingerprint
         this.app.btnScoreDetailToggle?.removeAttribute('disabled')
         this.app.jumpManager?.loadBookmarks()
 
-        const savedStamps = localStorage.getItem(`scoreflow_stamps_${newFingerprint}`)
-        this.app.stamps = savedStamps ? JSON.parse(savedStamps) : []
+        const rawStamps = (await db.get(`stamps_${newFingerprint}`)) || []
+        this.app.stamps = rawStamps.filter(s => !s.deleted)
+        this.app.stamps.forEach(s => {
+            if (s.layerId === 'performance') s.layerId = 'text'
+            if (s.layerId === 'other' || s.layerId === 'anchor') s.layerId = 'layout'
+            if (!this.app.layers.find(l => l.id === s.layerId)) s.layerId = 'draw'
+            if (!s.sourceId) s.sourceId = this.app.activeSourceId
+        })
         this.app.jumpHistory = []
 
         // Notify GistShareManager in case a share link is pending PDF upload

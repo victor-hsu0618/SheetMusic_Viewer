@@ -76,6 +76,7 @@ export class DriveAuthManager {
                     console.error('[DriveSync] ❌ Folder setup failed:', err);
                 }
 
+                this.sync.log.record('signin', `user: ${this.sync.app?.profileManager?.data?.userName || 'Guest'}`);
                 this.refreshUI();
                 console.log('[DriveSync] 🔄 Starting auto-sync...');
                 this.startAutoSync();
@@ -157,6 +158,11 @@ export class DriveAuthManager {
                 badge.textContent = this.sync.isPaused ? '同步暫停' : '同步中';
                 badge.className = this.sync.isPaused ? 'badge badge-warn' : 'badge badge-success';
                 if (infoBox) infoBox.classList.remove('hidden');
+            } else if (this.sync.isEnabled && !this.sync.accessToken) {
+                // isEnabled but no token = silent reconnect in progress
+                badge.textContent = '連線中...';
+                badge.className = 'badge badge-warn';
+                if (infoBox) infoBox.classList.add('hidden');
             } else {
                 badge.textContent = '已中斷';
                 badge.className = 'badge badge-error';
@@ -173,8 +179,10 @@ export class DriveAuthManager {
         }
 
         if (btnSignIn && btnSignOut) {
-            btnSignIn.classList.toggle('hidden', !!(this.sync.isEnabled && this.sync.accessToken));
-            btnSignOut.classList.toggle('hidden', !(this.sync.isEnabled && this.sync.accessToken));
+            const fullyConnected = !!(this.sync.isEnabled && this.sync.accessToken);
+            const reconnecting = this.sync.isEnabled && !this.sync.accessToken;
+            btnSignIn.classList.toggle('hidden', fullyConnected || reconnecting);
+            btnSignOut.classList.toggle('hidden', !fullyConnected);
         }
 
         if (this.sync.lastSyncTime > 0) {
@@ -396,6 +404,8 @@ export class DriveAuthManager {
 
     signOut() {
         this.addLog('已斷開 Google Drive 連線', 'warn');
+        this.sync.log.record('signout', `user: ${this.sync.app?.profileManager?.data?.userName || 'Guest'}`);
+        this.sync.log.flush().catch(() => {});
         if (this.sync.accessToken) {
             google.accounts.oauth2.revoke(this.sync.accessToken, () => {
                 console.log('[DriveSync] Token revoked.');
@@ -408,7 +418,7 @@ export class DriveAuthManager {
         localStorage.setItem('scoreflow_drive_sync_enabled', 'false');
         localStorage.removeItem('scoreflow_drive_access_token');
         localStorage.removeItem('scoreflow_drive_token_expiry');
-        localStorage.removeItem('scoreflow_drive_folder_ids');
+        localStorage.removeItem('scoreflow_drive_folder_ids_v3');
         this.refreshUI();
     }
 

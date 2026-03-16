@@ -8,7 +8,7 @@ export class PersistenceManager {
 
     saveToStorage() {
         if (this.app.pdfFingerprint) {
-            localStorage.setItem(`scoreflow_stamps_${this.app.pdfFingerprint}`, JSON.stringify(this.app.stamps))
+            db.set(`stamps_${this.app.pdfFingerprint}`, this.app.stamps)
             if (this.app.scoreDetailManager) {
                 this.app.scoreDetailManager.save(this.app.pdfFingerprint)
             }
@@ -16,7 +16,6 @@ export class PersistenceManager {
                 this.app.scoreManager.updateSyncStatus(this.app.pdfFingerprint, false);
             }
         }
-        localStorage.setItem('scoreflow_stamps', JSON.stringify(this.app.stamps))
         localStorage.setItem('scoreflow_current_fingerprint', this.app.pdfFingerprint || '')
         localStorage.setItem('scoreflow_sources', JSON.stringify(this.app.sources))
         localStorage.setItem('scoreflow_active_source', this.app.activeSourceId)
@@ -49,7 +48,6 @@ export class PersistenceManager {
 
     loadFromStorage() {
         const layersData = localStorage.getItem('scoreflow_layers')
-        const stampsData = localStorage.getItem('scoreflow_stamps')
         const sourcesData = localStorage.getItem('scoreflow_sources')
         const activeSourceData = localStorage.getItem('scoreflow_active_source')
         const fingerprintData = localStorage.getItem('scoreflow_current_fingerprint')
@@ -222,27 +220,6 @@ export class PersistenceManager {
             INITIAL_LAYERS.forEach(coreLayer => {
                 if (!this.app.layers.find(l => l.id === coreLayer.id)) {
                     this.app.layers.push({ ...coreLayer })
-                }
-            })
-        }
-
-        if (stampsData) {
-            let parsedStamps = JSON.parse(stampsData)
-            if (fingerprintData) {
-                const scoreStamps = localStorage.getItem(`scoreflow_stamps_${fingerprintData}`)
-                if (scoreStamps) parsedStamps = JSON.parse(scoreStamps)
-            }
-            this.app.stamps = parsedStamps.filter(s => !s.deleted)
-            this.app.stamps.forEach(s => {
-                // Migrate stamp layer IDs too
-                if (s.layerId === 'performance') s.layerId = 'text';
-                if (s.layerId === 'other' || s.layerId === 'anchor') s.layerId = 'layout';
-
-                if (!this.app.layers.find(l => l.id === s.layerId)) {
-                    s.layerId = 'draw'
-                }
-                if (!s.sourceId) {
-                    s.sourceId = this.app.activeSourceId
                 }
             })
         }

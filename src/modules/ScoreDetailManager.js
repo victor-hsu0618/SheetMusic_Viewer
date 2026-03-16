@@ -69,12 +69,11 @@ export class ScoreDetailManager {
             lastScrollTop: 0
         }
 
-        const detailData = localStorage.getItem(`scoreflow_detail_${fingerprint}`)
+        const info = await db.get(`detail_${fingerprint}`)
         const regScore = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint)
 
-        if (detailData) {
+        if (info) {
             try {
-                const info = JSON.parse(detailData)
                 this.currentInfo = {
                     name: info.name || regScore?.title || '',
                     composer: info.composer || regScore?.composer || '',
@@ -92,8 +91,15 @@ export class ScoreDetailManager {
                 this.currentInfo.name = regScore?.title || ''
             }
         } else {
+            // Determine a safe fallback name without contaminating from other open scores
+            let fallbackName = regScore?.title || "";
+            if (!fallbackName && this.app.pdfFingerprint === fingerprint) {
+                fallbackName = this.app.activeScoreName?.replace(/\.pdf$/i, '') || "";
+            }
+            if (!fallbackName) fallbackName = "Untitled";
+
             this.currentInfo = {
-                name: regScore?.title || (this.app.activeScoreName?.replace(/\.pdf$/i, '') || ''),
+                name: fallbackName,
                 composer: regScore?.composer || 'Unknown',
                 nameEditedAt: 0,
                 composerEditedAt: 0,
@@ -119,7 +125,7 @@ export class ScoreDetailManager {
         if (!fingerprint) return
         const saveData = { ...this.currentInfo }
         saveData.mediaList = saveData.mediaList.map(m => m.type === 'local' ? { ...m, source: null } : m)
-        localStorage.setItem(`scoreflow_detail_${fingerprint}`, JSON.stringify(saveData))
+        db.set(`detail_${fingerprint}`, saveData)
     }
 
     /**
@@ -138,7 +144,7 @@ export class ScoreDetailManager {
             stampScale: 1.0,
             lastScrollTop: 0
         };
-        localStorage.setItem(`scoreflow_detail_${fingerprint}`, JSON.stringify(info));
+        db.set(`detail_${fingerprint}`, info)
         console.log(`[ScoreDetailManager] Initialized new record for: ${name} (${fingerprint.slice(0,8)})`);
     }
 
@@ -146,19 +152,16 @@ export class ScoreDetailManager {
      * Safely retrieves metadata for a specific fingerprint from localStorage or Registry.
      * Prevents stale data contamination during background sync.
      */
-    getMetadata(fingerprint) {
+    async getMetadata(fingerprint) {
         if (!fingerprint) return null;
-        
-        // If it's the currently loaded score, return currentInfo
+
+        // If it's the currently loaded score, return in-memory currentInfo
         if (fingerprint === this.currentFp) return this.currentInfo;
 
-        // Otherwise, load from localStorage
-        const detailData = localStorage.getItem(`scoreflow_detail_${fingerprint}`);
         const regScore = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
-
-        if (detailData) {
-            try {
-                const info = JSON.parse(detailData);
+        try {
+            const info = await db.get(`detail_${fingerprint}`);
+            if (info) {
                 return {
                     name: info.name || regScore?.title || '',
                     composer: info.composer || regScore?.composer || 'Unknown',
@@ -171,9 +174,9 @@ export class ScoreDetailManager {
                     stampScale: info.stampScale || 1.0,
                     lastScrollTop: info.lastScrollTop || 0
                 };
-            } catch (err) {
-                console.error('[ScoreDetailManager] getMetadata parse failed:', err);
             }
+        } catch (err) {
+            console.error('[ScoreDetailManager] getMetadata failed:', err);
         }
 
         // Fallback to Registry info if no detail record exists
@@ -181,12 +184,9 @@ export class ScoreDetailManager {
             return {
                 name: regScore.title,
                 composer: regScore.composer || 'Unknown',
-                lastEdit: 0,
-                lastAuthor: null,
-                mediaList: [],
-                activeMediaId: null,
-                stampScale: 1.0,
-                lastScrollTop: 0
+                lastEdit: 0, lastAuthor: null,
+                mediaList: [], activeMediaId: null,
+                stampScale: 1.0, lastScrollTop: 0
             };
         }
 
@@ -269,104 +269,26 @@ export class ScoreDetailManager {
         const fingerprint = this.currentFp || this.app.pdfFingerprint
         if (!fingerprint || this.isLoading) return
 
+        // Safety Check: Ensure the UI we are reading belongs to the fingerprint we think we are saving.
+        // If the panel fingerprint display doesn't match currentFp, we are in a transition state.
+        const displayedFingerprint = this.ui.scoreFingerprintDisplay?.title;
+        if (displayedFingerprint && displayedFingerprint !== fingerprint) {
+            console.warn('[ScoreDetail] Auto-save blocked: UI fingerprint mismatch (Transitioning?)');
+            return;
+        }
+
         const newName = (this.scoreNameInput.value || '').trim()
         const newComposer = (this.scoreComposerInput.value || '').trim()
         if (newName === this.currentInfo.name && newComposer === this.currentInfo.composer) return
 
         const now = Date.now();
-        if (newName !== this.currentInfo.name) this.currentInfo.nameEditedAt = now;
+        if (newName !== this.currentInfo.name) {
+            this.currentInfo.nameEditedAt = now;
+        }
         if (newComposer !== this.currentInfo.composer) this.currentInfo.composerEditedAt = now;
         this.currentInfo.name = newName
         this.currentInfo.composer = newComposer
         this.onModification()
-    }
-
-    async handleSyncRename() {
-        const fp = this.currentFp || this.app.pdfFingerprint;
-        if (!fp) return;
-
-        const drive = this.app.driveSyncManager;
-        if (!drive?.isEnabled || !drive?.accessToken) {
-            alert('請先連接 Google Drive');
-            return;
-        }
-
-        const rawName = (this.ui.syncFilenameInput.value || '').trim();
-        const hash = fp.slice(0, 8);
-        
-        // Final name format: MozSym40_abc12345.json
-        const finalFilename = rawName ? `${rawName}_${hash}.json` : `sync_${hash}.json`;
-
-        let entry = drive.manifest[fp];
-        
-        // If entry doesn't exist at all, we can't do much yet
-        if (!entry) {
-            const confirmed = await this.app.showDialog({
-                title: '建立雲端紀錄',
-                message: '此樂譜在雲端索引中查無紀錄。是否現在為其建立索引（僅名稱），以便下次同步時使用？',
-                type: 'confirm',
-                icon: '📝'
-            });
-            if (!confirmed) return;
-            
-            // Create a stub entry
-            await drive.updateManifestEntry(fp, { name: rawName, updated: Date.now() });
-            this.app.showMessage('已建立雲端預約名稱', 'success');
-            this.render(fp);
-            return;
-        }
-
-        try {
-            this.app.showMessage('正在更新雲端資訊...', 'system');
-
-            // 1. If we have a syncId, rename the actual file on GDrive
-            if (entry.syncId) {
-                console.log(`[ScoreDetail] Renaming remote file: ${entry.syncId} -> ${finalFilename}`);
-                await drive.renameFile(entry.syncId, finalFilename);
-            }
-            
-            // 2. Always update the manifest entry's display name
-            entry.name = rawName;
-            entry.updated = Date.now();
-            await drive.saveManifest();
-            
-            this.app.showMessage(entry.syncId ? '雲端檔名已更新' : '雲端預測名稱已更新', 'success');
-            this.render(fp);
-        } catch (err) {
-            console.error('[ScoreDetail] Rename failed:', err);
-            // If it failed because the file was missing, but we have a syncId, maybe reset it?
-            if (err.message?.includes('404')) {
-                const fix = await this.app.showDialog({
-                    title: '雲端檔案遺失',
-                    message: '找不到雲端同步檔，可能已被手動刪除。是否清除此無效的同步連結？',
-                    type: 'confirm'
-                });
-                if (fix) {
-                    delete entry.syncId;
-                    entry.name = rawName;
-                    await drive.saveManifest();
-                    this.render(fp);
-                }
-            } else {
-                alert('更新失敗: ' + err.message);
-            }
-        }
-    }
-
-    handleSyncMatchLocal() {
-        if (!this.ui.syncFilenameInput || !this.ui.scoreNameInput) return;
-        const drive = this.app.driveSyncManager;
-        if (!drive) return;
-
-        const localTitle = this.ui.scoreNameInput.value.trim();
-        if (!localTitle) return;
-
-        const safePrefix = drive.safeTitle(localTitle).replace(/_$/, '');
-        this.ui.syncFilenameInput.value = safePrefix;
-        
-        // Trigger the input event to update the "Full" preview
-        this.ui.syncFilenameInput.dispatchEvent(new Event('input'));
-        this.app.showMessage('已從曲名抓取建議檔名', 'info');
     }
 
     handleAddYoutube() {
@@ -423,7 +345,7 @@ export class ScoreDetailManager {
         if (!fingerprint) return
 
         const confirmed = await this.app.showDialog({
-            title: 'Reset Entire Score?',
+            title: 'Reset Score Meta Data?',
             message: `This will PERMANENTLY delete all markings, bookmarks, and cloud data for "${this.currentInfo.name || 'this score'}".`,
             type: 'confirm',
             icon: '⚠️'
@@ -435,7 +357,7 @@ export class ScoreDetailManager {
             this.app.stamps = []
             this.app.annotationManager.redrawAllAnnotationLayers()
         }
-        localStorage.removeItem(`scoreflow_stamps_${fingerprint}`)
+        db.remove(`stamps_${fingerprint}`)
         if (this.app.jumpManager) {
             this.app.jumpManager.bookmarks = []
             this.app.jumpManager.renderBookmarks()

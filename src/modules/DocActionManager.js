@@ -37,6 +37,8 @@ export class DocActionManager {
             exportType: isGlobal ? 'global_backup' : 'single_score',
             author: userName,
             timestamp: Date.now(),
+            pdfFingerprint: this.app.pdfFingerprint || null,
+            pdfFileName: this.app.activeScoreName || null,
             metadata: this.app.scoreDetailManager.getExportMetadata(),
             sources: this.app.sources,
             layers: this.app.layers,

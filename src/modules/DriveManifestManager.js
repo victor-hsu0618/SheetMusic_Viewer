@@ -35,16 +35,32 @@ export class DriveManifestManager {
         this.sync.isManifestSaving = true;
         try {
             const fileName = this.sync.MANIFEST_NAME;
-            const content = this.sync.manifest;
 
             if (!this.sync.manifestFileId) {
                 this.sync.manifestFileId = await this.sync.findFileByName(fileName);
             }
 
             if (this.sync.manifestFileId) {
-                await this.sync.updateFile(this.sync.manifestFileId, content);
+                // Read-merge-write: re-fetch cloud version and merge by `updated` timestamp
+                // to avoid overwriting concurrent changes from another device.
+                let merged = { ...this.sync.manifest };
+                try {
+                    const cloud = await this.sync.getFileContent(this.sync.manifestFileId);
+                    if (cloud && typeof cloud === 'object') {
+                        for (const [fp, cloudEntry] of Object.entries(cloud)) {
+                            const local = merged[fp];
+                            if (!local || (cloudEntry.updated || 0) > (local.updated || 0)) {
+                                merged[fp] = cloudEntry;
+                            }
+                        }
+                        this.sync.manifest = merged;
+                    }
+                } catch (e) {
+                    console.warn('[DriveSync] Manifest re-read failed, writing local version:', e.message);
+                }
+                await this.sync.updateFile(this.sync.manifestFileId, merged);
             } else {
-                await this.sync.createFile(fileName, content);
+                await this.sync.createFile(fileName, this.sync.manifest);
                 this.sync.manifestFileId = await this.sync.findFileByName(fileName);
             }
         } catch (err) {
@@ -302,49 +318,77 @@ export class DriveManifestManager {
         this.sync.addLog('正在啟動雲端名稱修復流程...', 'warn');
         
         try {
-            const pdfsId = this.sync.pdfsFolderId;
-            const annotsId = this.sync.annotationsFolderId;
-            if (!pdfsId && !annotsId) throw new Error('雲端目錄結構不完整，無法修復');
-
-            // 1. Scan PDF folder
-            const pdfResp = await this.sync.gdriveFetch(`https://www.googleapis.com/drive/v3/files?q='${pdfsId}' in parents and trashed=false&fields=files(id,name)`);
-            const pdfData = await pdfResp.json();
-            
-            // 2. Scan Annotation folder
-            const annResp = await this.sync.gdriveFetch(`https://www.googleapis.com/drive/v3/files?q='${annotsId}' in parents and trashed=false&fields=files(id,name)`);
-            const annData = await annResp.json();
-
+            const registry = this.sync.app.scoreManager?.registry || [];
             let repairedCount = 0;
-            const allFiles = [...(pdfData.files || []), ...(annData.files || [])];
 
-            for (const file of allFiles) {
-                // Extract hash from filename (e.g. MyTitle_abc12345.pdf)
-                const match = file.name.match(/^(.*)_([a-f0-9]{8,})\.(pdf|json)$/i);
-                if (match) {
-                    const realName = match[1].replace(/_/g, ' ').trim();
-                    const hash = match[2];
-                    
-                    // Find entry in manifest starting with this hash
-                    const fp = Object.keys(this.sync.manifest).find(k => k.startsWith(hash));
-                    if (fp) {
-                        const entry = this.sync.manifest[fp];
-                        if (entry.name !== realName) {
-                            console.log(`[Heal] Correcting ${hash}: "${entry.name}" -> "${realName}"`);
-                            entry.name = realName;
-                            repairedCount++;
-                        }
-                    }
+            for (const score of registry) {
+                const fp = score.fingerprint;
+                const entry = this.sync.manifest[fp];
+                if (!entry) continue;
+
+                const localTitle = score.title || "";
+                const cloudName = entry.name || "";
+                const hash = fp.slice(0, 8);
+
+                // Use the best (longest) title available between local and cloud
+                const bestTitle = localTitle.length >= cloudName.length ? localTitle : cloudName;
+                
+                // Regenerate safe prefix using a guaranteed 100-char limit
+                const safePrefix = (bestTitle || "").replace(/[/\\?*:|"<>]/g, '_').trim().slice(0, 100) + "_";
+                const expectedPdfName = `${safePrefix}${hash}.pdf`;
+                const expectedJsonName = `${safePrefix}${hash}.json`;
+                
+                let needsUpdate = false;
+
+                // 1. Force Rename PDF if mismatched
+                if (entry.pdfId && entry.pdfFilename !== expectedPdfName) {
+                    console.log(`[Heal] Fixing PDF filename: "${entry.pdfFilename}" -> "${expectedPdfName}"`);
+                    try {
+                        await this.sync.renameFile(entry.pdfId, expectedPdfName);
+                        entry.pdfFilename = expectedPdfName;
+                        needsUpdate = true;
+                    } catch (e) { console.warn(`[Heal] PDF rename failed: ${e.message}`); }
+                }
+
+                // 2. Force Rename JSON if mismatched
+                if (entry.syncId && entry.filename !== expectedJsonName) {
+                    console.log(`[Heal] Fixing JSON filename: "${entry.filename}" -> "${expectedJsonName}"`);
+                    try {
+                        await this.sync.renameFile(entry.syncId, expectedJsonName);
+                        entry.filename = expectedJsonName;
+                        needsUpdate = true;
+                    } catch (e) { console.warn(`[Heal] JSON rename failed: ${e.message}`); }
+                }
+
+                // 3. Sync Name & Local Registry
+                if (entry.name !== bestTitle) {
+                    entry.name = bestTitle;
+                    needsUpdate = true;
+                }
+                
+                // --- CRITICAL FIX: Also repair local registry fileName if it was contaminated ---
+                if (score.title !== bestTitle || score.fileName !== expectedPdfName) {
+                    console.log(`[Heal] Correcting local Registry for ${hash}: "${score.title}" -> "${bestTitle}", File: "${score.fileName}" -> "${expectedPdfName}"`);
+                    score.title = bestTitle;
+                    score.fileName = expectedPdfName;
+                    await this.sync.app.scoreManager?.updateMetadata(fp, { 
+                        title: bestTitle,
+                        fileName: expectedPdfName 
+                    }, true);
+                }
+
+                if (needsUpdate) {
+                    entry.updated = Date.now();
+                    repairedCount++;
                 }
             }
 
             if (repairedCount > 0) {
                 await this.saveManifest();
-                await this.scanRemoteSyncFiles(); // Refresh local registry
-                this.sync.addLog(`修復完成：已更正 ${repairedCount} 份樂譜名稱`, 'success');
+                this.sync.addLog(`修復完成：已更正 ${repairedCount} 份樂譜的雲端檔名與索引`, 'success');
             } else {
-                this.sync.addLog('未發現需要修復的名稱', 'info');
+                this.sync.addLog('未發現需要修復的截斷名稱。', 'info');
             }
-
         } catch (err) {
             console.error('[Heal] Failed:', err);
             this.sync.addLog('修復失敗: ' + err.message, 'error');

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScoreFlow Debug Analyzer</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f13; --bg-card: #1a1a24; --bg-soft: #252535;
+  --border: rgba(255,255,255,0.08); --primary: #6366f1;
+  --text: #e2e2f0; --muted: #888; --success: #10b981;
+  --warn: #f59e0b; --danger: #ef4444; --info: #38bdf8;
+  --cloud: #a78bfa;
+}
+body { background: var(--bg); color: var(--text); font-family: -apple-system, monospace; font-size: 13px; min-height: 100vh; padding: 20px; }
+h1 { font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 2px; font-family: -apple-system, sans-serif; display: inline; }
+.header-row { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+.subtitle { color: var(--muted); font-size: 0.82rem; margin-bottom: 20px; }
+
+/* Drop zone */
+#drop-zone { border: 2px dashed rgba(99,102,241,0.4); border-radius: 14px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-card); }
+#drop-zone:hover, #drop-zone.drag-over { border-color: var(--primary); background: rgba(99,102,241,0.08); }
+#drop-zone p { color: var(--muted); }
+#drop-zone strong { color: var(--text); }
+#file-input { display: none; }
+
+/* Layout */
+#results, #manifest-results { display: none; margin-top: 20px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+@media (max-width: 800px) { .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 500px) { .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; } }
+section { margin-bottom: 14px; }
+
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.card-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; font-family: -apple-system, sans-serif; }
+.card-title + .card-title { margin-top: 14px; }
+
+/* Big stat */
+.stat-big { font-size: 2rem; font-weight: 800; color: #fff; line-height: 1; font-family: -apple-system, sans-serif; }
+.stat-label { color: var(--muted); font-size: 0.75rem; margin-top: 3px; }
+
+/* Rows */
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+.stat-row:last-child { border-bottom: none; }
+.stat-row .val { font-weight: 700; color: #fff; }
+.stat-row .label { color: var(--text); }
+
+/* Bar */
+.bar-item { margin-bottom: 8px; }
+.bar-header { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 0.78rem; }
+.bar-track { background: var(--bg-soft); border-radius: 3px; height: 6px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+
+/* Badges */
+.badge { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; }
+.ok { background: rgba(16,185,129,0.15); color: var(--success); }
+.warn { background: rgba(245,158,11,0.15); color: var(--warn); }
+.danger { background: rgba(239,68,68,0.15); color: var(--danger); }
+.info { background: rgba(56,189,248,0.15); color: var(--info); }
+.cloud-badge { background: rgba(167,139,250,0.15); color: var(--cloud); }
+
+/* Warn boxes */
+.warn-box { border-radius: 7px; padding: 8px 12px; font-size: 0.8rem; margin-bottom: 8px; }
+.warn-box.danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: var(--danger); }
+.warn-box.warn { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); color: var(--warn); }
+.warn-box.ok { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: var(--success); }
+.warn-box.info { background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25); color: var(--info); }
+
+/* Meta */
+.meta-row { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+.meta-row:last-child { border-bottom: none; }
+.meta-key { color: var(--muted); width: 130px; flex-shrink: 0; }
+.meta-val { color: var(--text); word-break: break-all; }
+
+/* Page heatmap */
+.page-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.page-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 7px; border: 1px solid var(--border); font-size: 0.72rem; font-weight: 700; }
+.page-cell .page-num { color: var(--muted); font-weight: 400; font-size: 0.62rem; }
+
+/* Stamp table */
+.stamp-table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; border-radius: 6px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+th { background: var(--bg-soft); color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.65rem; padding: 6px 8px; text-align: left; position: sticky; top: 0; z-index: 1; }
+td { padding: 4px 8px; border-bottom: 1px solid var(--border); color: var(--text); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.03); }
+.type-cell { font-weight: 700; }
+.type-system { color: var(--muted); }
+.type-settings { color: var(--warn); }
+.type-user { color: var(--primary); }
+.missing { color: var(--danger); font-style: italic; }
+.null-val { color: var(--muted); }
+
+/* Field coverage */
+.field-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.field-chip { padding: 3px 8px; border-radius: 5px; font-size: 0.72rem; }
+.field-chip.full { background: rgba(16,185,129,0.15); color: var(--success); }
+.field-chip.partial { background: rgba(245,158,11,0.15); color: var(--warn); }
+.field-chip.missing { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+.tab-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 0.78rem; }
+.tab-btn.active { background: var(--primary); color: #fff; border-color: transparent; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+#new-file-btn { margin-top: 16px; background: var(--bg-soft); border: 1px solid var(--border); color: var(--text); padding: 7px 16px; border-radius: 7px; cursor: pointer; font-size: 0.82rem; }
+#new-file-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+.section-title { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 10px; font-family: -apple-system, sans-serif; display: flex; align-items: center; gap: 8px; }
+
+/* Manifest table */
+.manifest-table-wrap { overflow-x: auto; max-height: 500px; overflow-y: auto; border-radius: 6px; border: 1px solid var(--border); }
+#profile-results { display: none; margin-top: 20px; }
+.text-chip { padding: 3px 9px; border-radius: 5px; font-size: 0.75rem; background: var(--bg-soft); border: 1px solid var(--border); color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="header-row">
+  <h1>ScoreFlow Debug Analyzer</h1>
+  <span id="file-type-label"></span>
+</div>
+<p class="subtitle">支援：匯出 JSON、Cloud Annotation JSON、Cloud Manifest JSON、User Profile JSON</p>
+
+<div id="drop-zone" onclick="document.getElementById('file-input').click()">
+  <input type="file" id="file-input" accept=".json">
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.35;margin-bottom:10px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+  <p><strong>點擊選擇</strong>或拖放 JSON</p>
+  <p style="font-size:0.75rem;margin-top:6px;color:var(--muted)">export JSON · cloud annotation JSON · cloud_manifest_v2.json · user_profile_sync.json</p>
+</div>
+
+<!-- ══ ANNOTATION RESULTS ══ -->
+<div id="results">
+  <section id="warnings-section"></section>
+
+  <section>
+    <div class="grid-4">
+      <div class="card"><div class="card-title">Total Stamps</div><div class="stat-big" id="s-total">0</div><div class="stat-label">所有類型</div></div>
+      <div class="card"><div class="card-title">User Annotations</div><div class="stat-big" id="s-user" style="color:var(--primary)">0</div><div class="stat-label">排除 system/settings</div></div>
+      <div class="card"><div class="card-title">System Stamps</div><div class="stat-big" id="s-sys" style="color:var(--muted)">0</div><div class="stat-label">staff detection 等</div></div>
+      <div class="card"><div class="card-title">Pages w/ Marks</div><div class="stat-big" id="s-pages">0</div><div class="stat-label">有標記的頁數</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('overview')">概覽</button>
+      <button class="tab-btn" onclick="switchTab('stamps')">Stamps 列表</button>
+      <button class="tab-btn" onclick="switchTab('system')">System Stamps</button>
+      <button class="tab-btn" id="tab-btn-bookmarks" onclick="switchTab('bookmarks')" style="display:none">Bookmarks</button>
+      <button class="tab-btn" onclick="switchTab('integrity')">Integrity</button>
+    </div>
+
+    <!-- Tab: Overview -->
+    <div class="tab-pane active" id="tab-overview">
+      <div class="grid-2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="card-title">檔案 Metadata</div>
+          <div id="meta-rows"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Layers 定義</div>
+          <div id="layers-rows"></div>
+          <div class="card-title">Sources 定義</div>
+          <div id="sources-rows"></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">By Type（User）</div>
+          <div id="type-bars"></div>
+          <div class="card-title">System / Settings</div>
+          <div id="sys-type-rows"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">By LayerId</div>
+          <div id="layer-rows"></div>
+          <div class="card-title">By Source</div>
+          <div id="source-rows"></div>
+          <div class="card-title">Page Distribution</div>
+          <div class="page-grid" id="page-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Stamps list -->
+    <div class="tab-pane" id="tab-stamps">
+      <div class="card">
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+          <input id="filter-input" placeholder="Filter by type, layerId, sourceId..." style="background:var(--bg-soft);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:0.8rem;flex:1;min-width:180px">
+          <label style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:4px">
+            <input type="checkbox" id="hide-system" checked onchange="renderTable()"> Hide system/settings
+          </label>
+        </div>
+        <div class="stamp-table-wrap">
+          <table id="stamp-table">
+            <thead><tr>
+              <th>#</th><th>type</th><th>page</th><th>layerId</th><th>sourceId</th>
+              <th>x</th><th>y</th><th>id</th><th>updatedAt</th><th>data</th><th>deleted</th>
+            </tr></thead>
+            <tbody id="stamp-tbody"></tbody>
+          </table>
+        </div>
+        <div id="table-footer" style="margin-top:8px;font-size:0.75rem;color:var(--muted)"></div>
+      </div>
+    </div>
+
+    <!-- Tab: System stamps -->
+    <div class="tab-pane" id="tab-system">
+      <div class="card">
+        <div class="card-title">System Stamps Detail（staff detection data）</div>
+        <div class="stamp-table-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th><th>type</th><th>page</th><th>y</th><th>yBottom</th><th>lineCount</th><th>auto</th><th>createdAt</th><th>id</th>
+            </tr></thead>
+            <tbody id="sys-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Bookmarks (cloud annotation only) -->
+    <div class="tab-pane" id="tab-bookmarks">
+      <div class="card">
+        <div class="card-title">Bookmarks</div>
+        <div class="stamp-table-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th><th>id</th><th>page</th><th>label</th><th>y</th><th>createdAt</th>
+            </tr></thead>
+            <tbody id="bookmarks-tbody"></tbody>
+          </table>
+        </div>
+        <div id="bookmarks-footer" style="margin-top:8px;font-size:0.75rem;color:var(--muted)"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Integrity -->
+    <div class="tab-pane" id="tab-integrity">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">欄位覆蓋率 Field Coverage</div>
+          <div class="field-grid" id="field-coverage"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Integrity Issues</div>
+          <div id="integrity-list"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-title">Settings Stamps Raw Data</div>
+        <div id="settings-raw" style="font-size:0.75rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+  </div><!-- /tabs -->
+  </section>
+
+  <button id="new-file-btn" onclick="resetAnalyzer()">↩ 換另一個檔案</button>
+</div>
+
+<!-- ══ MANIFEST RESULTS ══ -->
+<div id="manifest-results">
+  <section id="manifest-warnings"></section>
+
+  <section>
+    <div class="grid-4">
+      <div class="card"><div class="card-title">總 Entries</div><div class="stat-big" id="m-total">0</div><div class="stat-label">所有 fingerprint</div></div>
+      <div class="card"><div class="card-title">已同步</div><div class="stat-big" id="m-synced" style="color:var(--success)">0</div><div class="stat-label">有 syncId</div></div>
+      <div class="card"><div class="card-title">有 PDF</div><div class="stat-big" id="m-pdf" style="color:var(--info)">0</div><div class="stat-label">有 pdfId</div></div>
+      <div class="card"><div class="card-title">Tombstones</div><div class="stat-big" id="m-deleted" style="color:var(--danger)">0</div><div class="stat-label">deleted=true</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <div class="card-title">Manifest Entries</div>
+      <div class="manifest-table-wrap">
+        <table>
+          <thead><tr>
+            <th>fingerprint</th><th>name</th><th>syncId</th><th>pdfId</th><th>updated</th><th>status</th>
+          </tr></thead>
+          <tbody id="manifest-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <div class="card-title">Raw JSON</div>
+      <div id="manifest-raw" style="font-size:0.72rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto"></div>
+    </div>
+  </section>
+
+  <button id="new-file-btn-manifest" onclick="resetAnalyzer()">↩ 換另一個檔案</button>
+</div>
+
+<!-- ══ PROFILE RESULTS ══ -->
+<div id="profile-results">
+  <section>
+    <div class="grid-3">
+      <div class="card"><div class="card-title">User Name</div><div class="stat-big" id="p-name" style="font-size:1.2rem">—</div><div class="stat-label" id="p-title">—</div></div>
+      <div class="card"><div class="card-title">Setlists</div><div class="stat-big" id="p-setlists">0</div><div class="stat-label">個清單</div></div>
+      <div class="card"><div class="card-title">Text Library</div><div class="stat-big" id="p-textlib">0</div><div class="stat-label">個自訂文字</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Profile 資訊</div>
+        <div id="p-meta-rows"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Setlists</div>
+        <div id="p-setlists-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <div class="card-title">Text Library（自訂文字）</div>
+      <div id="p-textlib-list" style="display:flex;flex-wrap:wrap;gap:6px;max-height:200px;overflow-y:auto"></div>
+    </div>
+  </section>
+
+  <button id="new-file-btn-profile" onclick="resetAnalyzer()">↩ 換另一個檔案</button>
+</div>
+
+<script>
+let allStamps = []
+
+// ── File type detection ──
+function detectFileType(data) {
+  if (!data || typeof data !== 'object') return 'unknown'
+  // User profile: has profile.userName + version number
+  if (data.profile && typeof data.profile.userName === 'string' && typeof data.version === 'number') {
+    return 'profile'
+  }
+  // Manifest: top-level keys look like fingerprints (hex strings),
+  // values are objects with syncId / pdfId / updated
+  if (!data.stamps && !Array.isArray(data)) {
+    const keys = Object.keys(data)
+    if (keys.length > 0) {
+      const first = data[keys[0]]
+      if (first && typeof first === 'object' &&
+          ('syncId' in first || 'pdfId' in first || 'updated' in first)) {
+        return 'manifest'
+      }
+    }
+  }
+  // Cloud annotation JSON: stamps array + version is a number (timestamp) + fingerprint field
+  if (Array.isArray(data.stamps) && typeof data.version === 'number' && data.fingerprint) {
+    return 'cloud-annotation'
+  }
+  // Export annotation JSON
+  if (Array.isArray(data.stamps)) return 'export-annotation'
+  return 'unknown'
+}
+
+// Normalize cloud annotation JSON to match export format
+function normalizeAnnotationData(data, type) {
+  if (type !== 'cloud-annotation') return data
+  return {
+    ...data,
+    pdfFingerprint: data.fingerprint || null,
+    pdfFileName: data.pdfFileName || null,
+    timestamp: data.version,          // version is Date.now() in cloud JSON
+    metadata: data.scoreDetail || {},
+    exportType: 'cloud_sync',
+    author: data.scoreDetail?.lastAuthor || null,
+    version: 'cloud',
+  }
+}
+
+// ── Tab switching ──
+function switchTab(id) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+  document.getElementById('tab-' + id).classList.add('active')
+  event.target.classList.add('active')
+}
+
+// ── Drop / file input ──
+const dropZone = document.getElementById('drop-zone')
+const fileInput = document.getElementById('file-input')
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over') })
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'))
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); processFile(e.dataTransfer.files[0]) })
+fileInput.addEventListener('change', e => processFile(e.target.files[0]))
+document.getElementById('filter-input').addEventListener('input', renderTable)
+
+function resetAnalyzer() {
+  document.getElementById('results').style.display = 'none'
+  document.getElementById('manifest-results').style.display = 'none'
+  document.getElementById('profile-results').style.display = 'none'
+  document.getElementById('file-type-label').innerHTML = ''
+  dropZone.style.display = 'block'
+  fileInput.value = ''
+  allStamps = []
+}
+
+function processFile(file) {
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = e => {
+    try {
+      const raw = JSON.parse(e.target.result)
+      const type = detectFileType(raw)
+
+      const typeLabels = {
+        'export-annotation': ['匯出 JSON', 'ok'],
+        'cloud-annotation':  ['Cloud Annotation JSON', 'cloud-badge'],
+        'manifest':          ['Cloud Manifest JSON', 'info'],
+        'profile':           ['User Profile JSON', 'warn'],
+        'unknown':           ['Unknown JSON', 'warn'],
+      }
+      const [label, cls] = typeLabels[type] || ['Unknown', 'warn']
+      document.getElementById('file-type-label').innerHTML = `<span class="badge ${cls}">${label}</span>`
+
+      if (type === 'manifest') {
+        analyzeManifest(raw, file.name)
+      } else if (type === 'profile') {
+        analyzeProfile(raw, file.name)
+      } else if (type === 'export-annotation' || type === 'cloud-annotation') {
+        const data = normalizeAnnotationData(raw, type)
+        analyze(data, file.name, type)
+      } else {
+        alert('無法辨識檔案格式。支援：匯出 JSON、Cloud Annotation JSON、cloud_manifest_v2.json、user_profile_sync.json')
+      }
+    } catch(err) { alert('無法解析 JSON：' + err.message) }
+  }
+  reader.readAsText(file)
+}
+
+function fmt(v) {
+  if (v === null || v === undefined) return '<span class="null-val">—</span>'
+  if (typeof v === 'number') return v > 1000000000000 ? new Date(v).toLocaleString() : v.toFixed(4).replace(/\.?0+$/, '')
+  if (typeof v === 'object') return JSON.stringify(v).slice(0,60)
+  return String(v).slice(0,60)
+}
+
+// ══════════════════════════════════════════
+// ANNOTATION ANALYSIS
+// ══════════════════════════════════════════
+function analyze(data, filename, fileType) {
+  allStamps = data.stamps || []
+  const stamps = allStamps
+  const userStamps = stamps.filter(s => s.type !== 'system' && s.type !== 'settings')
+  const sysStamps = stamps.filter(s => s.type === 'system' || s.type === 'settings')
+  const settingsStamps = stamps.filter(s => s.type === 'settings')
+  const layers = data.layers || []
+  const sources = data.sources || []
+  const bookmarks = data.bookmarks || []
+
+  const byType = {}, byLayer = {}, bySource = {}, byPage = {}
+  stamps.forEach(s => {
+    byType[s.type] = (byType[s.type] || 0) + 1
+    const l = s.layerId || s.layer || 'none'; byLayer[l] = (byLayer[l] || 0) + 1
+    const src = s.sourceId || 'none'; bySource[src] = (bySource[src] || 0) + 1
+    byPage[s.page] = (byPage[s.page] || 0) + 1
+  })
+
+  // ── Warnings ──
+  const warns = []
+  if (!data.pdfFingerprint) warns.push({ level:'danger', msg:'pdfFingerprint 缺失 — 接收方無法自動對應 PDF' })
+  const noId = stamps.filter(s => !s.id)
+  if (noId.length) warns.push({ level:'warn', msg:`${noId.length} 個 stamps 缺少 id 欄位（含 ${noId.filter(s=>s.type==='system').length} system）` })
+  const noLayerId = userStamps.filter(s => !s.layerId && !s.layer)
+  if (noLayerId.length) warns.push({ level:'warn', msg:`${noLayerId.length} 個 user stamps 沒有 layerId` })
+  const noUpdatedAt = userStamps.filter(s => !s.updatedAt)
+  if (noUpdatedAt.length) warns.push({ level:'warn', msg:`${noUpdatedAt.length} 個 user stamps 沒有 updatedAt（無法 cloud merge）` })
+  const deletedCount = stamps.filter(s => s.deleted).length
+  if (deletedCount) warns.push({ level:'info', msg:`${deletedCount} 個 stamps 標記為 deleted（未清除）` })
+  const ids = stamps.map(s => s.id).filter(Boolean)
+  const dupIds = ids.filter((id, i) => ids.indexOf(id) !== i)
+  if (dupIds.length) warns.push({ level:'danger', msg:`${dupIds.length} 個重複 id：${[...new Set(dupIds)].slice(0,3).join(', ')}` })
+  if (fileType === 'cloud-annotation' && bookmarks.length === 0) warns.push({ level:'info', msg:'此 cloud JSON 無 bookmarks 資料' })
+  if (!warns.length) warns.push({ level:'ok', msg:'未發現明顯問題 ✓' })
+
+  document.getElementById('warnings-section').innerHTML =
+    warns.map(w => `<div class="warn-box ${w.level}">${w.msg}</div>`).join('')
+
+  // ── Top stats ──
+  document.getElementById('s-total').textContent = stamps.length
+  document.getElementById('s-user').textContent = userStamps.length
+  document.getElementById('s-sys').textContent = sysStamps.length
+  document.getElementById('s-pages').textContent = Object.keys(byPage).length
+
+  // ── Metadata ──
+  const fp = data.pdfFingerprint
+  const meta = data.metadata || {}
+  const exportTypeLabel = {
+    'single_score': 'single_score（手動匯出）',
+    'global_backup': 'global_backup（全量備份）',
+    'cloud_sync': 'cloud_sync（Drive 自動同步）'
+  }[data.exportType] || (data.exportType || '—')
+
+  document.getElementById('meta-rows').innerHTML = [
+    ['檔案名稱', filename],
+    ['PDF 檔案', data.pdfFileName || '<span class="null-val">—</span>'],
+    ['Version', data.version || '—'],
+    ['Type', exportTypeLabel],
+    ['Author', data.author || '<span class="null-val">—</span>'],
+    ['曲名', meta.name || '<span class="null-val">—</span>'],
+    ['Composer', meta.composer || '<span class="null-val">—</span>'],
+    ['Timestamp', data.timestamp ? new Date(data.timestamp).toLocaleString() : '—'],
+    ['pdfFingerprint', fp ? `<span class="badge ok">✓</span> <code>${fp.slice(0,8)}…${fp.slice(-8)}</code>` : '<span class="badge danger">缺失</span>'],
+  ].map(([k,v]) => `<div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${v}</span></div>`).join('')
+
+  // ── Layers ──
+  document.getElementById('layers-rows').innerHTML = layers.length
+    ? layers.map(l => `<div class="stat-row"><span class="label">${l.name} <span class="null-val">(${l.id})</span></span><span class="val"><span class="badge ${l.visible?'ok':'warn'}">${l.visible?'on':'off'}</span></span></div>`).join('')
+    : '<div style="color:var(--muted);font-size:0.8rem">無 layers 定義</div>'
+
+  // ── Sources ──
+  document.getElementById('sources-rows').innerHTML = sources.length
+    ? sources.map(s => `<div class="stat-row"><span class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color||'#888'};margin-right:5px"></span>${s.name}</span><span class="val null-val">${s.id}</span></div>`).join('')
+    : '<div style="color:var(--muted);font-size:0.8rem">無 sources 定義</div>'
+
+  // ── Type bars (user) ──
+  const userByType = {}
+  userStamps.forEach(s => { userByType[s.type] = (userByType[s.type] || 0) + 1 })
+  const maxType = Math.max(...Object.values(userByType), 1)
+  const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#38bdf8','#ef4444','#84cc16']
+  document.getElementById('type-bars').innerHTML = Object.entries(userByType).sort((a,b)=>b[1]-a[1])
+    .map(([k,v],i) => `<div class="bar-item"><div class="bar-header"><span>${k}</span><span>${v}</span></div><div class="bar-track"><div class="bar-fill" style="width:${(v/maxType*100).toFixed(1)}%;background:${colors[i%colors.length]}"></div></div></div>`).join('')
+
+  // ── Sys type rows ──
+  const sysTypes = {}
+  sysStamps.forEach(s => { sysTypes[s.type] = (sysTypes[s.type] || 0) + 1 })
+  document.getElementById('sys-type-rows').innerHTML = Object.entries(sysTypes).length
+    ? Object.entries(sysTypes).map(([k,v]) => `<div class="stat-row"><span class="label type-${k}">${k}</span><span class="val">${v}</span></div>`).join('')
+    : '<div style="color:var(--muted);font-size:0.8rem">無</div>'
+
+  // ── Layer rows ──
+  const layerNameMap = {}
+  layers.forEach(l => { layerNameMap[l.id] = l.name })
+  document.getElementById('layer-rows').innerHTML = Object.entries(byLayer).sort((a,b)=>b[1]-a[1])
+    .map(([k,v]) => `<div class="stat-row"><span class="label">${layerNameMap[k]||k}</span><span class="val">${v}</span></div>`).join('')
+
+  // ── Source rows ──
+  const srcNameMap = {}; sources.forEach(s => { srcNameMap[s.id] = s.name })
+  document.getElementById('source-rows').innerHTML = Object.entries(bySource).sort((a,b)=>b[1]-a[1])
+    .map(([k,v]) => `<div class="stat-row"><span class="label">${srcNameMap[k]||k}</span><span class="val">${v}</span></div>`).join('')
+
+  // ── Page heatmap ──
+  const maxPage = Math.max(...Object.values(byPage), 1)
+  document.getElementById('page-grid').innerHTML = Object.entries(byPage).sort((a,b)=>parseInt(a[0])-parseInt(b[0]))
+    .map(([page,count]) => {
+      const intensity = count/maxPage
+      const bg = `rgba(99,102,241,${0.15+intensity*0.7})`
+      return `<div class="page-cell" style="background:${bg}"><span>${count}</span><span class="page-num">p.${page}</span></div>`
+    }).join('')
+
+  // ── System stamps table ──
+  document.getElementById('sys-tbody').innerHTML = stamps
+    .filter(s => s.type === 'system' || s.type === 'settings')
+    .map((s,i) => `<tr>
+      <td class="null-val">${i+1}</td>
+      <td class="type-cell type-${s.type}">${s.type}</td>
+      <td>${fmt(s.page)}</td>
+      <td>${fmt(s.y)}</td>
+      <td>${fmt(s.yBottom)}</td>
+      <td>${fmt(s.lineCount)}</td>
+      <td>${s.auto ? '<span class="badge info">auto</span>' : fmt(s.auto)}</td>
+      <td>${s.createdAt ? new Date(s.createdAt).toLocaleString() : '<span class="null-val">—</span>'}</td>
+      <td>${s.id ? s.id.slice(0,8)+'…' : '<span class="missing">missing</span>'}</td>
+    </tr>`).join('')
+
+  // ── Bookmarks tab (cloud annotation) ──
+  const bookmarkBtn = document.getElementById('tab-btn-bookmarks')
+  if (bookmarks.length > 0) {
+    bookmarkBtn.style.display = ''
+    document.getElementById('bookmarks-tbody').innerHTML = bookmarks.map((b,i) => `<tr>
+      <td class="null-val">${i+1}</td>
+      <td>${b.id ? `<code>${b.id.slice(0,12)}…</code>` : '<span class="missing">—</span>'}</td>
+      <td>${fmt(b.page)}</td>
+      <td>${b.label || '<span class="null-val">—</span>'}</td>
+      <td>${b.y !== undefined ? b.y.toFixed(4) : '<span class="null-val">—</span>'}</td>
+      <td>${b.createdAt ? new Date(b.createdAt).toLocaleString() : '<span class="null-val">—</span>'}</td>
+    </tr>`).join('')
+    document.getElementById('bookmarks-footer').textContent = `共 ${bookmarks.length} 個 bookmark`
+  } else {
+    bookmarkBtn.style.display = 'none'
+  }
+
+  // ── Field coverage ──
+  const allKeys = new Set()
+  stamps.forEach(s => Object.keys(s).forEach(k => allKeys.add(k)))
+  const coverage = {}
+  allKeys.forEach(k => {
+    const count = stamps.filter(s => s[k] !== undefined && s[k] !== null).length
+    coverage[k] = count
+  })
+  document.getElementById('field-coverage').innerHTML = [...allKeys].sort().map(k => {
+    const pct = coverage[k] / stamps.length
+    const cls = pct === 1 ? 'full' : pct > 0.1 ? 'partial' : 'missing'
+    return `<div class="field-chip ${cls}" title="${coverage[k]}/${stamps.length}">${k} <strong>${Math.round(pct*100)}%</strong></div>`
+  }).join('')
+
+  // ── Integrity issues ──
+  const noId2 = stamps.filter(s => !s.id)
+  const noLayerId2 = userStamps.filter(s => !s.layerId && !s.layer)
+  const issues = []
+  noId2.forEach(s => issues.push(`<div class="stat-row"><span class="label">Missing id</span><span class="val null-val">type=${s.type} p=${s.page}</span></div>`))
+  noLayerId2.forEach(s => issues.push(`<div class="stat-row"><span class="label">No layerId</span><span class="val null-val">type=${s.type} p=${s.page}</span></div>`))
+  noUpdatedAt.filter(s=>s.type!=='system'&&s.type!=='settings').forEach(s => issues.push(`<div class="stat-row"><span class="label warn">No updatedAt</span><span class="val null-val">type=${s.type} id=${s.id?.slice(0,8)||'?'}</span></div>`))
+  stamps.filter(s => s.deleted).forEach(s => issues.push(`<div class="stat-row"><span class="label warn">deleted=true</span><span class="val null-val">type=${s.type} id=${s.id?.slice(0,8)||'?'}</span></div>`))
+  document.getElementById('integrity-list').innerHTML = issues.length
+    ? issues.slice(0,50).join('') + (issues.length > 50 ? `<div class="stat-row"><span class="null-val">...and ${issues.length-50} more</span></div>` : '')
+    : '<div style="color:var(--success);font-size:0.8rem">無問題 ✓</div>'
+
+  // ── Settings raw ──
+  document.getElementById('settings-raw').textContent = settingsStamps.length
+    ? JSON.stringify(settingsStamps, null, 2)
+    : '（無 settings stamps）'
+
+  renderTable()
+
+  dropZone.style.display = 'none'
+  document.getElementById('results').style.display = 'block'
+}
+
+function renderTable() {
+  const hideSystem = document.getElementById('hide-system').checked
+  const filter = document.getElementById('filter-input').value.toLowerCase()
+  let stamps = allStamps
+  if (hideSystem) stamps = stamps.filter(s => s.type !== 'system' && s.type !== 'settings')
+  if (filter) stamps = stamps.filter(s =>
+    (s.type||'').includes(filter) || (s.layerId||'').includes(filter) ||
+    (s.sourceId||'').includes(filter) || (s.id||'').includes(filter) ||
+    String(s.page).includes(filter)
+  )
+  const tbody = document.getElementById('stamp-tbody')
+  tbody.innerHTML = stamps.slice(0, 500).map((s,i) => {
+    const cls = s.type === 'system' ? 'type-system' : s.type === 'settings' ? 'type-settings' : 'type-user'
+    return `<tr>
+      <td class="null-val">${i+1}</td>
+      <td class="type-cell ${cls}">${s.type}</td>
+      <td>${fmt(s.page)}</td>
+      <td>${s.layerId || '<span class="missing">—</span>'}</td>
+      <td>${fmt(s.sourceId)}</td>
+      <td>${s.x !== undefined ? s.x.toFixed(4) : '<span class="null-val">—</span>'}</td>
+      <td>${s.y !== undefined ? s.y.toFixed(4) : '<span class="null-val">—</span>'}</td>
+      <td>${s.id ? `<code>${s.id.slice(0,12)}…</code>` : '<span class="missing">missing</span>'}</td>
+      <td>${s.updatedAt ? new Date(s.updatedAt).toLocaleString() : '<span class="null-val">—</span>'}</td>
+      <td>${s.data !== undefined ? `<code>${JSON.stringify(s.data).slice(0,30)}</code>` : '<span class="null-val">—</span>'}</td>
+      <td>${s.deleted ? '<span class="badge warn">true</span>' : '<span class="null-val">—</span>'}</td>
+    </tr>`
+  }).join('')
+  document.getElementById('table-footer').textContent =
+    `顯示 ${Math.min(stamps.length,500)} / ${stamps.length} 筆（allStamps: ${allStamps.length}）`
+}
+
+// ══════════════════════════════════════════
+// MANIFEST ANALYSIS
+// ══════════════════════════════════════════
+function analyzeManifest(data, filename) {
+  const entries = Object.entries(data)
+  const total = entries.length
+  const synced  = entries.filter(([,e]) => e.syncId).length
+  const hasPdf  = entries.filter(([,e]) => e.pdfId).length
+  const deleted = entries.filter(([,e]) => e.deleted).length
+
+  document.getElementById('m-total').textContent = total
+  document.getElementById('m-synced').textContent = synced
+  document.getElementById('m-pdf').textContent = hasPdf
+  document.getElementById('m-deleted').textContent = deleted
+
+  // Warnings
+  const warns = []
+  if (deleted > 0) warns.push({ level:'info', msg:`${deleted} 個 tombstone（deleted=true）` })
+  const noSync = entries.filter(([,e]) => !e.deleted && !e.syncId)
+  if (noSync.length) warns.push({ level:'warn', msg:`${noSync.length} 個 entries 沒有 syncId（未上傳 annotation）` })
+  const noPdf = entries.filter(([,e]) => !e.deleted && !e.pdfId)
+  if (noPdf.length) warns.push({ level:'info', msg:`${noPdf.length} 個 entries 沒有 pdfId（PDF 未上傳）` })
+  const noName = entries.filter(([,e]) => !e.deleted && (!e.name || e.name === 'Unknown'))
+  if (noName.length) warns.push({ level:'warn', msg:`${noName.length} 個 entries 名稱為空或 Unknown` })
+  if (!warns.length) warns.push({ level:'ok', msg:'未發現明顯問題 ✓' })
+  document.getElementById('manifest-warnings').innerHTML =
+    warns.map(w => `<div class="warn-box ${w.level}">${w.msg}</div>`).join('')
+
+  // Table
+  const sorted = [...entries].sort((a, b) => (b[1].updated || 0) - (a[1].updated || 0))
+  document.getElementById('manifest-tbody').innerHTML = sorted.map(([fp, e]) => {
+    const status = e.deleted
+      ? '<span class="badge danger">tombstone</span>'
+      : (e.syncId ? '<span class="badge ok">synced</span>' : '<span class="badge warn">local only</span>')
+    const shortFp = fp.slice(0,8) + '…' + fp.slice(-6)
+    const syncShort = e.syncId ? e.syncId.slice(0,12)+'…' : '<span class="null-val">—</span>'
+    const pdfShort  = e.pdfId  ? e.pdfId.slice(0,12)+'…'  : '<span class="null-val">—</span>'
+    const updTime = e.updated ? new Date(e.updated).toLocaleString() : '<span class="null-val">—</span>'
+    return `<tr>
+      <td><code title="${fp}">${shortFp}</code></td>
+      <td>${e.name || '<span class="null-val">—</span>'}</td>
+      <td><code>${syncShort}</code></td>
+      <td><code>${pdfShort}</code></td>
+      <td>${updTime}</td>
+      <td>${status}</td>
+    </tr>`
+  }).join('')
+
+  // Raw JSON
+  document.getElementById('manifest-raw').textContent = JSON.stringify(data, null, 2)
+
+  dropZone.style.display = 'none'
+  document.getElementById('manifest-results').style.display = 'block'
+}
+
+// ══════════════════════════════════════════
+// PROFILE ANALYSIS
+// ══════════════════════════════════════════
+function analyzeProfile(data, filename) {
+  const profile = data.profile || {}
+  const textLib = data.userTextLibrary || []
+  const setlists = data.setlists || []
+  const hasToken = !!data.githubToken
+
+  // Big stats
+  document.getElementById('p-name').textContent = profile.userName || '—'
+  document.getElementById('p-title').textContent = profile.title || '—'
+  document.getElementById('p-setlists').textContent = setlists.length
+  document.getElementById('p-textlib').textContent = textLib.length
+
+  // Profile meta rows
+  document.getElementById('p-meta-rows').innerHTML = [
+    ['檔案名稱',    filename],
+    ['Version',     data.version ? new Date(data.version).toLocaleString() : '—'],
+    ['User Name',   profile.userName || '—'],
+    ['Title',       profile.title    || '—'],
+    ['Email',       profile.email    || '<span class="null-val">—</span>'],
+    ['Note',        profile.note     || '<span class="null-val">—</span>'],
+    ['Profile 更新', profile.updatedAt ? new Date(profile.updatedAt).toLocaleString() : '—'],
+    ['GitHub Token', hasToken ? '<span class="badge ok">✓ 已設定</span>' : '<span class="null-val">未設定</span>'],
+  ].map(([k,v]) => `<div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${v}</span></div>`).join('')
+
+  // Setlists
+  if (setlists.length === 0) {
+    document.getElementById('p-setlists-list').innerHTML = '<div style="color:var(--muted);font-size:0.8rem">無 setlist</div>'
+  } else {
+    document.getElementById('p-setlists-list').innerHTML = setlists.map(s => {
+      const scoreCount = Array.isArray(s.scores) ? s.scores.length : 0
+      const upd = s.updatedAt ? new Date(s.updatedAt).toLocaleString() : '—'
+      return `<div class="stat-row">
+        <span class="label">
+          <strong>${s.title || s.name || s.id || '?'}</strong>
+          <span class="null-val" style="margin-left:6px">${scoreCount} 首</span>
+        </span>
+        <span class="val null-val" style="font-size:0.7rem">${upd}</span>
+      </div>`
+    }).join('')
+  }
+
+  // Text library chips
+  document.getElementById('p-textlib-list').innerHTML = textLib.length
+    ? textLib.map(t => `<span class="text-chip">${String(t).slice(0,40)}</span>`).join('')
+    : '<div style="color:var(--muted);font-size:0.8rem">空</div>'
+
+  dropZone.style.display = 'none'
+  document.getElementById('profile-results').style.display = 'block'
+}
+</script>
+</body>
+</html>

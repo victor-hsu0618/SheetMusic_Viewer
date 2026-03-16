@@ -19,13 +19,9 @@ export class ScoreDetailUIManager {
         this.scoreFingerprintDisplay = document.getElementById('score-fingerprint-display')
         this.btnSave = document.getElementById('btn-save-score-detail')
 
-        this.syncFilenameInput = document.getElementById('sync-filename-input')
-        this.btnSyncRename = document.getElementById('btn-sync-rename')
         this.syncFileIdDisplay = document.getElementById('sync-file-id-display')
-        this.syncFullPreview = document.getElementById('sync-full-filename-preview')
-        this.btnSyncMatchLocal = document.getElementById('btn-sync-match-local')
 
-        this.mediaLabelInput = document.getElementById('sidebar-media-label')
+        this.mediaListContainer = document.getElementById('score-media-list')
         this.mediaUrlInput = document.getElementById('sidebar-media-url')
         this.mediaListContainer = document.getElementById('sidebar-media-list')
         this.btnAddYoutube = document.getElementById('sidebar-add-youtube')
@@ -33,6 +29,7 @@ export class ScoreDetailUIManager {
         this.localFileInput = document.getElementById('sidebar-local-input')
 
         this.statsTotalCount = document.getElementById('stats-total-count')
+        this.statsSystemCount = document.getElementById('stats-system-count')
         this.statsLastEdit = document.getElementById('stats-last-edit')
         this.statsAuthor = document.getElementById('stats-author')
         
@@ -57,16 +54,6 @@ export class ScoreDetailUIManager {
         this.btnAddLocal?.addEventListener('click', () => this.localFileInput.click())
         this.localFileInput?.addEventListener('change', (e) => this.manager.handleLocalFile(e))
         this.btnSave?.addEventListener('click', () => this.manager.handleSave())
-        this.btnSyncRename?.addEventListener('click', () => this.manager.handleSyncRename())
-        this.btnSyncMatchLocal?.addEventListener('click', () => this.manager.handleSyncMatchLocal())
-        this.syncFilenameInput?.addEventListener('input', () => {
-            const fp = this.manager.currentFp || this.app.pdfFingerprint;
-            if (!fp) return;
-            const val = this.syncFilenameInput.value.trim();
-            const hash = fp.slice(0, 8);
-            const preview = val ? `${val}_${hash}.json` : `sync_${hash}.json`;
-            if (this.syncFullPreview) this.syncFullPreview.textContent = `Full: ${preview}`;
-        });
 
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
         document.getElementById('btn-reset-score-all')?.addEventListener('click', () => this.manager.handleResetAll())
@@ -173,23 +160,26 @@ export class ScoreDetailUIManager {
     }
 
     refreshStats(fingerprint, info) {
-        let stamps = []
-        if (this.app.pdfFingerprint === fingerprint) stamps = this.app.stamps || []
-        else {
-            try {
-                const stored = localStorage.getItem(`scoreflow_stamps_${fingerprint}`)
-                if (stored) stamps = JSON.parse(stored)
-            } catch (e) {}
+        if (this.app.pdfFingerprint === fingerprint) {
+            this._applyStats(this.app.stamps || [], info)
+        } else {
+            import('../db.js').then(db => db.get(`stamps_${fingerprint}`)).then(stamps => {
+                this._applyStats(stamps || [], info)
+            }).catch(() => this._applyStats([], info))
         }
+    }
 
+    _applyStats(stamps, info) {
         let lastTime = 'Never'
         if (info.lastEdit) {
             lastTime = new Date(info.lastEdit).toLocaleString([], {
                 year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
             })
         }
-
-        if (this.statsTotalCount) this.statsTotalCount.textContent = stamps.length
+        const annotCount = stamps.filter(s => s.type !== 'system' && s.type !== 'settings').length
+        const systemCount = stamps.filter(s => s.type === 'system').length
+        if (this.statsTotalCount) this.statsTotalCount.textContent = annotCount
+        if (this.statsSystemCount) this.statsSystemCount.textContent = systemCount
         if (this.statsLastEdit) this.statsLastEdit.textContent = lastTime
         if (this.statsAuthor) this.statsAuthor.textContent = info.lastAuthor || 'Guest'
     }
@@ -222,52 +212,29 @@ export class ScoreDetailUIManager {
         }
 
         if (this.scoreFilenameDisplay) {
-            // 1. Try Registry
+            // 1. Try Registry (The most reliable source for a given fingerprint)
             let fileName = regScore?.fileName;
             
-            // 2. Try Current Active Name (if it's the open file)
-            if (!fileName && this.app.pdfFingerprint === fingerprint) {
+            // 2. Fallback: If this IS the currently active open PDF, use its name
+            if (!fileName && this.app.pdfFingerprint === fingerprint && this.app.activeScoreName) {
                 fileName = this.app.activeScoreName;
             }
             
-            // 3. Last Resort: Use the Piece Title (which you confirmed is correct)
+            // 3. Fallback: Use the specific score's info title + .pdf (Avoid global pollution)
             if (!fileName) {
-                fileName = (info.name || 'Untitled') + '.pdf';
+                const title = info.name || regScore?.title || 'Untitled';
+                fileName = title.endsWith('.pdf') ? title : title + '.pdf';
             }
             
             this.scoreFilenameDisplay.textContent = fileName;
         }
 
-        // --- ADDED: Populate Sync Filename ---
-        if (this.syncFilenameInput) {
+        if (this.syncFileIdDisplay) {
             const manifest = this.app.driveSyncManager?.manifest || {};
             const entry = manifest[fingerprint];
-            const hash = fingerprint.slice(0, 8);
-            
-            // Decide Display Name: 1. From Manifest, 2. From Registry FileName, 3. From active score name
-            let defaultName = entry?.name;
-            const pieceName = regScore?.title || (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName?.replace(/\.pdf$/i, '') : '') || '';
-            
-            // --- AUTO FIX: If manifest name is empty or totally different from piece title, and we have a piece title
-            if (!defaultName && pieceName && pieceName !== 'Unknown') {
-                defaultName = this.app.driveSyncManager.safeTitle(pieceName).replace(/_$/, '');
-            }
-
-            if (!defaultName) {
-                const fileName = regScore?.fileName || (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName : '') || '';
-                defaultName = fileName.replace(/\.pdf$/i, '');
-            }
-
-            this.syncFilenameInput.value = defaultName || '';
-            const preview = defaultName ? `${defaultName}_${hash}.json` : `sync_${hash}.json`;
-            
-            if (this.syncFullPreview) this.syncFullPreview.textContent = `Full: ${preview}`;
-            
-            if (this.syncFileIdDisplay) {
-                this.syncFileIdDisplay.textContent = entry?.syncId ? `Cloud ID: ${entry.syncId}` : 'Not on cloud';
-            }
+            this.syncFileIdDisplay.textContent = entry?.syncId ? entry.syncId : 'Not on cloud';
+            this.syncFileIdDisplay.classList.toggle('opacity-70', !!entry?.syncId);
         }
-
         if (this.mediaListContainer) {
             this.mediaListContainer.innerHTML = ''
             info.mediaList.forEach(media => {
