@@ -155,10 +155,16 @@ class ScoreFlow {
     }
     if (timeEl) timeEl.textContent = BUILD_TIME
 
+    const normalizedBranch = APP_BRANCH.replace('refs/heads/', '')
     if (mode === 'stable') {
         document.body.classList.add('env-stable')
-    } else if (APP_BRANCH === 'main') {
+        console.log('[ScoreFlow] Mode: STABLE (Purple)')
+    } else if (normalizedBranch === 'main' || mode === 'current') {
         document.body.classList.add('env-main')
+        console.log('[ScoreFlow] Mode: CURRENT (Amber)')
+    } else if (this.isDev) {
+        document.body.classList.add('env-dev')
+        console.log('[ScoreFlow] Mode: DEV (Emerald)')
     }
   }
 
