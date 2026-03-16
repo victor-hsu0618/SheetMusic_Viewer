@@ -45,13 +45,17 @@
 }
 
 .env-main {
-  --primary: #6366f1; /* Indigo for Current/Main */
-  --primary-rgb: 99, 102, 241;
-  --primary-hover: #4f46e5;
+  --primary: #f59e0b; /* Amber/Orange for Current/Main */
+  --primary-rgb: 245, 158, 11;
+  --primary-hover: #d97706;
 }
 
 /* Visual cues for different versions */
 .env-stable .floating-doc-bar {
+  border-top: 2px solid var(--primary);
+}
+
+.env-main .floating-doc-bar {
   border-top: 2px solid var(--primary);
 }
 
