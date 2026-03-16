@@ -34,6 +34,8 @@ jobs:
         run: |
           npm install
           npm run build
+          # 強制注入 env-main class 到 body
+          sed -i 's/<body/<body class="env-main"/g' dist/index.html
           mkdir -p final_deploy
           cp -r dist/* final_deploy/
 
@@ -51,6 +53,11 @@ jobs:
           cd stable_source
           npm install
           npm run build
+          # 強制注入 env-stable class 到 body，並修正可能存在的絕對路徑
+          sed -i 's/<body/<body class="env-stable"/g' dist/index.html
+          # 修正舊版本中可能導致資源跳回根目錄的絕對路徑
+          sed -i 's/href="\/src/href="src/g' dist/index.html
+          sed -i 's/src="\/src/src="src/g' dist/index.html
           mkdir -p ../final_deploy/stable
           cp -r dist/* ../final_deploy/stable/
 
