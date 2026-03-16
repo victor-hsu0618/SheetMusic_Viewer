@@ -122,7 +122,7 @@ export class ScoreRegistryHelper {
             fingerprint: fp,
             exportedAt: Date.now(),
             app: 'ScoreFlow',
-            version: '2.3',
+            version: '3.0',
             score: score || { title: 'Unknown' },
             annotations: stamps,
             metadata: detail

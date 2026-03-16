@@ -282,7 +282,31 @@ export class ViewerManager {
 
         this.app.updateJumpLinePosition()
         this.app.updateRulerClip()
+        this.updateFloatingTitle()
     }
+
+    async updateFloatingTitle() {
+        if (!this.app.floatingScoreTitle) return;
+        
+        if (!this.pdf || !this.pdfFingerprint) {
+            this.app.floatingScoreTitle.classList.remove('active');
+            return;
+        }
+
+        let displayName = "";
+        if (this.app.scoreDetailManager) {
+            const meta = await this.app.scoreDetailManager.getMetadata(this.pdfFingerprint);
+            displayName = meta?.name || "";
+        }
+        
+        if (!displayName) {
+            displayName = this.activeScoreName ? this.activeScoreName.replace(/\.pdf$/i, '') : "Untitled";
+        }
+
+        this.app.floatingScoreTitle.textContent = displayName;
+        this.app.floatingScoreTitle.classList.add('active');
+    }
+
 
     /**
      * Captures the current focal point (page and relative offset) to preserve view during zoom.
@@ -708,5 +732,6 @@ export class ViewerManager {
             console.log('[ViewerManager] Triggering DriveSync on PDF load');
             this.app.driveSyncManager.sync();
         }
+        this.updateFloatingTitle();
     }
 }

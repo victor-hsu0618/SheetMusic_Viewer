@@ -39,7 +39,7 @@ const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'jus
 class ScoreFlow {
   constructor() {
     window.app = this
-    this.DEBUG_VERSION = '2026.03.16.v4'
+    this.DEBUG_VERSION = '2026.03.16.v5'
     this.isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     if (this.isDev) {
         document.body.classList.add('env-dev')

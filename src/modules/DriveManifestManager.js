@@ -1,5 +1,5 @@
 /**
- * DriveManifestManager handles the cloud manifest (cloud_manifest_v2.json):
+ * DriveManifestManager handles the cloud manifest (cloud_manifest_v3.json):
  * loading, saving, updating entries, scanning remote files, and index reset.
  * Uses this.sync (DriveSyncManager) to access shared state and cross-manager methods.
  */

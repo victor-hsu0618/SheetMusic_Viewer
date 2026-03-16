@@ -462,8 +462,8 @@ export class DriveFileManager {
             const resetTime = Date.now();
             this.sync.manifest = {
                 globalResetTime: resetTime,
-                generation: 2,
-                description: "Cloud was purged. Switched to manifest v2."
+                generation: 3,
+                description: "Cloud was purged. Switched to manifest v3."
             };
 
             await this.sync.saveManifest();

@@ -221,6 +221,7 @@ export class ScoreDetailManager {
         }
 
         if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
+        if (this.app.viewerManager?.updateFloatingTitle) this.app.viewerManager.updateFloatingTitle()
         this.refreshStats()
     }
 
@@ -412,7 +413,7 @@ export class ScoreDetailManager {
 
     getExportFilename(isGlobal, userName) {
         const now = new Date();
-        const datestr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const datestr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
         const clean = (s) => (s || '').trim().replace(/[\/\?<>\\:\*\|":]/g, '_').replace(/\s+/g, '_').replace(/\.+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
         const safeUserName = clean(userName) || 'Guest';
 

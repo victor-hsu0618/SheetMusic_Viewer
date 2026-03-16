@@ -517,9 +517,14 @@ export class RulerManager {
                     } else if (stamp.type === 'measure' || stamp.type === 'measure-free') {
                         mark.className = 'ruler-measure-mark'
                         mark.textContent = stamp.data
-                        mark.style.pointerEvents = 'auto'
-                        mark.style.cursor = 'ns-resize'
-                        mark.addEventListener('mousedown', (e) => this._startMeasureDrag(e, stamp, mark))
+                        // Only allow dragging if NOT in View mode
+                        const isViewMode = this.app.activeStampType === 'view';
+                        mark.style.pointerEvents = isViewMode ? 'none' : 'auto'
+                        mark.style.cursor = isViewMode ? 'default' : 'ns-resize'
+                        if (!isViewMode) {
+                            mark.addEventListener('mousedown', (e) => this._startMeasureDrag(e, stamp, mark))
+                            mark.addEventListener('touchstart', (e) => this._startMeasureDrag(e, stamp, mark), { passive: false })
+                        }
                     } else if (stamp.type === 'system') {
                         mark.className = stamp === nextSystemTarget
                             ? 'ruler-system-mark ruler-system-next-target'

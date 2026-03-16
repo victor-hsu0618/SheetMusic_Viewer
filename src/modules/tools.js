@@ -351,6 +351,9 @@ export class ToolManager {
 
             // SYNC TOUCH ACTIONS: Ensure overlays are updated to match the NEW active tool immediately
             this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
+            
+            // REFRESH RULER: Ensure measure marks pointer-events are updated for scrolling safety
+            this.app?.rulerManager?.updateRulerMarks();
         }
         // Sync Doc Bar
         if (this.app.btnModeHand) this.app.btnModeHand.classList.toggle('active', this.app.activeStampType === 'view')

@@ -53,7 +53,7 @@ export class DriveSyncManager {
         this.manifest = {};
         this.manifestFileId = null;
         this.isManifestSaving = false;
-        this.MANIFEST_NAME = 'manifest.json';
+        this.MANIFEST_NAME = 'cloud_manifest_v3.json';
         this.hasScanned = false;
 
         // --- UI state ---

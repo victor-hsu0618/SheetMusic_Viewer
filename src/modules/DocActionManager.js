@@ -33,7 +33,7 @@ export class DocActionManager {
         )
 
         const exportData = {
-            version: '2.0',
+            version: '3.0',
             exportType: isGlobal ? 'global_backup' : 'single_score',
             author: userName,
             timestamp: Date.now(),
@@ -65,7 +65,7 @@ export class DocActionManager {
             let data = JSON.parse(text)
 
             // Auto-Migration for Legacy Formats
-            if (data.version !== '2.0') {
+            if (data.version !== '3.0') {
                 console.log('[DocAction] Legacy format detected, migrating...');
                 data = this.migrateLegacyData(data);
             }
@@ -300,7 +300,7 @@ export class DocActionManager {
             sourceCount: data.sources?.length || 0
         });
         const migrated = {
-            version: '2.0',
+            version: '3.0',
             exportType: data.exportType || 'single_score',
             author: data.author || 'Guest',
             timestamp: Date.now(),
