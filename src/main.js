@@ -39,8 +39,12 @@ const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'jus
 class ScoreFlow {
   constructor() {
     window.app = this
-    this.DEBUG_VERSION = '2026.03.14.v3'
-    console.log(`%c [ScoreFlow] Initializing Version: ${this.DEBUG_VERSION} `, 'background: #222; color: #bada55');
+    this.DEBUG_VERSION = '2026.03.16.v4'
+    this.isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    if (this.isDev) {
+        document.body.classList.add('env-dev')
+    }
+    console.log(`%c [ScoreFlow] Initializing Version: ${this.DEBUG_VERSION} (${this.isDev ? 'Dev' : 'Prod'})`, 'background: #222; color: #bada55');
     this.activeLayerId = 'draw'
     this.activeStampType = 'view'
     this.activeCategories = ['Pens']
@@ -140,8 +144,22 @@ class ScoreFlow {
   renderBuildInfo() {
     const branchEl = document.getElementById('build-branch')
     const timeEl = document.getElementById('build-time')
-    if (branchEl) branchEl.textContent = APP_BRANCH
+    const mode = typeof __APP_MODE__ !== 'undefined' ? __APP_MODE__ : 'current'
+    
+    if (branchEl) {
+        branchEl.textContent = APP_BRANCH + (this.isDev ? ' (LOCAL)' : '')
+        if (mode === 'stable') {
+            branchEl.style.color = '#10b981' // Green for stable
+            branchEl.textContent += ' [STABLE]'
+        }
+    }
     if (timeEl) timeEl.textContent = BUILD_TIME
+
+    if (mode === 'stable') {
+        document.body.classList.add('env-stable')
+    } else if (APP_BRANCH === 'main') {
+        document.body.classList.add('env-main')
+    }
   }
 
   async openRecentScore(name) {

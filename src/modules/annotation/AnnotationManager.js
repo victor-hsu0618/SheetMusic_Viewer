@@ -150,7 +150,7 @@ export class AnnotationManager {
     /**
      * Erase a specific annotation object.
      */
-    eraseStampTarget(stamp) {
+    async eraseStampTarget(stamp) {
         const page = stamp.page
         const idx = this.app.stamps.indexOf(stamp)
         if (idx === -1) return
@@ -165,7 +165,7 @@ export class AnnotationManager {
         }
         stamp.deleted = true
         stamp.updatedAt = Date.now()
-        this.app.saveToStorage(true)
+        await this.app.saveToStorage(true)
         if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
         this.redrawStamps(page)
     }
@@ -425,11 +425,11 @@ export class AnnotationManager {
             const page = parseInt(wrapper.dataset.page)
             this.redrawStamps(page)
         })
-        this.app.saveToStorage(true)
+        await this.app.saveToStorage(true)
         if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
     }
 
-    eraseAllByLayer(layerId) {
+    async eraseAllByLayer(layerId) {
         const originalCount = this.app.stamps.length
         if (layerId === '__all__') {
             this.app.stamps = []
@@ -444,7 +444,7 @@ export class AnnotationManager {
                 const page = parseInt(wrapper.dataset.page)
                 this.redrawStamps(page)
             })
-            this.app.saveToStorage(true)
+            await this.app.saveToStorage(true)
             if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
         }
     }
@@ -781,8 +781,8 @@ export class AnnotationManager {
     /**
      * Update layer visibility, save state, and redraw all stamps.
      */
-    updateLayerVisibility() {
-        this.app.saveToStorage()
+    async updateLayerVisibility() {
+        await this.app.saveToStorage()
         if (this.app.pdf) {
             for (let i = 1; i <= this.app.pdf.numPages; i++) {
                 this.redrawStamps(i)
@@ -877,9 +877,9 @@ export class AnnotationManager {
             this.app.updateRulerMarks()
         }
 
-        this.app.saveToStorage(true)
+        await this.app.saveToStorage(true)
         if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
-        this.updateLayerVisibility()
+        await this.updateLayerVisibility()
         this.redrawStamps(page)
     }
 

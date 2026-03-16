@@ -121,11 +121,11 @@ export class ScoreDetailManager {
         }
     }
 
-    save(fingerprint) {
+    async save(fingerprint) {
         if (!fingerprint) return
         const saveData = { ...this.currentInfo }
         saveData.mediaList = saveData.mediaList.map(m => m.type === 'local' ? { ...m, source: null } : m)
-        db.set(`detail_${fingerprint}`, saveData)
+        await db.set(`detail_${fingerprint}`, saveData)
     }
 
     /**

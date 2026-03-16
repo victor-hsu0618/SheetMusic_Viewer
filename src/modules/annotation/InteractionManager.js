@@ -114,7 +114,7 @@ export class InteractionManager {
 
         // --- HANDLERS ---
 
-        const startAction = (e) => {
+        const startAction = async (e) => {
             const toolType = this.app.activeStampType;
             const pointerType = getPointerType(e);
 
@@ -284,7 +284,7 @@ export class InteractionManager {
                             const newTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === target.type);
                             if (newTool?.draw) target.draw = { ...newTool.draw };
                             target.updatedAt = Date.now();
-                            this.app.saveToStorage(true);
+                            await this.app.saveToStorage(true);
                             this.app.redrawAllAnnotationLayers();
                         }
                         isInteracting = false;
@@ -293,12 +293,12 @@ export class InteractionManager {
                         const cloakId = toolType.replace('cloak-', '');
                         target.hiddenGroup = (target.hiddenGroup === cloakId) ? undefined : cloakId;
                         target.updatedAt = Date.now();
-                        this.app.saveToStorage(true);
+                        await this.app.saveToStorage(true);
                         this.app.redrawAllAnnotationLayers();
                         isInteracting = false;
                         this.app.isInteracting = false;
                     } else if (toolType === 'recycle-bin') {
-                        this.app.annotationManager.eraseStampTarget(target);
+                        await this.app.annotationManager.eraseStampTarget(target);
                         isInteracting = false;
                         this.app.isInteracting = false;
                     } else if (toolType === 'copy') {
@@ -372,7 +372,7 @@ export class InteractionManager {
             } else if (toolType === 'eraser') {
                 const eraserTarget = this.app.hoveredStamp || this.app.findClosestStamp(pageNum, pPos.x, pPos.y, false);
                 if (eraserTarget) {
-                    this.app.annotationManager.eraseStampTarget(eraserTarget);
+                    await this.app.annotationManager.eraseStampTarget(eraserTarget);
                     isInteracting = false;
                     this.app.isInteracting = false;
                 } else {
@@ -419,7 +419,7 @@ export class InteractionManager {
             }
         };
 
-        const moveAction = (e) => {
+        const moveAction = async (e) => {
             if (!isInteracting) return;
             
             const pointerType = getPointerType(e);
@@ -459,7 +459,7 @@ export class InteractionManager {
                 const target = this.app.findClosestStamp(currentPageNum, pPos.x, pPos.y, toolType !== 'eraser');
                 if (target) {
                     if (toolType === 'eraser' || toolType === 'recycle-bin') {
-                        this.app.annotationManager.eraseStampTarget(target);
+                        await this.app.annotationManager.eraseStampTarget(target);
                     } else {
                         activeObject = target;
                         isMovingExisting = true;
@@ -561,7 +561,7 @@ export class InteractionManager {
             resetPointerIdleTimer();
         };
 
-        const endAction = (e) => {
+        const endAction = async (e) => {
             if (!isInteracting) return;
             try {
                 if (activeObject) {
@@ -569,7 +569,7 @@ export class InteractionManager {
                     const targetWrapper = document.querySelector(`.page-container[data-page="${targetPageNum}"]`);
                     const isOverTrash = InteractionUI.isObjectOverTrash(activeObject, targetWrapper, CoordMapper);
                     if (isOverTrash) {
-                        if (isMovingExisting) this.app.annotationManager.eraseStampTarget(activeObject);
+                        if (isMovingExisting) await this.app.annotationManager.eraseStampTarget(activeObject);
                         this.app.showMessage('Object Deleted', 'success');
                         activeObject = null;
                         InteractionUI.showTrash(false, targetWrapper);
@@ -583,12 +583,12 @@ export class InteractionManager {
                             return;
                         }
                         const targetObj = activeObject;
-                        this.app.annotationManager.promptMeasureNumber().then(numStr => {
+                        this.app.annotationManager.promptMeasureNumber().then(async numStr => {
                             if (numStr !== null && numStr !== undefined && numStr !== '') {
                                 targetObj.data = numStr;
                                 targetObj.updatedAt = Date.now();
                                 this.app.stamps.push(targetObj); 
-                                this.app.saveToStorage(true); 
+                                await this.app.saveToStorage(true); 
                                 this.app.updateRulerMarks();
                                 startGracePeriod(targetObj);
                             } else {
@@ -602,7 +602,7 @@ export class InteractionManager {
                         activeObject.updatedAt = Date.now();
                         if (!isMovingExisting && activeObject.type !== 'view') this.app.stamps.push(activeObject);
                         if (activeObject.type === 'anchor') this.app.updateRulerMarks();
-                        this.app.saveToStorage(true);
+                        await this.app.saveToStorage(true);
                         this.app.redrawStamps(targetPageNum);
                         startGracePeriod(activeObject);
                     }

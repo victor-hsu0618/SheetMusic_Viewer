@@ -62,12 +62,30 @@ export class DocActionManager {
 
         try {
             const text = await file.text()
-            const data = JSON.parse(text)
+            let data = JSON.parse(text)
 
-            // Version check or basic validation
-            if (!data.stamps || !data.sources) {
-                alert('Invalid ScoreFlow data file.')
+            // Auto-Migration for Legacy Formats
+            if (data.version !== '2.0') {
+                console.log('[DocAction] Legacy format detected, migrating...');
+                data = this.migrateLegacyData(data);
+            }
+
+            // Basic validation after migration
+            if (!data.stamps || !data.sources || !Array.isArray(data.stamps)) {
+                console.error('[DocAction] Validation failed:', { hasStamps: !!data.stamps, hasSources: !!data.sources, isStampsArray: Array.isArray(data.stamps) });
+                alert('Invalid ScoreFlow data file format.')
                 return
+            }
+
+            // 1. Fingerprint check for Single Score imports
+            if (data.exportType !== 'global_backup' && data.pdfFingerprint && this.app.pdfFingerprint && data.pdfFingerprint !== this.app.pdfFingerprint) {
+                const proceed = await this.showDialog({
+                    title: 'Fingerprint Mismatch (樂譜不符)',
+                    message: `This data was created for "${data.pdfFileName || 'a different score'}". Importing it into the current PDF may result in misaligned markings. Continue?`,
+                    type: 'confirm',
+                    icon: '⚠️'
+                })
+                if (!proceed) return
             }
 
             const confirmed = await this.app.showDialog({
@@ -83,19 +101,19 @@ export class DocActionManager {
             })
 
             if (confirmed === 'merge') {
-                this.app.importAsNewPersona(data)
+                await this.importAsNewPersona(data)
             } else if (confirmed === 'overwrite') {
-                this.app.overwriteProject(data)
+                await this.overwriteProject(data)
             }
         } catch (err) {
-            console.error('Failed to import:', err)
-            alert('Failed to parse data file.')
+            console.error('[DocAction] Import Error:', err)
+            alert(`Failed to import: ${err.message || 'Unknown error. Check console for details.'}`)
         } finally {
-            e.target.value = ''
+            if (e.target) e.target.value = ''
         }
     }
 
-    importAsNewPersona(data) {
+    async importAsNewPersona(data) {
         const newSourceId = `imported_${Date.now()}`
         const newSourceName = `${data.metadata?.name || 'Imported'} (${data.author || 'Guest'})`
 
@@ -117,16 +135,36 @@ export class DocActionManager {
         this.app.stamps.push(...remappedStamps)
 
         this.app.activeSourceId = newSourceId
-        this.app.saveToStorage()
-        location.reload()
+        await this.app.saveToStorage()
+        
+        // UI Refresh instead of reload
+        this.app.renderSourceUI()
+        this.app.redrawAllAnnotationLayers()
+        if (this.app.updateRulerMarks) this.app.updateRulerMarks()
+        this.app.showMessage(`Imported data as "${newSourceName}"`, 'success')
     }
 
-    overwriteProject(data) {
+    async overwriteProject(data) {
         this.app.sources = data.sources || this.app.sources
         this.app.layers = data.layers || this.app.layers
         this.app.stamps = data.stamps || []
-        this.app.saveToStorage()
-        location.reload()
+        
+        // Update Metadata
+        if (data.metadata && this.app.scoreDetailManager) {
+            const m = data.metadata;
+            const target = this.app.scoreDetailManager.currentInfo;
+            target.name = m.name || m.title || target.name;
+            target.composer = m.composer || target.composer;
+        }
+
+        await this.app.saveToStorage()
+        
+        // UI Refresh instead of reload
+        this.app.renderSourceUI()
+        this.app.renderLayerUI()
+        this.app.redrawAllAnnotationLayers()
+        if (this.app.updateRulerMarks) this.app.updateRulerMarks()
+        this.app.showMessage('Project overwritten successfully', 'success')
     }
 
     async showDialog({ title, message, icon = 'ℹ️', type = 'alert', actions = [], defaultValue = '', placeholder = '', cloakDefs = [], defaultInclude = {} }) {
@@ -252,5 +290,56 @@ export class DocActionManager {
                 setTimeout(() => this.app.dialogInput.focus(), 100)
             }
         })
+    }
+
+    migrateLegacyData(data) {
+        console.log('[DocAction] Migrating data:', {
+            hasStamps: !!data.stamps,
+            hasAnnotations: !!data.annotations,
+            hasMarks: !!data.marks,
+            sourceCount: data.sources?.length || 0
+        });
+        const migrated = {
+            version: '2.0',
+            exportType: data.exportType || 'single_score',
+            author: data.author || 'Guest',
+            timestamp: Date.now(),
+            pdfFingerprint: data.pdfFingerprint || null,
+            pdfFileName: data.pdfFileName || null,
+            metadata: data.metadata || {},
+            sources: data.sources || [
+                { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
+            ],
+            layers: data.layers || [],
+            stamps: (data.stamps || data.annotations || data.marks || []).map(s => {
+                // Ensure every stamp has a sourceId
+                const sourceId = (data.sources && data.sources[0]?.id) || data.activeSourceId || 'self';
+                if (!s.sourceId) s.sourceId = sourceId;
+                
+                // Legacy layer remapping
+                if (s.layerId === 'performance') s.layerId = 'text';
+                
+                // Ensure page is number
+                if (typeof s.page === 'string') s.page = parseInt(s.page, 10);
+                
+                return s;
+            })
+        };
+
+        // Migrate Layers
+        migrated.layers.forEach(l => {
+            if (l.name === 'Bow/Fingering' || l.name === 'Fingering' || l.name === 'F.Fingering') {
+                l.name = 'B.Fingering';
+                if (l.color === '#ff4757' || l.color === '#3b82f6') l.color = '#be123c';
+            }
+            if (l.id === 'draw' && l.name !== 'Pens') l.name = 'Pens';
+            if (l.id === 'draw' && l.name === 'Pens') {
+                if (l.color === '#ff4757' || l.color === '#3b82f6') l.color = '#1d4ed8';
+            }
+            if (l.id === 'performance') { l.id = 'text'; l.name = 'Text'; }
+            if (l.id === 'layout' && l.name !== 'Others') l.name = 'Others';
+        });
+
+        return migrated;
     }
 }

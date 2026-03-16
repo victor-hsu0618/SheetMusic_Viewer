@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreFlow JSON Migrator (V1 → V2)</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: var(--card);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 550px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+        .back-link {
+            display: block;
+            margin-bottom: 2rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--primary); }
+        h1 { font-size: 1.75rem; margin-bottom: 0.5rem; color: var(--primary); }
+        .version-tag { background: rgba(16, 185, 129, 0.1); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-bottom: 1.5rem; }
+        p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem; }
+        .drop-zone {
+            border: 2px dashed var(--border);
+            padding: 3rem 2rem;
+            margin-bottom: 2rem;
+            border-radius: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .drop-zone:hover { border-color: var(--primary); background: rgba(16, 185, 129, 0.04); transform: scale(1.01); }
+        .drop-zone svg { width: 48px; height: 48px; color: var(--border); transition: color 0.3s; }
+        .drop-zone:hover svg { color: var(--primary); }
+        .hidden { display: none; }
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3); background: #059669; }
+        #status { margin-top: 1.5rem; font-size: 0.9rem; font-weight: 500; }
+        .success { color: var(--primary); }
+        .error { color: #f43f5e; }
+        
+        .feature-list {
+            text-align: left;
+            margin: 2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.2);
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .feature-list h3 { font-size: 0.9rem; color: var(--text); margin-top: 0; }
+        .feature-list ul { padding-left: 1.25rem; margin-bottom: 0; }
+        .feature-list li { margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Portal</a>
+        <div class="version-tag">MIGRATION TOOL</div>
+        <h1>Upgrade ScoreFlow Data</h1>
+        <p>Convert your legacy ScoreFlow JSON files (v1.0) to the latest v2.0 standard with interpreting support.</p>
+        
+        <div class="drop-zone" id="drop-zone">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <span>Click or Drag legacy JSON file here</span>
+            <input type="file" id="file-input" class="hidden" accept=".json">
+        </div>
+
+        <div class="feature-list">
+            <h3>What's migrating:</h3>
+            <ul>
+                <li>Upgrade file version to <strong>v2.0</strong></li>
+                <li>Add required <strong>sources</strong> (Primary Interpretation)</li>
+                <li>Map all stamps to the <strong>Primary Source</strong></li>
+                <li>Remap categories (e.g., <em>Fingering</em> → <strong>B.Fingering</strong>)</li>
+            </ul>
+        </div>
+
+        <div id="status"></div>
+        <button id="download-btn" class="btn hidden">Download Converted File</button>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const status = document.getElementById('status');
+        const downloadBtn = document.getElementById('download-btn');
+        let convertedData = null;
+        let originalFilename = '';
+
+        dropZone.onclick = () => fileInput.click();
+
+        fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--primary)'; };
+        dropZone.ondragleave = (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--border)'; };
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border)';
+            handleFile(e.dataTransfer.files[0]);
+        };
+
+        function handleFile(file) {
+            if (!file) return;
+            if (!file.name.endsWith('.json')) {
+                showStatus('Please upload a JSON file.', 'error');
+                return;
+            }
+
+            originalFilename = file.name;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    migrate(data);
+                } catch (err) {
+                    showStatus('Failed to parse JSON.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function migrate(data) {
+            if (data.version === '2.0') {
+                showStatus('File is already version 2.0.', 'success');
+                prepareDownload(data);
+                return;
+            }
+
+            const migrated = {
+                version: '2.0',
+                exportType: data.exportType || 'single_score',
+                author: data.author || 'Guest',
+                timestamp: Date.now(),
+                pdfFingerprint: data.pdfFingerprint || null,
+                pdfFileName: data.pdfFileName || null,
+                metadata: data.metadata || {},
+                sources: data.sources || [
+                    { id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }
+                ],
+                layers: data.layers || [],
+                stamps: data.stamps || []
+            };
+
+            const primarySourceId = migrated.sources[0].id;
+
+            migrated.stamps = migrated.stamps.map(s => {
+                if (!s.sourceId) s.sourceId = primarySourceId;
+                if (s.layerId === 'performance') s.layerId = 'text';
+                return s;
+            });
+
+            migrated.layers.forEach(l => {
+                if (l.name === 'Bow/Fingering' || l.name === 'Fingering' || l.name === 'F.Fingering') {
+                    l.name = 'B.Fingering';
+                    if (l.color === '#ff4757' || l.color === '#3b82f6') l.color = '#be123c';
+                }
+                if (l.id === 'draw' && l.name !== 'Pens') l.name = 'Pens';
+                if (l.id === 'draw' && l.name === 'Pens') {
+                    if (l.color === '#ff4757' || l.color === '#3b82f6') l.color = '#1d4ed8';
+                }
+                if (l.id === 'performance') { l.id = 'text'; l.name = 'Text'; }
+                if (l.id === 'layout' && l.name !== 'Others') l.name = 'Others';
+            });
+
+            showStatus('Successfully migrated to V2.0!', 'success');
+            prepareDownload(migrated);
+        }
+
+        function prepareDownload(data) {
+            convertedData = data;
+            downloadBtn.classList.remove('hidden');
+        }
+
+        downloadBtn.onclick = () => {
+            const blob = new Blob([JSON.stringify(convertedData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = originalFilename.replace('.json', '_v2.json');
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        function showStatus(msg, type) {
+            status.textContent = msg;
+            status.className = type;
+        }
+    </script>
+</body>
+</html>

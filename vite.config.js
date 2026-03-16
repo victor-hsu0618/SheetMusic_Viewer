@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-    base: '/SheetMusic_Viewer/',
+    base: process.env.VITE_BASE_PATH || '/SheetMusic_Viewer/',
     server: {
         host: true,
         headers: {
@@ -12,7 +12,8 @@ export default defineConfig({
     },
     define: {
         __BUILD_TIME__: JSON.stringify(new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })),
-        __APP_BRANCH__: JSON.stringify(process.env.GITHUB_REF_NAME || process.env.GITHUB_HEAD_REF || 'local-dev')
+        __APP_BRANCH__: JSON.stringify(process.env.GITHUB_REF_NAME || process.env.GITHUB_HEAD_REF || 'local-dev'),
+        __APP_MODE__: JSON.stringify(process.env.VITE_APP_MODE || 'current')
     },
     plugins: [
         VitePWA({

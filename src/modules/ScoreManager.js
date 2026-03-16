@@ -147,10 +147,47 @@ export class ScoreManager {
     async batchDelete() {
         const count = this.selectedFingerprints.size;
         if (count === 0) return;
-        if (await this.app.showDialog({ title: 'Batch Delete', message: `Delete ${count} scores?`, type: 'confirm', icon: '🗑️' })) {
-            for (const fp of this.selectedFingerprints) await this.deleteScore(fp);
-            this.toggleSelectionMode(false);
+
+        const sync = this.app.driveSyncManager;
+        const isDriveConnected = sync?.isEnabled && sync?.accessToken;
+        let deleteFromCloud = false;
+
+        if (isDriveConnected) {
+            const actions = [
+                { id: 'local', label: 'Delete Locally Only', class: 'btn-outline-sm' },
+                { id: 'everywhere', label: 'Delete Everywhere', class: 'btn-outline-danger' },
+                { id: 'cancel', label: 'Cancel', class: 'btn-ghost' }
+            ];
+
+            const choice = await this.app.showDialog({
+                title: 'Batch Delete',
+                message: `You are about to delete ${count} score${count !== 1 ? 's' : ''}. How would you like to proceed?`,
+                type: 'actions',
+                icon: '🗑️',
+                actions: actions
+            });
+
+            if (!choice || choice === 'cancel') return;
+            deleteFromCloud = (choice === 'everywhere');
+        } else {
+            // Fallback for non-cloud users
+            const confirmed = await this.app.showDialog({
+                title: 'Batch Delete',
+                message: `Delete ${count} score${count !== 1 ? 's' : ''} from this device?`,
+                type: 'confirm',
+                icon: '🗑️'
+            });
+            if (!confirmed) return;
         }
+
+        this.app.showMessage(`Deleting ${count} score${count !== 1 ? 's' : ''}...`, 'system');
+        
+        for (const fp of this.selectedFingerprints) {
+            await this.deleteScore(fp, deleteFromCloud);
+        }
+
+        this.toggleSelectionMode(false);
+        this.app.showMessage('Deletion completed.', 'success');
     }
 
     async batchBackup() {
@@ -241,10 +278,28 @@ export class ScoreManager {
         }
     }
 
-    async deleteScore(fp) {
+    async deleteScore(fp, deleteFromCloud = false) {
+        // 1. Cloud Deletion (if requested and available)
+        if (deleteFromCloud && this.app.driveSyncManager) {
+            try {
+                // deleteSyncFiles(fp, true) deletes both JSON and PDF and tombstones the manifest
+                await this.app.driveSyncManager.deleteSyncFiles(fp, true);
+            } catch (err) {
+                console.error(`[ScoreManager] Cloud deletion failed for ${fp}:`, err);
+                this.app.showMessage(`Cloud deletion failed for some files.`, 'error');
+            }
+        }
+
+        // 2. Local Deletion
         this.registry = this.registry.filter(s => s.fingerprint !== fp);
         await this.helper.saveRegistry(this.registry);
         await db.remove(`score_buf_${fp}`);
+        
+        // Also remove metadata and stamps
+        await db.remove(`detail_${fp}`);
+        await db.remove(`stamps_${fp}`);
+        await db.remove(`bookmarks_${fp}`);
+
         this.render();
     }
 

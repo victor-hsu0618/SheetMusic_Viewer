@@ -116,6 +116,10 @@ export class DriveManifestManager {
             deleted: true,
             deletedAt: Date.now(),
             updated: Date.now(),
+            syncId: null,
+            pdfId: null,
+            filename: null,
+            pdfFilename: null,
             ...(title && { name: title }),
         };
 
@@ -148,8 +152,8 @@ export class DriveManifestManager {
             let syncCount = 0;
 
             Object.values(this.sync.manifest).forEach(entry => {
-                if (entry.syncId) syncCount++;
-                if (entry.pdfId) pdfCount++;
+                if (entry.syncId && !entry.deleted) syncCount++;
+                if (entry.pdfId && !entry.deleted) pdfCount++;
             });
 
             this.sync.addLog(`清單載入完成，共 ${syncCount} 份備份`, 'system');

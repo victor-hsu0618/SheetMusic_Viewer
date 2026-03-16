@@ -3,21 +3,23 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+  workflow_dispatch: # Allow manual trigger
 
 permissions:
-  contents: read
+  contents: write # Needed for checking out tags
   pages: write
   id-token: write
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      STABLE_TAG: v1.1.5-Stable-CycleTool # <--- 在這裡更新你指定的穩定版本 Tag
     steps:
-      - name: Checkout
+      - name: Checkout Current (Main)
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -25,22 +27,37 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install
+      - name: Build Current version
+        env:
+          VITE_BASE_PATH: /SheetMusic_Viewer/
+          VITE_APP_MODE: current
+        run: |
+          npm install
+          npm run build
+          mkdir -p final_deploy
+          cp -r dist/* final_deploy/
 
-      - name: Build
-        run: npm run build
+      - name: Checkout Stable Tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.STABLE_TAG }}
+          path: stable_source
 
-      - name: Copy docs
-        run: cp -r docs dist/docs
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      - name: Build Stable version
+        env:
+          VITE_BASE_PATH: /SheetMusic_Viewer/stable/
+          VITE_APP_MODE: stable
+        run: |
+          cd stable_source
+          npm install
+          npm run build
+          mkdir -p ../final_deploy/stable
+          cp -r dist/* ../final_deploy/stable/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: './final_deploy'
 
       - name: Deploy to GitHub Pages
         id: deployment

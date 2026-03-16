@@ -30,3 +30,16 @@
   --text-muted: #94a3b8;
   --border: #334155;
 }
+
+/* Environment-Specific Themes */
+.env-dev {
+  --primary: #10b981; /* Emerald/Green for Dev */
+  --primary-rgb: 16, 185, 129;
+  --primary-hover: #059669;
+}
+
+.env-dev .welcome-header h2 {
+  background: linear-gradient(135deg, var(--primary), #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+}

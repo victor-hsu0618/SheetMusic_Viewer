@@ -6,14 +6,14 @@ export class PersistenceManager {
         this.app = app
     }
 
-    saveToStorage() {
+    async saveToStorage() {
         if (this.app.pdfFingerprint) {
-            db.set(`stamps_${this.app.pdfFingerprint}`, this.app.stamps)
+            await db.set(`stamps_${this.app.pdfFingerprint}`, this.app.stamps)
             if (this.app.scoreDetailManager) {
-                this.app.scoreDetailManager.save(this.app.pdfFingerprint)
+                await this.app.scoreDetailManager.save(this.app.pdfFingerprint)
             }
             if (this.app.scoreManager) {
-                this.app.scoreManager.updateSyncStatus(this.app.pdfFingerprint, false);
+                await this.app.scoreManager.updateSyncStatus(this.app.pdfFingerprint, false);
             }
         }
         localStorage.setItem('scoreflow_current_fingerprint', this.app.pdfFingerprint || '')

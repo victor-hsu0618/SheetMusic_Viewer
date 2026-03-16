@@ -45,11 +45,11 @@ export class ViewerManager {
             let scrollTimer;
             this.app.viewer.addEventListener('scroll', () => {
                 clearTimeout(scrollTimer);
-                scrollTimer = setTimeout(() => {
+                scrollTimer = setTimeout(async () => {
                     if (this.pdfFingerprint && this.app.scoreDetailManager) {
                         this.app.scoreDetailManager.currentInfo.lastScrollTop = this.app.viewer.scrollTop;
                         // Silent save (don't mark as unsynced for just scroll)
-                        this.app.scoreDetailManager.save(this.pdfFingerprint);
+                        await this.app.scoreDetailManager.save(this.pdfFingerprint);
                     }
                 }, 1000); // Debounce save to every 1 second
             }, { passive: true });
@@ -184,12 +184,12 @@ export class ViewerManager {
         this._pageMetrics = {};
 
         if (this.pdfFingerprint) {
-            this.app.saveToStorage()
+            await this.app.saveToStorage()
         }
 
         if (filename) {
             this.app.addToRecentSoloScores(filename)
-            this.app.saveToStorage()
+            await this.app.saveToStorage()
         }
 
         let uint8Data;
