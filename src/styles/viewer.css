@@ -212,9 +212,16 @@ body.edit-scrollbar-hidden #edit-scrollbar {
   transition: all 0.2s;
 }
 
-.floating-doc-bar button:hover {
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--primary);
+@media (hover: hover) {
+  .floating-doc-bar button:hover {
+    background: rgba(var(--primary-rgb), 0.1);
+    color: var(--primary);
+  }
+}
+
+.floating-doc-bar button:active {
+  background: rgba(var(--primary-rgb), 0.2);
+  transform: scale(0.92);
 }
 
 .floating-doc-bar button svg {

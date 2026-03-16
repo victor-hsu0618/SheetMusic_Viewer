@@ -40,9 +40,15 @@ class ScoreFlow {
   constructor() {
     window.app = this
     this.DEBUG_VERSION = '2026.03.16.v5'
-    this.isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.0.200'
+    this.isDev = window.location.hostname === 'localhost' || 
+                 window.location.hostname === '127.0.0.1' || 
+                 window.location.hostname.startsWith('192.168.') ||
+                 window.location.hostname.startsWith('172.') ||
+                 window.location.hostname.startsWith('10.');
+    
+    // We categorize local LAN as Dev (Blue)
     if (this.isDev) {
-        document.body.classList.add('env-dev')
+        document.body.classList.add('env-dev');
     }
     console.log(`%c [ScoreFlow] Initializing Version: ${this.DEBUG_VERSION} (${this.isDev ? 'Dev' : 'Prod'}) on ${window.location.hostname}`, 'background: #222; color: #bada55');
     this.activeLayerId = 'draw'
@@ -161,12 +167,14 @@ class ScoreFlow {
     if (mode === 'stable') {
         document.body.classList.add('env-stable')
         console.log('[ScoreFlow] Mode: STABLE (Purple)')
+    } else if (this.isDev) {
+        // Dev (LAN/Local) Priority
+        document.body.classList.remove('env-main')
+        document.body.classList.add('env-dev')
+        console.log('[ScoreFlow] Mode: DEV/LAN (Blue)')
     } else if (normalizedBranch === 'main' || mode === 'current') {
         document.body.classList.add('env-main')
-        console.log('[ScoreFlow] Mode: CURRENT (Amber)')
-    } else if (this.isDev) {
-        document.body.classList.add('env-dev')
-        console.log('[ScoreFlow] Mode: DEV (Blue)')
+        console.log('[ScoreFlow] Mode: MAIN/GitHub (Amber)')
     }
   }
 
