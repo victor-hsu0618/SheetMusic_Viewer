@@ -214,26 +214,10 @@ export class ViewerManager {
 
         console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
         this.pdfFingerprint = newFingerprint
-        this.app.stamps = []  // clear immediately — prevents stale stamps being saved under new fingerprint
         this.app.btnScoreDetailToggle?.removeAttribute('disabled')
         this.app.jumpManager?.loadBookmarks()
 
-        const rawStamps = (await db.get(`stamps_${newFingerprint}`)) || []
-        const now = Date.now()
-        this.app.stamps = rawStamps.filter(s => !s.deleted).map(s => {
-            const sNew = { ...s };
-            if (sNew.layerId === 'performance') sNew.layerId = 'text'
-            if (sNew.layerId === 'other' || sNew.layerId === 'anchor' || sNew.layerId === 'layout') sNew.layerId = 'others'
-            if (!this.app.layers.find(l => l.id === sNew.layerId)) sNew.layerId = 'draw'
-            if (!sNew.sourceId) sNew.sourceId = this.app.activeSourceId
-            
-            // Critical healing for Cloud Merge support
-            if (!sNew.id) sNew.id = `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`;
-            if (!sNew.createdAt) sNew.createdAt = now;
-            if (!sNew.updatedAt) sNew.updatedAt = now;
-            
-            return sNew;
-        })
+        await this.loadStamps(newFingerprint);
         this.app.jumpHistory = []
 
         // Notify GistShareManager in case a share link is pending PDF upload
@@ -293,6 +277,30 @@ export class ViewerManager {
         this.app.updateJumpLinePosition()
         this.app.updateRulerClip()
         this.updateFloatingTitle()
+    }
+
+    /**
+     * Load stamps (annotations) for a specific fingerprint from IndexedDB.
+     */
+    async loadStamps(fingerprint) {
+        if (!fingerprint) return;
+        const rawStamps = (await db.get(`stamps_${fingerprint}`)) || []
+        const now = Date.now()
+        this.app.stamps = rawStamps.filter(s => !s.deleted).map(s => {
+            const sNew = { ...s };
+            if (sNew.layerId === 'performance') sNew.layerId = 'text'
+            if (sNew.layerId === 'other' || sNew.layerId === 'anchor' || sNew.layerId === 'layout') sNew.layerId = 'others'
+            if (!this.app.layers.find(l => l.id === sNew.layerId)) sNew.layerId = 'draw'
+            if (!sNew.sourceId) sNew.sourceId = this.app.activeSourceId
+            
+            // Critical healing for Cloud Merge support
+            if (!sNew.id) sNew.id = `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`;
+            if (!sNew.createdAt) sNew.createdAt = now;
+            if (!sNew.updatedAt) sNew.updatedAt = now;
+            
+            return sNew;
+        })
+        console.log(`[ViewerManager] Loaded ${this.app.stamps.length} stamps for ${fingerprint.slice(0, 8)}`);
     }
 
     async updateFloatingTitle() {

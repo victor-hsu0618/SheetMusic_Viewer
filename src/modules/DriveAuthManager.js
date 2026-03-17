@@ -14,8 +14,20 @@ export class DriveAuthManager {
      * Initialize Google Identity Services.
      */
     init() {
+        // Restore enabled state early for UI consistency
+        if (localStorage.getItem('scoreflow_drive_sync_enabled') === 'true') {
+            this.sync.isEnabled = true;
+            this.refreshUI();
+        }
+
         if (typeof google === 'undefined') {
-            console.warn('[DriveSync] Google Identity Services not loaded yet.');
+            console.warn('[DriveSync] Google Identity Services not loaded yet. Retrying in 500ms...');
+            setTimeout(() => this.init(), 500);
+            return;
+        }
+
+        if (this.sync.tokenClient) {
+            console.log('[DriveSync] Token client already initialized.');
             return;
         }
 
@@ -35,12 +47,14 @@ export class DriveAuthManager {
 
                     if (response.error === 'immediate_failed') {
                         this.addLog('背景連線過期，請點擊「連接」重新授權', 'warn');
+                        // DO NOT set isEnabled = false here. 
+                        // Keep it true so the user can just click "Sign In" again.
                     } else {
                         this.addLog(`授權發生錯誤: ${response.error}`, 'error');
+                        // For other errors, we might still want to stay enabled but show a warning
                     }
 
-                    this.sync.isEnabled = false;
-                    localStorage.setItem('scoreflow_drive_sync_enabled', 'false');
+                    this.sync.accessToken = null;
                     this.refreshUI();
                     return;
                 }
