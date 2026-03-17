@@ -419,6 +419,45 @@ export class ScoreDetailManager {
         }
     }
 
+    async handleManualPush() {
+        const fp = this.currentFp || this.app.pdfFingerprint
+        if (!fp) return
+        if (!this.app.driveSyncManager?.isEnabled) return this.app.showMessage('Google Drive not connected', 'error')
+        
+        this.app.showMessage(`Forcing cloud push for current score...`, 'system')
+        try {
+            await this.app.driveSyncManager.pushScore(fp, true) // Force push
+            this.app.showMessage('Cloud push completed.', 'success')
+            this.refreshStats()
+        } catch (err) {
+            this.app.showMessage(`Push failed: ${err.message}`, 'error')
+        }
+    }
+
+    async handleManualPull() {
+        const fp = this.currentFp || this.app.pdfFingerprint
+        if (!fp) return
+        if (!this.app.driveSyncManager?.isEnabled) return this.app.showMessage('Google Drive not connected', 'error')
+
+        this.app.showMessage(`Fetching latest data from cloud...`, 'system')
+        try {
+            const result = await this.app.driveSyncManager.syncScore(fp, false, true, false) // Force pull
+            if (result) {
+                this.app.showMessage('Cloud data fetched and merged.', 'success')
+                // Force reload if it's the active score
+                if (this.app.pdfFingerprint === fp) {
+                    await this.app.viewerManager.loadStamps(fp)
+                    this.app.annotationManager?.redrawAllAnnotationLayers()
+                }
+                this.refreshStats()
+            } else {
+                this.app.showMessage('No new data found on cloud.', 'info')
+            }
+        } catch (err) {
+            this.app.showMessage(`Pull failed: ${err.message}`, 'error')
+        }
+    }
+
     getExportMetadata() {
         return { name: this.currentInfo.name, composer: this.currentInfo.composer, fingerprint: this.currentFp || this.app.pdfFingerprint }
     }

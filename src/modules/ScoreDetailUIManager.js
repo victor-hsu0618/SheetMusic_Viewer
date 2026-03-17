@@ -20,6 +20,8 @@ export class ScoreDetailUIManager {
         this.btnSave = document.getElementById('btn-save-score-detail')
 
         this.syncFileIdDisplay = document.getElementById('sync-file-id-display')
+        this.btnManualPush = document.getElementById('btn-drive-manual-push')
+        this.btnManualPull = document.getElementById('btn-drive-manual-pull')
 
         this.mediaListContainer = document.getElementById('score-media-list')
         this.mediaUrlInput = document.getElementById('sidebar-media-url')
@@ -57,6 +59,9 @@ export class ScoreDetailUIManager {
 
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
         document.getElementById('btn-reset-score-all')?.addEventListener('click', () => this.manager.handleResetAll())
+
+        this.btnManualPush?.addEventListener('click', () => this.manager.handleManualPush())
+        this.btnManualPull?.addEventListener('click', () => this.manager.handleManualPull())
 
         document.getElementById('btn-toggle-keep-offline')?.addEventListener('change', async (e) => {
             const fp = this.manager.currentFp || this.app.pdfFingerprint

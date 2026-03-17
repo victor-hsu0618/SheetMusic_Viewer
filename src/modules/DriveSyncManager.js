@@ -435,8 +435,10 @@ export class DriveSyncManager {
             }
 
             // 5. Execute PULL/PUSH
-            if (canPull && fingerprint !== this.app.pdfFingerprint) {
+            // Manual sync or background scan can both trigger pulls
+            if (canPull) {
                 await this.pullBackground(fingerprint, entry.syncId);
+                return remoteVer; // Signal that a pull happened
             }
 
             if (needsPush) {
@@ -612,6 +614,52 @@ export class DriveSyncManager {
             fingerprint: fp,
             dateImported: score?.dateImported || 0
         };
+    }
+
+    /**
+     * Manual score push wrapper. 
+     * If fingerprint matches active PDF, it uses in-memory stamps.
+     * Otherwise it gathers from DB.
+     */
+    async pushScore(fingerprint, isManual = false) {
+        if (!this.folderId) return;
+        
+        // If it's the active score, we can use the regular push() which is already optimized
+        if (fingerprint === this.app.pdfFingerprint) {
+            return await this.push();
+        }
+
+        // For non-active score, we need a custom gather-then-upload flow
+        if (this._pushLocks.has(fingerprint)) return;
+        this._pushLocks.add(fingerprint);
+
+        try {
+            const data = await this.gatherLocalData(fingerprint);
+            const entry = this.manifest[fingerprint];
+            let fileId = entry?.syncId || await this.findSyncFile(fingerprint, 'sync');
+            
+            const prefix = this.safeTitle(data.scoreDetail?.name);
+            const fileName = `${prefix}${this.shortHash(fingerprint)}.json`;
+            const annotParent = this.annotationsFolderId || this.folderId;
+
+            if (fileId) {
+                await this.updateFile(fileId, data);
+            } else {
+                fileId = await this.createFile(fileName, data, annotParent);
+            }
+
+            if (fileId) {
+                await this.updateManifestEntry(fingerprint, {
+                    syncId: fileId,
+                    name: prefix.replace(/_$/, ''),
+                    filename: fileName,
+                    updated: data.version
+                });
+                this.app.scoreManager?.updateSyncStatus(fingerprint, true);
+            }
+        } finally {
+            this._pushLocks.delete(fingerprint);
+        }
     }
 
     /**

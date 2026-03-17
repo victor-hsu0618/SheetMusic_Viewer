@@ -826,7 +826,7 @@
             <div class="build-info-item">ScoreFlow v2.2</div>
             <div class="build-info-item">Branch: <span id="build-branch">main</span></div>
             <div class="flex-column mt-10">
-              <a href="tools/index.html" style="color: var(--primary); text-decoration: none; font-weight: 600; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; padding: 4px 0;">
+              <a href="./tools/index.html" style="color: var(--primary); text-decoration: none; font-weight: 600; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; padding: 4px 0;">
                 <span>🛠️</span> Open Developer Tools
               </a>
               <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0; width: 50%;"></div>
@@ -1303,6 +1303,20 @@
           </div>
           <span class="setting-hint">Pin this score to always keep a local copy.</span>
         </div>
+
+        <div class="tab-divider"></div>
+        <div class="tab-section-label">Cloud Sync Control</div>
+        <div class="flex-row-center gap-10 mt-10">
+          <button id="btn-drive-manual-push" class="btn btn-primary btn-mini-sidebar w-full">
+            <span>↑</span> Push Now
+          </button>
+          <button id="btn-drive-manual-pull" class="btn btn-outline-sm btn-mini-sidebar w-full">
+            <span>↓</span> Pull Now
+          </button>
+        </div>
+        <p class="setting-hint mt-10">
+          Manual sync will bypass the automatic timer. Use "Pull Now" if your markings are missing after a cloud update.
+        </p>
         <div class="tab-divider"></div>
         <div class="tab-section-label">Score Annotation Exchange</div>
         <div class="flex-row-center gap-10 mb-10">
