@@ -212,7 +212,25 @@
                 首次快取：建議在有網路時至少開啟一次 ScoreFlow 並載入您的常用樂譜，確保資源已妥善快取。
             </blockquote>
             <p>ScoreFlow 將樂譜儲存在瀏覽器的 <strong>IndexedDB</strong> 中。請勿清除瀏覽器的快取資料，否則本機樂譜需重新手動開啟。</p>
-        </section>
+ 
++            <h3>10.4 軟體更新機制</h3>
++            <p>ScoreFlow 採用自動化更新機制，確保您始終使用最新且最穩定的版本：</p>
++            <ul>
++                <li><strong>自動檢查</strong>：
++                    <ul>
++                        <li><strong>啟動時</strong>：每次您在連網狀態下開啟或重新整理 App，系統會立即檢查有無新版本。</li>
++                        <li><strong>背景檢查</strong>：若 App 長時間保持開啟，瀏覽器通常會每隔 24 小時自動於背景檢查一次。</li>
++                    </ul>
++                </li>
++                <li><strong>自動安裝</strong>：一旦偵測到新版本，系統會於背景自動下載並安裝。新版本通常會在您<strong>下一次啟動 App</strong> 或重新整理後立即生效。</li>
++                <li><strong>版本確認</strong>：
++                    <ul>
++                        <li>您可以前往 <strong>Global Settings -> System Settings</strong> 查看最下方的 <strong>Build Info</strong>。</li>
++                        <li><strong>Build Time</strong>：顯示該版本的最後編譯時間，可用於確認是否已更新。</li>
++                    </ul>
++                </li>
++            </ul>
+         </section>
 
         <footer>
             <p style="text-align: center; color: var(--text-muted); margin-top: 60px; font-size: 0.9rem;">
