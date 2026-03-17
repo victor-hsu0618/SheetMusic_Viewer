@@ -351,6 +351,14 @@ export class DocActionManager {
                 if (sNew.type.startsWith('measure') && (!sNew.draw || sNew.draw.variant !== 'measure')) {
                     sNew.draw = { type: 'special', variant: 'measure' };
                 }
+            } else if (sNew.type === 'system' || !sNew.type) {
+                // HEAL: If it's labeled as 'system' but has points, it's a pen mark
+                if (sNew.points) {
+                    sNew.type = 'pen';
+                    if (!sNew.layerId || sNew.layerId === 'performance') sNew.layerId = 'draw';
+                } else if (sNew.data && sNew.layerId === 'text') {
+                    sNew.type = 'text';
+                }
             }
             return sNew;
         });
