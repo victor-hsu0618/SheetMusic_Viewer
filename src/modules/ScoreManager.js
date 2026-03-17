@@ -186,8 +186,15 @@ export class ScoreManager {
 
         this.app.showMessage(`Deleting ${count} score${count !== 1 ? 's' : ''}...`, 'system');
         
+        let activeScoreDeleted = false;
         for (const fp of this.selectedFingerprints) {
-            await this.deleteScore(fp, deleteFromCloud);
+            if (fp === this.app.pdfFingerprint) activeScoreDeleted = true;
+            await this.deleteScore(fp, deleteFromCloud, true); // skip autoload inside the loop
+        }
+
+        if (activeScoreDeleted) {
+            console.log('[ScoreManager] Active score was deleted, triggering auto-load of replacement...');
+            await this._autoLoadOnStartup();
         }
 
         this.toggleSelectionMode(false);
@@ -283,7 +290,7 @@ export class ScoreManager {
         }
     }
 
-    async deleteScore(fp, deleteFromCloud = false) {
+    async deleteScore(fp, deleteFromCloud = false, skipAutoLoad = false) {
         // 1. Cloud Deletion (if requested and available)
         if (deleteFromCloud && this.app.driveSyncManager) {
             try {
@@ -304,6 +311,13 @@ export class ScoreManager {
         await db.remove(`detail_${fp}`);
         await db.remove(`stamps_${fp}`);
         await db.remove(`bookmarks_${fp}`);
+
+        // If we deleted the active score and aren't skipping autoload (e.g. not in a batch), 
+        // immediately switch to a different score.
+        if (!skipAutoLoad && fp === this.app.pdfFingerprint) {
+            console.log('[ScoreManager] Open score deleted individually, switching to next available...');
+            await this._autoLoadOnStartup();
+        }
 
         this.render();
     }

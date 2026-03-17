@@ -99,11 +99,21 @@ export class JumpManager {
         if (!this.panel) return
         const active = force !== null ? force : !this.panel.classList.contains('active')
         
+        // If clicking same button and panel is open, toggle it off
+        if (force === null && !active) {
+            this.togglePanel(false)
+            return
+        }
+
         if (active) {
             this.app.uiManager.closeAllActivePanels('JumpManager')
         }
 
         this.panel.classList.toggle('active', active)
+        
+        // Sync button visual state
+        const btn = document.getElementById('btn-jump-panel-toggle')
+        if (btn) btn.classList.toggle('active', active)
         if (active) {
             // Reset position to let CSS fix it as a "Stacked Shelf"
             this.panel.style.top = ''

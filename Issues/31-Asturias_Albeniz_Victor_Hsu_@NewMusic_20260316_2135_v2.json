@@ -1,0 +1,1184 @@
+{
+  "version": "2.0",
+  "exportType": "single_score",
+  "author": "Victor Hsu @NewMusic",
+  "timestamp": 1773668357817,
+  "pdfFingerprint": "b7c4979ff73cb54fac570c85c638c62e09b839e0227767e3ec14b7973c80cfb9",
+  "pdfFileName": "31-Asturias-Cello.pdf",
+  "metadata": {
+    "name": "31-Asturias",
+    "composer": "Albeniz",
+    "fingerprint": "b7c4979ff73cb54fac570c85c638c62e09b839e0227767e3ec14b7973c80cfb9"
+  },
+  "sources": [
+    {
+      "id": "self",
+      "name": "Primary Interpretation",
+      "visible": true,
+      "opacity": 1,
+      "color": "#6366f1"
+    }
+  ],
+  "layers": [
+    {
+      "id": "draw",
+      "name": "Pens",
+      "color": "#1d4ed8",
+      "visible": true,
+      "type": "draw"
+    },
+    {
+      "id": "fingering",
+      "name": "B.Fingering",
+      "color": "#be123c",
+      "visible": true,
+      "type": "fingering"
+    },
+    {
+      "id": "articulation",
+      "name": "Articulations",
+      "color": "#10b981",
+      "visible": true,
+      "type": "articulation"
+    },
+    {
+      "id": "text",
+      "name": "Text",
+      "color": "#f59e0b",
+      "visible": true,
+      "type": "performance"
+    },
+    {
+      "id": "other",
+      "name": "Other (Layout)",
+      "color": "#64748b",
+      "visible": true,
+      "type": "layout"
+    }
+  ],
+  "stamps": [
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.8777052488520066,
+      "y": 0.1750796676512958,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.42567386693573295,
+      "y": 0.17601094247922822,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.392726973210057,
+      "y": 0.283107547691457,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.6958383954862756,
+      "y": 0.3827539542802264,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.5284681753598419,
+      "y": 0.4321115201606449,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.532421802606923,
+      "y": 0.3855477787640237,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.14364845664394704,
+      "y": 0.18439241593062003,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.641805489776167,
+      "y": 0.17973604179095792,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.6194016020427074,
+      "y": 0.2821762728635246,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.674752383501843,
+      "y": 0.2821762728635246,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f0",
+      "x": 0.6681630047567079,
+      "y": 0.3855477787640237,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.5759117023248153,
+      "y": 0.48053781121313094,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.7630500586866544,
+      "y": 0.4824003608689958,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.13310545065173074,
+      "y": 0.5801842178019004,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.13310545065173074,
+      "y": 0.5801842178019004,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.15550933838519038,
+      "y": 0.6863495481861968,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.4454420031711385,
+      "y": 0.664930227143751,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.9066985153306014,
+      "y": 0.6630676774878862,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.33474044025286737,
+      "y": 0.7673704582163178,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.9066985153306014,
+      "y": 0.7627140840766556,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.7221959104668163,
+      "y": 0.7645766337325205,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.20822436834627187,
+      "y": 0.1527290717809176,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.43621687292794925,
+      "y": 0.15086652212505275,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.7011098984823837,
+      "y": 0.26355077630487606,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.1278339476556226,
+      "y": 0.4926443839762525,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.13046969915367668,
+      "y": 0.5354830260611441,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.6800238864979512,
+      "y": 0.5876344164253599,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.8724337458558985,
+      "y": 0.5904282409091571,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.8697979943578444,
+      "y": 0.6397858067895755,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.16473446862837965,
+      "y": 0.8972832967128909,
+      "data": null
+    },
+    {
+      "page": 2,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.09356917818091964,
+      "y": 0.5913595157370896,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.6483948685213022,
+      "y": 0.7720268323559798,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.5851368325680045,
+      "y": 0.7599202595928584,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.7169244074707082,
+      "y": 0.7738893820118447,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.5745938265757882,
+      "y": 0.862360490665425,
+      "data": null
+    },
+    {
+      "page": 3,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.12915182340464965,
+      "y": 0.08940238348151273,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.11465519016535222,
+      "y": 0.12479082694294487,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.12256244465951446,
+      "y": 0.06798306243906697,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.28466116178983997,
+      "y": 0.14248504867366094,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.31497230401746185,
+      "y": 0.14248504867366094,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.12915182340464965,
+      "y": 0.2654133259607409,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "ii",
+      "x": 0.12915182340464965,
+      "y": 0.3147708918411594,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.33605831600189445,
+      "y": 0.6658615019716835,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.35846220373535403,
+      "y": 0.6602738530040889,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.5574614418384367,
+      "y": 0.7664391833883853,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.781500319173033,
+      "y": 0.8651543151492223,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f4",
+      "x": 0.6088585960504912,
+      "y": 0.06332668829940485,
+      "data": null
+    },
+    {
+      "page": 4,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f1",
+      "x": 0.6470769927722753,
+      "y": 0.0689143372669994,
+      "data": null
+    },
+    {
+      "page": 5,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.7116529044746001,
+      "y": 0.5801842178019004,
+      "data": null
+    },
+    {
+      "page": 5,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.24776064081708296,
+      "y": 0.7804083058073716,
+      "data": null
+    },
+    {
+      "page": 5,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f2",
+      "x": 0.6839775137450322,
+      "y": 0.8791234375682087,
+      "data": null
+    },
+    {
+      "page": 6,
+      "layerId": "fingering",
+      "sourceId": "self",
+      "type": "f3",
+      "x": 0.40063422770421925,
+      "y": 0.7729581071839122,
+      "data": null
+    },
+    {
+      "page": 1,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.17889447236180905,
+      "data": "1",
+      "id": "f509d2de-207a-41ec-9b43-39ef7a2611e2",
+      "updatedAt": 1773038478548
+    },
+    {
+      "page": 1,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.27437185929648245,
+      "data": "4",
+      "id": "bc4c68af-6c23-47d3-8deb-645799f3ca54",
+      "updatedAt": 1773038490381
+    },
+    {
+      "page": 1,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.3678391959798995,
+      "data": "7",
+      "id": "dc1c9a39-b6b9-4765-8aae-b7fda550f0b1",
+      "updatedAt": 1773038505603
+    },
+    {
+      "page": 1,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.4753768844221106,
+      "data": "10",
+      "id": "075a50e1-e5e9-4aa0-8731-d8ce17c97036",
+      "updatedAt": 1773038513490
+    },
+    {
+      "page": 1,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.5738693467336683,
+      "data": "13",
+      "id": "22ad1f72-7190-4113-8aa3-0ae4fa6f89e8",
+      "updatedAt": 1773038519227
+    },
+    {
+      "page": 1,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.678894472361809,
+      "data": "16",
+      "id": "38cd5e58-8a77-4d43-b0ef-45cafcdb4720",
+      "updatedAt": 1773038523750
+    },
+    {
+      "page": 1,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.7763819095477387,
+      "data": "19",
+      "id": "7b96bde7-ea44-4eca-b374-5501d40cf104",
+      "updatedAt": 1773038527024
+    },
+    {
+      "page": 1,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.042044689385437616,
+      "y": 0.878894472361809,
+      "data": "22",
+      "id": "294e704f-f88e-46ca-96b7-0a5448cbf0d4",
+      "updatedAt": 1773038530231
+    },
+    {
+      "page": 2,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.06080402010050251,
+      "data": "25",
+      "id": "c13445a4-8c16-4497-93d9-689e2ae34c82",
+      "updatedAt": 1773038534899
+    },
+    {
+      "page": 2,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.16331658291457285,
+      "data": "28",
+      "id": "c50f6413-4f75-48f9-955c-ec3b596e346d",
+      "updatedAt": 1773038537858
+    },
+    {
+      "page": 2,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.26884422110552764,
+      "data": "31",
+      "id": "016fa5a0-99dc-42be-95cd-01f6dab0ba2d",
+      "updatedAt": 1773038544518
+    },
+    {
+      "page": 2,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.38040201005025126,
+      "data": "34",
+      "id": "58091c41-de4e-44f2-af04-0cb717d36a99",
+      "updatedAt": 1773038546948
+    },
+    {
+      "page": 2,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.48592964824120605,
+      "data": "37",
+      "id": "724b1186-c59c-40dd-b6d2-2be8398e2596",
+      "updatedAt": 1773038550560
+    },
+    {
+      "page": 2,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.5814070351758793,
+      "data": "40",
+      "id": "84523f38-5c38-4699-8b83-fe138da20c29",
+      "updatedAt": 1773038553699
+    },
+    {
+      "page": 2,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.6909547738693467,
+      "data": "43",
+      "id": "cb8ebd6a-b81f-46b7-8585-2c27ba74d337",
+      "updatedAt": 1773038559886
+    },
+    {
+      "page": 2,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.7874371859296482,
+      "data": "46",
+      "id": "121c4267-3dc3-48a8-85b2-88632d8745dc",
+      "updatedAt": 1773038564285
+    },
+    {
+      "page": 2,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.05626706963410705,
+      "y": 0.8919597989949748,
+      "data": "49",
+      "id": "ad2a8382-71af-47ee-9f67-3e8071a7e8cd",
+      "updatedAt": 1773038566693
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.0864321608040201,
+      "data": "52",
+      "id": "e5120353-8f8b-476c-a4c8-1794d17320ef",
+      "updatedAt": 1773038569956
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.17939698492462314,
+      "data": "55",
+      "id": "b45edea7-c09b-4dec-a175-c6d9bfdfb106",
+      "updatedAt": 1773038573218
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.2788944723618091,
+      "data": "58",
+      "id": "e2600496-8f9a-42cd-8f8f-e05b909c4518",
+      "updatedAt": 1773038576268
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.3748743718592965,
+      "data": "61",
+      "id": "fb267551-dd02-4e28-81f7-c457d3020a6c",
+      "updatedAt": 1773038579203
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.4763819095477387,
+      "data": "64",
+      "id": "69560bcd-828c-4e59-bdaa-a88169eb12eb",
+      "updatedAt": 1773038606700,
+      "deleted": true
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.47437185929648246,
+      "data": "70",
+      "id": "b4e639b1-570e-40f2-aeb3-5b6a218394e9",
+      "updatedAt": 1773038623282
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.5778894472361809,
+      "data": "79",
+      "id": "52b0305d-74da-4b1a-9efb-78d30f5b5ac6",
+      "updatedAt": 1773038644230
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.6743718592964824,
+      "data": "86",
+      "id": "3c862fa0-ca5a-4e72-91d8-072d160d266e",
+      "updatedAt": 1773038655728
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.7728643216080402,
+      "data": "92",
+      "id": "67afaf6a-baf1-4f16-a143-a44decadd23f",
+      "updatedAt": 1773038663032
+    },
+    {
+      "page": 3,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.06471183013144591,
+      "y": 0.8738693467336683,
+      "data": "98",
+      "id": "d6a4bdb4-0f9c-486f-9ec5-e5d8925d4443",
+      "updatedAt": 1773038670365
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.06231155778894473,
+      "data": "103",
+      "id": "9ba40eeb-ec8e-4ab7-95a1-005738eb16e0",
+      "updatedAt": 1773038679185
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.16180904522613065,
+      "data": "107",
+      "id": "d3f1da12-00fb-49da-8353-741bc8aa8e2e",
+      "updatedAt": 1773038686297
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.25829145728643216,
+      "data": "112",
+      "id": "062e183b-0bf3-48c9-bec9-1b5c53df8616",
+      "updatedAt": 1773038694249
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.3597989949748744,
+      "data": "115",
+      "id": "c2bb7ebb-d4f9-4e54-8d98-badb20b9c84a",
+      "updatedAt": 1773038715502
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.4613065326633166,
+      "data": "118",
+      "id": "8bc3f783-2934-407e-af14-2af9fa94a210",
+      "updatedAt": 1773038752717,
+      "deleted": true
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.5653266331658291,
+      "data": "127",
+      "id": "8a33d95c-3f54-4961-994f-3236bc37a2d0",
+      "updatedAt": 1773038886023,
+      "deleted": true
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.4587939698492462,
+      "data": "123",
+      "id": "a303312f-e5b7-4187-ada2-951a87d35e26",
+      "updatedAt": 1773038882299
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.5623115577889447,
+      "data": "127",
+      "id": "f6935148-99bc-48c5-b892-e1d828779ecb",
+      "updatedAt": 1773038902854,
+      "deleted": true
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.5653266331658291,
+      "data": "126",
+      "id": "4ae87c4a-6e63-494e-a98c-8c023e6078f3",
+      "updatedAt": 1773038912686
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.6658291457286432,
+      "data": "130",
+      "id": "b688d684-c71d-4ba7-b2ca-0b53d55e1b76",
+      "updatedAt": 1773038924162,
+      "deleted": true
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.6608040201005024,
+      "data": "129",
+      "id": "255aafe5-d296-4b09-8ec0-409e22272b2d",
+      "updatedAt": 1773038933994
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.7683417085427136,
+      "data": "132",
+      "id": "f6414adb-bff7-4a33-96c8-099425b03942",
+      "updatedAt": 1773038948013
+    },
+    {
+      "page": 4,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.07608973433038145,
+      "y": 0.8618090452261307,
+      "data": "135",
+      "id": "70afebec-9be3-4376-a8d1-87a714cecf09",
+      "updatedAt": 1773038962997
+    },
+    {
+      "page": 5,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.10050251256281408,
+      "data": "138",
+      "id": "3fac3da9-05f1-426f-9c06-a884399ad673",
+      "updatedAt": 1773038987332
+    },
+    {
+      "page": 5,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.18693467336683417,
+      "data": "141",
+      "id": "7f851736-7188-49a7-b28c-d82121b2eb49",
+      "updatedAt": 1773038990730
+    },
+    {
+      "page": 5,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.2934673366834171,
+      "data": "144",
+      "id": "0a2d93a0-58fe-42ab-a641-c847575d0624",
+      "updatedAt": 1773038993947
+    },
+    {
+      "page": 5,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.3899497487437186,
+      "data": "147",
+      "id": "5eed5713-24fe-4d86-8a81-d34fd4afcd8b",
+      "updatedAt": 1773038996152
+    },
+    {
+      "page": 5,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.49145728643216086,
+      "data": "150",
+      "id": "c3fbb97c-f1cb-4253-a799-0744c6330a44",
+      "updatedAt": 1773038999426
+    },
+    {
+      "page": 5,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.5909547738693467,
+      "data": "153",
+      "id": "a11d1d3d-0663-4cc4-af44-19fccb5fc511",
+      "updatedAt": 1773039003105
+    },
+    {
+      "page": 5,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.6839195979899497,
+      "data": "156",
+      "id": "c5075b1b-07bb-4d3f-b82d-50ce92a3e944",
+      "updatedAt": 1773039005783
+    },
+    {
+      "page": 5,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.78643216080402,
+      "data": "159",
+      "id": "fe921f9e-a64d-4530-8df7-41ae858d8c71",
+      "updatedAt": 1773039009372
+    },
+    {
+      "page": 5,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08177868642984921,
+      "y": 0.8834170854271356,
+      "data": "162",
+      "id": "8826e369-f1b5-40b5-aecb-df6db0a83378",
+      "updatedAt": 1773039012004
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.0949748743718593,
+      "data": "165",
+      "id": "cfd7c1ed-cf6a-492c-b7b6-f8b53d110943",
+      "updatedAt": 1773039016302
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.18542713567839197,
+      "data": "168",
+      "id": "bdad467f-f1f9-4f60-b3eb-d4715424e087",
+      "updatedAt": 1773039018788
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.2869346733668342,
+      "data": "171",
+      "id": "50414a3e-dd9c-4d98-bb6a-ac3b0d6b52bc",
+      "updatedAt": 1773039021173
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.3849246231155779,
+      "data": "174",
+      "id": "ec675cf9-b584-43f2-a39e-c8e106e3c0ed",
+      "updatedAt": 1773039025133
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.47738693467336685,
+      "data": "177",
+      "id": "4f1e0b2d-b20d-4f30-b1b6-8966eac84547",
+      "updatedAt": 1773039028193
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.5748743718592965,
+      "data": "180",
+      "id": "9e65e8d8-163e-4fe5-84af-a0be55bde8cd",
+      "updatedAt": 1773039031164
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.6763819095477387,
+      "data": "183",
+      "id": "5adc3d4a-4ff4-468c-9560-e633232aea0c",
+      "updatedAt": 1773039036069
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.7748743718592964,
+      "data": "186",
+      "id": "5665f20a-6dfc-43af-8b51-f812be636ae3",
+      "updatedAt": 1773039067558,
+      "deleted": true
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.771859296482412,
+      "data": "190",
+      "id": "6c977ac3-4539-4316-85f5-4afe134cd7eb",
+      "updatedAt": 1773039074849
+    },
+    {
+      "page": 6,
+      "layerId": "other",
+      "sourceId": "self",
+      "type": "measure",
+      "x": 0.08604540050445005,
+      "y": 0.8613065326633166,
+      "data": "195",
+      "id": "20ac95e9-d0cd-47f4-8aa8-563568ebad1b",
+      "updatedAt": 1773039087002
+    }
+  ]
+}

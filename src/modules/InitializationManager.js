@@ -68,6 +68,8 @@ export class InitializationManager {
         app.dialogInput = document.getElementById('dialog-input')
         app.closeDialogBtn = document.getElementById('close-dialog')
         app.floatingScoreTitle = document.getElementById('floating-score-title')
+        app.btnModeHand = document.getElementById('btn-mode-hand')
+        app.btnModeEraser = document.getElementById('btn-mode-eraser')
 
         document.querySelectorAll('.zoom-btn-mini[title]').forEach(btn => {
             btn.dataset.tooltip = btn.title

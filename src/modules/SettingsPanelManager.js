@@ -183,7 +183,19 @@ export class SettingsPanelManager {
 
     toggle(force = null) {
         if (!this.panel) return
-        this.isVisible = force !== null ? force : !this.isVisible
+        const active = force !== null ? force : !this.isVisible
+
+        // If clicking same button and panel is open, toggle it off
+        if (force === null && !active) {
+            this.toggle(false)
+            return
+        }
+
+        this.isVisible = active
+
+        // Sync button visual state
+        const btn = document.getElementById('btn-settings-toggle')
+        if (btn) btn.classList.toggle('active', active)
 
         if (this.isVisible) {
             this.app.uiManager.closeAllActivePanels('SettingsPanelManager')

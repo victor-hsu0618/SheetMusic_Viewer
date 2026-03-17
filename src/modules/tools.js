@@ -663,7 +663,8 @@ export class ToolManager {
                     const btn = document.createElement("button")
                     const isSelected = this.app.activeStampType === tool.id
                     btn.className = `text-tool-pill ${isSelected ? "active" : ""}`
-                    btn.innerHTML = tool.icon || tool.label
+                    const hasIcon = tool.icon && tool.icon.includes('<path')
+                    btn.innerHTML = hasIcon ? this.getIcon(tool, 20) : (tool.icon || tool.label)
                     btn.style.color = isSelected ? '#ffffff' : rowColor
                     
                     // Apply font styling from tool definition if available

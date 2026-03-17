@@ -97,7 +97,9 @@ export const TOOLSETS = [
         name: 'Text',
         type: 'text',
         tools: [
-            // Row 1: Dynamics (Professional Musical Symbols using Text mode for stability)
+            // Row 1: Generic Text & Dynamics
+            { id: 'text', label: 'Text', row: 1, icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'text', content: '', size: 20 } },
+            { id: 'tempo-text', label: 'Tempo', row: 1, icon: '<path d="M4 7V4h16v3M12 4v16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />', draw: { type: 'text', content: '', font: 'bold', size: 20 } },
             { id: 'text-ppp', label: 'ppp', row: 1, icon: 'ppp', draw: { type: 'text', content: 'ppp', font: 'italic 800', size: 16, fontFace: 'serif' } },
             { id: 'text-pp', label: 'pp', row: 1, icon: 'pp', draw: { type: 'text', content: 'pp', font: 'italic 800', size: 16, fontFace: 'serif' } },
             { id: 'text-p', label: 'p', row: 1, icon: 'p', draw: { type: 'text', content: 'p', font: 'italic 800', size: 16, fontFace: 'serif' } },

@@ -308,19 +308,66 @@
 }
 
 /* Professional Floating Text Editor */
-.floating-text-editor {
+.text-editor-container {
   position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 15000;
+  pointer-events: auto;
+}
+
+.text-editor-toolbar {
+  display: flex;
+  gap: 5px;
+  background: white;
+  padding: 4px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  margin-bottom: 8px; /* Place buttons ABOVE the text box for visibility */
+  border: 1px solid var(--border-light);
+  order: -1; /* Move toolbar above the editor */
+}
+
+.editor-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.editor-btn.confirm {
+  background: #10b981;
+  color: white;
+}
+
+.editor-btn.cancel {
+  background: #ef4444;
+  color: white;
+}
+
+.editor-btn:active {
+  transform: scale(0.9);
+}
+
+.floating-text-editor {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid var(--primary);
   border-radius: 4px;
   padding: 4px 8px;
-  min-width: 60px;
-  min-height: 30px;
+  min-width: 80px;
+  min-height: 32px;
   line-height: 1.2;
   font-weight: 700;
   outline: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 2000;
   resize: none;
   overflow: hidden;
   white-space: pre-wrap;

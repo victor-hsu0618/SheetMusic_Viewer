@@ -115,6 +115,9 @@ export class InteractionManager {
         // --- HANDLERS ---
 
         const startAction = async (e) => {
+            // Guard: Ignore clicks on the text editor or its toolbar
+            if (e.target.closest('.text-editor-container')) return;
+
             const toolType = this.app.activeStampType;
             const pointerType = getPointerType(e);
 
@@ -139,6 +142,8 @@ export class InteractionManager {
                         window.addEventListener('pointermove',   doTwoFingerPan);
                         window.addEventListener('pointerup',     stopTwoFingerPan);
                         window.addEventListener('pointercancel', stopTwoFingerPan);
+                        isInteracting = false; // Ensure we don't block subsequent single-finger taps
+                        this.app.isInteracting = false;
                         // Clear any stamp preview that appeared on first-finger down
                         virtualPointer?.classList.remove('active');
                         this.app.redrawStamps(pageNum);
@@ -367,6 +372,8 @@ export class InteractionManager {
                     createdAt: Date.now(), updatedAt: Date.now()
                 };
                 if (toolType === 'slur') activeObject.curvature = -0.28;
+                isInteracting = true;
+                this.app.isInteracting = true;
                 attachGlobalListeners();
                 InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
             } else if (toolType === 'eraser') {
@@ -406,6 +413,8 @@ export class InteractionManager {
                         activeObject.draw = { ...tool.draw };
                     }
                 }
+                isInteracting = true;
+                this.app.isInteracting = true;
                 this.app.lastFocusedStamp = activeObject;
                 // Draw preview immediately on touch-down so stamp appears before any movement
                 const previewCanvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
@@ -792,11 +801,16 @@ export class InteractionManager {
         //
         // touch-action: none stays on overlays at all times (set in CSS).
         // We only need to clear any inline zIndex from previous interactions.
+        // Global Interaction Reset: If we switch tools, we MUST force clear any stuck local states
         if (toolType === 'view') {
             this.app.isInteracting = false;
-            document.querySelectorAll('.capture-overlay').forEach(el => {
-                el.style.zIndex = '';
-            });
         }
+
+        document.querySelectorAll('.capture-overlay').forEach(el => {
+            // Logic to clear stuck isInteracting flag would go here, 
+            // but isInteracting is local to the closure. 
+            // A better way is to set a global timestamp or serial to invalidate old interactions.
+            if (toolType === 'view') el.style.zIndex = '';
+        });
     }
 }

@@ -538,37 +538,50 @@ export class AnnotationManager {
      * Spawn the floating text editor for text/tempo-text annotations.
      */
     spawnTextEditor(wrapper, pageNum, stamp) {
+        // Guard: Prevent multiple editors
+        if (this.app.activeTextEditor) return;
+
         const overlay = wrapper.querySelector('.capture-overlay')
         if (!overlay) return
+
+        // Create Container to hold editor + mini toolbar
+        const container = document.createElement('div')
+        container.className = 'text-editor-container'
+        container.style.left = (stamp.x * 100) + '%'
+        container.style.top = (stamp.y * 100) + '%'
+        
         const editor = document.createElement('textarea')
         editor.className = 'floating-text-editor'
         editor.placeholder = 'Type here...'
-        editor.style.left = (stamp.x * 100) + '%'
-        editor.style.top = (stamp.y * 100) + '%'
         editor.style.fontSize = this.app.defaultFontSize + 'px'
         const layer = this.app.layers.find(l => l.id === stamp.layerId)
         editor.style.color = layer ? layer.color : '#ff4757'
-        overlay.appendChild(editor)
+        editor.value = stamp.data || ''
 
-        // Preserve scroll position: browser auto-scrolls when focusing a textarea
-        const scroller = document.querySelector('.pdf-container') || document.documentElement
-        const savedScrollLeft = scroller.scrollLeft
-        const savedScrollTop = scroller.scrollTop
-        setTimeout(() => {
-            editor.focus({ preventScroll: true })
-            editor.style.height = 'auto'
-            editor.style.height = editor.scrollHeight + 'px'
-            // Restore in case preventScroll wasn't supported
-            scroller.scrollLeft = savedScrollLeft
-            scroller.scrollTop = savedScrollTop
-        }, 10)
+        // Mini Toolbar (Confirm/Cancel) for touch users
+        const toolbar = document.createElement('div')
+        toolbar.className = 'text-editor-toolbar'
+        toolbar.innerHTML = `
+            <button class="editor-btn confirm" title="Confirm">✓</button>
+            <button class="editor-btn cancel" title="Cancel">✕</button>
+        `
+
+        container.appendChild(editor)
+        container.appendChild(toolbar)
+        overlay.appendChild(container)
+        this.app.activeTextEditor = container;
+
+        // Focus immediately (iOS requirement)
+        editor.focus({ preventScroll: true })
+        editor.style.height = 'auto'
+        editor.style.height = editor.scrollHeight + 'px'
 
         const finalize = () => {
             const val = editor.value.trim()
+            this.app.activeTextEditor = null;
             if (val) {
                 stamp.data = val
                 stamp.updatedAt = Date.now()
-                // Auto-save to library if it's new
                 if (!this.app.userTextLibrary.includes(val)) {
                     this.app.userTextLibrary.push(val)
                     if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
@@ -580,12 +593,29 @@ export class AnnotationManager {
                 this.redrawStamps(pageNum)
                 if (this.app.toolManager) this.app.toolManager.updateActiveTools()
             }
-            editor.remove()
+            container.remove()
         }
-        editor.onblur = () => { if (editor.value.trim()) finalize(); else editor.remove(); }
+
+        const cancel = () => {
+            this.app.activeTextEditor = null;
+            container.remove()
+            this.redrawStamps(pageNum)
+        }
+
+        // Toolbar Events
+        toolbar.querySelector('.confirm').onpointerdown = (e) => { e.stopPropagation(); finalize(); }
+        toolbar.querySelector('.cancel').onpointerdown = (e) => { e.stopPropagation(); cancel(); }
+
+        editor.onblur = (e) => { 
+            // Don't finalize if we just clicked the toolbar
+            if (e.relatedTarget && toolbar.contains(e.relatedTarget)) return
+            // For iPad, auto-finalize on blur is usually expected
+            setTimeout(() => { if (container.parentNode) finalize(); }, 200)
+        }
+
         editor.onkeydown = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finalize(); }
-            if (e.key === 'Escape') { editor.remove(); }
+            if (e.key === 'Escape') { e.preventDefault(); cancel(); }
             e.stopPropagation();
         }
         editor.oninput = () => {

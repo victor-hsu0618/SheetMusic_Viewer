@@ -37,6 +37,11 @@ export class ScoreDetailManager {
         }
 
         this.ui.panel.classList.toggle('active', active)
+        
+        // Sync button visual state
+        if (this.app.btnScoreDetailToggle) {
+            this.app.btnScoreDetailToggle.classList.toggle('active', active)
+        }
 
         if (active) {
             document.querySelectorAll('.jump-sub-panel').forEach(p => p.style.zIndex = '11500')
@@ -46,9 +51,16 @@ export class ScoreDetailManager {
     }
 
     async showPanel(fingerprint) {
-        this.currentFp = fingerprint || this.app.pdfFingerprint
-        if (!this.currentFp) return
-        await this.load(this.currentFp)
+        const targetFp = fingerprint || this.app.pdfFingerprint
+        if (!targetFp) return
+
+        // If clicking same button and panel is open, toggle it off
+        if (!fingerprint && this.ui.panel?.classList.contains('active')) {
+            this.toggle(false)
+            return
+        }
+
+        await this.load(targetFp)
         this.toggle(true)
     }
 
