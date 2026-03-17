@@ -54,23 +54,13 @@
   --border: rgba(255, 255, 255, 0.1);
 }
 
-/* Environment-Specific Themes */
+/* Environment-Specific Visual Themes (Shared Branding) */
 .env-dev {
-  --primary: #3b82f6; /* Blue for Local/Dev */
-  --primary-rgb: 59, 130, 246;
-  --primary-hover: #2563eb;
+  --primary-rgb: 16, 185, 129; /* Emerald cue */
 }
 
 .env-stable {
-  --primary: #8b5cf6; /* Royal Purple for Stable */
-  --primary-rgb: 139, 92, 246;
-  --primary-hover: #7c3aed;
-}
-
-.env-main {
-  --primary: #2c3e50; /* Warship Blue (Formal/Formal) */
-  --primary-rgb: 44, 62, 80;
-  --primary-hover: #34495e;
+  --primary-rgb: 139, 92, 246; /* Royal Purple cue */
 }
 
 /* Visual cues for different versions */
