@@ -27,7 +27,7 @@ export class EditScrollbarManager {
       if (e.target === this.thumb) return
       e.preventDefault()
       const rect = this.track.getBoundingClientRect()
-      const ratio = (e.clientY - rect.top) / rect.height
+      const ratio = 1 - ((e.clientY - rect.top) / rect.height)
       this.viewer.scrollTop = ratio * (this.viewer.scrollHeight - this.viewer.clientHeight)
     })
 
@@ -45,7 +45,7 @@ export class EditScrollbarManager {
     const trackH = clientHeight
     const thumbH = Math.max(40, trackH * (clientHeight / scrollHeight))
     const maxThumbTop = trackH - thumbH
-    const thumbTop = (scrollTop / (scrollHeight - clientHeight)) * maxThumbTop
+    const thumbTop = maxThumbTop - (scrollTop / (scrollHeight - clientHeight)) * maxThumbTop
     this.thumb.style.height = `${thumbH}px`
     this.thumb.style.top = `${thumbTop}px`
   }
@@ -67,7 +67,7 @@ export class EditScrollbarManager {
       const maxThumbTop = trackH - thumbH
       const scrollRange = scrollHeight - clientHeight
       const dy = ev.clientY - this._dragStartY
-      const scrollDelta = (dy / maxThumbTop) * scrollRange
+      const scrollDelta = -(dy / maxThumbTop) * scrollRange
       this.viewer.scrollTop = Math.max(0, Math.min(scrollRange, this._dragStartScrollTop + scrollDelta))
     }
 
