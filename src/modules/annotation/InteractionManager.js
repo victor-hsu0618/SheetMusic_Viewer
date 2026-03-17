@@ -599,6 +599,13 @@ export class InteractionManager {
                                 this.app.stamps.push(targetObj); 
                                 await this.app.saveToStorage(true); 
                                 this.app.updateRulerMarks();
+                                
+                                // --- Supabase Sync ---
+                                if (this.app.supabaseManager) {
+                                    targetObj.updatedAt = Date.now();
+                                    this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
+                                }
+
                                 startGracePeriod(targetObj);
                             } else {
                                 // If cancelled or empty, don't keep the temporary stamp
@@ -612,6 +619,13 @@ export class InteractionManager {
                         if (!isMovingExisting && activeObject.type !== 'view') this.app.stamps.push(activeObject);
                         if (activeObject.type === 'anchor') this.app.updateRulerMarks();
                         await this.app.saveToStorage(true);
+
+                        // --- Supabase Sync ---
+                        if (this.app.supabaseManager && activeObject.type !== 'view') {
+                            activeObject.updatedAt = Date.now();
+                            this.app.supabaseManager.pushAnnotation(activeObject, this.app.pdfFingerprint);
+                        }
+
                         this.app.redrawStamps(targetPageNum);
                         startGracePeriod(activeObject);
                     }
@@ -700,7 +714,7 @@ export class InteractionManager {
                         const chip = document.createElement('div');
                         chip.className = 'erase-hover-chip';
                         chip.textContent = '🗑 Delete';
-                        const wPx = getWrapperPixels(found.x || found.points?.[0]?.x || 0, found.y || found.points?.[0]?.y || 0);
+                        const wPx = getPixelsForWrapper(wrapper, found.x || found.points?.[0]?.x || 0, found.y || found.points?.[0]?.y || 0);
                         chip.style.left = `${wPx.x}px`; chip.style.top = `${wPx.y}px`;
                         wrapper.appendChild(chip);
                     }

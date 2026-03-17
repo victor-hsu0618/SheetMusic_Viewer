@@ -29,6 +29,7 @@ import { applyAppProxies } from './modules/AppProxyHandler.js'
 import { StaffDetector } from './modules/StaffDetector.js'
 import { GistShareManager } from './modules/GistShareManager.js'
 import { EditScrollbarManager } from './modules/EditScrollbarManager.js'
+import { SupabaseManager } from './modules/SupabaseManager.js'
 
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs/pdf.worker.min.mjs', baseUrl).href
@@ -109,6 +110,7 @@ class ScoreFlow {
     this.initManager = new InitializationManager(this)
     this.staffDetector = new StaffDetector(this)
     this.gistShareManager = new GistShareManager(this)
+    this.supabaseManager = new SupabaseManager(this)
 
     // Apply Proxies
     applyAppProxies(this)
@@ -138,15 +140,19 @@ class ScoreFlow {
     this.toolManager.initDraggable()
     this.toolManager.initToolbarResizable()
 
-    this.loadFromStorage().then(() => {
-      this.renderLayerUI()
-      this.renderSourceUI()
-      this.toolManager.updateActiveTools()
-      this.viewerManager.checkInitialView()
-      this.toolManager.preloadSvgs()
-      this.renderBuildInfo()
-      console.log('[ScoreFlow] Initialized - Version 2.3.5')
-    })
+    const initAll = async () => {
+        await this.scoreManager.init()
+        await this.loadFromStorage()
+        
+        this.renderLayerUI()
+        this.renderSourceUI()
+        this.toolManager.updateActiveTools()
+        this.viewerManager.checkInitialView()
+        this.toolManager.preloadSvgs()
+        this.renderBuildInfo()
+        console.log('[ScoreFlow] Initialized - Version 2.3.5')
+    }
+    initAll()
 
     this.restoreTheme()
   }
@@ -274,6 +280,7 @@ class ScoreFlow {
       sessionStorage.clear()
       
       try { 
+        db.closeDB(); // CRITICAL: Close connection before clearing/deleting
         await db.clear() 
         console.log('[System] IndexedDB cleared successfully.')
       } catch (err) { 

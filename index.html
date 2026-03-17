@@ -574,10 +574,39 @@
             </div>
           </div>
 
+          <!-- Supabase Cloud Sync Section (New) -->
+          <div class="tab-section-label">Real-time Cloud Sync (Supabase)</div>
+          <div id="supabase-auth-logged-out">
+            <p class="setting-hint mb-10">Sign in to sync your scores and annotations in real-time across devices.</p>
+            <div class="setting-item mb-10">
+              <input type="email" id="supabase-email" class="search-input-mini w-full" placeholder="Email Address" />
+            </div>
+            <div class="setting-item mb-15">
+              <input type="password" id="supabase-password" class="search-input-mini w-full" placeholder="Password" />
+            </div>
+            <button id="btn-supabase-login" class="btn btn-primary btn-full mb-10">Sign In to Cloud</button>
+            <div class="flex-row-center flex-center gap-10">
+                <button id="btn-supabase-signup" class="btn btn-outline-sm">Create Account</button>
+            </div>
+          </div>
+
+          <div id="supabase-auth-logged-in" class="hidden">
+            <div class="glass-card-mini mb-15" style="background: rgba(var(--primary-rgb), 0.1); border-color: rgba(var(--primary-rgb), 0.2);">
+                <div class="flex-row-center gap-10">
+                    <div class="user-avatar-small" id="supabase-user-initials" style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">U</div>
+                    <div class="flex-column">
+                        <div id="supabase-user-email" class="text-bold text-sm" style="font-size: 13px;">user@example.com</div>
+                        <div class="status-tag success" style="color: var(--success); font-size: 10px; font-weight: bold;">Connected</div>
+                    </div>
+                </div>
+            </div>
+            <button id="btn-supabase-logout" class="btn btn-outline-sm btn-full text-danger">Sign Out from Cloud</button>
+          </div>
+
           <div class="tab-divider"></div>
 
           <!-- Drive Sync Section -->
-          <div class="tab-section-label">Google Drive Sync</div>
+          <div class="tab-section-label">Legacy Sync (Google Drive)</div>
           <div class="setting-item mb-10">
             <div class="flex-row-center flex-space-between">
               <span class="text-mini">雲端連線狀態</span>

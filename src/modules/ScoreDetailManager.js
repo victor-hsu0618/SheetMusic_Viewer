@@ -68,6 +68,7 @@ export class ScoreDetailManager {
         if (!fingerprint) return
         this.isLoading = true
         this.currentFp = fingerprint
+        console.log(`[ScoreDetailManager] Loading Panel for: ${fingerprint.slice(0, 8)}...`);
 
         // Reset to clean state first
         this.currentInfo = {

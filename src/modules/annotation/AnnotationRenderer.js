@@ -70,9 +70,7 @@ export class AnnotationRenderer {
             ctx.restore()
         });
 
-        if (drawnCount > 0 || skippedCount > 0) {
-            console.log(`[AnnotationRenderer] Page ${page}: Drew ${drawnCount}, Skipped ${skippedCount}. Reasons:`, skipReasons);
-        }
+        // console.log(`[AnnotationRenderer] Page ${page}: Drew ${drawnCount}, Skipped ${skippedCount}. Reasons:`, skipReasons);
     }
 
     /**

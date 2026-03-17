@@ -450,6 +450,15 @@ export class ScoreManager {
 
         this.render();
         this.app.showMessage(`✓ 已匯入：${file.name.replace(/\.pdf$/i, '')}`, 'success');
+
+        // --- Supabase Sync ---
+        if (this.app.supabaseManager) {
+            this.app.supabaseManager.syncScore(fp, {
+                title: entry.title,
+                composer: entry.composer
+            });
+        }
+
         return entry;
     }
 
@@ -494,6 +503,17 @@ export class ScoreManager {
 
             await this.helper.saveRegistry(this.registry);
             await this.app.loadPDF(new Uint8Array(buffer), score.fileName);
+
+            // --- Supabase Sync ---
+            if (this.app.supabaseManager) {
+                // 1. Sync score metadata
+                this.app.supabaseManager.syncScore(fp, {
+                    title: score.title,
+                    composer: score.composer
+                });
+                // 2. Pull external annotations and merge with local data
+                this.app.supabaseManager.pullAnnotations(fp);
+            }
         }
     }
 

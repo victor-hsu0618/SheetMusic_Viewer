@@ -60,15 +60,42 @@ function _sha256(data) {
 }
 
 export async function computeFingerprint(buffer) {
-    const bytes = (buffer instanceof ArrayBuffer) ? new Uint8Array(buffer) : buffer;
-    const bufferToHash = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-
-    if (window.isSecureContext && crypto?.subtle) {
-        const hashBuffer = await crypto.subtle.digest('SHA-256', bufferToHash);
-        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    // 1. Force convert to a Clean Uint8Array with NO offset dependencies
+    let uint8;
+    try {
+        if (buffer instanceof Uint8Array) {
+            uint8 = new Uint8Array(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength));
+        } else if (buffer instanceof ArrayBuffer) {
+            uint8 = new Uint8Array(buffer.slice(0));
+        } else {
+            uint8 = new Uint8Array(await new Blob([buffer]).arrayBuffer());
+        }
+    } catch (e) {
+        console.error('[Fingerprint] Buffer processing failed:', e);
+        return 'error-' + Date.now();
     }
 
-    // Non-secure context (HTTP/LAN): pure-JS SHA-256 — same output as crypto.subtle
-    console.warn('[Fingerprint] crypto.subtle unavailable. Using pure-JS SHA-256 fallback.');
-    return _sha256(bytes);
+    const byteLen = uint8.byteLength;
+    const header = Array.from(uint8.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    console.log(`[Fingerprint] Size: ${byteLen} bytes | Head: ${header}`);
+
+    // Standard SHA-256 (Web Crypto is standard source of truth)
+    if (window.isSecureContext && crypto?.subtle) {
+        try {
+            const hashBuffer = await crypto.subtle.digest('SHA-256', uint8.buffer);
+            const hash = Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+            console.log(`[Fingerprint] Crypto Hash: ${hash.slice(0, 12)}...`);
+            return hash;
+        } catch (e) {
+            console.warn('[Fingerprint] crypto.subtle.digest failed:', e);
+        }
+    }
+
+    // Fallback: This MUST match crypto.subtle exactly.
+    console.warn('[Fingerprint] Using JS Fallback.');
+    const hash = _sha256(uint8);
+    console.log(`[Fingerprint] Fallback Hash: ${hash.slice(0, 12)}...`);
+    return hash;
 }

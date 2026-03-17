@@ -226,6 +226,29 @@ export class SettingsPanelManager {
         if (this.app.driveSyncManager) {
             this.app.driveSyncManager.refreshUI()
         }
+        // Refresh Supabase Status
+        this.updateSupabaseUI()
+    }
+
+    updateSupabaseUI() {
+        const mgr = this.app.supabaseManager
+        const loggedOutEl = document.getElementById('supabase-auth-logged-out')
+        const loggedInEl = document.getElementById('supabase-auth-logged-in')
+        
+        if (!mgr || !loggedOutEl || !loggedInEl) return
+
+        if (mgr.user) {
+            loggedOutEl.classList.add('hidden')
+            loggedInEl.classList.remove('hidden')
+            
+            const emailEl = document.getElementById('supabase-user-email')
+            const initialsEl = document.getElementById('supabase-user-initials')
+            if (emailEl) emailEl.textContent = mgr.user.email
+            if (initialsEl) initialsEl.textContent = mgr.user.email.slice(0, 1).toUpperCase()
+        } else {
+            loggedOutEl.classList.remove('hidden')
+            loggedInEl.classList.add('hidden')
+        }
     }
 
     initSettings() {
@@ -365,6 +388,43 @@ export class SettingsPanelManager {
                 if (this.app.driveSyncManager) {
                     this.app.driveSyncManager.refreshCloudStats()
                 }
+            })
+        }
+
+        // --- Supabase Auth Binding ---
+        const loginBtn = document.getElementById('btn-supabase-login')
+        const signupBtn = document.getElementById('btn-supabase-signup')
+        const logoutBtn = document.getElementById('btn-supabase-logout')
+
+        if (loginBtn) {
+            loginBtn.addEventListener('click', async () => {
+                const email = document.getElementById('supabase-email').value
+                const password = document.getElementById('supabase-password').value
+                if (!email || !password) return alert('Please enter email and password')
+                
+                loginBtn.disabled = true
+                loginBtn.textContent = 'Signing in...'
+                
+                const { error } = await this.app.supabaseManager.signIn(email, password)
+                
+                loginBtn.disabled = false
+                loginBtn.textContent = 'Sign In to Cloud'
+                
+                if (error) alert('Login failed: ' + error.message)
+                else this.updateSupabaseUI()
+            })
+        }
+
+        if (signupBtn) {
+            signupBtn.addEventListener('click', () => {
+                alert('Account creation is managed via the ScoreFlow Portal. Please contact your ensemble administrator or visit scoreflow.app to register.')
+            })
+        }
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                await this.app.supabaseManager.signOut()
+                this.updateSupabaseUI()
             })
         }
 

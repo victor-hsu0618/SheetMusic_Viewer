@@ -214,6 +214,7 @@ export class ViewerManager {
 
         console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
         this.pdfFingerprint = newFingerprint
+        this.app.pdfFingerprint = newFingerprint // Global Sync
 
         // --- SWITCH CONTEXT: Load score-specific sources and layers ---
         await this.app.persistenceManager.loadFromStorage(newFingerprint);
@@ -225,6 +226,13 @@ export class ViewerManager {
 
         await this.loadStamps(newFingerprint);
         this.app.jumpHistory = []
+
+        // --- Supabase Realtime Sync Update ---
+        // Ensure we are subscribed to the NEW fingerprint's channel
+        if (this.app.supabaseManager) {
+            console.log(`[ViewerManager] 📡 Updating Supabase sync for: ${newFingerprint.slice(0, 8)}`);
+            this.app.supabaseManager.subscribeToAnnotations(newFingerprint);
+        }
 
         // Notify GistShareManager in case a share link is pending PDF upload
         this.app.gistShareManager?.onPdfLoaded(newFingerprint)

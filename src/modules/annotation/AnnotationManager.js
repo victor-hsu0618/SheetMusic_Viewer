@@ -10,6 +10,9 @@ export class AnnotationManager {
         this.app = app;
         this.renderer = new AnnotationRenderer(app);
         this.interaction = new InteractionManager(app);
+        
+        // CRITICAL: Ensure the global app object has a reference to the renderer for remote redraws
+        this.app.annotationRenderer = this.renderer;
     }
 
     // --- RENDERER PROXIES ---
@@ -157,6 +160,12 @@ export class AnnotationManager {
         stamp.deleted = true
         stamp.updatedAt = Date.now()
         await this.app.saveToStorage(true)
+
+        // --- Supabase Sync ---
+        if (this.app.supabaseManager) {
+            this.app.supabaseManager.deleteAnnotation(stamp.id);
+        }
+
         if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
         this.redrawStamps(page)
     }
@@ -410,6 +419,11 @@ export class AnnotationManager {
         const idsToRemove = new Set(stampsToErase.map(s => s.id))
         this.app.stamps = this.app.stamps.filter(s => !idsToRemove.has(s.id))
         
+        // --- Supabase Sync ---
+        if (this.app.supabaseManager) {
+            idsToRemove.forEach(id => this.app.supabaseManager.deleteAnnotation(id));
+        }
+        
         this.app.updateRulerMarks()
         this.app.computeNextTarget()
         document.querySelectorAll('.page-container[data-page]').forEach(wrapper => {
@@ -429,6 +443,13 @@ export class AnnotationManager {
         }
 
         if (this.app.stamps.length !== originalCount) {
+            // --- Supabase Sync ---
+            if (this.app.supabaseManager) {
+                const removedStamps = originalCount > this.app.stamps.length ? originalCount - this.app.stamps.length : 0; 
+                // Note: For large deletions, we might need a batch delete in SupabaseManager
+                // For now, let the individual deletes handle it or refresh later.
+            }
+
             this.app.updateRulerMarks()
             this.app.computeNextTarget()
             document.querySelectorAll('.page-container[data-page]').forEach(wrapper => {
@@ -899,6 +920,15 @@ export class AnnotationManager {
         }
 
         await this.app.saveToStorage(true)
+        
+        // --- Supabase Sync ---
+        if (this.app.supabaseManager) {
+            const addedStamp = this.app.stamps[this.app.stamps.length - 1];
+            if (addedStamp) {
+                this.app.supabaseManager.pushAnnotation(addedStamp, this.app.pdfFingerprint);
+            }
+        }
+
         if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
         await this.updateLayerVisibility()
         this.redrawStamps(page)

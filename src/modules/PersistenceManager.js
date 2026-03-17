@@ -100,7 +100,13 @@ export class PersistenceManager {
         if (recentSoloData) this.app.recentSoloScores = JSON.parse(recentSoloData)
 
         if (activeSourceData) this.app.activeSourceId = activeSourceData
-        if (fingerprintData) this.app.pdfFingerprint = fingerprintData
+        
+        // CRITICAL: Do NOT overwrite app.pdfFingerprint if we already solved it in activeFp
+        if (activeFp) {
+            this.app.pdfFingerprint = activeFp
+        } else if (fingerprintData) {
+            this.app.pdfFingerprint = fingerprintData
+        }
         if (activeCategoriesData) {
             const parsed = JSON.parse(activeCategoriesData)
             let activeCatName = Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : 'Pens';
@@ -259,8 +265,8 @@ export class PersistenceManager {
         }
 
         // Load score details for the current fingerprint
-        if (fingerprintData && this.app.scoreDetailManager) {
-            this.app.scoreDetailManager.load(fingerprintData)
+        if (activeFp && this.app.scoreDetailManager) {
+            this.app.scoreDetailManager.load(activeFp)
         }
     }
 
