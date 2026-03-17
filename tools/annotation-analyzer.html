@@ -7,73 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared-styles.css">
+<script src="theme-manager.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #030712; 
-  --card-bg: rgba(17, 24, 39, 0.7);
-  --bg-soft: rgba(255, 255, 255, 0.05);
-  --border: rgba(255, 255, 255, 0.08); 
-  --primary: #6366f1;
-  --text: #f9fafb; 
-  --muted: #9ca3af; 
-  --success: #10b981;
-  --warn: #f59e0b; 
-  --danger: #ef4444; 
-  --info: #38bdf8;
-  --cloud: #a78bfa;
-}
-
-body { 
-    background: var(--bg); 
-    background-image: radial-gradient(circle at 100% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
-    color: var(--text); 
-    font-family: 'Inter', -apple-system, sans-serif; 
-    font-size: 13px; 
-    min-height: 100vh; 
-    padding: 40px 20px; 
-    line-height: 1.5;
-}
-
-.container { max-width: 1200px; margin: 0 auto; }
-
-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--border);
-}
-
-h1 { font-size: 1.75rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
-h1 span { color: var(--primary); }
-
-.subtitle { color: var(--muted); font-size: 0.9rem; margin-top: -24px; margin-bottom: 32px; }
-
-/* Drop zone */
-#drop-zone { 
-    border: 2px dashed var(--primary); 
-    border-radius: 20px; 
-    padding: 60px 40px; 
-    text-align: center; 
-    cursor: pointer; 
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-    background: var(--card-bg);
-    margin-bottom: 32px;
-}
-#drop-zone:hover, #drop-zone.drag-over { 
-    background: rgba(99, 102, 241, 0.05); 
-    border-style: solid;
-    transform: scale(1.01);
-}
-#drop-zone svg { margin-bottom: 16px; color: var(--primary); }
-#drop-zone p { color: var(--text); font-size: 1.1rem; font-weight: 600; }
-#drop-zone p + p { color: var(--muted); font-size: 0.85rem; font-weight: 400; margin-top: 8px; }
-#file-input { display: none; }
-
 /* Layout */
-#results, #manifest-results { display: none; margin-top: 20px; }
+#results, #manifest-results, #profile-results { display: none; margin-top: 20px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
 .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
@@ -89,6 +27,7 @@ h1 span { color: var(--primary); }
     padding: 24px; 
     margin-bottom: 20px; 
 }
+/* ... (keep other component-specific styles like .stat-big, .badge, etc.) ... */
 
 .card-title { 
     font-size: 0.7rem; 
@@ -141,6 +80,53 @@ h1 span { color: var(--primary); }
 .meta-key { color: var(--muted); width: 140px; flex-shrink: 0; font-weight: 600; }
 .meta-val { color: var(--text); word-break: break-all; font-family: monospace; font-weight: 500; }
 
+/* Page heatmap */
+.page-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.page-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 10px; border: 1px solid var(--border); font-size: 0.72rem; font-weight: 700; transition: transform 0.2s; }
+.page-cell:hover { transform: translateY(-2px); border-color: var(--primary); }
+.page-cell .page-num { color: var(--muted); font-weight: 400; font-size: 0.62rem; }
+
+/* Tables */
+.stamp-table-wrap, .manifest-table-wrap { 
+    overflow-x: auto; 
+    max-height: 500px; 
+    overflow-y: auto; 
+    border-radius: 16px; 
+    border: 1px solid var(--border); 
+    background: rgba(0, 0, 0, 0.2);
+}
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+th { 
+    background: #111827; 
+    color: var(--muted); 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    font-size: 10px; 
+    padding: 12px 16px; 
+    text-align: left; 
+    position: sticky; 
+    top: 0; 
+    z-index: 10; 
+    letter-spacing: 0.05em; 
+    border-bottom: 1px solid var(--border);
+}
+td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text); font-family: monospace; }
+tr:hover td { background: rgba(255, 255, 255, 0.03); }
+.type-cell { font-weight: 700; }
+.type-system { color: var(--muted); }
+.type-settings { color: var(--warn); }
+.type-user { color: var(--primary); }
+.missing { color: var(--danger); font-style: italic; }
+.null-val { color: var(--muted); }
+
+/* Field coverage */
+.field-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.field-chip { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); }
+.field-chip strong { margin-left: 6px; opacity: 0.8; }
+.field-chip.full { background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.2); }
+.field-chip.partial { background: rgba(245, 158, 11, 0.1); color: var(--warn); border-color: rgba(245, 158, 11, 0.2); }
+.field-chip.missing { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
+
 /* Tabs */
 .tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
 .tab-btn { 
@@ -148,7 +134,7 @@ h1 span { color: var(--primary); }
     border-radius: 10px; 
     border: 1px solid var(--border); 
     background: transparent; 
-    color: var(--text-muted); 
+    color: var(--muted); 
     cursor: pointer; 
     font-size: 13px; 
     font-weight: 600;
@@ -156,6 +142,8 @@ h1 span { color: var(--primary); }
 }
 .tab-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
 .tab-btn.active { background: var(--primary); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
 
 .btn {
     padding: 10px 20px;
@@ -173,40 +161,7 @@ h1 span { color: var(--primary); }
 #new-file-btn { margin-top: 32px; }
 
 .section-title { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 20px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 12px; }
-
-/* Tables */
-.stamp-table-wrap { 
-    overflow-x: auto; 
-    max-height: 500px; 
-    overflow-y: auto; 
-    border-radius: 16px; 
-    border: 1px solid var(--border); 
-    background: rgba(0, 0, 0, 0.2);
-}
-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
-th { 
-    background: #111827; 
-    color: var(--text-muted); 
-    font-weight: 700; 
-    text-transform: uppercase; 
-    font-size: 10px; 
-    padding: 12px 16px; 
-    text-align: left; 
-    position: sticky; 
-    top: 0; 
-    z-index: 10; 
-    letter-spacing: 0.05em; 
-    border-bottom: 1px solid var(--border);
-}
-td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text); font-family: monospace; }
-tr:hover td { background: rgba(255, 255, 255, 0.03); }
-
-/* Field coverage */
-.field-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.field-chip { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); }
-.field-chip strong { margin-left: 6px; opacity: 0.8; }
-
-#results { display: none; }
+.text-chip { padding: 4px 12px; border-radius: 8px; font-size: 12px; background: var(--bg-soft); border: 1px solid var(--border); color: var(--text); }
 </style>
 </head>
 <body>
@@ -224,71 +179,6 @@ tr:hover td { background: rgba(255, 255, 255, 0.03); }
   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
   <p><strong>點擊選擇</strong>或拖放 JSON 檔案</p>
   <p>export JSON &bull; cloud annotation JSON &bull; cloud_manifest_v2.json &bull; user_profile_sync.json</p>
-</div>
-
-/* Meta */
-.meta-row { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
-.meta-row:last-child { border-bottom: none; }
-.meta-key { color: var(--muted); width: 130px; flex-shrink: 0; }
-.meta-val { color: var(--text); word-break: break-all; }
-
-/* Page heatmap */
-.page-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-.page-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 7px; border: 1px solid var(--border); font-size: 0.72rem; font-weight: 700; }
-.page-cell .page-num { color: var(--muted); font-weight: 400; font-size: 0.62rem; }
-
-/* Stamp table */
-.stamp-table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; border-radius: 6px; border: 1px solid var(--border); }
-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-th { background: var(--bg-soft); color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.65rem; padding: 6px 8px; text-align: left; position: sticky; top: 0; z-index: 1; }
-td { padding: 4px 8px; border-bottom: 1px solid var(--border); color: var(--text); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(255,255,255,0.03); }
-.type-cell { font-weight: 700; }
-.type-system { color: var(--muted); }
-.type-settings { color: var(--warn); }
-.type-user { color: var(--primary); }
-.missing { color: var(--danger); font-style: italic; }
-.null-val { color: var(--muted); }
-
-/* Field coverage */
-.field-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-.field-chip { padding: 3px 8px; border-radius: 5px; font-size: 0.72rem; }
-.field-chip.full { background: rgba(16,185,129,0.15); color: var(--success); }
-.field-chip.partial { background: rgba(245,158,11,0.15); color: var(--warn); }
-.field-chip.missing { background: rgba(239,68,68,0.15); color: var(--danger); }
-
-/* Tabs */
-.tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
-.tab-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 0.78rem; }
-.tab-btn.active { background: var(--primary); color: #fff; border-color: transparent; }
-.tab-pane { display: none; }
-.tab-pane.active { display: block; }
-
-#new-file-btn { margin-top: 16px; background: var(--bg-soft); border: 1px solid var(--border); color: var(--text); padding: 7px 16px; border-radius: 7px; cursor: pointer; font-size: 0.82rem; }
-#new-file-btn:hover { border-color: var(--primary); color: var(--primary); }
-
-.section-title { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 10px; font-family: -apple-system, sans-serif; display: flex; align-items: center; gap: 8px; }
-
-/* Manifest table */
-.manifest-table-wrap { overflow-x: auto; max-height: 500px; overflow-y: auto; border-radius: 6px; border: 1px solid var(--border); }
-#profile-results { display: none; margin-top: 20px; }
-.text-chip { padding: 3px 9px; border-radius: 5px; font-size: 0.75rem; background: var(--bg-soft); border: 1px solid var(--border); color: var(--text); }
-</style>
-</head>
-<body>
-
-<div class="header-row">
-  <h1>ScoreFlow Debug Analyzer</h1>
-  <span id="file-type-label"></span>
-</div>
-<p class="subtitle">支援：匯出 JSON、Cloud Annotation JSON、Cloud Manifest JSON、User Profile JSON</p>
-
-<div id="drop-zone" onclick="document.getElementById('file-input').click()">
-  <input type="file" id="file-input" accept=".json">
-  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.35;margin-bottom:10px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
-  <p><strong>點擊選擇</strong>或拖放 JSON</p>
-  <p style="font-size:0.75rem;margin-top:6px;color:var(--muted)">export JSON · cloud annotation JSON · cloud_manifest_v2.json · user_profile_sync.json</p>
 </div>
 
 <!-- ══ ANNOTATION RESULTS ══ -->

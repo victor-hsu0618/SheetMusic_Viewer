@@ -1,0 +1,123 @@
+/* ScoreFlow Developer Hub - Shared Modular Styles */
+
+:root {
+    /* DEFAULT: Midnight Suite (Higher Contrast for Stage) */
+    --bg: #0f172a;
+    --card-bg: rgba(30, 41, 59, 0.85);
+    --bg-soft: rgba(255, 255, 255, 0.1);
+    --border: rgba(255, 255, 255, 0.15);
+    --primary: #818cf8;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --info: #38bdf8;
+    --cloud: #a78bfa;
+    --text: #ffffff;
+    --text-muted: #cbd5e1;
+}
+
+[data-theme="midnight-deep"] {
+    --bg: #030712;
+    --card-bg: rgba(17, 24, 39, 0.7);
+    --bg-soft: rgba(255, 255, 255, 0.05);
+    --border: rgba(255, 255, 255, 0.08);
+    --primary: #6366f1;
+    --text: #f9fafb;
+    --text-muted: #9ca3af;
+}
+
+[data-theme="stage-high-contrast"] {
+    --bg: #000000;
+    --card-bg: #1e293b;
+    --bg-soft: #334155;
+    --border: #475569;
+    --primary: #a5b4fc;
+    --text: #ffffff;
+    --text-muted: #f1f5f9;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 100% 0%, rgba(129, 140, 248, 0.1) 0%, transparent 50%);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.container { 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    padding: 40px 20px;
+}
+
+/* Glassmorphism Common */
+.glass {
+    background: var(--card-bg);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+}
+
+/* Common Header Styles */
+.hub-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.hub-header h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+}
+
+.hub-header h1 span { color: var(--primary); }
+
+.hub-subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-top: -16px;
+    margin-bottom: 32px;
+}
+
+/* Theme Switcher Widget */
+.theme-switcher {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
+    background: rgba(0,0,0,0.4);
+    padding: 8px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+
+.theme-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.theme-dot:hover { transform: scale(1.2); }
+.theme-dot.active { border-color: #fff; transform: scale(1.1); }
+
+.dot-midnight { background: #0f172a; }
+.dot-deep { background: #030712; }
+.dot-stage { background: #000000; }

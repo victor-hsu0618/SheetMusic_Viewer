@@ -258,6 +258,23 @@ export class SettingsPanelManager {
             })
         }
 
+        // Application Theme Selection
+        const themeSelect = document.getElementById('settings-app-theme')
+        if (themeSelect) {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'default'
+            themeSelect.value = currentTheme
+
+            themeSelect.addEventListener('change', (e) => {
+                const themeId = e.target.value
+                if (themeId === 'default') {
+                    document.documentElement.removeAttribute('data-theme')
+                } else {
+                    document.documentElement.setAttribute('data-theme', themeId)
+                }
+                localStorage.setItem('scoreflow_theme', themeId)
+            })
+        }
+
 
 
         // Jump Offset

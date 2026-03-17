@@ -22,13 +22,36 @@
 }
 
 [data-theme="dark"] {
-  --bg-app: #0f172a;
-  --bg-sidebar: #1e293b;
-  --bg-card: #1e293b;
-  --bg-card-rgb: 30, 23, 59;
-  --text-main: #f1f5f9;
+  --bg-app: #111827; /* Slightly brighter, more slate-blue */
+  --bg-sidebar: #1f2937;
+  --bg-card: #1f2937;
+  --bg-card-rgb: 31, 41, 55;
+  --text-main: #f9fafb; /* Cleaner white */
+  --text-muted: #9ca3af;
+  --border: rgba(255, 255, 255, 0.12);
+}
+
+/* Stage Mode: Extreme High Contrast for Stage Lighting */
+[data-theme="stage"] {
+  --bg-app: #000000;
+  --bg-sidebar: #050505;
+  --bg-card: #0a0a0a;
+  --bg-card-rgb: 10, 10, 10;
+  --text-main: #ffffff;
+  --text-muted: #d1d5db;
+  --border: rgba(255, 255, 255, 0.25);
+  --primary: #818cf8;
+}
+
+/* Deep Midnight: OLED Optimized */
+[data-theme="deep"] {
+  --bg-app: #030712;
+  --bg-sidebar: #0f172a;
+  --bg-card: #0f172a;
+  --bg-card-rgb: 15, 23, 42;
+  --text-main: #ffffff;
   --text-muted: #94a3b8;
-  --border: #334155;
+  --border: rgba(255, 255, 255, 0.1);
 }
 
 /* Environment-Specific Themes */

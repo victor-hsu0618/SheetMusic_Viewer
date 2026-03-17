@@ -7,44 +7,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles.css">
+    <script src="theme-manager.js"></script>
     <style>
         :root {
-            --bg: #030712;
-            --card-bg: rgba(17, 24, 39, 0.7);
-            --primary: #6366f1;
             --secondary: #a855f7;
             --accent: #22d3ee;
-            --text: #f9fafb;
-            --text-muted: #9ca3af;
-            --border: rgba(255, 255, 255, 0.08);
-        }
-        
-        * { box-sizing: border-box; }
-        
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg);
-            background-image: 
-                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
-            color: var(--text);
-            margin: 0;
-            padding: 60px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            line-height: 1.5;
-        }
-
-        .container {
-            max-width: 1100px;
-            width: 100%;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 64px;
         }
 
         .hub-tag {
@@ -61,7 +29,7 @@
             margin-bottom: 20px;
         }
 
-        h1 {
+        h1.main-title {
             font-size: 3.5rem;
             font-weight: 800;
             margin: 0 0 12px 0;
@@ -71,17 +39,11 @@
             -webkit-text-fill-color: transparent;
         }
 
-        p.subtitle {
-            font-size: 1.125rem;
-            color: var(--text-muted);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 24px;
+            margin-top: 40px;
         }
 
         .tool-card {
@@ -98,16 +60,6 @@
             flex-direction: column;
             position: relative;
             overflow: hidden;
-        }
-
-        .tool-card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            z-index: -1;
         }
 
         .tool-card:hover {
@@ -169,7 +121,7 @@
             color: var(--text-muted);
         }
 
-        .footer {
+        .hub-footer {
             margin-top: 80px;
             padding: 40px;
             border-top: 1px solid var(--border);
@@ -179,23 +131,23 @@
             width: 100%;
         }
 
-        .footer span {
+        .hub-footer span {
             color: var(--primary);
             font-weight: 600;
         }
 
         @media (max-width: 640px) {
-            h1 { font-size: 2.5rem; }
+            h1.main-title { font-size: 2.5rem; }
             .grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
+        <header style="text-align:center; margin-bottom: 64px;">
             <div class="hub-tag">ScoreFlow Internals</div>
-            <h1>Developer Hub</h1>
-            <p class="subtitle">Premium diagnostics and performance analysis suite for ScoreFlow v3.0 ecosystem.</p>
+            <h1 class="main-title">Developer Hub</h1>
+            <p class="hub-subtitle" style="margin-top: 0;">Premium diagnostics and performance analysis suite for ScoreFlow v3.0 ecosystem.</p>
         </header>
 
         <div class="grid">

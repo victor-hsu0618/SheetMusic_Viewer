@@ -138,6 +138,7 @@ class ScoreFlow {
     this.toolManager.initToolbarResizable()
 
     this.loadFromStorage()
+    this.restoreTheme()
     this.renderLayerUI()
     this.renderSourceUI()
     this.toolManager.updateActiveTools()
@@ -314,6 +315,13 @@ class ScoreFlow {
   }
 
   showMessage(msg, type = 'info') { this.uiManager.showMessage(msg, type) }
+
+  restoreTheme() {
+    const savedTheme = localStorage.getItem('scoreflow_theme')
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme)
+    }
+  }
 }
 
 new ScoreFlow()
