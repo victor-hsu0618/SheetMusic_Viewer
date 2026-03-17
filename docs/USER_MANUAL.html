@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreFlow User Manual v3.0</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f172a;
+                --text: #f8fafc;
+                --text-muted: #94a3b8;
+                --card-bg: #1e293b;
+                --border: #334155;
+            }
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        header {
+            margin-bottom: 40px;
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+        }
+        h1 { font-size: 2.5rem; margin: 0; color: var(--primary); }
+        .version-tag { background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; display: inline-block; margin-top: 10px; }
+        
+        nav {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        nav h2 { margin-top: 0; border: none; font-size: 1.2rem; }
+        nav ul { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        nav a { text-decoration: none; color: var(--text); font-weight: 500; display: block; padding: 8px; border-radius: 6px; transition: all 0.2s; }
+        nav a:hover { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+
+        h2 { font-size: 1.8rem; margin-top: 2rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); color: var(--primary); }
+        h3 { font-size: 1.4rem; margin-top: 1.5rem; color: var(--text); }
+        p { margin-bottom: 1rem; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; background: var(--card-bg); border-radius: 8px; overflow: hidden; }
+        th, td { border: 1px solid var(--border); padding: 12px; text-align: left; }
+        th { background: rgba(99, 102, 241, 0.1); font-weight: 700; color: var(--primary); }
+        
+        code { background: rgba(99, 102, 241, 0.1); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.9em; color: var(--primary); }
+        pre { background: #1e293b; color: #f8fafc; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 20px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        
+        blockquote { border-left: 4px solid var(--primary); margin: 20px 0; padding: 10px 20px; background: rgba(99, 102, 241, 0.05); color: var(--text-muted); font-style: italic; }
+        
+        .print-btn {
+            position: fixed; top: 20px; right: 20px;
+            background: var(--primary); color: white; border: none; padding: 10px 20px;
+            border-radius: 30px; cursor: pointer; font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            z-index: 100;
+        }
+        .print-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        
+        @media print {
+            .print-btn, nav { display: none; }
+            body { background: white; color: black; }
+            .container { max-width: 100%; padding: 0; }
+            h2, h3 { page-break-after: avoid; }
+            pre, table, blockquote { page-break-inside: avoid; }
+        }
+
+        kbd {
+            background-color: #eee;
+            border-radius: 3px;
+            border: 1px solid #b4b4b4;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, .2), 0 2px 0 0 rgba(255, 255, 255, .7) inset;
+            color: #333;
+            display: inline-block;
+            font-size: .85em;
+            font-weight: 700;
+            line-height: 1;
+            padding: 2px 4px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">🖨️ 打印 / 另存為 PDF</button>
+
+    <div class="container">
+        <header>
+            <h1>ScoreFlow 使用手冊</h1>
+            <div class="version-tag">最後更新：2026-03-17 · v3.0</div>
+        </header>
+
+        <nav>
+            <h2>目錄</h2>
+            <ul>
+                <li><a href="#1-快速開始">1. 快速開始</a></li>
+                <li><a href="#2-閱讀介面">2. 閱讀介面</a></li>
+                <li><a href="#3-jump-導航系統">3. Jump 導航系統</a></li>
+                <li><a href="#4-五線譜行偵測">4. 五線譜行偵測</a></li>
+                <li><a href="#5-anchor-錨點">5. Anchor 錨點</a></li>
+                <li><a href="#6-標記與註記">6. 標記與註記</a></li>
+                <li><a href="#7-鍵盤快捷鍵">7. 鍵盤快捷鍵</a></li>
+                <li><a href="#8-設定">8. 設定</a></li>
+                <li><a href="#9-標記分享">9. 標記分享</a></li>
+                <li><a href="#10-pwa-安裝與離線使用">10. PWA 安裝與離線使用</a></li>
+            </ul>
+        </nav>
+
+        <section id="1-快速開始">
+            <h2>1. 快速開始</h2>
+            <h3>開啟樂譜</h3>
+            <ol>
+                <li>點擊首頁的 <strong>Open Solo Score</strong>，選取 PDF 檔案。</li>
+                <li>樂譜載入後，工具列（右側浮動欄）與尺規（左側）自動出現。</li>
+                <li>首次開啟時，系統在背景自動偵測五線譜行位置。</li>
+            </ol>
+            <h3>基本瀏覽</h3>
+            <table>
+                <thead><tr><th>操作</th><th>說明</th></tr></thead>
+                <tbody>
+                    <tr><td>捲動 / 滑動</td><td>連續瀏覽樂譜</td></tr>
+                    <tr><td><kbd>Space</kbd> / <kbd>→</kbd></td><td>Jump 前進（跳至下一段）</td></tr>
+                    <tr><td><kbd>←</kbd></td><td>Jump 後退（回到上一個位置）</td></tr>
+                    <tr><td><kbd>W</kbd></td><td>適合寬度 (Fit to Width)</td></tr>
+                    <tr><td><kbd>F</kbd></td><td>適合高度 (Fit to Height)</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="2-閱讀介面">
+            <h2>2. 閱讀介面</h2>
+            <h3>浮動文件工具列 (右側)</h3>
+            <table>
+                <thead><tr><th>群組</th><th>按鈕</th><th>快捷鍵</th></tr></thead>
+                <tbody>
+                    <tr><td>跳躍</td><td>跳至頭部、跳至尾部、尺規開關</td><td><kbd>Home</kbd>、<kbd>End</kbd>、<kbd>R</kbd></td></tr>
+                    <tr><td>模式</td><td>瀏覽、選取、橡皮擦、錨點</td><td>V、E、A</td></tr>
+                    <tr><td>縮放</td><td>放大、縮小、適合寬度、適合高度</td><td><kbd>+</kbd>、<kbd>-</kbd>、<kbd>W</kbd>、<kbd>F</kbd></td></tr>
+                    <tr><td>標記工具</td><td>開啟標記面板</td><td><kbd>T</kbd></td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="3-jump-導航系統">
+            <h2>3. Jump 導航系統</h2>
+            <p>Jump 是 ScoreFlow 最核心的導航功能，設計給演奏中或練習時快速翻頁。</p>
+            <h3>3.1 跳躍線 (Jump Line)</h3>
+            <p>視窗中有一條水平虛線，定義了視線焦點的位置。Jump 後，目標內容會對齊在這條線上。</p>
+            <h3>3.2 Jump 前進邏輯</h3>
+            <pre>① Anchor 存在 → 跳至跳躍線下方最近的 Anchor
+② System 存在 → 跳至「頁面重疊設定」指定的 System
+③ 最終 fallback → 捲動 (viewport 高度 − 跳躍線偏移量)</pre>
+        </section>
+
+        <section id="10-pwa-安裝與離線使用">
+            <h2>10. PWA 安裝與離線使用</h2>
+            <p>ScoreFlow 是一款 <strong>PWA (Progressive Web App)</strong>，它可以像原生應用程式一樣安裝到您的桌面上或手機主畫面上，並且在完全沒有網路（例如演藝廳、飛機上）的情況下仍能正常運作。</p>
+            
+            <h3>10.1 為什麼要安裝成 App？</h3>
+            <ul>
+                <li><strong>全螢幕體驗</strong>：移除瀏覽器網址列，將所有視窗空間留給樂譜。</li>
+                <li><strong>離線啟動</strong>：即使沒有 Wi-Fi，也能從主畫面直接開啟 App 並讀取樂譜。</li>
+                <li><strong>快取優先</strong>：核心引擎會被永久快取在您的設備中，提升啟動速度。</li>
+            </ul>
+
+            <h3>10.2 安裝指南</h3>
+            
+            <h4>iOS / iPadOS (Safari)</h4>
+            <ol>
+                <li>在 Safari 中開啟 ScoreFlow 網址。</li>
+                <li>點擊工具列底部的 <strong>分享 (Share)</strong> 圖示（箭頭向上方框）。</li>
+                <li>選擇 <strong>加入主畫面 (Add to Home Screen)</strong>。</li>
+            </ol>
+
+            <h4>Android / Chrome / Windows / macOS</h4>
+            <ol>
+                <li>開啟 ScoreFlow 後，點擊網頁列右側的 <strong>安裝</strong> 字樣。</li>
+                <li>或者點擊瀏覽器右上角的 <strong>三個點 (⋮)</strong> 並選擇 <strong>安裝 ScoreFlow</strong>。</li>
+            </ol>
+
+            <h4>Edge (Windows/macOS)</h4>
+            <ol>
+                <li>點擊網址列右端的 <strong>應用程式可用圖示</strong> 進行安裝。</li>
+            </ol>
+
+            <h3>10.3 離線使用注意事項</h3>
+            <blockquote>
+                首次快取：建議在有網路時至少開啟一次 ScoreFlow 並載入您的常用樂譜，確保資源已妥善快取。
+            </blockquote>
+            <p>ScoreFlow 將樂譜儲存在瀏覽器的 <strong>IndexedDB</strong> 中。請勿清除瀏覽器的快取資料，否則本機樂譜需重新手動開啟。</p>
+        </section>
+
+        <footer>
+            <p style="text-align: center; color: var(--text-muted); margin-top: 60px; font-size: 0.9rem;">
+                © 2026 ScoreFlow Team. 所有權利保留。
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
