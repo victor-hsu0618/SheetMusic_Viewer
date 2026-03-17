@@ -544,7 +544,11 @@ export class DriveSyncManager {
                 let updCount = 0;
                 const newByType = {};
 
-                remoteData.stamps.forEach(remoteS => {
+                // Use DocActionManager's migration/healing logic for cloud data
+                const migratedData = this.app.docActionManager?.migrateLegacyData(remoteData) || remoteData;
+                const cloudStamps = migratedData.stamps || [];
+
+                cloudStamps.forEach(remoteS => {
                     if (!remoteS.id) return;
                     const localS = localMap.get(remoteS.id);
                     if (!localS) {
@@ -564,7 +568,7 @@ export class DriveSyncManager {
                     if (newCount > 0) {
                         const typeStr = Object.entries(newByType).map(([t, n]) => `${t}×${n}`).join(', ');
                         bgChanges.push(`+${newCount} stamp(s) [${typeStr}]`);
-                        console.log(`[DriveSync] Pulled ${newCount} new stamps for ${fingerprint}: ${typeStr}`);
+                        console.log(`[DriveSync] Pulled ${newCount} new migrated stamps for ${fingerprint}: ${typeStr}`);
                     }
                     if (updCount > 0) bgChanges.push(`updated ${updCount} stamp(s)`);
                 }
