@@ -305,7 +305,18 @@ export class ViewerManager {
             
             return sNew;
         })
-        console.log(`[ViewerManager] Loaded ${this.app.stamps.length} stamps for ${fingerprint.slice(0, 8)}`);
+        console.log(`[ViewerManager] loadStamps: Parsed ${this.app.stamps.length} stamps for ${fingerprint.slice(0, 8)}`);
+        if (this.app.stamps.length > 0) {
+            console.log(`[ViewerManager] First stamp:`, {
+                id: this.app.stamps[0].id,
+                type: this.app.stamps[0].type,
+                page: this.app.stamps[0].page,
+                sourceId: this.app.stamps[0].sourceId,
+                layerId: this.app.stamps[0].layerId,
+                x: this.app.stamps[0].x,
+                y: this.app.stamps[0].y
+            });
+        }
     }
 
     async updateFloatingTitle() {

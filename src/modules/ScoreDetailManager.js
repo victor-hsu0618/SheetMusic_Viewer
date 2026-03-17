@@ -441,12 +441,16 @@ export class ScoreDetailManager {
 
         this.app.showMessage(`Fetching latest data from cloud...`, 'system')
         try {
+            console.log(`[ScoreDetailManager] Triggering manual pull for ${fp}`);
             const result = await this.app.driveSyncManager.syncScore(fp, false, true, false) // Force pull
+            console.log(`[ScoreDetailManager] Manual pull result:`, result);
             if (result) {
                 this.app.showMessage('Cloud data fetched and merged.', 'success')
                 // Force reload if it's the active score
                 if (this.app.pdfFingerprint === fp) {
+                    console.log(`[ScoreDetailManager] Active score match. Reloading stamps...`);
                     await this.app.viewerManager.loadStamps(fp)
+                    console.log(`[ScoreDetailManager] Redrawing layers...`);
                     this.app.annotationManager?.redrawAllAnnotationLayers()
                 }
                 this.refreshStats()
