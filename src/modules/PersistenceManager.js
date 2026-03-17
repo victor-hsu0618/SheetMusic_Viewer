@@ -15,6 +15,9 @@ export class PersistenceManager {
             if (this.app.scoreManager) {
                 await this.app.scoreManager.updateSyncStatus(this.app.pdfFingerprint, false);
             }
+            // Per-score isolation for Interpretations and Layers
+            await db.set(`sources_${this.app.pdfFingerprint}`, this.app.sources)
+            await db.set(`layers_${this.app.pdfFingerprint}`, this.app.layers)
         }
         localStorage.setItem('scoreflow_current_fingerprint', this.app.pdfFingerprint || '')
         localStorage.setItem('scoreflow_sources', JSON.stringify(this.app.sources))
@@ -46,27 +49,33 @@ export class PersistenceManager {
         }
     }
 
-    loadFromStorage() {
-        const layersData = localStorage.getItem('scoreflow_layers')
-        const sourcesData = localStorage.getItem('scoreflow_sources')
-        const activeSourceData = localStorage.getItem('scoreflow_active_source')
-        const fingerprintData = localStorage.getItem('scoreflow_current_fingerprint')
-        const recentSoloData = localStorage.getItem('scoreflow_recent_solo_scores')
-        const turnerModeData = localStorage.getItem('scoreflow_turner_mode')
-        const activeCategoriesData = localStorage.getItem('scoreflow_active_categories')
-        const docBarCollapsedStr = localStorage.getItem('scoreflow_doc_bar_collapsed')
-        const rulerVisibleData = localStorage.getItem('scoreflow_ruler_visible')
-        const userTextLibraryData = localStorage.getItem('scoreflow_user_text_library')
-        const activeColorData = localStorage.getItem('scoreflow_active_color')
-        const defaultFontSizeData = localStorage.getItem('scoreflow_default_font_size')
-        const stampSizeMultiplierData = localStorage.getItem('scoreflow_stamp_size_multiplier')
-
-        if (recentSoloData) this.app.recentSoloScores = JSON.parse(recentSoloData)
+    async loadFromStorage(fingerprint) {
+        const activeFp = fingerprint || localStorage.getItem('scoreflow_current_fingerprint')
+        
+        // 1. Load Sources (Interpretations) - Priority: Per-Score > Global
+        let sourcesData = localStorage.getItem('scoreflow_sources')
+        if (activeFp) {
+            const perScoreSources = await db.get(`sources_${activeFp}`)
+            if (perScoreSources) {
+                this.app.sources = perScoreSources
+                sourcesData = null // skip global load
+            }
+        }
 
         if (sourcesData) {
             this.app.sources = JSON.parse(sourcesData)
-            if (this.app.sources.length === 0) {
+            if (!this.app.sources || this.app.sources.length === 0) {
                 this.app.sources = [{ id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' }]
+            }
+        }
+
+        // 2. Load Layers - Priority: Per-Score > Global
+        let layersData = localStorage.getItem('scoreflow_layers')
+        if (activeFp) {
+            const perScoreLayers = await db.get(`layers_${activeFp}`)
+            if (perScoreLayers) {
+                this.app.layers = perScoreLayers
+                layersData = null // skip global load
             }
         }
         if (activeSourceData) this.app.activeSourceId = activeSourceData

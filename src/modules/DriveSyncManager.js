@@ -489,6 +489,13 @@ export class DriveSyncManager {
             const remoteData = await this.getFileContent(fileId);
             if (!remoteData) return 0;
 
+            // --- CRITICAL: Fingerprint Validation ---
+            if (remoteData.fingerprint && remoteData.fingerprint !== fingerprint) {
+                console.error(`[DriveSync] FINGERPRINT MISMATCH! Remote: ${remoteData.fingerprint.slice(0,8)} vs Local: ${fingerprint.slice(0,8)}`);
+                console.log(`[DriveSync] Blocking pull for ${fileId} to prevent cross-score contamination.`);
+                return 0;
+            }
+
             const remoteVer = remoteData.version || 0;
             const score = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
             if (!score) return 0;
@@ -578,41 +585,56 @@ export class DriveSyncManager {
                 }
             }
 
-            // 2.5 Merge Sources & Layers (Migrated data ensures stability)
+            // 2.5 Merge Sources & Layers (Isolated by Fingerprint)
             if (Array.isArray(migratedData.sources)) {
-                const localSources = this.app.sources || [];
-                const localSourceMap = new Map(localSources.map(s => [s.id, s]));
+                const isCurrent = (this.app.pdfFingerprint === fingerprint);
+                let localSources = isCurrent ? this.app.sources : (await db.get(`sources_${fingerprint}`)) || [];
+                
+                // Fallback for legacy scores currently relying on global sources
+                if (localSources.length === 0 && isCurrent) {
+                    localSources = this.app.sources || [];
+                }
+
+                const localSourceMap = new Map((localSources || []).map(s => [s.id, s]));
                 let srcChanges = 0;
                 migratedData.sources.forEach(rs => {
                     const existing = localSourceMap.get(rs.id);
                     if (!existing) {
-                        // New source from cloud - force it to be visible initially
                         rs.visible = true;
                         localSources.push(rs);
                         localSourceMap.set(rs.id, rs);
                         srcChanges++;
                     } else if ((rs.updatedAt || 0) > (existing.updatedAt || 0)) {
-                        // Cloud version is newer - update but preserve local visibility if already true
                         const wasVisible = existing.visible;
                         Object.assign(existing, rs);
                         if (wasVisible) existing.visible = true; 
                         srcChanges++;
                     }
                 });
+
                 if (srcChanges > 0) {
                     bgChanges.push(`merged ${srcChanges} interpretation styles`);
-                    this.app.saveToStorage();
-                    if (this.app.pdfFingerprint === fingerprint) {
+                    if (isCurrent) {
+                        this.app.saveToStorage();
                         this.app.collaborationManager?.renderSourceUI();
+                    } else {
+                        await db.set(`sources_${fingerprint}`, localSources);
                     }
                 }
             }
 
             if (Array.isArray(migratedData.layers)) {
-                const localLayers = this.app.layers || [];
-                const localLayerMap = new Map(localLayers.map(l => [l.id, l]));
+                const isCurrent = (this.app.pdfFingerprint === fingerprint);
+                let localLayers = isCurrent ? this.app.layers : (await db.get(`layers_${fingerprint}`)) || [];
+
+                // Fallback for legacy
+                if (localLayers.length === 0 && isCurrent) {
+                    localLayers = this.app.layers || [];
+                }
+
+                const localLayerMap = new Map((localLayers || []).map(l => [l.id, l]));
                 let lyrChanges = 0;
-                remoteData.layers.forEach(rl => {
+                migratedData.layers.forEach(rl => {
                     if (!localLayerMap.has(rl.id)) {
                         localLayers.push(rl);
                         localLayerMap.set(rl.id, rl);
@@ -627,9 +649,11 @@ export class DriveSyncManager {
                 });
                 if (lyrChanges > 0) {
                     bgChanges.push(`merged ${lyrChanges} layers`);
-                    this.app.saveToStorage();
-                    if (this.app.pdfFingerprint === fingerprint) {
-                        this.app.layerManager?.renderLayers();
+                    if (isCurrent) {
+                        this.app.saveToStorage();
+                        this.app.layerManager?.renderLayerUI();
+                    } else {
+                        await db.set(`layers_${fingerprint}`, localLayers);
                     }
                 }
             }
@@ -672,8 +696,8 @@ export class DriveSyncManager {
         return {
             stamps,
             bookmarks,
-            sources: this.app.sources || [],
-            layers: this.app.layers || [],
+            sources: (fp === this.app.pdfFingerprint) ? (this.app.sources || []) : (await db.get(`sources_${fp}`)) || [],
+            layers: (fp === this.app.pdfFingerprint) ? (this.app.layers || []) : (await db.get(`layers_${fp}`)) || [],
             scoreDetail,
             version: Date.now(),
             fingerprint: fp,

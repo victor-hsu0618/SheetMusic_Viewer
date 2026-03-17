@@ -137,15 +137,17 @@ class ScoreFlow {
     this.toolManager.initDraggable()
     this.toolManager.initToolbarResizable()
 
-    this.loadFromStorage()
+    this.loadFromStorage().then(() => {
+      this.renderLayerUI()
+      this.renderSourceUI()
+      this.toolManager.updateActiveTools()
+      this.viewerManager.checkInitialView()
+      this.toolManager.preloadSvgs()
+      this.renderBuildInfo()
+      console.log('[ScoreFlow] Initialized - Version 2.3.5')
+    })
+
     this.restoreTheme()
-    this.renderLayerUI()
-    this.renderSourceUI()
-    this.toolManager.updateActiveTools()
-    this.viewerManager.checkInitialView()
-    this.toolManager.preloadSvgs()
-    this.renderBuildInfo()
-    console.log('[ScoreFlow] Initialized - Version 2.3.5')
   }
 
   renderBuildInfo() {

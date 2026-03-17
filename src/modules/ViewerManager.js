@@ -214,6 +214,12 @@ export class ViewerManager {
 
         console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
         this.pdfFingerprint = newFingerprint
+
+        // --- SWITCH CONTEXT: Load score-specific sources and layers ---
+        await this.app.persistenceManager.loadFromStorage(newFingerprint);
+        this.app.renderSourceUI?.();
+        this.app.renderLayerUI?.();
+
         this.app.btnScoreDetailToggle?.removeAttribute('disabled')
         this.app.jumpManager?.loadBookmarks()
 

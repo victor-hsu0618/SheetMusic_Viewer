@@ -73,7 +73,7 @@ export function applyAppProxies(app) {
 
     // --- Persistence & Layer Proxies ---
     app.saveToStorage = () => app.persistenceManager.saveToStorage();
-    app.loadFromStorage = () => app.persistenceManager.loadFromStorage();
+    app.loadFromStorage = (fp) => app.persistenceManager.loadFromStorage(fp);
     app.addToRecentSoloScores = (n) => app.persistenceManager.addToRecentSoloScores(n);
     app.addNewLayer = () => app.layerManager.addNewLayer();
     app.deleteLayer = (id) => app.layerManager.deleteLayer(id);
