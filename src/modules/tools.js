@@ -413,7 +413,7 @@ export class ToolManager {
                 const btn = document.createElement("button")
                 const isSelected = this.app.activeStampType === tool.id
                 btn.className = `recent-tool-btn pinned ${isSelected ? "active" : ""}`
-                btn.innerHTML = this.getIcon(tool, 22)
+                btn.innerHTML = this.getIcon(tool, 30)
                 btn.onclick = (e) => {
                     e.stopPropagation()
                     this.app.activeStampType = tool.id
@@ -819,8 +819,8 @@ export class ToolManager {
 
                 if (r1.children.length > 0) row.appendChild(r1)
                 if (r2.children.length > 0) row.appendChild(r2)
+                container.appendChild(row)
             }
-            container.appendChild(row)
         })
         this.app.activeToolsContainer.appendChild(container)
     }

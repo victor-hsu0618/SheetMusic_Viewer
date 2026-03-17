@@ -583,7 +583,7 @@ export class InteractionManager {
                         activeObject = null;
                         InteractionUI.showTrash(false, targetWrapper);
                         this.app.redrawStamps(targetPageNum);
-                    } else if (activeObject.type === 'text' || activeObject.type === 'tempo-text') {
+                    } else if (['text', 'tempo-text', 'quick-text'].includes(activeObject.type)) {
                         this.app.annotationManager.spawnTextEditor(targetWrapper, targetPageNum, activeObject);
                     } else if (['measure', 'measure-free'].includes(activeObject.type) && !isMovingExisting) {
                         // Guard: if user switched back to view mode, don't trigger the keypad
@@ -707,7 +707,7 @@ export class InteractionManager {
                 }
             }
 
-            if (['select', 'copy', 'recycle-bin', 'cycle', 'text', 'tempo-text'].includes(toolType) || toolType.startsWith('cloak-')) {
+            if (['select', 'copy', 'recycle-bin', 'cycle', 'text', 'tempo-text', 'quick-text'].includes(toolType) || toolType.startsWith('cloak-')) {
                 const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
                 const found = this.app.findClosestStamp(pageNum, pPos.x, pPos.y, true);
                 if (found !== this.app.selectHoveredStamp) {

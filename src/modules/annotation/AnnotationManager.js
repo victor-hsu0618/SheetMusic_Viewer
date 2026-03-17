@@ -582,7 +582,7 @@ export class AnnotationManager {
             if (val) {
                 stamp.data = val
                 stamp.updatedAt = Date.now()
-                if (!this.app.userTextLibrary.includes(val)) {
+                if (stamp.type !== 'quick-text' && !this.app.userTextLibrary.includes(val)) {
                     this.app.userTextLibrary.push(val)
                     if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
                 }
