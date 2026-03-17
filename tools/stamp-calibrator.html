@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreFlow Stamp Calibrator</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #6366f1;
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; }
+        h1 { font-size: 1.5rem; margin: 0; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .section-title { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        /* Global Slider */
+        .global-control { display: flex; align-items: center; gap: 20px; padding: 10px 0; }
+        .slider-group { flex: 1; display: flex; align-items: center; gap: 12px; }
+        input[type="range"] { flex: 1; accent-color: var(--primary); }
+        .val-badge { background: var(--primary); color: white; padding: 2px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; min-width: 60px; text-align: center; }
+
+        /* Stamp List */
+        .stamp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+        .stamp-row { 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid var(--border); 
+            border-radius: 10px; 
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: border-color 0.2s;
+        }
+        .stamp-row:hover { border-color: var(--primary); }
+        .stamp-preview { width: 64px; height: 40px; background: rgba(0,0,0,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        canvas { max-width: 100%; max-height: 100%; }
+        
+        .stamp-info { flex: 1; }
+        .stamp-label { font-size: 0.85rem; font-weight: 600; margin-bottom: 2px; }
+        .stamp-id { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; }
+        
+        .stamp-controls { display: flex; align-items: center; gap: 6px; }
+        .adj-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .adj-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+        input[type="number"] { width: 45px; background: transparent; border: none; color: white; font-weight: 700; text-align: center; -moz-appearance: textfield; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .reset-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 4px; border-radius: 4px; transition: all 0.2s; }
+        .reset-btn:hover { color: #f87171; background: rgba(248, 113, 113, 0.1); }
+        .reset-btn.invisible { opacity: 0; pointer-events: none; }
+
+        .btn-main { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: filter 0.2s; }
+        .btn-main:hover { filter: brightness(1.1); }
+        .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+
+        .header-actions { display: flex; gap: 10px; }
+        
+        .category-group { margin-top: 30px; }
+        .category-group:first-child { margin-top: 0; }
+        
+        .hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 5px; }
+
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #10b981; color: white; padding: 10px 20px; border-radius: 30px;
+            font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Stamp Annotation Calibrator</h1>
+                <p class="hint">進階圖章尺寸微調工具 (Advanced Calibration)</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-ghost" onclick="window.location.href='index.html'">返回入口</button>
+                <button class="btn-main" onclick="saveAll()">儲存設定</button>
+            </div>
+        </header>
+
+        <div class="card">
+            <div class="section-title">整體縮放 (Global Multiplier)</div>
+            <div class="global-control">
+                <div class="slider-group">
+                    <button class="adj-btn" onclick="adjGlobal(-0.1)">−</button>
+                    <input type="range" id="global-multiplier" min="0.5" max="3.0" step="0.1" value="1.0" oninput="updateGlobalLabel(this.value)">
+                    <button class="adj-btn" onclick="adjGlobal(0.1)">+</button>
+                </div>
+                <div class="val-badge" id="global-val">1.0x</div>
+                <button class="reset-btn" onclick="resetGlobal()" title="重設為 1.0x">↺</button>
+            </div>
+            <p class="hint">這會影響所有圖章的基礎大小。通常設定為 1.0x。iPad Pro 建議 1.0x - 1.2x。</p>
+        </div>
+
+        <div id="calibration-area">
+            <!-- Dynamically populated -->
+        </div>
+
+        <div style="margin-top: 40px; text-align: center; opacity: 0.5; font-size: 0.8rem;">
+            ScoreFlow Advanced Tools &bull; 任何變更將儲存於瀏覽器本地空間 (Local Storage)
+        </div>
+    </div>
+
+    <div id="toast" class="toast">設定已儲存！</div>
+
+    <script>
+        // ── Constants (Mirrored from src/constants.js) ──
+        const TOOLSETS = [
+            {
+                name: 'Pens',
+                tools: [
+                    { id: 'pen', label: 'Pen', draw: { type: 'path', data: 'M 1 0 L -1 0' } },
+                    { id: 'red-pen', label: 'Red', draw: { type: 'path', color: '#be123c' } },
+                    { id: 'green-pen', label: 'Green', draw: { type: 'path', color: '#15803d' } },
+                    { id: 'blue-pen', label: 'Blue', draw: { type: 'path', color: '#1d4ed8' } },
+                    { id: 'dashed-pen', label: 'Dashed', draw: { type: 'path', dashed: true } },
+                    { id: 'arrow-pen', label: 'Arrow', draw: { type: 'path', arrow: true } },
+                ]
+            },
+            {
+                name: 'Fingering',
+                tools: [
+                    { id: 'thumb', label: 'Thumb', draw: { type: 'complex', variant: 'thumb', size: 15 } },
+                    { id: 'f1', label: '1', draw: { type: 'text', content: '1', font: '300', size: 20 } },
+                    { id: 'f2', label: '2', draw: { type: 'text', content: '2', font: '300', size: 20 } },
+                    { id: 'f3', label: '3', draw: { type: 'text', content: '3', font: '400', size: 20 } },
+                    { id: 'f4', label: '4', draw: { type: 'text', content: '4', font: '400', size: 20 } },
+                    { id: 'f5', label: '5', draw: { type: 'text', content: '5', font: '400', size: 20 } },
+                    { id: 'f0', label: '0', draw: { type: 'text', content: '0', font: '300', size: 14 } },
+                    { id: 'down-bow', label: 'Down', draw: { type: 'path', data: 'M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3', size: 15, strokeWidth: 1.6, fill: 'none' } },
+                    { id: 'up-bow', label: 'Up', draw: { type: 'path', data: 'M -0.28 -0.35 L 0 0.35 L 0.28 -0.35', size: 15, strokeWidth: 1.6, fill: 'none' } },
+                    { id: 'open_string', label: 'o', draw: { type: 'shape', shape: 'circle', radius: 0.2, fill: false, size: 20 } },
+                ]
+            },
+            {
+                name: 'Articulation',
+                tools: [
+                    { id: 'accent', label: 'Accent', draw: { type: 'path', data: 'M -0.35 -0.15 L 0.35 0 L -0.35 0.15', size: 20, strokeWidth: 2, fill: 'none' } },
+                    { id: 'marcato', label: 'Marcato', draw: { type: 'path', data: 'M -0.2 0.3 L 0 -0.3 L 0.2 0.3', size: 20, strokeWidth: 2, fill: 'none' } },
+                    { id: 'staccato', label: 'Staccato', draw: { type: 'shape', shape: 'circle', radius: 0.15, fill: true, size: 20 } },
+                    { id: 'tenuto', label: 'Tenuto', draw: { type: 'path', data: 'M -0.3 0 L 0.3 0', size: 20, strokeWidth: 2, fill: 'none' } },
+                    { id: 'fermata', label: 'Fermata', draw: { type: 'complex', variant: 'fermata', size: 20 } },
+                    { id: 'sharp', label: 'Sharp', draw: { type: 'text', content: '♯', font: '400', size: 17, fontFace: 'serif' } },
+                    { id: 'flat', label: 'Flat', draw: { type: 'text', content: '♭', font: '400', size: 17, fontFace: 'serif' } },
+                    { id: 'natural', label: 'Natural', draw: { type: 'text', content: '♮', font: '400', size: 17, fontFace: 'serif' } },
+                ]
+            },
+            {
+                name: 'Text',
+                tools: [
+                    { id: 'text', label: 'Text', draw: { type: 'text', content: 'Abc', size: 20 } },
+                    { id: 'text-ppp', label: 'ppp', draw: { type: 'text', content: 'ppp', font: 'italic 800', size: 16, fontFace: 'serif' } },
+                    { id: 'text-f', label: 'f', draw: { type: 'text', content: 'f', font: 'italic 800', size: 16, fontFace: 'serif' } },
+                    { id: 'text-page', label: '換頁', draw: { type: 'text', content: '換頁', font: 'italic 500', size: 16, color: '#ef4444' } },
+                ]
+            },
+            {
+                name: 'Others',
+                tools: [
+                    { id: 'anchor', label: 'Anchor', draw: { type: 'complex', variant: 'anchor' } }
+                ]
+            }
+        ];
+
+        let multiplier = 1.0;
+        let overrides = {};
+
+        function init() {
+            // Load from localStorage
+            const storedMult = localStorage.getItem('scoreflow_stamp_size_multiplier');
+            if (storedMult) multiplier = parseFloat(storedMult);
+            
+            const storedOverrides = localStorage.getItem('scoreflow_stamp_size_overrides');
+            if (storedOverrides) overrides = JSON.parse(storedOverrides);
+
+            // Update Global UI
+            const multInput = document.getElementById('global-multiplier');
+            multInput.value = multiplier;
+            updateGlobalLabel(multiplier);
+
+            // Populate calibration list
+            const area = document.getElementById('calibration-area');
+            let html = '';
+
+            TOOLSETS.forEach(set => {
+                html += `<div class="category-group">
+                    <div class="section-title">${set.name}</div>
+                    <div class="stamp-grid">`;
+                
+                set.tools.forEach(tool => {
+                    if (!tool.draw) return;
+                    const defaultSize = tool.draw.size ?? 24;
+                    const currentSize = overrides[tool.id] ?? defaultSize;
+                    const isOverridden = tool.id in overrides;
+                    
+                    html += `
+                    <div class="stamp-row" id="row-${tool.id}" data-id="${tool.id}" data-default="${defaultSize}">
+                        <div class="stamp-preview">
+                            <canvas id="canvas-${tool.id}" width="64" height="40"></canvas>
+                        </div>
+                        <div class="stamp-info">
+                            <div class="stamp-label">${tool.label}</div>
+                            <div class="stamp-id">${tool.id}</div>
+                        </div>
+                        <div class="stamp-controls">
+                            <button class="adj-btn" onclick="adjIndividual('${tool.id}', -1)">−</button>
+                            <input type="number" id="input-${tool.id}" value="${currentSize}" onchange="updateIndividual('${tool.id}', this.value)">
+                            <button class="adj-btn" onclick="adjIndividual('${tool.id}', 1)">+</button>
+                            <button class="reset-btn ${isOverridden ? '' : 'invisible'}" id="reset-${tool.id}" onclick="resetIndividual('${tool.id}')">↺</button>
+                        </div>
+                    </div>`;
+                });
+                
+                html += `</div></div>`;
+            });
+
+            area.innerHTML = html;
+
+            // Render all previews
+            TOOLSETS.forEach(set => {
+                set.tools.forEach(tool => {
+                    const canvas = document.getElementById('canvas-' + tool.id);
+                    if (canvas) renderPreview(canvas, tool, overrides[tool.id] ?? (tool.draw.size ?? 24));
+                });
+            });
+        }
+
+        function updateGlobalLabel(val) {
+            multiplier = parseFloat(val);
+            document.getElementById('global-val').textContent = multiplier.toFixed(1) + 'x';
+        }
+
+        function adjGlobal(delta) {
+            const input = document.getElementById('global-multiplier');
+            let val = parseFloat(input.value) + delta;
+            val = Math.max(0.5, Math.min(3.0, val));
+            input.value = val;
+            updateGlobalLabel(val);
+        }
+
+        function resetGlobal() {
+            const input = document.getElementById('global-multiplier');
+            input.value = 1.0;
+            updateGlobalLabel(1.0);
+        }
+
+        function adjIndividual(id, delta) {
+            const input = document.getElementById('input-' + id);
+            let val = parseInt(input.value) + delta;
+            updateIndividual(id, val);
+        }
+
+        function updateIndividual(id, val) {
+            val = parseInt(val);
+            const row = document.getElementById('row-' + id);
+            const defaultSize = parseInt(row.dataset.default);
+            const input = document.getElementById('input-' + id);
+            const resetBtn = document.getElementById('reset-' + id);
+            
+            val = Math.max(6, Math.min(100, val));
+            input.value = val;
+
+            if (val === defaultSize) {
+                delete overrides[id];
+                resetBtn.classList.add('invisible');
+            } else {
+                overrides[id] = val;
+                resetBtn.classList.remove('invisible');
+            }
+
+            // Re-render preview
+            const tool = findTool(id);
+            const canvas = document.getElementById('canvas-' + id);
+            if (tool && canvas) renderPreview(canvas, tool, val);
+        }
+
+        function resetIndividual(id) {
+            const row = document.getElementById('row-' + id);
+            const defaultSize = parseInt(row.dataset.default);
+            updateIndividual(id, defaultSize);
+        }
+
+        function findTool(id) {
+            for (const set of TOOLSETS) {
+                const t = set.tools.find(x => x.id === id);
+                if (t) return t;
+            }
+            return null;
+        }
+
+        function renderPreview(canvas, tool, size) {
+            const dpr = window.devicePixelRatio || 1;
+            const W = 64, H = 40;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, W, H);
+
+            const d = tool.draw;
+            const color = d.color || '#6366f1';
+            const x = W / 2, y = H / 2;
+            ctx.fillStyle = ctx.strokeStyle = color;
+
+            if (d.type === 'text') {
+                ctx.font = `${d.font || ''} ${size}px ${d.fontFace || 'Outfit'}`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(d.content || '?', x, y);
+            } else if (d.type === 'path') {
+                ctx.save(); ctx.translate(x, y); ctx.scale(size, size);
+                ctx.lineWidth = (d.strokeWidth || 2.5) / size;
+                ctx.lineCap = 'round';
+                try {
+                    const p = new Path2D(d.data || 'M -0.5 0 L 0.5 0');
+                    ctx.stroke(p);
+                    if (d.fill && d.fill !== 'none') { ctx.fill(p); }
+                } catch (e) {}
+                ctx.restore();
+            } else if (d.type === 'shape') {
+                if (d.shape === 'circle') {
+                    ctx.beginPath(); ctx.arc(x, y, d.radius * size, 0, Math.PI * 2);
+                    if (d.fill) ctx.fill(); else { ctx.lineWidth = 1; ctx.stroke(); }
+                }
+            } else if (d.type === 'complex') {
+                if (d.variant === 'thumb') {
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.ellipse(x, y - size * 0.15, size * 0.12, size * 0.28, 0, 0, Math.PI * 2); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(x, y + size * 0.13); ctx.lineTo(x, y + size * 0.38); ctx.stroke();
+                } else if (d.variant === 'fermata') {
+                    const fs = size * 0.45;
+                    ctx.beginPath(); ctx.lineWidth = 1.5; ctx.arc(x, y, fs, Math.PI, 0); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(x, y - fs * 0.3, fs * 0.15, 0, Math.PI * 2); ctx.fill();
+                } else if (d.variant === 'anchor') {
+                    const s = size * 0.6;
+                    ctx.beginPath(); ctx.arc(x, y - s * 1.1, s * 0.2, 0, Math.PI * 2); ctx.fill();
+                    ctx.lineWidth = s * 0.15;
+                    ctx.beginPath(); ctx.moveTo(x, y - s * 0.9); ctx.lineTo(x, y + s * 0.3); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(x - s * 0.6, y); ctx.lineTo(x + s * 0.6, y); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(x, y, s * 0.6, 0, Math.PI, false); ctx.stroke();
+                }
+            }
+        }
+
+        function saveAll() {
+            localStorage.setItem('scoreflow_stamp_size_multiplier', multiplier);
+            localStorage.setItem('scoreflow_stamp_size_overrides', JSON.stringify(overrides));
+            
+            showToast();
+        }
+
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

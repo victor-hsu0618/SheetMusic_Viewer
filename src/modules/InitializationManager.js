@@ -206,9 +206,7 @@ export class InitializationManager {
         document.getElementById('btn-drive-signin')?.addEventListener('click', (e) => { e.preventDefault(); app.driveSyncManager.signIn() })
         document.getElementById('btn-drive-signout')?.addEventListener('click', (e) => { e.preventDefault(); app.driveSyncManager.signOut() })
         document.getElementById('btn-drive-pause')?.addEventListener('click', (e) => { e.preventDefault(); app.togglePauseSync() })
-        document.getElementById('btn-rebuild-library')?.addEventListener('click', () => app.scoreManager.rebuildLibrary())
-        document.getElementById('btn-reset-cloud-index')?.addEventListener('click', () => app.driveSyncManager.resetCloudIndex())
-        document.getElementById('btn-heal-cloud-titles')?.addEventListener('click', () => app.driveSyncManager.healManifestNames())
+
         document.getElementById('btn-purge-cloud-data')?.addEventListener('click', () => {
             console.log('[InitializationManager] Purge button clicked');
             app.purgeAllCloudData();

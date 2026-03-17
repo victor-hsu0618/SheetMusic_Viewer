@@ -80,12 +80,86 @@
         </div>
 
         <div class="card">
+            <h3>Local Data Management</h3>
+            <p style="font-size: 12px; color: #666;">重建資料庫索引 (score_registry) — 若您的樂譜庫清單消失，但底層數據還在 IndexedDB 中，可使用此工具恢復。</p>
+            <button id="btn-rebuild-registry" style="background: #ed8936;">Rebuild Registry from Storage</button>
+        </div>
+
+        <div class="card">
+            <h3>Cloud Sync Log History</h3>
+            <p style="font-size: 12px; color: #666;">從 Google Drive 讀取最近的同步紀錄 (sync_log.json)。需確保主程式已連線。</p>
+            <button id="btn-load-logs" style="background: #805ad5;">Load Sync Logs from Cloud</button>
+            <div id="log-container" class="hidden" style="margin-top: 15px;">
+                <div id="log-entries" style="max-height: 400px; overflow-y: auto; font-size: 12px; font-family: monospace; background: #1a202c; color: #a0aec0; border-radius: 6px; padding: 10px;">
+                    <!-- Logs go here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
             <h3>Raw Manifest Snapshot</h3>
             <pre id="raw-manifest"></pre>
         </div>
     </div>
 
     <script type="module">
+        // --- SHA-256 Fingerprint Implementation (Matching main app) ---
+        function _sha256(data) {
+            const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+            const K = [
+                0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+                0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+                0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+                0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+                0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+                0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+                0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+                0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+            ];
+            let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+            let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+            const len = bytes.length;
+            const paddedLen = (len + 9 + 63) & ~63;
+            const padded = new Uint8Array(paddedLen);
+            padded.set(bytes);
+            padded[len] = 0x80;
+            const dv = new DataView(padded.buffer);
+            dv.setUint32(paddedLen - 4, (len * 8) >>> 0, false);
+            dv.setUint32(paddedLen - 8, Math.floor(len / 0x20000000) >>> 0, false);
+            const w = new Array(64);
+            const rotr = (x, n) => ((x >>> n) | (x << (32 - n))) >>> 0;
+            for (let off = 0; off < paddedLen; off += 64) {
+                for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4, false);
+                for (let i = 16; i < 64; i++) {
+                    const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+                    const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+                    w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+                }
+                let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, hv = h7;
+                for (let i = 0; i < 64; i++) {
+                    const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+                    const ch = ((e & f) ^ (~e & g)) >>> 0;
+                    const t1 = (hv + S1 + ch + K[i] + w[i]) >>> 0;
+                    const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+                    const maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
+                    const t2 = (S0 + maj) >>> 0;
+                    hv = g; g = f; f = e; e = (d + t1) >>> 0;
+                    d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+                }
+                h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0;
+                h4 = (h4 + e) >>> 0; h5 = (h5 + f) >>> 0; h6 = (h6 + g) >>> 0; h7 = (h7 + hv) >>> 0;
+            }
+            return [h0, h1, h2, h3, h4, h5, h6, h7].map(v => v.toString(16).padStart(8, '0')).join('');
+        }
+        async function computeFingerprint(buffer) {
+            const bytes = (buffer instanceof ArrayBuffer) ? new Uint8Array(buffer) : buffer;
+            if (window.isSecureContext && crypto?.subtle) {
+                const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
+                return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+            return _sha256(bytes);
+        }
+
         // Minimal IndexedDB wrapper for diagnosis
         const dbName = 'ScoreFlowStorage';
         const dbVersion = 1;
@@ -122,31 +196,31 @@
         const dropZone = document.getElementById('drop-zone');
         const externalTextarea = document.getElementById('external-manifest-json');
         
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
-            dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }, false);
-        });
-        
-        dropZone.addEventListener('dragover', () => dropZone.style.background = '#bee3f8');
-        dropZone.addEventListener('dragleave', () => dropZone.style.background = '#ebf8ff');
-        
-        dropZone.addEventListener('drop', e => {
-            dropZone.style.background = '#ebf8ff';
-            const file = e.dataTransfer.files[0];
-            if (file && (file.name.endsWith('.json') || file.type === 'application/json')) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    externalTextarea.value = e.target.result;
-                    document.getElementById('btn-analyze-external').click();
-                };
-                reader.readAsText(file);
-            }
-        });
+        if (dropZone) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+                dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+            dropZone.addEventListener('dragover', () => dropZone.style.background = '#bee3f8');
+            dropZone.addEventListener('dragleave', () => dropZone.style.background = '#ebf8ff');
+            dropZone.addEventListener('drop', e => {
+                dropZone.style.background = '#ebf8ff';
+                const file = e.dataTransfer.files[0];
+                if (file && (file.name.endsWith('.json') || file.type === 'application/json')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        externalTextarea.value = e.target.result;
+                        document.getElementById('btn-analyze-external').click();
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        }
 
-        document.getElementById('btn-toggle-external').addEventListener('click', () => {
+        document.getElementById('btn-toggle-external')?.addEventListener('click', () => {
             document.getElementById('external-input-area').classList.toggle('hidden');
         });
 
-        document.getElementById('btn-analyze-external').addEventListener('click', async () => {
+        document.getElementById('btn-analyze-external')?.addEventListener('click', async () => {
             const raw = document.getElementById('external-manifest-json').value.trim();
             if (!raw) return alert('請先貼上 JSON 內容');
             try {
@@ -159,16 +233,13 @@
             } catch (e) { alert('JSON 格式錯誤：' + e.message); }
         });
 
-        document.getElementById('btn-analyze').addEventListener('click', async () => {
+        document.getElementById('btn-analyze')?.addEventListener('click', async () => {
             const btn = document.getElementById('btn-analyze');
             btn.textContent = 'Analyzing...';
             btn.disabled = true;
 
             try {
-                // 1. Gather all data from IndexedDB (Store name is 'store')
                 const allData = await getAllFromStore('store');
-                
-                // 2. Extract Specific Keys
                 const registry = allData['score_registry'] || [];
                 const manifest = JSON.parse(localStorage.getItem('scoreflow_sync_manifest_v3') || '{}');
                 
@@ -177,9 +248,7 @@
                 }
                 
                 renderAnalysis(registry, manifest, allData);
-                
                 document.getElementById('results-area').classList.remove('hidden');
-                document.getElementById('btn-export').classList.remove('hidden');
                 document.getElementById('raw-manifest').textContent = JSON.stringify(manifest, null, 2);
             } catch (err) {
                 alert('Analysis failed: ' + err.message);
@@ -190,8 +259,147 @@
             }
         });
 
+        async function gdriveFetch(url, token, options = {}) {
+            options.headers = options.headers || {};
+            options.headers['Authorization'] = `Bearer ${token}`;
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`GDrive API Error: ${response.status}`);
+            return response;
+        }
+
+        document.getElementById('btn-load-logs')?.addEventListener('click', async () => {
+            const btn = document.getElementById('btn-load-logs');
+            const container = document.getElementById('log-container');
+            const entriesEl = document.getElementById('log-entries');
+            const accessToken = localStorage.getItem('scoreflow_drive_access_token');
+            const folderInfoStr = localStorage.getItem('scoreflow_drive_folder_ids_v3');
+            
+            if (!accessToken) return alert('未找到 Access Token，請先在主程式連線 Google Drive。');
+            if (!folderInfoStr) return alert('未找到雲端資料夾資訊。');
+            
+            btn.textContent = 'Loading Logs...';
+            btn.disabled = true;
+            
+            try {
+                const folderInfo = JSON.parse(folderInfoStr);
+                const parentId = folderInfo.root;
+                const q = encodeURIComponent(`name = 'sync_log.json' and '${parentId}' in parents and trashed = false`);
+                const findUrl = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`;
+                const findRes = await gdriveFetch(findUrl, accessToken);
+                const findData = await findRes.json();
+                
+                if (!findData.files?.length) {
+                    entriesEl.innerHTML = '<div style="padding:10px; opacity:0.6;">雲端尚無 sync_log.json 檔案。</div>';
+                    container.classList.remove('hidden');
+                    return;
+                }
+                const fileId = findData.files[0].id;
+                const contentRes = await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, accessToken);
+                const logData = await contentRes.json();
+                
+                if (!logData.entries || !logData.entries.length) {
+                    entriesEl.innerHTML = '<div style="padding:10px; opacity:0.6;">日誌檔案內容為空。</div>';
+                } else {
+                    const entries = logData.entries.slice().reverse();
+                    const actionIcon = { push: '↑', pull: '↓', signin: '🔑', signout: '🔒', scan: '🔍', pdf_upload: '📤', pdf_download: '📥' };
+                    entriesEl.innerHTML = entries.map(e => {
+                        const icon = actionIcon[e.action] || '•';
+                        const timeStr = new Date(e.ts).toLocaleString();
+                        const color = e.action === 'push' ? '#6ee7b7' : e.action === 'pull' ? '#93c5fd' : e.action.startsWith('sign') ? '#fde68a' : '#d1d5db';
+                        return `<div style="padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.05); color:${color}">`
+                             + `<span style="opacity:0.5; margin-right:8px;">[${timeStr}]</span> `
+                             + `<span style="margin-right:8px;">${icon} ${e.action.toUpperCase()}</span> `
+                             + `<span style="opacity:0.8; margin-right:8px;">${e.user}@${e.device}</span> `
+                             + `<span>${e.detail || ''}</span></div>`;
+                    }).join('');
+                }
+                container.classList.remove('hidden');
+            } catch (err) {
+                alert('載入日誌失敗: ' + err.message);
+                console.error(err);
+            } finally {
+                btn.textContent = 'Load Sync Logs from Cloud';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('btn-rebuild-registry')?.addEventListener('click', async () => {
+            if (!confirm('此操作將從 IndexedDB 中的 PDF 檔案重建 score_registry 選單。現有的選單將被替換，確定嗎？')) return;
+            const btn = document.getElementById('btn-rebuild-registry');
+            btn.disabled = true;
+            btn.textContent = 'Rebuilding...';
+
+            try {
+                const db = await getDB();
+                const transaction = db.transaction('store', 'readwrite');
+                const store = transaction.objectStore('store');
+                
+                // 1. Get all data
+                const allData = await new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    const keyRequest = store.getAllKeys();
+                    request.onsuccess = () => {
+                        const results = {};
+                        keyRequest.onsuccess = () => {
+                            keyRequest.result.forEach((key, i) => results[key] = request.result[i]);
+                            resolve(results);
+                        };
+                    };
+                });
+
+                const bufferKeys = Object.keys(allData).filter(k => k.startsWith('score_buf_'));
+                console.log(`Found ${bufferKeys.length} PDF buffers.`);
+
+                const oldRegistry = allData['score_registry'] || [];
+                const newRegistry = [];
+
+                for (const key of bufferKeys) {
+                    const fp = key.replace('score_buf_', '');
+                    const buffer = allData[key];
+                    const detail = allData[`detail_${fp}`];
+                    const oldEntry = oldRegistry.find(s => s.fingerprint === fp);
+
+                    // Compute SHA-256 for verification
+                    const actualFp = await computeFingerprint(buffer);
+                    if (actualFp !== fp) {
+                        console.warn(`Fingerprint mismatch for ${fp}: actual is ${actualFp}. Skipping.`);
+                        continue;
+                    }
+
+                    newRegistry.push({
+                        fingerprint: fp,
+                        title: detail?.name || oldEntry?.title || `Recovered (${fp.slice(0, 6)})`,
+                        fileName: detail?.name ? detail.name + '.pdf' : (oldEntry?.fileName || 'recovered.pdf'),
+                        composer: detail?.composer || oldEntry?.composer || 'Unknown',
+                        thumbnail: oldEntry?.thumbnail || null, // UI tool doesn't have pdf.js renderer readily available
+                        dateImported: oldEntry?.dateImported || Date.now(),
+                        lastAccessed: oldEntry?.lastAccessed || Date.now(),
+                        tags: oldEntry?.tags || [],
+                        isSynced: oldEntry?.isSynced || false,
+                        storageMode: 'cached'
+                    });
+                }
+
+                await new Promise((resolve, reject) => {
+                    const putRequest = store.put(newRegistry, 'score_registry');
+                    putRequest.onsuccess = resolve;
+                    putRequest.onerror = reject;
+                });
+
+                alert(`成功！已從儲存空間恢復 ${newRegistry.length} 份樂譜清單。請重新載入主程式以檢視結果。`);
+                location.reload();
+            } catch (err) {
+                alert('重建清單失敗: ' + err.message);
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Rebuild Registry from Storage';
+            }
+        });
+
         function renderAnalysis(registry, manifest, allDetails) {
             const tbody = document.getElementById('analysis-body');
+            if (!tbody) return;
             tbody.innerHTML = '';
             
             const stats = { total: 0, mismatched: 0, synced: 0, cloudOnly: 0, issues: 0 };
@@ -207,13 +415,10 @@
                 if (score && score.isCloudOnly) stats.cloudOnly++;
 
                 const row = document.createElement('tr');
-                
-                // Column 1: Score Info
                 const title = score?.title || entry?.name || 'Unknown';
                 const hash = fp.slice(0, 8);
                 let infoHtml = `<b>${title}</b><br><span class="hash">${hash}</span>`;
                 
-                // Column 2: Sync Status
                 let syncStatus = '';
                 if (!entry) {
                     syncStatus = '<span class="status-pill status-warn">Local Only (No Cloud)</span>';
@@ -224,72 +429,43 @@
                     syncStatus = '<span class="status-pill status-ok">Synced (v3)</span>';
                 }
                 
-                // Column 3: Consistency
                 let consistHtml = '';
                 const issues = [];
-                
                 if (entry && score) {
-                    // Check Name Mismatch
                     if (entry.name && entry.name !== score.title) {
                         issues.push(`Title Mismatch: Cloud="${entry.name}" vs Local="${score.title}"`);
                         stats.mismatched++;
                     }
-                    
-                    // Check Filenames
                     const safeTitle = (title || 'Untitled').replace(/[/\\?*:|"<>]/g, '_').trim().slice(0, 100);
-                    const expectedBase = safeTitle ? safeTitle + '_' + hash : hash;
-                    
-                    if (entry.pdfFilename && !entry.pdfFilename.includes(hash)) {
-                        issues.push(`PDF Hash Mismatch!`);
-                    }
-                    if (entry.pdfFilename && !entry.pdfFilename.startsWith(safeTitle) && !title.includes('score_buf')) {
-                        issues.push(`PDF Title Stale: "${entry.pdfFilename}"`);
-                    }
+                    if (entry.pdfFilename && !entry.pdfFilename.includes(hash)) issues.push(`PDF Hash Mismatch!`);
+                    if (entry.pdfFilename && !entry.pdfFilename.startsWith(safeTitle) && !title.includes('score_buf')) issues.push(`PDF Title Stale: "${entry.pdfFilename}"`);
                 }
+                consistHtml = issues.length > 0 ? issues.map(i => `<span class="status-pill status-error">${i}</span>`).join('<br>') : '<span class="status-pill status-ok">Filenames consistent</span>';
+                if (issues.length > 0) stats.issues++;
 
-                if (issues.length > 0) {
-                    consistHtml = issues.map(i => `<span class="status-pill status-error">${i}</span>`).join('<br>');
-                    stats.issues++;
-                } else {
-                    consistHtml = '<span class="status-pill status-ok">Filenames consistent</span>';
-                }
-
-                // Column 4: Timeline
                 const localEdit = detail?.lastEdit || 0;
                 const cloudUpdate = entry?.updated || 0;
-                let timelineHtml = `Local: ${localEdit ? new Date(localEdit).toLocaleString() : 'Never'}<br>`;
-                timelineHtml += `Cloud: ${cloudUpdate ? new Date(cloudUpdate).toLocaleString() : 'Never'}`;
-                
-                if (localEdit > cloudUpdate && cloudUpdate > 0) {
-                    timelineHtml += '<br><span class="diff-tag">Local is NEWER (+'+ Math.round((localEdit-cloudUpdate)/1000) +'s)</span>';
-                } else if (cloudUpdate > localEdit && localEdit > 0) {
-                    timelineHtml += '<br><span class="diff-tag">Cloud is NEWER (+'+ Math.round((cloudUpdate-localEdit)/1000) +'s)</span>';
-                }
+                let timelineHtml = `Local: ${localEdit ? new Date(localEdit).toLocaleString() : 'Never'}<br>Cloud: ${cloudUpdate ? new Date(cloudUpdate).toLocaleString() : 'Never'}`;
+                if (localEdit > cloudUpdate && cloudUpdate > 0) timelineHtml += '<br><span class="diff-tag">Local is NEWER (+'+ Math.round((localEdit-cloudUpdate)/1000) +'s)</span>';
+                else if (cloudUpdate > localEdit && localEdit > 0) timelineHtml += '<br><span class="diff-tag">Cloud is NEWER (+'+ Math.round((cloudUpdate-localEdit)/1000) +'s)</span>';
 
-                // Column 5: Actions
                 let actions = [];
                 if (issues.length > 0) actions.push('Needs Sync Rename');
                 if (!entry) actions.push('Push to Cloud');
                 if (score?.isCloudOnly) actions.push('Download PDF');
                 
-                row.innerHTML = `
-                    <td>${infoHtml}</td>
-                    <td>${syncStatus}</td>
-                    <td>${consistHtml}</td>
-                    <td>${timelineHtml}</td>
-                    <td>${actions.join(', ') || 'None'}</td>
-                `;
+                row.innerHTML = `<td>${infoHtml}</td><td>${syncStatus}</td><td>${consistHtml}</td><td>${timelineHtml}</td><td>${actions.join(', ') || 'None'}</td>`;
                 tbody.appendChild(row);
             });
 
-            // Update Stats UI
             const statsContainer = document.getElementById('stats-container');
-            statsContainer.innerHTML = `
-                <div class="stat-box"><div class="value">${stats.total}</div><div class="label">Total Scores</div></div>
-                <div class="stat-box"><div class="value">${stats.synced}</div><div class="label">Synced</div></div>
-                <div class="stat-box"><div class="value">${stats.mismatched}</div><div class="label">Title Mismatches</div></div>
-                <div class="stat-box"><div class="value" style="color: #e53e3e">${stats.issues}</div><div class="label">Consistency Issues</div></div>
-            `;
+            if (statsContainer) {
+                statsContainer.innerHTML = `
+                    <div class="stat-box"><div class="value">${stats.total}</div><div class="label">Total Scores</div></div>
+                    <div class="stat-box"><div class="value">${stats.synced}</div><div class="label">Synced</div></div>
+                    <div class="stat-box"><div class="value">${stats.mismatched}</div><div class="label">Title Mismatches</div></div>
+                    <div class="stat-box"><div class="value" style="color: #e53e3e">${stats.issues}</div><div class="label">Consistency Issues</div></div>`;
+            }
         }
     </script>
 </body>

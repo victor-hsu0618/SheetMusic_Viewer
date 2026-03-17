@@ -92,7 +92,6 @@ export function applyAppProxies(app) {
     app.toggleLibrary = (f) => app.scoreManager.toggleOverlay(f);
     app.toggleScoreDetail = (f) => app.scoreDetailManager?.showPanel(f);
     app.togglePauseSync = () => app.driveSyncManager?.togglePauseSync();
-    app.healCloudTitles = () => app.driveSyncManager?.healManifestNames();
     app.purgeAllCloudData = () => {
         console.log('[AppProxy] Calling purgeAllCloudData');
         return app.driveSyncManager?.purgeAllCloudData();

@@ -118,8 +118,6 @@ export class DriveSyncManager {
     deleteManifestEntry(fingerprint, title)         { return this.manifest_mgr.deleteManifestEntry(fingerprint, title); }
     scanRemoteSyncFiles()                           { return this.manifest_mgr.scanRemoteSyncFiles(); }
     fetchCloudScoreDetails(fileId, fingerprint)     { return this.manifest_mgr.fetchCloudScoreDetails(fileId, fingerprint); }
-    resetCloudIndex()                               { return this.manifest_mgr.resetCloudIndex(); }
-    healManifestNames()                             { return this.manifest_mgr.healManifestNames(); }
     forcePushAll()                                  { return this.manifest_mgr.forcePushAll(); }
 
     // =========================================================

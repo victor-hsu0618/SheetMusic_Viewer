@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreFlow LAN Debug & Auth Tool</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warn: #f59e0b;
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+        .container { max-width: 700px; margin: 0 auto; }
+        header { margin-bottom: 30px; }
+        h1 { font-size: 1.8rem; margin: 0; color: #60a5fa; }
+        p.subtitle { color: var(--text-muted); margin-top: 5px; }
+        
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+        .section-title { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+        
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: #fff;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+        textarea:focus { outline: none; border-color: var(--primary); }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); }
+
+        .hint-box {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #bfdbfe;
+            margin-bottom: 20px;
+        }
+
+        .status-area {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.1);
+            font-size: 0.85rem;
+        }
+        .status-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .status-val { font-family: monospace; color: var(--primary); }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: var(--success); color: white; padding: 12px 24px; border-radius: 30px;
+            font-weight: 600; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        .toast.show { opacity: 1; }
+
+        code { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="btn btn-outline" style="margin-bottom: 15px;" onclick="window.location.href='index.html'">← 返回工具門戶</button>
+            <h1>LAN Debug & Auth Tool</h1>
+            <p class="subtitle">針對跨裝置偵錯與手動權限注入的進階工具</p>
+        </header>
+
+        <div class="card">
+            <div class="section-title">Google Drive Token 注入</div>
+            <div class="hint-box">
+                由於 Google Drive API 的限制，當您使用 LAN IP (例如 <code>192.168.x.x</code>) 存取 App 時，可能無法正常彈出授權視窗。
+                您可以從<b>已授權的電腦端</b>拷貝 Token，並在此處貼上以獲得臨時存取權（有效期約 1 小時）。
+            </div>
+
+            <div class="form-group">
+                <label>目前的存取權限 (Access Token)</label>
+                <div style="display: flex; gap: 10px; align-items: start;">
+                    <textarea id="current-token" readonly placeholder="目前尚未取得 Token..."></textarea>
+                    <button class="btn btn-outline" onclick="copyCurrentToken()" title="拷貝目前的 Token">📋</button>
+                </div>
+                <p class="subtitle" style="font-size: 0.75rem;">這是目前此瀏覽器儲存的 Access Token。</p>
+            </div>
+
+            <div class="form-group">
+                <label>注入新的 Token (Inject Token)</label>
+                <textarea id="input-token" placeholder="貼上來自其他裝置的 Token..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-primary" onclick="applyToken()">⚡ 套用 Token 並啟用同步</button>
+                <button class="btn btn-outline" onclick="clearToken()" style="color: #ef4444; border-color: rgba(239,68,68,0.2)">💣 清除 Token</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">當前狀態 (Auth State)</div>
+            <div class="status-area" id="auth-status">
+                <div class="status-row"><span>Sync Enabled:</span> <span class="status-val" id="st-enabled">---</span></div>
+                <div class="status-row"><span>Token Expiry:</span> <span class="status-val" id="st-expiry">---</span></div>
+                <div class="status-row"><span>User Hint:</span> <span class="status-val" id="st-hint">---</span></div>
+            </div>
+            <div style="margin-top: 15px; font-size: 0.8rem; color: var(--text-muted);">
+                注意：套用 Token 後，請<b>重新整理主程式系統</b>以套用變更。
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">已成功套用！</div>
+
+    <script>
+        function updateStatus() {
+            const enabled = localStorage.getItem('scoreflow_drive_sync_enabled');
+            const token = localStorage.getItem('scoreflow_drive_access_token');
+            const expiry = localStorage.getItem('scoreflow_drive_token_expiry');
+            const hint = localStorage.getItem('scoreflow_drive_user_hint');
+
+            document.getElementById('current-token').value = token || '';
+            document.getElementById('st-enabled').textContent = enabled || 'false';
+            
+            if (expiry) {
+                const date = new Date(parseInt(expiry));
+                const diff = Math.round((date - Date.now()) / 60000);
+                document.getElementById('st-expiry').textContent = date.toLocaleString() + (diff > 0 ? ` (剩餘 ${diff} 分鐘)` : ' (已過期)');
+            } else {
+                document.getElementById('st-expiry').textContent = 'None';
+            }
+            
+            document.getElementById('st-hint').textContent = hint || 'None';
+        }
+
+        function applyToken() {
+            const token = document.getElementById('input-token').value.trim();
+            if (!token || token.length < 20) {
+                alert('有效的 Token 通常長度超過 100 字元，請確定您貼上的格式正確。');
+                return;
+            }
+
+            // Set localStorage items to match main app's DriveSyncManager logic
+            localStorage.setItem('scoreflow_drive_sync_enabled', 'true');
+            localStorage.setItem('scoreflow_drive_access_token', token);
+            
+            // Set default 1 hour expiry
+            const expiry = Date.now() + (3600 * 1000);
+            localStorage.setItem('scoreflow_drive_token_expiry', expiry.toString());
+
+            showToast('Token 已套用，請回到主程式重新整理。');
+            updateStatus();
+            document.getElementById('input-token').value = '';
+        }
+
+        function copyCurrentToken() {
+            const token = document.getElementById('current-token').value;
+            if (!token) return;
+            navigator.clipboard.writeText(token).then(() => {
+                showToast('已拷貝目前 Token');
+            });
+        }
+
+        function clearToken() {
+            if (!confirm('確定要清除所有同步憑證嗎？這將導致主程式登出。')) return;
+            localStorage.removeItem('scoreflow_drive_access_token');
+            localStorage.removeItem('scoreflow_drive_token_expiry');
+            localStorage.setItem('scoreflow_drive_sync_enabled', 'false');
+            updateStatus();
+            showToast('已清除憑證');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        window.onload = updateStatus;
+    </script>
+</body>
+</html>
