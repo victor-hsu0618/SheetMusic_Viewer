@@ -78,6 +78,20 @@ export class PersistenceManager {
                 layersData = null // skip global load
             }
         }
+        const activeSourceData = localStorage.getItem('scoreflow_active_source')
+        const fingerprintData = localStorage.getItem('scoreflow_current_fingerprint')
+        const recentSoloData = localStorage.getItem('scoreflow_recent_solo_scores')
+        const turnerModeData = localStorage.getItem('scoreflow_turner_mode')
+        const activeCategoriesData = localStorage.getItem('scoreflow_active_categories')
+        const docBarCollapsedStr = localStorage.getItem('scoreflow_doc_bar_collapsed')
+        const rulerVisibleData = localStorage.getItem('scoreflow_ruler_visible')
+        const userTextLibraryData = localStorage.getItem('scoreflow_user_text_library')
+        const activeColorData = localStorage.getItem('scoreflow_active_color')
+        const defaultFontSizeData = localStorage.getItem('scoreflow_default_font_size')
+        const stampSizeMultiplierData = localStorage.getItem('scoreflow_stamp_size_multiplier')
+
+        if (recentSoloData) this.app.recentSoloScores = JSON.parse(recentSoloData)
+
         if (activeSourceData) this.app.activeSourceId = activeSourceData
         if (fingerprintData) this.app.pdfFingerprint = fingerprintData
         if (activeCategoriesData) {
