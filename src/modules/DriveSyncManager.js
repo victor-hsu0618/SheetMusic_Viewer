@@ -589,16 +589,19 @@ export class DriveSyncManager {
                 const localSourceMap = new Map(localSources.map(s => [s.id, s]));
                 let srcChanges = 0;
                 migratedData.sources.forEach(rs => {
-                    if (!localSourceMap.has(rs.id)) {
+                    const existing = localSourceMap.get(rs.id);
+                    if (!existing) {
+                        // New source from cloud - force it to be visible initially
+                        rs.visible = true;
                         localSources.push(rs);
                         localSourceMap.set(rs.id, rs);
                         srcChanges++;
-                    } else {
-                        const ls = localSourceMap.get(rs.id);
-                        if ((rs.updatedAt || 0) > (ls.updatedAt || 0)) {
-                            Object.assign(ls, rs);
-                            srcChanges++;
-                        }
+                    } else if ((rs.updatedAt || 0) > (existing.updatedAt || 0)) {
+                        // Cloud version is newer - update but preserve local visibility if already true
+                        const wasVisible = existing.visible;
+                        Object.assign(existing, rs);
+                        if (wasVisible) existing.visible = true; 
+                        srcChanges++;
                     }
                 });
                 if (srcChanges > 0) {

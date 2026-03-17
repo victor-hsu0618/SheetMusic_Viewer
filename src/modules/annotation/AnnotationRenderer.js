@@ -13,14 +13,24 @@ export class AnnotationRenderer {
         const wrapper = document.querySelector(`.page-container[data-page="${page}"]`)
         if (!wrapper) return
 
-        // We draw ALL visible sources onto the virtual canvas
         const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
         if (!canvas) return
         const ctx = canvas.getContext('2d')
         ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+        let drawnCount = 0;
+        let skippedCount = 0;
+        const skipReasons = {};
+
         this.app.sources.forEach(source => {
-            if (!source.visible) return
+            if (!source.visible) {
+                const count = this.app.stamps.filter(s => s.page === page && s.sourceId === source.id && !s.deleted).length;
+                if (count > 0) {
+                    skipReasons[`hidden_source_${source.id}`] = (skipReasons[`hidden_source_${source.id}`] || 0) + count;
+                    skippedCount += count;
+                }
+                return;
+            }
 
             ctx.save()
             ctx.globalAlpha = source.opacity || 1
@@ -30,12 +40,34 @@ export class AnnotationRenderer {
             sourceStamps.forEach(stamp => {
                 const effectiveLayerId = this.app.annotationManager.getEffectiveLayerId(stamp)
                 const layer = this.app.layers.find(l => l.id === effectiveLayerId)
-                if (!layer || !layer.visible) return
-                if (stamp.hiddenGroup && !this.app.cloakVisible?.[stamp.hiddenGroup]) return
+                
+                if (!layer) {
+                    skipReasons['no_layer'] = (skipReasons['no_layer'] || 0) + 1;
+                    skippedCount++;
+                    return;
+                }
+                if (!layer.visible) {
+                    skipReasons[`hidden_layer_${layer.id}`] = (skipReasons[`hidden_layer_${layer.id}`] || 0) + 1;
+                    skippedCount++;
+                    return;
+                }
+                if (stamp.hiddenGroup && !this.app.cloakVisible?.[stamp.hiddenGroup]) {
+                    skipReasons['hidden_cloak'] = (skipReasons['hidden_cloak'] || 0) + 1;
+                    skippedCount++;
+                    return;
+                }
 
-                const isHovered = stamp === this.app.hoveredStamp           // red (eraser)
-                const isSelectHovered = stamp === this.app.selectHoveredStamp // blue (select)
+                if (stamp.type === 'system' || stamp.type === 'settings') {
+                    // System stamps are usually not drawn on the annotation layer
+                    skipReasons[`internal_type_${stamp.type}`] = (skipReasons[`internal_type_${stamp.type}`] || 0) + 1;
+                    skippedCount++;
+                    return;
+                }
 
+                const isHovered = stamp === this.app.hoveredStamp
+                const isSelectHovered = stamp === this.app.selectHoveredStamp
+
+                drawnCount++;
                 if (stamp.points) {
                     this.drawPathOnCanvas(ctx, canvas, stamp, isForeign, isHovered, isSelectHovered)
                 } else {
@@ -43,7 +75,11 @@ export class AnnotationRenderer {
                 }
             })
             ctx.restore()
-        })
+        });
+
+        if (drawnCount > 0 || skippedCount > 0) {
+            console.log(`[AnnotationRenderer] Page ${page}: Drew ${drawnCount}, Skipped ${skippedCount}. Reasons:`, skipReasons);
+        }
     }
 
     /**
