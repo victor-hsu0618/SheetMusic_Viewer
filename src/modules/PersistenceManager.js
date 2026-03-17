@@ -78,6 +78,13 @@ export class PersistenceManager {
                 layersData = null // skip global load
             }
         }
+        if (layersData) {
+            this.app.layers = JSON.parse(layersData)
+        }
+        if (!this.app.layers || this.app.layers.length === 0) {
+            this.app.layers = JSON.parse(JSON.stringify(INITIAL_LAYERS))
+        }
+
         const activeSourceData = localStorage.getItem('scoreflow_active_source')
         const fingerprintData = localStorage.getItem('scoreflow_current_fingerprint')
         const recentSoloData = localStorage.getItem('scoreflow_recent_solo_scores')
