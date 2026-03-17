@@ -295,6 +295,20 @@ export class ViewerManager {
             // Layer ID Migration (Legacy cleanup)
             if (sNew.layerId === 'performance') sNew.layerId = 'text'
             if (sNew.layerId === 'other' || sNew.layerId === 'anchor' || sNew.layerId === 'layout') sNew.layerId = 'others'
+            
+            // Healing: If it's labeled as 'system' but has points, it's a pen mark
+            if (sNew.type === 'system' || !sNew.type) {
+                if (sNew.points) {
+                    sNew.type = 'pen';
+                    sNew.layerId = 'draw';
+                } else if (sNew.data && (sNew.layerId === 'text' || sNew.layerId === 'draw')) {
+                    sNew.type = 'text';
+                    sNew.layerId = 'text';
+                } else if (sNew.type === 'anchor' || sNew.type === 'measure') {
+                    sNew.layerId = 'others';
+                }
+            }
+
             if (!this.app.layers.find(l => l.id === sNew.layerId)) sNew.layerId = 'draw'
 
             // Aggressive Source ID Healing: 
