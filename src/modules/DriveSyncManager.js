@@ -688,10 +688,17 @@ export class DriveSyncManager {
 
         const bookmarks = await db.get(`bookmarks_${fp}`) || [];
 
-        // --- FIXED: Use safe getMetadata instead of stale currentInfo ---
-        const scoreDetail = await this.app.scoreDetailManager?.getMetadata(fp);
-
         const score = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
+
+        // HEAL: Ensure all marks being gathered for cloud have required sync metadata
+        const now = Date.now();
+        stamps.forEach(s => {
+            if (!s.updatedAt) s.updatedAt = now;
+            // Ensure type exists to prevent "all system" classification in cloud
+            if (!s.type && s.points) s.type = 'pen';
+            else if (!s.type && s.data) s.type = 'text';
+            else if (!s.type) s.type = 'stamp';
+        });
 
         return {
             stamps,
@@ -715,7 +722,7 @@ export class DriveSyncManager {
         
         // If it's the active score, we can use the regular push() which is already optimized
         if (fingerprint === this.app.pdfFingerprint) {
-            return await this.push();
+            return await this.push(0, isManual);
         }
 
         // For non-active score, we need a custom gather-then-upload flow
@@ -754,15 +761,15 @@ export class DriveSyncManager {
     /**
      * Push local changes to Drive.
      */
-    async push(remoteVersion = 0) {
+    async push(remoteVersion = 0, isForced = false) {
         if (!this.folderId) return;
 
         const fingerprint = this.app.pdfFingerprint;
         if (!fingerprint) return;
 
-        // --- CONCURRENCY LOCK: Prevent duplicate creation/update if sync and debounce overlap ---
+        // --- CONCURRENCY LOCK ---
         if (this._pushLocks.has(fingerprint)) {
-            console.log(`[DriveSync] Push for ${fingerprint.slice(0, 8)} is already in progress. Skipping duplicate request.`);
+            console.log(`[DriveSync] Push for ${fingerprint.slice(0, 8)} is already in progress. Skipping duplicate.`);
             return;
         }
         this._pushLocks.add(fingerprint);
@@ -790,12 +797,22 @@ export class DriveSyncManager {
             const localEdit = metadata?.lastEdit || 0;
             const latestLocalChange = Math.max(latestStampTime, localEdit);
 
-            if (score.isSynced && remoteVersion <= (this.lastSyncTime || 0) && latestLocalChange <= (this.lastSyncTime || 0)) {
+            // Bypass sync skip check if forced
+            if (!isForced && score.isSynced && remoteVersion <= (this.lastSyncTime || 0) && latestLocalChange <= (this.lastSyncTime || 0)) {
                 console.log(`[DriveSync] Score ${score.title} is already synced. Skipping push.`);
                 return;
             }
 
             this.addLog(`正在同步當前樂譜: ${score.title}`, 'system');
+
+            // HEAL: Ensure all active stamps have updatedAt and proper types before push
+            const now = Date.now();
+            this.app.stamps.forEach(s => {
+                if (!s.updatedAt) s.updatedAt = now - 1000; // slightly in the past
+                if (!s.type && s.points) s.type = 'pen';
+                else if (!s.type && s.data) s.type = 'text';
+                else if (!s.type) s.type = 'stamp';
+            });
 
             const sinceLastSync = this.lastSyncTime || 0;
             const changedStamps = this.app.stamps.filter(s => (s.updatedAt || 0) > sinceLastSync);
@@ -971,11 +988,11 @@ export class DriveSyncManager {
 
                 const remoteIds = new Set(remoteData.stamps.map(s => s.id));
                 // Only prune stamps that existed at last sync (updatedAt ≤ localSyncTime) but
-                // are now absent from cloud — i.e., they were deleted remotely. Stamps created
-                // locally after the last sync (updatedAt > localSyncTime) are never pruned here;
-                // they will be pushed in the subsequent push() call.
+                // are now absent from cloud. 
+                // CRITICAL FIX: Only prune if updatedAt > 0. Legacy/unsynced marks (updatedAt=0) 
+                // MUST be preserved until they receive a server timestamp or are pushed.
                 const toPrune = localSyncTime > 0
-                    ? this.app.stamps.filter(s => s.id && !remoteIds.has(s.id) && (s.updatedAt || 0) <= localSyncTime)
+                    ? this.app.stamps.filter(s => s.id && !remoteIds.has(s.id) && (s.updatedAt || 0) > 0 && (s.updatedAt || 0) <= localSyncTime)
                     : [];
                 if (toPrune.length > 0) {
                     this.app.stamps = this.app.stamps.filter(s => !toPrune.includes(s));
