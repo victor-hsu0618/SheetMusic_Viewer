@@ -809,9 +809,22 @@ export class DriveSyncManager {
             const now = Date.now();
             this.app.stamps.forEach(s => {
                 if (!s.updatedAt) s.updatedAt = now - 1000; // slightly in the past
-                if (!s.type && s.points) s.type = 'pen';
-                else if (!s.type && s.data) s.type = 'text';
-                else if (!s.type) s.type = 'stamp';
+                
+                // Try to recover type if it's missing or generic 'system'
+                if (!s.type || s.type === 'system') {
+                    if (s.points && s.points.length > 0) {
+                        s.type = 'pen';
+                        if (!s.layerId || s.layerId === 'others') s.layerId = 'draw';
+                    } else if (s.data && (s.layerId === 'text' || s.layerId === 'draw' || s.layerId === 'others')) {
+                        s.type = 'text';
+                        if (!s.layerId || s.layerId === 'others') s.layerId = 'text';
+                    } else if (s.draw && s.draw.type === 'text') {
+                        s.type = 'text';
+                        if (!s.layerId || s.layerId === 'others') s.layerId = 'text';
+                    } else if (s.draw) {
+                        s.type = 'stamp';
+                    }
+                }
             });
 
             const sinceLastSync = this.lastSyncTime || 0;

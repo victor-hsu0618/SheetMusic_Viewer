@@ -302,14 +302,19 @@ export class ViewerManager {
             if (sNew.layerId === 'performance') sNew.layerId = 'text'
             if (sNew.layerId === 'other' || sNew.layerId === 'anchor' || sNew.layerId === 'layout') sNew.layerId = 'others'
             
-            // Healing: If it's labeled as 'system' but has points, it's a pen mark
+            // Healing: Try to recover type if it's generic 'system' or missing
             if (sNew.type === 'system' || !sNew.type) {
-                if (sNew.points) {
+                if (sNew.points && sNew.points.length > 0) {
                     sNew.type = 'pen';
-                    sNew.layerId = 'draw';
-                } else if (sNew.data && (sNew.layerId === 'text' || sNew.layerId === 'draw')) {
+                    if (!sNew.layerId || sNew.layerId === 'others' || sNew.layerId === 'performance') sNew.layerId = 'draw';
+                } else if (sNew.data && (sNew.layerId === 'text' || sNew.layerId === 'performance' || sNew.layerId === 'others')) {
                     sNew.type = 'text';
-                    sNew.layerId = 'text';
+                    if (!sNew.layerId || sNew.layerId === 'others' || sNew.layerId === 'performance') sNew.layerId = 'text';
+                } else if (sNew.draw && sNew.draw.type === 'text') {
+                    sNew.type = 'text';
+                    if (!sNew.layerId || sNew.layerId === 'others' || sNew.layerId === 'performance') sNew.layerId = 'text';
+                } else if (sNew.draw && sNew.type !== 'anchor' && sNew.type !== 'measure') {
+                    sNew.type = 'stamp';
                 } else if (sNew.type === 'anchor' || sNew.type === 'measure') {
                     sNew.layerId = 'others';
                 }
