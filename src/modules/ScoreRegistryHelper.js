@@ -129,6 +129,50 @@ export class ScoreRegistryHelper {
         };
     }
 
+    async migrateFingerprint(oldFp, newFp, title = 'Recovered') {
+        if (!oldFp || !newFp || oldFp === newFp) return;
+        
+        console.log(`[ScoreRegistryHelper] 🛠️ AUTO-REPAIR: Migrating ${oldFp.slice(0,8)} -> ${newFp.slice(0,8)}`);
+        
+        // 1. Migrate IndexedDB Records
+        const keys = [
+            { old: `score_buf_${oldFp}`, new: `score_buf_${newFp}` },
+            { old: `stamps_${oldFp}`, new: `stamps_${newFp}` },
+            { old: `detail_${oldFp}`, new: `detail_${newFp}` },
+            { old: `bookmarks_${oldFp}`, new: `bookmarks_${newFp}` },
+            { old: `sources_${oldFp}`, new: `sources_${newFp}` },
+            { old: `layers_${oldFp}`, new: `layers_${newFp}` }
+        ];
+
+        for (const pair of keys) {
+            const data = await db.get(pair.old);
+            if (data !== undefined && data !== null) {
+                await db.set(pair.new, data);
+                await db.remove(pair.old);
+                console.log(`   -> Migrated ${pair.old}`);
+            }
+        }
+
+        // 2. Update Registry
+        const entry = this.manager.registry.find(s => s.fingerprint === oldFp);
+        const duplicate = this.manager.registry.find(s => s.fingerprint === newFp);
+
+        if (entry) {
+            if (duplicate) {
+                // If the new fingerprint already exists (maybe from another device sync), 
+                // just remove the old one. Merge logic for markings would be ideal but risky here.
+                this.manager.registry = this.manager.registry.filter(s => s.fingerprint !== oldFp);
+            } else {
+                entry.fingerprint = newFp;
+                entry.title = entry.title || title;
+            }
+            await this.saveRegistry(this.manager.registry);
+            this.manager.render();
+        }
+
+        console.log(`[ScoreRegistryHelper] ✅ Migration complete.`);
+    }
+
     triggerDownload(filename, content) {
         const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);

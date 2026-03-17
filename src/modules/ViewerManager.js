@@ -208,9 +208,22 @@ export class ViewerManager {
 
         if (loadingId !== this.latestLoadingId) return;
 
-        const newFingerprint = await this.getFingerprint(uint8Data)
-
         if (loadingId !== this.latestLoadingId) return;
+        const newFingerprint = await this.getFingerprint(uint8Data)
+        if (loadingId !== this.latestLoadingId) return;
+
+        // --- AUTOMATIC REPAIR: Detect Fingerprint Drift ---
+        // If we are loading a score from the registry, but the calculated fingerprint changed, migrate it.
+        const currentRegistryFp = this.app.pdfFingerprint; // What the app thought it was loading
+        if (currentRegistryFp && currentRegistryFp !== newFingerprint) {
+            const entry = this.app.scoreManager?.registry?.find(s => s.fingerprint === currentRegistryFp);
+            if (entry) {
+                console.log(`[ViewerManager] 🛠️ Fingerprint drift detected! Auto-repairing ${currentRegistryFp.slice(0,8)}...`);
+                if (this.app.scoreManager?.helper?.migrateFingerprint) {
+                    await this.app.scoreManager.helper.migrateFingerprint(currentRegistryFp, newFingerprint, filename);
+                }
+            }
+        }
 
         console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
         this.pdfFingerprint = newFingerprint
