@@ -10,6 +10,9 @@
   pointer-events: none;
   /* Let clicks pass to PDF unless on track/handle */
   transition: opacity 0.3s;
+  overflow: hidden;
+  /* CRITICAL: Prevent ruler from ever becoming a scroll target on touch devices */
+  touch-action: none;
 }
 
 .jump-ruler.hidden {

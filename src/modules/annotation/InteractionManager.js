@@ -818,6 +818,24 @@ export class InteractionManager {
             }
         });
 
+        // SAFETY: Ensure the viewer's own touch-action is correct.
+        // In stamp mode, the capture overlay blocks native scroll. The viewer itself 
+        // must still allow programmatic scrolling, but two-finger pan is handled by JS.
+        if (this.app.viewer) {
+            this.app.viewer.style.touchAction = isViewMode ? 'pan-y' : 'pan-y';
+            // Ensure overflow-y is never stuck at 'hidden' (can happen after fitToHeight race condition)
+            if (this.app.viewer.style.overflowY === 'hidden') {
+                this.app.viewer.style.overflowY = '';
+            }
+        }
+
+        // SAFETY: Sync EditScrollbar visibility to prevent it from getting stuck hidden
+        // when the tool state changes. The CSS rule relies on data-active-tool, but if 
+        // that attribute ever gets out of sync, the scrollbar vanishes and the user can't scroll.
+        if (this.app.editScrollbarManager?.track) {
+            this.app.editScrollbarManager.syncThumb();
+        }
+
         if (isViewMode) {
             this.app.isInteracting = false;
         }
