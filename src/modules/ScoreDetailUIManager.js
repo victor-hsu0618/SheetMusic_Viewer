@@ -183,12 +183,15 @@ export class ScoreDetailUIManager {
                 year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
             })
         }
-        const annotCount = stamps.filter(s => s.type !== 'system' && s.type !== 'settings').length
-        const systemCount = stamps.filter(s => s.type === 'system').length
-        if (this.statsTotalCount) this.statsTotalCount.textContent = annotCount
-        if (this.statsSystemCount) this.statsSystemCount.textContent = systemCount
-        if (this.statsLastEdit) this.statsLastEdit.textContent = lastTime
-        if (this.statsAuthor) this.statsAuthor.textContent = info.lastAuthor || 'Guest'
+        const activeStamps = stamps.filter(s => !s.deleted);
+        const sysTypes = ['system', 'anchor', 'measure', 'measure-free', 'settings'];
+        const annotCount = activeStamps.filter(s => s.type && !sysTypes.includes(s.type)).length;
+        const systemCount = activeStamps.filter(s => !s.type || sysTypes.includes(s.type)).length;
+
+        if (this.statsTotalCount) this.statsTotalCount.textContent = annotCount;
+        if (this.statsSystemCount) this.statsSystemCount.textContent = systemCount;
+        if (this.statsLastEdit) this.statsLastEdit.textContent = lastTime;
+        if (this.statsAuthor) this.statsAuthor.textContent = info.lastAuthor || 'Guest';
     }
 
     updateKeepOfflineBtn(fingerprint) {

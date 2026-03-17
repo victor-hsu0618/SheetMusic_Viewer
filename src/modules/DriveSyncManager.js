@@ -836,6 +836,13 @@ export class DriveSyncManager {
                 fingerprint
             };
 
+            const typeCounts = {};
+            this.app.stamps.forEach(s => {
+                const t = s.type || 'undefined';
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
+            });
+            console.log(`[DriveSync] Push Data Prep: ${this.app.stamps.length} stamps. Breakdown:`, typeCounts);
+
             const scoreEntry = this.app.scoreManager?.registry?.find(s => s.fingerprint === fingerprint);
             const prefix = this.safeTitle(scoreEntry?.title);
             const fileName = `${prefix}${this.shortHash(fingerprint)}.json`;

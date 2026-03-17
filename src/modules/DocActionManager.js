@@ -356,8 +356,13 @@ export class DocActionManager {
                 if (sNew.points) {
                     sNew.type = 'pen';
                     if (!sNew.layerId || sNew.layerId === 'performance') sNew.layerId = 'draw';
-                } else if (sNew.data && sNew.layerId === 'text') {
+                } else if (sNew.data && (sNew.layerId === 'text' || sNew.layerId === 'performance')) {
                     sNew.type = 'text';
+                    sNew.layerId = 'text';
+                } else if (!sNew.type) {
+                    // Final fallback for missing type: If it has draw content it might be a stamp, 
+                    // else it's a generic system item.
+                    sNew.type = sNew.draw ? 'stamp' : 'system';
                 }
             }
             return sNew;
@@ -378,7 +383,11 @@ export class DocActionManager {
                     return dx < 0.01 && dy < 0.01; // 1% tolerance for same-number measures
                 }
 
-                // For other types, require very close proximity
+                // FIX: If it's a path-based tool (pen, line, slur) OR has distinct data (text), 
+                // x/y comparison is either irrelevant or incomplete. Avoid aggressive dedupe.
+                if (s.points || s.data) return false;
+
+                // For simple stamps, require very close proximity
                 const dx = Math.abs((existing.x || 0) - (s.x || 0));
                 const dy = Math.abs((existing.y || 0) - (s.y || 0));
                 return dx < 0.005 && dy < 0.005; 
