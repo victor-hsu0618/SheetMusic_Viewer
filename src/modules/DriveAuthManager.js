@@ -97,7 +97,9 @@ export class DriveAuthManager {
             },
         });
 
-        // Restore state — attempt silent reconnect if was previously enabled
+        // Restore state — if enabled, we just show the "Disconnected" state in UI 
+        // until the user triggers a sync or clicks connect. 
+        // DO NOT call signIn(true) here as it triggers popup blockers on page load.
         if (localStorage.getItem('scoreflow_drive_sync_enabled') === 'true') {
             const savedToken = localStorage.getItem('scoreflow_drive_access_token');
             const expiryStr = localStorage.getItem('scoreflow_drive_token_expiry');
@@ -114,14 +116,12 @@ export class DriveAuthManager {
                     this.startAutoSync();
                 }).catch(e => console.error(e));
             } else {
-                const hasHint = !!localStorage.getItem('scoreflow_drive_user_hint');
-                console.log('[DriveSync] Token expired or missing. Attempting silent reconnect...');
+                console.log('[DriveSync] Token expired or missing. Waiting for user gesture.');
                 this.sync.isEnabled = true;
-                if (hasHint) {
-                    this.signIn(true);
-                } else {
-                    this.startAutoSync();
-                }
+                this.sync.accessToken = null;
+                // Just start auto-sync if we think we are enabled, 
+                // but the sync loop itself should no longer try to reconnect silently.
+                this.startAutoSync();
             }
         }
         this.refreshUI();

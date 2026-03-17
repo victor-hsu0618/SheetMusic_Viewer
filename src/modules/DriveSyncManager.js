@@ -172,14 +172,9 @@ export class DriveSyncManager {
         console.groupEnd();
 
         if (!this.accessToken) {
-            console.log('[DriveSync] Enabled but no access token. Attempting silent reconnect...');
-            try {
-                await this.signIn(true);
-            } catch (err) {
-                console.error('[DriveSync] Silent reconnect failed in sync loop:', err);
-                this.isSyncing = false;
-                return;
-            }
+            console.log('[DriveSync] Enabled but no access token. Skipping sync until user reconnects.');
+            this.isSyncing = false;
+            return;
         }
 
         console.log('[DriveSync] Syncing cycle started...');
