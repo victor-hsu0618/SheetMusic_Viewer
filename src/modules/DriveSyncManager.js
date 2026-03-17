@@ -569,6 +569,59 @@ export class DriveSyncManager {
                 }
             }
 
+            // 2.5 Merge Sources & Layers (Fixes visibility for foreign interpretations)
+            if (Array.isArray(remoteData.sources)) {
+                const localSources = this.app.sources || [];
+                const localSourceMap = new Map(localSources.map(s => [s.id, s]));
+                let srcChanges = 0;
+                remoteData.sources.forEach(rs => {
+                    if (!localSourceMap.has(rs.id)) {
+                        localSources.push(rs);
+                        localSourceMap.set(rs.id, rs);
+                        srcChanges++;
+                    } else {
+                        const ls = localSourceMap.get(rs.id);
+                        if ((rs.updatedAt || 0) > (ls.updatedAt || 0)) {
+                            Object.assign(ls, rs);
+                            srcChanges++;
+                        }
+                    }
+                });
+                if (srcChanges > 0) {
+                    bgChanges.push(`merged ${srcChanges} interpretation styles`);
+                    this.app.saveToStorage();
+                    if (this.app.pdfFingerprint === fingerprint) {
+                        this.app.collaborationManager?.renderSourceUI();
+                    }
+                }
+            }
+
+            if (Array.isArray(remoteData.layers)) {
+                const localLayers = this.app.layers || [];
+                const localLayerMap = new Map(localLayers.map(l => [l.id, l]));
+                let lyrChanges = 0;
+                remoteData.layers.forEach(rl => {
+                    if (!localLayerMap.has(rl.id)) {
+                        localLayers.push(rl);
+                        localLayerMap.set(rl.id, rl);
+                        lyrChanges++;
+                    } else {
+                        const ll = localLayerMap.get(rl.id);
+                        if ((rl.updatedAt || 0) > (ll.updatedAt || 0)) {
+                            Object.assign(ll, rl);
+                            lyrChanges++;
+                        }
+                    }
+                });
+                if (lyrChanges > 0) {
+                    bgChanges.push(`merged ${lyrChanges} layers`);
+                    this.app.saveToStorage();
+                    if (this.app.pdfFingerprint === fingerprint) {
+                        this.app.layerManager?.renderLayers();
+                    }
+                }
+            }
+
             if (bgChanges.length > 0) {
                 const label = score.isCloudOnly ? 'new file in cloud' : 'bg pull';
                 console.log(`[DriveSync] ↓ ${label} "${scoreName}" — ${bgChanges.join(' | ')}`);

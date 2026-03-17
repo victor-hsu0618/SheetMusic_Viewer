@@ -291,7 +291,12 @@ export class ViewerManager {
             if (sNew.layerId === 'performance') sNew.layerId = 'text'
             if (sNew.layerId === 'other' || sNew.layerId === 'anchor' || sNew.layerId === 'layout') sNew.layerId = 'others'
             if (!this.app.layers.find(l => l.id === sNew.layerId)) sNew.layerId = 'draw'
-            if (!sNew.sourceId) sNew.sourceId = this.app.activeSourceId
+
+            // Source ID Healing: Map missing or legacy 'p1' to the active source if 'p1' doesn't exist as a source
+            const sourceExists = this.app.sources.find(src => src.id === sNew.sourceId)
+            if (!sNew.sourceId || (sNew.sourceId === 'p1' && !sourceExists)) {
+                sNew.sourceId = this.app.activeSourceId
+            }
             
             // Critical healing for Cloud Merge support
             if (!sNew.id) sNew.id = `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`;
