@@ -57,13 +57,6 @@ export class AnnotationRenderer {
                     return;
                 }
 
-                if (stamp.type === 'system' || stamp.type === 'settings') {
-                    // System stamps are usually not drawn on the annotation layer
-                    skipReasons[`internal_type_${stamp.type}`] = (skipReasons[`internal_type_${stamp.type}`] || 0) + 1;
-                    skippedCount++;
-                    return;
-                }
-
                 const isHovered = stamp === this.app.hoveredStamp
                 const isSelectHovered = stamp === this.app.selectHoveredStamp
 
