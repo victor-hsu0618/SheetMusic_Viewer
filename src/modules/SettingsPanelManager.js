@@ -275,6 +275,36 @@ export class SettingsPanelManager {
             })
         }
 
+        // Accent Color Selection
+        const swatches = document.querySelectorAll('.accent-swatch')
+        if (swatches.length > 0) {
+            const savedColor = localStorage.getItem('scoreflow_accent_color')
+            if (savedColor) {
+                const activeSwatch = Array.from(swatches).find(s => s.dataset.color === savedColor)
+                if (activeSwatch) {
+                    swatches.forEach(s => s.classList.remove('active'))
+                    activeSwatch.classList.add('active')
+                }
+            }
+
+            swatches.forEach(swatch => {
+                swatch.addEventListener('click', () => {
+                    const color = swatch.dataset.color
+                    const rgb = swatch.dataset.rgb
+                    
+                    swatches.forEach(s => s.classList.remove('active'))
+                    swatch.classList.add('active')
+
+                    document.documentElement.style.setProperty('--primary', color)
+                    document.documentElement.style.setProperty('--primary-rgb', rgb)
+                    document.documentElement.style.setProperty('--primary-hover', color) // Simple approximation
+
+                    localStorage.setItem('scoreflow_accent_color', color)
+                    localStorage.setItem('scoreflow_accent_rgb', rgb)
+                })
+            })
+        }
+
 
 
         // Jump Offset

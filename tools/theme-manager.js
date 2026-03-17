@@ -16,7 +16,17 @@ class ThemeManager {
 
     init() {
         this.applyTheme(this.currentTheme);
+        this.applyAccentColor();
         this.createSwitcher();
+    }
+
+    applyAccentColor() {
+        const color = localStorage.getItem('scoreflow_accent_color');
+        const rgb = localStorage.getItem('scoreflow_accent_rgb');
+        if (color && rgb) {
+            document.documentElement.style.setProperty('--primary', color);
+            document.documentElement.style.setProperty('--primary-rgb', rgb);
+        }
     }
 
     applyTheme(themeId) {

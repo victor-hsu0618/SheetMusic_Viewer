@@ -319,7 +319,19 @@ class ScoreFlow {
   restoreTheme() {
     const savedTheme = localStorage.getItem('scoreflow_theme')
     if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme)
+        if (savedTheme === 'default') {
+            document.documentElement.removeAttribute('data-theme')
+        } else {
+            document.documentElement.setAttribute('data-theme', savedTheme)
+        }
+    }
+
+    const savedAccent = localStorage.getItem('scoreflow_accent_color')
+    const savedAccentRgb = localStorage.getItem('scoreflow_accent_rgb')
+    if (savedAccent && savedAccentRgb) {
+        document.documentElement.style.setProperty('--primary', savedAccent)
+        document.documentElement.style.setProperty('--primary-rgb', savedAccentRgb)
+        document.documentElement.style.setProperty('--primary-hover', savedAccent)
     }
   }
 }

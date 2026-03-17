@@ -709,7 +709,7 @@
           <div class="setting-item mb-15">
             <div class="flex-row-center flex-space-between w-full">
               <label class="setting-label">Application Theme</label>
-              <select id="settings-app-theme" class="btn-outline-sm" style="width: auto; padding-right: 25px;">
+              <select id="settings-app-theme" class="btn-outline-sm" style="width: auto; padding-right: 25px;" title="Select App Theme">
                 <option value="default">Light Suite (Default)</option>
                 <option value="dark">Midnight Suite (Standard Dark)</option>
                 <option value="deep">Deep Midnight (OLED Black)</option>
@@ -717,6 +717,20 @@
               </select>
             </div>
             <span class="setting-hint">選擇適合演奏環境的視覺風格。舞台模式為極致高對比。</span>
+          </div>
+
+          <div class="setting-item mb-15">
+            <div class="flex-row-center flex-space-between w-full">
+              <label class="setting-label">Accent Color</label>
+              <div id="accent-color-palette" class="flex-row-center" style="gap: 8px;">
+                <div class="accent-swatch active" data-color="#6366f1" data-rgb="99, 102, 241" style="background:#6366f1;" title="Indigo"></div>
+                <div class="accent-swatch" data-color="#10b981" data-rgb="16, 185, 129" style="background:#10b981;" title="Emerald"></div>
+                <div class="accent-swatch" data-color="#3b82f6" data-rgb="59, 130, 246" style="background:#3b82f6;" title="Royal Blue"></div>
+                <div class="accent-swatch" data-color="#ef4444" data-rgb="239, 68, 68" style="background:#ef4444;" title="Crimson"></div>
+                <div class="accent-swatch" data-color="#f59e0b" data-rgb="245, 158, 11" style="background:#f59e0b;" title="Amber"></div>
+              </div>
+            </div>
+            <span class="setting-hint">選擇全域重點配色（按鈕、高亮、連線顏色）。</span>
           </div>
 
           <div class="setting-item mb-15">
