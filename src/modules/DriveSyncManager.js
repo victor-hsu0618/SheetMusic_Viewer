@@ -423,8 +423,15 @@ export class DriveSyncManager {
             // --- 4. Metadata & Content Sync ---
             const isLocalNameGeneric = !localDetail?.name || localDetail.name === 'Unknown' || localDetail.name.includes('score_buf_');
             const hasRemoteRealName = entry?.name && entry.name !== 'Unknown' && !entry.name.includes('score_buf_');
+            
+            // Log the decision factors
+            console.log(`[DriveSync] Sync decision for ${fingerprint.slice(0,8)}:`, {
+                cloudUpdateTs, localUpdateTs, 
+                passedCanPull: canPull, 
+                isLocalNameGeneric, hasRemoteRealName
+            });
 
-            if (cloudUpdateTs > localUpdateTs || (isLocalNameGeneric && hasRemoteRealName)) {
+            if (canPull || cloudUpdateTs > localUpdateTs || (isLocalNameGeneric && hasRemoteRealName)) {
                 if (entry?.syncId) {
                     canPull = true;
                 }
@@ -436,9 +443,10 @@ export class DriveSyncManager {
 
             // 5. Execute PULL/PUSH
             // Manual sync or background scan can both trigger pulls
-            if (canPull) {
+            if (canPull && entry?.syncId) {
+                console.log(`[DriveSync] ↓ Pulling cloud data for "${targetTitle}"...`);
                 const pulledVer = await this.pullBackground(fingerprint, entry.syncId);
-                return pulledVer || true; // Signal that a pull happened (truthy)
+                return pulledVer || true; 
             }
 
             if (needsPush) {
@@ -536,18 +544,19 @@ export class DriveSyncManager {
                 }
             }
 
-            // 2. Merge Stamps
-            if (Array.isArray(remoteData.stamps)) {
+            // 2. Merge Stamps, Sources, and Layers
+            // We use DocActionManager's migration logic to handle legacy formats (marks/annotations)
+            // and ensure all data is correctly sanitzed.
+            const migratedData = this.app.docActionManager?.migrateLegacyData(remoteData) || remoteData;
+
+            if (migratedData.stamps) {
                 const localStamps = await db.get(`stamps_${fingerprint}`) || [];
                 const localMap = new Map(localStamps.map(s => [s.id, s]));
                 let newCount = 0;
                 let updCount = 0;
                 const newByType = {};
 
-                // Use DocActionManager's migration/healing logic for cloud data
-                const migratedData = this.app.docActionManager?.migrateLegacyData(remoteData) || remoteData;
                 const cloudStamps = migratedData.stamps || [];
-
                 cloudStamps.forEach(remoteS => {
                     if (!remoteS.id) return;
                     const localS = localMap.get(remoteS.id);
@@ -574,12 +583,12 @@ export class DriveSyncManager {
                 }
             }
 
-            // 2.5 Merge Sources & Layers (Fixes visibility for foreign interpretations)
-            if (Array.isArray(remoteData.sources)) {
+            // 2.5 Merge Sources & Layers (Migrated data ensures stability)
+            if (Array.isArray(migratedData.sources)) {
                 const localSources = this.app.sources || [];
                 const localSourceMap = new Map(localSources.map(s => [s.id, s]));
                 let srcChanges = 0;
-                remoteData.sources.forEach(rs => {
+                migratedData.sources.forEach(rs => {
                     if (!localSourceMap.has(rs.id)) {
                         localSources.push(rs);
                         localSourceMap.set(rs.id, rs);
@@ -601,7 +610,7 @@ export class DriveSyncManager {
                 }
             }
 
-            if (Array.isArray(remoteData.layers)) {
+            if (Array.isArray(migratedData.layers)) {
                 const localLayers = this.app.layers || [];
                 const localLayerMap = new Map(localLayers.map(l => [l.id, l]));
                 let lyrChanges = 0;
