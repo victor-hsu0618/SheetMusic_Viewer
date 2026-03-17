@@ -784,33 +784,42 @@ export class InteractionManager {
     }
 
     /**
-     * Globally update the touch-action of all active overlays based on current tool.
+     * Globally update the touch-action and pointer-events of all active overlays based on current tool.
      */
     updateAllOverlaysTouchAction() {
         const toolType = this.app.activeStampType;
+        const isViewMode = toolType === 'view';
 
         // Sync data-active-tool for CSS selectors (cursor, etc.)
         document.documentElement.dataset.activeTool = toolType;
         document.body.dataset.activeTool = toolType;
         if (this.app.viewer) this.app.viewer.dataset.activeTool = toolType;
 
-        // Overlays are always visible and always receive pointer events.
-        // View-mode panning is handled in startAction via JS scroll (same as mouse),
-        // so we never need to hide or disable overlays — no display/pointer-events toggling,
-        // no iOS hit-testing cache problems.
-        //
-        // touch-action: none stays on overlays at all times (set in CSS).
-        // We only need to clear any inline zIndex from previous interactions.
-        // Global Interaction Reset: If we switch tools, we MUST force clear any stuck local states
-        if (toolType === 'view') {
-            this.app.isInteracting = false;
-        }
+        // Fix for iPad/Desktop hybrid:
+        // In "View" mode, we want native touch gestures (scroll/pinch) on mobile/iPad.
+        // Setting pointer-events: none on the overlay allows gestures to fall through
+        // to the scrollable viewer container.
+        const isTouchScreen = window.matchMedia('(pointer: coarse)').matches;
 
         document.querySelectorAll('.capture-overlay').forEach(el => {
-            // Logic to clear stuck isInteracting flag would go here, 
-            // but isInteracting is local to the closure. 
-            // A better way is to set a global timestamp or serial to invalidate old interactions.
-            if (toolType === 'view') el.style.zIndex = '';
+            if (isViewMode) {
+                // IMPORTANT: Let browser handle scrolling/panning natively on touch devices
+                el.style.touchAction = 'auto';
+                
+                // On iPads/Tablets, we want standard OS scrolling. 
+                // Making the overlay pointer-transparent allows native gestures to hit the underlying viewer.
+                el.style.pointerEvents = isTouchScreen ? 'none' : 'auto';
+                el.style.zIndex = '';
+            } else {
+                // Stamp tools REQUIRE touch-action: none to allow drawing without scrolling
+                el.style.touchAction = 'none';
+                el.style.pointerEvents = 'auto';
+                el.style.zIndex = '50';
+            }
         });
+
+        if (isViewMode) {
+            this.app.isInteracting = false;
+        }
     }
 }
