@@ -395,14 +395,13 @@ function detectFileType(data) {
   // Manifest: top-level keys look like fingerprints (hex strings),
   // values are objects with syncId / pdfId / updated
   if (!data.stamps && !Array.isArray(data)) {
-    const keys = Object.keys(data)
-    if (keys.length > 0) {
-      const first = data[keys[0]]
-      if (first && typeof first === 'object' &&
-          ('syncId' in first || 'pdfId' in first || 'updated' in first)) {
-        return 'manifest'
-      }
-    }
+    // Check all top-level values to find a manifest entry
+    const values = Object.values(data)
+    const looksLikeManifest = values.some(val => 
+      val && typeof val === 'object' && 
+      ('syncId' in val || 'pdfId' in val || 'updated' in val)
+    )
+    if (looksLikeManifest) return 'manifest'
   }
   // Cloud annotation JSON: stamps array + version is a number (timestamp) + fingerprint field
   if (Array.isArray(data.stamps) && typeof data.version === 'number' && data.fingerprint) {

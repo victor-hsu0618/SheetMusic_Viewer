@@ -98,6 +98,12 @@ export class ScoreDetailManager {
                     stampScale: info.stampScale || 1.0,
                     lastScrollTop: info.lastScrollTop || 0
                 }
+
+                // HEALING: If detail name differs from registry title, registry is likely stale or prefixed.
+                if (regScore && info.name && info.name !== regScore.title) {
+                    console.log(`[ScoreDetailManager] Healing registry title: "${regScore.title}" -> "${info.name}"`);
+                    this.app.scoreManager.updateMetadata(fingerprint, { title: info.name });
+                }
             } catch (err) {
                 console.error('[ScoreDetailManager] Load failed:', err)
                 this.currentInfo.name = regScore?.title || ''
@@ -122,6 +128,9 @@ export class ScoreDetailManager {
                 stampScale: 1.0,
                 lastScrollTop: 0
             }
+            
+            // If the fallback name has a known prefix pattern (like 43-), we might want to strip it here,
+            // but for now we just trust the existing registry.
         }
 
         this.render(fingerprint)

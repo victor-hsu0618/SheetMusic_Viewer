@@ -127,8 +127,8 @@ export const TOOLSETS = [
         ]
     },
     {
-        name: 'Others',
-        type: 'others',
+        name: 'Layout',
+        type: 'layout',
         tools: [
             { id: 'copy', label: 'Copy', icon: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>' },
             { id: 'cloak-black', label: '黑斗篷', icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#374151" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="1" fill="#374151"/><circle cx="14" cy="10" r="1" fill="#374151"/>' },

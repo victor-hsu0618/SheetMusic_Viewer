@@ -194,8 +194,10 @@ export class DriveAuthManager {
 
         if (btnSignIn && btnSignOut) {
             const fullyConnected = !!(this.sync.isEnabled && this.sync.accessToken);
-            const reconnecting = this.sync.isEnabled && !this.sync.accessToken;
-            btnSignIn.classList.toggle('hidden', fullyConnected || reconnecting);
+            // FIX: Show Sign In button whenever not fully connected.
+            // Previously it was hidden if 'isEnabled' was true but 'accessToken' was null (reconnecting),
+            // which could leave the user with no UI to log in if background refresh failed.
+            btnSignIn.classList.toggle('hidden', fullyConnected);
             btnSignOut.classList.toggle('hidden', !fullyConnected);
         }
 
