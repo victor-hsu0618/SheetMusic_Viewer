@@ -22,6 +22,7 @@ export class ScoreLibraryUIManager {
     render() {
         if (!this.manager.grid) return;
         this.manager.grid.innerHTML = "";
+        this.manager.grid.classList.toggle("selection-mode", this.manager.isSelectionMode);
 
         if (this.manager.registry.length === 0) {
             this.manager.grid.innerHTML = '<div class="library-empty">Your library is empty. Import a PDF to begin.</div>';
@@ -70,17 +71,17 @@ export class ScoreLibraryUIManager {
                 timeInfo = `Last opened: ${this.formatRelativeTime(score.lastAccessed)}`;
             }
 
-            const thumbContent = score.storageMode === 'cloud' ? '☁️' : (score.thumbnail ? `<img src="${score.thumbnail}">` : '🎼');
+            // Storage mode badge logic
+            const isCloudOnly = score.isCloudOnly || score.storageMode === 'cloud';
+            const thumbContent = isCloudOnly ? '<div class="cloud-thumb">☁️</div>' : (score.thumbnail ? `<img src="${score.thumbnail}">` : '🎼');
 
-            // Storage mode badge
             let storageBadge = '';
             if (score.storageMode === 'pinned') {
-                storageBadge = `<div class="cloud-sync-status pinned clickable" title="Pinned offline — tap to unpin">📌</div>`;
-            } else if (score.storageMode === 'cloud') {
+                storageBadge = `<div class="cloud-sync-status pinned clickable" title="Pinned offline">📌</div>`;
+            } else if (isCloudOnly) {
                 storageBadge = `<div class="cloud-sync-status not-synced clickable" title="Cloud only — tap to download">☁️</div>`;
             } else {
-                // For 'cached', we could show a subtle icon or nothing. Let's show a toggleable ghost pin.
-                storageBadge = `<div class="cloud-sync-status cached clickable" title="Cached locally — tap to pin permanently">📍</div>`;
+                storageBadge = `<div class="cloud-sync-status cached clickable" title="Cached locally — tap to pin">📍</div>`;
             }
 
             // Add selection indicator if in selection mode
@@ -137,6 +138,7 @@ export class ScoreLibraryUIManager {
             }
 
             card.onclick = () => {
+                console.log('[LibraryUI] Card clicked:', score.title, 'SelectionMode:', this.manager.isSelectionMode);
                 if (this.manager.isSelectionMode) {
                     this.manager.toggleSelectScore(score.fingerprint);
                 } else {

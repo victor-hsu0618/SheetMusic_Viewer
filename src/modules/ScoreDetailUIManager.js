@@ -62,6 +62,8 @@ export class ScoreDetailUIManager {
 
         this.btnManualPush?.addEventListener('click', () => this.manager.handleManualPush())
         this.btnManualPull?.addEventListener('click', () => this.manager.handleManualPull())
+        document.getElementById('btn-supabase-repair')?.addEventListener('click', () => this.manager.handleSupabaseRepair())
+        document.getElementById('btn-supabase-push-stamps')?.addEventListener('click', () => this.manager.handleSupabasePushAnnotations())
 
         document.getElementById('btn-toggle-keep-offline')?.addEventListener('change', async (e) => {
             const fp = this.manager.currentFp || this.app.pdfFingerprint

@@ -108,6 +108,12 @@ export class ProfileManager {
         this.data.updatedAt = Date.now()
 
         await this.save()
+        
+        // --- NEW: Sync to Supabase ---
+        if (this.app.supabaseManager) {
+            this.app.supabaseManager.pushProfile();
+        }
+
         this.render()
         this.toggleModal(false)
 

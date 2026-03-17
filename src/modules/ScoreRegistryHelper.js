@@ -17,6 +17,10 @@ export class ScoreRegistryHelper {
     }
 
     async generateThumbnail(buffer) {
+        if (!buffer || buffer.byteLength === 0) {
+            console.error('[ScoreRegistryHelper] Cannot generate thumbnail: PDF buffer is empty (0 bytes).');
+            return null;
+        }
         try {
             const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/');
             const pdf = await pdfjsLib.getDocument({

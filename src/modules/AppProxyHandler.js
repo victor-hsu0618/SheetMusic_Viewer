@@ -13,7 +13,7 @@ export function applyAppProxies(app) {
         activeScoreName: { get() { return this.viewerManager.activeScoreName }, set(v) { this.viewerManager.activeScoreName = v } }
     });
 
-    app.loadPDF = (data, name) => app.viewerManager.loadPDF(data, name);
+    app.loadPDF = (data, name, expectedFp) => app.viewerManager.loadPDF(data, name, expectedFp);
     app.renderPDF = () => app.viewerManager.renderPDF();
     app.getFingerprint = (buf) => app.viewerManager.getFingerprint(buf);
     app.updateZoomDisplay = () => {

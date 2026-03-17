@@ -373,6 +373,11 @@ export class DocActionManager {
                     sNew.type = sNew.draw ? 'stamp' : 'system';
                 }
             }
+
+            // Ensure x and y exist (default to 0) to prevent undefined/NaN
+            if (sNew.x === undefined && !sNew.points) sNew.x = 0;
+            if (sNew.y === undefined && !sNew.points) sNew.y = 0;
+
             return sNew;
         });
 

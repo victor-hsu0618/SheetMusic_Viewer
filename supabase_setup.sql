@@ -1,20 +1,23 @@
 -- 1. 建立樂譜索引表 (我的樂譜櫃)
 CREATE TABLE IF NOT EXISTS user_scores (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  id text PRIMARY KEY,
   user_id uuid REFERENCES auth.users NOT NULL DEFAULT auth.uid(),
   fingerprint text NOT NULL,
   title text,
   composer text,
+  filename text,
   last_viewed timestamptz DEFAULT now(),
   created_at timestamptz DEFAULT now()
 );
 
 -- 2. 建立標註數據表 (即時標註數據)
 CREATE TABLE IF NOT EXISTS annotations (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  id text PRIMARY KEY,
   user_id uuid REFERENCES auth.users NOT NULL DEFAULT auth.uid(),
-  score_id text NOT NULL,
+  fingerprint text NOT NULL,
   layer_id text NOT NULL,
+  type text NOT NULL,
+  page integer NOT NULL,
   data jsonb NOT NULL,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()

@@ -95,6 +95,7 @@ export class StaffDetector {
       type: 'system',
       id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `sys-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       page: pageNum,
+      x: 0,
       y: toRatio(lines[0].top),
       yBottom: toRatio(lines[lines.length - 1].bottom),
       lineCount: lines.length,

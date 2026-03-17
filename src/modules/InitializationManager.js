@@ -132,10 +132,20 @@ export class InitializationManager {
                 const file = e.target.files[0]
                 if (!file) return
                 app.showMessage(`正在讀取檔案: ${file.name}...`, 'system')
+                
                 try {
-                    const buf = await file.arrayBuffer()
+                    const buf = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => resolve(ev.target.result);
+                        reader.onerror = (err) => reject(err);
+                        reader.readAsArrayBuffer(file);
+                    });
+                    
+                    if (!buf || buf.byteLength === 0) throw new Error('檔案內容為空 (0 bytes)');
+                    
                     await app.scoreManager.importScore(file, new Uint8Array(buf))
                 } catch (err) {
+                    console.error('[InitializationManager] Import failed:', err);
                     alert('Import failed: ' + err.message)
                 } finally { e.target.value = '' }
             })

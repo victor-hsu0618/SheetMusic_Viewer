@@ -86,39 +86,36 @@ export class ViewerManager {
         const cleanup = () => { if (loader) loader.style.display = 'none' }
 
         try {
-            const reader = new FileReader()
-            reader.onerror = (err) => {
-                console.error('FileReader error:', err)
-                cleanup()
-                alert('Error reading the file from your device.')
+            const buffer = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => resolve(event.target.result);
+                reader.onerror = (err) => reject(err);
+                reader.readAsArrayBuffer(file);
+            });
+
+            if (!buffer || buffer.byteLength === 0) {
+                console.error('[ViewerManager] Empty buffer from FileReader');
+                cleanup();
+                alert('讀取文件失敗：數據長度為 0。');
+                return;
             }
 
-            reader.onload = async (event) => {
-                const buffer = event.target.result
-                if (!buffer || buffer.byteLength === 0) {
-                    console.error('[ViewerManager] Empty buffer from FileReader');
-                    cleanup();
-                    alert('讀取文件失敗：數據長度為 0。');
-                    return;
+            try {
+                // Pass a slice to db.set to avoid detaching the main buffer
+                await db.set(`recent_buf_${file.name}`, buffer.slice(0))
+                // Ensure we pass a clean Uint8Array to loadPDF
+                await this.loadPDF(new Uint8Array(buffer), file.name)
+            } catch (pdfErr) {
+                console.error('[ViewerManager] handleUpload failed:', pdfErr)
+                let msg = pdfErr.message || pdfErr.toString()
+                if (msg.includes('InvalidPDFException')) {
+                    alert(`解析 PDF 失敗：此檔案似乎不是有效的 PDF 或已損毀。\n(${file.name})`)
+                } else {
+                    alert(`無法開啟樂譜：${msg}`)
                 }
-                try {
-                    // Pass a slice to db.set to avoid detaching the main buffer
-                    await db.set(`recent_buf_${file.name}`, buffer.slice(0))
-                    // Ensure we pass a clean Uint8Array to loadPDF
-                    await this.loadPDF(new Uint8Array(buffer), file.name)
-                } catch (pdfErr) {
-                    console.error('[ViewerManager] handleUpload failed:', pdfErr)
-                    let msg = pdfErr.message || pdfErr.toString()
-                    if (msg.includes('InvalidPDFException')) {
-                        alert(`解析 PDF 失敗：此檔案似乎不是有效的 PDF 或已損毀。\n(${file.name})`)
-                    } else {
-                        alert(`無法開啟樂譜：${msg}`)
-                    }
-                } finally {
-                    cleanup()
-                }
+            } finally {
+                cleanup()
             }
-            reader.readAsArrayBuffer(file)
         } catch (err) {
             console.error('General upload error:', err)
             cleanup()
@@ -175,7 +172,7 @@ export class ViewerManager {
         return computeFingerprint(buffer);
     }
 
-    async loadPDF(data, filename = null) {
+    async loadPDF(data, filename = null, expectedFp = null) {
         const loadingId = ++this.latestLoadingId;
         console.log(`[ViewerManager] loadPDF started (id: ${loadingId}) for: ${filename || 'unknown'}`);
 
@@ -213,14 +210,13 @@ export class ViewerManager {
         if (loadingId !== this.latestLoadingId) return;
 
         // --- AUTOMATIC REPAIR: Detect Fingerprint Drift ---
-        // If we are loading a score from the registry, but the calculated fingerprint changed, migrate it.
-        const currentRegistryFp = this.app.pdfFingerprint; // What the app thought it was loading
-        if (currentRegistryFp && currentRegistryFp !== newFingerprint) {
-            const entry = this.app.scoreManager?.registry?.find(s => s.fingerprint === currentRegistryFp);
+        // If we are loading a score from the registry with an expected FP, but the calculated fingerprint changed, migrate it.
+        if (expectedFp && expectedFp !== newFingerprint) {
+            const entry = this.app.scoreManager?.registry?.find(s => s.fingerprint === expectedFp);
             if (entry) {
-                console.log(`[ViewerManager] 🛠️ Fingerprint drift detected! Auto-repairing ${currentRegistryFp.slice(0,8)}...`);
+                console.log(`[ViewerManager] 🛠️ Fingerprint drift detected! Auto-repairing ${expectedFp.slice(0,8)} to ${newFingerprint.slice(0,8)}...`);
                 if (this.app.scoreManager?.helper?.migrateFingerprint) {
-                    await this.app.scoreManager.helper.migrateFingerprint(currentRegistryFp, newFingerprint, filename);
+                    await this.app.scoreManager.helper.migrateFingerprint(expectedFp, newFingerprint, filename);
                 }
             }
         }
@@ -252,6 +248,27 @@ export class ViewerManager {
 
         if (this.app.updateScoreDetailUI) {
             this.app.updateScoreDetailUI(newFingerprint)
+        }
+
+        // --- NEW: Supabase PDF Storage Sync (Background) ---
+        if (this.app.supabaseManager?.user) {
+            // CRITICAL: Create a copy immediately. PDF.js may detach the buffer during getDocument()
+            const uploadCopy = uint8Data.slice(0); 
+            
+            (async () => {
+                try {
+                    const exists = await this.app.supabaseManager.checkPDFExists(newFingerprint);
+                    if (!exists) {
+                        console.log(`[ViewerManager] ⬆️ PDF not found in cloud. Starting background upload (${uploadCopy.byteLength} bytes)...`);
+                        await this.app.supabaseManager.uploadPDFBuffer(newFingerprint, uploadCopy);
+                        console.log(`[ViewerManager] ✅ Background upload complete.`);
+                    } else {
+                        console.log(`[ViewerManager] ☁️ PDF already exists in Supabase storage.`);
+                    }
+                } catch (err) {
+                    console.error('[ViewerManager] Background upload process failed:', err);
+                }
+            })();
         }
 
         const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
@@ -358,10 +375,14 @@ export class ViewerManager {
             if (!sNew.id) sNew.id = `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`;
             if (!sNew.createdAt) sNew.createdAt = now;
             if (!sNew.updatedAt) sNew.updatedAt = now;
-            
+
+            // Ensure x and y exist (default to 0) to prevent undefined logs/NaN
+            if (sNew.x === undefined && !sNew.points) sNew.x = 0;
+            if (sNew.y === undefined && !sNew.points) sNew.y = 0;
+
             return sNew;
         })
-        
+
         console.log(`[ViewerManager] loadStamps: Parsed ${this.app.stamps.length} stamps for ${fingerprint.slice(0, 8)}`);
         if (this.app.stamps.length > 0) {
             const first = this.app.stamps[0];
@@ -371,12 +392,11 @@ export class ViewerManager {
                 page: first.page,
                 sourceId: first.sourceId,
                 layerId: first.layerId,
-                x: first.x,
-                y: first.y
+                x: first.x !== undefined ? first.x : 'N/A',
+                y: first.y !== undefined ? first.y : 'N/A'
             });
         }
     }
-
     async updateFloatingTitle() {
         if (!this.app.floatingScoreTitle) return;
         

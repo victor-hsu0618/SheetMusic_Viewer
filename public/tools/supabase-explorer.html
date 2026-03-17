@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Explorer | ScoreFlow Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles.css">
+    <script src="theme-manager.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #3ecf8e;
+            --primary-hover: #34b27b;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        .explorer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .config-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .btn-connect {
+            background: var(--primary);
+            color: #000;
+            font-weight: 700;
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: 40px;
+        }
+
+        .btn-connect:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .status-online { color: #3ecf8e; border-color: rgba(62, 207, 142, 0.3); background: rgba(62, 207, 142, 0.1); }
+        .status-offline { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .tab {
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: rgba(62, 207, 142, 0.1);
+            color: var(--primary);
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            vertical-align: middle;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); }
+        
+        .btn-action {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .btn-repair {
+            background: rgba(62, 207, 142, 0.1);
+            border: 1px solid rgba(62, 207, 142, 0.2);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .debug-console {
+            background: #000;
+            color: #aaa;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            height: 120px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        .size-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .size-badge.zero { color: #ef4444; }
+        .size-badge.exists { color: #3ecf8e; }
+    </style>
+</head>
+<body>
+    <div class="explorer-container">
+        <header style="margin-bottom: 20px;">
+            <a href="index.html" style="text-decoration:none; color:var(--primary); font-weight:700; font-size:14px;">← Back to Hub</a>
+            <h1 style="font-size: 2rem; font-weight: 800; margin: 12px 0 8px 0;">Supabase Explorer v3.1</h1>
+        </header>
+
+        <div id="debug-log" class="debug-console">Explorer ready. Waiting for user action...</div>
+
+        <div class="config-card">
+            <div class="input-group">
+                <label>Supabase URL</label>
+                <input type="text" id="sb-url" value="https://tanoqdnqtxqxerwcbdlf.supabase.co">
+            </div>
+            <div class="input-group">
+                <label>Anon Key</label>
+                <input type="password" id="sb-key" value="sb_publishable_CqpxXMRonYfz25IHc3VYvQ_CSKrgFU4">
+            </div>
+            <button class="btn-connect" id="btn-connect">Connect & Load</button>
+            <div id="connection-status" class="status-badge status-offline">Offline</div>
+        </div>
+
+        <div id="auth-section" style="display:none;">
+            <div class="user-info" style="display:flex; align-items:center; gap:12px; margin-bottom:20px; padding:12px; background:rgba(255,255,255,0.05); border-radius:12px;">
+                <div style="flex:1">
+                    <div id="user-email" style="font-weight:700;">-</div>
+                    <div id="user-id" class="mono" style="font-size:10px;">-</div>
+                </div>
+                <button class="btn-action" id="btn-logout">Logout</button>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="scores">Scores</div>
+                <div class="tab" data-tab="annotations">Annotations</div>
+                <div class="tab" data-tab="pdfs">Storage</div>
+            </div>
+
+            <div id="content-area" class="table-container">
+                <div style="padding:40px; text-align:center; color:var(--text-muted)">Connecting...</div>
+            </div>
+        </div>
+
+        <div id="login-section" class="config-card" style="display:none; flex-direction:column; align-items:flex-start;">
+            <h3 style="margin:0 0 16px 0;">Developer Login Required</h3>
+            <div style="display:flex; gap:16px; width:100%;">
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="dev@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••">
+                </div>
+            </div>
+            <button class="btn-connect" id="btn-login" style="margin-top:16px;">Sign In</button>
+        </div>
+    </div>
+
+    <script>
+        // --- NATIVE DB WRAPPER ---
+        const db = {
+            get: (key) => {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open('ScoreFlowStorage', 1);
+                    req.onsuccess = () => {
+                        const store = req.result.transaction('store', 'readonly').objectStore('store');
+                        const getReq = store.get(key);
+                        getReq.onsuccess = () => resolve(getReq.result);
+                        getReq.onerror = () => reject(getReq.error);
+                    };
+                    req.onerror = () => reject(req.error);
+                });
+            }
+        };
+
+        const logEl = document.getElementById('debug-log');
+        function log(msg) {
+            console.log('[Explorer]', msg);
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<div>[${time}] ${msg}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        window.onerror = (e) => log('Script Error: ' + e);
+
+        let supabaseClient = null;
+        let currentUser = null;
+        let activeTab = 'scores';
+        let cachedScores = [];
+        let cachedFiles = [];
+
+        async function initSupabase() {
+            const url = document.getElementById('sb-url').value.trim();
+            const key = document.getElementById('sb-key').value.trim();
+            
+            log('Attempting connection to ' + url);
+            if (!url || !key) return alert('Provide URL and Key');
+
+            try {
+                if (typeof supabase === 'undefined') throw new Error('Supabase SDK not loaded');
+                
+                supabaseClient = supabase.createClient(url, key);
+                document.getElementById('connection-status').textContent = 'Connected';
+                document.getElementById('connection-status').className = 'status-badge status-online';
+                
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                handleSession(session);
+
+                supabaseClient.auth.onAuthStateChange((_event, session) => {
+                    handleSession(session);
+                });
+                log('Connection established.');
+            } catch (err) {
+                log('Init failed: ' + err.message);
+                document.getElementById('connection-status').textContent = 'Error';
+                document.getElementById('connection-status').className = 'status-badge status-offline';
+            }
+        }
+
+        function handleSession(session) {
+            currentUser = session?.user || null;
+            if (currentUser) {
+                log('Logged in as ' + currentUser.email);
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('user-email').textContent = currentUser.email;
+                document.getElementById('user-id').textContent = currentUser.id;
+                loadData();
+            } else {
+                log('Waiting for login.');
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('login-section').style.display = 'flex';
+                document.getElementById('content-area').innerHTML = '<div style="padding:40px; text-align:center;">Please sign in to browse your cloud data.</div>';
+            }
+        }
+
+        async function loadData() {
+            if (!supabaseClient || !currentUser) return;
+            log('Loading ' + activeTab + '...');
+            
+            try {
+                const [scoresRes, filesRes] = await Promise.all([
+                    supabaseClient.from('scores').select('*').eq('user_id', currentUser.id).order('last_accessed', { ascending: false }),
+                    supabaseClient.storage.from('pdfs').list(currentUser.id)
+                ]);
+                cachedScores = scoresRes.data || [];
+                cachedFiles = filesRes.data || [];
+                
+                if (activeTab === 'scores') renderScores();
+                else if (activeTab === 'annotations') renderAnnotations();
+                else if (activeTab === 'pdfs') renderFiles();
+                
+                log('Success. Found ' + cachedScores.length + ' scores, ' + cachedFiles.length + ' files.');
+            } catch (err) {
+                log('Fetch error: ' + err.message);
+            }
+        }
+
+        function renderScores() {
+            let html = `<table><thead><tr><th>Score Title</th><th>FP</th><th>PDF Status</th><th>Actions</th></tr></thead><tbody>`;
+            cachedScores.forEach(s => {
+                const file = cachedFiles.find(f => f.name === `${s.fingerprint}.pdf`);
+                let status = '<span class="size-badge zero">Missing</span>';
+                if (file) {
+                    const size = file.metadata?.size || file.size || 0;
+                    status = size === 0 ? '<span class="size-badge zero">0.0 KB</span>' : `<span class="size-badge exists">${(size/1024).toFixed(1)} KB</span>`;
+                }
+                html += `<tr>
+                    <td><strong>${s.title}</strong><div style="font-size:10px">${s.composer}</div></td>
+                    <td class="mono">${s.fingerprint.substring(0,8)}...</td>
+                    <td>${status}</td>
+                    <td>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-action" onclick="downloadFile('${s.fingerprint}.pdf')">Cloud ↓</button>
+                            <button class="btn-repair" onclick="repairPDF('${s.fingerprint}')">Push ⬆️</button>
+                            <button class="btn-delete" onclick="deleteScore('${s.fingerprint}', '${s.title.replace(/'/g, "\\'")}')">🗑️</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('content-area').innerHTML = html + '</tbody></table>';
+        }
+
+        async function renderAnnotations() {
+            log('Loading annotations...');
+            try {
+                const { data, error } = await supabaseClient.from('annotations').select('id, type, page, updated_at, fingerprint, layer_id').eq('user_id', currentUser.id).order('updated_at', { ascending: false }).limit(100);
+                if (error) throw error;
+                
+                let html = `<table><thead><tr><th>Type/Layer</th><th>Page</th><th>Fingerprint</th><th>Date</th><th>Action</th></tr></thead><tbody>`;
+                (data || []).forEach(a => {
+                    const score = cachedScores.find(sc => sc.fingerprint === a.fingerprint);
+                    const title = score ? score.title : `<span class="null-val">Unknown Score</span>`;
+                    html += `<tr>
+                        <td><strong>${a.type}</strong><div style="font-size:10px">${a.layer_id || 'draw'}</div></td>
+                        <td>P.${a.page+1}</td>
+                        <td class="mono">
+                            <div title="${a.fingerprint}">${a.fingerprint.substring(0,12)}...</div>
+                            <div style="font-size:10px; color:var(--text-muted)">${title}</div>
+                        </td>
+                        <td style="font-size:10px">${new Date(a.updated_at).toLocaleString()}</td>
+                        <td><button class="btn-delete" onclick="window.deleteAnnotation('${a.id}')">🗑️</button></td>
+                    </tr>`;
+                });
+                document.getElementById('content-area').innerHTML = html + '</tbody></table>';
+                log('Annotations loaded.');
+            } catch (err) {
+                log('Annotation load error: ' + err.message);
+            }
+        }
+
+        function renderFiles() {
+            let html = `<table><thead><tr><th>Filename</th><th>Size</th><th>Created</th><th>Action</th></tr></thead><tbody>`;
+            cachedFiles.forEach(f => {
+                const size = f.metadata?.size || f.size || 0;
+                html += `<tr>
+                    <td class="mono">${f.name}</td>
+                    <td>${(size/1024).toFixed(1)} KB</td>
+                    <td style="font-size:10px">${new Date(f.created_at || f.metadata?.lastModified).toLocaleString()}</td>
+                    <td><button class="btn-delete" onclick="deleteFile('${f.name}')">🗑️</button></td>
+                </tr>`;
+            });
+            document.getElementById('content-area').innerHTML = html + '</tbody></table>';
+        }
+
+        // --- ACTION HANDLERS ---
+
+        window.downloadFile = async (name) => {
+            log('Downloading: ' + name);
+            try {
+                const { data, error } = await supabaseClient.storage.from('pdfs').download(`${currentUser.id}/${name}`);
+                if (error) throw error;
+                const url = URL.createObjectURL(data);
+                const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+            } catch (err) { alert(err.message); }
+        };
+
+        window.repairPDF = async (fp) => {
+            try {
+                const buffer = await db.get(`score_buf_${fp}`);
+                if (!buffer) return alert('No local data found for this fingerprint in IndexedDB.');
+                log('Repairing ' + fp + ' (' + buffer.byteLength + ' bytes)');
+                if (!confirm(`Force push local PDF to cloud?`)) return;
+                const { error } = await supabaseClient.storage.from('pdfs').upload(`${currentUser.id}/${fp}.pdf`, new Blob([buffer], {type:'application/pdf'}), { upsert:true });
+                if (error) throw error;
+                log('Repair successful.');
+                loadData();
+            } catch (err) { log('Repair error: ' + err.message); alert(err.message); }
+        };
+
+        window.deleteScore = async (fp, title) => {
+            if (!confirm(`確定要刪除樂譜「${title}」的雲端紀錄嗎？\n這將刪除 scores 表中的 Metadata，但不會自動刪除 PDF 檔案或標註數據。`)) return;
+            log('Deleting score metadata: ' + fp);
+            try {
+                const { error } = await supabaseClient.from('scores').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
+                if (error) throw error;
+                log('Score metadata deleted.');
+                loadData();
+            } catch (err) { alert('Delete failed: ' + err.message); }
+        };
+
+        window.deleteAnnotation = async (id) => {
+            if (!confirm('確定要刪除此筆標註數據嗎？')) return;
+            log('Deleting annotation: ' + id);
+            try {
+                const { error } = await supabaseClient.from('annotations').delete().eq('id', id).eq('user_id', currentUser.id);
+                if (error) throw error;
+                log('Annotation deleted.');
+                loadData();
+            } catch (err) { alert('Delete failed: ' + err.message); }
+        };
+
+        window.deleteFile = async (name) => {
+            if (!confirm(`確定要刪除雲端檔案 ${name} 嗎？`)) return;
+            log('Deleting file from storage: ' + name);
+            try {
+                const { error } = await supabaseClient.storage.from('pdfs').remove([`${currentUser.id}/${name}`]);
+                if (error) throw error;
+                log('File deleted.');
+                loadData();
+            } catch (err) { alert('Delete failed: ' + err.message); }
+        };
+
+        // Event Binding
+        document.getElementById('btn-connect').addEventListener('click', initSupabase);
+        document.getElementById('btn-login').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message);
+        });
+        document.getElementById('btn-logout').addEventListener('click', () => supabaseClient.auth.signOut());
+
+        document.querySelectorAll('.tab').forEach(t => {
+            t.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                t.classList.add('active');
+                activeTab = t.dataset.tab;
+                loadData();
+            });
+        });
+
+        // Initialize credentials
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementById('sb-url').value && document.getElementById('sb-key').value) {
+                initSupabase();
+            }
+        });
+    </script>
+</body>
+</html>

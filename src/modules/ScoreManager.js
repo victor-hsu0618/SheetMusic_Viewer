@@ -83,6 +83,7 @@ export class ScoreManager {
         document.getElementById('btn-open-user-guide')?.addEventListener('click', () => this.loadUserGuide());
         document.getElementById('btn-full-backup')?.addEventListener('click', () => this.fullBackup());
         document.getElementById('btn-full-restore')?.addEventListener('click', () => this.fullRestore());
+        document.getElementById('btn-library-sync-cloud')?.addEventListener('click', () => this.syncWithCloud());
         const sortSelect = document.getElementById('library-sort-select');
         if (sortSelect) {
             sortSelect.value = this.sortMode;
@@ -417,11 +418,29 @@ export class ScoreManager {
     }
 
     async importScore(file, buffer) {
+        if (!buffer || buffer.byteLength === 0) {
+            this.app.showMessage('匯入失敗：檔案內容為空 (0 bytes)。', 'error');
+            console.error(`[ScoreManager] importScore failed: Buffer is empty for ${file.name}`);
+            return;
+        }
         this.app.showMessage('正在計算指紋...', 'system')
         const fp = await this.helper.calculateFingerprint(buffer);
-        if (this.registry.find(s => s.fingerprint === fp)) {
-            this.app.showMessage('此樂譜已存在於樂譜庫中。', 'info')
-            return
+        const existingScore = this.registry.find(s => s.fingerprint === fp);
+        if (existingScore) {
+            const existingBuf = await db.get(`score_buf_${fp}`);
+            const isCorrupt = !existingBuf || existingBuf.byteLength === 0;
+
+            if (isCorrupt) {
+                console.log(`[ScoreManager] Existing buffer for ${fp} is corrupt/empty. Overwriting with new import.`);
+                await db.set(`score_buf_${fp}`, buffer);
+                existingScore.storageMode = 'cached';
+                await this.helper.saveRegistry(this.registry);
+                this.app.showMessage('已修復並更新損毀的樂譜檔案。', 'success');
+            } else {
+                this.app.showMessage('此樂譜已存在於樂譜庫中，已為您開啟。', 'info');
+            }
+            this.loadScore(fp);
+            return;
         }
 
         this.app.showMessage('正在生成縮略圖...', 'system')
@@ -445,7 +464,7 @@ export class ScoreManager {
 
         // --- FIXED: Initialize Score Detail without touching active state ---
         if (this.app.scoreDetailManager) {
-            this.app.scoreDetailManager.initializeNewScore(fp, entry.title);
+            await this.app.scoreDetailManager.initializeNewScore(fp, entry.title);
         }
 
         this.render();
@@ -453,10 +472,7 @@ export class ScoreManager {
 
         // --- Supabase Sync ---
         if (this.app.supabaseManager) {
-            this.app.supabaseManager.syncScore(fp, {
-                title: entry.title,
-                composer: entry.composer
-            });
+            await this.app.supabaseManager.syncScore(fp, entry);
         }
 
         return entry;
@@ -469,27 +485,50 @@ export class ScoreManager {
 
         let buffer = await db.get(`score_buf_${fp}`);
 
-        if (!buffer && score.storageMode === 'cloud') {
-            const drive = this.app.driveSyncManager;
-            if (!drive?.isEnabled || !drive?.accessToken) {
-                this.app.showMessage('此樂譜僅存於雲端，請先連接 Google Drive', 'error');
-                this.toggleOverlay(true);
-                return;
+        // If buffer is 0 bytes, treat it as missing so we can try re-downloading
+        if (buffer && buffer.byteLength === 0) {
+            console.warn(`[ScoreManager] Local buffer for ${fp} is 0 bytes. Treating as missing.`);
+            buffer = null;
+        }
+
+        if (!buffer) {
+            this.app.showMessage('正在從雲端下載檔案...', 'system');
+            // Priority 1: Supabase Storage (New Single-Cloud)
+            if (this.app.supabaseManager?.user) {
+                try {
+                    const blob = await this.app.supabaseManager.downloadPDFBuffer(fp);
+                    if (blob) {
+                        buffer = await blob.arrayBuffer();
+                        await db.set(`score_buf_${fp}`, buffer);
+                        score.isCloudOnly = false;
+                        score.storageMode = 'cached';
+                    }
+                } catch (e) { console.warn('[ScoreManager] Supabase download failed:', e); }
             }
-            try {
-                this.app.showMessage('正在從雲端下載樂譜...', 'info');
-                buffer = await drive.downloadPDF(fp);
+
+            // Priority 2: Google Drive Legacy
+            if (!buffer && score.storageMode === 'cloud') {
+                const drive = this.app.driveSyncManager;
+                if (drive?.isEnabled && drive?.accessToken) {
+                    try {
+                        this.app.showMessage('正在從 Google Drive 下載...', 'info');
+                        buffer = await drive.downloadPDF(fp);
+                    } catch (err) { console.error('Drive download failed:', err); }
+                }
+            }
+
+            if (buffer) {
                 await db.set(`score_buf_${fp}`, buffer);
                 score.storageMode = 'cached';
                 await this.helper.saveRegistry(this.registry);
-            } catch (err) {
-                this.app.showMessage('雲端下載失敗: ' + err.message, 'error');
+            } else {
+                this.app.showMessage('無法獲取樂譜檔案，請連接網路或 Google Drive', 'error');
                 this.toggleOverlay(true);
                 return;
             }
         }
 
-        if (buffer) {
+        if (buffer && buffer.byteLength > 0) {
             score.lastAccessed = Date.now();
             
             // --- ADDED: Auto-generate missing thumbnail ---
@@ -502,26 +541,78 @@ export class ScoreManager {
             }
 
             await this.helper.saveRegistry(this.registry);
-            await this.app.loadPDF(new Uint8Array(buffer), score.fileName);
+            await this.app.loadPDF(new Uint8Array(buffer), score.fileName, fp);
+        } else {
+            this.app.showMessage('樂譜檔案內容為空 (0 bytes)，載入失敗。', 'error');
+            console.error(`[ScoreManager] loadScore failed: Buffer is empty for ${fp}`);
+            this.toggleOverlay(true);
+            return;
+        }
 
             // --- Supabase Sync ---
             if (this.app.supabaseManager) {
                 // 1. Sync score metadata
-                this.app.supabaseManager.syncScore(fp, {
-                    title: score.title,
-                    composer: score.composer
-                });
+                this.app.supabaseManager.syncScore(fp, score);
                 // 2. Pull external annotations and merge with local data
                 this.app.supabaseManager.pullAnnotations(fp);
             }
-        }
     }
 
     async setStorageMode(fp, mode) {
         const score = this.registry.find(s => s.fingerprint === fp);
         if (score) {
+            const oldMode = score.storageMode;
             score.storageMode = mode;
+
+            // Trigger download if switching from cloud to a local mode
+            if (oldMode === 'cloud' && (mode === 'pinned' || mode === 'cached')) {
+                const buffer = await db.get(`score_buf_${fp}`);
+                if (!buffer) {
+                    this.app.showMessage('正在下載樂譜檔...', 'system');
+                    try {
+                        const blob = await this.app.supabaseManager?.downloadPDFBuffer(fp);
+                        if (blob) {
+                            const buf = await blob.arrayBuffer();
+                            await db.set(`score_buf_${fp}`, buf);
+                            score.isCloudOnly = false;
+                        }
+                    } catch (e) {
+                        console.error('[ScoreManager] Storage mode switch download failed:', e);
+                    }
+                }
+            }
+
             await this.helper.saveRegistry(this.registry);
+            this.render();
+        }
+    }
+
+    async syncWithCloud() {
+        if (!this.app.supabaseManager?.user) {
+            this.app.showMessage('請先登入 Supabase 以進行雲端同步', 'warn');
+            return;
+        }
+
+        const btn = document.getElementById('btn-library-sync-cloud');
+        if (btn) btn.classList.add('syncing');
+
+        try {
+            this.app.showMessage('正在同步雲端書庫...', 'info');
+            
+            // 1. Push Phase: Ensure all local scores are known by cloud
+            console.log('[ScoreManager] ⬆️ Pushing local registry to cloud...');
+            await this.app.supabaseManager.syncScoreRegistry(this.registry);
+            
+            // 2. Pull Phase: Get new placements from other devices
+            console.log('[ScoreManager] ↓ Pulling cloud placeholders...');
+            await this.app.supabaseManager.pullScoreRegistry();
+            
+            this.app.showMessage('書庫同步完成！', 'success');
+        } catch (err) {
+            console.error('[ScoreManager] Sync with cloud failed:', err);
+            this.app.showMessage('同步失敗: ' + err.message, 'error');
+        } finally {
+            if (btn) btn.classList.remove('syncing');
         }
     }
 
@@ -593,6 +684,7 @@ export class ScoreManager {
     toggleSelectScore(fp) {
         if (this.selectedFingerprints.has(fp)) this.selectedFingerprints.delete(fp);
         else this.selectedFingerprints.add(fp);
+        console.log('[ScoreManager] Toggled selection for:', fp, 'New set size:', this.selectedFingerprints.size);
         this.updateBatchBar();
         this.render();
     }

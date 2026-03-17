@@ -436,6 +436,11 @@
           </div>
         </div>
         <div class="library-actions">
+          <button id="btn-library-sync-cloud" class="btn btn-outline-sm btn-icon-only" title="Sync Library with Cloud">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M17.5 19a3.5 3.5 0 1 1-5.18-3.04"/><path d="M20.9 10.1a8.3 8.3 0 0 0-11.2-6.1"/><path d="M2 13h10"/><path d="m5 10-3 3 3 3"/>
+            </svg>
+          </button>
           <button id="btn-full-restore" class="btn btn-outline-sm" title="Restore System from Backup File">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -1343,8 +1348,14 @@
             <span>↓</span> Pull Now
           </button>
         </div>
+        <button id="btn-supabase-repair" class="btn btn-outline btn-full mt-10" title="如果雲端檔案損毀 (0 KB)，可由此強制重傳本地檔案">
+          <span>☁️</span> Repair Cloud File
+        </button>
+        <button id="btn-supabase-push-stamps" class="btn btn-outline btn-full mt-5" title="強制將本地所有標註同步到雲端">
+          <span>⬆️</span> Push All Markings (Cloud)
+        </button>
         <p class="setting-hint mt-10">
-          Manual sync will bypass the automatic timer. Use "Pull Now" if your markings are missing after a cloud update.
+          Manual sync will bypass the automatic timer. Use "Repair" for 0 KB files, and "Push All" to force sync markings.
         </p>
         <div class="tab-divider"></div>
         <div class="tab-section-label">Score Annotation Exchange</div>

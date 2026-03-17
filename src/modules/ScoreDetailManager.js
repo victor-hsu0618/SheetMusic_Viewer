@@ -65,13 +65,17 @@ export class ScoreDetailManager {
     }
 
     async load(fingerprint) {
-        if (!fingerprint) return
-        this.isLoading = true
-        this.currentFp = fingerprint
-        console.log(`[ScoreDetailManager] Loading Panel for: ${fingerprint.slice(0, 8)}...`);
+        if (!fingerprint) return;
+        this.isLoading = true;
+        this.currentFp = fingerprint;
+        
+        console.log(`[ScoreDetailManager] load(${fingerprint.slice(0, 8)}) - Current Global FP: ${this.app.pdfFingerprint?.slice(0, 8)}`);
 
-        // Reset to clean state first
-        this.currentInfo = {
+        // 1. Fetch data into temporary object to avoid partial UI state
+        const info = await db.get(`detail_${fingerprint}`);
+        const regScore = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
+
+        let newInfo = {
             name: '',
             composer: 'Unknown',
             lastEdit: 0,
@@ -80,71 +84,50 @@ export class ScoreDetailManager {
             activeMediaId: null,
             stampScale: 1.0,
             lastScrollTop: 0
-        }
-
-        const info = await db.get(`detail_${fingerprint}`)
-        const regScore = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint)
+        };
 
         if (info) {
-            try {
-                this.currentInfo = {
-                    name: info.name || regScore?.title || '',
-                    composer: info.composer || regScore?.composer || '',
-                    nameEditedAt: info.nameEditedAt || info.lastEdit || 0,
-                    composerEditedAt: info.composerEditedAt || info.lastEdit || 0,
-                    lastEdit: info.lastEdit || 0,
-                    lastAuthor: info.lastAuthor || null,
-                    mediaList: info.mediaList || [],
-                    activeMediaId: info.activeMediaId || null,
-                    stampScale: info.stampScale || 1.0,
-                    lastScrollTop: info.lastScrollTop || 0
-                }
-
-                // HEALING: If detail name differs from registry title, registry is likely stale or prefixed.
-                if (regScore && info.name && info.name !== regScore.title) {
-                    console.log(`[ScoreDetailManager] Healing registry title: "${regScore.title}" -> "${info.name}"`);
-                    this.app.scoreManager.updateMetadata(fingerprint, { title: info.name });
-                }
-            } catch (err) {
-                console.error('[ScoreDetailManager] Load failed:', err)
-                this.currentInfo.name = regScore?.title || ''
+            newInfo = {
+                ...newInfo,
+                ...info,
+                name: info.name || regScore?.title || '',
+                composer: info.composer || regScore?.composer || '',
+                nameEditedAt: info.nameEditedAt || info.lastEdit || 0,
+                composerEditedAt: info.composerEditedAt || info.lastEdit || 0
+            };
+            
+            if (regScore && info.name && info.name !== regScore.title) {
+                console.log(`[ScoreDetailManager] Healing registry title for ${fingerprint.slice(0,8)}: "${regScore.title}" -> "${info.name}"`);
+                this.app.scoreManager.updateMetadata(fingerprint, { title: info.name });
             }
         } else {
-            // Determine a safe fallback name without contaminating from other open scores
-            let fallbackName = regScore?.title || "";
-            if (!fallbackName && this.app.pdfFingerprint === fingerprint) {
-                fallbackName = this.app.activeScoreName?.replace(/\.pdf$/i, '') || "";
-            }
-            if (!fallbackName) fallbackName = "Untitled";
-
-            this.currentInfo = {
-                name: fallbackName,
-                composer: regScore?.composer || 'Unknown',
-                nameEditedAt: 0,
-                composerEditedAt: 0,
-                lastEdit: 0,
-                lastAuthor: null,
-                mediaList: [],
-                activeMediaId: null,
-                stampScale: 1.0,
-                lastScrollTop: 0
-            }
-            
-            // If the fallback name has a known prefix pattern (like 43-), we might want to strip it here,
-            // but for now we just trust the existing registry.
+            let fallbackName = regScore?.title || (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName?.replace(/\.pdf$/i, '') : "") || "Untitled";
+            newInfo.name = fallbackName;
+            newInfo.composer = regScore?.composer || 'Unknown';
         }
 
-        this.render(fingerprint)
-        this.isLoading = false
+        // 2. Final check: if fingerprint changed while we were awaiting DB, abort this load
+        if (this.currentFp !== fingerprint) {
+            console.warn(`[ScoreDetailManager] Abandoning load for ${fingerprint.slice(0, 8)} (Current is ${this.currentFp?.slice(0, 8)})`);
+            return;
+        }
+
+        this.currentInfo = newInfo;
+        this.render(fingerprint);
+        this.isLoading = false;
 
         if (this.currentInfo.activeMediaId) {
-            const activeMedia = this.currentInfo.mediaList.find(m => m.id === this.currentInfo.activeMediaId)
-            if (activeMedia) this.app.playbackManager?.loadMedia(activeMedia)
+            const activeMedia = this.currentInfo.mediaList.find(m => m.id === this.currentInfo.activeMediaId);
+            if (activeMedia) this.app.playbackManager?.loadMedia(activeMedia);
         }
     }
 
     async save(fingerprint) {
         if (!fingerprint) return
+        if (fingerprint !== this.currentFp) {
+            console.warn(`[ScoreDetailManager] Blocked stale save for ${fingerprint.slice(0, 8)}. Current FP: ${this.currentFp?.slice(0, 8)}`);
+            return;
+        }
         const saveData = { ...this.currentInfo }
         saveData.mediaList = saveData.mediaList.map(m => m.type === 'local' ? { ...m, source: null } : m)
         await db.set(`detail_${fingerprint}`, saveData)
@@ -154,7 +137,7 @@ export class ScoreDetailManager {
      * Initializes a new score detail record in storage without touching the current active state.
      * Essential for background imports to prevent UI/Sync cross-contamination.
      */
-    initializeNewScore(fingerprint, name) {
+    async initializeNewScore(fingerprint, name) {
         if (!fingerprint) return;
         const info = {
             name: name || 'Untitled',
@@ -166,7 +149,7 @@ export class ScoreDetailManager {
             stampScale: 1.0,
             lastScrollTop: 0
         };
-        db.set(`detail_${fingerprint}`, info)
+        await db.set(`detail_${fingerprint}`, info)
         console.log(`[ScoreDetailManager] Initialized new record for: ${name} (${fingerprint.slice(0,8)})`);
     }
 
@@ -224,13 +207,13 @@ export class ScoreDetailManager {
         if (fingerprint) this.ui.refreshStats(fingerprint, this.currentInfo)
     }
 
-    onModification() {
+    async onModification() {
         const fingerprint = this.currentFp || this.app.pdfFingerprint
         if (!fingerprint) return
 
         this.currentInfo.lastEdit = Date.now()
         this.currentInfo.lastAuthor = this.app.profileManager?.data?.userName || 'Guest'
-        this.save(fingerprint)
+        await this.save(fingerprint)
 
         if (this.app.scoreManager) {
             this.app.scoreManager.updateSyncStatus(fingerprint, false)
@@ -469,6 +452,79 @@ export class ScoreDetailManager {
             }
         } catch (err) {
             this.app.showMessage(`Pull failed: ${err.message}`, 'error')
+        }
+    }
+
+    async handleSupabaseRepair() {
+        const fp = this.currentFp || this.app.pdfFingerprint
+        if (!fp) return
+        if (!this.app.supabaseManager?.user) return this.app.showMessage('Supabase not connected', 'error')
+
+        this.app.showMessage(`🔍 檢查本地資料...`, 'system')
+        try {
+            const buffer = await db.get(`score_buf_${fp}`);
+            if (!buffer || buffer.byteLength === 0) {
+                return this.app.showMessage('本地找不到完整的樂譜資料，無法修復雲端。', 'error');
+            }
+
+            const confirmed = await this.app.showDialog({
+                title: 'Repair Cloud File?',
+                message: `確定要將本地樂譜 (${(buffer.byteLength / 1024).toFixed(1)} KB) 強制覆蓋到 Supabase 雲端嗎？此操作將修復 0 KB 的損毀檔案。`,
+                type: 'confirm',
+                icon: '☁️'
+            });
+            if (!confirmed) return;
+
+            this.app.showMessage('正在上傳修復檔案...', 'system');
+            const success = await this.app.supabaseManager.uploadPDFBuffer(fp, buffer);
+            if (success) {
+                this.app.showMessage('✅ 雲端檔案修復成功！', 'success');
+            } else {
+                this.app.showMessage('❌ 雲端修復失敗，請檢查網路。', 'error');
+            }
+        } catch (err) {
+            console.error('[ScoreDetailManager] Supabase repair failed:', err);
+            this.app.showMessage(`修復失敗: ${err.message}`, 'error');
+        }
+    }
+
+    async handleSupabasePushAnnotations() {
+        const fp = this.currentFp || this.app.pdfFingerprint
+        if (!fp) return
+        if (!this.app.supabaseManager?.user) return this.app.showMessage('Supabase not connected', 'error')
+
+        this.app.showMessage(`🔍 準備同步標註...`, 'system')
+        try {
+            // Get current stamps (either global or from DB)
+            let stamps = []
+            if (this.app.pdfFingerprint === fp) {
+                stamps = this.app.stamps || []
+            } else {
+                stamps = await db.get(`stamps_${fp}`) || []
+            }
+
+            if (stamps.length === 0) {
+                return this.app.showMessage('此樂譜沒有任何本地標註可同步。', 'info');
+            }
+
+            const confirmed = await this.app.showDialog({
+                title: 'Push All Markings?',
+                message: `確定要將本地所有標註 (${stamps.length} 筆) 強制同步到 Supabase 雲端嗎？`,
+                type: 'confirm',
+                icon: '⬆️'
+            });
+            if (!confirmed) return;
+
+            this.app.showMessage('正在上傳標註數據...', 'system');
+            const success = await this.app.supabaseManager.pushAllAnnotations(fp, stamps);
+            if (success) {
+                this.app.showMessage(`✅ 成功上傳 ${stamps.length} 筆標註！`, 'success');
+            } else {
+                this.app.showMessage('❌ 標註同步失敗，請檢查網路。', 'error');
+            }
+        } catch (err) {
+            console.error('[ScoreDetailManager] Supabase annotation push failed:', err);
+            this.app.showMessage(`同步失敗: ${err.message}`, 'error');
         }
     }
 
