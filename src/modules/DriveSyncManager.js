@@ -425,7 +425,7 @@ export class DriveSyncManager {
             const hasRemoteRealName = entry?.name && entry.name !== 'Unknown' && !entry.name.includes('score_buf_');
 
             if (cloudUpdateTs > localUpdateTs || (isLocalNameGeneric && hasRemoteRealName)) {
-                if (entry?.syncId && fingerprint !== this.app.pdfFingerprint) {
+                if (entry?.syncId) {
                     canPull = true;
                 }
             } else if (localUpdateTs > cloudUpdateTs) {
@@ -437,8 +437,8 @@ export class DriveSyncManager {
             // 5. Execute PULL/PUSH
             // Manual sync or background scan can both trigger pulls
             if (canPull) {
-                await this.pullBackground(fingerprint, entry.syncId);
-                return remoteVer; // Signal that a pull happened
+                const pulledVer = await this.pullBackground(fingerprint, entry.syncId);
+                return pulledVer || true; // Signal that a pull happened (truthy)
             }
 
             if (needsPush) {

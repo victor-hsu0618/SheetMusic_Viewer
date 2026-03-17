@@ -118,7 +118,61 @@
     </style>
 </head>
 <body>
-            <h3>Raw Manifest Snapshot</h3>
+    <div class="container" style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
+        <header style="margin-bottom: 40px;">
+            <a href="index.html" class="btn btn-outline" style="margin-bottom: 20px; width: fit-content;">← Back to Hub</a>
+            <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 8px;">Sync Integrity Analyzer</h1>
+            <p style="color: var(--text-muted);">Inspect IndexedDB registry vs. Google Drive manifest consistency.</p>
+        </header>
+
+        <div class="controls">
+            <button id="btn-analyze" class="btn">Run Analysis (Local Cache)</button>
+            <button id="btn-toggle-external" class="btn btn-outline">Analyze External JSON</button>
+            <button id="btn-rebuild-registry" class="btn btn-outline" style="background: rgba(239, 68, 68, 0.1); color: var(--error); border-color: rgba(239, 68, 68, 0.2);">☢️ Rebuild Registry</button>
+        </div>
+
+        <div id="external-input-area" class="card hidden">
+            <h3 style="margin-top:0">Analyze Remote Manifest</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Paste a v3 manifest JSON to compare with your current local database.</p>
+            <div id="drop-zone">Drop JSON file here or paste below</div>
+            <textarea id="external-manifest-json" placeholder='{ "fingerprint": { ... } }'></textarea>
+            <button id="btn-analyze-external" class="btn" style="margin-top: 20px;">Compare with Local DB</button>
+        </div>
+
+        <div id="results-area" class="hidden">
+            <div id="stats-container" class="grid" style="margin-bottom: 32px;"></div>
+            
+            <div class="card">
+                <h3 style="margin-top:0">Registry Analysis</h3>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Score / Hash</th>
+                                <th>Sync Status</th>
+                                <th>Consistency</th>
+                                <th>Timeline (LWW)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analysis-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="border-color: var(--accent);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin:0; color: var(--accent);">Cloud Sync History (Logs)</h3>
+                    <button id="btn-load-logs" class="btn btn-outline" style="font-size: 12px; padding: 6px 16px;">Load Sync Logs from Cloud</button>
+                </div>
+                <div id="log-container" class="hidden">
+                    <div id="log-entries" style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 16px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; border: 1px solid var(--border);">
+                        Loading history...
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-top:40px">Raw Manifest Snapshot</h3>
             <pre id="raw-manifest"></pre>
         </div>
     </div>
