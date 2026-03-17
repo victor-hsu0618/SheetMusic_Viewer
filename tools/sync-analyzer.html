@@ -4,99 +4,148 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScoreFlow Sync Integrity Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.5; color: #333; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f7f9; }
-        h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .card { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 20px; margin-bottom: 20px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-box { background: #edf2f7; padding: 15px; border-radius: 6px; text-align: center; }
-        .stat-box .value { font-size: 24px; font-weight: bold; color: #2d3748; }
-        .stat-box .label { font-size: 12px; color: #718096; text-transform: uppercase; }
+        :root {
+            --bg: #030712;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --primary: #6366f1;
+            --accent: #22d3ee;
+            --text: #f9fafb;
+            --text-muted: #9ca3af;
+            --border: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --warn: #f59e0b;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            background-image: radial-gradient(circle at 100% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        th { text-align: left; background: #f8fafc; padding: 10px; border-bottom: 2px solid #e2e8f0; color: #4a5568; }
-        td { padding: 10px; border-bottom: 1px solid #edf2f7; vertical-align: top; }
-        tr:hover { background: #f7fafc; }
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 { font-size: 1.75rem; font-weight: 800; margin: 0; color: #fff; display: flex; align-items: center; gap: 12px; }
+        h1 span { color: var(--primary); }
+
+        .card { 
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px); 
+            border: 1px solid var(--border); 
+            border-radius: 20px; 
+            padding: 32px; 
+            margin-bottom: 24px; 
+        }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 0; }
+        .stat-box { 
+            background: rgba(255, 255, 255, 0.03); 
+            padding: 24px; 
+            border-radius: 16px; 
+            text-align: center; 
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease;
+        }
+        .stat-box:hover { transform: translateY(-4px); background: rgba(255, 255, 255, 0.05); }
+        .stat-box .value { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+        .stat-box .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-top: 20px; font-size: 13px; }
+        th { text-align: left; padding: 12px 16px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
         
-        .status-pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
-        .status-ok { background: #c6f6d5; color: #22543d; }
-        .status-warn { background: #feebc8; color: #744210; }
-        .status-error { background: #fed7d7; color: #822727; }
-        .status-info { background: #bee3f8; color: #2a4365; }
+        td { 
+            padding: 16px; 
+            background: rgba(255, 255, 255, 0.02); 
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle; 
+        }
+        td:first-child { border-left: 1px solid var(--border); border-radius: 12px 0 0 12px; }
+        td:last-child { border-right: 1px solid var(--border); border-radius: 0 12px 12px 0; }
         
-        .diff-tag { font-family: monospace; background: #fefcbf; padding: 1px 4px; border-radius: 3px; font-size: 11px; display: block; margin-top: 2px; }
-        .hash { font-family: monospace; color: #718096; font-size: 11px; }
-        .controls { margin-bottom: 20px; }
-        button { background: #4299e1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #3182ce; }
-        pre { background: #1a202c; color: #a0aec0; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px; max-height: 300px; }
-        .hidden { display: none; }
+        tr:hover td { background: rgba(99, 102, 241, 0.05); border-color: rgba(99, 102, 241, 0.2); }
+
+        .status-pill { 
+            display: inline-block; 
+            padding: 4px 10px; 
+            border-radius: 8px; 
+            font-size: 10px; 
+            font-weight: 800; 
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .status-ok { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .status-warn { background: rgba(245, 158, 11, 0.1); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .status-error { background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .status-info { background: rgba(34, 211, 238, 0.1); color: var(--accent); border: 1px solid rgba(34, 211, 238, 0.2); }
+
+        .diff-tag { font-family: monospace; color: var(--accent); font-size: 11px; margin-top: 4px; display: block; opacity: 0.8; }
+        .hash { font-family: monospace; color: var(--text-muted); font-size: 11px; }
+
+        .controls { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+        
+        .btn { 
+            font-family: inherit;
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 14px;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3); }
+        .btn:active { transform: translateY(0); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
+        .btn-ghost { background: transparent; border: none; color: var(--text-muted); padding: 0; }
+        
+        pre { background: #000; color: #6ee7b7; padding: 20px; border-radius: 12px; overflow-x: auto; font-size: 12px; border: 1px solid var(--border); }
+        .hidden { display: none !important; }
+
+        #drop-zone { 
+            border: 2px dashed var(--primary); 
+            border-radius: 16px; 
+            padding: 32px; 
+            text-align: center; 
+            background: rgba(99, 102, 241, 0.05); 
+            margin-bottom: 20px; 
+            transition: all 0.3s ease; 
+        }
+        textarea { 
+            width: 100%; height: 160px; 
+            background: #000 !important; 
+            color: #fff !important; 
+            border: 1px solid var(--border) !important; 
+            border-radius: 12px !important; 
+            padding: 16px !important; 
+            font-family: monospace; font-size: 13px; margin-top: 20px; 
+        }
     </style>
 </head>
 <body>
-    <h1>🎼 ScoreFlow Sync Integrity Analyzer</h1>
-    <p>此工具將讀取本地 LocalStorage 與 IndexedDB，並與目前快取的雲端 Manifest 進行比對分析。</p>
-
-    <div class="controls">
-        <button id="btn-analyze">Run Analysis (Local Cache)</button>
-        <button id="btn-toggle-external">Load External Manifest (JSON)</button>
-        <button id="btn-export" class="hidden">Export JSON Report</button>
-    </div>
-
-    <div id="external-input-area" class="hidden card">
-        <h3>Load External Manifest JSON</h3>
-        <p style="font-size: 12px; color: #666;">將雲端下載的 cloud_manifest_v2.json <b>拖放到下方框內</b> 或貼上內容：</p>
-        <div id="drop-zone" style="border: 2px dashed #4299e1; border-radius: 8px; padding: 20px; text-align: center; background: #ebf8ff; margin-bottom: 10px; transition: all 0.2s;">
-            <span id="drop-text" style="color: #2b6cb0; font-weight: bold;">Drop manifest file here</span>
-            <textarea id="external-manifest-json" style="width: 100%; height: 150px; font-family: monospace; font-size: 12px; margin-top: 15px; border: 1px solid #cbd5e0; border-radius: 4px;"></textarea>
-        </div>
-        <button id="btn-analyze-external" style="background: #48bb78;">Run Analysis (Against External JSON)</button>
-    </div>
-
-    <div id="results-area" class="hidden">
-        <div class="card">
-            <h3>Summary Statistics</h3>
-            <div class="stats-grid" id="stats-container">
-                <!-- Stats go here -->
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>Detailed Score Analysis</h3>
-            <table id="analysis-table">
-                <thead>
-                    <tr>
-                        <th>Score Info</th>
-                        <th>Sync Status</th>
-                        <th>File Consistency</th>
-                        <th>Timeline (LWW)</th>
-                        <th>Actions Needed</th>
-                    </tr>
-                </thead>
-                <tbody id="analysis-body">
-                    <!-- Rows go here -->
-                </tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <h3>Local Data Management</h3>
-            <p style="font-size: 12px; color: #666;">重建資料庫索引 (score_registry) — 若您的樂譜庫清單消失，但底層數據還在 IndexedDB 中，可使用此工具恢復。</p>
-            <button id="btn-rebuild-registry" style="background: #ed8936;">Rebuild Registry from Storage</button>
-        </div>
-
-        <div class="card">
-            <h3>Cloud Sync Log History</h3>
-            <p style="font-size: 12px; color: #666;">從 Google Drive 讀取最近的同步紀錄 (sync_log.json)。需確保主程式已連線。</p>
-            <button id="btn-load-logs" style="background: #805ad5;">Load Sync Logs from Cloud</button>
-            <div id="log-container" class="hidden" style="margin-top: 15px;">
-                <div id="log-entries" style="max-height: 400px; overflow-y: auto; font-size: 12px; font-family: monospace; background: #1a202c; color: #a0aec0; border-radius: 6px; padding: 10px;">
-                    <!-- Logs go here -->
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
             <h3>Raw Manifest Snapshot</h3>
             <pre id="raw-manifest"></pre>
         </div>

@@ -4,95 +4,134 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScoreFlow JSON Migrator (V1 → V2)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #10b981;
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border: #334155;
+            --bg: #030712;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --primary: #6366f1;
+            --success: #10b981;
+            --text: #f9fafb;
+            --text-muted: #9ca3af;
+            --border: rgba(255, 255, 255, 0.08);
         }
+
+        * { box-sizing: border-box; }
+
         body {
             font-family: 'Inter', -apple-system, sans-serif;
             background: var(--bg);
+            background-image: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 100%);
             color: var(--text);
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 24px;
+            line-height: 1.6;
         }
+
         .container {
-            background: var(--card);
-            padding: 2.5rem;
-            border-radius: 1.5rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 48px;
+            border-radius: 32px;
             border: 1px solid var(--border);
             width: 100%;
-            max-width: 550px;
+            max-width: 580px;
             text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
         }
+
         .back-link {
-            display: block;
-            margin-bottom: 2rem;
+            display: inline-block;
+            margin-bottom: 32px;
             color: var(--text-muted);
             text-decoration: none;
             font-size: 0.9rem;
-            transition: color 0.2s;
+            font-weight: 600;
+            transition: all 0.2s;
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
         }
-        .back-link:hover { color: var(--primary); }
-        h1 { font-size: 1.75rem; margin-bottom: 0.5rem; color: var(--primary); }
-        .version-tag { background: rgba(16, 185, 129, 0.1); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-bottom: 1.5rem; }
-        p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem; }
+        .back-link:hover { color: #fff; background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.2); }
+
+        h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; color: #fff; letter-spacing: -0.02em; }
+        
+        .version-tag { 
+            background: rgba(99, 102, 241, 0.1); 
+            color: var(--primary); 
+            padding: 4px 14px; 
+            border-radius: 100px; 
+            font-size: 11px; 
+            font-weight: 800; 
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: inline-block; 
+            margin-bottom: 24px; 
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        p { color: var(--text-muted); font-size: 1rem; margin-bottom: 32px; }
+
         .drop-zone {
             border: 2px dashed var(--border);
-            padding: 3rem 2rem;
-            margin-bottom: 2rem;
-            border-radius: 1rem;
+            padding: 48px 32px;
+            margin-bottom: 32px;
+            border-radius: 20px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1rem;
+            gap: 16px;
         }
-        .drop-zone:hover { border-color: var(--primary); background: rgba(16, 185, 129, 0.04); transform: scale(1.01); }
-        .drop-zone svg { width: 48px; height: 48px; color: var(--border); transition: color 0.3s; }
-        .drop-zone:hover svg { color: var(--primary); }
-        .hidden { display: none; }
+        .drop-zone:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); transform: translateY(-4px); }
+        .drop-zone svg { width: 56px; height: 56px; color: var(--primary); transition: transform 0.3s; }
+        .drop-zone:hover svg { transform: scale(1.1); }
+        .drop-zone span { font-weight: 700; color: var(--text); }
+        
+        .hidden { display: none !important; }
+        
         .btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 1rem 2rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-weight: 700;
             cursor: pointer;
             width: 100%;
             font-size: 1rem;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3); background: #059669; }
-        #status { margin-top: 1.5rem; font-size: 0.9rem; font-weight: 500; }
-        .success { color: var(--primary); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(99, 102, 241, 0.4); filter: brightness(1.1); }
+        .btn:active { transform: translateY(0); }
+        
+        #status { margin-top: 24px; font-size: 0.95rem; font-weight: 700; }
+        .success { color: var(--success); }
         .error { color: #f43f5e; }
         
         .feature-list {
             text-align: left;
-            margin: 2rem 0;
+            margin: 32px 0;
             font-size: 0.85rem;
             color: var(--text-muted);
-            background: rgba(0,0,0,0.2);
-            padding: 1rem;
-            border-radius: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
         }
-        .feature-list h3 { font-size: 0.9rem; color: var(--text); margin-top: 0; }
-        .feature-list ul { padding-left: 1.25rem; margin-bottom: 0; }
-        .feature-list li { margin-bottom: 0.5rem; }
+        .feature-list h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); margin-top: 0; margin-bottom: 12px; }
+        .feature-list ul { padding-left: 1rem; margin-bottom: 0; }
+        .feature-list li { margin-bottom: 8px; }
     </style>
 </head>
 <body>
