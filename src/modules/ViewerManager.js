@@ -286,35 +286,47 @@ export class ViewerManager {
         if (!fingerprint) return;
         const rawStamps = (await db.get(`stamps_${fingerprint}`)) || []
         const now = Date.now()
+        
+        console.log(`[ViewerManager] loadStamps: Available Sources:`, this.app.sources.map(s => `${s.name}(${s.id})`));
+        
         this.app.stamps = rawStamps.filter(s => !s.deleted).map(s => {
             const sNew = { ...s };
+            
+            // Layer ID Migration (Legacy cleanup)
             if (sNew.layerId === 'performance') sNew.layerId = 'text'
             if (sNew.layerId === 'other' || sNew.layerId === 'anchor' || sNew.layerId === 'layout') sNew.layerId = 'others'
             if (!this.app.layers.find(l => l.id === sNew.layerId)) sNew.layerId = 'draw'
 
-            // Source ID Healing: Map missing or legacy 'p1' to the active source if 'p1' doesn't exist as a source
-            const sourceExists = this.app.sources.find(src => src.id === sNew.sourceId)
-            if (!sNew.sourceId || (sNew.sourceId === 'p1' && !sourceExists)) {
-                sNew.sourceId = this.app.activeSourceId
+            // Aggressive Source ID Healing: 
+            // If the sourceId is missing OR doesn't exist in our known sources, it will be hidden.
+            // We heal it to the active interpretation so it becomes visible.
+            const sourceExists = this.app.sources.some(src => src.id === sNew.sourceId);
+            if (!sNew.sourceId || !sourceExists || sNew.sourceId === 'p1') {
+                const oldId = sNew.sourceId;
+                sNew.sourceId = this.app.activeSourceId;
+                if (oldId && oldId !== sNew.sourceId) {
+                    console.log(`[ViewerManager] Healing stamp ${sNew.id}: source ${oldId} -> ${sNew.sourceId}`);
+                }
             }
             
-            // Critical healing for Cloud Merge support
             if (!sNew.id) sNew.id = `stamp-${now}-${Math.random().toString(36).slice(2, 9)}`;
             if (!sNew.createdAt) sNew.createdAt = now;
             if (!sNew.updatedAt) sNew.updatedAt = now;
             
             return sNew;
         })
+        
         console.log(`[ViewerManager] loadStamps: Parsed ${this.app.stamps.length} stamps for ${fingerprint.slice(0, 8)}`);
         if (this.app.stamps.length > 0) {
+            const first = this.app.stamps[0];
             console.log(`[ViewerManager] First stamp:`, {
-                id: this.app.stamps[0].id,
-                type: this.app.stamps[0].type,
-                page: this.app.stamps[0].page,
-                sourceId: this.app.stamps[0].sourceId,
-                layerId: this.app.stamps[0].layerId,
-                x: this.app.stamps[0].x,
-                y: this.app.stamps[0].y
+                id: first.id,
+                type: first.type,
+                page: first.page,
+                sourceId: first.sourceId,
+                layerId: first.layerId,
+                x: first.x,
+                y: first.y
             });
         }
     }

@@ -547,10 +547,13 @@ export class DriveSyncManager {
                 remoteData.stamps.forEach(remoteS => {
                     if (!remoteS.id) return;
                     const t = remoteS.type || remoteS.stampType || 'unknown';
+                const newByType = {};
+                remoteData.stamps.forEach(remoteS => {
                     const localS = localMap.get(remoteS.id);
                     if (!localS) {
                         localMap.set(remoteS.id, remoteS);
                         newCount++;
+                        const t = remoteS.type || 'unknown';
                         newByType[t] = (newByType[t] || 0) + 1;
                     } else if (remoteS.updatedAt > (localS.updatedAt || 0)) {
                         localMap.set(remoteS.id, remoteS);
@@ -563,9 +566,10 @@ export class DriveSyncManager {
                     needsSave = true;
                     if (newCount > 0) {
                         const typeStr = Object.entries(newByType).map(([t, n]) => `${t}×${n}`).join(', ');
-                        bgChanges.push(`+${newCount} annotation(s) [${typeStr}]`);
+                        bgChanges.push(`+${newCount} stamp(s) [${typeStr}]`);
+                        console.log(`[DriveSync] Pulled ${newCount} new stamps for ${fingerprint}: ${typeStr}`);
                     }
-                    if (updCount > 0) bgChanges.push(`updated ${updCount} annotation(s)`);
+                    if (updCount > 0) bgChanges.push(`updated ${updCount} stamp(s)`);
                 }
             }
 
