@@ -132,10 +132,12 @@ export class DocActionManager {
             section: data.metadata?.section || 'Unknown'
         })
 
-        // Add stamps with remapped sourceId
+        // Add stamps with remapped sourceId and refreshed timestamps to ensure they sync to cloud
+        const now = Date.now();
         const remappedStamps = data.stamps.map(s => ({
             ...s,
-            sourceId: newSourceId
+            sourceId: newSourceId,
+            updatedAt: now
         }))
         this.app.stamps.push(...remappedStamps)
 
@@ -152,7 +154,13 @@ export class DocActionManager {
     async overwriteProject(data) {
         this.app.sources = data.sources || this.app.sources
         this.app.layers = data.layers || this.app.layers
-        this.app.stamps = data.stamps || []
+        
+        // Refresh timestamps to ensure pulled data dominates local sync state
+        const now = Date.now();
+        this.app.stamps = (data.stamps || []).map(s => ({
+            ...s,
+            updatedAt: now
+        }))
         
         // Update Metadata
         if (data.metadata && this.app.scoreDetailManager) {
