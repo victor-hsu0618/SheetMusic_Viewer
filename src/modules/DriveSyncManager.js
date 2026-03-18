@@ -379,14 +379,7 @@ export class DriveSyncManager {
                 }
             }
 
-            // 5. Execute PULL/PUSH
-            // Manual sync or background scan can both trigger pulls
-            if (canPull && entry?.syncId) {
-                console.log(`[DriveSync] ↓ Pulling cloud data for "${targetTitle}"...`);
-                const pulledVer = await this.pullBackground(fingerprint, entry.syncId);
-                return pulledVer || true; 
-            }
-
+            // 5. Execute PUSH only — Drive is backup-only, never pull annotations back.
             if (needsPush) {
                 // LOCK during push to prevent background batch overlapping with manual/timer sync
                 if (this._pushLocks.has(fingerprint)) return;
@@ -1170,50 +1163,17 @@ export class DriveSyncManager {
                 const remoteData = await this.getFileContent(fileId);
                 let shouldPush = false;
 
-                if (remoteData && remoteData.version > (this.lastProfileSyncTime || 0)) {
-                    // 0. Sync GitHub token — pull from Drive if local is missing
-                    if (remoteData.githubToken && !localStorage.getItem('scoreflow_github_token')) {
-                        localStorage.setItem('scoreflow_github_token', remoteData.githubToken);
-                        if (this.app.gistShareManager) this.app.gistShareManager._token = remoteData.githubToken;
-                        console.log('[DriveSync] GitHub token synced from Drive.');
-                    }
-
-                    // 1. Merge Profile (LWW)
+                // Drive is backup-only: never pull profile, setlists, annotations, or text library back.
+                // Only determine if local data is newer to trigger a push.
+                if (remoteData) {
                     const remoteProfile = remoteData.profile;
-                    if (remoteProfile && (remoteProfile.updatedAt || 0) > (localProfile.updatedAt || 0)) {
-                        console.log('[DriveSync] Merging newer remote profile...');
-                        Object.assign(this.app.profileManager.data, remoteProfile);
-                        this.app.profileManager.save();
-                        this.app.profileManager.render();
-                    } else if (remoteProfile && (localProfile.updatedAt || 0) > (remoteProfile.updatedAt || 0)) {
+                    if (!remoteProfile || (localProfile.updatedAt || 0) > (remoteProfile.updatedAt || 0)) {
                         shouldPush = true;
                     }
-
-                    // 2. Merge Custom Text Library
-                    if (Array.isArray(remoteData.userTextLibrary)) {
-                        const localSet = new Set(this.app.userTextLibrary);
-                        let hasNewText = false;
-                        remoteData.userTextLibrary.forEach(text => {
-                            if (!localSet.has(text)) {
-                                this.app.userTextLibrary.push(text);
-                                localSet.add(text);
-                                hasNewText = true;
-                            }
-                        });
-                        if (hasNewText) {
-                            this.app.saveToStorage();
-                            if (this.app.toolManager) this.app.toolManager.updateActiveTools();
-                        }
-                    }
-
-                    // 3. Setlists — Drive is backup-only, never sync back to local.
-                    // Only check if local is newer than last push (to trigger a push).
                     if (Array.isArray(remoteData.setlists) && this.app.setlistManager) {
                         this.app.setlistManager.setlists.forEach(ls => {
                             const rs = remoteData.setlists.find(s => s.id === ls.id);
-                            if (!rs || (ls.updatedAt || 0) > (rs.updatedAt || 0)) {
-                                shouldPush = true;
-                            }
+                            if (!rs || (ls.updatedAt || 0) > (rs.updatedAt || 0)) shouldPush = true;
                         });
                     }
                 } else {
