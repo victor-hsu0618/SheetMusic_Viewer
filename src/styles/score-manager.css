@@ -302,34 +302,56 @@
 
 .library-grid {
     flex: 1;
-    padding: 24px 36px;
+    padding: 0; /* Header handles padding */
     padding-bottom: 100px;
-    /* Space for floating batch action bar at bottom */
     display: flex;
     flex-direction: column;
-    gap: 3px; /* Tight spacing like file manager */
     overflow-y: auto;
 }
 
-.score-card {
-    background: rgba(var(--bg-card-rgb), 0.05); /* Soft tint */
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    display: flex;
+.library-grid-header {
+    display: grid;
+    grid-template-columns: 44px 36px 1fr 100px 50px 44px;
     align-items: center;
-    height: 44px; /* Highly compact file-manager feel */
-    min-height: 44px;
-    flex-shrink: 0;
+    padding: 0 12px;
+    height: 36px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(var(--bg-card-rgb), 0.9);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.header-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.score-card {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 44px 36px 1fr 100px 50px 44px;
+    align-items: center;
+    height: 40px;
+    min-height: 40px;
     padding: 0 12px;
     position: relative;
-    transition: all 0.2s ease;
+    transition: background 0.15s ease;
 }
 
 .score-card:hover {
-    background: rgba(var(--primary-rgb), 0.05);
-    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .score-card.selected {
@@ -338,19 +360,17 @@
 }
 
 .score-thumb {
-    width: 28px; /* Compact icon size */
-    height: 28px;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.02);
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.03);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 14px;
     overflow: hidden;
-    position: relative;
     flex-shrink: 0;
-    margin-right: 12px;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .score-thumb img {
@@ -361,19 +381,11 @@
 
 /* Numerical Index Badge */
 .score-index-badge {
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    background: #35354a;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 10px;
-    font-weight: 800;
-    padding: 2px 6px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    z-index: 12;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.5;
+    text-align: left;
 }
 
 .score-card:hover .score-index-badge {
@@ -382,49 +394,38 @@
     border-color: rgba(255, 255, 255, 0.3);
 }
 
-.selection-mode .score-index-badge {
-    left: 28px;
+/* Mini Selection Indicator for Grid */
+.selection-indicator-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
 }
 
-/* Selection Indicator */
-.selection-indicator {
-    position: absolute;
-    top: 50%;
-    left: -8px;
-    transform: translateY(-50%);
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    background: rgba(0, 0, 0, 0.2);
+.selection-indicator-mini {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--text-muted);
+    opacity: 0.5;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    z-index: 11;
+    transition: all 0.2s;
+    background: rgba(0,0,0,0.1);
 }
 
-.selection-mode .selection-indicator {
-    opacity: 1;
-    left: 12px;
+.selection-indicator-mini svg {
+    display: none;
+    color: white;
 }
 
-.selection-mode .score-thumb {
-    margin-left: 32px;
-}
-
-.score-card.selected .selection-indicator {
+.selection-indicator-mini.selected {
     background: var(--primary);
     border-color: var(--primary);
     opacity: 1;
 }
 
-.selection-indicator svg {
-    display: none;
-    color: white;
-}
-
-.score-card.selected .selection-indicator svg {
+.selection-indicator-mini.selected svg {
     display: block;
 }
 
@@ -444,45 +445,59 @@
 }
 
 .cloud-sync-status.pinned {
-    color: #ef4444; /* Standard pin red */
-    background: rgba(239, 68, 68, 0.1);
+    color: #10b981;
+    font-size: 14px;
 }
 
 .cloud-sync-status.cached {
     color: var(--text-muted);
-    opacity: 0.4;
+    opacity: 0.35;
 }
 
-.cloud-sync-status.cached:hover {
-    opacity: 1;
-    color: var(--primary);
-}
-
-
-.cloud-sync-status.pinned {
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
-    border-color: rgba(16, 185, 129, 0.4);
-    font-size: 13px;
+.cloud-sync-status.not-synced {
+    opacity: 0.8;
 }
 
 /* Info button */
 .score-info-btn {
-    color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.07);
-    border-radius: 8px;
+    color: var(--text-muted);
+    opacity: 0.4;
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: 12px;
-    flex-shrink: 0;
+    border-radius: 6px;
+    transition: all 0.2s;
 }
 
 .score-info-btn:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.18);
+    opacity: 1;
+    color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.1);
+}
+
+.score-title-cell, .score-composer-cell, .score-time-cell, .score-status-cell, .score-action-cell {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding: 0 8px;
+}
+
+.score-time-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+/* Hide some columns on mobile */
+@media (max-width: 600px) {
+    .library-grid-header, .score-card {
+        grid-template-columns: 40px 32px 1fr 44px;
+    }
+    .col-composer, .col-time {
+        display: none !important;
+    }
 }
 
 /* Score info content */

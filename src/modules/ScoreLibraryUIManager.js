@@ -10,7 +10,7 @@ export class ScoreLibraryUIManager {
         const diff = now - timestamp;
         const mins = Math.floor(diff / 60000);
         const hours = Math.floor(mins / 60);
-        const days = Math.floor(hours / 24);
+        const days = Math.floor(mins / (60 * 24)); // Corrected calculation for days
 
         if (mins < 1) return 'Just now';
         if (mins < 60) return `${mins}m ago`;
@@ -28,6 +28,19 @@ export class ScoreLibraryUIManager {
             this.manager.grid.innerHTML = '<div class="library-empty">Your library is empty. Import a PDF to begin.</div>';
             return;
         }
+
+        // Add Header Row
+        const header = document.createElement("div");
+        header.className = "library-grid-header";
+        header.innerHTML = `
+            <div class="header-item col-select">#</div>
+            <div class="header-item col-icon"></div>
+            <div class="header-item col-title">Piece Title</div>
+            <div class="header-item col-time">Last Viewed</div>
+            <div class="header-item col-status">Status</div>
+            <div class="header-item col-action"></div>
+        `;
+        this.manager.grid.appendChild(header);
 
         // Sort and Filter
         let sorted = [...this.manager.registry]
@@ -89,31 +102,37 @@ export class ScoreLibraryUIManager {
                 storageBadge = `<div class="cloud-sync-status cached clickable" title="Cached locally — tap to pin">📍</div>`;
             }
 
-            // Add selection indicator if in selection mode
-            const selectionIndicator = this.manager.isSelectionMode ? `
-                <div class="selection-indicator">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+            const cellSelect = this.manager.isSelectionMode ? `
+                <div class="col-select selection-indicator-cell">
+                    <div class="selection-indicator-mini ${this.manager.selectedFingerprints.has(score.fingerprint) ? 'selected' : ''}">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
                 </div>
-            ` : '';
+            ` : `<div class="col-select score-index-badge">#${index + 1}</div>`;
 
             card.innerHTML = `
-                ${selectionIndicator}
-                <div class="score-index-badge">#${index + 1}</div>
-                <div class="score-thumb">${thumbContent}</div>
-                <div class="score-info">
-                    <div class="score-meta-row">
-                        <span class="score-title">${displayTitle}</span>
-                        <span class="score-meta-separator">·</span>
-                        <span class="score-composer">${score.composer || "Unknown"}</span>
-                    </div>
-                    <div class="score-time-info" style="font-size: 11px; opacity: 0.6; margin-top: 4px;">
-                        ${timeInfo}
+                ${cellSelect}
+                <div class="col-icon score-thumb">${thumbContent}</div>
+                <div class="col-title score-title-cell">
+                    <span class="score-title" title="${displayTitle}">${displayTitle}</span>
+                </div>
+                <div class="col-time score-time-cell">
+                    <span class="score-time-text">${this.formatRelativeTime(score.lastAccessed)}</span>
+                </div>
+                <div class="col-status score-status-cell">
+                    ${storageBadge}
+                </div>
+                <div class="col-action score-action-cell">
+                    <div class="score-info-btn" title="More Actions">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
                     </div>
                 </div>
-                ${storageBadge}
-                <div class="score-info-btn" title="Score Details">ℹ️</div>
             `;
 
             card.querySelector('.score-info-btn').onclick = (e) => {
