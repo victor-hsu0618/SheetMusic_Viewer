@@ -186,7 +186,15 @@
 
     <!-- LOGIN -->
     <div id="screen-login">
-        <div class="login-card">
+        <!-- No-key banner (shown when sf_supabase_anon_key is missing) -->
+        <div id="no-key-banner" class="login-card hidden" style="text-align:center;">
+            <div style="font-size:3rem;margin-bottom:16px;">🔑</div>
+            <h2 style="margin-bottom:8px;">Connection Required</h2>
+            <p style="margin-bottom:24px;">No Supabase key found. Please visit <strong>Network &amp; Auth</strong> first to set up your connection credentials, then return here.</p>
+            <a href="network-auth.html" class="btn btn-primary btn-full" style="text-decoration:none;display:block;text-align:center;">Go to Network &amp; Auth →</a>
+        </div>
+        <!-- Normal login form -->
+        <div id="login-form-card" class="login-card hidden">
             <h2>My Score Library</h2>
             <p>Sign in to manage your scores, collections, and backups.</p>
             <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"></div>
@@ -476,7 +484,11 @@ let addToMode='collection'; // 'collection' or 'setlist'
 // ═══ Init ═══
 async function init() {
     fillGenreSelects();
-    if (!SUPABASE_ANON) { showLoginError('No Supabase key. Visit Network & Auth tool first.'); return; }
+    if (!SUPABASE_ANON) {
+        document.getElementById('no-key-banner').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('login-form-card').classList.remove('hidden');
     sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     const {data:{session}} = await sbClient.auth.getSession();
     if (session?.user) { currentUser=session.user; showApp(); }
@@ -487,7 +499,7 @@ document.getElementById('btn-login').onclick = async () => {
     const email=document.getElementById('login-email').value.trim();
     const pwd=document.getElementById('login-password').value;
     if (!email||!pwd) { showLoginError('Enter email and password.'); return; }
-    if (!sbClient) { if(!SUPABASE_ANON){showLoginError('No key. Visit Network & Auth first.');return;} sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON); }
+    if (!sbClient) { sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON); }
     const btn=document.getElementById('btn-login');
     btn.disabled=true; btn.textContent='Signing in…';
     const {error}=await sbClient.auth.signInWithPassword({email,password:pwd});
