@@ -64,6 +64,21 @@ export class InputManager {
             const key = e.key.toLowerCase()
             const code = e.code
 
+            // 0. Undo / Redo (Cmd+Z / Cmd+Shift+Z / Cmd+Y)
+            if (e.metaKey || e.ctrlKey) {
+                if (key === 'z') {
+                    e.preventDefault()
+                    if (e.shiftKey) this.app.redo()
+                    else this.app.undo()
+                    return
+                }
+                if (key === 'y') {
+                    e.preventDefault()
+                    this.app.redo()
+                    return
+                }
+            }
+
             // 1. Zoom Control (Meta+ / Ctrl+ / +/-)
             if (e.metaKey || e.ctrlKey) {
                 if (key === '=' || key === '+' || code === 'Equal' || code === 'NumpadAdd') {

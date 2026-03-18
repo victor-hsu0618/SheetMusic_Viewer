@@ -827,12 +827,48 @@
 .color-picker-ribbon {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.02);
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.preset-group {
+    display: flex;
+    gap: 4px;
+    margin-left: auto; /* Push to the right */
+    padding-left: 12px;
+    border-left: 1px solid var(--border);
+}
+
+.preset-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preset-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+
+.preset-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
 }
 
 .color-swatch {

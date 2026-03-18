@@ -255,6 +255,34 @@
             <p class="hint">這會影響所有圖章的基礎大小。通常設定為 1.0x。iPad Pro 建議 1.0x - 1.2x 之間以獲得最佳比例。</p>
         </div>
 
+        <div class="card">
+            <div class="section-title">工具預設 (Tool Presets S/M/L)</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                <div class="preset-edit-group">
+                    <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Small (S)</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="number" step="0.1" id="preset-s" style="width: 60px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 8px; border-radius: 8px; color: white;" onchange="updatePreset('S', this.value)">
+                        <span style="font-size: 12px; color: var(--text-muted);">x</span>
+                    </div>
+                </div>
+                <div class="preset-edit-group">
+                    <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Medium (M)</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="number" step="0.1" id="preset-m" style="width: 60px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 8px; border-radius: 8px; color: white;" onchange="updatePreset('M', this.value)">
+                        <span style="font-size: 12px; color: var(--text-muted);">x</span>
+                    </div>
+                </div>
+                <div class="preset-edit-group">
+                    <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Large (L)</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="number" step="0.1" id="preset-l" style="width: 60px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 8px; border-radius: 8px; color: white;" onchange="updatePreset('L', this.value)">
+                        <span style="font-size: 12px; color: var(--text-muted);">x</span>
+                    </div>
+                </div>
+            </div>
+            <p class="hint">定義 Stamp Panel 中的 S/M/L 快速按鈕對應的縮放倍率。</p>
+        </div>
+
         <div id="calibration-area">
             <!-- Dynamically populated -->
         </div>
@@ -327,6 +355,7 @@
 
         let multiplier = 1.0;
         let overrides = {};
+        let presets = { S: 0.7, M: 1.0, L: 1.6 };
 
         function init() {
             // Load from localStorage
@@ -337,9 +366,14 @@
             if (storedOverrides) overrides = JSON.parse(storedOverrides);
 
             // Update Global UI
-            const multInput = document.getElementById('global-multiplier');
-            multInput.value = multiplier;
             updateGlobalLabel(multiplier);
+
+            // Load Presets
+            const storedPresets = localStorage.getItem('scoreflow_preset_scales');
+            if (storedPresets) presets = JSON.parse(storedPresets);
+            document.getElementById('preset-s').value = presets.S;
+            document.getElementById('preset-m').value = presets.M;
+            document.getElementById('preset-l').value = presets.L;
 
             // Populate calibration list
             const area = document.getElementById('calibration-area');
@@ -443,6 +477,10 @@
             updateIndividual(id, defaultSize);
         }
 
+        function updatePreset(key, val) {
+            presets[key] = parseFloat(val);
+        }
+
         function findTool(id) {
             for (const set of TOOLSETS) {
                 const t = set.tools.find(x => x.id === id);
@@ -507,6 +545,7 @@
         function saveAll() {
             localStorage.setItem('scoreflow_stamp_size_multiplier', multiplier);
             localStorage.setItem('scoreflow_stamp_size_overrides', JSON.stringify(overrides));
+            localStorage.setItem('scoreflow_preset_scales', JSON.stringify(presets));
             
             showToast();
         }

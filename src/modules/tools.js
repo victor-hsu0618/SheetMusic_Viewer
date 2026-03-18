@@ -417,9 +417,15 @@ export class ToolManager {
                 btn.innerHTML = this.getIcon(tool, 30)
                 btn.onclick = (e) => {
                     e.stopPropagation()
-                    this.app.activeStampType = tool.id
-                    this.updateActiveTools()
-                    this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
+                    if (tool.id === 'undo') {
+                        this.app.undo()
+                    } else if (tool.id === 'redo') {
+                        this.app.redo()
+                    } else {
+                        this.app.activeStampType = tool.id
+                        this.updateActiveTools()
+                        this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
+                    }
                 }
                 recentRibbon.appendChild(btn)
             })
@@ -470,8 +476,8 @@ export class ToolManager {
             this.renderSettingsPanel()
         } else {
             // Color Picker & Tools Grid: Only show these in normal tool selection mode
-            this.renderColorPicker()
             this.renderToolsGrid()
+            this.renderColorPicker()
         }
         // 3. Category & Control Ribbon (FILTER OUT 'Edit')
         if (this.app.activeStampType !== "settings" && this.app.activeStampType !== "recycle-bin") {
@@ -587,6 +593,30 @@ export class ToolManager {
         }
         ribbon.appendChild(resetBtn)
 
+        // 5. Preset Selector (S/M/L) - Fills the right side
+        const presetContainer = document.createElement("div")
+        presetContainer.className = "preset-group"
+
+        const presets = [
+            { label: 'S', size: this.app.presetScales?.S || 0.7 },
+            { label: 'M', size: this.app.presetScales?.M || 1.0 },
+            { label: 'L', size: this.app.presetScales?.L || 1.6 }
+        ]
+
+        presets.forEach(p => {
+            const btn = document.createElement("button")
+            const isActive = Math.abs((this.app.activeToolPreset || 1.0) - p.size) < 0.05
+            btn.className = `preset-btn ${isActive ? "active" : ""}`
+            btn.textContent = p.label
+            btn.onclick = (e) => {
+                e.stopPropagation()
+                this.app.updateActiveToolPreset(p.size)
+                this.updateActiveTools()
+            }
+            presetContainer.appendChild(btn)
+        })
+
+        ribbon.appendChild(presetContainer)
         this.app.activeToolsContainer.appendChild(ribbon)
     }
 

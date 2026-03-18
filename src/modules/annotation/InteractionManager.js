@@ -360,7 +360,7 @@ export class InteractionManager {
                     isInteracting = false;
                     this.app.isInteracting = false;
                 }
-            } else if (['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen'].includes(toolType)) {
+            } else if (['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(toolType)) {
                 const toolDef = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === toolType);
                 activeObject = {
                     type: toolType, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
@@ -369,7 +369,8 @@ export class InteractionManager {
                     dashed: toolDef?.draw?.dashed || false,
                     arrow: toolDef?.draw?.arrow || false,
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
-                    createdAt: Date.now(), updatedAt: Date.now()
+                    createdAt: Date.now(), updatedAt: Date.now(),
+                    userScale: this.app.activeToolPreset || 1.0
                 };
                 if (toolType === 'slur') activeObject.curvature = -0.28;
                 isInteracting = true;
@@ -397,7 +398,8 @@ export class InteractionManager {
                     page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
                     x: fPos.x, y: fPos.y, color: this.app.activeColor, data: null,
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
-                    createdAt: Date.now(), updatedAt: Date.now()
+                    createdAt: Date.now(), updatedAt: Date.now(),
+                    userScale: this.app.activeToolPreset || 1.0
                 };
                 const group = this.app.toolsets.find(g => g.tools.some(t => t.id === toolType));
                 if (group) {
@@ -616,7 +618,10 @@ export class InteractionManager {
                         return;
                     } else {
                         activeObject.updatedAt = Date.now();
-                        if (!isMovingExisting && activeObject.type !== 'view') this.app.stamps.push(activeObject);
+                        if (!isMovingExisting && activeObject.type !== 'view') {
+                            this.app.stamps.push(activeObject);
+                            this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(activeObject)) });
+                        }
                         if (activeObject.type === 'anchor') this.app.updateRulerMarks();
                         await this.app.saveToStorage(true);
 
@@ -755,7 +760,7 @@ export class InteractionManager {
                     if (canvas) {
                         this.app.redrawStamps(pageNum);
                         const layer = this.app.layers.find(l => l.id === 'draw');
-                        this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, { type: toolType, x: pPos.x, y: pPos.y, page: pageNum }, layer?.color || '#000', true, false, false, pos);
+                        this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, { type: toolType, x: pPos.x, y: pPos.y, page: pageNum, userScale: this.app.activeToolPreset || 1.0 }, layer?.color || '#000', true, false, false, pos);
                     }
                 }
             }

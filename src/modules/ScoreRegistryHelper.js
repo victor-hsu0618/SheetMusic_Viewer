@@ -162,8 +162,9 @@ export class ScoreRegistryHelper {
     }
 
     async rebuildLibrary() {
+        if (!confirm('Rebuild library will scan all local PDF buffers and recreate your registry index. Proceed?')) return;
+        this.app.showMessage('Scanning IndexedDB for orphan files...', 'system');
         console.log('[ScoreRegistryHelper] Rebuilding library from IndexedDB buffers...');
-        this.app.showMessage('Rebuilding library...', 'system');
         
         try {
             // Get all keys from DB using a helper if available, or brute force prefix
@@ -201,14 +202,16 @@ export class ScoreRegistryHelper {
             this.manager.registry = newRegistry;
             await this.saveRegistry(this.manager.registry);
             this.manager.render();
-            this.app.showMessage(`Library rebuilt: ${newRegistry.length} score(s) recovered.`, 'success');
-            console.log(`[ScoreRegistryHelper] Rebuild complete. ${newRegistry.length} entries.`);
+            
+            console.log('[ScoreRegistryHelper] ✓ REBUILD: Success. Restoration complete.');
+            this.app.showMessage(`Library rebuilt! ${newRegistry.length} scores recovered. 🧩`, 'success');
         } catch (err) {
-            console.error('[ScoreRegistryHelper] Rebuild failed:', err);
+            console.error('[ScoreRegistryHelper] ❌ Error rebuilding library:', err);
             this.app.showMessage('Rebuild failed: ' + err.message, 'error');
         }
     }
     async healLibrary() {
+        this.app.showMessage('Healing metadata and fix titles...', 'system');
         console.log('[ScoreRegistryHelper] 🏥 Healing Library Registry & Purging Thumbnails...');
         let changed = false;
 
@@ -249,15 +252,17 @@ export class ScoreRegistryHelper {
         }
 
         if (changed) {
+            console.log('[ScoreRegistryHelper] ✓ HEAL: Successfully repaired and purged library index.');
+            this.app.showMessage('Metadata fixed and thumbnails purged! 🧼', 'success');
             await this.saveRegistry(this.manager.registry);
-            this.app.showMessage('Library metadata healed and synchronized.', 'success');
-            // Sync up the healed data to Supabase
-            if (this.app.supabaseManager?.user) {
+            this.manager.render();
+            
+            // SYNC TO CLOUD: If we healed, ensure cloud gets update too!
+            if (this.app.supabaseManager) {
                 await this.app.supabaseManager.syncScoreRegistry(this.manager.registry);
             }
-            this.manager.render();
         } else {
-            console.log('[ScoreRegistryHelper] No mismatches found.');
+            this.app.showMessage('Your library is already healthy. ✨', 'info');
         }
     }
 }

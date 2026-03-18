@@ -93,6 +93,13 @@ class ScoreFlow {
     this.stamps = []
     this.toolsets = TOOLSETS
     this.scoreStampScale = 1.0
+    this.activeToolPreset = 1.0 // S/M/L preset for the active tool
+    this.presetScales = JSON.parse(localStorage.getItem('scoreflow_preset_scales')) || { S: 0.7, M: 1.0, L: 1.6 }
+    
+    // Undo/Redo History
+    this.history = []
+    this.redoStack = []
+    
     this.stampOffsetTouchY = 50
     this.stampOffsetTouchX = -30
     this.stampOffsetMouseY = 25
@@ -335,6 +342,12 @@ class ScoreFlow {
     this.saveToStorage()
   }
 
+  updateActiveToolPreset(val) {
+      this.activeToolPreset = parseFloat(val) || 1.0
+      // Redraw only for PREVIEW purpose of the current tool
+      if (this.annotationManager) this.annotationManager.redrawAllAnnotationLayers()
+  }
+
   updateScoreStampScale(val) {
     this.scoreStampScale = parseFloat(val) || 1.0
     if (this.scoreDetailManager) {
@@ -343,6 +356,54 @@ class ScoreFlow {
     }
     if (this._redrawTimer) cancelAnimationFrame(this._redrawTimer)
     this._redrawTimer = requestAnimationFrame(() => { this.redrawAllAnnotationLayers(); this._redrawTimer = null })
+  }
+
+  pushHistory(action) {
+    this.history.push(action)
+    if (this.history.length > 50) this.history.shift()
+    this.redoStack = []
+  }
+
+  async undo() {
+    if (this.history.length === 0) return
+    const action = this.history.pop()
+    this.redoStack.push(action)
+    
+    if (action.type === 'add') {
+      const idx = this.stamps.findIndex(s => s.id === action.obj.id)
+      if (idx !== -1) {
+        const removed = this.stamps.splice(idx, 1)[0]
+        if (this.supabaseManager) this.supabaseManager.deleteAnnotation(removed.id)
+      }
+    } else if (action.type === 'delete') {
+      this.stamps.push(action.obj)
+      if (this.supabaseManager) this.supabaseManager.saveAnnotation(action.obj)
+    }
+    
+    await this.saveToStorage(true)
+    this.redrawAllAnnotationLayers()
+    if (this.onAnnotationChanged) this.onAnnotationChanged()
+  }
+
+  async redo() {
+    if (this.redoStack.length === 0) return
+    const action = this.redoStack.pop()
+    this.history.push(action)
+    
+    if (action.type === 'add') {
+      this.stamps.push(action.obj)
+      if (this.supabaseManager) this.supabaseManager.saveAnnotation(action.obj)
+    } else if (action.type === 'delete') {
+      const idx = this.stamps.findIndex(s => s.id === action.obj.id)
+      if (idx !== -1) {
+        const removed = this.stamps.splice(idx, 1)[0]
+        if (this.supabaseManager) this.supabaseManager.deleteAnnotation(removed.id)
+      }
+    }
+    
+    await this.saveToStorage(true)
+    this.redrawAllAnnotationLayers()
+    if (this.onAnnotationChanged) this.onAnnotationChanged()
   }
 
   showMessage(msg, type = 'info') { this.uiManager.showMessage(msg, type) }

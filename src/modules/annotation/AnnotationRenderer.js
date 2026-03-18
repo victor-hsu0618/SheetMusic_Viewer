@@ -161,14 +161,25 @@ export class AnnotationRenderer {
         }
 
         const pageFactor = this.app.pageScales[path.page] || 1.0
+        const globalMultiplier = this.app.stampSizeMultiplier || 1.0;
+        const individualScale = path.userScale || 1.0;
+        
         if (path.type && path.type.includes('highlighter')) {
             const baseColor = path.color || '#fde047'
             ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : baseColor + '2D')
-            ctx.lineWidth = (isHovered ? 18 : 14) * (this.app.scale / 1.5) * pageFactor
+            ctx.lineWidth = (isHovered ? 18 : 14) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
         } else {
             ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
-            ctx.lineWidth = (path.type === 'line' ? 1.2 : 1.8) * (this.app.scale / 1.5) * pageFactor
-            if (isHovered) ctx.lineWidth *= 1.5 // Make path thicker when hovered
+            let baseWidth = (path.type === 'line' ? 1.2 : 1.8);
+            if (path.type === 'bracket-left' || path.type === 'bracket-right') baseWidth = 3.0;
+            ctx.lineWidth = baseWidth * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            if (isHovered) ctx.lineWidth *= 1.5 
+        }
+
+        // Transparency for brackets
+        const oldAlpha = ctx.globalAlpha;
+        if (path.type === 'bracket-left' || path.type === 'bracket-right') {
+            ctx.globalAlpha = 0.6;
         }
 
         const startX = path.points[0].x * canvas.width
@@ -208,6 +219,32 @@ export class AnnotationRenderer {
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.quadraticCurveTo(cx, cy, x2, y2);
+        } else if ((path.type === 'bracket-left' || path.type === 'bracket-right') && path.points.length >= 2) {
+            const p1 = path.points[0];
+            const p2 = path.points[path.points.length - 1];
+            const x1 = p1.x * canvas.width, y1 = p1.y * canvas.height;
+            const x2 = p2.x * canvas.width, y2 = p2.y * canvas.height;
+
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            // Perpendicular vector for caps
+            const capLen = 12 * (this.app.scale / 1.5) * pageFactor * individualScale;
+            // For bracket-left, cap points "inward" (right if drawing top-down)
+            // For bracket-right, cap points "inward" (left if drawing top-down)
+            const side = path.type === 'bracket-left' ? -1 : 1;
+            const px = -(dy / dist) * capLen * side;
+            const py = (dx / dist) * capLen * side;
+
+            ctx.beginPath();
+            // Start cap
+            ctx.moveTo(x1 + px, y1 + py);
+            ctx.lineTo(x1, y1);
+            // Main spine
+            ctx.lineTo(x2, y2);
+            // End cap
+            ctx.lineTo(x2 + px, y2 + py);
         } else {
             ctx.beginPath()
             ctx.moveTo(startX, startY)
@@ -219,6 +256,7 @@ export class AnnotationRenderer {
             }
         }
         ctx.stroke()
+        ctx.globalAlpha = oldAlpha;
 
         // 矢印の描画 (Arrowhead rendering)
         if (path.arrow && path.points.length >= 2) {
@@ -328,13 +366,14 @@ export class AnnotationRenderer {
         const pageFactor = this.app.pageScales[stamp.page] || 1.0
         const userMultiplier = this.app.stampSizeMultiplier || 1.0
         const scoreMultiplier = this.app.scoreStampScale || 1.0
+        const individualScale = stamp.userScale || 1.0
         
         // Unified Scale Factor (Standardizing on zoom=1.5 as base)
-        const globalScale = (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier;
+        const globalScale = (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale;
         
         // Final pixel size for paths/shapes
         const size = toolSize * globalScale;
-        
+
         // textScale is now simply the global multiplier, so d.size * textScale = final pixels
         const textScale = globalScale;
 
@@ -384,7 +423,7 @@ export class AnnotationRenderer {
         const finalColor = isHovered ? '#ef4444' : (isSelectHovered ? '#6366f1' : color)
         ctx.strokeStyle = finalColor
         ctx.fillStyle = isHovered ? '#ef444444' : (isSelectHovered ? '#6366f133' : `${color}33`)
-        ctx.lineWidth = (isHovered ? 3.5 : 2.2) * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier
+        ctx.lineWidth = (isHovered ? 3.5 : 2.2) * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 

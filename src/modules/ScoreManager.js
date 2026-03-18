@@ -40,7 +40,6 @@ export class ScoreManager {
 
         await this.helper.migrateLegacyData();
         this.helper.migrateFallbackFingerprints();
-        await this.helper.healLibrary();
         this.initLibraryHeader();
         this.initBatchBar();
         this.initSearch();
@@ -690,6 +689,10 @@ export class ScoreManager {
 
     async rebuildLibrary() {
         await this.helper.rebuildLibrary();
+    }
+
+    async healLibrary() {
+        await this.helper.healLibrary();
     }
 
     toggleSelectionMode(val) {

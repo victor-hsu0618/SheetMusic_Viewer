@@ -37,7 +37,9 @@ export const TOOLSETS = [
             { id: 'down-bow', label: 'Down', icon: '<path d="M8 17 L8 10 L16 10 L16 17" fill="none" stroke="currentColor" stroke-width="1.6" />', draw: { type: 'path', data: 'M -0.25 0.3 L -0.25 -0.3 L 0.25 -0.3 L 0.25 0.3', size: 15, strokeWidth: 1.6, fill: 'none' } },
             { id: 'f1', label: '1', icon: '<text x="12" y="17" font-family="Outfit" font-weight="300" text-anchor="middle" fill="currentColor" stroke="none">1</text>', draw: { type: 'text', content: '1', font: '300', size: 20 } },
             { id: 'cycle', label: 'Cycle', icon: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="21 3 21 8 16 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' },
-            { id: 'eraser', label: 'Eraser', icon: '<path d="M16.5 4.5 L19.5 7.5 L9 18 L4.5 18 L4.5 13.5 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="15" y2="10.5" stroke="currentColor" stroke-width="1.6"/><line x1="4.5" y1="18" x2="19.5" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' }
+            { id: 'eraser', label: 'Eraser', icon: '<path d="M16.5 4.5 L19.5 7.5 L9 18 L4.5 18 L4.5 13.5 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="15" y2="10.5" stroke="currentColor" stroke-width="1.6"/><line x1="4.5" y1="18" x2="19.5" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
+            { id: 'undo', label: 'Undo', icon: '<path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20v-7a4 4 0 0 0-4-4H4" fill="none" stroke="currentColor" stroke-width="2"/>' },
+            { id: 'redo', label: 'Redo', icon: '<path d="M15 14l5-5-5-5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20v-7a4 4 0 0 1 4-4h12" fill="none" stroke="currentColor" stroke-width="2"/>' }
         ]
     },
     {
@@ -55,7 +57,9 @@ export const TOOLSETS = [
             { id: 'highlighter-blue', label: 'H.Blue', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#1d4ed8" opacity="0.3" stroke="#1d4ed8" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#1d4ed8" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#1d4ed8' } },
             { id: 'highlighter-green', label: 'H.Green', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#15803d" opacity="0.3" stroke="#15803d" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#15803d" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#15803d' } },
             { id: 'line', label: 'Line', row: 2, icon: '<line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2" />' },
-            { id: 'slur', label: 'Slur', row: 2, icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />' }
+            { id: 'slur', label: 'Slur', row: 2, icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />', draw: { type: 'path' } },
+            { id: 'bracket-left', label: '[', row: 2, icon: '<path d="M15 5 L9 5 L9 19 L15 19" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'path' } },
+            { id: 'bracket-right', label: ']', row: 2, icon: '<path d="M9 5 L15 5 L15 19 L9 19" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'path' } }
         ]
     },
     {
@@ -127,8 +131,8 @@ export const TOOLSETS = [
         ]
     },
     {
-        name: 'Layout',
-        type: 'layout',
+        name: 'Others',
+        type: 'others',
         tools: [
             { id: 'copy', label: 'Copy', icon: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>' },
             { id: 'cloak-black', label: '黑斗篷', icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#374151" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="1" fill="#374151"/><circle cx="14" cy="10" r="1" fill="#374151"/>' },

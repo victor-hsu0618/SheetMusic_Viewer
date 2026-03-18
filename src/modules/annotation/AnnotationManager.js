@@ -148,6 +148,7 @@ export class AnnotationManager {
         const page = stamp.page
         const idx = this.app.stamps.indexOf(stamp)
         if (idx === -1) return
+        this.app.pushHistory({ type: 'delete', obj: JSON.parse(JSON.stringify(stamp)) })
         this.app.stamps.splice(idx, 1)
         if (stamp.type === 'anchor' || stamp.type === 'measure' || stamp.type === 'measure-free') this.app.updateRulerMarks()
         this.app.hoveredStamp = null
@@ -912,8 +913,10 @@ export class AnnotationManager {
                 data,
                 draw,
                 createdAt: now,
-                updatedAt: now
+                updatedAt: now,
+                userScale: this.app.activeToolPreset || 1.0
             })
+            this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(this.app.stamps[this.app.stamps.length - 1])) })
 
         if (type === 'anchor' || type === 'measure' || type === 'measure-free') {
             this.app.updateRulerMarks()
