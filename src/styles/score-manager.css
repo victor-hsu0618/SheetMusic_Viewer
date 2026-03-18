@@ -307,7 +307,7 @@
     /* Space for floating batch action bar at bottom */
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 3px; /* Tight spacing like file manager */
     overflow-y: auto;
 }
 
@@ -319,10 +319,10 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    height: 60px; /* Reduced for file list feel */
-    min-height: 60px;
+    height: 44px; /* Highly compact file-manager feel */
+    min-height: 44px;
     flex-shrink: 0;
-    padding: 0 16px;
+    padding: 0 12px;
     position: relative;
     transition: all 0.2s ease;
 }
@@ -338,10 +338,10 @@
 }
 
 .score-thumb {
-    width: 36px; /* Smaller icon size */
-    height: 36px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.03);
+    width: 28px; /* Compact icon size */
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.02);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -349,7 +349,7 @@
     overflow: hidden;
     position: relative;
     flex-shrink: 0;
-    margin-right: 16px;
+    margin-right: 12px;
     border: 1px solid var(--border);
 }
 
@@ -503,8 +503,8 @@
 }
 
 .score-title {
-    font-weight: 600;
-    font-size: 15px;
+    font-weight: 500;
+    font-size: 14px;
     color: var(--text-main);
     white-space: nowrap;
     overflow: hidden;

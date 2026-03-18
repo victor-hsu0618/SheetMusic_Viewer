@@ -359,11 +359,12 @@ export class SetlistManager {
             row.draggable = true
             row.dataset.index = index
             row.style.cssText = `
-                display: flex; align-items: center; padding: 15px;
-                background: rgba(255,255,255,0.05); border-radius: 8px;
-                border: 1px solid rgba(255,255,255,0.1);
-                transition: transform 0.2s, opacity 0.2s, background 0.15s;
-                ${!isDeleted ? 'cursor: pointer;' : ''}
+                display: flex; align-items: center; padding: 6px 12px;
+            background: rgba(255,255,255,0.03); border-radius: 6px;
+            margin-bottom: 2px;
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: transform 0.2s, opacity 0.2s, background 0.15s;
+            ${!isDeleted ? 'cursor: pointer;' : ''}
             `
             if (!isDeleted) {
                 row.addEventListener('mouseenter', () => { row.style.background = 'rgba(255,255,255,0.1)' })

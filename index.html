@@ -500,9 +500,9 @@
             <span>Back</span>
           </button>
           <h3 id="setlist-detail-title" style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;"></h3>
-          <button id="btn-setlist-add-score" class="btn btn-primary btn-mini-inline" style="margin-right: 15px;">⊕ Add Score</button>
+          <button id="btn-setlist-add-score" class="btn btn-primary btn-mini-inline" style="margin-right: 12px; flex-shrink: 0;">⊕ Add Score</button>
         </div>
-        <div id="setlist-detail-list" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 20px 20px 100px;">
+        <div id="setlist-detail-list" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 20px 20px 100px;">
           <!-- Render drag-and-drop score rows here -->
         </div>
       </div>
@@ -693,7 +693,7 @@
           <div class="tab-divider"></div>
           <div class="tab-section-label">Maintenance</div>
           <button id="btn-reload-app" class="btn btn-outline btn-full btn-smaller mb-10">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
             Reload App
           </button>
 
@@ -1308,7 +1308,6 @@
             <span id="stats-system-count" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">0</span>
           </div>
           <div class="stats-item-tiny" style="display: flex; flex-direction: column; flex: 2;">
-            <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Author</span>
             <span id="stats-author" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</span>
           </div>
         </div>
@@ -1381,10 +1380,13 @@
         </div>
 
         <div class="tab-divider"></div>
-        <div class="tab-section-label">Supabase Cloud Sync</div>
+        <div class="tab-section-label">Cloud Synchronization</div>
+        <div class="flex-row-center gap-10 mb-10">
+          <button id="btn-force-push-drive" class="btn btn-outline-sm w-full" title="Sync current score to Google Drive now">Sync to Drive</button>
+          <button id="btn-force-push-supabase" class="btn btn-outline-sm w-full" title="Sync current score to Supabase now">Sync to Supabase</button>
+        </div>
         <div class="flex-row-center gap-10 mb-15">
-          <button id="btn-force-push-supabase" class="btn btn-outline-sm w-full" title="Force Push to Supabase">Force Push to Cloud</button>
-          <button id="btn-force-pull-supabase" class="btn btn-outline-sm w-full" title="Force Pull from Supabase">Force Pull from Cloud</button>
+          <button id="btn-force-pull-supabase" class="btn btn-outline-sm w-full" title="Force Pull from Supabase Cloud">Pull from Cloud</button>
         </div>
 
         <div class="tab-divider"></div>

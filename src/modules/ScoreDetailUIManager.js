@@ -57,6 +57,7 @@ export class ScoreDetailUIManager {
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
         document.getElementById('btn-reset-score-all')?.addEventListener('click', () => this.manager.handleResetAll())
         document.getElementById('btn-force-push-supabase')?.addEventListener('click', () => this.manager.handleForcePushSupabase())
+        document.getElementById('btn-force-push-drive')?.addEventListener('click', () => this.manager.handleForcePushDrive())
         document.getElementById('btn-force-pull-supabase')?.addEventListener('click', () => this.manager.handleForcePullSupabase())
 
 

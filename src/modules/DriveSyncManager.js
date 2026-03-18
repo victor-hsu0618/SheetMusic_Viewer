@@ -665,7 +665,7 @@ export class DriveSyncManager {
             bookmarks,
             sources: (fp === this.app.pdfFingerprint) ? (this.app.sources || []) : (await db.get(`sources_${fp}`)) || [],
             layers: (fp === this.app.pdfFingerprint) ? (this.app.layers || []) : (await db.get(`layers_${fp}`)) || [],
-            scoreDetail,
+            scoreDetail: await this.app.scoreDetailManager?.getMetadata(fp) || {},
             version: Date.now(),
             fingerprint: fp,
             dateImported: score?.dateImported || 0
