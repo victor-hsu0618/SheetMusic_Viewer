@@ -490,9 +490,8 @@ export class DriveAuthManager {
     }
 
     startAutoSync() {
-        this.stopAutoSync();
-        this.sync.syncTimer = setInterval(() => this.sync.sync(), this.sync.syncInterval);
-
+        // Continuous background sync timer removed as per user request to use only manual/direct sync.
+        // We still perform a one-off sync when initialization completes.
         if (!this.sync.isSyncing) {
             this.sync.sync();
         }

@@ -219,7 +219,8 @@ export class DriveSyncManager {
                 }
             }
 
-            await this.syncBatch();
+            // Background batching removed as per user request to disable background sync
+            // await this.syncBatch();
 
         } catch (err) {
             console.error('[DriveSync] Sync failed:', err);
@@ -294,48 +295,7 @@ export class DriveSyncManager {
         }
     }
 
-    async syncBatch() {
-        if (!this.app.scoreManager?.registry) return;
-
-        let workDone = false;
-        let processedCount = 0;
-        const activeFp = this.app.pdfFingerprint;
-
-        for (const score of this.app.scoreManager.registry) {
-            if (score.fingerprint === activeFp) continue;
-
-            const fp = score.fingerprint;
-            const entry = this.manifest[fp];
-
-            // --- SKIP: Tombstoned scores ---
-            if (entry?.deleted) continue;
-
-            if (!entry && score.isCloudOnly) continue;
-
-            const isGeneric = !score.title || score.title === 'Unknown' || score.title.includes('score_buf_');
-            const neverPulled = score.isCloudOnly && !score.cloudDataPulled;
-            const hasUpdate = entry && (entry.updated || 0) > (score.lastPulledVersion || 0);
-
-            const needsPull = !!(entry && entry.syncId) && (isGeneric || neverPulled || hasUpdate);
-            const needsPush = !score.isCloudOnly && !score.isSynced;
-            const needsPDF = !score.isCloudOnly && (!entry || !entry.pdfId);
-
-            if (needsPull || needsPush || needsPDF) {
-                processedCount++;
-                if (processedCount > 5) break;
-
-                workDone = true;
-                console.log(`[Sync] Background processing score: ${score.title || fp.slice(0,8)}... (Reason: Pull=${needsPull}, Push=${needsPush}, PDF=${needsPDF})`);
-
-                await this.syncScore(fp, needsPDF, needsPull, needsPush);
-                await new Promise(r => setTimeout(r, 800));
-            }
-        }
-
-        if (workDone) {
-            console.log(`[Sync] Background batch finished. Processed ${processedCount} items.`);
-        }
-    }
+    // syncBatch() method removed to disable background synchronization of non-active scores.
 
     async syncScore(fingerprint, needsPDF, canPull, needsPush) {
         try {
