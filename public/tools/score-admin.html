@@ -458,6 +458,7 @@ const db = {
     _open() { return new Promise((res,rej)=>{const r=indexedDB.open('ScoreFlowStorage',1);r.onupgradeneeded=()=>r.result.createObjectStore('store');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}); },
     async get(k) { const d=await this._open(); return new Promise((res,rej)=>{const q=d.transaction('store','readonly').objectStore('store').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);}); },
     async set(k,v) { const d=await this._open(); return new Promise((res,rej)=>{const tx=d.transaction('store','readwrite');tx.objectStore('store').put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);}); },
+    async remove(k) { const d=await this._open(); return new Promise((res,rej)=>{const tx=d.transaction('store','readwrite');tx.objectStore('store').delete(k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);}); },
     async getAllKeys() { const d=await this._open(); return new Promise((res,rej)=>{const q=d.transaction('store','readonly').objectStore('store').getAllKeys();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);}); },
     async clear() { const d=await this._open(); return new Promise((res,rej)=>{const tx=d.transaction('store','readwrite');tx.objectStore('store').clear();tx.oncomplete=res;tx.onerror=()=>rej(tx.error);}); }
 };
