@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Score Admin | ScoreFlow</title>
+    <title>My Library | ScoreFlow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -11,1252 +11,837 @@
     <script src="theme-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .admin-wrap { max-width: 1400px; margin: 0 auto; padding: 32px 20px; }
+        .wrap { max-width: 1340px; margin: 0 auto; padding: 28px 20px; }
 
-        /* Config */
-        .config-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-        .input-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 240px; }
-        .input-group label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
-        input[type=text], input[type=email], input[type=password] { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px; width: 100%; }
-        .badge-admin { background: rgba(239,68,68,.15); color: #ef4444; border: 1px solid rgba(239,68,68,.3); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
-        .badge-user { background: rgba(99,102,241,.15); color: #818cf8; border: 1px solid rgba(99,102,241,.3); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+        /* ── Auth ── */
+        .login-card { max-width: 420px; margin: 80px auto; background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 40px; }
+        .login-card h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; }
+        .login-card p  { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; }
+        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .field label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+        .field input, .field select { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: inherit; font-size: 13px; width: 100%; box-sizing: border-box; }
+        .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.2); }
 
-        /* Buttons */
-        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; transition: all .15s; }
+        /* ── Buttons ── */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; transition: all .15s; white-space: nowrap; }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-primary:hover { opacity: .85; }
-        .btn-danger { background: var(--danger); color: #fff; }
-        .btn-danger:hover { opacity: .85; }
+        .btn-success { background: rgba(16,185,129,.15); color: #10b981; border: 1px solid rgba(16,185,129,.3); }
+        .btn-success:hover { background: rgba(16,185,129,.25); }
+        .btn-danger  { background: rgba(239,68,68,.12);  color: #ef4444; border: 1px solid rgba(239,68,68,.25); }
+        .btn-danger:hover  { background: rgba(239,68,68,.22); }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
         .btn-outline:hover { background: rgba(255,255,255,.06); color: var(--text); }
-        .btn-sm { padding: 4px 10px; font-size: 11px; }
+        .btn-sm  { padding: 4px 10px; font-size: 11px; }
+        .btn-icon { padding: 5px 8px; font-size: 13px; border-radius: 6px; }
         .btn:disabled { opacity: .4; cursor: not-allowed; }
+        .btn-full { width: 100%; justify-content: center; padding: 11px 16px; font-size: 13px; box-sizing: border-box; }
 
-        /* Debug Console */
-        .debug-console { background: #000; color: #6b7280; padding: 10px 14px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; height: 80px; overflow-y: auto; border: 1px solid #1f2937; margin-bottom: 20px; }
-
-        /* Tab Nav */
-        .tab-nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; flex-wrap: wrap; }
+        /* ── Tabs ── */
+        .tab-nav { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 24px; flex-wrap: wrap; }
         .tab-btn { padding: 10px 16px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
         .tab-btn:hover { color: var(--text); }
         .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
 
-        /* Stat Cards */
-        .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
-        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
-        .stat-card .val { font-size: 26px; font-weight: 800; }
-        .stat-card .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; }
+        /* ── Toolbar ── */
+        .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+        .search-input { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; color: var(--text); font-family: inherit; font-size: 12px; width: 200px; }
+        .search-input:focus { outline: none; border-color: var(--primary); }
+        .filter-pill { padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); background: transparent; transition: all .15s; }
+        .filter-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .tool-select { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; color: var(--text); font-family: inherit; font-size: 12px; cursor: pointer; }
+        .tool-select:focus { outline: none; }
 
-        /* Table */
+        /* ── Alphabet Index ── */
+        .alpha-bar { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 10px; }
+        .alpha-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-muted); transition: all .12s; }
+        .alpha-btn:hover { background: rgba(255,255,255,.06); color: var(--text); }
+        .alpha-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .alpha-btn.has-scores { color: var(--text); border-color: rgba(255,255,255,.2); }
+
+        /* ── Table ── */
         .table-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
         th { text-align: left; padding: 10px 14px; background: rgba(255,255,255,.03); border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
-        td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+        th.sortable { cursor: pointer; user-select: none; }
+        th.sortable:hover { color: var(--text); }
+        th.sort-asc::after  { content: ' ↑'; color: var(--primary); }
+        th.sort-desc::after { content: ' ↓'; color: var(--primary); }
+        td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
         tr:last-child td { border-bottom: none; }
         tr:hover td { background: rgba(255,255,255,.02); }
+        .row-selected td { background: rgba(99,102,241,.06) !important; }
+        .row-detail td { background: rgba(0,0,0,.15) !important; padding: 12px 14px; }
+        .row-detail { display: none; }
+        .row-detail.open { display: table-row; }
 
-        /* Inline Edit */
-        .editable { cursor: text; border-radius: 4px; padding: 2px 4px; min-width: 60px; outline: none; }
-        .editable:focus { background: rgba(99,102,241,.15); box-shadow: 0 0 0 1px var(--primary); }
-        .editable.saving { opacity: .5; }
-        .editable.saved { background: rgba(16,185,129,.2); transition: background .5s; }
-        .editable.error { background: rgba(239,68,68,.2); }
+        /* ── Inline Edit ── */
+        .editable { cursor: text; border-radius: 6px; padding: 4px 6px; outline: none; display: block; width: 100%; background: transparent; border: 1px solid transparent; font-family: inherit; font-size: 12px; color: var(--text); transition: all .15s; box-sizing: border-box; }
+        .editable:hover { background: rgba(255,255,255,.04); border-color: var(--border); }
+        .editable:focus { background: rgba(99,102,241,.1); border-color: var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,.2); }
+        .editable.saving { opacity: .5; pointer-events: none; }
+        .editable.saved  { background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.3); }
+        .editable.error  { background: rgba(239,68,68,.12);  border-color: rgba(239,68,68,.3); }
+        .cat-select { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 5px; font-family: inherit; font-size: 11px; color: var(--text); width: 100%; cursor: pointer; }
+        .cat-select:hover { background: rgba(255,255,255,.04); border-color: var(--border); }
+        .cat-select:focus { outline: none; background: rgba(99,102,241,.1); border-color: var(--primary); }
 
-        /* Toolbar row */
-        .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
-        .search-input { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; color: var(--text); font-family: inherit; font-size: 12px; width: 220px; }
-        .filter-pill { padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); background: transparent; transition: all .15s; }
-        .filter-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        /* ── Tag Chips ── */
+        .tag-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.25); color: #a78bfa; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 600; }
+        .tag-chip .remove-tag { cursor: pointer; opacity: .6; font-size: 11px; line-height: 1; }
+        .tag-chip .remove-tag:hover { opacity: 1; }
+        .tag-editor { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+        .tag-input { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; color: var(--text); font-family: inherit; font-size: 11px; width: 120px; }
+        .tag-input:focus { outline: none; border-color: var(--primary); }
 
-        /* Status Pills */
+        /* ── Status Pills ── */
         .pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        .pill-green { background: rgba(16,185,129,.12); color: #10b981; border: 1px solid rgba(16,185,129,.25); }
-        .pill-red { background: rgba(239,68,68,.12); color: #ef4444; border: 1px solid rgba(239,68,68,.25); }
-        .pill-amber { background: rgba(245,158,11,.12); color: #f59e0b; border: 1px solid rgba(245,158,11,.25); }
-        .pill-gray { background: rgba(255,255,255,.07); color: var(--text-muted); border: 1px solid var(--border); }
-        .pill-blue { background: rgba(56,189,248,.12); color: #38bdf8; border: 1px solid rgba(56,189,248,.25); }
+        .pill-green  { background: rgba(16,185,129,.12); color: #10b981; border: 1px solid rgba(16,185,129,.25); }
+        .pill-amber  { background: rgba(245,158,11,.12);  color: #f59e0b; border: 1px solid rgba(245,158,11,.25); }
+        .pill-gray   { background: rgba(255,255,255,.07); color: var(--text-muted); border: 1px solid var(--border); }
+        .pill-blue   { background: rgba(56,189,248,.12);  color: #38bdf8; border: 1px solid rgba(56,189,248,.25); }
+        .pill-purple { background: rgba(167,139,250,.12); color: #a78bfa; border: 1px solid rgba(167,139,250,.25); }
+        .pill-red    { background: rgba(239,68,68,.12);   color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+        .pill-teal   { background: rgba(20,184,166,.12);  color: #2dd4bf; border: 1px solid rgba(20,184,166,.25); }
+        .pill-orange { background: rgba(249,115,22,.12);  color: #fb923c; border: 1px solid rgba(249,115,22,.25); }
+        .pill-cyan   { background: rgba(6,182,212,.12);   color: #22d3ee; border: 1px solid rgba(6,182,212,.25); }
+        .pill-rose   { background: rgba(244,63,94,.12);   color: #fb7185; border: 1px solid rgba(244,63,94,.25); }
+        .pill-lime   { background: rgba(132,204,22,.12);  color: #a3e635; border: 1px solid rgba(132,204,22,.25); }
+        .pill-sky    { background: rgba(14,165,233,.12);  color: #38bdf8; border: 1px solid rgba(14,165,233,.25); }
 
-        /* Quota Bar */
-        .quota-bar-wrap { margin: 12px 0; }
-        .quota-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+        /* ── Dashboard ── */
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; }
+        .stat-card .val { font-size: 2rem; font-weight: 800; line-height: 1; }
+        .stat-card .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-top: 6px; }
+
+        /* ── Quota Bar ── */
+        .quota-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
+        .quota-label { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; }
+        .plan-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; background: rgba(99,102,241,.15); color: #818cf8; border: 1px solid rgba(99,102,241,.3); }
         .quota-bar-bg { height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
-        .quota-bar-fill { height: 100%; border-radius: 99px; transition: width .4s; }
+        .quota-bar-fill { height: 100%; border-radius: 99px; background: var(--primary); transition: width .5s; }
+        .quota-bar-fill.warn { background: #f59e0b; }
+        .quota-bar-fill.crit { background: #ef4444; }
 
-        /* Setlist Cards */
-        .setlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-        .setlist-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-        .setlist-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
-        .setlist-scores { list-style: none; margin: 8px 0; }
-        .setlist-scores li { font-size: 11px; color: var(--text-muted); padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.04); display: flex; align-items: center; gap: 6px; }
-        .setlist-scores li:last-child { border-bottom: none; }
+        /* ── Collection / Setlist Cards ── */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+        .coll-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; cursor: default; }
+        .coll-card-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .coll-card-hd h3 { font-size: 14px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .coll-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .coll-scores-list { list-style: none; margin: 0; padding: 0; }
+        .coll-scores-list li { font-size: 11px; color: var(--text-muted); padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+        .coll-scores-list li:last-child { border-bottom: none; }
 
-        /* Section Header */
+        /* ── Modal ── */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 480px; max-width: 100%; max-height: 85vh; overflow-y: auto; }
+        .modal h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 20px; }
+        .modal-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: transparent; margin-bottom: 6px; font-family: inherit; color: var(--text); font-size: 13px; font-weight: 600; width: 100%; text-align: left; transition: all .12s; }
+        .modal-option:hover { background: rgba(99,102,241,.1); border-color: var(--primary); }
+        .modal-row { display: flex; gap: 8px; margin-top: 12px; }
+        .modal-row input, .modal-row select { flex: 1; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: inherit; font-size: 12px; }
+        .modal-row input:focus, .modal-row select:focus { outline: none; border-color: var(--primary); }
+
+        /* ── Import Modal ── */
+        .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: all .2s; margin-bottom: 16px; color: var(--text-muted); }
+        .drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: rgba(99,102,241,.06); color: var(--text); }
+        .progress-card { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-top: 12px; font-size: 12px; }
+        .progress-bar-bg { height: 4px; background: rgba(255,255,255,.08); border-radius: 99px; margin-top: 8px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width .3s; }
+
+        /* ── Section Header ── */
         .section-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-        .section-hd h2 { font-size: 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+        .section-hd h2 { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
 
-        /* Lock Overlay */
-        .lock-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; color: var(--text-muted); }
-        .lock-card .lock-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        /* ── Backup ── */
+        .backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .backup-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; }
+        .backup-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 14px; }
+        .btn-row { display: flex; flex-direction: column; gap: 8px; }
 
-        /* Mono */
-        .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-
-        /* Code Block */
-        .code-block { background: #0a0f1e; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #a5b4fc; white-space: pre; overflow-x: auto; margin: 8px 0 16px 0; }
-
-        /* Checkbox */
+        /* ── Misc ── */
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); }
+        .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); font-size: 13px; }
+        .empty-state .icon { font-size: 2rem; margin-bottom: 12px; }
+        .count-tag { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+        .hidden { display: none !important; }
         input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: var(--primary); }
 
-        .hidden { display: none !important; }
-        .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+        @media (max-width: 700px) { .backup-grid { grid-template-columns: 1fr; } .search-input { width: 100%; } }
     </style>
 </head>
 <body>
-<div class="admin-wrap">
-
-    <!-- Header -->
-    <nav style="display:flex; gap:16px; margin-bottom:20px; align-items:center;">
-        <a href="index.html" style="text-decoration:none; color:var(--primary); font-weight:700; font-size:13px; opacity:.8;">← Dev Hub</a>
-        <a href="../index.html" style="text-decoration:none; color:var(--text-muted); font-weight:600; font-size:13px; opacity:.6;">🏠 ScoreFlow</a>
-        <span style="margin-left:auto;" id="admin-badge"></span>
+<div class="wrap">
+    <nav style="display:flex;gap:16px;margin-bottom:20px;align-items:center;">
+        <a href="index.html" style="text-decoration:none;color:var(--primary);font-weight:700;font-size:13px;opacity:.8;">← Dev Hub</a>
+        <a href="../index.html" style="text-decoration:none;color:var(--text-muted);font-weight:600;font-size:13px;opacity:.6;">🏠 ScoreFlow</a>
+        <span id="user-badge" style="margin-left:auto;font-size:12px;color:var(--text-muted);"></span>
+        <button class="btn btn-outline btn-sm hidden" id="btn-signout">Sign Out</button>
     </nav>
-    <h1 style="font-size:1.8rem; font-weight:800; margin-bottom:4px;">Score Admin Panel</h1>
-    <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Manage scores, setlists, storage, users and backups.</p>
 
-    <!-- Config -->
-    <div class="config-card">
-        <div class="input-group">
-            <label>Supabase URL</label>
-            <input type="text" id="sb-url" value="https://tanoqdnqtxqxerwcbdlf.supabase.co">
+    <!-- LOGIN -->
+    <div id="screen-login">
+        <div class="login-card">
+            <h2>My Score Library</h2>
+            <p>Sign in to manage your scores, collections, and backups.</p>
+            <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"></div>
+            <div class="field"><label>Password</label><input type="password" id="login-password" autocomplete="current-password"></div>
+            <div id="login-error" style="font-size:12px;color:#ef4444;margin-bottom:12px;display:none;"></div>
+            <button class="btn btn-primary btn-full" id="btn-login">Sign In</button>
         </div>
-        <div class="input-group">
-            <label>Anon Key</label>
-            <input type="password" id="sb-anon">
-        </div>
-        <div class="input-group">
-            <label>Service Role Key <span style="color:var(--danger);font-size:9px;">(Users tab only — keep secret)</span></label>
-            <input type="password" id="sb-service">
-        </div>
-        <button class="btn btn-primary" id="btn-connect">Connect</button>
     </div>
 
-    <!-- Login -->
-    <div id="login-section" class="config-card hidden">
-        <div class="input-group"><label>Email</label><input type="email" id="login-email"></div>
-        <div class="input-group"><label>Password</label><input type="password" id="login-password"></div>
-        <button class="btn btn-primary" id="btn-login">Sign In</button>
-    </div>
+    <!-- APP -->
+    <div id="screen-app" class="hidden">
+        <h1 style="font-size:1.6rem;font-weight:800;margin-bottom:2px;">My Score Library</h1>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;" id="welcome-line"></p>
 
-    <!-- Debug Log -->
-    <div id="debug-log" class="debug-console">Waiting for connection...</div>
-
-    <!-- Main Panel -->
-    <div id="admin-panel" class="hidden">
         <div class="tab-nav">
             <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
-            <button class="tab-btn" data-tab="scores">🎼 Scores</button>
+            <button class="tab-btn" data-tab="library">🎼 My Scores</button>
+            <button class="tab-btn" data-tab="collections">📚 Collections</button>
             <button class="tab-btn" data-tab="setlists">📋 Setlists</button>
             <button class="tab-btn" data-tab="storage">💾 Storage</button>
-            <button class="tab-btn" data-tab="users">👥 Users</button>
             <button class="tab-btn" data-tab="backup">🗄️ Backup</button>
-            <button class="tab-btn" data-tab="repair">🔧 Repair</button>
         </div>
 
-        <!-- ═══ DASHBOARD ═══ -->
+        <!-- DASHBOARD -->
         <div id="panel-dashboard" class="tab-panel active">
-            <div class="stat-row" id="dash-stats">
-                <div class="stat-card"><div class="val" id="d-scores">—</div><div class="lbl">Cloud Scores</div></div>
-                <div class="stat-card"><div class="val" id="d-local">—</div><div class="lbl">Local Scores</div></div>
-                <div class="stat-card"><div class="val" id="d-storage">—</div><div class="lbl">Storage Used</div></div>
+            <div class="dash-grid">
+                <div class="stat-card"><div class="val" id="d-total">—</div><div class="lbl">Total Scores</div></div>
+                <div class="stat-card"><div class="val" id="d-synced">—</div><div class="lbl">Cloud Synced</div></div>
+                <div class="stat-card"><div class="val" id="d-pdf">—</div><div class="lbl">With PDF</div></div>
+                <div class="stat-card"><div class="val" id="d-colls">—</div><div class="lbl">Collections</div></div>
                 <div class="stat-card"><div class="val" id="d-setlists">—</div><div class="lbl">Setlists</div></div>
-                <div class="stat-card"><div class="val" id="d-annots">—</div><div class="lbl">Annotations</div></div>
+                <div class="stat-card"><div class="val" id="d-storage">—</div><div class="lbl">Storage Used</div></div>
             </div>
-            <div id="dash-quota-section" style="margin-bottom:20px;"></div>
-            <div id="dash-alerts"></div>
+            <div id="dash-quota"></div>
+            <div id="dash-genre-breakdown" style="margin-bottom:20px;"></div>
+            <div id="dash-recent"></div>
         </div>
 
-        <!-- ═══ SCORES ═══ -->
-        <div id="panel-scores" class="tab-panel">
+        <!-- LIBRARY -->
+        <div id="panel-library" class="tab-panel">
             <div class="toolbar">
-                <input type="text" class="search-input" id="score-search" placeholder="Search title / composer / filename…">
+                <input type="text" class="search-input" id="score-search" placeholder="Search title, composer, tags…">
                 <button class="filter-pill active" data-filter="all">All</button>
-                <button class="filter-pill" data-filter="cloud">Cloud</button>
-                <button class="filter-pill" data-filter="local">Local only</button>
-                <button class="filter-pill" data-filter="nopdf">No PDF</button>
-                <span style="margin-left:auto;display:flex;gap:8px;">
-                    <button class="btn btn-outline btn-sm" id="btn-select-all">Select All</button>
-                    <button class="btn btn-danger btn-sm" id="btn-bulk-delete" disabled>Delete Selected</button>
-                    <button class="btn btn-outline btn-sm" id="btn-export-csv">Export CSV</button>
-                    <button class="btn btn-outline btn-sm" id="btn-refresh-scores">↻ Refresh</button>
+                <button class="filter-pill" data-filter="cloud">Synced</button>
+                <button class="filter-pill" data-filter="pdf">Has PDF</button>
+                <button class="filter-pill" data-filter="local">Local Only</button>
+                <span style="margin-left:auto;display:flex;gap:6px;">
+                    <button class="btn btn-primary btn-sm" id="btn-import-score">＋ Import Score</button>
+                    <button class="btn btn-outline btn-sm" id="btn-group-composer">By Composer</button>
+                    <button class="btn btn-outline btn-sm" id="btn-refresh-lib">↻ Refresh</button>
                 </span>
             </div>
-            <div class="table-wrap">
-                <table>
-                    <thead><tr>
-                        <th style="width:30px;"><input type="checkbox" id="chk-all"></th>
-                        <th style="width:22%;">Title</th>
-                        <th style="width:14%;">Composer</th>
-                        <th style="width:18%;">Filename</th>
-                        <th style="width:10%;">Fingerprint</th>
-                        <th style="width:8%;">PDF</th>
-                        <th style="width:10%;">Last Accessed</th>
-                        <th style="width:8%;">Mode</th>
-                        <th>Actions</th>
-                    </tr></thead>
-                    <tbody id="scores-tbody"></tbody>
-                </table>
+            <div class="toolbar">
+                <select class="tool-select" id="sort-select">
+                    <option value="title-asc">Title A → Z</option>
+                    <option value="title-desc">Title Z → A</option>
+                    <option value="composer-asc">Composer A → Z</option>
+                    <option value="composer-desc">Composer Z → A</option>
+                    <option value="accessed-desc">Recently Accessed</option>
+                    <option value="accessed-asc">Oldest Access</option>
+                </select>
+                <select class="tool-select" id="genre-filter"><option value="">All Genres</option></select>
+                <select class="tool-select" id="collection-filter"><option value="">All Collections</option></select>
+                <span style="margin-left:auto;display:flex;gap:6px;">
+                    <button class="btn btn-outline btn-sm" id="btn-select-all">Select All</button>
+                    <button class="btn btn-success btn-sm hidden" id="btn-add-to">Add to…</button>
+                    <button class="btn btn-danger btn-sm" id="btn-bulk-delete" disabled>Delete Selected</button>
+                    <button class="btn btn-outline btn-sm" id="btn-export-csv">↓ CSV</button>
+                </span>
             </div>
-            <div id="scores-count" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></div>
+            <div class="alpha-bar" id="alpha-bar"></div>
+            <div id="lib-view"></div>
+            <div class="count-tag" id="lib-count"></div>
         </div>
 
-        <!-- ═══ SETLISTS ═══ -->
+        <!-- COLLECTIONS -->
+        <div id="panel-collections" class="tab-panel">
+            <div class="section-hd">
+                <h2>My Collections (樂譜庫類別)</h2>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-outline btn-sm" id="btn-new-collection">＋ New Collection</button>
+                    <button class="btn btn-outline btn-sm" id="btn-refresh-colls">↻ Refresh</button>
+                </div>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">Collections organize your library into categories (e.g. "Concert Repertoire", "Teaching Material"). Different from Setlists — collections are permanent folders, not performance orders.</p>
+            <div id="collections-grid" class="card-grid"></div>
+        </div>
+
+        <!-- SETLISTS -->
         <div id="panel-setlists" class="tab-panel">
             <div class="section-hd">
-                <h2>Local Setlists (IndexedDB)</h2>
-                <button class="btn btn-outline btn-sm" id="btn-refresh-setlists">↻ Refresh</button>
+                <h2>Local Setlists</h2>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-outline btn-sm" id="btn-new-setlist">＋ New Setlist</button>
+                    <button class="btn btn-outline btn-sm" id="btn-refresh-setlists">↻ Refresh</button>
+                </div>
             </div>
-            <div id="setlist-local-grid" class="setlist-grid"></div>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">Setlists are ordered lists of scores for specific performances or rehearsals.</p>
+            <div id="setlist-local-grid" class="card-grid"></div>
             <hr class="divider">
             <div class="section-hd">
-                <h2>Cloud Setlists (Supabase)</h2>
+                <h2>Cloud Setlists</h2>
                 <button class="btn btn-outline btn-sm" id="btn-push-setlists">↑ Push Local → Cloud</button>
             </div>
-            <div id="setlist-cloud-grid" class="setlist-grid"></div>
+            <div id="setlist-cloud-grid" class="card-grid"></div>
         </div>
 
-        <!-- ═══ STORAGE ═══ -->
+        <!-- STORAGE -->
         <div id="panel-storage" class="tab-panel">
-            <div id="storage-quota-section" style="margin-bottom:20px;"></div>
+            <div id="quota-section" style="margin-bottom:24px;"></div>
             <div class="section-hd">
-                <h2>PDF Files in Bucket</h2>
+                <h2>PDF Files in Cloud</h2>
                 <button class="btn btn-outline btn-sm" id="btn-refresh-storage">↻ Refresh</button>
             </div>
             <div class="table-wrap">
                 <table>
-                    <thead><tr>
-                        <th>Score Title</th>
-                        <th>Filename (bucket)</th>
-                        <th style="width:90px;">Size</th>
-                        <th style="width:140px;">Last Modified</th>
-                        <th style="width:100px;">Actions</th>
-                    </tr></thead>
+                    <colgroup><col style="width:32%;"><col><col style="width:90px;"><col style="width:130px;"><col style="width:110px;"></colgroup>
+                    <thead><tr><th>Score Title</th><th>Stored Filename</th><th>Size</th><th>Last Modified</th><th>Actions</th></tr></thead>
                     <tbody id="storage-tbody"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ═══ USERS ═══ -->
-        <div id="panel-users" class="tab-panel">
-            <div id="users-lock" class="lock-card">
-                <div class="lock-icon">🔐</div>
-                <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Service Role Required</div>
-                <div style="font-size:13px;">Enter your Supabase <strong>service_role</strong> key in the config above to access user management.</div>
-            </div>
-            <div id="users-panel" class="hidden">
-                <div class="toolbar">
-                    <button class="btn btn-outline btn-sm" id="btn-refresh-users">↻ Refresh</button>
-                    <button class="btn btn-outline btn-sm" id="btn-recalc-quotas">Recalculate Storage</button>
-                </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr>
-                            <th>Email</th>
-                            <th style="width:90px;">Plan</th>
-                            <th style="width:130px;">Quota</th>
-                            <th style="width:130px;">Used</th>
-                            <th style="width:70px;">Scores</th>
-                            <th style="width:120px;">Last Login</th>
-                            <th>Actions</th>
-                        </tr></thead>
-                        <tbody id="users-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══ BACKUP ═══ -->
+        <!-- BACKUP -->
         <div id="panel-backup" class="tab-panel">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                <!-- Export -->
-                <div class="glass" style="border-radius:12px;">
-                    <h3 style="font-size:13px;font-weight:700;margin-bottom:12px;">📤 Export / Download</h3>
-                    <div style="display:flex;flex-direction:column;gap:8px;">
-                        <button class="btn btn-outline" id="btn-export-idb">Export IndexedDB (Full Local Backup)</button>
-                        <button class="btn btn-outline" id="btn-export-cloud">Export Cloud Metadata (Scores + Annotations)</button>
-                        <button class="btn btn-outline" id="btn-export-setlists">Export Setlists JSON</button>
-                        <button class="btn btn-outline" id="btn-download-pdf-list">Download PDF List (with URLs)</button>
+            <div class="backup-grid">
+                <div class="backup-card">
+                    <h3>📤 Export / Download</h3>
+                    <div class="btn-row">
+                        <button class="btn btn-outline" id="btn-export-idb">Export Full Local Backup (IndexedDB)</button>
+                        <button class="btn btn-outline" id="btn-export-cloud">Export Cloud Metadata</button>
+                        <button class="btn btn-outline" id="btn-export-setlists-json">Export Setlists JSON</button>
+                        <button class="btn btn-outline" id="btn-export-collections-json">Export Collections JSON</button>
+                        <button class="btn btn-outline" id="btn-download-pdf-list">Download PDF URL List (CSV)</button>
                     </div>
                 </div>
-                <!-- Import -->
-                <div class="glass" style="border-radius:12px;">
-                    <h3 style="font-size:13px;font-weight:700;margin-bottom:12px;">📥 Import / Restore</h3>
-                    <div style="display:flex;flex-direction:column;gap:8px;">
+                <div class="backup-card">
+                    <h3>📥 Import / Restore</h3>
+                    <div class="btn-row">
                         <div>
-                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Restore IndexedDB from backup JSON:</div>
-                            <input type="file" id="file-restore-idb" accept=".json" style="font-size:11px;width:100%;">
-                            <button class="btn btn-danger btn-sm" id="btn-restore-idb" style="margin-top:6px;">⚠ Restore (overwrites local)</button>
+                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Restore local data from backup JSON:</div>
+                            <input type="file" id="file-restore-idb" accept=".json" style="font-size:11px;color:var(--text-muted);width:100%;">
+                            <button class="btn btn-danger btn-sm" id="btn-restore-idb" style="margin-top:8px;">⚠ Restore (overwrites local data)</button>
                         </div>
-                        <hr class="divider" style="margin:8px 0;">
+                        <hr class="divider" style="margin:4px 0;">
                         <div>
-                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Restore Setlists from JSON:</div>
-                            <input type="file" id="file-restore-setlists" accept=".json" style="font-size:11px;width:100%;">
-                            <button class="btn btn-outline btn-sm" id="btn-restore-setlists" style="margin-top:6px;">Import Setlists</button>
+                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Restore setlists from JSON:</div>
+                            <input type="file" id="file-restore-setlists" accept=".json" style="font-size:11px;color:var(--text-muted);width:100%;">
+                            <button class="btn btn-outline btn-sm" id="btn-restore-setlists" style="margin-top:8px;">Import Setlists</button>
                         </div>
                     </div>
                 </div>
             </div>
             <hr class="divider">
-            <!-- Sync -->
-            <div class="glass" style="border-radius:12px;">
-                <h3 style="font-size:13px;font-weight:700;margin-bottom:12px;">☁️ Cloud Sync Operations</h3>
+            <div class="backup-card">
+                <h3>☁️ Cloud Sync</h3>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button class="btn btn-outline" id="btn-push-registry">Push Registry → Supabase</button>
-                    <button class="btn btn-outline" id="btn-push-setlists-sb">Push Setlists → Supabase</button>
-                    <button class="btn btn-outline" id="btn-pull-registry">Pull Registry ← Supabase</button>
+                    <button class="btn btn-outline" id="btn-push-registry">Push Library → Cloud</button>
+                    <button class="btn btn-outline" id="btn-pull-registry">Pull Library ← Cloud</button>
+                    <button class="btn btn-outline" id="btn-push-setlists-sb">Push Setlists → Cloud</button>
                 </div>
             </div>
             <hr class="divider">
-            <div id="backup-log" class="debug-console" style="height:120px;"></div>
+            <div id="backup-log" style="background:#000;color:#6b7280;padding:10px 14px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;height:110px;overflow-y:auto;border:1px solid #1f2937;"></div>
         </div>
+    </div>
+</div>
 
-        <!-- ═══ REPAIR ═══ -->
-        <div id="panel-repair" class="tab-panel">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-                <div class="glass" style="border-radius:12px;">
-                    <h3 style="font-size:13px;font-weight:700;margin-bottom:10px;">🔬 Data Integrity</h3>
-                    <div style="display:flex;flex-direction:column;gap:6px;">
-                        <button class="btn btn-outline btn-sm" id="btn-scan-issues">Scan for Issues</button>
-                        <button class="btn btn-outline btn-sm" id="btn-fix-all-hashes">Fix All Hash-Suffix fileNames</button>
-                        <button class="btn btn-outline btn-sm" id="btn-orphan-cleanup">Remove Orphan Cloud Records</button>
-                        <button class="btn btn-outline btn-sm" id="btn-fix-missing-filenames">Fill Missing fileNames</button>
-                    </div>
-                </div>
-                <div class="glass" style="border-radius:12px;">
-                    <h3 style="font-size:13px;font-weight:700;margin-bottom:10px;">⚙️ Schema Setup (Supabase SQL)</h3>
-                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Run in Supabase SQL editor to enable Users tab + Setlist cloud sync:</div>
-                    <button class="btn btn-outline btn-sm" id="btn-copy-schema">Copy SQL</button>
-                    <button class="btn btn-outline btn-sm" id="btn-check-schema" style="margin-left:4px;">Check Schema</button>
+<!-- ADD TO MODAL (Setlist or Collection) -->
+<div id="modal-addto" class="modal-backdrop hidden">
+    <div class="modal">
+        <h3 id="addto-title">Add to…</h3>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="btn btn-outline btn-sm addto-tab active" data-type="collection">📚 Collection</button>
+            <button class="btn btn-outline btn-sm addto-tab" data-type="setlist">📋 Setlist</button>
+        </div>
+        <div id="addto-list"></div>
+        <hr class="divider" style="margin:12px 0;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Or create new:</div>
+        <div class="modal-row">
+            <input type="text" id="addto-new-name" placeholder="Name…">
+            <button class="btn btn-primary btn-sm" id="btn-addto-create">Create & Add</button>
+        </div>
+        <div style="margin-top:16px;text-align:right;">
+            <button class="btn btn-outline btn-sm" id="btn-addto-cancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- IMPORT SCORE MODAL -->
+<div id="modal-import" class="modal-backdrop hidden">
+    <div class="modal" style="width:520px;">
+        <h3>Import Score</h3>
+        <div id="import-step1">
+            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('pdf-input').click()">
+                <div style="font-size:2rem;margin-bottom:8px;">📄</div>
+                <div style="font-weight:700;margin-bottom:4px;">Drop PDF here or click to browse</div>
+                <div style="font-size:11px;">PDF files only</div>
+                <input type="file" id="pdf-input" accept=".pdf" style="display:none;">
+            </div>
+        </div>
+        <div id="import-step2" class="hidden">
+            <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;display:flex;align-items:center;gap:8px;">
+                <span>📄</span><span id="imp-filename" style="font-weight:700;flex:1;"></span><span id="imp-size" style="color:var(--text-muted);"></span>
+            </div>
+            <div class="field"><label>Score Name *</label><input type="text" id="imp-title" placeholder="e.g. Symphony No. 5"></div>
+            <div class="field"><label>Composer</label><input type="text" id="imp-composer" placeholder="e.g. Beethoven"></div>
+            <div class="field"><label>Genre</label><select id="imp-genre"><option value="">— Select Genre —</option></select></div>
+            <div class="field">
+                <label>Tags (press Enter to add)</label>
+                <div id="imp-tags-editor" class="tag-editor" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px;">
+                    <input type="text" class="tag-input" id="imp-tag-input" placeholder="Add tag…">
                 </div>
             </div>
-            <div id="repair-issues-list" style="margin-bottom:12px;"></div>
-            <div id="repair-log" class="debug-console" style="height:160px;"></div>
+            <div id="imp-progress" class="progress-card hidden">
+                <div id="imp-progress-text">Preparing…</div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="imp-progress-bar" style="width:0%"></div></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+                <button class="btn btn-outline btn-sm" id="btn-imp-cancel">Cancel</button>
+                <button class="btn btn-outline btn-sm" id="btn-imp-change">Change File</button>
+                <button class="btn btn-primary" id="btn-imp-upload">Upload & Save</button>
+            </div>
         </div>
-    </div><!-- /admin-panel -->
-</div><!-- /wrap -->
+    </div>
+</div>
 
 <script type="module">
-// ═══════════════════════════════════════════════════════
-// INLINE DB WRAPPER
-// ═══════════════════════════════════════════════════════
-const db = {
-    _open() {
-        return new Promise((res, rej) => {
-            const r = indexedDB.open('ScoreFlowStorage', 1);
-            r.onupgradeneeded = () => r.result.createObjectStore('store');
-            r.onsuccess = () => res(r.result);
-            r.onerror = () => rej(r.error);
-        });
-    },
-    async get(key) {
-        const d = await this._open();
-        return new Promise((res, rej) => {
-            const req = d.transaction('store','readonly').objectStore('store').get(key);
-            req.onsuccess = () => res(req.result);
-            req.onerror = () => rej(req.error);
-        });
-    },
-    async set(key, val) {
-        const d = await this._open();
-        return new Promise((res, rej) => {
-            const tx = d.transaction('store','readwrite');
-            tx.objectStore('store').put(val, key);
-            tx.oncomplete = res;
-            tx.onerror = () => rej(tx.error);
-        });
-    },
-    async getAllKeys() {
-        const d = await this._open();
-        return new Promise((res, rej) => {
-            const req = d.transaction('store','readonly').objectStore('store').getAllKeys();
-            req.onsuccess = () => res(req.result);
-            req.onerror = () => rej(req.error);
-        });
-    },
-    async clear() {
-        const d = await this._open();
-        return new Promise((res, rej) => {
-            const tx = d.transaction('store','readwrite');
-            tx.objectStore('store').clear();
-            tx.oncomplete = res;
-            tx.onerror = () => rej(tx.error);
-        });
-    }
-};
+const SUPABASE_URL  = 'https://tanoqdnqtxqxerwcbdlf.supabase.co';
+const SUPABASE_ANON = localStorage.getItem('sf_supabase_anon_key') || '';
 
-// ═══════════════════════════════════════════════════════
-// LOGGING
-// ═══════════════════════════════════════════════════════
-const logEl = document.getElementById('debug-log');
-const repairLogEl = document.getElementById('repair-log');
-const backupLogEl = document.getElementById('backup-log');
+// ═══ GENRES ═══
+const GENRES = [
+    { id: 'Classical',    label: 'Classical',              label_zh: '古典音樂',  pill: 'pill-purple', icon: '🎻' },
+    { id: 'Symphony',     label: 'Symphony / Orchestral',  label_zh: '交響樂',    pill: 'pill-cyan',   icon: '🎺' },
+    { id: 'Chamber',      label: 'Chamber Music',          label_zh: '室內樂',    pill: 'pill-blue',   icon: '🎼' },
+    { id: 'Ensemble',     label: 'Ensemble / Concerto',    label_zh: '合奏',      pill: 'pill-sky',    icon: '🎶' },
+    { id: 'Opera',        label: 'Opera',                  label_zh: '歌劇',      pill: 'pill-rose',   icon: '🎭' },
+    { id: 'Musical',      label: 'Musical Theatre',        label_zh: '音樂劇',    pill: 'pill-red',    icon: '🎤' },
+    { id: 'Choral',       label: 'Choral',                 label_zh: '合唱',      pill: 'pill-teal',   icon: '🎵' },
+    { id: 'Vocal',        label: 'Vocal / Solo',           label_zh: '聲樂獨唱',  pill: 'pill-amber',  icon: '🎙' },
+    { id: 'Piano',        label: 'Piano Solo',             label_zh: '鋼琴獨奏',  pill: 'pill-purple', icon: '🎹' },
+    { id: 'Chinese',      label: 'Chinese Traditional',    label_zh: '國樂',      pill: 'pill-orange', icon: '🎍' },
+    { id: 'Pop',          label: 'Pop / Songs',            label_zh: '流行音樂',  pill: 'pill-amber',  icon: '🎧' },
+    { id: 'Folk',         label: 'Folk / Traditional',     label_zh: '民謠',      pill: 'pill-lime',   icon: '🪕' },
+    { id: 'Jazz',         label: 'Jazz',                   label_zh: '爵士樂',    pill: 'pill-orange', icon: '🎷' },
+    { id: 'Band',         label: 'Wind Band / Brass',      label_zh: '管樂',      pill: 'pill-sky',    icon: '🎸' },
+    { id: 'Film',         label: 'Film / Media',           label_zh: '電影音樂',  pill: 'pill-gray',   icon: '🎬' },
+    { id: 'Contemporary', label: 'Contemporary',           label_zh: '現代音樂',  pill: 'pill-cyan',   icon: '📐' },
+    { id: 'Other',        label: 'Other',                  label_zh: '其他',      pill: 'pill-gray',   icon: '📄' },
+];
+const GENRE_MAP = Object.fromEntries(GENRES.map(g => [g.id, g]));
 
-function log(msg, type='info', target=logEl) {
-    const t = new Date().toLocaleTimeString();
-    const color = type === 'error' ? '#f87171' : type === 'success' ? '#10b981' : type === 'warn' ? '#f59e0b' : '#6b7280';
-    target.innerHTML += `<div style="color:${color}">[${t}] ${msg}</div>`;
-    target.scrollTop = target.scrollHeight;
+function genrePill(id) {
+    if (!id) return '';
+    const g = GENRE_MAP[id] || { pill: 'pill-gray', icon: '📄', label: id };
+    return `<span class="pill ${g.pill}" title="${g.label_zh||''}">${g.icon} ${escHtml(g.label)}</span>`;
 }
-const rlog = (m,t) => log(m,t,repairLogEl);
-const blog = (m,t) => log(m,t,backupLogEl);
 
-// ═══════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════
-let sbClient = null, adminClient = null, currentUser = null;
-let cachedScores = [], cachedFiles = [], cachedLocalReg = [], cachedSetlists = [];
-let loadedTabs = new Set();
-let selectedFps = new Set();
-let scoreFilter = 'all', scoreSearch = '';
+// Populate genre selects
+function fillGenreSelects() {
+    const opts = GENRES.map(g => `<option value="${g.id}">${g.icon} ${g.label} (${g.label_zh||''})</option>`).join('');
+    document.getElementById('imp-genre').innerHTML = '<option value="">— Select Genre —</option>' + opts;
+    document.getElementById('genre-filter').innerHTML = '<option value="">All Genres</option>' + opts;
+}
 
-// ═══════════════════════════════════════════════════════
-// INIT & AUTH
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-connect').onclick = async () => {
-    const url = document.getElementById('sb-url').value.trim();
-    const anon = document.getElementById('sb-anon').value.trim();
-    const svc  = document.getElementById('sb-service').value.trim();
-    if (!url || !anon) { log('URL and Anon Key required.','error'); return; }
-
-    sbClient = supabase.createClient(url, anon);
-    if (svc) {
-        adminClient = supabase.createClient(url, svc, { auth: { autoRefreshToken: false, persistSession: false } });
-        document.getElementById('admin-badge').innerHTML = '<span class="badge-admin">Service Role Active</span>';
-        document.getElementById('users-lock').classList.add('hidden');
-        document.getElementById('users-panel').classList.remove('hidden');
-        log('Admin client ready (service_role).', 'success');
-    } else {
-        document.getElementById('admin-badge').innerHTML = '<span class="badge-user">Anon Mode</span>';
-    }
-
-    const { data: { session } } = await sbClient.auth.getSession();
-    currentUser = session?.user || null;
-    if (currentUser) {
-        log(`Authenticated as ${currentUser.email}`, 'success');
-        onAuthenticated();
-    } else {
-        log('Not signed in — please login.', 'warn');
-        document.getElementById('login-section').classList.remove('hidden');
-    }
+// ═══ IndexedDB ═══
+const db = {
+    _open() { return new Promise((res,rej)=>{const r=indexedDB.open('ScoreFlowStorage',1);r.onupgradeneeded=()=>r.result.createObjectStore('store');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}); },
+    async get(k) { const d=await this._open(); return new Promise((res,rej)=>{const q=d.transaction('store','readonly').objectStore('store').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);}); },
+    async set(k,v) { const d=await this._open(); return new Promise((res,rej)=>{const tx=d.transaction('store','readwrite');tx.objectStore('store').put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);}); },
+    async getAllKeys() { const d=await this._open(); return new Promise((res,rej)=>{const q=d.transaction('store','readonly').objectStore('store').getAllKeys();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);}); },
+    async clear() { const d=await this._open(); return new Promise((res,rej)=>{const tx=d.transaction('store','readwrite');tx.objectStore('store').clear();tx.oncomplete=res;tx.onerror=()=>rej(tx.error);}); }
 };
 
+// ═══ State ═══
+let sbClient=null, currentUser=null;
+let cachedScores=[], cachedLocalReg=[];
+let mergedList=[];
+let scoreFilter='all', scoreSearch='', scoreSort='title-asc', alphaFilter='', genreFilter='', collFilter='';
+let groupByComposer=false;
+let selectedFps=new Set();
+let loadedTabs=new Set();
+let importFile=null, importTags=[];
+let addToMode='collection'; // 'collection' or 'setlist'
+
+// ═══ Init ═══
+async function init() {
+    fillGenreSelects();
+    if (!SUPABASE_ANON) { showLoginError('No Supabase key. Visit Network & Auth tool first.'); return; }
+    sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    const {data:{session}} = await sbClient.auth.getSession();
+    if (session?.user) { currentUser=session.user; showApp(); }
+}
+
+// ═══ Auth ═══
 document.getElementById('btn-login').onclick = async () => {
-    const { error } = await sbClient.auth.signInWithPassword({
-        email: document.getElementById('login-email').value,
-        password: document.getElementById('login-password').value
-    });
-    if (error) { log(error.message, 'error'); return; }
-    const { data: { session } } = await sbClient.auth.getSession();
-    currentUser = session.user;
-    document.getElementById('login-section').classList.add('hidden');
-    log(`Signed in as ${currentUser.email}`, 'success');
-    onAuthenticated();
+    const email=document.getElementById('login-email').value.trim();
+    const pwd=document.getElementById('login-password').value;
+    if (!email||!pwd) { showLoginError('Enter email and password.'); return; }
+    if (!sbClient) { if(!SUPABASE_ANON){showLoginError('No key. Visit Network & Auth first.');return;} sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON); }
+    const btn=document.getElementById('btn-login');
+    btn.disabled=true; btn.textContent='Signing in…';
+    const {error}=await sbClient.auth.signInWithPassword({email,password:pwd});
+    btn.disabled=false; btn.textContent='Sign In';
+    if (error) { showLoginError(error.message); return; }
+    const {data:{session}}=await sbClient.auth.getSession();
+    currentUser=session.user; showApp();
 };
-
-function onAuthenticated() {
-    document.getElementById('admin-panel').classList.remove('hidden');
+document.getElementById('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-login').click();});
+document.getElementById('btn-signout').onclick = async () => {
+    await sbClient.auth.signOut();
+    currentUser=null; mergedList=[]; selectedFps.clear(); loadedTabs.clear();
+    document.getElementById('screen-app').classList.add('hidden');
+    document.getElementById('screen-login').classList.remove('hidden');
+    document.getElementById('btn-signout').classList.add('hidden');
+    document.getElementById('user-badge').textContent='';
+};
+function showLoginError(m){const e=document.getElementById('login-error');e.textContent=m;e.style.display='block';}
+function showApp() {
+    document.getElementById('screen-login').classList.add('hidden');
+    document.getElementById('screen-app').classList.remove('hidden');
+    document.getElementById('btn-signout').classList.remove('hidden');
+    document.getElementById('user-badge').textContent=currentUser.email;
+    document.getElementById('welcome-line').textContent=`Welcome back, ${currentUser.email}`;
     loadTab('dashboard');
 }
 
-// ═══════════════════════════════════════════════════════
-// TAB SYSTEM
-// ═══════════════════════════════════════════════════════
+// ═══ Tabs ═══
 document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.onclick = () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
-        loadTab(btn.dataset.tab);
-    };
+    btn.onclick=()=>{ document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active'); loadTab(btn.dataset.tab); };
 });
+function loadTab(tab) { if(loadedTabs.has(tab))return; loadedTabs.add(tab); if(tab==='dashboard')loadDashboard(); if(tab==='library')loadLibrary(); if(tab==='collections')loadCollections(); if(tab==='setlists')loadSetlists(); if(tab==='storage')loadStorage(); }
+function reloadTab(tab) { loadedTabs.delete(tab); loadTab(tab); }
 
-function loadTab(tab) {
-    if (loadedTabs.has(tab)) return;
-    loadedTabs.add(tab);
-    if (tab === 'dashboard') loadDashboard();
-    if (tab === 'scores') loadScores();
-    if (tab === 'setlists') loadSetlists();
-    if (tab === 'storage') loadStorage();
-    if (tab === 'users' && adminClient) loadUsers();
-}
-
-function reloadTab(tab) {
-    loadedTabs.delete(tab);
-    loadTab(tab);
-}
-
-// ═══════════════════════════════════════════════════════
-// DASHBOARD
-// ═══════════════════════════════════════════════════════
+// ══════════ DASHBOARD ══════════
 async function loadDashboard() {
-    try {
-        // Cloud scores
-        const { count: cloudCount } = await sbClient.from('scores').select('*', {count:'exact',head:true}).eq('user_id', currentUser.id);
-        document.getElementById('d-scores').textContent = cloudCount ?? '—';
-
-        // Local
-        cachedLocalReg = await db.get('score_registry') || [];
-        document.getElementById('d-local').textContent = cachedLocalReg.length;
-
-        // Setlists
-        const setlists = await db.get('score_setlists') || [];
-        document.getElementById('d-setlists').textContent = setlists.length;
-
-        // Annotations count
-        const { count: annotCount } = await sbClient.from('annotations').select('*', {count:'exact',head:true}).eq('user_id', currentUser.id);
-        document.getElementById('d-annots').textContent = annotCount ?? '—';
-
-        // Storage
-        const files = await sbClient.storage.from('pdfs').list(currentUser.id);
-        const fileList = files.data || [];
-        const totalBytes = fileList.reduce((s, f) => s + (f.metadata?.size || f.size || 0), 0);
-        document.getElementById('d-storage').textContent = fmtBytes(totalBytes);
-
-        // Quota bar (if user_profiles exists)
-        await renderQuotaSection('dash-quota-section', totalBytes);
-
-        log(`Dashboard loaded. ${cloudCount} cloud scores, ${fmtBytes(totalBytes)} storage.`, 'success');
-    } catch(e) { log('Dashboard error: ' + e.message, 'error'); }
+    cachedLocalReg=(await db.get('score_registry'))||[];
+    const {data:cs}=await sbClient.from('scores').select('fingerprint,filename,genre').eq('user_id',currentUser.id);
+    const cloudSet=new Set((cs||[]).map(c=>c.fingerprint));
+    const pdfSet=new Set((cs||[]).filter(c=>c.filename).map(c=>c.fingerprint));
+    const setlists=(await db.get('score_setlists'))||[];
+    const colls=(await db.get('score_collections'))||[];
+    document.getElementById('d-total').textContent=cachedLocalReg.length;
+    document.getElementById('d-synced').textContent=cachedLocalReg.filter(s=>cloudSet.has(s.fingerprint)).length;
+    document.getElementById('d-pdf').textContent=cachedLocalReg.filter(s=>pdfSet.has(s.fingerprint)).length;
+    document.getElementById('d-colls').textContent=colls.length;
+    document.getElementById('d-setlists').textContent=setlists.length;
+    // Quota
+    const {data:prof}=await sbClient.from('user_profiles').select('storage_used_bytes,storage_quota_bytes,plan').eq('user_id',currentUser.id).single();
+    if(prof){const used=prof.storage_used_bytes||0,quota=prof.storage_quota_bytes||536870912,pct=Math.min(100,(used/quota)*100);document.getElementById('d-storage').textContent=fmtBytes(used);document.getElementById('dash-quota').innerHTML=`<div class="quota-wrap"><div class="quota-label"><span>Storage</span><span>${fmtBytes(used)} / ${fmtBytes(quota)}</span><span class="plan-tag">${prof.plan||'Free'} — ${Math.round(pct)}% used</span></div><div class="quota-bar-bg"><div class="quota-bar-fill ${pct>90?'crit':pct>70?'warn':''}" style="width:${pct.toFixed(1)}%"></div></div></div>`;}
+    else document.getElementById('d-storage').textContent='—';
+    // Genre breakdown
+    const gc={};
+    cachedLocalReg.forEach(s=>{const k=s.genre||'Uncategorized';gc[k]=(gc[k]||0)+1;});
+    const sorted=Object.entries(gc).sort((a,b)=>b[1]-a[1]);
+    if(sorted.length>1)document.getElementById('dash-genre-breakdown').innerHTML=`<div class="quota-wrap"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">By Genre</div><div style="display:flex;flex-wrap:wrap;gap:8px;">${sorted.map(([g,n])=>`<div style="display:flex;align-items:center;gap:5px;">${genrePill(g)||`<span class="pill pill-gray">${escHtml(g)}</span>`}<span style="font-size:12px;font-weight:700;">${n}</span></div>`).join('')}</div></div>`;
+    // Recent
+    const recent=[...cachedLocalReg].filter(s=>s.lastAccessed).sort((a,b)=>(b.lastAccessed||0)-(a.lastAccessed||0)).slice(0,6);
+    if(recent.length)document.getElementById('dash-recent').innerHTML=`<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Recently Accessed</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">${recent.map(s=>`<div class="stat-card" style="padding:14px 16px;"><div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(s.title)}</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${escHtml(s.composer||'—')}</div><div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;">${s.genre?genrePill(s.genre):''}<span style="font-size:10px;color:var(--text-muted);">${new Date(s.lastAccessed).toLocaleDateString()}</span></div></div>`).join('')}</div></div>`;
 }
 
-async function renderQuotaSection(containerId, usedBytes) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    try {
-        const { data: profile } = await sbClient.from('user_profiles').select('plan,storage_quota_bytes').eq('id', currentUser.id).single();
-        if (!profile) { container.innerHTML = ''; return; }
-        const quota = profile.storage_quota_bytes || 524288000;
-        const pct = Math.min(100, (usedBytes / quota) * 100).toFixed(1);
-        const color = pct < 70 ? 'var(--success)' : pct < 90 ? 'var(--warn)' : 'var(--danger)';
-        container.innerHTML = `
-            <div class="glass" style="border-radius:12px;padding:16px 20px;">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                    <span style="font-size:13px;font-weight:700;">Storage Quota</span>
-                    <span class="pill pill-blue">${profile.plan?.toUpperCase() || 'FREE'}</span>
+// ══════════ LIBRARY ══════════
+async function loadLibrary() {
+    document.getElementById('lib-view').innerHTML='<div class="empty-state"><div class="icon">⏳</div>Loading…</div>';
+    cachedLocalReg=(await db.get('score_registry'))||[];
+    const {data:cr}=await sbClient.from('scores').select('fingerprint,title,composer,filename,genre,tags,updated_at').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
+    cachedScores=cr||[];
+    mergedList=buildMergedList(cachedLocalReg,cachedScores);
+    // Populate collection filter
+    const colls=(await db.get('score_collections'))||[];
+    const cf=document.getElementById('collection-filter');
+    cf.innerHTML='<option value="">All Collections</option>'+colls.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+    buildAlphaBar(mergedList);
+    renderLibrary();
+}
+
+function buildMergedList(local,cloud) {
+    const cm=Object.fromEntries(cloud.map(c=>[c.fingerprint,c]));
+    const result=[], seen=new Set();
+    for(const s of local){const fp=s.fingerprint;seen.add(fp);const c=cm[fp];result.push({fingerprint:fp,title:s.title||c?.title||'Untitled',composer:s.composer||c?.composer||'',fileName:s.fileName||'',genre:s.genre||c?.genre||'',tags:s.tags||[],lastAccessed:s.lastAccessed||0,cloudSynced:!!c,hasPdf:!!(c?.filename||s.isPdfAvailable),localOnly:!c,isCloudOnly:false});}
+    for(const c of cloud){if(!seen.has(c.fingerprint))result.push({fingerprint:c.fingerprint,title:c.title||'Untitled',composer:c.composer||'',fileName:c.filename||'',genre:c.genre||'',tags:c.tags||[],lastAccessed:0,cloudSynced:true,hasPdf:!!c.filename,localOnly:false,isCloudOnly:true});}
+    return result;
+}
+
+async function applyFiltersAndSort(list) {
+    let out=[...list];
+    if(scoreFilter==='cloud')out=out.filter(s=>s.cloudSynced);
+    if(scoreFilter==='pdf')  out=out.filter(s=>s.hasPdf);
+    if(scoreFilter==='local')out=out.filter(s=>s.localOnly);
+    if(genreFilter)out=out.filter(s=>s.genre===genreFilter);
+    if(collFilter){const colls=(await db.get('score_collections'))||[];const c=colls.find(x=>x.id===collFilter);if(c)out=out.filter(s=>c.fingerprints?.includes(s.fingerprint));}
+    if(scoreSearch){const q=scoreSearch.toLowerCase();out=out.filter(s=>(s.title||'').toLowerCase().includes(q)||(s.composer||'').toLowerCase().includes(q)||(s.tags||[]).join(' ').toLowerCase().includes(q));}
+    if(alphaFilter){const ch=alphaFilter==='#'?null:alphaFilter;out=out.filter(s=>{const fc=(s.title||'').charAt(0).toLowerCase();return ch?fc===ch:!/[a-z]/.test(fc);});}
+    const [field,dir]=scoreSort.split('-');
+    out.sort((a,b)=>{let va=field==='accessed'?(a.lastAccessed||0):(a[field]||'').toLowerCase(),vb=field==='accessed'?(b.lastAccessed||0):(b[field]||'').toLowerCase();if(va<vb)return dir==='asc'?-1:1;if(va>vb)return dir==='asc'?1:-1;return 0;});
+    return out;
+}
+
+function buildAlphaBar(list) {
+    const has=new Set(list.map(s=>{const ch=(s.title||'').charAt(0).toUpperCase();return /[A-Z]/.test(ch)?ch:'#';}));
+    const bar=document.getElementById('alpha-bar');
+    bar.innerHTML=`<button class="alpha-btn active" data-alpha="">All</button>`+'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('').map(l=>`<button class="alpha-btn ${has.has(l)?'has-scores':''}" data-alpha="${l==='#'?'#':l.toLowerCase()}">${l}</button>`).join('');
+    bar.querySelectorAll('.alpha-btn').forEach(btn=>{btn.onclick=()=>{bar.querySelectorAll('.alpha-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');alphaFilter=btn.dataset.alpha;renderLibrary();};});
+}
+
+async function renderLibrary() {
+    const filtered=await applyFiltersAndSort(mergedList);
+    document.getElementById('lib-count').textContent=`Showing ${filtered.length} of ${mergedList.length} score${mergedList.length!==1?'s':''}`;
+    if(groupByComposer)renderGrouped(filtered); else renderFlat(filtered);
+}
+
+const GENRE_OPTS='<option value="">—</option>'+GENRES.map(g=>`<option value="${g.id}">${g.icon} ${g.label}</option>`).join('');
+
+function scoreRow(s) {
+    const accessed=s.lastAccessed?new Date(s.lastAccessed).toLocaleDateString():'—';
+    const statusPill=s.isCloudOnly?`<span class="pill pill-blue">Cloud</span>`:s.cloudSynced?`<span class="pill pill-green">Synced</span>`:`<span class="pill pill-amber">Local</span>`;
+    const tagChips=(s.tags||[]).slice(0,3).map(t=>`<span class="tag-chip">${escHtml(t)}</span>`).join('');
+    const moreTagsNote=(s.tags||[]).length>3?`<span style="font-size:10px;color:var(--text-muted);">+${s.tags.length-3}</span>`:'';
+    return `<tr data-fp="${s.fingerprint}" class="${selectedFps.has(s.fingerprint)?'row-selected':''}" style="cursor:pointer;">
+        <td onclick="event.stopPropagation()"><input type="checkbox" class="row-chk" data-fp="${s.fingerprint}" ${selectedFps.has(s.fingerprint)?'checked':''}></td>
+        <td onclick="toggleDetail('${s.fingerprint}')"><input class="editable" data-fp="${s.fingerprint}" data-field="title" value="${escHtml(s.title)}" title="Edit name" onclick="event.stopPropagation()"></td>
+        <td onclick="toggleDetail('${s.fingerprint}')"><input class="editable" data-fp="${s.fingerprint}" data-field="composer" value="${escHtml(s.composer)}" placeholder="—" onclick="event.stopPropagation()"></td>
+        <td onclick="event.stopPropagation()"><select class="cat-select" data-fp="${s.fingerprint}">${GENRE_OPTS.replace(`value="${s.genre}"`,`value="${s.genre}" selected`)}</select></td>
+        <td onclick="toggleDetail('${s.fingerprint}')">${tagChips}${moreTagsNote}</td>
+        <td onclick="toggleDetail('${s.fingerprint}')">${statusPill}</td>
+        <td style="color:var(--text-muted);font-size:11px;" onclick="toggleDetail('${s.fingerprint}')">${accessed}</td>
+        <td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-fp="${s.fingerprint}" title="Delete">🗑</button></td>
+    </tr>
+    <tr class="row-detail" id="detail-${s.fingerprint}">
+        <td colspan="8">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);padding-top:6px;">Tags / Keywords</div>
+                <div class="tag-editor" id="tags-${s.fingerprint}">
+                    ${(s.tags||[]).map(t=>`<span class="tag-chip">${escHtml(t)}<span class="remove-tag" data-fp="${s.fingerprint}" data-tag="${escHtml(t)}">×</span></span>`).join('')}
+                    <input type="text" class="tag-input" placeholder="Add tag, press Enter" data-fp="${s.fingerprint}">
                 </div>
-                <div class="quota-bar-label"><span>${fmtBytes(usedBytes)} used</span><span>${fmtBytes(quota)} total</span></div>
-                <div class="quota-bar-bg"><div class="quota-bar-fill" style="width:${pct}%;background:${color};"></div></div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${pct}% used</div>
-            </div>`;
-    } catch { container.innerHTML = ''; }
-}
-
-// ═══════════════════════════════════════════════════════
-// SCORES
-// ═══════════════════════════════════════════════════════
-async function loadScores() {
-    log('Loading scores...');
-    try {
-        const [cloudRes, filesRes] = await Promise.all([
-            sbClient.from('scores').select('*').eq('user_id', currentUser.id).order('last_accessed', {ascending:false}),
-            sbClient.storage.from('pdfs').list(currentUser.id)
-        ]);
-        cachedScores = cloudRes.data || [];
-        cachedFiles  = filesRes.data || [];
-        cachedLocalReg = await db.get('score_registry') || [];
-        renderScoresTable();
-        log(`Loaded ${cachedScores.length} cloud scores.`, 'success');
-    } catch(e) { log('Scores error: ' + e.message, 'error'); }
-}
-
-function renderScoresTable() {
-    const tbody = document.getElementById('scores-tbody');
-    const q = scoreSearch.toLowerCase();
-
-    // Build unified list: cloud scores + local-only
-    const cloudFps = new Set(cachedScores.map(s => s.fingerprint));
-    const allScores = [
-        ...cachedScores.map(s => ({ ...s, _src: 'cloud', _local: cachedLocalReg.find(l => l.fingerprint === s.fingerprint) })),
-        ...cachedLocalReg.filter(l => !cloudFps.has(l.fingerprint)).map(l => ({ fingerprint: l.fingerprint, title: l.title, composer: l.composer, filename: l.fileName, _src: 'local', _local: l }))
-    ];
-
-    const fileMap = {};
-    cachedFiles.forEach(f => { fileMap[f.name] = f; });
-
-    let filtered = allScores.filter(s => {
-        if (scoreFilter === 'cloud' && s._src !== 'cloud') return false;
-        if (scoreFilter === 'local' && s._src !== 'local') return false;
-        if (scoreFilter === 'nopdf' && fileMap[`${s.fingerprint}.pdf`]) return false;
-        if (q && !((s.title||'').toLowerCase().includes(q) || (s.composer||'').toLowerCase().includes(q) || (s.filename||s.fileName||'').toLowerCase().includes(q))) return false;
-        return true;
-    });
-
-    document.getElementById('scores-count').textContent = `${filtered.length} scores`;
-    tbody.innerHTML = '';
-
-    filtered.forEach(s => {
-        const fp = s.fingerprint;
-        const file = fileMap[`${fp}.pdf`];
-        const fileSize = file ? fmtBytes(file.metadata?.size || file.size || 0) : null;
-        const lastAccessed = s.last_accessed ? relTime(s.last_accessed) : (s._local?.lastAccessed ? relTime(s._local.lastAccessed) : '—');
-        const mode = s._local?.storageMode || (s._src === 'cloud' ? 'cloud' : '—');
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><input type="checkbox" class="row-chk" data-fp="${fp}"></td>
-            <td><span class="editable mono" contenteditable="true" data-fp="${fp}" data-field="title">${esc(s.title||'')}</span></td>
-            <td><span class="editable mono" contenteditable="true" data-fp="${fp}" data-field="composer">${esc(s.composer||'')}</span></td>
-            <td><span class="editable mono" contenteditable="true" data-fp="${fp}" data-field="filename">${esc(s.filename||s.fileName||'')}</span></td>
-            <td><span class="mono" title="${fp}">${fp.slice(0,8)}…</span></td>
-            <td>${file ? `<span class="pill pill-green">${fileSize}</span>` : `<span class="pill pill-red">Missing</span>`}</td>
-            <td style="color:var(--text-muted);">${lastAccessed}</td>
-            <td><span class="pill ${mode==='pinned'?'pill-blue':mode==='cached'?'pill-green':mode==='cloud'?'pill-amber':'pill-gray'}">${mode}</span></td>
-            <td>
-                <div style="display:flex;gap:4px;">
-                    ${s._src === 'cloud' ? `<button class="btn btn-outline btn-sm" onclick="window.deleteScore('${fp}')">Delete Cloud</button>` : ''}
-                    ${!s._src.includes('cloud') || !file ? '' : `<a class="btn btn-outline btn-sm" href="#" onclick="window.downloadPDF('${fp}');return false;">↓ PDF</a>`}
-                </div>
-            </td>`;
-        tbody.appendChild(tr);
-    });
-
-    // Wire inline edits
-    tbody.querySelectorAll('.editable').forEach(el => {
-        const orig = el.textContent;
-        el.addEventListener('blur', async () => {
-            const val = el.textContent.trim();
-            if (val === orig) return;
-            await saveScoreField(el.dataset.fp, el.dataset.field, val, el);
-        });
-        el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
-    });
-
-    // Wire checkboxes
-    tbody.querySelectorAll('.row-chk').forEach(chk => {
-        chk.addEventListener('change', () => {
-            if (chk.checked) selectedFps.add(chk.dataset.fp);
-            else selectedFps.delete(chk.dataset.fp);
-            document.getElementById('btn-bulk-delete').disabled = selectedFps.size === 0;
-        });
-    });
-}
-
-async function saveScoreField(fp, field, value, el) {
-    el.classList.add('saving');
-    try {
-        // Map field name to Supabase column
-        const col = field === 'filename' ? 'filename' : field;
-        const { error } = await sbClient.from('scores').update({ [col]: value, updated_at: new Date().toISOString() }).eq('fingerprint', fp).eq('user_id', currentUser.id);
-        if (error) throw error;
-
-        // Also update local registry if present
-        const local = cachedLocalReg.find(l => l.fingerprint === fp);
-        if (local) {
-            if (field === 'title') local.title = value;
-            if (field === 'composer') local.composer = value;
-            if (field === 'filename') local.fileName = value;
-            await db.set('score_registry', cachedLocalReg);
-        }
-
-        el.classList.remove('saving');
-        el.classList.add('saved');
-        setTimeout(() => el.classList.remove('saved'), 1500);
-        log(`Updated ${field} for ${fp.slice(0,8)}.`, 'success');
-    } catch(e) {
-        el.classList.remove('saving');
-        el.classList.add('error');
-        setTimeout(() => el.classList.remove('error'), 1500);
-        log('Save failed: ' + e.message, 'error');
-    }
-}
-
-// Bulk Delete
-document.getElementById('btn-bulk-delete').onclick = async () => {
-    if (selectedFps.size === 0) return;
-    const titles = [...selectedFps].map(fp => { const s = cachedScores.find(x => x.fingerprint === fp); return s?.title || fp.slice(0,8); });
-    if (!confirm(`Delete ${selectedFps.size} scores from Supabase?\n\n${titles.join('\n')}\n\nThis also removes PDFs and annotations.`)) return;
-    for (const fp of selectedFps) await deleteScore(fp);
-    selectedFps.clear();
-    reloadTab('scores');
-};
-
-// Select All
-document.getElementById('chk-all').onchange = (e) => {
-    document.querySelectorAll('.row-chk').forEach(c => { c.checked = e.target.checked; if (e.target.checked) selectedFps.add(c.dataset.fp); else selectedFps.delete(c.dataset.fp); });
-    document.getElementById('btn-bulk-delete').disabled = selectedFps.size === 0;
-};
-document.getElementById('btn-select-all').onclick = () => { document.getElementById('chk-all').checked = true; document.getElementById('chk-all').dispatchEvent(new Event('change')); };
-
-// Search & Filter
-document.getElementById('score-search').addEventListener('input', e => { scoreSearch = e.target.value; renderScoresTable(); });
-document.querySelectorAll('.filter-pill').forEach(p => p.onclick = () => {
-    document.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
-    p.classList.add('active'); scoreFilter = p.dataset.filter; renderScoresTable();
-});
-
-document.getElementById('btn-refresh-scores').onclick = () => reloadTab('scores');
-
-// Export CSV
-document.getElementById('btn-export-csv').onclick = () => {
-    const rows = [['fingerprint','title','composer','filename','storage_mode','last_accessed']];
-    cachedScores.forEach(s => rows.push([s.fingerprint, s.title||'', s.composer||'', s.filename||'', s._local?.storageMode||'', s.last_accessed||'']));
-    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    dlString(csv, `scores_${Date.now()}.csv`, 'text/csv');
-};
-
-// Global delete score
-window.deleteScore = async (fp) => {
-    try {
-        await sbClient.storage.from('pdfs').remove([`${currentUser.id}/${fp}.pdf`]);
-        await sbClient.from('annotations').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
-        await sbClient.from('scores').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
-        log(`Deleted ${fp.slice(0,8)} from cloud.`, 'success');
-    } catch(e) { log('Delete failed: ' + e.message, 'error'); }
-};
-
-window.downloadPDF = async (fp) => {
-    const { data, error } = await sbClient.storage.from('pdfs').createSignedUrl(`${currentUser.id}/${fp}.pdf`, 60);
-    if (error) { log('Signed URL failed: ' + error.message, 'error'); return; }
-    window.open(data.signedUrl, '_blank');
-};
-
-// ═══════════════════════════════════════════════════════
-// SETLISTS
-// ═══════════════════════════════════════════════════════
-async function loadSetlists() {
-    cachedLocalReg = await db.get('score_registry') || [];
-    cachedSetlists  = await db.get('score_setlists') || [];
-    renderLocalSetlists();
-    renderCloudSetlists();
-}
-
-function renderLocalSetlists() {
-    const grid = document.getElementById('setlist-local-grid');
-    if (cachedSetlists.length === 0) { grid.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">No local setlists found.</div>`; return; }
-    grid.innerHTML = '';
-    cachedSetlists.forEach(list => {
-        const scores = list.scores || [];
-        const card = document.createElement('div');
-        card.className = 'setlist-card';
-        card.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <h3 class="editable" contenteditable="true" data-id="${list.id}">${esc(list.title)}</h3>
-                <span class="pill pill-gray">${scores.length} scores</span>
             </div>
-            <ul class="setlist-scores">${scores.slice(0,6).map(item => {
-                const fp = typeof item === 'object' ? item.fingerprint : item;
-                const reg = cachedLocalReg.find(s => s.fingerprint === fp);
-                const isDeleted = typeof item === 'object' && item.status === 'deleted';
-                return `<li>${isDeleted ? '🗑️ ' : '🎼 '}<span style="${isDeleted?'text-decoration:line-through;color:var(--danger)':''}">${esc(reg?.title || item.title || fp.slice(0,8))}</span></li>`;
-            }).join('')}${scores.length > 6 ? `<li style="opacity:.5;">+${scores.length-6} more…</li>` : ''}</ul>
-            <div style="display:flex;gap:6px;margin-top:8px;">
-                <button class="btn btn-outline btn-sm" onclick="window.pushSetlistToCloud('${list.id}')">↑ Push Cloud</button>
-                <button class="btn btn-danger btn-sm" onclick="window.deleteLocalSetlist('${list.id}')">Delete</button>
-            </div>`;
-        // Inline rename
-        const titleEl = card.querySelector('[contenteditable]');
-        titleEl.addEventListener('blur', async () => {
-            const newTitle = titleEl.textContent.trim();
-            if (newTitle === list.title) return;
-            list.title = newTitle; list.updatedAt = Date.now();
-            await db.set('score_setlists', cachedSetlists);
-            log(`Renamed setlist to "${newTitle}".`, 'success');
-        });
-        grid.appendChild(card);
-    });
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;margin-top:10px;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);">Filename</div>
+                <div class="mono" style="color:var(--text-muted);">${escHtml(s.fileName)||'—'}</div>
+            </div>
+        </td>
+    </tr>`;
 }
 
-async function renderCloudSetlists() {
-    const grid = document.getElementById('setlist-cloud-grid');
-    try {
-        const { data, error } = await sbClient.from('setlists').select('*').eq('user_id', currentUser.id);
-        if (error && error.code === '42P01') {
-            grid.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">⚠️ <code>setlists</code> table not found. Run the Schema Setup SQL in the Repair tab.</div>`;
-            return;
-        }
-        if (!data || data.length === 0) { grid.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">No cloud setlists found.</div>`; return; }
-        grid.innerHTML = '';
-        data.forEach(list => {
-            const scores = list.scores || [];
-            const isLocal = cachedSetlists.some(l => l.id === list.id);
-            const card = document.createElement('div');
-            card.className = 'setlist-card';
-            card.innerHTML = `
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                    <h3>${esc(list.title)}</h3>
-                    <span class="pill ${isLocal ? 'pill-green' : 'pill-amber'}">${isLocal ? 'Synced' : 'Cloud Only'}</span>
-                </div>
-                <div style="font-size:11px;color:var(--text-muted);">${scores.length} scores · Updated ${relTime(list.updated_at)}</div>
-                <div style="display:flex;gap:6px;margin-top:8px;">
-                    ${!isLocal ? `<button class="btn btn-outline btn-sm" onclick="window.pullSetlistToLocal('${list.id}')">↓ Import Local</button>` : ''}
-                    <button class="btn btn-danger btn-sm" onclick="window.deleteCloudSetlist('${list.id}')">Delete Cloud</button>
-                </div>`;
-            grid.appendChild(card);
-        });
-    } catch(e) { grid.innerHTML = `<div style="color:var(--danger);font-size:13px;">${e.message}</div>`; }
+function renderFlat(list) {
+    const view=document.getElementById('lib-view');
+    if(!list.length){view.innerHTML=`<div class="empty-state"><div class="icon">🎼</div>No scores match.</div>`;return;}
+    const [sf,sd]=scoreSort.split('-');
+    const thc=(f)=>`sortable${sf===f?' sort-'+sd:''}`;
+    view.innerHTML=`<div class="table-wrap"><table>
+        <colgroup><col style="width:28px;"><col style="width:24%;"><col style="width:15%;"><col style="width:14%;"><col style="width:16%;"><col style="width:8%;"><col style="width:9%;"><col style="width:7%;"></colgroup>
+        <thead><tr><th><input type="checkbox" id="chk-all-tbl"></th><th class="${thc('title')}" data-sort-field="title">Score Name</th><th class="${thc('composer')}" data-sort-field="composer">Composer</th><th>Genre</th><th>Tags</th><th>Status</th><th class="${thc('accessed')}" data-sort-field="accessed">Accessed</th><th></th></tr></thead>
+        <tbody>${list.map(scoreRow).join('')}</tbody>
+    </table></div>`;
+    view.querySelectorAll('th[data-sort-field]').forEach(th=>{th.onclick=()=>{const f=th.dataset.sortField,cf=scoreSort.split('-')[0],cd=scoreSort.split('-')[1];scoreSort=f===cf?`${f}-${cd==='asc'?'desc':'asc'}`:`${f}-asc`;document.getElementById('sort-select').value=scoreSort;renderLibrary();};});
+    wireTable(view);
 }
 
-document.getElementById('btn-refresh-setlists').onclick = () => reloadTab('setlists');
-
-document.getElementById('btn-push-setlists').onclick = async () => {
-    for (const list of cachedSetlists) await pushSetlistToCloud(list.id);
-    reloadTab('setlists');
-};
-
-window.pushSetlistToCloud = async (id) => {
-    const list = cachedSetlists.find(l => l.id === id);
-    if (!list) return;
-    const { error } = await sbClient.from('setlists').upsert({ id: list.id, user_id: currentUser.id, title: list.title, scores: list.scores, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-    if (error) log('Push setlist failed: ' + error.message, 'error');
-    else log(`Pushed setlist "${list.title}" to cloud.`, 'success');
-};
-
-window.pullSetlistToLocal = async (id) => {
-    const { data } = await sbClient.from('setlists').select('*').eq('id', id).single();
-    if (!data) return;
-    cachedSetlists.push({ id: data.id, title: data.title, dateCreated: new Date(data.created_at).getTime(), updatedAt: Date.now(), scores: data.scores || [] });
-    await db.set('score_setlists', cachedSetlists);
-    log(`Imported "${data.title}" to local.`, 'success');
-    reloadTab('setlists');
-};
-
-window.deleteLocalSetlist = async (id) => {
-    if (!confirm('Delete this setlist locally?')) return;
-    cachedSetlists = cachedSetlists.filter(l => l.id !== id);
-    await db.set('score_setlists', cachedSetlists);
-    reloadTab('setlists');
-};
-
-window.deleteCloudSetlist = async (id) => {
-    if (!confirm('Delete this setlist from cloud?')) return;
-    await sbClient.from('setlists').delete().eq('id', id).eq('user_id', currentUser.id);
-    log('Cloud setlist deleted.', 'success');
-    reloadTab('setlists');
-};
-
-// ═══════════════════════════════════════════════════════
-// STORAGE
-// ═══════════════════════════════════════════════════════
-async function loadStorage() {
-    log('Loading storage...');
-    try {
-        const { data: files } = await sbClient.storage.from('pdfs').list(currentUser.id);
-        cachedFiles = files || [];
-        cachedLocalReg = await db.get('score_registry') || [];
-        const totalBytes = cachedFiles.reduce((s, f) => s + (f.metadata?.size || f.size || 0), 0);
-        await renderQuotaSection('storage-quota-section', totalBytes);
-
-        const tbody = document.getElementById('storage-tbody');
-        tbody.innerHTML = '';
-        cachedFiles.sort((a,b) => (b.metadata?.size||0) - (a.metadata?.size||0)).forEach(f => {
-            const fp = f.name.replace('.pdf','');
-            const reg = cachedLocalReg.find(s => s.fingerprint === fp);
-            const size = f.metadata?.size || f.size || 0;
-            const mod = f.updated_at ? relTime(f.updated_at) : '—';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${reg ? esc(reg.title) : `<span class="mono">${fp.slice(0,8)}…</span>`} ${!reg ? '<span class="pill pill-amber">No Local</span>' : ''}</td>
-                <td class="mono">${f.name}</td>
-                <td>${fmtBytes(size)}</td>
-                <td style="color:var(--text-muted);">${mod}</td>
-                <td><div style="display:flex;gap:4px;">
-                    <button class="btn btn-outline btn-sm" onclick="window.downloadPDF('${fp}')">↓ Open</button>
-                    <button class="btn btn-danger btn-sm" onclick="window.deletePdfFromBucket('${fp}')">Delete</button>
-                </div></td>`;
-            tbody.appendChild(tr);
-        });
-        log(`${cachedFiles.length} files, ${fmtBytes(totalBytes)} total.`, 'success');
-    } catch(e) { log('Storage error: ' + e.message, 'error'); }
+function renderGrouped(list) {
+    const view=document.getElementById('lib-view');
+    if(!list.length){view.innerHTML=`<div class="empty-state"><div class="icon">🎼</div>No scores match.</div>`;return;}
+    const groups={};list.forEach(s=>{const k=s.composer||'(Unknown Composer)';if(!groups[k])groups[k]=[];groups[k].push(s);});
+    const keys=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
+    view.innerHTML=keys.map(c=>`<div style="margin-bottom:20px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:0 4px;margin-bottom:8px;">${escHtml(c)} <span style="color:var(--primary);">${groups[c].length}</span></div><div class="table-wrap"><table><colgroup><col style="width:28px;"><col style="width:27%;"><col style="width:15%;"><col style="width:18%;"><col style="width:9%;"><col style="width:10%;"><col style="width:8%;"></colgroup><thead><tr><th></th><th>Score Name</th><th>Genre</th><th>Tags</th><th>Status</th><th>Accessed</th><th></th></tr></thead><tbody>${groups[c].map(scoreRow).join('')}</tbody></table></div></div>`).join('');
+    document.querySelectorAll('#lib-view .row-chk,[data-action="delete"],.editable,.cat-select,.tag-input,.remove-tag').forEach(el=>wireEl(el));
+    document.querySelectorAll('#lib-view tr[data-fp]').forEach(tr=>{if(!tr.classList.contains('row-detail'))tr.addEventListener('click',()=>toggleDetail(tr.dataset.fp));});
 }
 
-document.getElementById('btn-refresh-storage').onclick = () => reloadTab('storage');
-
-window.deletePdfFromBucket = async (fp) => {
-    if (!confirm(`Delete ${fp.slice(0,8)}.pdf from storage?`)) return;
-    const { error } = await sbClient.storage.from('pdfs').remove([`${currentUser.id}/${fp}.pdf`]);
-    if (error) log('Delete error: ' + error.message, 'error');
-    else { log('PDF deleted from bucket.', 'success'); reloadTab('storage'); }
-};
-
-// ═══════════════════════════════════════════════════════
-// USERS (service_role only)
-// ═══════════════════════════════════════════════════════
-async function loadUsers() {
-    if (!adminClient) return;
-    log('Loading users (admin)...');
-    try {
-        const { data: { users }, error } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
-        if (error) throw error;
-        const { data: profiles } = await adminClient.from('user_profiles').select('*');
-        const profileMap = {};
-        (profiles || []).forEach(p => profileMap[p.id] = p);
-
-        const tbody = document.getElementById('users-tbody');
-        tbody.innerHTML = '';
-        users.forEach(u => {
-            const p = profileMap[u.id] || {};
-            const quota = p.storage_quota_bytes || 524288000;
-            const used = p.storage_used_bytes || 0;
-            const pct = Math.min(100, (used/quota)*100).toFixed(0);
-            const color = pct < 70 ? 'var(--success)' : pct < 90 ? 'var(--warn)' : 'var(--danger)';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${esc(u.email)}</td>
-                <td>
-                    <select class="plan-select" data-uid="${u.id}" style="background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);font-size:11px;cursor:pointer;">
-                        ${['free','pro','premium'].map(pl => `<option value="${pl}" ${(p.plan||'free')===pl?'selected':''}>${pl}</option>`).join('')}
-                    </select>
-                </td>
-                <td>
-                    <input type="number" class="quota-input" data-uid="${u.id}" value="${Math.round(quota/1073741824*100)/100}" step="0.5" min="0.1"
-                        style="width:60px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);font-size:11px;" title="GB"> GB
-                </td>
-                <td>
-                    <div style="font-size:11px;">${fmtBytes(used)}</div>
-                    <div style="height:4px;border-radius:99px;background:rgba(255,255,255,.08);margin-top:3px;overflow:hidden;">
-                        <div style="height:100%;width:${pct}%;background:${color};border-radius:99px;"></div>
-                    </div>
-                </td>
-                <td class="mono">${p.score_count ?? '—'}</td>
-                <td style="color:var(--text-muted);font-size:11px;">${u.last_sign_in_at ? relTime(u.last_sign_in_at) : 'Never'}</td>
-                <td><button class="btn btn-outline btn-sm" onclick="window.saveUserProfile('${u.id}', this)">Save</button></td>`;
-            tbody.appendChild(tr);
-        });
-
-        // Wire plan & quota save
-        tbody.querySelectorAll('.plan-select').forEach(sel => sel.onchange = () => {});
-
-        log(`Loaded ${users.length} users.`, 'success');
-    } catch(e) { log('Users error: ' + e.message, 'error'); }
+function wireTable(container) {
+    const ca=container.querySelector('#chk-all-tbl');
+    if(ca)ca.onchange=()=>{container.querySelectorAll('.row-chk').forEach(c=>{c.checked=ca.checked;const fp=c.dataset.fp;if(ca.checked)selectedFps.add(fp);else selectedFps.delete(fp);c.closest('tr').classList.toggle('row-selected',ca.checked);});updateBulkBar();};
+    container.querySelectorAll('.row-chk,[data-action="delete"],.editable,.cat-select,.tag-input,.remove-tag').forEach(el=>wireEl(el));
 }
 
-document.getElementById('btn-refresh-users').onclick = () => { loadedTabs.delete('users'); loadUsers(); };
+function toggleDetail(fp) {
+    const row=document.getElementById(`detail-${fp}`);
+    if(row)row.classList.toggle('open');
+}
 
-document.getElementById('btn-recalc-quotas').onclick = async () => {
-    if (!adminClient) return;
-    log('Recalculating storage for all users...');
-    try {
-        const { data: { users } } = await adminClient.auth.admin.listUsers({ page:1, perPage:1000 });
-        for (const u of users) {
-            const { data: files } = await adminClient.storage.from('pdfs').list(u.id);
-            const totalBytes = (files||[]).reduce((s,f) => s + (f.metadata?.size||f.size||0), 0);
-            await adminClient.from('user_profiles').upsert({ id: u.id, storage_used_bytes: totalBytes, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-        }
-        log('All quotas recalculated.', 'success');
-        loadedTabs.delete('users'); loadUsers();
-    } catch(e) { log('Recalc error: ' + e.message, 'error'); }
-};
-
-window.saveUserProfile = async (uid, btn) => {
-    const row = btn.closest('tr');
-    const plan = row.querySelector('.plan-select').value;
-    const quotaGb = parseFloat(row.querySelector('.quota-input').value);
-    const quotaBytes = Math.round(quotaGb * 1073741824);
-    try {
-        await adminClient.from('user_profiles').upsert({ id: uid, plan, storage_quota_bytes: quotaBytes, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-        log(`Updated user ${uid.slice(0,8)} — plan: ${plan}, quota: ${quotaGb}GB.`, 'success');
-        btn.textContent = '✓';
-        setTimeout(() => btn.textContent = 'Save', 1500);
-    } catch(e) { log('Save user failed: ' + e.message, 'error'); }
-};
-
-// ═══════════════════════════════════════════════════════
-// BACKUP
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-export-idb').onclick = async () => {
-    blog('Exporting IndexedDB...');
-    try {
-        const keys = await db.getAllKeys();
-        const storage = {};
-        for (const key of keys) { storage[key] = await db.get(key); }
-        const payload = { type: 'ScoreFlow_FullBackup', timestamp: Date.now(), version: '4.0', storage };
-        dlString(JSON.stringify(payload), `ScoreFlow_LocalBackup_${ts()}.json`);
-        blog(`Exported ${keys.length} keys.`, 'success');
-    } catch(e) { blog('Export failed: ' + e.message, 'error'); }
-};
-
-document.getElementById('btn-export-cloud').onclick = async () => {
-    blog('Exporting cloud metadata...');
-    try {
-        const [scoresRes, annotsRes] = await Promise.all([
-            sbClient.from('scores').select('*').eq('user_id', currentUser.id),
-            sbClient.from('annotations').select('*').eq('user_id', currentUser.id)
-        ]);
-        const payload = { type: 'ScoreFlow_CloudBackup', timestamp: Date.now(), scores: scoresRes.data, annotations: annotsRes.data };
-        dlString(JSON.stringify(payload, null, 2), `ScoreFlow_CloudBackup_${ts()}.json`);
-        blog(`Exported ${scoresRes.data?.length} scores, ${annotsRes.data?.length} annotations.`, 'success');
-    } catch(e) { blog('Export failed: ' + e.message, 'error'); }
-};
-
-document.getElementById('btn-export-setlists').onclick = async () => {
-    const setlists = await db.get('score_setlists') || [];
-    dlString(JSON.stringify(setlists, null, 2), `ScoreFlow_Setlists_${ts()}.json`);
-    blog(`Exported ${setlists.length} setlists.`, 'success');
-};
-
-document.getElementById('btn-download-pdf-list').onclick = async () => {
-    blog('Generating PDF URL list...');
-    try {
-        const { data: files } = await sbClient.storage.from('pdfs').list(currentUser.id);
-        const reg = await db.get('score_registry') || [];
-        const rows = [['title','fingerprint','size_bytes','signed_url']];
-        for (const f of (files||[])) {
-            const fp = f.name.replace('.pdf','');
-            const score = reg.find(s => s.fingerprint === fp);
-            const { data: urlData } = await sbClient.storage.from('pdfs').createSignedUrl(`${currentUser.id}/${f.name}`, 3600);
-            rows.push([score?.title||fp, fp, f.metadata?.size||0, urlData?.signedUrl||'']);
-        }
-        dlString(rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'), `ScoreFlow_PDFList_${ts()}.csv`, 'text/csv');
-        blog(`Generated list for ${files.length} files.`, 'success');
-    } catch(e) { blog('Failed: ' + e.message, 'error'); }
-};
-
-document.getElementById('btn-restore-idb').onclick = async () => {
-    const file = document.getElementById('file-restore-idb').files[0];
-    if (!file) return;
-    try {
-        const data = JSON.parse(await file.text());
-        if (data.type !== 'ScoreFlow_FullBackup') throw new Error('Not a valid ScoreFlow backup file.');
-        if (!confirm(`Restore ${Object.keys(data.storage||{}).length} keys to IndexedDB? This will overwrite all local data.`)) return;
-        await db.clear();
-        for (const [k,v] of Object.entries(data.storage||{})) await db.set(k, v);
-        blog(`Restored ${Object.keys(data.storage||{}).length} keys.`, 'success');
-        alert('Restore complete. Reload ScoreFlow to see changes.');
-    } catch(e) { blog('Restore failed: ' + e.message, 'error'); }
-};
-
-document.getElementById('btn-restore-setlists').onclick = async () => {
-    const file = document.getElementById('file-restore-setlists').files[0];
-    if (!file) return;
-    try {
-        const data = JSON.parse(await file.text());
-        if (!Array.isArray(data)) throw new Error('Invalid setlists JSON — expected array.');
-        if (!confirm(`Import ${data.length} setlists? Existing setlists with same ID will be merged.`)) return;
-        const existing = await db.get('score_setlists') || [];
-        const existingIds = new Set(existing.map(l => l.id));
-        let added = 0;
-        data.forEach(l => { if (!existingIds.has(l.id)) { existing.push(l); added++; } });
-        await db.set('score_setlists', existing);
-        blog(`Imported ${added} new setlists (${data.length-added} already existed).`, 'success');
-    } catch(e) { blog('Import failed: ' + e.message, 'error'); }
-};
-
-document.getElementById('btn-push-registry').onclick = async () => {
-    blog('Pushing local registry to Supabase...');
-    const reg = await db.get('score_registry') || [];
-    let ok = 0, fail = 0;
-    for (const s of reg) {
-        const { error } = await sbClient.from('scores').upsert({
-            fingerprint: s.fingerprint, user_id: currentUser.id, title: s.title||'Untitled',
-            composer: s.composer||'Unknown', filename: s.fileName||'', tags: s.tags||[],
-            last_accessed: s.lastAccessed||Date.now(), updated_at: new Date().toISOString()
-        }, { onConflict: 'fingerprint' });
-        if (error) fail++; else ok++;
+function wireEl(el) {
+    if (el.classList.contains('row-chk')) {
+        el.onchange=()=>{const fp=el.dataset.fp;if(el.checked)selectedFps.add(fp);else selectedFps.delete(fp);el.closest('tr').classList.toggle('row-selected',el.checked);updateBulkBar();};
+    } else if (el.dataset.action==='delete') {
+        el.onclick=()=>deleteScore(el.dataset.fp);
+    } else if (el.classList.contains('editable')) {
+        let orig=el.value;
+        const save=async()=>{const nv=el.value.trim();if(nv===orig)return;orig=nv;const fp=el.dataset.fp,field=el.dataset.field;el.classList.add('saving');try{const reg=(await db.get('score_registry'))||[];const ent=reg.find(e=>e.fingerprint===fp);if(ent){ent[field]=nv;ent.updatedAt=Date.now();await db.set('score_registry',reg);}const mi=mergedList.findIndex(e=>e.fingerprint===fp);if(mi!==-1)mergedList[mi][field]=nv;const detail=await db.get(`detail_${fp}`);if(detail){if(field==='title'){detail.name=nv;detail.title=nv;}if(field==='composer')detail.composer=nv;await db.set(`detail_${fp}`,detail);}const{error}=await sbClient.from('scores').update({[field]:nv,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);if(error)throw error;el.classList.remove('saving');el.classList.add('saved');setTimeout(()=>el.classList.remove('saved'),1500);}catch(e){el.classList.remove('saving');el.classList.add('error');el.value=orig;setTimeout(()=>el.classList.remove('error'),2000);}};
+        el.addEventListener('blur',save);
+        el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();el.blur();}if(e.key==='Escape'){el.value=orig;el.blur();}});
+    } else if (el.classList.contains('cat-select')) {
+        el.addEventListener('change',async()=>{const fp=el.dataset.fp,genre=el.value;const reg=(await db.get('score_registry'))||[];const ent=reg.find(e=>e.fingerprint===fp);if(ent){ent.genre=genre;ent.updatedAt=Date.now();await db.set('score_registry',reg);}const mi=mergedList.findIndex(e=>e.fingerprint===fp);if(mi!==-1)mergedList[mi].genre=genre;await sbClient.from('scores').update({genre,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);});
+    } else if (el.classList.contains('tag-input')) {
+        el.addEventListener('keydown',async e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();const tag=el.value.trim().replace(/,$/,'');if(!tag)return;el.value='';const fp=el.dataset.fp;const reg=(await db.get('score_registry'))||[];const ent=reg.find(s=>s.fingerprint===fp);if(!ent)return;if(!ent.tags)ent.tags=[];if(ent.tags.includes(tag))return;ent.tags.push(tag);ent.updatedAt=Date.now();await db.set('score_registry',reg);const mi=mergedList.findIndex(s=>s.fingerprint===fp);if(mi!==-1)mergedList[mi].tags=[...ent.tags];await sbClient.from('scores').update({tags:ent.tags,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);// Refresh tag editor UI
+const editor=document.getElementById(`tags-${fp}`);if(editor){editor.innerHTML=ent.tags.map(t=>`<span class="tag-chip">${escHtml(t)}<span class="remove-tag" data-fp="${fp}" data-tag="${escHtml(t)}">×</span></span>`).join('')+`<input type="text" class="tag-input" placeholder="Add tag, press Enter" data-fp="${fp}">`;editor.querySelectorAll('.tag-input,.remove-tag').forEach(x=>wireEl(x));}}});
+    } else if (el.classList.contains('remove-tag')) {
+        el.onclick=async()=>{const fp=el.dataset.fp,tag=el.dataset.tag;const reg=(await db.get('score_registry'))||[];const ent=reg.find(s=>s.fingerprint===fp);if(!ent||!ent.tags)return;ent.tags=ent.tags.filter(t=>t!==tag);ent.updatedAt=Date.now();await db.set('score_registry',reg);const mi=mergedList.findIndex(s=>s.fingerprint===fp);if(mi!==-1)mergedList[mi].tags=[...ent.tags];await sbClient.from('scores').update({tags:ent.tags,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);const editor=document.getElementById(`tags-${fp}`);if(editor){editor.innerHTML=ent.tags.map(t=>`<span class="tag-chip">${escHtml(t)}<span class="remove-tag" data-fp="${fp}" data-tag="${escHtml(t)}">×</span></span>`).join('')+`<input type="text" class="tag-input" placeholder="Add tag, press Enter" data-fp="${fp}">`;editor.querySelectorAll('.tag-input,.remove-tag').forEach(x=>wireEl(x));}};
     }
-    blog(`Pushed ${ok} scores. ${fail} failed.`, fail > 0 ? 'warn' : 'success');
-};
-
-document.getElementById('btn-push-setlists-sb').onclick = async () => {
-    const setlists = await db.get('score_setlists') || [];
-    blog(`Pushing ${setlists.length} setlists...`);
-    for (const list of setlists) await window.pushSetlistToCloud(list.id);
-    blog('Done.', 'success');
-};
-
-document.getElementById('btn-pull-registry').onclick = async () => {
-    blog('Pulling cloud scores to local registry...');
-    const { data } = await sbClient.from('scores').select('*').eq('user_id', currentUser.id);
-    const existing = await db.get('score_registry') || [];
-    const existingMap = {};
-    existing.forEach(s => existingMap[s.fingerprint] = s);
-    let added = 0;
-    (data||[]).forEach(cloud => {
-        if (!existingMap[cloud.fingerprint]) {
-            existing.push({ fingerprint: cloud.fingerprint, title: cloud.title||'Untitled', composer: cloud.composer||'Unknown', fileName: cloud.filename||'', storageMode: 'cloud', isCloudOnly: true, tags: cloud.tags||[], dateImported: new Date(cloud.created_at).getTime(), lastAccessed: cloud.last_accessed||0 });
-            added++;
-        }
-    });
-    await db.set('score_registry', existing);
-    blog(`Pulled ${added} new cloud-only placeholders.`, 'success');
-};
-
-// ═══════════════════════════════════════════════════════
-// REPAIR
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-scan-issues').onclick = async () => {
-    rlog('Scanning for issues...');
-    const reg = await db.get('score_registry') || [];
-    const hashSuffix = /_[0-9a-f]{8}$/i;
-    const issues = [];
-    reg.forEach(s => {
-        const base = (s.fileName||'').replace(/\.pdf$/i,'');
-        if (!s.fileName) issues.push(`[fileName empty] ${s.title || s.fingerprint.slice(0,8)}`);
-        else if (hashSuffix.test(base)) issues.push(`[hash suffix] ${s.title} → ${s.fileName}`);
-        else if (/^[0-9a-f]{64}$/i.test(base)) issues.push(`[fileName is fingerprint] ${s.title}`);
-        if (hashSuffix.test(s.title||'')) issues.push(`[title has hash] ${s.title}`);
-    });
-    if (issues.length === 0) { rlog('No issues found.', 'success'); }
-    else {
-        issues.forEach(i => rlog('⚠ ' + i, 'warn'));
-        document.getElementById('repair-issues-list').innerHTML = `<div class="glass" style="border-radius:8px;padding:12px;margin-bottom:8px;"><b style="font-size:12px;">${issues.length} issues found:</b><ul style="margin-top:8px;padding-left:16px;font-size:11px;color:var(--text-muted);">${issues.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
-    }
-};
-
-document.getElementById('btn-fix-all-hashes').onclick = async () => {
-    const reg = await db.get('score_registry') || [];
-    const hashSuffix = /_[0-9a-f]{8}$/i;
-    let fixed = 0;
-    for (const s of reg) {
-        const base = (s.fileName||'').replace(/\.pdf$/i,'');
-        if (hashSuffix.test(base)) {
-            const clean = base.replace(hashSuffix, '');
-            rlog(`Fixing: "${s.fileName}" → "${clean}.pdf"`);
-            s.fileName = clean + '.pdf';
-            fixed++;
-            if (sbClient && currentUser) await sbClient.from('scores').update({ filename: s.fileName, updated_at: new Date().toISOString() }).eq('fingerprint', s.fingerprint).eq('user_id', currentUser.id);
-        }
-    }
-    if (fixed > 0) { await db.set('score_registry', reg); rlog(`Fixed ${fixed} fileNames.`, 'success'); }
-    else rlog('No hash-suffix fileNames found.', 'success');
-};
-
-document.getElementById('btn-fix-missing-filenames').onclick = async () => {
-    const reg = await db.get('score_registry') || [];
-    let fixed = 0;
-    for (const s of reg) {
-        if (!s.fileName && s.title) {
-            s.fileName = s.title + '.pdf';
-            rlog(`Filled: "${s.title}" → "${s.fileName}"`);
-            fixed++;
-            if (sbClient && currentUser) await sbClient.from('scores').update({ filename: s.fileName, updated_at: new Date().toISOString() }).eq('fingerprint', s.fingerprint).eq('user_id', currentUser.id);
-        }
-    }
-    if (fixed > 0) { await db.set('score_registry', reg); rlog(`Filled ${fixed} missing fileNames.`, 'success'); }
-    else rlog('No empty fileNames.', 'success');
-};
-
-document.getElementById('btn-orphan-cleanup').onclick = async () => {
-    rlog('Scanning for orphan cloud records...');
-    const { data: scores } = await sbClient.from('scores').select('fingerprint').eq('user_id', currentUser.id);
-    const { data: annots } = await sbClient.from('annotations').select('fingerprint').eq('user_id', currentUser.id);
-    const scoreFps = new Set((scores||[]).map(s => s.fingerprint));
-    const orphanAnnotFps = [...new Set((annots||[]).map(a => a.fingerprint))].filter(fp => !scoreFps.has(fp));
-    if (orphanAnnotFps.length === 0) { rlog('No orphan annotations found.', 'success'); return; }
-    rlog(`Found ${orphanAnnotFps.length} fingerprints with annotations but no score record.`, 'warn');
-    if (!confirm(`Delete annotations for ${orphanAnnotFps.length} orphan fingerprints?`)) return;
-    for (const fp of orphanAnnotFps) {
-        await sbClient.from('annotations').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
-        rlog(`Deleted orphan annotations for ${fp.slice(0,8)}.`);
-    }
-    rlog('Orphan cleanup done.', 'success');
-};
-
-// Schema SQL
-const SCHEMA_SQL = `-- Run in Supabase SQL Editor
--- 1. User profiles / quota table
-CREATE TABLE IF NOT EXISTS public.user_profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT,
-    plan TEXT NOT NULL DEFAULT 'free',
-    storage_quota_bytes BIGINT NOT NULL DEFAULT 524288000,
-    storage_used_bytes BIGINT NOT NULL DEFAULT 0,
-    score_count INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "own profile" ON public.user_profiles FOR ALL USING (auth.uid() = id);
-
--- 2. Auto-create profile on signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-    INSERT INTO public.user_profiles (id, email)
-    VALUES (NEW.id, NEW.email) ON CONFLICT (id) DO NOTHING;
-    RETURN NEW;
-END; $$;
-CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users FOR EACH ROW
-    EXECUTE FUNCTION public.handle_new_user();
-
--- 3. Setlists table
-CREATE TABLE IF NOT EXISTS public.setlists (
-    id TEXT PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL DEFAULT 'Untitled',
-    scores JSONB NOT NULL DEFAULT '[]',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-ALTER TABLE public.setlists ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "own setlists" ON public.setlists FOR ALL USING (auth.uid() = user_id);
-
--- 4. Score count trigger
-CREATE OR REPLACE FUNCTION update_score_count()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-    UPDATE public.user_profiles
-    SET score_count = (SELECT COUNT(*) FROM public.scores WHERE user_id = COALESCE(NEW.user_id, OLD.user_id)),
-        updated_at = NOW()
-    WHERE id = COALESCE(NEW.user_id, OLD.user_id);
-    RETURN COALESCE(NEW, OLD);
-END; $$;
-CREATE TRIGGER on_score_change
-    AFTER INSERT OR DELETE ON public.scores FOR EACH ROW
-    EXECUTE FUNCTION update_score_count();`;
-
-document.getElementById('btn-copy-schema').onclick = () => {
-    navigator.clipboard.writeText(SCHEMA_SQL);
-    document.getElementById('btn-copy-schema').textContent = '✓ Copied';
-    setTimeout(() => document.getElementById('btn-copy-schema').textContent = 'Copy SQL', 1500);
-};
-
-document.getElementById('btn-check-schema').onclick = async () => {
-    rlog('Checking schema...');
-    const checks = [
-        { table: 'user_profiles', label: 'user_profiles table' },
-        { table: 'setlists', label: 'setlists table' }
-    ];
-    for (const c of checks) {
-        const { error } = await sbClient.from(c.table).select('*', {head:true,count:'exact'});
-        if (error?.code === '42P01') rlog(`✗ ${c.label} — NOT FOUND (run Schema SQL)`, 'error');
-        else rlog(`✓ ${c.label}`, 'success');
-    }
-};
-
-// ═══════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════
-function fmtBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024, sizes = ['B','KB','MB','GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
 }
 
-function relTime(val) {
-    const d = typeof val === 'number' ? new Date(val) : new Date(val);
-    const diff = Date.now() - d.getTime();
-    if (diff < 60000) return 'just now';
-    if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
-    if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
-    if (diff < 2592000000) return Math.floor(diff/86400000) + 'd ago';
-    return d.toLocaleDateString();
+window.toggleDetail=toggleDetail;
+
+function updateBulkBar(){const n=selectedFps.size;document.getElementById('btn-bulk-delete').disabled=n===0;document.getElementById('btn-add-to').classList.toggle('hidden',n===0);}
+
+// Controls
+document.querySelectorAll('.filter-pill').forEach(p=>{p.onclick=()=>{document.querySelectorAll('.filter-pill').forEach(x=>x.classList.remove('active'));p.classList.add('active');scoreFilter=p.dataset.filter;renderLibrary();};});
+document.getElementById('score-search').addEventListener('input',e=>{scoreSearch=e.target.value;renderLibrary();});
+document.getElementById('sort-select').addEventListener('change',e=>{scoreSort=e.target.value;renderLibrary();});
+document.getElementById('genre-filter').addEventListener('change',e=>{genreFilter=e.target.value;renderLibrary();});
+document.getElementById('collection-filter').addEventListener('change',e=>{collFilter=e.target.value;renderLibrary();});
+document.getElementById('btn-group-composer').onclick=function(){groupByComposer=!groupByComposer;this.classList.toggle('btn-primary',groupByComposer);this.classList.toggle('btn-outline',!groupByComposer);renderLibrary();};
+document.getElementById('btn-refresh-lib').onclick=()=>reloadTab('library');
+document.getElementById('btn-select-all').onclick=async()=>{const filtered=await applyFiltersAndSort(mergedList);filtered.forEach(s=>selectedFps.add(s.fingerprint));renderLibrary();updateBulkBar();};
+document.getElementById('btn-bulk-delete').onclick=async()=>{if(!selectedFps.size)return;if(!confirm(`Remove ${selectedFps.size} score(s) from cloud?`))return;for(const fp of[...selectedFps])await deleteScore(fp,true);selectedFps.clear();reloadTab('library');};
+document.getElementById('btn-export-csv').onclick=async()=>{const filtered=await applyFiltersAndSort(mergedList);const rows=[['Title','Composer','Genre','Tags','Filename','Fingerprint','Status','Last Accessed']];filtered.forEach(s=>rows.push([s.title,s.composer,s.genre||'',(s.tags||[]).join(';'),s.fileName,s.fingerprint,s.localOnly?'Local':s.cloudSynced?'Synced':'Cloud',s.lastAccessed?new Date(s.lastAccessed).toLocaleDateString():'']));downloadFile(rows.map(r=>r.map(c=>`"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n'),'scores.csv','text/csv');};
+
+async function deleteScore(fp,silent=false){if(!silent&&!confirm('Remove from cloud library?'))return;await sbClient.from('scores').delete().eq('fingerprint',fp).eq('user_id',currentUser.id);await sbClient.from('annotations').delete().eq('fingerprint',fp).eq('user_id',currentUser.id);const reg=(await db.get('score_registry'))||[];const ent=reg.find(e=>e.fingerprint===fp);if(ent){ent.isSynced=false;ent.isPdfAvailable=false;await db.set('score_registry',reg);}if(!silent)reloadTab('library');}
+
+// ══════════ ADD TO MODAL ══════════
+document.getElementById('btn-add-to').onclick=openAddToModal;
+document.getElementById('btn-addto-cancel').onclick=()=>document.getElementById('modal-addto').classList.add('hidden');
+document.getElementById('modal-addto').addEventListener('click',e=>{if(e.target===document.getElementById('modal-addto'))document.getElementById('modal-addto').classList.add('hidden');});
+document.querySelectorAll('.addto-tab').forEach(btn=>{btn.onclick=()=>{document.querySelectorAll('.addto-tab').forEach(b=>{b.classList.remove('active','btn-primary');b.classList.add('btn-outline');});btn.classList.add('active','btn-primary');btn.classList.remove('btn-outline');addToMode=btn.dataset.type;renderAddToList();};});
+
+async function openAddToModal(){if(!selectedFps.size)return;addToMode='collection';document.querySelectorAll('.addto-tab').forEach(b=>{b.classList.remove('active','btn-primary');b.classList.add('btn-outline');});document.querySelector('.addto-tab[data-type="collection"]').classList.add('active','btn-primary');document.querySelector('.addto-tab[data-type="collection"]').classList.remove('btn-outline');document.getElementById('addto-new-name').value='';await renderAddToList();document.getElementById('modal-addto').classList.remove('hidden');}
+
+async function renderAddToList(){const listEl=document.getElementById('addto-list');if(addToMode==='collection'){const colls=(await db.get('score_collections'))||[];listEl.innerHTML=!colls.length?`<div style="font-size:12px;color:var(--text-muted);">No collections yet. Create one below.</div>`:colls.map((c,i)=>`<button class="modal-option" data-idx="${i}" data-type="collection"><span>${c.color||'📚'}</span><span style="flex:1;">${escHtml(c.name)}</span><span class="pill pill-gray">${c.fingerprints?.length||0}</span></button>`).join('');listEl.querySelectorAll('.modal-option').forEach(btn=>{btn.onclick=async()=>{const colls2=(await db.get('score_collections'))||[];await addFpsToCollection(colls2[parseInt(btn.dataset.idx)],[...selectedFps]);closeAddToModal();};});}else{const sl=(await db.get('score_setlists'))||[];listEl.innerHTML=!sl.length?`<div style="font-size:12px;color:var(--text-muted);">No setlists yet.</div>`:sl.map((s,i)=>`<button class="modal-option" data-idx="${i}" data-type="setlist"><span>📋</span><span style="flex:1;">${escHtml(s.name)}</span><span class="pill pill-gray">${s.scores?.length||0}</span></button>`).join('');listEl.querySelectorAll('.modal-option').forEach(btn=>{btn.onclick=async()=>{const sl2=(await db.get('score_setlists'))||[];await addFpsToSetlist(sl2[parseInt(btn.dataset.idx)],[...selectedFps]);closeAddToModal();};});}}
+
+function closeAddToModal(){document.getElementById('modal-addto').classList.add('hidden');selectedFps.clear();updateBulkBar();renderLibrary();}
+
+document.getElementById('btn-addto-create').onclick=async()=>{const name=document.getElementById('addto-new-name').value.trim();if(!name){alert('Enter a name.');return;}if(addToMode==='collection'){const item={id:`col_${Date.now()}`,name,color:'📚',fingerprints:[]};await addFpsToCollection(item,[...selectedFps],null,true);}else{const item={id:`sl_${Date.now()}`,name,scores:[],updatedAt:Date.now()};await addFpsToSetlist(item,[...selectedFps],null,true);}closeAddToModal();};
+
+async function addFpsToCollection(coll,fps,existing=null,isNew=false){const colls=existing||(await db.get('score_collections'))||[];if(!coll.fingerprints)coll.fingerprints=[];let added=0;for(const fp of fps){if(!coll.fingerprints.includes(fp)){coll.fingerprints.push(fp);added++;}}coll.updatedAt=Date.now();if(isNew){colls.push(coll);}else{const i=colls.findIndex(c=>c.id===coll.id);if(i!==-1)colls[i]=coll;else colls.push(coll);}await db.set('score_collections',colls);alert(`Added ${added} score(s) to "${coll.name}".`);if(loadedTabs.has('collections'))reloadTab('collections');}
+async function addFpsToSetlist(sl,fps,existing=null,isNew=false){const setlists=existing||(await db.get('score_setlists'))||[];if(!sl.scores)sl.scores=[];let added=0;for(const fp of fps){if(!sl.scores.includes(fp)){sl.scores.push(fp);added++;}}sl.updatedAt=Date.now();if(isNew){setlists.push(sl);}else{const i=setlists.findIndex(s=>s.id===sl.id);if(i!==-1)setlists[i]=sl;else setlists.push(sl);}await db.set('score_setlists',setlists);alert(`Added ${added} score(s) to "${sl.name}".`);if(loadedTabs.has('setlists'))reloadTab('setlists');}
+
+// ══════════ COLLECTIONS ══════════
+async function loadCollections(){const colls=(await db.get('score_collections'))||[];const reg=(await db.get('score_registry'))||[];const titleMap=Object.fromEntries(reg.map(s=>[s.fingerprint,s.title]));const grid=document.getElementById('collections-grid');grid.innerHTML=!colls.length?`<div class="empty-state"><div class="icon">📚</div>No collections yet.<br><br><button class="btn btn-outline btn-sm" onclick="document.getElementById('btn-new-collection').click()">Create your first collection</button></div>`:colls.map(c=>`<div class="coll-card"><div class="coll-card-hd"><span style="font-size:1.4rem;">${c.color||'📚'}</span><h3>${escHtml(c.name)}</h3><span class="pill pill-purple">${c.fingerprints?.length||0}</span><button class="btn btn-outline btn-sm" onclick="editCollection('${c.id}')">✎</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteCollection('${c.id}')" title="Delete">🗑</button></div><ul class="coll-scores-list">${(c.fingerprints||[]).slice(0,6).map(fp=>`<li>🎼 ${escHtml(titleMap[fp]||fp.slice(0,8)+'…')}</li>`).join('')}${(c.fingerprints?.length||0)>6?`<li style="color:var(--primary);">+${c.fingerprints.length-6} more…</li>`:''}</ul></div>`).join('');}
+
+window.editCollection=async(id)=>{const colls=(await db.get('score_collections'))||[];const c=colls.find(x=>x.id===id);if(!c)return;const n=prompt('Rename collection:',c.name);if(!n?.trim())return;c.name=n.trim();c.updatedAt=Date.now();await db.set('score_collections',colls);reloadTab('collections');};
+window.deleteCollection=async(id)=>{if(!confirm('Delete this collection? Scores are not deleted.'))return;const colls=(await db.get('score_collections'))||[];await db.set('score_collections',colls.filter(c=>c.id!==id));reloadTab('collections');};
+document.getElementById('btn-new-collection').onclick=async()=>{const n=prompt('New collection name:');if(!n?.trim())return;const colls=(await db.get('score_collections'))||[];colls.push({id:`col_${Date.now()}`,name:n.trim(),color:'📚',fingerprints:[],updatedAt:Date.now()});await db.set('score_collections',colls);reloadTab('collections');};
+document.getElementById('btn-refresh-colls').onclick=()=>reloadTab('collections');
+
+// ══════════ IMPORT SCORE ══════════
+document.getElementById('btn-import-score').onclick=()=>{showImpStep(1);importTags=[];document.getElementById('modal-import').classList.remove('hidden');};
+document.getElementById('btn-imp-cancel').onclick=()=>document.getElementById('modal-import').classList.add('hidden');
+document.getElementById('btn-imp-change').onclick=()=>{importFile=null;showImpStep(1);};
+function showImpStep(n){document.getElementById('import-step1').classList.toggle('hidden',n!==1);document.getElementById('import-step2').classList.toggle('hidden',n!==2);document.getElementById('imp-progress').classList.add('hidden');document.getElementById('btn-imp-upload').disabled=false;document.getElementById('btn-imp-upload').textContent='Upload & Save';}
+
+const dropZone=document.getElementById('drop-zone');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)handleImportFile(f);});
+document.getElementById('pdf-input').addEventListener('change',e=>{if(e.target.files[0])handleImportFile(e.target.files[0]);});
+
+// Import tags editor
+const impTagInput=document.getElementById('imp-tag-input');
+function renderImpTags(){const editor=document.getElementById('imp-tags-editor');editor.innerHTML=importTags.map(t=>`<span class="tag-chip">${escHtml(t)}<span class="remove-tag" data-tag="${escHtml(t)}">×</span></span>`).join('')+`<input type="text" class="tag-input" id="imp-tag-input" placeholder="Add tag…">`;document.getElementById('imp-tag-input').addEventListener('keydown',impTagKeydown);document.querySelectorAll('#imp-tags-editor .remove-tag').forEach(el=>{el.onclick=()=>{importTags=importTags.filter(t=>t!==el.dataset.tag);renderImpTags();};});}
+function impTagKeydown(e){if(e.key==='Enter'||e.key===','){e.preventDefault();const v=e.target.value.trim().replace(/,$/,'');if(v&&!importTags.includes(v)){importTags.push(v);renderImpTags();}else e.target.value='';}}
+impTagInput.addEventListener('keydown',impTagKeydown);
+
+function handleImportFile(file){if(!file.name.toLowerCase().endsWith('.pdf')){alert('Please select a PDF file.');return;}importFile=file;const base=file.name.replace(/\.pdf$/i,'');document.getElementById('imp-filename').textContent=file.name;document.getElementById('imp-size').textContent=fmtBytes(file.size);document.getElementById('imp-title').value=base;document.getElementById('imp-composer').value='';document.getElementById('imp-genre').value='';importTags=[];renderImpTags();showImpStep(2);}
+
+document.getElementById('btn-imp-upload').onclick=async()=>{
+    if(!importFile)return;
+    const title=document.getElementById('imp-title').value.trim();
+    const composer=document.getElementById('imp-composer').value.trim();
+    const genre=document.getElementById('imp-genre').value;
+    if(!title){alert('Please enter a score name.');return;}
+    const btn=document.getElementById('btn-imp-upload');
+    btn.disabled=true;btn.textContent='Uploading…';
+    document.getElementById('imp-progress').classList.remove('hidden');
+    const setP=(pct,msg)=>{document.getElementById('imp-progress-text').textContent=msg;document.getElementById('imp-progress-bar').style.width=pct+'%';};
+    try{
+        setP(10,'Computing fingerprint…');
+        const buf=await importFile.arrayBuffer();
+        const hb=await crypto.subtle.digest('SHA-256',buf);
+        const fp=Array.from(new Uint8Array(hb)).map(b=>b.toString(16).padStart(2,'0')).join('');
+        setP(25,'Checking library…');
+        const reg=(await db.get('score_registry'))||[];
+        const existing=reg.find(s=>s.fingerprint===fp);
+        if(existing){if(!confirm(`This PDF already exists as "${existing.title}". Update metadata?`)){document.getElementById('modal-import').classList.add('hidden');return;}}
+        setP(40,'Uploading PDF…');
+        const {error:ue}=await sbClient.storage.from('pdfs').upload(`${currentUser.id}/${fp}.pdf`,importFile,{contentType:'application/pdf',upsert:true});
+        if(ue)throw ue;
+        setP(70,'Saving metadata…');
+        const {error:de}=await sbClient.from('scores').upsert({user_id:currentUser.id,fingerprint:fp,title,composer,genre:genre||null,filename:`${fp}.pdf`,tags:importTags,updated_at:new Date().toISOString()},{onConflict:'user_id,fingerprint'});
+        if(de)throw de;
+        setP(85,'Updating local library…');
+        if(existing){existing.title=title;existing.composer=composer;existing.genre=genre||'';existing.tags=importTags;existing.isSynced=true;existing.isPdfAvailable=true;existing.updatedAt=Date.now();}
+        else{reg.push({fingerprint:fp,title,composer,genre:genre||'',tags:importTags,fileName:importFile.name,storageMode:'cached',isSynced:true,isPdfAvailable:true,dateImported:Date.now(),lastAccessed:0});}
+        await db.set('score_registry',reg);
+        setP(100,'Done!');
+        setTimeout(()=>{document.getElementById('modal-import').classList.add('hidden');reloadTab('library');if(loadedTabs.has('dashboard'))reloadTab('dashboard');},600);
+    }catch(err){btn.disabled=false;btn.textContent='Upload & Save';document.getElementById('imp-progress-text').textContent='Error: '+err.message;document.getElementById('imp-progress-bar').style.background='#ef4444';console.error(err);}
+};
+document.getElementById('modal-import').addEventListener('click',e=>{if(e.target===document.getElementById('modal-import'))document.getElementById('modal-import').classList.add('hidden');});
+
+// ══════════ SETLISTS ══════════
+async function loadSetlists(){
+    const sl=(await db.get('score_setlists'))||[];
+    const reg=(await db.get('score_registry'))||[];
+    const tm=Object.fromEntries(reg.map(s=>[s.fingerprint,s.title]));
+    const lg=document.getElementById('setlist-local-grid');
+    lg.innerHTML=!sl.length?`<div class="empty-state"><div class="icon">📋</div>No setlists yet.<br><br><button class="btn btn-outline btn-sm" onclick="document.getElementById('btn-new-setlist').click()">Create your first setlist</button></div>`:sl.map(s=>`<div class="coll-card"><div class="coll-card-hd"><span style="font-size:1.4rem;">📋</span><h3>${escHtml(s.name||'Untitled')}</h3><span class="pill pill-gray">${s.scores?.length||0}</span><button class="btn btn-outline btn-sm" onclick="editSetlist('${s.id}')">✎</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteSetlist('${s.id}')">🗑</button></div><ul class="coll-scores-list">${(s.scores||[]).slice(0,6).map(fp=>`<li>🎼 ${escHtml(tm[fp]||fp.slice(0,8)+'…')}</li>`).join('')}${(s.scores?.length||0)>6?`<li style="color:var(--primary);">+${s.scores.length-6} more…</li>`:''}</ul></div>`).join('');
+    const {data:cs}=await sbClient.from('setlists').select('*').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
+    const cg=document.getElementById('setlist-cloud-grid');
+    cg.innerHTML=!cs?.length?`<div class="empty-state"><div class="icon">☁️</div>No cloud setlists.</div>`:cs.map(s=>{const sc=typeof s.scores==='string'?JSON.parse(s.scores):(s.scores||[]);return`<div class="coll-card"><div class="coll-card-hd"><span style="font-size:1.4rem;">📋</span><h3>${escHtml(s.name||'Untitled')}</h3><span class="pill pill-blue">${sc.length}</span><button class="btn btn-outline btn-sm" onclick="importCloudSetlist('${s.id}')">↓ Import</button></div><ul class="coll-scores-list">${sc.slice(0,5).map(fp=>`<li>🎼 ${escHtml(tm[fp]||fp.slice(0,8)+'…')}</li>`).join('')}${sc.length>5?`<li style="color:var(--primary);">+${sc.length-5} more…</li>`:''}</ul></div>`;}).join('');
 }
+window.editSetlist=async(id)=>{const all=(await db.get('score_setlists'))||[];const s=all.find(x=>x.id===id);if(!s)return;const n=prompt('Rename:',s.name);if(!n?.trim())return;s.name=n.trim();s.updatedAt=Date.now();await db.set('score_setlists',all);reloadTab('setlists');};
+window.deleteSetlist=async(id)=>{if(!confirm('Delete this setlist?'))return;await db.set('score_setlists',((await db.get('score_setlists'))||[]).filter(s=>s.id!==id));reloadTab('setlists');};
+window.importCloudSetlist=async(id)=>{const{data}=await sbClient.from('setlists').select('*').eq('id',id).single();if(!data)return;const local=(await db.get('score_setlists'))||[];const idx=local.findIndex(s=>s.id===id);const scores=typeof data.scores==='string'?JSON.parse(data.scores):(data.scores||[]);const entry={id:data.id,name:data.name,scores,updatedAt:Date.now()};if(idx!==-1)local[idx]=entry;else local.push(entry);await db.set('score_setlists',local);alert(`Setlist "${data.name}" imported.`);reloadTab('setlists');};
+document.getElementById('btn-new-setlist').onclick=async()=>{const n=prompt('New setlist name:');if(!n?.trim())return;const all=(await db.get('score_setlists'))||[];all.push({id:`sl_${Date.now()}`,name:n.trim(),scores:[],updatedAt:Date.now()});await db.set('score_setlists',all);reloadTab('setlists');};
+document.getElementById('btn-refresh-setlists').onclick=()=>reloadTab('setlists');
+document.getElementById('btn-push-setlists').onclick=async()=>{const l=(await db.get('score_setlists'))||[];if(!l.length){alert('No local setlists.');return;}let ok=0;for(const s of l){const{error}=await sbClient.from('setlists').upsert({id:s.id,user_id:currentUser.id,name:s.name,scores:s.scores,updated_at:new Date().toISOString()});if(!error)ok++;}alert(`Pushed ${ok} setlist(s).`);reloadTab('setlists');};
 
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function dlString(content, filename, mime='application/json') {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([content], { type: mime }));
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
+// ══════════ STORAGE ══════════
+async function loadStorage(){
+    const {data:prof}=await sbClient.from('user_profiles').select('storage_used_bytes,storage_quota_bytes,plan').eq('user_id',currentUser.id).single();
+    const qEl=document.getElementById('quota-section');
+    if(prof){const used=prof.storage_used_bytes||0,quota=prof.storage_quota_bytes||536870912,pct=Math.min(100,(used/quota)*100);qEl.innerHTML=`<div class="quota-wrap"><div class="quota-label"><span>Storage — <strong>${prof.plan||'Free'}</strong></span><span>${fmtBytes(used)} / ${fmtBytes(quota)}</span><span class="plan-tag">${Math.round(pct)}% used</span></div><div class="quota-bar-bg"><div class="quota-bar-fill ${pct>90?'crit':pct>70?'warn':''}" style="width:${pct.toFixed(1)}%"></div></div></div>`;}
+    const tbody=document.getElementById('storage-tbody');
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr>';
+    const{data:files}=await sbClient.storage.from('pdfs').list(currentUser.id,{limit:200});
+    if(!files?.length){tbody.innerHTML=`<tr><td colspan="5"><div class="empty-state"><div class="icon">📄</div>No PDFs in cloud.</div></td></tr>`;return;}
+    const reg=(await db.get('score_registry'))||[];const m=Object.fromEntries(reg.map(s=>[s.fingerprint,s.title]));
+    tbody.innerHTML=files.map(f=>{const fp=f.name.replace('.pdf','');return`<tr><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(m[fp]||'—')}">${escHtml(m[fp]||'—')}</td><td class="mono">${escHtml(f.name)}</td><td style="color:var(--text-muted);">${fmtBytes(f.metadata?.size||0)}</td><td style="color:var(--text-muted);font-size:11px;">${f.updated_at?new Date(f.updated_at).toLocaleDateString():'—'}</td><td><div style="display:flex;gap:4px;"><button class="btn btn-outline btn-sm" onclick="openPdf('${f.name}')">Open</button><button class="btn btn-danger btn-sm btn-icon" onclick="deletePdf('${f.name}')">🗑</button></div></td></tr>`;}).join('');
 }
+window.openPdf=async(name)=>{const{data}=await sbClient.storage.from('pdfs').createSignedUrl(`${currentUser.id}/${name}`,300);if(data?.signedUrl)window.open(data.signedUrl,'_blank');};
+window.deletePdf=async(name)=>{if(!confirm(`Delete "${name}"?`))return;await sbClient.storage.from('pdfs').remove([`${currentUser.id}/${name}`]);reloadTab('storage');};
+document.getElementById('btn-refresh-storage').onclick=()=>reloadTab('storage');
 
-function ts() { return new Date().toISOString().slice(0,10); }
+// ══════════ BACKUP ══════════
+const bLog=document.getElementById('backup-log');
+const blog=(msg,type='info')=>{const col=type==='error'?'#f87171':type==='success'?'#10b981':'#6b7280';bLog.innerHTML+=`<div style="color:${col}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;bLog.scrollTop=bLog.scrollHeight;};
+
+document.getElementById('btn-export-idb').onclick=async()=>{blog('Reading IndexedDB…');const keys=await db.getAllKeys();const out={};for(const k of keys)out[k]=await db.get(k);downloadFile(JSON.stringify(out,null,2),`scoreflow-backup-${dateStr()}.json`,'application/json');blog(`Exported ${keys.length} keys.`,'success');};
+document.getElementById('btn-export-cloud').onclick=async()=>{const{data}=await sbClient.from('scores').select('*').eq('user_id',currentUser.id);downloadFile(JSON.stringify(data||[],null,2),`scoreflow-cloud-${dateStr()}.json`,'application/json');blog(`Exported ${data?.length||0} records.`,'success');};
+document.getElementById('btn-export-setlists-json').onclick=async()=>{const l=(await db.get('score_setlists'))||[];downloadFile(JSON.stringify(l,null,2),`scoreflow-setlists-${dateStr()}.json`,'application/json');blog(`Exported ${l.length} setlists.`,'success');};
+document.getElementById('btn-export-collections-json').onclick=async()=>{const l=(await db.get('score_collections'))||[];downloadFile(JSON.stringify(l,null,2),`scoreflow-collections-${dateStr()}.json`,'application/json');blog(`Exported ${l.length} collections.`,'success');};
+document.getElementById('btn-download-pdf-list').onclick=async()=>{blog('Generating…');const{data:files}=await sbClient.storage.from('pdfs').list(currentUser.id,{limit:200});if(!files?.length){blog('No files.','warn');return;}const reg=(await db.get('score_registry'))||[];const m=Object.fromEntries(reg.map(s=>[s.fingerprint,s.title]));const rows=[['Title','Filename','Fingerprint','Signed URL']];for(const f of files){const fp=f.name.replace('.pdf','');const{data}=await sbClient.storage.from('pdfs').createSignedUrl(`${currentUser.id}/${f.name}`,3600);rows.push([m[fp]||'—',f.name,fp,data?.signedUrl||'']);}downloadFile(rows.map(r=>r.map(c=>`"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n'),`pdf-urls-${dateStr()}.csv`,'text/csv');blog(`Done: ${files.length} PDFs.`,'success');};
+document.getElementById('btn-restore-idb').onclick=async()=>{const file=document.getElementById('file-restore-idb').files[0];if(!file){blog('Select a file.','warn');return;}if(!confirm('Overwrite ALL local data?'))return;try{const j=JSON.parse(await file.text());await db.clear();for(const[k,v]of Object.entries(j))await db.set(k,v);blog(`Restored ${Object.keys(j).length} keys.`,'success');}catch(e){blog('Failed: '+e.message,'error');}};
+document.getElementById('btn-restore-setlists').onclick=async()=>{const file=document.getElementById('file-restore-setlists').files[0];if(!file){blog('Select a file.','warn');return;}try{const j=JSON.parse(await file.text());await db.set('score_setlists',j);blog(`Restored ${j.length} setlists.`,'success');}catch(e){blog('Failed: '+e.message,'error');}};
+document.getElementById('btn-push-registry').onclick=async()=>{blog('Pushing…');const reg=(await db.get('score_registry'))||[];let ok=0,fail=0;for(const s of reg){if(!s.fingerprint)continue;const{error}=await sbClient.from('scores').upsert({user_id:currentUser.id,fingerprint:s.fingerprint,title:s.title||'Untitled',composer:s.composer||'',filename:s.fileName||null,genre:s.genre||null,tags:s.tags||[],updated_at:new Date().toISOString()},{onConflict:'user_id,fingerprint'});if(error)fail++;else ok++;}blog(`Pushed ${ok}.${fail?' '+fail+' failed.':''}`,fail?'warn':'success');};
+document.getElementById('btn-pull-registry').onclick=async()=>{blog('Pulling…');const{data,error}=await sbClient.from('scores').select('*').eq('user_id',currentUser.id);if(error){blog('Failed: '+error.message,'error');return;}const reg=(await db.get('score_registry'))||[];let upd=0,add=0;for(const c of data){const l=reg.find(s=>s.fingerprint===c.fingerprint);if(l){l.title=c.title||l.title;l.composer=c.composer||l.composer;if(c.filename)l.fileName=c.filename;if(c.genre)l.genre=c.genre;if(c.tags)l.tags=c.tags;upd++;}else{reg.push({fingerprint:c.fingerprint,title:c.title||'Untitled',composer:c.composer||'',fileName:c.filename||'',genre:c.genre||'',tags:c.tags||[],isSynced:true,isCloudOnly:true,storageMode:'cloud'});add++;}}await db.set('score_registry',reg);blog(`Updated ${upd}, added ${add}.`,'success');};
+document.getElementById('btn-push-setlists-sb').onclick=async()=>{blog('Pushing setlists…');const local=(await db.get('score_setlists'))||[];let ok=0;for(const sl of local){const{error}=await sbClient.from('setlists').upsert({id:sl.id,user_id:currentUser.id,name:sl.name,scores:sl.scores,updated_at:new Date().toISOString()});if(!error)ok++;}blog(`Pushed ${ok}.`,'success');};
+
+// ══════════ UTILS ══════════
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtBytes(b){if(b>=1073741824)return(b/1073741824).toFixed(1)+' GB';if(b>=1048576)return(b/1048576).toFixed(1)+' MB';if(b>=1024)return(b/1024).toFixed(0)+' KB';return b+' B';}
+function dateStr(){return new Date().toISOString().slice(0,10);}
+function downloadFile(content,name,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download=name;a.click();}
+
+init();
 </script>
 </body>
 </html>
