@@ -159,17 +159,21 @@ export class InteractionManager {
 
             // 1. View Mode Panning (Only for mouse/pen in view mode)
             if (toolType === 'view') {
-                // Only handle single-touch; ignore if already panning
+                // IMPORTANT: For touch devices, we want native scroll. 
+                // Return early and let the event bubble or fall through.
+                if (pointerType === 'touch') return;
+
+                // Only handle single-mouse/pen; ignore if already panning
                 if (isPanning) return;
 
                 isPanning = true;
                 const startX = e.clientX, startY = e.clientY;
                 const startScrollTop = this.app.viewer.scrollTop;
                 const startScrollLeft = this.app.viewer.scrollLeft;
-                if (pointerType !== 'touch') {
-                    overlay.style.cursor = 'grabbing';
-                    this.app.viewer.style.scrollBehavior = 'auto';
-                }
+                
+                overlay.style.cursor = 'grabbing';
+                this.app.viewer.style.scrollBehavior = 'auto';
+                
                 const doPan = (ev) => {
                     if (!isPanning) return;
                     const dx = ev.clientX - startX;
@@ -828,7 +832,7 @@ export class InteractionManager {
                 // On iPads/Tablets, we want standard OS scrolling. 
                 // Making the overlay pointer-transparent allows native gestures to hit the underlying viewer.
                 el.style.pointerEvents = isTouchScreen ? 'none' : 'auto';
-                el.style.zIndex = '';
+                el.style.zIndex = '1'; // Move to back but keep above PDF if needed for clicks
             } else {
                 // Stamp tools REQUIRE touch-action: none to allow drawing without scrolling
                 el.style.touchAction = 'none';
@@ -838,11 +842,10 @@ export class InteractionManager {
         });
 
         // SAFETY: Ensure the viewer's own touch-action is correct.
-        // In stamp mode, the capture overlay blocks native scroll. The viewer itself 
-        // must still allow programmatic scrolling, but two-finger pan is handled by JS.
         if (this.app.viewer) {
-            this.app.viewer.style.touchAction = isViewMode ? 'pan-y' : 'pan-y';
-            // Ensure overflow-y is never stuck at 'hidden' (can happen after fitToHeight race condition)
+            // In view mode, allow both horizontal and vertical panning (important for zoomed scores)
+            this.app.viewer.style.touchAction = isViewMode ? 'pan-x pan-y' : 'pan-y';
+            // Ensure overflow-y is never stuck at 'hidden'
             if (this.app.viewer.style.overflowY === 'hidden') {
                 this.app.viewer.style.overflowY = '';
             }

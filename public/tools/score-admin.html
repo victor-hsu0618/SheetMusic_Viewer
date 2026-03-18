@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score Admin | ScoreFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles.css">
+    <script src="theme-manager.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .admin-wrap { max-width: 1400px; margin: 0 auto; padding: 32px 20px; }
+
+        /* Config */
+        .config-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 240px; }
+        .input-group label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+        input[type=text], input[type=email], input[type=password] { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px; width: 100%; }
+        .badge-admin { background: rgba(239,68,68,.15); color: #ef4444; border: 1px solid rgba(239,68,68,.3); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+        .badge-user { background: rgba(99,102,241,.15); color: #818cf8; border: 1px solid rgba(99,102,241,.3); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; transition: all .15s; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { opacity: .85; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { opacity: .85; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+        .btn-outline:hover { background: rgba(255,255,255,.06); color: var(--text); }
+        .btn-sm { padding: 4px 10px; font-size: 11px; }
+        .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* Debug Console */
+        .debug-console { background: #000; color: #6b7280; padding: 10px 14px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; height: 80px; overflow-y: auto; border: 1px solid #1f2937; margin-bottom: 20px; }
+
+        /* Tab Nav */
+        .tab-nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 16px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Stat Cards */
+        .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+        .stat-card .val { font-size: 26px; font-weight: 800; }
+        .stat-card .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; }
+
+        /* Table */
+        .table-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; padding: 10px 14px; background: rgba(255,255,255,.03); border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+        td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,.02); }
+
+        /* Inline Edit */
+        .editable { cursor: text; border-radius: 4px; padding: 2px 4px; min-width: 60px; outline: none; }
+        .editable:focus { background: rgba(99,102,241,.15); box-shadow: 0 0 0 1px var(--primary); }
+        .editable.saving { opacity: .5; }
+        .editable.saved { background: rgba(16,185,129,.2); transition: background .5s; }
+        .editable.error { background: rgba(239,68,68,.2); }
+
+        /* Toolbar row */
+        .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+        .search-input { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; color: var(--text); font-family: inherit; font-size: 12px; width: 220px; }
+        .filter-pill { padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); background: transparent; transition: all .15s; }
+        .filter-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        /* Status Pills */
+        .pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .pill-green { background: rgba(16,185,129,.12); color: #10b981; border: 1px solid rgba(16,185,129,.25); }
+        .pill-red { background: rgba(239,68,68,.12); color: #ef4444; border: 1px solid rgba(239,68,68,.25); }
+        .pill-amber { background: rgba(245,158,11,.12); color: #f59e0b; border: 1px solid rgba(245,158,11,.25); }
+        .pill-gray { background: rgba(255,255,255,.07); color: var(--text-muted); border: 1px solid var(--border); }
+        .pill-blue { background: rgba(56,189,248,.12); color: #38bdf8; border: 1px solid rgba(56,189,248,.25); }
+
+        /* Quota Bar */
+        .quota-bar-wrap { margin: 12px 0; }
+        .quota-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+        .quota-bar-bg { height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+        .quota-bar-fill { height: 100%; border-radius: 99px; transition: width .4s; }
+
+        /* Setlist Cards */
+        .setlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+        .setlist-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+        .setlist-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+        .setlist-scores { list-style: none; margin: 8px 0; }
+        .setlist-scores li { font-size: 11px; color: var(--text-muted); padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.04); display: flex; align-items: center; gap: 6px; }
+        .setlist-scores li:last-child { border-bottom: none; }
+
+        /* Section Header */
+        .section-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .section-hd h2 { font-size: 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+
+        /* Lock Overlay */
+        .lock-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; color: var(--text-muted); }
+        .lock-card .lock-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+        /* Mono */
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+        /* Code Block */
+        .code-block { background: #0a0f1e; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #a5b4fc; white-space: pre; overflow-x: auto; margin: 8px 0 16px 0; }
+
+        /* Checkbox */
+        input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: var(--primary); }
+
+        .hidden { display: none !important; }
+        .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    </style>
+</head>
+<body>
+<div class="admin-wrap">
+
+    <!-- Header -->
+    <nav style="display:flex; gap:16px; margin-bottom:20px; align-items:center;">
+        <a href="index.html" style="text-decoration:none; color:var(--primary); font-weight:700; font-size:13px; opacity:.8;">← Dev Hub</a>
+        <a href="../index.html" style="text-decoration:none; color:var(--text-muted); font-weight:600; font-size:13px; opacity:.6;">🏠 ScoreFlow</a>
+        <span style="margin-left:auto;" id="admin-badge"></span>
+    </nav>
+    <h1 style="font-size:1.8rem; font-weight:800; margin-bottom:4px;">Score Admin Panel</h1>
+    <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Manage scores, setlists, storage, users and backups.</p>
+
+    <!-- Config -->
+    <div class="config-card">
+        <div class="input-group">
+            <label>Supabase URL</label>
+            <input type="text" id="sb-url" value="https://tanoqdnqtxqxerwcbdlf.supabase.co">
+        </div>
+        <div class="input-group">
+            <label>Anon Key</label>
+            <input type="password" id="sb-anon">
+        </div>
+        <div class="input-group">
+            <label>Service Role Key <span style="color:var(--danger);font-size:9px;">(Users tab only — keep secret)</span></label>
+            <input type="password" id="sb-service">
+        </div>
+        <button class="btn btn-primary" id="btn-connect">Connect</button>
+    </div>
+
+    <!-- Login -->
+    <div id="login-section" class="config-card hidden">
+        <div class="input-group"><label>Email</label><input type="email" id="login-email"></div>
+        <div class="input-group"><label>Password</label><input type="password" id="login-password"></div>
+        <button class="btn btn-primary" id="btn-login">Sign In</button>
+    </div>
+
+    <!-- Debug Log -->
+    <div id="debug-log" class="debug-console">Waiting for connection...</div>
+
+    <!-- Main Panel -->
+    <div id="admin-panel" class="hidden">
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="tab-btn" data-tab="scores">🎼 Scores</button>
+            <button class="tab-btn" data-tab="setlists">📋 Setlists</button>
+            <button class="tab-btn" data-tab="storage">💾 Storage</button>
+            <button class="tab-btn" data-tab="users">👥 Users</button>
+            <button class="tab-btn" data-tab="backup">🗄️ Backup</button>
+            <button class="tab-btn" data-tab="repair">🔧 Repair</button>
+        </div>
+
+        <!-- ═══ DASHBOARD ═══ -->
+        <div id="panel-dashboard" class="tab-panel active">
+            <div class="stat-row" id="dash-stats">
+                <div class="stat-card"><div class="val" id="d-scores">—</div><div class="lbl">Cloud Scores</div></div>
+                <div class="stat-card"><div class="val" id="d-local">—</div><div class="lbl">Local Scores</div></div>
+                <div class="stat-card"><div class="val" id="d-storage">—</div><div class="lbl">Storage Used</div></div>
+                <div class="stat-card"><div class="val" id="d-setlists">—</div><div class="lbl">Setlists</div></div>
+                <div class="stat-card"><div class="val" id="d-annots">—</div><div class="lbl">Annotations</div></div>
+            </div>
+            <div id="dash-quota-section" style="margin-bottom:20px;"></div>
+            <div id="dash-alerts"></div>
+        </div>
+
+        <!-- ═══ SCORES ═══ -->
+        <div id="panel-scores" class="tab-panel">
+            <div class="toolbar">
+                <input type="text" class="search-input" id="score-search" placeholder="Search title / composer / filename…">
+                <button class="filter-pill active" data-filter="all">All</button>
+                <button class="filter-pill" data-filter="cloud">Cloud</button>
+                <button class="filter-pill" data-filter="local">Local only</button>
+                <button class="filter-pill" data-filter="nopdf">No PDF</button>
+                <span style="margin-left:auto;display:flex;gap:8px;">
+                    <button class="btn btn-outline btn-sm" id="btn-select-all">Select All</button>
+                    <button class="btn btn-danger btn-sm" id="btn-bulk-delete" disabled>Delete Selected</button>
+                    <button class="btn btn-outline btn-sm" id="btn-export-csv">Export CSV</button>
+                    <button class="btn btn-outline btn-sm" id="btn-refresh-scores">↻ Refresh</button>
+                </span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr>
+                        <th style="width:30px;"><input type="checkbox" id="chk-all"></th>
+                        <th style="width:22%;">Title</th>
+                        <th style="width:14%;">Composer</th>
+                        <th style="width:18%;">Filename</th>
+                        <th style="width:10%;">Fingerprint</th>
+                        <th style="width:8%;">PDF</th>
+                        <th style="width:10%;">Last Accessed</th>
+                        <th style="width:8%;">Mode</th>
+                        <th>Actions</th>
+                    </tr></thead>
+                    <tbody id="scores-tbody"></tbody>
+                </table>
+            </div>
+            <div id="scores-count" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></div>
+        </div>
+
+        <!-- ═══ SETLISTS ═══ -->
+        <div id="panel-setlists" class="tab-panel">
+            <div class="section-hd">
+                <h2>Local Setlists (IndexedDB)</h2>
+                <button class="btn btn-outline btn-sm" id="btn-refresh-setlists">↻ Refresh</button>
+            </div>
+            <div id="setlist-local-grid" class="setlist-grid"></div>
+            <hr class="divider">
+            <div class="section-hd">
+                <h2>Cloud Setlists (Supabase)</h2>
+                <button class="btn btn-outline btn-sm" id="btn-push-setlists">↑ Push Local → Cloud</button>
+            </div>
+            <div id="setlist-cloud-grid" class="setlist-grid"></div>
+        </div>
+
+        <!-- ═══ STORAGE ═══ -->
+        <div id="panel-storage" class="tab-panel">
+            <div id="storage-quota-section" style="margin-bottom:20px;"></div>
+            <div class="section-hd">
+                <h2>PDF Files in Bucket</h2>
+                <button class="btn btn-outline btn-sm" id="btn-refresh-storage">↻ Refresh</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr>
+                        <th>Score Title</th>
+                        <th>Filename (bucket)</th>
+                        <th style="width:90px;">Size</th>
+                        <th style="width:140px;">Last Modified</th>
+                        <th style="width:100px;">Actions</th>
+                    </tr></thead>
+                    <tbody id="storage-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ USERS ═══ -->
+        <div id="panel-users" class="tab-panel">
+            <div id="users-lock" class="lock-card">
+                <div class="lock-icon">🔐</div>
+                <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Service Role Required</div>
+                <div style="font-size:13px;">Enter your Supabase <strong>service_role</strong> key in the config above to access user management.</div>
+            </div>
+            <div id="users-panel" class="hidden">
+                <div class="toolbar">
+                    <button class="btn btn-outline btn-sm" id="btn-refresh-users">↻ Refresh</button>
+                    <button class="btn btn-outline btn-sm" id="btn-recalc-quotas">Recalculate Storage</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr>
+                            <th>Email</th>
+                            <th style="width:90px;">Plan</th>
+                            <th style="width:130px;">Quota</th>
+                            <th style="width:130px;">Used</th>
+                            <th style="width:70px;">Scores</th>
+                            <th style="width:120px;">Last Login</th>
+                            <th>Actions</th>
+                        </tr></thead>
+                        <tbody id="users-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ BACKUP ═══ -->
+        <div id="panel-backup" class="tab-panel">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <!-- Export -->
+                <div class="glass" style="border-radius:12px;">
+                    <h3 style="font-size:13px;font-weight:700;margin-bottom:12px;">📤 Export / Download</h3>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <button class="btn btn-outline" id="btn-export-idb">Export IndexedDB (Full Local Backup)</button>
+                        <button class="btn btn-outline" id="btn-export-cloud">Export Cloud Metadata (Scores + Annotations)</button>
+                        <button class="btn btn-outline" id="btn-export-setlists">Export Setlists JSON</button>
+                        <button class="btn btn-outline" id="btn-download-pdf-list">Download PDF List (with URLs)</button>
+                    </div>
+                </div>
+                <!-- Import -->
+                <div class="glass" style="border-radius:12px;">
+                    <h3 style="font-size:13px;font-weight:700;margin-bottom:12px;">📥 Import / Restore</h3>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Restore IndexedDB from backup JSON:</div>
+                            <input type="file" id="file-restore-idb" accept=".json" style="font-size:11px;width:100%;">
+                            <button class="btn btn-danger btn-sm" id="btn-restore-idb" style="margin-top:6px;">⚠ Restore (overwrites local)</button>
+                        </div>
+                        <hr class="divider" style="margin:8px 0;">
+                        <div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Restore Setlists from JSON:</div>
+                            <input type="file" id="file-restore-setlists" accept=".json" style="font-size:11px;width:100%;">
+                            <button class="btn btn-outline btn-sm" id="btn-restore-setlists" style="margin-top:6px;">Import Setlists</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr class="divider">
+            <!-- Sync -->
+            <div class="glass" style="border-radius:12px;">
+                <h3 style="font-size:13px;font-weight:700;margin-bottom:12px;">☁️ Cloud Sync Operations</h3>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-outline" id="btn-push-registry">Push Registry → Supabase</button>
+                    <button class="btn btn-outline" id="btn-push-setlists-sb">Push Setlists → Supabase</button>
+                    <button class="btn btn-outline" id="btn-pull-registry">Pull Registry ← Supabase</button>
+                </div>
+            </div>
+            <hr class="divider">
+            <div id="backup-log" class="debug-console" style="height:120px;"></div>
+        </div>
+
+        <!-- ═══ REPAIR ═══ -->
+        <div id="panel-repair" class="tab-panel">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                <div class="glass" style="border-radius:12px;">
+                    <h3 style="font-size:13px;font-weight:700;margin-bottom:10px;">🔬 Data Integrity</h3>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <button class="btn btn-outline btn-sm" id="btn-scan-issues">Scan for Issues</button>
+                        <button class="btn btn-outline btn-sm" id="btn-fix-all-hashes">Fix All Hash-Suffix fileNames</button>
+                        <button class="btn btn-outline btn-sm" id="btn-orphan-cleanup">Remove Orphan Cloud Records</button>
+                        <button class="btn btn-outline btn-sm" id="btn-fix-missing-filenames">Fill Missing fileNames</button>
+                    </div>
+                </div>
+                <div class="glass" style="border-radius:12px;">
+                    <h3 style="font-size:13px;font-weight:700;margin-bottom:10px;">⚙️ Schema Setup (Supabase SQL)</h3>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Run in Supabase SQL editor to enable Users tab + Setlist cloud sync:</div>
+                    <button class="btn btn-outline btn-sm" id="btn-copy-schema">Copy SQL</button>
+                    <button class="btn btn-outline btn-sm" id="btn-check-schema" style="margin-left:4px;">Check Schema</button>
+                </div>
+            </div>
+            <div id="repair-issues-list" style="margin-bottom:12px;"></div>
+            <div id="repair-log" class="debug-console" style="height:160px;"></div>
+        </div>
+    </div><!-- /admin-panel -->
+</div><!-- /wrap -->
+
+<script type="module">
+// ═══════════════════════════════════════════════════════
+// INLINE DB WRAPPER
+// ═══════════════════════════════════════════════════════
+const db = {
+    _open() {
+        return new Promise((res, rej) => {
+            const r = indexedDB.open('ScoreFlowStorage', 1);
+            r.onupgradeneeded = () => r.result.createObjectStore('store');
+            r.onsuccess = () => res(r.result);
+            r.onerror = () => rej(r.error);
+        });
+    },
+    async get(key) {
+        const d = await this._open();
+        return new Promise((res, rej) => {
+            const req = d.transaction('store','readonly').objectStore('store').get(key);
+            req.onsuccess = () => res(req.result);
+            req.onerror = () => rej(req.error);
+        });
+    },
+    async set(key, val) {
+        const d = await this._open();
+        return new Promise((res, rej) => {
+            const tx = d.transaction('store','readwrite');
+            tx.objectStore('store').put(val, key);
+            tx.oncomplete = res;
+            tx.onerror = () => rej(tx.error);
+        });
+    },
+    async getAllKeys() {
+        const d = await this._open();
+        return new Promise((res, rej) => {
+            const req = d.transaction('store','readonly').objectStore('store').getAllKeys();
+            req.onsuccess = () => res(req.result);
+            req.onerror = () => rej(req.error);
+        });
+    },
+    async clear() {
+        const d = await this._open();
+        return new Promise((res, rej) => {
+            const tx = d.transaction('store','readwrite');
+            tx.objectStore('store').clear();
+            tx.oncomplete = res;
+            tx.onerror = () => rej(tx.error);
+        });
+    }
+};
+
+// ═══════════════════════════════════════════════════════
+// LOGGING
+// ═══════════════════════════════════════════════════════
+const logEl = document.getElementById('debug-log');
+const repairLogEl = document.getElementById('repair-log');
+const backupLogEl = document.getElementById('backup-log');
+
+function log(msg, type='info', target=logEl) {
+    const t = new Date().toLocaleTimeString();
+    const color = type === 'error' ? '#f87171' : type === 'success' ? '#10b981' : type === 'warn' ? '#f59e0b' : '#6b7280';
+    target.innerHTML += `<div style="color:${color}">[${t}] ${msg}</div>`;
+    target.scrollTop = target.scrollHeight;
+}
+const rlog = (m,t) => log(m,t,repairLogEl);
+const blog = (m,t) => log(m,t,backupLogEl);
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let sbClient = null, adminClient = null, currentUser = null;
+let cachedScores = [], cachedFiles = [], cachedLocalReg = [], cachedSetlists = [];
+let loadedTabs = new Set();
+let selectedFps = new Set();
+let scoreFilter = 'all', scoreSearch = '';
+
+// ═══════════════════════════════════════════════════════
+// INIT & AUTH
+// ═══════════════════════════════════════════════════════
+document.getElementById('btn-connect').onclick = async () => {
+    const url = document.getElementById('sb-url').value.trim();
+    const anon = document.getElementById('sb-anon').value.trim();
+    const svc  = document.getElementById('sb-service').value.trim();
+    if (!url || !anon) { log('URL and Anon Key required.','error'); return; }
+
+    sbClient = supabase.createClient(url, anon);
+    if (svc) {
+        adminClient = supabase.createClient(url, svc, { auth: { autoRefreshToken: false, persistSession: false } });
+        document.getElementById('admin-badge').innerHTML = '<span class="badge-admin">Service Role Active</span>';
+        document.getElementById('users-lock').classList.add('hidden');
+        document.getElementById('users-panel').classList.remove('hidden');
+        log('Admin client ready (service_role).', 'success');
+    } else {
+        document.getElementById('admin-badge').innerHTML = '<span class="badge-user">Anon Mode</span>';
+    }
+
+    const { data: { session } } = await sbClient.auth.getSession();
+    currentUser = session?.user || null;
+    if (currentUser) {
+        log(`Authenticated as ${currentUser.email}`, 'success');
+        onAuthenticated();
+    } else {
+        log('Not signed in — please login.', 'warn');
+        document.getElementById('login-section').classList.remove('hidden');
+    }
+};
+
+document.getElementById('btn-login').onclick = async () => {
+    const { error } = await sbClient.auth.signInWithPassword({
+        email: document.getElementById('login-email').value,
+        password: document.getElementById('login-password').value
+    });
+    if (error) { log(error.message, 'error'); return; }
+    const { data: { session } } = await sbClient.auth.getSession();
+    currentUser = session.user;
+    document.getElementById('login-section').classList.add('hidden');
+    log(`Signed in as ${currentUser.email}`, 'success');
+    onAuthenticated();
+};
+
+function onAuthenticated() {
+    document.getElementById('admin-panel').classList.remove('hidden');
+    loadTab('dashboard');
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB SYSTEM
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+        loadTab(btn.dataset.tab);
+    };
+});
+
+function loadTab(tab) {
+    if (loadedTabs.has(tab)) return;
+    loadedTabs.add(tab);
+    if (tab === 'dashboard') loadDashboard();
+    if (tab === 'scores') loadScores();
+    if (tab === 'setlists') loadSetlists();
+    if (tab === 'storage') loadStorage();
+    if (tab === 'users' && adminClient) loadUsers();
+}
+
+function reloadTab(tab) {
+    loadedTabs.delete(tab);
+    loadTab(tab);
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+async function loadDashboard() {
+    try {
+        // Cloud scores
+        const { count: cloudCount } = await sbClient.from('scores').select('*', {count:'exact',head:true}).eq('user_id', currentUser.id);
+        document.getElementById('d-scores').textContent = cloudCount ?? '—';
+
+        // Local
+        cachedLocalReg = await db.get('score_registry') || [];
+        document.getElementById('d-local').textContent = cachedLocalReg.length;
+
+        // Setlists
+        const setlists = await db.get('score_setlists') || [];
+        document.getElementById('d-setlists').textContent = setlists.length;
+
+        // Annotations count
+        const { count: annotCount } = await sbClient.from('annotations').select('*', {count:'exact',head:true}).eq('user_id', currentUser.id);
+        document.getElementById('d-annots').textContent = annotCount ?? '—';
+
+        // Storage
+        const files = await sbClient.storage.from('pdfs').list(currentUser.id);
+        const fileList = files.data || [];
+        const totalBytes = fileList.reduce((s, f) => s + (f.metadata?.size || f.size || 0), 0);
+        document.getElementById('d-storage').textContent = fmtBytes(totalBytes);
+
+        // Quota bar (if user_profiles exists)
+        await renderQuotaSection('dash-quota-section', totalBytes);
+
+        log(`Dashboard loaded. ${cloudCount} cloud scores, ${fmtBytes(totalBytes)} storage.`, 'success');
+    } catch(e) { log('Dashboard error: ' + e.message, 'error'); }
+}
+
+async function renderQuotaSection(containerId, usedBytes) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    try {
+        const { data: profile } = await sbClient.from('user_profiles').select('plan,storage_quota_bytes').eq('id', currentUser.id).single();
+        if (!profile) { container.innerHTML = ''; return; }
+        const quota = profile.storage_quota_bytes || 524288000;
+        const pct = Math.min(100, (usedBytes / quota) * 100).toFixed(1);
+        const color = pct < 70 ? 'var(--success)' : pct < 90 ? 'var(--warn)' : 'var(--danger)';
+        container.innerHTML = `
+            <div class="glass" style="border-radius:12px;padding:16px 20px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                    <span style="font-size:13px;font-weight:700;">Storage Quota</span>
+                    <span class="pill pill-blue">${profile.plan?.toUpperCase() || 'FREE'}</span>
+                </div>
+                <div class="quota-bar-label"><span>${fmtBytes(usedBytes)} used</span><span>${fmtBytes(quota)} total</span></div>
+                <div class="quota-bar-bg"><div class="quota-bar-fill" style="width:${pct}%;background:${color};"></div></div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${pct}% used</div>
+            </div>`;
+    } catch { container.innerHTML = ''; }
+}
+
+// ═══════════════════════════════════════════════════════
+// SCORES
+// ═══════════════════════════════════════════════════════
+async function loadScores() {
+    log('Loading scores...');
+    try {
+        const [cloudRes, filesRes] = await Promise.all([
+            sbClient.from('scores').select('*').eq('user_id', currentUser.id).order('last_accessed', {ascending:false}),
+            sbClient.storage.from('pdfs').list(currentUser.id)
+        ]);
+        cachedScores = cloudRes.data || [];
+        cachedFiles  = filesRes.data || [];
+        cachedLocalReg = await db.get('score_registry') || [];
+        renderScoresTable();
+        log(`Loaded ${cachedScores.length} cloud scores.`, 'success');
+    } catch(e) { log('Scores error: ' + e.message, 'error'); }
+}
+
+function renderScoresTable() {
+    const tbody = document.getElementById('scores-tbody');
+    const q = scoreSearch.toLowerCase();
+
+    // Build unified list: cloud scores + local-only
+    const cloudFps = new Set(cachedScores.map(s => s.fingerprint));
+    const allScores = [
+        ...cachedScores.map(s => ({ ...s, _src: 'cloud', _local: cachedLocalReg.find(l => l.fingerprint === s.fingerprint) })),
+        ...cachedLocalReg.filter(l => !cloudFps.has(l.fingerprint)).map(l => ({ fingerprint: l.fingerprint, title: l.title, composer: l.composer, filename: l.fileName, _src: 'local', _local: l }))
+    ];
+
+    const fileMap = {};
+    cachedFiles.forEach(f => { fileMap[f.name] = f; });
+
+    let filtered = allScores.filter(s => {
+        if (scoreFilter === 'cloud' && s._src !== 'cloud') return false;
+        if (scoreFilter === 'local' && s._src !== 'local') return false;
+        if (scoreFilter === 'nopdf' && fileMap[`${s.fingerprint}.pdf`]) return false;
+        if (q && !((s.title||'').toLowerCase().includes(q) || (s.composer||'').toLowerCase().includes(q) || (s.filename||s.fileName||'').toLowerCase().includes(q))) return false;
+        return true;
+    });
+
+    document.getElementById('scores-count').textContent = `${filtered.length} scores`;
+    tbody.innerHTML = '';
+
+    filtered.forEach(s => {
+        const fp = s.fingerprint;
+        const file = fileMap[`${fp}.pdf`];
+        const fileSize = file ? fmtBytes(file.metadata?.size || file.size || 0) : null;
+        const lastAccessed = s.last_accessed ? relTime(s.last_accessed) : (s._local?.lastAccessed ? relTime(s._local.lastAccessed) : '—');
+        const mode = s._local?.storageMode || (s._src === 'cloud' ? 'cloud' : '—');
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="checkbox" class="row-chk" data-fp="${fp}"></td>
+            <td><span class="editable mono" contenteditable="true" data-fp="${fp}" data-field="title">${esc(s.title||'')}</span></td>
+            <td><span class="editable mono" contenteditable="true" data-fp="${fp}" data-field="composer">${esc(s.composer||'')}</span></td>
+            <td><span class="editable mono" contenteditable="true" data-fp="${fp}" data-field="filename">${esc(s.filename||s.fileName||'')}</span></td>
+            <td><span class="mono" title="${fp}">${fp.slice(0,8)}…</span></td>
+            <td>${file ? `<span class="pill pill-green">${fileSize}</span>` : `<span class="pill pill-red">Missing</span>`}</td>
+            <td style="color:var(--text-muted);">${lastAccessed}</td>
+            <td><span class="pill ${mode==='pinned'?'pill-blue':mode==='cached'?'pill-green':mode==='cloud'?'pill-amber':'pill-gray'}">${mode}</span></td>
+            <td>
+                <div style="display:flex;gap:4px;">
+                    ${s._src === 'cloud' ? `<button class="btn btn-outline btn-sm" onclick="window.deleteScore('${fp}')">Delete Cloud</button>` : ''}
+                    ${!s._src.includes('cloud') || !file ? '' : `<a class="btn btn-outline btn-sm" href="#" onclick="window.downloadPDF('${fp}');return false;">↓ PDF</a>`}
+                </div>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+
+    // Wire inline edits
+    tbody.querySelectorAll('.editable').forEach(el => {
+        const orig = el.textContent;
+        el.addEventListener('blur', async () => {
+            const val = el.textContent.trim();
+            if (val === orig) return;
+            await saveScoreField(el.dataset.fp, el.dataset.field, val, el);
+        });
+        el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+    });
+
+    // Wire checkboxes
+    tbody.querySelectorAll('.row-chk').forEach(chk => {
+        chk.addEventListener('change', () => {
+            if (chk.checked) selectedFps.add(chk.dataset.fp);
+            else selectedFps.delete(chk.dataset.fp);
+            document.getElementById('btn-bulk-delete').disabled = selectedFps.size === 0;
+        });
+    });
+}
+
+async function saveScoreField(fp, field, value, el) {
+    el.classList.add('saving');
+    try {
+        // Map field name to Supabase column
+        const col = field === 'filename' ? 'filename' : field;
+        const { error } = await sbClient.from('scores').update({ [col]: value, updated_at: new Date().toISOString() }).eq('fingerprint', fp).eq('user_id', currentUser.id);
+        if (error) throw error;
+
+        // Also update local registry if present
+        const local = cachedLocalReg.find(l => l.fingerprint === fp);
+        if (local) {
+            if (field === 'title') local.title = value;
+            if (field === 'composer') local.composer = value;
+            if (field === 'filename') local.fileName = value;
+            await db.set('score_registry', cachedLocalReg);
+        }
+
+        el.classList.remove('saving');
+        el.classList.add('saved');
+        setTimeout(() => el.classList.remove('saved'), 1500);
+        log(`Updated ${field} for ${fp.slice(0,8)}.`, 'success');
+    } catch(e) {
+        el.classList.remove('saving');
+        el.classList.add('error');
+        setTimeout(() => el.classList.remove('error'), 1500);
+        log('Save failed: ' + e.message, 'error');
+    }
+}
+
+// Bulk Delete
+document.getElementById('btn-bulk-delete').onclick = async () => {
+    if (selectedFps.size === 0) return;
+    const titles = [...selectedFps].map(fp => { const s = cachedScores.find(x => x.fingerprint === fp); return s?.title || fp.slice(0,8); });
+    if (!confirm(`Delete ${selectedFps.size} scores from Supabase?\n\n${titles.join('\n')}\n\nThis also removes PDFs and annotations.`)) return;
+    for (const fp of selectedFps) await deleteScore(fp);
+    selectedFps.clear();
+    reloadTab('scores');
+};
+
+// Select All
+document.getElementById('chk-all').onchange = (e) => {
+    document.querySelectorAll('.row-chk').forEach(c => { c.checked = e.target.checked; if (e.target.checked) selectedFps.add(c.dataset.fp); else selectedFps.delete(c.dataset.fp); });
+    document.getElementById('btn-bulk-delete').disabled = selectedFps.size === 0;
+};
+document.getElementById('btn-select-all').onclick = () => { document.getElementById('chk-all').checked = true; document.getElementById('chk-all').dispatchEvent(new Event('change')); };
+
+// Search & Filter
+document.getElementById('score-search').addEventListener('input', e => { scoreSearch = e.target.value; renderScoresTable(); });
+document.querySelectorAll('.filter-pill').forEach(p => p.onclick = () => {
+    document.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active'); scoreFilter = p.dataset.filter; renderScoresTable();
+});
+
+document.getElementById('btn-refresh-scores').onclick = () => reloadTab('scores');
+
+// Export CSV
+document.getElementById('btn-export-csv').onclick = () => {
+    const rows = [['fingerprint','title','composer','filename','storage_mode','last_accessed']];
+    cachedScores.forEach(s => rows.push([s.fingerprint, s.title||'', s.composer||'', s.filename||'', s._local?.storageMode||'', s.last_accessed||'']));
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    dlString(csv, `scores_${Date.now()}.csv`, 'text/csv');
+};
+
+// Global delete score
+window.deleteScore = async (fp) => {
+    try {
+        await sbClient.storage.from('pdfs').remove([`${currentUser.id}/${fp}.pdf`]);
+        await sbClient.from('annotations').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
+        await sbClient.from('scores').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
+        log(`Deleted ${fp.slice(0,8)} from cloud.`, 'success');
+    } catch(e) { log('Delete failed: ' + e.message, 'error'); }
+};
+
+window.downloadPDF = async (fp) => {
+    const { data, error } = await sbClient.storage.from('pdfs').createSignedUrl(`${currentUser.id}/${fp}.pdf`, 60);
+    if (error) { log('Signed URL failed: ' + error.message, 'error'); return; }
+    window.open(data.signedUrl, '_blank');
+};
+
+// ═══════════════════════════════════════════════════════
+// SETLISTS
+// ═══════════════════════════════════════════════════════
+async function loadSetlists() {
+    cachedLocalReg = await db.get('score_registry') || [];
+    cachedSetlists  = await db.get('score_setlists') || [];
+    renderLocalSetlists();
+    renderCloudSetlists();
+}
+
+function renderLocalSetlists() {
+    const grid = document.getElementById('setlist-local-grid');
+    if (cachedSetlists.length === 0) { grid.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">No local setlists found.</div>`; return; }
+    grid.innerHTML = '';
+    cachedSetlists.forEach(list => {
+        const scores = list.scores || [];
+        const card = document.createElement('div');
+        card.className = 'setlist-card';
+        card.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <h3 class="editable" contenteditable="true" data-id="${list.id}">${esc(list.title)}</h3>
+                <span class="pill pill-gray">${scores.length} scores</span>
+            </div>
+            <ul class="setlist-scores">${scores.slice(0,6).map(item => {
+                const fp = typeof item === 'object' ? item.fingerprint : item;
+                const reg = cachedLocalReg.find(s => s.fingerprint === fp);
+                const isDeleted = typeof item === 'object' && item.status === 'deleted';
+                return `<li>${isDeleted ? '🗑️ ' : '🎼 '}<span style="${isDeleted?'text-decoration:line-through;color:var(--danger)':''}">${esc(reg?.title || item.title || fp.slice(0,8))}</span></li>`;
+            }).join('')}${scores.length > 6 ? `<li style="opacity:.5;">+${scores.length-6} more…</li>` : ''}</ul>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+                <button class="btn btn-outline btn-sm" onclick="window.pushSetlistToCloud('${list.id}')">↑ Push Cloud</button>
+                <button class="btn btn-danger btn-sm" onclick="window.deleteLocalSetlist('${list.id}')">Delete</button>
+            </div>`;
+        // Inline rename
+        const titleEl = card.querySelector('[contenteditable]');
+        titleEl.addEventListener('blur', async () => {
+            const newTitle = titleEl.textContent.trim();
+            if (newTitle === list.title) return;
+            list.title = newTitle; list.updatedAt = Date.now();
+            await db.set('score_setlists', cachedSetlists);
+            log(`Renamed setlist to "${newTitle}".`, 'success');
+        });
+        grid.appendChild(card);
+    });
+}
+
+async function renderCloudSetlists() {
+    const grid = document.getElementById('setlist-cloud-grid');
+    try {
+        const { data, error } = await sbClient.from('setlists').select('*').eq('user_id', currentUser.id);
+        if (error && error.code === '42P01') {
+            grid.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">⚠️ <code>setlists</code> table not found. Run the Schema Setup SQL in the Repair tab.</div>`;
+            return;
+        }
+        if (!data || data.length === 0) { grid.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">No cloud setlists found.</div>`; return; }
+        grid.innerHTML = '';
+        data.forEach(list => {
+            const scores = list.scores || [];
+            const isLocal = cachedSetlists.some(l => l.id === list.id);
+            const card = document.createElement('div');
+            card.className = 'setlist-card';
+            card.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <h3>${esc(list.title)}</h3>
+                    <span class="pill ${isLocal ? 'pill-green' : 'pill-amber'}">${isLocal ? 'Synced' : 'Cloud Only'}</span>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);">${scores.length} scores · Updated ${relTime(list.updated_at)}</div>
+                <div style="display:flex;gap:6px;margin-top:8px;">
+                    ${!isLocal ? `<button class="btn btn-outline btn-sm" onclick="window.pullSetlistToLocal('${list.id}')">↓ Import Local</button>` : ''}
+                    <button class="btn btn-danger btn-sm" onclick="window.deleteCloudSetlist('${list.id}')">Delete Cloud</button>
+                </div>`;
+            grid.appendChild(card);
+        });
+    } catch(e) { grid.innerHTML = `<div style="color:var(--danger);font-size:13px;">${e.message}</div>`; }
+}
+
+document.getElementById('btn-refresh-setlists').onclick = () => reloadTab('setlists');
+
+document.getElementById('btn-push-setlists').onclick = async () => {
+    for (const list of cachedSetlists) await pushSetlistToCloud(list.id);
+    reloadTab('setlists');
+};
+
+window.pushSetlistToCloud = async (id) => {
+    const list = cachedSetlists.find(l => l.id === id);
+    if (!list) return;
+    const { error } = await sbClient.from('setlists').upsert({ id: list.id, user_id: currentUser.id, title: list.title, scores: list.scores, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    if (error) log('Push setlist failed: ' + error.message, 'error');
+    else log(`Pushed setlist "${list.title}" to cloud.`, 'success');
+};
+
+window.pullSetlistToLocal = async (id) => {
+    const { data } = await sbClient.from('setlists').select('*').eq('id', id).single();
+    if (!data) return;
+    cachedSetlists.push({ id: data.id, title: data.title, dateCreated: new Date(data.created_at).getTime(), updatedAt: Date.now(), scores: data.scores || [] });
+    await db.set('score_setlists', cachedSetlists);
+    log(`Imported "${data.title}" to local.`, 'success');
+    reloadTab('setlists');
+};
+
+window.deleteLocalSetlist = async (id) => {
+    if (!confirm('Delete this setlist locally?')) return;
+    cachedSetlists = cachedSetlists.filter(l => l.id !== id);
+    await db.set('score_setlists', cachedSetlists);
+    reloadTab('setlists');
+};
+
+window.deleteCloudSetlist = async (id) => {
+    if (!confirm('Delete this setlist from cloud?')) return;
+    await sbClient.from('setlists').delete().eq('id', id).eq('user_id', currentUser.id);
+    log('Cloud setlist deleted.', 'success');
+    reloadTab('setlists');
+};
+
+// ═══════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════
+async function loadStorage() {
+    log('Loading storage...');
+    try {
+        const { data: files } = await sbClient.storage.from('pdfs').list(currentUser.id);
+        cachedFiles = files || [];
+        cachedLocalReg = await db.get('score_registry') || [];
+        const totalBytes = cachedFiles.reduce((s, f) => s + (f.metadata?.size || f.size || 0), 0);
+        await renderQuotaSection('storage-quota-section', totalBytes);
+
+        const tbody = document.getElementById('storage-tbody');
+        tbody.innerHTML = '';
+        cachedFiles.sort((a,b) => (b.metadata?.size||0) - (a.metadata?.size||0)).forEach(f => {
+            const fp = f.name.replace('.pdf','');
+            const reg = cachedLocalReg.find(s => s.fingerprint === fp);
+            const size = f.metadata?.size || f.size || 0;
+            const mod = f.updated_at ? relTime(f.updated_at) : '—';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${reg ? esc(reg.title) : `<span class="mono">${fp.slice(0,8)}…</span>`} ${!reg ? '<span class="pill pill-amber">No Local</span>' : ''}</td>
+                <td class="mono">${f.name}</td>
+                <td>${fmtBytes(size)}</td>
+                <td style="color:var(--text-muted);">${mod}</td>
+                <td><div style="display:flex;gap:4px;">
+                    <button class="btn btn-outline btn-sm" onclick="window.downloadPDF('${fp}')">↓ Open</button>
+                    <button class="btn btn-danger btn-sm" onclick="window.deletePdfFromBucket('${fp}')">Delete</button>
+                </div></td>`;
+            tbody.appendChild(tr);
+        });
+        log(`${cachedFiles.length} files, ${fmtBytes(totalBytes)} total.`, 'success');
+    } catch(e) { log('Storage error: ' + e.message, 'error'); }
+}
+
+document.getElementById('btn-refresh-storage').onclick = () => reloadTab('storage');
+
+window.deletePdfFromBucket = async (fp) => {
+    if (!confirm(`Delete ${fp.slice(0,8)}.pdf from storage?`)) return;
+    const { error } = await sbClient.storage.from('pdfs').remove([`${currentUser.id}/${fp}.pdf`]);
+    if (error) log('Delete error: ' + error.message, 'error');
+    else { log('PDF deleted from bucket.', 'success'); reloadTab('storage'); }
+};
+
+// ═══════════════════════════════════════════════════════
+// USERS (service_role only)
+// ═══════════════════════════════════════════════════════
+async function loadUsers() {
+    if (!adminClient) return;
+    log('Loading users (admin)...');
+    try {
+        const { data: { users }, error } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (error) throw error;
+        const { data: profiles } = await adminClient.from('user_profiles').select('*');
+        const profileMap = {};
+        (profiles || []).forEach(p => profileMap[p.id] = p);
+
+        const tbody = document.getElementById('users-tbody');
+        tbody.innerHTML = '';
+        users.forEach(u => {
+            const p = profileMap[u.id] || {};
+            const quota = p.storage_quota_bytes || 524288000;
+            const used = p.storage_used_bytes || 0;
+            const pct = Math.min(100, (used/quota)*100).toFixed(0);
+            const color = pct < 70 ? 'var(--success)' : pct < 90 ? 'var(--warn)' : 'var(--danger)';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${esc(u.email)}</td>
+                <td>
+                    <select class="plan-select" data-uid="${u.id}" style="background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);font-size:11px;cursor:pointer;">
+                        ${['free','pro','premium'].map(pl => `<option value="${pl}" ${(p.plan||'free')===pl?'selected':''}>${pl}</option>`).join('')}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="quota-input" data-uid="${u.id}" value="${Math.round(quota/1073741824*100)/100}" step="0.5" min="0.1"
+                        style="width:60px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);font-size:11px;" title="GB"> GB
+                </td>
+                <td>
+                    <div style="font-size:11px;">${fmtBytes(used)}</div>
+                    <div style="height:4px;border-radius:99px;background:rgba(255,255,255,.08);margin-top:3px;overflow:hidden;">
+                        <div style="height:100%;width:${pct}%;background:${color};border-radius:99px;"></div>
+                    </div>
+                </td>
+                <td class="mono">${p.score_count ?? '—'}</td>
+                <td style="color:var(--text-muted);font-size:11px;">${u.last_sign_in_at ? relTime(u.last_sign_in_at) : 'Never'}</td>
+                <td><button class="btn btn-outline btn-sm" onclick="window.saveUserProfile('${u.id}', this)">Save</button></td>`;
+            tbody.appendChild(tr);
+        });
+
+        // Wire plan & quota save
+        tbody.querySelectorAll('.plan-select').forEach(sel => sel.onchange = () => {});
+
+        log(`Loaded ${users.length} users.`, 'success');
+    } catch(e) { log('Users error: ' + e.message, 'error'); }
+}
+
+document.getElementById('btn-refresh-users').onclick = () => { loadedTabs.delete('users'); loadUsers(); };
+
+document.getElementById('btn-recalc-quotas').onclick = async () => {
+    if (!adminClient) return;
+    log('Recalculating storage for all users...');
+    try {
+        const { data: { users } } = await adminClient.auth.admin.listUsers({ page:1, perPage:1000 });
+        for (const u of users) {
+            const { data: files } = await adminClient.storage.from('pdfs').list(u.id);
+            const totalBytes = (files||[]).reduce((s,f) => s + (f.metadata?.size||f.size||0), 0);
+            await adminClient.from('user_profiles').upsert({ id: u.id, storage_used_bytes: totalBytes, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+        }
+        log('All quotas recalculated.', 'success');
+        loadedTabs.delete('users'); loadUsers();
+    } catch(e) { log('Recalc error: ' + e.message, 'error'); }
+};
+
+window.saveUserProfile = async (uid, btn) => {
+    const row = btn.closest('tr');
+    const plan = row.querySelector('.plan-select').value;
+    const quotaGb = parseFloat(row.querySelector('.quota-input').value);
+    const quotaBytes = Math.round(quotaGb * 1073741824);
+    try {
+        await adminClient.from('user_profiles').upsert({ id: uid, plan, storage_quota_bytes: quotaBytes, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+        log(`Updated user ${uid.slice(0,8)} — plan: ${plan}, quota: ${quotaGb}GB.`, 'success');
+        btn.textContent = '✓';
+        setTimeout(() => btn.textContent = 'Save', 1500);
+    } catch(e) { log('Save user failed: ' + e.message, 'error'); }
+};
+
+// ═══════════════════════════════════════════════════════
+// BACKUP
+// ═══════════════════════════════════════════════════════
+document.getElementById('btn-export-idb').onclick = async () => {
+    blog('Exporting IndexedDB...');
+    try {
+        const keys = await db.getAllKeys();
+        const storage = {};
+        for (const key of keys) { storage[key] = await db.get(key); }
+        const payload = { type: 'ScoreFlow_FullBackup', timestamp: Date.now(), version: '4.0', storage };
+        dlString(JSON.stringify(payload), `ScoreFlow_LocalBackup_${ts()}.json`);
+        blog(`Exported ${keys.length} keys.`, 'success');
+    } catch(e) { blog('Export failed: ' + e.message, 'error'); }
+};
+
+document.getElementById('btn-export-cloud').onclick = async () => {
+    blog('Exporting cloud metadata...');
+    try {
+        const [scoresRes, annotsRes] = await Promise.all([
+            sbClient.from('scores').select('*').eq('user_id', currentUser.id),
+            sbClient.from('annotations').select('*').eq('user_id', currentUser.id)
+        ]);
+        const payload = { type: 'ScoreFlow_CloudBackup', timestamp: Date.now(), scores: scoresRes.data, annotations: annotsRes.data };
+        dlString(JSON.stringify(payload, null, 2), `ScoreFlow_CloudBackup_${ts()}.json`);
+        blog(`Exported ${scoresRes.data?.length} scores, ${annotsRes.data?.length} annotations.`, 'success');
+    } catch(e) { blog('Export failed: ' + e.message, 'error'); }
+};
+
+document.getElementById('btn-export-setlists').onclick = async () => {
+    const setlists = await db.get('score_setlists') || [];
+    dlString(JSON.stringify(setlists, null, 2), `ScoreFlow_Setlists_${ts()}.json`);
+    blog(`Exported ${setlists.length} setlists.`, 'success');
+};
+
+document.getElementById('btn-download-pdf-list').onclick = async () => {
+    blog('Generating PDF URL list...');
+    try {
+        const { data: files } = await sbClient.storage.from('pdfs').list(currentUser.id);
+        const reg = await db.get('score_registry') || [];
+        const rows = [['title','fingerprint','size_bytes','signed_url']];
+        for (const f of (files||[])) {
+            const fp = f.name.replace('.pdf','');
+            const score = reg.find(s => s.fingerprint === fp);
+            const { data: urlData } = await sbClient.storage.from('pdfs').createSignedUrl(`${currentUser.id}/${f.name}`, 3600);
+            rows.push([score?.title||fp, fp, f.metadata?.size||0, urlData?.signedUrl||'']);
+        }
+        dlString(rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'), `ScoreFlow_PDFList_${ts()}.csv`, 'text/csv');
+        blog(`Generated list for ${files.length} files.`, 'success');
+    } catch(e) { blog('Failed: ' + e.message, 'error'); }
+};
+
+document.getElementById('btn-restore-idb').onclick = async () => {
+    const file = document.getElementById('file-restore-idb').files[0];
+    if (!file) return;
+    try {
+        const data = JSON.parse(await file.text());
+        if (data.type !== 'ScoreFlow_FullBackup') throw new Error('Not a valid ScoreFlow backup file.');
+        if (!confirm(`Restore ${Object.keys(data.storage||{}).length} keys to IndexedDB? This will overwrite all local data.`)) return;
+        await db.clear();
+        for (const [k,v] of Object.entries(data.storage||{})) await db.set(k, v);
+        blog(`Restored ${Object.keys(data.storage||{}).length} keys.`, 'success');
+        alert('Restore complete. Reload ScoreFlow to see changes.');
+    } catch(e) { blog('Restore failed: ' + e.message, 'error'); }
+};
+
+document.getElementById('btn-restore-setlists').onclick = async () => {
+    const file = document.getElementById('file-restore-setlists').files[0];
+    if (!file) return;
+    try {
+        const data = JSON.parse(await file.text());
+        if (!Array.isArray(data)) throw new Error('Invalid setlists JSON — expected array.');
+        if (!confirm(`Import ${data.length} setlists? Existing setlists with same ID will be merged.`)) return;
+        const existing = await db.get('score_setlists') || [];
+        const existingIds = new Set(existing.map(l => l.id));
+        let added = 0;
+        data.forEach(l => { if (!existingIds.has(l.id)) { existing.push(l); added++; } });
+        await db.set('score_setlists', existing);
+        blog(`Imported ${added} new setlists (${data.length-added} already existed).`, 'success');
+    } catch(e) { blog('Import failed: ' + e.message, 'error'); }
+};
+
+document.getElementById('btn-push-registry').onclick = async () => {
+    blog('Pushing local registry to Supabase...');
+    const reg = await db.get('score_registry') || [];
+    let ok = 0, fail = 0;
+    for (const s of reg) {
+        const { error } = await sbClient.from('scores').upsert({
+            fingerprint: s.fingerprint, user_id: currentUser.id, title: s.title||'Untitled',
+            composer: s.composer||'Unknown', filename: s.fileName||'', tags: s.tags||[],
+            last_accessed: s.lastAccessed||Date.now(), updated_at: new Date().toISOString()
+        }, { onConflict: 'fingerprint' });
+        if (error) fail++; else ok++;
+    }
+    blog(`Pushed ${ok} scores. ${fail} failed.`, fail > 0 ? 'warn' : 'success');
+};
+
+document.getElementById('btn-push-setlists-sb').onclick = async () => {
+    const setlists = await db.get('score_setlists') || [];
+    blog(`Pushing ${setlists.length} setlists...`);
+    for (const list of setlists) await window.pushSetlistToCloud(list.id);
+    blog('Done.', 'success');
+};
+
+document.getElementById('btn-pull-registry').onclick = async () => {
+    blog('Pulling cloud scores to local registry...');
+    const { data } = await sbClient.from('scores').select('*').eq('user_id', currentUser.id);
+    const existing = await db.get('score_registry') || [];
+    const existingMap = {};
+    existing.forEach(s => existingMap[s.fingerprint] = s);
+    let added = 0;
+    (data||[]).forEach(cloud => {
+        if (!existingMap[cloud.fingerprint]) {
+            existing.push({ fingerprint: cloud.fingerprint, title: cloud.title||'Untitled', composer: cloud.composer||'Unknown', fileName: cloud.filename||'', storageMode: 'cloud', isCloudOnly: true, tags: cloud.tags||[], dateImported: new Date(cloud.created_at).getTime(), lastAccessed: cloud.last_accessed||0 });
+            added++;
+        }
+    });
+    await db.set('score_registry', existing);
+    blog(`Pulled ${added} new cloud-only placeholders.`, 'success');
+};
+
+// ═══════════════════════════════════════════════════════
+// REPAIR
+// ═══════════════════════════════════════════════════════
+document.getElementById('btn-scan-issues').onclick = async () => {
+    rlog('Scanning for issues...');
+    const reg = await db.get('score_registry') || [];
+    const hashSuffix = /_[0-9a-f]{8}$/i;
+    const issues = [];
+    reg.forEach(s => {
+        const base = (s.fileName||'').replace(/\.pdf$/i,'');
+        if (!s.fileName) issues.push(`[fileName empty] ${s.title || s.fingerprint.slice(0,8)}`);
+        else if (hashSuffix.test(base)) issues.push(`[hash suffix] ${s.title} → ${s.fileName}`);
+        else if (/^[0-9a-f]{64}$/i.test(base)) issues.push(`[fileName is fingerprint] ${s.title}`);
+        if (hashSuffix.test(s.title||'')) issues.push(`[title has hash] ${s.title}`);
+    });
+    if (issues.length === 0) { rlog('No issues found.', 'success'); }
+    else {
+        issues.forEach(i => rlog('⚠ ' + i, 'warn'));
+        document.getElementById('repair-issues-list').innerHTML = `<div class="glass" style="border-radius:8px;padding:12px;margin-bottom:8px;"><b style="font-size:12px;">${issues.length} issues found:</b><ul style="margin-top:8px;padding-left:16px;font-size:11px;color:var(--text-muted);">${issues.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
+    }
+};
+
+document.getElementById('btn-fix-all-hashes').onclick = async () => {
+    const reg = await db.get('score_registry') || [];
+    const hashSuffix = /_[0-9a-f]{8}$/i;
+    let fixed = 0;
+    for (const s of reg) {
+        const base = (s.fileName||'').replace(/\.pdf$/i,'');
+        if (hashSuffix.test(base)) {
+            const clean = base.replace(hashSuffix, '');
+            rlog(`Fixing: "${s.fileName}" → "${clean}.pdf"`);
+            s.fileName = clean + '.pdf';
+            fixed++;
+            if (sbClient && currentUser) await sbClient.from('scores').update({ filename: s.fileName, updated_at: new Date().toISOString() }).eq('fingerprint', s.fingerprint).eq('user_id', currentUser.id);
+        }
+    }
+    if (fixed > 0) { await db.set('score_registry', reg); rlog(`Fixed ${fixed} fileNames.`, 'success'); }
+    else rlog('No hash-suffix fileNames found.', 'success');
+};
+
+document.getElementById('btn-fix-missing-filenames').onclick = async () => {
+    const reg = await db.get('score_registry') || [];
+    let fixed = 0;
+    for (const s of reg) {
+        if (!s.fileName && s.title) {
+            s.fileName = s.title + '.pdf';
+            rlog(`Filled: "${s.title}" → "${s.fileName}"`);
+            fixed++;
+            if (sbClient && currentUser) await sbClient.from('scores').update({ filename: s.fileName, updated_at: new Date().toISOString() }).eq('fingerprint', s.fingerprint).eq('user_id', currentUser.id);
+        }
+    }
+    if (fixed > 0) { await db.set('score_registry', reg); rlog(`Filled ${fixed} missing fileNames.`, 'success'); }
+    else rlog('No empty fileNames.', 'success');
+};
+
+document.getElementById('btn-orphan-cleanup').onclick = async () => {
+    rlog('Scanning for orphan cloud records...');
+    const { data: scores } = await sbClient.from('scores').select('fingerprint').eq('user_id', currentUser.id);
+    const { data: annots } = await sbClient.from('annotations').select('fingerprint').eq('user_id', currentUser.id);
+    const scoreFps = new Set((scores||[]).map(s => s.fingerprint));
+    const orphanAnnotFps = [...new Set((annots||[]).map(a => a.fingerprint))].filter(fp => !scoreFps.has(fp));
+    if (orphanAnnotFps.length === 0) { rlog('No orphan annotations found.', 'success'); return; }
+    rlog(`Found ${orphanAnnotFps.length} fingerprints with annotations but no score record.`, 'warn');
+    if (!confirm(`Delete annotations for ${orphanAnnotFps.length} orphan fingerprints?`)) return;
+    for (const fp of orphanAnnotFps) {
+        await sbClient.from('annotations').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
+        rlog(`Deleted orphan annotations for ${fp.slice(0,8)}.`);
+    }
+    rlog('Orphan cleanup done.', 'success');
+};
+
+// Schema SQL
+const SCHEMA_SQL = `-- Run in Supabase SQL Editor
+-- 1. User profiles / quota table
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT,
+    plan TEXT NOT NULL DEFAULT 'free',
+    storage_quota_bytes BIGINT NOT NULL DEFAULT 524288000,
+    storage_used_bytes BIGINT NOT NULL DEFAULT 0,
+    score_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "own profile" ON public.user_profiles FOR ALL USING (auth.uid() = id);
+
+-- 2. Auto-create profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    INSERT INTO public.user_profiles (id, email)
+    VALUES (NEW.id, NEW.email) ON CONFLICT (id) DO NOTHING;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users FOR EACH ROW
+    EXECUTE FUNCTION public.handle_new_user();
+
+-- 3. Setlists table
+CREATE TABLE IF NOT EXISTS public.setlists (
+    id TEXT PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL DEFAULT 'Untitled',
+    scores JSONB NOT NULL DEFAULT '[]',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.setlists ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "own setlists" ON public.setlists FOR ALL USING (auth.uid() = user_id);
+
+-- 4. Score count trigger
+CREATE OR REPLACE FUNCTION update_score_count()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    UPDATE public.user_profiles
+    SET score_count = (SELECT COUNT(*) FROM public.scores WHERE user_id = COALESCE(NEW.user_id, OLD.user_id)),
+        updated_at = NOW()
+    WHERE id = COALESCE(NEW.user_id, OLD.user_id);
+    RETURN COALESCE(NEW, OLD);
+END; $$;
+CREATE TRIGGER on_score_change
+    AFTER INSERT OR DELETE ON public.scores FOR EACH ROW
+    EXECUTE FUNCTION update_score_count();`;
+
+document.getElementById('btn-copy-schema').onclick = () => {
+    navigator.clipboard.writeText(SCHEMA_SQL);
+    document.getElementById('btn-copy-schema').textContent = '✓ Copied';
+    setTimeout(() => document.getElementById('btn-copy-schema').textContent = 'Copy SQL', 1500);
+};
+
+document.getElementById('btn-check-schema').onclick = async () => {
+    rlog('Checking schema...');
+    const checks = [
+        { table: 'user_profiles', label: 'user_profiles table' },
+        { table: 'setlists', label: 'setlists table' }
+    ];
+    for (const c of checks) {
+        const { error } = await sbClient.from(c.table).select('*', {head:true,count:'exact'});
+        if (error?.code === '42P01') rlog(`✗ ${c.label} — NOT FOUND (run Schema SQL)`, 'error');
+        else rlog(`✓ ${c.label}`, 'success');
+    }
+};
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function fmtBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024, sizes = ['B','KB','MB','GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+}
+
+function relTime(val) {
+    const d = typeof val === 'number' ? new Date(val) : new Date(val);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return 'just now';
+    if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+    if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+    if (diff < 2592000000) return Math.floor(diff/86400000) + 'd ago';
+    return d.toLocaleDateString();
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function dlString(content, filename, mime='application/json') {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function ts() { return new Date().toISOString().slice(0,10); }
+</script>
+</body>
+</html>

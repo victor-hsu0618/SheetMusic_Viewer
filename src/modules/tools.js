@@ -167,25 +167,23 @@ export class ToolManager {
                 interaction.updateAllOverlaysTouchAction();
             }
 
-            // Deferred cleanup for lingering interaction state
-            setTimeout(() => {
-                if (this.app.rulerManager) {
-                    this.app.rulerManager.stopJump();
+            // Immediate cleanup of interaction state
+            if (this.app.rulerManager) {
+                this.app.rulerManager.stopJump();
+            }
+            if (interaction) {
+                interaction.updateAllOverlaysTouchAction();
+            }
+            if (document.activeElement) document.activeElement.blur();
+            if (this.app.inputManager) {
+                this.app.inputManager.isLongPressActive = false;
+                if (this.app.inputManager.longPressTimer) {
+                    clearTimeout(this.app.inputManager.longPressTimer);
+                    this.app.inputManager.lastLongPressAt = 0;
+                    this.app.inputManager.longPressTimer = null;
                 }
-                if (interaction) {
-                    interaction.updateAllOverlaysTouchAction();
-                }
-                if (document.activeElement) document.activeElement.blur();
-                if (this.app.inputManager) {
-                    this.app.inputManager.isLongPressActive = false;
-                    if (this.app.inputManager.longPressTimer) {
-                        clearTimeout(this.app.inputManager.longPressTimer);
-                        this.app.inputManager.lastLongPressAt = 0;
-                        this.app.inputManager.longPressTimer = null;
-                    }
-                }
-                this.updateActiveTools();
-            }, 50);
+            }
+            this.updateActiveTools();
         }
 
         this.updateActiveTools()
