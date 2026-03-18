@@ -361,9 +361,10 @@ export class ToolManager {
 
         const activeTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === this.app.activeStampType)
         if (this.app.btnStampPalette) {
-            this.app.btnStampPalette.classList.toggle('active', isExpanded || !!activeTool)
+            const isStampSelected = this.app.activeStampType !== 'view' && this.app.activeStampType !== 'eraser'
+            this.app.btnStampPalette.classList.toggle('active', isExpanded || (!!activeTool && isStampSelected))
             if (!this._stampBtnDefault) this._stampBtnDefault = this.app.btnStampPalette.innerHTML
-            this.app.btnStampPalette.innerHTML = activeTool
+            this.app.btnStampPalette.innerHTML = (activeTool && isStampSelected)
                 ? this.getIcon(activeTool, 18, this.app.activeColor)
                 : this._stampBtnDefault
         }

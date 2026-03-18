@@ -70,6 +70,7 @@ export class InitializationManager {
         app.floatingScoreTitle = document.getElementById('floating-score-title')
         app.btnModeHand = document.getElementById('btn-mode-hand')
         app.btnModeEraser = document.getElementById('btn-mode-eraser')
+        app.btnStampPalette = document.getElementById('btn-stamp-palette')
 
         document.querySelectorAll('.zoom-btn-mini[title]').forEach(btn => {
             btn.dataset.tooltip = btn.title
