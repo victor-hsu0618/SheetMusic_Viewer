@@ -369,7 +369,7 @@ export class DriveSyncManager {
                     score.thumbnail = thumbnail;
                     score.isCloudOnly = false;
                     score.isPdfAvailable = true;
-                    if (!score.fileName) score.fileName = `${prefix}${hash}.pdf`;
+                    if (!score.fileName) score.fileName = `${prefix}.pdf`;
                     await this.app.scoreManager.saveRegistry();
                     this.app.scoreManager.render();
                 } catch (err) { console.warn(`[DriveSync] PDF download failed:`, err.message); }
@@ -1171,8 +1171,17 @@ export class DriveSyncManager {
             
             const fileId = this.profileFileId;
             const localProfile = this.app.profileManager?.data;
-            const localSetlists = this.app.setlistManager?.setlists || [];
             if (!localProfile) return;
+
+            // Wait for SetlistManager to finish loading from DB before reading setlists.
+            // If we read before init() completes, setlists would be [] and overwrite Drive with empty data.
+            const sm = this.app.setlistManager;
+            if (sm && !sm.isLoaded) {
+                await new Promise(resolve => {
+                    const check = setInterval(() => { if (sm.isLoaded) { clearInterval(check); resolve(); } }, 50);
+                });
+            }
+            const localSetlists = sm?.setlists || [];
 
             if (fileId) {
                 const remoteData = await this.getFileContent(fileId);

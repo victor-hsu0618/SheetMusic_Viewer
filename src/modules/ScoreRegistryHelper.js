@@ -227,27 +227,12 @@ export class ScoreRegistryHelper {
             const baseFileName = entry.fileName.replace(/\.pdf$/i, '').trim();
             const currentTitle = (entry.title || '').trim();
 
-            // HEURISTIC: If title and fileName are radically different, 
-            // the metadata was likely corrupted during some migration.
-            // (Ignoring common variations like underscores vs spaces)
+            // Log mismatch for diagnostics only — do NOT auto-overwrite user-set titles
             const clean = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
             if (clean(baseFileName) !== clean(currentTitle) && currentTitle && !currentTitle.includes(baseFileName)) {
-                console.warn(`[ScoreRegistryHelper] 🚨 Mismatch detected for ${entry.fingerprint.slice(0, 8)}:`);
-                console.warn(`   Current Title: "${currentTitle}"`);
-                console.warn(`   Real Filename: "${baseFileName}"`);
-                
-                // RESTORE IDENTITY
-                entry.title = baseFileName;
-                entry.updatedAt = Date.now();
-                changed = true;
-                
-                // Also update the detailed metadata record
-                const detail = await db.get(`detail_${entry.fingerprint}`);
-                if (detail) {
-                    detail.name = baseFileName;
-                    detail.updatedAt = Date.now();
-                    await db.set(`detail_${entry.fingerprint}`, detail);
-                }
+                console.warn(`[ScoreRegistryHelper] ⚠️ title/fileName mismatch for ${entry.fingerprint.slice(0, 8)} (no action taken):`);
+                console.warn(`   Title:    "${currentTitle}"`);
+                console.warn(`   FileName: "${baseFileName}"`);
             }
         }
 

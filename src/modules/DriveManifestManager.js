@@ -298,12 +298,13 @@ export class DriveManifestManager {
                 if (data && data.scoreDetail && data.scoreDetail.name) {
                     score.title = data.scoreDetail.name;
                     score.composer = data.scoreDetail.composer || 'Unknown';
-                    score.fileName = data.scoreDetail.name + '.pdf';
+                    // fileName is the original upload filename — never derive from title
+                    if (data.scoreDetail.fileName) score.fileName = data.scoreDetail.fileName;
                     changed = true;
                 } else if (data && data.score && data.score.title) {
                     score.title = data.score.title;
                     score.composer = data.score.composer || 'Unknown';
-                    score.fileName = data.score.title + '.pdf';
+                    if (data.score.fileName) score.fileName = data.score.fileName;
                     changed = true;
                 }
 

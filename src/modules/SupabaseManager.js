@@ -444,6 +444,7 @@ export class SupabaseManager {
                         const oldTitle = exists.title;
                         exists.title = cloudRecord.title || exists.title;
                         exists.composer = cloudRecord.composer || exists.composer;
+                        if (cloudRecord.filename) exists.fileName = cloudRecord.filename;
                         exists.updatedAt = cloudUpdate;
                         itemChanged = true;
 

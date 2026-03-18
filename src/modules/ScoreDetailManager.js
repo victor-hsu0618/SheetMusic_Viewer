@@ -419,6 +419,57 @@ export class ScoreDetailManager {
         return { name: this.currentInfo.name, composer: this.currentInfo.composer, fingerprint: this.currentFp || this.app.pdfFingerprint }
     }
 
+    async handleForcePushSupabase() {
+        const fp = this.currentFp || this.app.pdfFingerprint
+        if (!fp) return
+        
+        if (!this.app.supabaseManager?.user) {
+            return this.app.showMessage('Please sign in to Supabase to push to cloud.', 'error')
+        }
+
+        const confirmed = await this.app.showDialog({
+            title: 'Force Push to Supabase?',
+            message: 'This will OVERWRITE all cloud annotations for this score with your local version. Continue?',
+            type: 'confirm',
+            icon: '☁️'
+        })
+        if (!confirmed) return
+
+        this.app.showMessage('Pushing annotations to Supabase...', 'system')
+        const success = await this.app.supabaseManager.pushAllAnnotations(fp, this.app.stamps)
+        if (success) {
+            this.app.showMessage('Force push to Supabase successful!', 'success')
+        } else {
+            this.app.showMessage('Force push to Supabase failed.', 'error')
+        }
+    }
+
+    async handleForcePullSupabase() {
+        const fp = this.currentFp || this.app.pdfFingerprint
+        if (!fp) return
+
+        if (!this.app.supabaseManager?.user) {
+            return this.app.showMessage('Please sign in to Supabase to pull from cloud.', 'error')
+        }
+
+        const confirmed = await this.app.showDialog({
+            title: 'Force Pull from Supabase?',
+            message: 'This will pull all cloud annotations and merge them with your local data. Continue?',
+            type: 'confirm',
+            icon: '☁️'
+        })
+        if (!confirmed) return
+
+        this.app.showMessage('Pulling from Supabase...', 'system')
+        const cloudData = await this.app.supabaseManager.pullAnnotations(fp)
+        if (cloudData) {
+            this.app.showMessage('Data pulled from Supabase successfully.', 'success')
+            this.refreshStats()
+        } else {
+            this.app.showMessage('No data found or pull failed.', 'info')
+        }
+    }
+
     getExportFilename(isGlobal, userName) {
         const now = new Date();
         const datestr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;

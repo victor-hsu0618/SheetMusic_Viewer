@@ -129,9 +129,15 @@
             overflow: hidden;
         }
 
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
         th { text-align: left; padding: 12px 16px; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border); color: var(--text-muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
-        td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th:nth-child(1) { width: 22%; }
+        th:nth-child(2) { width: 16%; }
+        th:nth-child(3) { width: 16%; }
+        th:nth-child(4) { width: 12%; }
+        th:nth-child(5) { width: 16%; }
+        th:nth-child(6) { width: 18%; }
+        td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; overflow: hidden; }
         
         .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
         .diff { color: #f87171; text-decoration: line-through; margin-right: 4px; }
@@ -363,10 +369,15 @@
                     if (local.composer !== cloud.composer) issues.push('Composer Mismatch');
                 }
                 
-                // Detailed mismatch logic for the user's specific case
-                if (local && local.fileName && !local.title.toLowerCase().includes(local.fileName.replace('.pdf','').toLowerCase().substring(0,5))) {
-                    if (!local.title.includes('score_buf')) {
-                        issues.push('Label Meta Mismatch (UI vs File)');
+                // Flag genuinely broken fileName values
+                if (local) {
+                    const hashSuffix = /_[0-9a-f]{8}$/i;
+                    if (!local.fileName) {
+                        issues.push('fileName Empty');
+                    } else if (hashSuffix.test(local.fileName.replace(/\.pdf$/i, ''))) {
+                        issues.push('fileName has hash suffix');
+                    } else if (/^[0-9a-f]{64}(\.pdf)?$/i.test(local.fileName)) {
+                        issues.push('fileName is fingerprint');
                     }
                 }
 
@@ -391,6 +402,20 @@
                 if (!cloud && local) {
                     actionHtml += `<button class="btn-outline" style="font-size:9px" onclick="window.syncToCloud('${fp}')">Upload Metadata</button>`;
                 }
+                if (local) {
+                    const hashSuffix = /_[0-9a-f]{8}$/i;
+                    const titleHasHash = hashSuffix.test(local.title || '');
+                    const fileNameBase = (local.fileName || '').replace(/\.pdf$/i, '');
+                    const fileNameHasHash = hashSuffix.test(fileNameBase);
+                    const fileNameIsFingerprint = /^[0-9a-f]{64}$/i.test(fileNameBase);
+                    if (titleHasHash && local.fileName && !fileNameHasHash) {
+                        // title has hash suffix but fileName is clean → fix title from fileName
+                        actionHtml += `<button class="btn-outline" style="font-size:9px; color:#f59e0b; border-color:#f59e0b" onclick="window.fixTitle('${fp}')">Fix title ← fileName</button>`;
+                    } else if (!local.fileName || fileNameHasHash || fileNameIsFingerprint) {
+                        // fileName is missing/has hash/is fingerprint → fix fileName from title
+                        actionHtml += `<button class="btn-outline" style="font-size:9px; color:#f59e0b; border-color:#f59e0b" onclick="window.fixFileName('${fp}')">Fix fileName → title</button>`;
+                    }
+                }
                 actionHtml += `</div>`;
 
                 row.innerHTML = `
@@ -411,6 +436,98 @@
             
             document.getElementById('stat-mismatch-box').style.borderColor = mismatched > 0 ? 'var(--danger)' : 'var(--border)';
             document.getElementById('analysis-results').classList.remove('hidden');
+        }
+
+        window.fixTitle = async (fp) => {
+            const registry = await db.get('score_registry');
+            const score = registry.find(s => s.fingerprint === fp);
+            if (!score) return log('Score not found: ' + fp, 'error');
+
+            const oldTitle = score.title;
+            score.title = score.fileName.replace(/\.pdf$/i, '');
+            score.updatedAt = Date.now();
+            log(`Fixing title: "${oldTitle}" → "${score.title}"`);
+
+            // 1. Update IndexedDB registry
+            await new Promise((resolve, reject) => {
+                const req = indexedDB.open('ScoreFlowStorage', 1);
+                req.onsuccess = () => {
+                    const tx = req.result.transaction('store', 'readwrite');
+                    tx.objectStore('store').put(registry, 'score_registry');
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => reject(tx.error);
+                };
+                req.onerror = () => reject(req.error);
+            });
+
+            // 2. Update detail record name
+            await new Promise((resolve, reject) => {
+                const req = indexedDB.open('ScoreFlowStorage', 1);
+                req.onsuccess = () => {
+                    const store = req.result.transaction('store', 'readwrite').objectStore('store');
+                    const getReq = store.get(`detail_${fp}`);
+                    getReq.onsuccess = () => {
+                        const detail = getReq.result;
+                        if (detail) {
+                            detail.name = score.title;
+                            store.put(detail, `detail_${fp}`);
+                        }
+                        resolve();
+                    };
+                    getReq.onerror = resolve;
+                };
+                req.onerror = () => reject(req.error);
+            });
+            log('✓ IndexedDB updated.');
+
+            // 3. Push corrected title to Supabase
+            if (supabaseClient && currentUser) {
+                const { error } = await supabaseClient
+                    .from('scores')
+                    .update({ title: score.title, updated_at: new Date().toISOString() })
+                    .eq('fingerprint', fp)
+                    .eq('user_id', currentUser.id);
+                if (error) log('Supabase update failed: ' + error.message, 'error');
+                else log('✓ Supabase title updated.');
+            }
+
+            runAnalysis();
+        }
+
+        window.fixFileName = async (fp) => {
+            const registry = await db.get('score_registry');
+            const score = registry.find(s => s.fingerprint === fp);
+            if (!score) return log('Score not found: ' + fp, 'error');
+
+            const oldName = score.fileName || '(empty)';
+            score.fileName = score.title + '.pdf';
+            log(`Fixing fileName: "${oldName}" → "${score.fileName}"`);
+
+            // 1. Update IndexedDB
+            await new Promise((resolve, reject) => {
+                const req = indexedDB.open('ScoreFlowStorage', 1);
+                req.onsuccess = () => {
+                    const tx = req.result.transaction('store', 'readwrite');
+                    tx.objectStore('store').put(registry, 'score_registry');
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => reject(tx.error);
+                };
+                req.onerror = () => reject(req.error);
+            });
+            log('✓ IndexedDB updated.');
+
+            // 2. Push corrected filename to Supabase if record exists
+            if (supabaseClient && currentUser) {
+                const { error } = await supabaseClient
+                    .from('scores')
+                    .update({ filename: score.fileName, updated_at: new Date().toISOString() })
+                    .eq('fingerprint', fp)
+                    .eq('user_id', currentUser.id);
+                if (error) log('Supabase update failed: ' + error.message, 'error');
+                else log('✓ Supabase filename updated.');
+            }
+
+            runAnalysis();
         }
 
         window.syncToCloud = async (fp) => {
