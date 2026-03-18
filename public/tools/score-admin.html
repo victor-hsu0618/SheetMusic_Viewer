@@ -703,7 +703,68 @@ document.getElementById('btn-select-all').onclick=async()=>{const filtered=await
 document.getElementById('btn-bulk-delete').onclick=async()=>{if(!selectedFps.size)return;if(!confirm(`Remove ${selectedFps.size} score(s) from cloud?`))return;for(const fp of[...selectedFps])await deleteScore(fp,true);selectedFps.clear();reloadTab('library');};
 document.getElementById('btn-export-csv').onclick=async()=>{const filtered=await applyFiltersAndSort(mergedList);const rows=[['Title','Composer','Genre','Tags','Filename','Fingerprint','Status','Last Accessed']];filtered.forEach(s=>rows.push([s.title,s.composer,s.genre||'',(s.tags||[]).join(';'),s.fileName,s.fingerprint,s.localOnly?'Local':s.cloudSynced?'Synced':'Cloud',s.lastAccessed?new Date(s.lastAccessed).toLocaleDateString():'']));downloadFile(rows.map(r=>r.map(c=>`"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n'),'scores.csv','text/csv');};
 
-async function deleteScore(fp,silent=false){if(!silent&&!confirm('Remove from cloud library?'))return;await sbClient.from('scores').delete().eq('fingerprint',fp).eq('user_id',currentUser.id);await sbClient.from('annotations').delete().eq('fingerprint',fp).eq('user_id',currentUser.id);const reg=(await db.get('score_registry'))||[];const ent=reg.find(e=>e.fingerprint===fp);if(ent){ent.isSynced=false;ent.isPdfAvailable=false;await db.set('score_registry',reg);}if(!silent)reloadTab('library');}
+async function tombstoneInDriveManifest(fp) {
+    const token = localStorage.getItem('scoreflow_drive_access_token');
+    if (!token) return; // Drive not connected, skip
+    try {
+        // Find the manifest file
+        const searchRes = await fetch(
+            `https://www.googleapis.com/drive/v3/files?q=name='cloud_manifest_v3.json' and trashed=false&fields=files(id)`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const searchData = await searchRes.json();
+        const fileId = searchData.files?.[0]?.id;
+        if (!fileId) return;
+
+        // Download current manifest
+        const dlRes = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const manifest = await dlRes.json();
+
+        // Tombstone the entry
+        manifest[fp] = {
+            ...(manifest[fp] || {}),
+            deleted: true,
+            deletedAt: Date.now(),
+            updated: Date.now(),
+            syncId: null,
+            pdfId: null,
+        };
+
+        // Upload updated manifest
+        await fetch(
+            `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+            {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(manifest)
+            }
+        );
+        console.log(`[ScoreAdmin] Drive manifest tombstoned for ${fp.slice(0,8)}`);
+    } catch(e) {
+        console.warn('[ScoreAdmin] Drive manifest tombstone failed:', e.message);
+    }
+}
+
+async function deleteScore(fp, silent=false) {
+    if (!silent && !confirm('Remove from cloud library? This will also tombstone the Drive manifest entry so it cannot resurrect.')) return;
+    // 1. Remove from IndexedDB registry entirely
+    const reg = (await db.get('score_registry')) || [];
+    const newReg = reg.filter(e => e.fingerprint !== fp);
+    await db.set('score_registry', newReg);
+    // 2. Remove detail + stamps from IndexedDB
+    await db.remove(`detail_${fp}`);
+    await db.remove(`stamps_${fp}`);
+    await db.remove(`score_buf_${fp}`);
+    // 3. Delete from Supabase
+    await sbClient.from('scores').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
+    await sbClient.from('annotations').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
+    // 4. Tombstone Drive manifest so it cannot resurrect
+    await tombstoneInDriveManifest(fp);
+    if (!silent) reloadTab('library');
+}
 
 // ══════════ ADD TO MODAL ══════════
 document.getElementById('btn-add-to').onclick=openAddToModal;
