@@ -536,6 +536,22 @@ body.edit-scrollbar-hidden #edit-scrollbar {
   display: block;
 }
 
+.floating-score-title.clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(var(--primary-rgb), 0);
+}
+
+.floating-score-title.clickable:hover {
+  color: var(--primary);
+  opacity: 0.8;
+}
+
+.floating-score-title.active-panel {
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+}
+
 /* Shrink on small tablets */
 @media (max-width: 600px) {
   .floating-score-title {

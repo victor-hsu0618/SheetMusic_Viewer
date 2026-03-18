@@ -6,6 +6,7 @@ export class DocBarManager {
     init() {
         this.app.docBar = document.getElementById('floating-doc-bar')
         this.app.zoomLevelDisplay = document.getElementById('zoom-level')
+        this.app.floatingScoreTitle = document.getElementById('floating-score-title')
 
         // Restore hidden state
         if (localStorage.getItem('scoreflow_doc_bar_hidden') === 'true') {
@@ -14,6 +15,92 @@ export class DocBarManager {
 
         this.initGrip()
         this.initGripPositionSetting()
+        this.initScoreTitleLongPress()
+        
+        // Handle responsive behavior on resize
+        window.addEventListener('resize', () => this.updateScoreTitleInteraction())
+    }
+
+    updateScoreTitleInteraction() {
+        const titleEl = this.app.floatingScoreTitle
+        if (!titleEl) return
+
+        const isNarrow = window.matchMedia("(max-width: 480px)").matches
+        const detailBtn = document.getElementById('btn-score-detail-toggle')
+
+        if (isNarrow) {
+            if (detailBtn) detailBtn.style.display = ''
+            titleEl.classList.remove('clickable')
+            titleEl.title = ""
+        } else {
+            if (detailBtn) detailBtn.style.display = 'none'
+            titleEl.classList.add('clickable')
+            titleEl.title = "Long press for Details (I), Short press to close"
+        }
+    }
+
+    initScoreTitleLongPress() {
+        const titleEl = this.app.floatingScoreTitle
+        if (!titleEl) return
+
+        this.updateScoreTitleInteraction()
+
+        let timer = null
+        let startPos = null
+        let isLongPressTriggered = false
+
+        const start = (e) => {
+            if (timer) clearTimeout(timer)
+            if (e.type === 'mousedown' && e.button !== 0) return // only left click
+            
+            isLongPressTriggered = false
+            const point = e.type === 'touchstart' ? e.touches[0] : e
+            startPos = { x: point.clientX, y: point.clientY }
+
+            timer = setTimeout(() => {
+                isLongPressTriggered = true
+                if (navigator.vibrate) navigator.vibrate(10)
+                this.app.scoreDetailManager?.showPanel()
+                timer = null
+            }, 600) // 600ms long press
+        }
+
+        const move = (e) => {
+            if (!timer || !startPos) return
+            const point = e.type === 'touchmove' ? e.touches[0] : e
+            const dx = Math.abs(point.clientX - startPos.x)
+            const dy = Math.abs(point.clientY - startPos.y)
+            if (dx > 10 || dy > 10) cancel()
+        }
+
+        const cancel = (e) => {
+            // Handle short press on release
+            if (e && (e.type === 'mouseup' || e.type === 'touchend')) {
+                const wasShortPress = timer !== null && !isLongPressTriggered
+                if (wasShortPress) {
+                    const detail = this.app.scoreDetailManager
+                    if (detail?.ui?.panel?.classList.contains('active')) {
+                        detail.toggle(false)
+                    }
+                }
+            }
+
+            if (timer) {
+                clearTimeout(timer)
+                timer = null
+            }
+            startPos = null
+        }
+
+        titleEl.addEventListener('mousedown', start)
+        titleEl.addEventListener('touchstart', start, { passive: true })
+        titleEl.addEventListener('mousemove', move)
+        titleEl.addEventListener('touchmove', move, { passive: true })
+        
+        // Use capture or specific listeners to ensure we catch the release even outside the element
+        window.addEventListener('mouseup', cancel)
+        window.addEventListener('touchend', cancel)
+        window.addEventListener('touchcancel', cancel)
     }
 
     applyGripPosition(pos) {

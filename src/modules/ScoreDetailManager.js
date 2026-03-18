@@ -42,6 +42,9 @@ export class ScoreDetailManager {
         if (this.app.btnScoreDetailToggle) {
             this.app.btnScoreDetailToggle.classList.toggle('active', active)
         }
+        if (this.app.floatingScoreTitle) {
+            this.app.floatingScoreTitle.classList.toggle('active-panel', active)
+        }
 
         if (active) {
             document.querySelectorAll('.jump-sub-panel').forEach(p => p.style.zIndex = '11500')
