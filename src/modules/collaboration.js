@@ -36,10 +36,21 @@ export class CollaborationManager {
 
       const stampCount = this.app.stamps.filter(s => s.sourceId === source.id && !s.deleted).length;
 
+      let statusSvg = '';
+      if (!source.visible) {
+        statusSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${source.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+      } else if (isActive) {
+        statusSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="${source.color}"><circle cx="12" cy="12" r="10" /></svg>`;
+      } else {
+        statusSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${source.color}" stroke-width="4"><circle cx="12" cy="12" r="8" /></svg>`;
+      }
+
       item.innerHTML = `
         <div class="source-header">
           <div class="source-info">
-            <div class="source-dot" style="background: ${source.color}"></div>
+            <button class="toggle-vis" title="Toggle Visibility" style="background:transparent; border:none; padding:0; cursor:pointer; display:flex; margin-right: 2px; flex-shrink: 0; outline: none;">
+              ${statusSvg}
+            </button>
             <div class="source-meta-box">
               <div class="style-name-row" style="display:flex; justify-content:space-between; align-items:center;">
                 <span class="source-name">${source.name}</span>
@@ -47,16 +58,8 @@ export class CollaborationManager {
               </div>
               ${contributorBadge}
             </div>
-            ${isActive ? '<span class="active-source-badge">Active</span>' : ''}
           </div>
           <div class="source-controls">
-            <button class="btn-sm-icon toggle-vis" title="Toggle Visibility">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                ${source.visible
-          ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
-          : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'}
-              </svg>
-            </button>
             <button class="btn-sm-icon rename-src" title="Rename Style">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
@@ -67,9 +70,7 @@ export class CollaborationManager {
             ` : ''}
           </div>
         </div>
-        <div class="source-actions">
-          <label><input type="checkbox" class="source-compare-toggle" ${source.visible ? 'checked' : ''}> Compare</label>
-        </div>
+
         <div class="source-opacity-box">
           <label for="source-opacity-slider-${source.id}">Opacity</label>
           <input id="source-opacity-slider-${source.id}" type="range" class="source-opacity-slider modern-slider" min="0" max="1" step="0.1" value="${source.opacity}">
@@ -77,7 +78,7 @@ export class CollaborationManager {
       `;
 
       item.onclick = (e) => {
-        if (e.target.closest('.source-controls') || e.target.closest('.source-opacity-box') || e.target.closest('.source-actions')) return
+        if (e.target.closest('.source-controls') || e.target.closest('.source-opacity-box') || e.target.closest('.source-actions') || e.target.closest('.toggle-vis')) return
         this.app.activeSourceId = source.id
         this.app.saveToStorage()
         this.renderSourceUI()

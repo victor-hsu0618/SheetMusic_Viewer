@@ -319,8 +319,8 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    height: 76px;
-    min-height: 76px;
+    height: 60px; /* Reduced for file list feel */
+    min-height: 60px;
     flex-shrink: 0;
     padding: 0 16px;
     position: relative;
@@ -338,18 +338,18 @@
 }
 
 .score-thumb {
-    width: 48px;
-    height: 62px;
-    border-radius: 6px;
-    background: var(--bg-app);
+    width: 36px; /* Smaller icon size */
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 16px;
     overflow: hidden;
     position: relative;
     flex-shrink: 0;
-    margin-right: 18px;
+    margin-right: 16px;
     border: 1px solid var(--border);
 }
 

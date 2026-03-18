@@ -110,7 +110,6 @@
 
     <!-- Floating Document Control Bar (Unified Control Hub - Moved outside for stable layering) -->
     <div id="floating-doc-bar" class="floating-doc-bar collapsed">
-      <div id="floating-score-title" class="floating-score-title"></div>
       <div class="doc-drag-handle">
         <!-- Expanded state: 6-dot grip -->
         <svg class="grip-icon-expanded" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -133,6 +132,9 @@
           <polyline points="5 13 12 19 19 13" />
         </svg>
       </button>
+
+      <!-- Integrated Score Title inside Doc Bar -->
+      <div id="floating-score-title" class="floating-score-title"></div>
 
       <!-- Page Nav: always adjacent to grip -->
       <div class="quick-nav-btns">
@@ -1201,8 +1203,21 @@
       <div class="drag-bar"></div>
     </div>
     <div class="jump-header">
-      <span class="jump-title">Score Detail</span>
-      <button id="btn-close-score-detail" class="btn-close-mini">✕</button>
+      <div class="flex-row-center" style="gap: 8px;">
+        <span class="jump-title">Score Detail</span>
+      </div>
+      <div class="flex-row-center" style="gap: 8px;">
+        <button id="btn-save-score-detail" class="btn btn-primary" title="Save Changes" style="padding: 4px 10px; font-size: 0.7rem; border-radius: 8px; font-weight: 600; white-space: nowrap;">
+          Save
+        </button>
+        <button id="btn-detail-add-setlist" class="btn-icon" title="Add to Setlist" style="display: flex; align-items: center; gap: 4px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; white-space: nowrap; flex-shrink: 0; font-size: 0.7rem; padding: 4px 8px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span>Add</span>
+        </button>
+        <button id="btn-close-score-detail" class="btn-close-mini">✕</button>
+      </div>
     </div>
 
     <div class="detail-main-content">
@@ -1234,74 +1249,55 @@
           <label class="setting-label" for="score-name-input">Piece Title</label>
           <input type="text" id="score-name-input" class="search-input-mini w-full mt-5"
             placeholder="e.g. Cello Suite No.1" />
+          <div class="text-mini opacity-50 mt-5" style="font-family: monospace; display: flex; gap: 4px; align-items: center;" title="SHA-256 Identification Hash">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span id="score-fingerprint-display">Unknown</span>
+          </div>
         </div>
         <div class="setting-item mb-15">
           <label class="setting-label" for="score-composer-input">Composer</label>
           <input type="text" id="score-composer-input" class="search-input-mini w-full mt-5"
             placeholder="e.g. J.S. Bach" />
         </div>
-        <button id="btn-save-score-detail" class="btn btn-primary btn-full mt-5 mb-10">Save Changes</button>
         <div class="tab-divider"></div>
-        <div class="tab-section-label">Notation Setup</div>
-        <button id="btn-detail-add-setlist" class="btn btn-outline btn-full mt-5 mb-10">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-            style="vertical-align: middle; margin-right: 5px;">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Add to Setlist
-        </button>
 
-        <div class="tab-divider"></div>
-        <div class="tab-section-label">File Integrity</div>
-        <div class="file-meta-minimal">
-          <div class="meta-row">
-            <span>File:</span>
-            <span id="score-filename-display" class="text-truncate">Unknown</span>
-          </div>
-          <div class="meta-row">
-            <span>SHA-256:</span>
-            <code id="score-fingerprint-display">Unknown</code>
-          </div>
-          <div class="meta-row">
-            <span>Cloud ID:</span>
-            <span id="sync-file-id-display" class="text-mini opacity-70" style="font-family: monospace;">Not on cloud</span>
-          </div>
-        </div>
       </div>
 
       <!-- Tab: Styles -->
       <div class="detail-tab-pane" id="pane-styles">
-        <div class="tab-section-label">Interpretation Styles</div>
+        <div class="tab-section-label" style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span>Interpretation Styles</span>
+          <span id="stats-last-edit" class="text-mini opacity-70" title="Last Synchronized">Never</span>
+        </div>
+        
+        <!-- Merged Compact Stats -->
+        <div class="stats-grid-tiny mb-10" style="display: flex; gap: 15px; background: rgba(0,0,0,0.03); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);">
+          <div class="stats-item-tiny" style="display: flex; flex-direction: column; flex: 1;">
+            <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Annotations</span>
+            <span id="stats-total-count" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">0</span>
+          </div>
+          <div class="stats-item-tiny" style="display: flex; flex-direction: column; flex: 1;">
+            <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">System</span>
+            <span id="stats-system-count" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">0</span>
+          </div>
+          <div class="stats-item-tiny" style="display: flex; flex-direction: column; flex: 2;">
+            <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Author</span>
+            <span id="stats-author" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</span>
+          </div>
+        </div>
+
         <div id="source-list" class="source-list">
           <!-- Populated via CollaborationManager -->
         </div>
+        
         <button id="add-source-btn" class="btn btn-outline btn-full mt-10">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M12 5v14M5 12h14" />
           </svg>
           Add New Style
         </button>
-
-        <div class="tab-divider"></div>
-        <div class="tab-section-label">Statistics</div>
-        <div class="stats-grid-compact">
-          <div class="stats-item">
-            <small>Annotations</small>
-            <div id="stats-total-count">0</div>
-          </div>
-          <div class="stats-item">
-            <small>System</small>
-            <div id="stats-system-count">0</div>
-          </div>
-          <div class="stats-item">
-            <small>Author</small>
-            <div id="stats-author">-</div>
-          </div>
-        </div>
-        <div class="stats-full-width mt-10">
-          <small>Last Optimized Sync</small>
-          <div id="stats-last-edit" class="text-mini opacity-70">Never</div>
-        </div>
       </div>
 
       <!-- Tab: Media -->
@@ -1340,25 +1336,6 @@
           <span class="setting-hint">Pin this score to always keep a local copy.</span>
         </div>
 
-        <div class="tab-divider"></div>
-        <div class="tab-section-label">Cloud Sync Control</div>
-        <div class="flex-row-center gap-10 mt-10">
-          <button id="btn-drive-manual-push" class="btn btn-primary btn-mini-sidebar w-full">
-            <span>↑</span> Push Now
-          </button>
-          <button id="btn-drive-manual-pull" class="btn btn-outline-sm btn-mini-sidebar w-full">
-            <span>↓</span> Pull Now
-          </button>
-        </div>
-        <button id="btn-supabase-repair" class="btn btn-outline btn-full mt-10" title="如果雲端檔案損毀 (0 KB)，可由此強制重傳本地檔案">
-          <span>☁️</span> Repair Cloud File
-        </button>
-        <button id="btn-supabase-push-stamps" class="btn btn-outline btn-full mt-5" title="強制將本地所有標註同步到雲端">
-          <span>⬆️</span> Push All Markings (Cloud)
-        </button>
-        <p class="setting-hint mt-10">
-          Manual sync will bypass the automatic timer. Use "Repair" for 0 KB files, and "Push All" to force sync markings.
-        </p>
         <div class="tab-divider"></div>
         <div class="tab-section-label">Score Annotation Exchange</div>
         <div class="flex-row-center gap-10 mb-10">

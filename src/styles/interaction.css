@@ -384,23 +384,23 @@
 .source-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px; /* Compact */
 }
 
 .source-item {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px;
+  border-radius: 10px; /* Tighter radius */
+  padding: 8px 10px; /* Reduced vertical padding */
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px; /* Reduced internal gap */
   transition: all 0.2s;
 }
 
 .source-item.active {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 1px var(--primary); /* Snappier border */
 }
 
 .source-header {
@@ -413,6 +413,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
 }
 
 .source-dot {
@@ -432,7 +434,7 @@
 
 .source-name {
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* Slightly smaller name */
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
@@ -440,7 +442,7 @@
 }
 
 .source-contributor {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
   display: flex;
   align-items: center;
@@ -455,13 +457,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .source-opacity-box {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 .source-opacity-box label {

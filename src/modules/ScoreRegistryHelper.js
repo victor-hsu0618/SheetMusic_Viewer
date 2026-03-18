@@ -17,36 +17,8 @@ export class ScoreRegistryHelper {
     }
 
     async generateThumbnail(buffer) {
-        if (!buffer || buffer.byteLength === 0) {
-            console.error('[ScoreRegistryHelper] Cannot generate thumbnail: PDF buffer is empty (0 bytes).');
-            return null;
-        }
-        try {
-            const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/');
-            const pdf = await pdfjsLib.getDocument({
-                data: buffer,
-                cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
-                cMapPacked: true,
-                standardFontDataUrl: new URL('pdfjs/standard_fonts/', baseUrl).href,
-                jbig2WasmUrl: new URL('pdfjs/wasm/jbig2.wasm', baseUrl).href,
-                wasmUrl: new URL('pdfjs/wasm/', baseUrl).href,
-                isEvalSupported: false,
-                stopAtErrors: false
-            }).promise;
-
-            const page = await pdf.getPage(1);
-            const viewport = page.getViewport({ scale: 0.5 });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
-            return canvas.toDataURL('image/webp', 0.7);
-        } catch (err) {
-            console.error('[ScoreRegistryHelper] Thumbnail failed:', err);
-            return null;
-        }
+        // Thumbnails disabled for performance and "File Manager" speed
+        return null;
     }
 
     async migrateLegacyData() {
@@ -237,10 +209,16 @@ export class ScoreRegistryHelper {
         }
     }
     async healLibrary() {
-        console.log('[ScoreRegistryHelper] 🏥 Healing Library Registry...');
+        console.log('[ScoreRegistryHelper] 🏥 Healing Library Registry & Purging Thumbnails...');
         let changed = false;
 
         for (const entry of this.manager.registry) {
+            // PURGE THUMBNAILS: Clear stored images to save megabytes of space
+            if (entry.thumbnail) {
+                entry.thumbnail = null;
+                changed = true;
+            }
+
             if (!entry.fileName) continue;
 
             const baseFileName = entry.fileName.replace(/\.pdf$/i, '').trim();

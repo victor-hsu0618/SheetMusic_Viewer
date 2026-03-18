@@ -15,13 +15,10 @@ export class ScoreDetailUIManager {
         this.btnClose = document.getElementById('btn-close-score-detail')
         this.scoreNameInput = document.getElementById('score-name-input')
         this.scoreComposerInput = document.getElementById('score-composer-input')
-        this.scoreFilenameDisplay = document.getElementById('score-filename-display')
+
         this.scoreFingerprintDisplay = document.getElementById('score-fingerprint-display')
         this.btnSave = document.getElementById('btn-save-score-detail')
 
-        this.syncFileIdDisplay = document.getElementById('sync-file-id-display')
-        this.btnManualPush = document.getElementById('btn-drive-manual-push')
-        this.btnManualPull = document.getElementById('btn-drive-manual-pull')
 
         this.mediaListContainer = document.getElementById('score-media-list')
         this.mediaUrlInput = document.getElementById('sidebar-media-url')
@@ -60,10 +57,6 @@ export class ScoreDetailUIManager {
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
         document.getElementById('btn-reset-score-all')?.addEventListener('click', () => this.manager.handleResetAll())
 
-        this.btnManualPush?.addEventListener('click', () => this.manager.handleManualPush())
-        this.btnManualPull?.addEventListener('click', () => this.manager.handleManualPull())
-        document.getElementById('btn-supabase-repair')?.addEventListener('click', () => this.manager.handleSupabaseRepair())
-        document.getElementById('btn-supabase-push-stamps')?.addEventListener('click', () => this.manager.handleSupabasePushAnnotations())
 
         document.getElementById('btn-toggle-keep-offline')?.addEventListener('change', async (e) => {
             const fp = this.manager.currentFp || this.app.pdfFingerprint
@@ -221,30 +214,7 @@ export class ScoreDetailUIManager {
             this.scoreFingerprintDisplay.title = fingerprint || ''
         }
 
-        if (this.scoreFilenameDisplay) {
-            // 1. Try Registry (The most reliable source for a given fingerprint)
-            let fileName = regScore?.fileName;
-            
-            // 2. Fallback: If this IS the currently active open PDF, use its name
-            if (!fileName && this.app.pdfFingerprint === fingerprint && this.app.activeScoreName) {
-                fileName = this.app.activeScoreName;
-            }
-            
-            // 3. Fallback: Use the specific score's info title + .pdf (Avoid global pollution)
-            if (!fileName) {
-                const title = info.name || regScore?.title || 'Untitled';
-                fileName = title.endsWith('.pdf') ? title : title + '.pdf';
-            }
-            
-            this.scoreFilenameDisplay.textContent = fileName;
-        }
 
-        if (this.syncFileIdDisplay) {
-            const manifest = this.app.driveSyncManager?.manifest || {};
-            const entry = manifest[fingerprint];
-            this.syncFileIdDisplay.textContent = entry?.syncId ? entry.syncId : 'Not on cloud';
-            this.syncFileIdDisplay.classList.toggle('opacity-70', !!entry?.syncId);
-        }
         if (this.mediaListContainer) {
             this.mediaListContainer.innerHTML = ''
             info.mediaList.forEach(media => {

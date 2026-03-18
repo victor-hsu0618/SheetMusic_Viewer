@@ -4,9 +4,11 @@ if (process.env.NODE_ENV === 'development') {
         const HOST = '192.168.0.200'; // 偵測到的您的 Mac IP
         const PORT = '3001';
         const log = (type, args) => {
+            const device = /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'iPad' : 
+                           /Macintosh/.test(navigator.userAgent) ? 'Mac' : 'Browser';
             fetch(`http://${HOST}:${PORT}`, {
                 method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, msg: Array.from(args) })
+                body: JSON.stringify({ type, device, msg: Array.from(args) })
             }).catch(() => {});
         };
         ['log', 'error', 'warn', 'info'].forEach(t => {
@@ -152,6 +154,7 @@ class ScoreFlow {
     this.scoreDetailManager.init()
     this.driveSyncManager.init()
     this.playbackManager.init()
+    this.scoreManager.init()
     this.gistShareManager.init()
     this.settingsPanelManager.init()
     this.setlistManager.init()
