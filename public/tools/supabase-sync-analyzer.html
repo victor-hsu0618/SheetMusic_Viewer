@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Sync Analyzer | ScoreFlow Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles.css">
+    <script src="theme-manager.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #3ecf8e;
+            --primary-hover: #34b27b;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        .analyzer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .config-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .input-group label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: #000;
+            font-weight: 700;
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .stat-box .value { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+        .stat-box .label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+
+        .status-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .status-match { background: rgba(62, 207, 142, 0.1); color: var(--primary); border: 1px solid rgba(62, 207, 142, 0.2); }
+        .status-error { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .status-warn { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+
+        .table-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; padding: 12px 16px; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border); color: var(--text-muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+        td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+        .diff { color: #f87171; text-decoration: line-through; margin-right: 4px; }
+        .sync-icon { font-size: 16px; }
+
+        .debug-console {
+            background: #000;
+            color: #888;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            height: 100px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            margin-bottom: 24px;
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="analyzer-container">
+        <header style="margin-bottom: 24px;">
+            <a href="index.html" style="text-decoration:none; color:var(--primary); font-weight:700; font-size:14px;">← Back to Hub</a>
+            <h1 style="font-size: 2rem; font-weight: 800; margin: 12px 0 8px 0;">Supabase Sync Integrity Analyzer</h1>
+            <p style="color:var(--text-muted); font-size: 14px;">Cross-reference IndexedDB vs. Supabase SQL vs. Storage Bucket.</p>
+        </header>
+
+        <div id="debug-log" class="debug-console">Ready. Initializing...</div>
+
+        <!-- Connection Settings -->
+        <div class="config-card">
+            <div class="input-group">
+                <label>Supabase URL</label>
+                <input type="text" id="sb-url" value="https://tanoqdnqtxqxerwcbdlf.supabase.co">
+            </div>
+            <div class="input-group">
+                <label>Anon Key</label>
+                <input type="password" id="sb-key" value="sb_publishable_CqpxXMRonYfz25IHc3VYvQ_CSKrgFU4">
+            </div>
+            <button class="btn" id="btn-analyze">🔄 Run Sync Analysis</button>
+        </div>
+
+        <!-- Login Prompt -->
+        <div id="login-area" class="config-card hidden">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="login-email" placeholder="dev@example.com">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="login-password">
+            </div>
+            <button class="btn" id="btn-login">Sign In</button>
+        </div>
+
+        <!-- Analysis Results -->
+        <div id="analysis-results" class="hidden">
+            <div class="stats-grid">
+                <div class="stat-box"><div id="stat-total" class="value">0</div><div class="label">Total Managed</div></div>
+                <div id="stat-mismatch-box" class="stat-box"><div id="stat-mismatch" class="value" style="color:var(--danger)">0</div><div class="label">Integrity Issues</div></div>
+                <div class="stat-box"><div id="stat-synced" class="value" style="color:var(--primary)">0</div><div class="label">Fully Synced</div></div>
+                <div class="stat-box"><div id="stat-local" class="value">0</div><div class="label">Local Only</div></div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Score Identity / Fingerprint</th>
+                            <th>Local Metadata</th>
+                            <th>Cloud Metadata</th>
+                            <th>Cloud PDF (Bucket)</th>
+                            <th>Integrity Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analysis-body">
+                        <!-- Rows will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- NATIVE DB WRAPPER ---
+        const db = {
+            get: (key) => {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open('ScoreFlowStorage', 1);
+                    req.onsuccess = () => {
+                        const store = req.result.transaction('store', 'readonly').objectStore('store');
+                        const getReq = store.get(key);
+                        getReq.onsuccess = () => resolve(getReq.result);
+                        getReq.onerror = () => reject(getReq.error);
+                    };
+                    req.onerror = () => reject(req.error);
+                });
+            }
+        };
+
+        const logEl = document.getElementById('debug-log');
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<div style="color:${type === 'error' ? 'var(--danger)' : '#888'}">[${time}] ${msg}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        let supabaseClient = null;
+        let currentUser = null;
+
+        async function initSupabase() {
+            const url = document.getElementById('sb-url').value.trim();
+            const key = document.getElementById('sb-key').value.trim();
+            if (!url || !key) return;
+
+            try {
+                supabaseClient = supabase.createClient(url, key);
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                currentUser = session?.user || null;
+                
+                if (currentUser) {
+                    log('Connected as ' + currentUser.email);
+                    document.getElementById('login-area').classList.add('hidden');
+                    runAnalysis();
+                } else {
+                    log('Not authenticated.');
+                    document.getElementById('login-area').classList.remove('hidden');
+                }
+            } catch (err) {
+                log('Supabase Error: ' + err.message, 'error');
+            }
+        }
+
+        async function runAnalysis() {
+            if (!supabaseClient || !currentUser) return;
+            log('Starting cross-domain analysis...');
+            
+            try {
+                // 1. Fetch Local Data
+                const localRegistry = await db.get('score_registry') || [];
+                const localDetails = {};
+                for (const score of localRegistry) {
+                    localDetails[score.fingerprint] = await db.get(`detail_${score.fingerprint}`);
+                }
+
+                // 2. Fetch Cloud Data
+                const { data: cloudScores, error: err1 } = await supabaseClient
+                    .from('scores')
+                    .select('*')
+                    .eq('user_id', currentUser.id);
+                
+                if (err1) throw err1;
+
+                const { data: cloudFiles, error: err2 } = await supabaseClient
+                    .storage
+                    .from('pdfs')
+                    .list(currentUser.id);
+
+                if (err2) throw err2;
+
+                log(`Loaded: ${localRegistry.length} local scores, ${cloudScores.length} cloud records, ${cloudFiles.length} cloud files.`);
+                
+                renderAnalysis(localRegistry, localDetails, cloudScores, cloudFiles);
+
+            } catch (err) {
+                log('Analysis failed: ' + err.message, 'error');
+            }
+        }
+
+        function renderAnalysis(localReg, localDetails, cloudScores, cloudFiles) {
+            const tbody = document.getElementById('analysis-body');
+            tbody.innerHTML = '';
+            
+            const fingerprints = new Set([
+                ...localReg.map(s => s.fingerprint),
+                ...cloudScores.map(s => s.fingerprint)
+            ]);
+
+            let total = 0, mismatched = 0, synced = 0, localOnly = 0;
+
+            fingerprints.forEach(fp => {
+                total++;
+                const local = localReg.find(s => s.fingerprint === fp);
+                const cloud = cloudScores.find(s => s.fingerprint === fp);
+                const file = cloudFiles.find(f => f.name === `${fp}.pdf`);
+                const detail = localDetails[fp];
+
+                const row = document.createElement('tr');
+                
+                // --- IDENTITY ---
+                const title = local?.title || cloud?.title || 'Unknown';
+                const fileName = local?.fileName || cloud?.filename || 'no_file';
+                let idHtml = `<strong>${title}</strong><div class="mono">${fp.substring(0,8)}...</div><div style="font-size:9px; opacity:0.6">${fileName}</div>`;
+
+                // --- LOCAL STATUS ---
+                let localHtml = '';
+                if (local) {
+                    localHtml = `<div>${local.title}</div><div style="font-size:10px; opacity:0.5">${local.composer || 'No Composer'}</div>`;
+                } else {
+                    localHtml = `<span class="status-pill status-error">Missing Locally</span>`;
+                }
+
+                // --- CLOUD STATUS ---
+                let cloudHtml = '';
+                if (cloud) {
+                    cloudHtml = `<div>${cloud.title}</div><div style="font-size:10px; opacity:0.5">${cloud.composer || 'No Composer'}</div>`;
+                } else {
+                    cloudHtml = `<span class="status-pill status-warn">Cloud Record Missing</span>`;
+                }
+
+                // --- PDF STATUS ---
+                let pdfHtml = '';
+                if (file) {
+                    const size = file.metadata?.size || file.size || 0;
+                    pdfHtml = `<span class="status-pill status-match">${(size/1024).toFixed(1)} KB</span>`;
+                } else {
+                    pdfHtml = `<span class="status-pill status-error">No PDF in Bucket</span>`;
+                }
+
+                // --- INTEGRITY CHECK ---
+                let statusHtml = '';
+                let issues = [];
+                
+                if (local && cloud) {
+                    if (local.title !== cloud.title) issues.push('Title Mismatch');
+                    if (local.composer !== cloud.composer) issues.push('Composer Mismatch');
+                }
+                
+                // Detailed mismatch logic for the user's specific case
+                if (local && local.fileName && !local.title.toLowerCase().includes(local.fileName.replace('.pdf','').toLowerCase().substring(0,5))) {
+                    if (!local.title.includes('score_buf')) {
+                        issues.push('Label Meta Mismatch (UI vs File)');
+                    }
+                }
+
+                if (!file && (local || cloud)) issues.push('File Not Uploaded');
+                if (!cloud && local) { localOnly++; issues.push('Local Only'); }
+                if (!local && cloud) issues.push('Cloud Only / Remote Stale');
+
+                if (issues.length === 0) {
+                    statusHtml = `<span class="status-pill status-match">Healthy</span>`;
+                    synced++;
+                } else {
+                    statusHtml = issues.map(i => `<div class="status-pill status-error" style="margin-bottom:2px">${i}</div>`).join('');
+                    mismatched++;
+                }
+
+                // --- ACTIONS ---
+                let actionHtml = `<div style="display:flex; flex-direction:column; gap:4px;">`;
+                if (local && cloud && local.title !== cloud.title) {
+                    actionHtml += `<button class="btn-outline" style="font-size:9px" onclick="window.syncToCloud('${fp}')">Push Local to Cloud</button>`;
+                    actionHtml += `<button class="btn-outline" style="font-size:9px" onclick="window.syncToLocal('${fp}')">Pull Cloud to Local</button>`;
+                }
+                if (!cloud && local) {
+                    actionHtml += `<button class="btn-outline" style="font-size:9px" onclick="window.syncToCloud('${fp}')">Upload Metadata</button>`;
+                }
+                actionHtml += `</div>`;
+
+                row.innerHTML = `
+                    <td>${idHtml}</td>
+                    <td>${localHtml}</td>
+                    <td>${cloudHtml}</td>
+                    <td>${pdfHtml}</td>
+                    <td>${statusHtml}</td>
+                    <td>${actionHtml}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-mismatch').textContent = mismatched;
+            document.getElementById('stat-synced').textContent = synced;
+            document.getElementById('stat-local').textContent = localOnly;
+            
+            document.getElementById('stat-mismatch-box').style.borderColor = mismatched > 0 ? 'var(--danger)' : 'var(--border)';
+            document.getElementById('analysis-results').classList.remove('hidden');
+        }
+
+        window.syncToCloud = async (fp) => {
+            log('Pushing local metadata to cloud for ' + fp);
+            const registry = await db.get('score_registry');
+            const score = registry.find(s => s.fingerprint === fp);
+            if (!score) return;
+
+            const record = {
+                fingerprint: fp,
+                user_id: currentUser.id,
+                title: score.title,
+                composer: score.composer || 'Unknown',
+                filename: score.fileName || '',
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await supabaseClient.from('scores').upsert(record);
+            if (error) alert(err.message);
+            else { log('Push success.'); runAnalysis(); }
+        }
+
+        window.syncToLocal = async (fp) => {
+            log('Pulling cloud metadata to local for ' + fp);
+            const { data, error } = await supabaseClient.from('scores').select('*').eq('fingerprint', fp).single();
+            if (error) return alert(error.message);
+
+            const registry = await db.get('score_registry');
+            const idx = registry.findIndex(s => s.fingerprint === fp);
+            if (idx !== -1) {
+                registry[idx].title = data.title;
+                registry[idx].composer = data.composer;
+                registry[idx].updatedAt = Date.now();
+                
+                // Open DB directly to save
+                const req = indexedDB.open('ScoreFlowStorage', 1);
+                req.onsuccess = () => {
+                    const tx = req.result.transaction('store', 'readwrite');
+                    tx.objectStore('store').put(registry, 'score_registry');
+                    log('Local update complete.');
+                    runAnalysis();
+                };
+            }
+        }
+
+        document.getElementById('btn-analyze').addEventListener('click', runAnalysis);
+        document.getElementById('btn-login').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message);
+            else initSupabase();
+        });
+
+        document.addEventListener('DOMContentLoaded', initSupabase);
+    </script>
+</body>
+</html>

@@ -8,6 +8,14 @@ export default defineConfig({
         headers: {
             'Permissions-Policy': 'fullscreen=(self)',
             'Cross-Origin-Opener-Policy': 'unsafe-none'
+        },
+        proxy: {
+            '/SheetMusic_Viewer/api-proxy': {
+                target: 'https://tanoqdnqtxqxerwcbdlf.supabase.co/storage/v1/object',
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/SheetMusic_Viewer\/api-proxy/, '')
+            }
         }
     },
     define: {

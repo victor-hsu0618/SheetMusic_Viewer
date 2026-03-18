@@ -20,6 +20,9 @@ export class ScoreManager {
     }
 
     async init() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
+        
         const stored = await db.get('score_registry');
         this.registry = stored || [];
 
@@ -37,6 +40,7 @@ export class ScoreManager {
 
         await this.helper.migrateLegacyData();
         this.helper.migrateFallbackFingerprints();
+        await this.helper.healLibrary();
         this.initLibraryHeader();
         this.initBatchBar();
         this.initSearch();
@@ -387,13 +391,23 @@ export class ScoreManager {
 
     async deleteScore(fp, deleteFromCloud = false, skipAutoLoad = false) {
         // 1. Cloud Deletion (if requested and available)
-        if (deleteFromCloud && this.app.driveSyncManager) {
-            try {
-                // deleteSyncFiles(fp, true) deletes both JSON and PDF and tombstones the manifest
-                await this.app.driveSyncManager.deleteSyncFiles(fp, true);
-            } catch (err) {
-                console.error(`[ScoreManager] Cloud deletion failed for ${fp}:`, err);
-                this.app.showMessage(`Cloud deletion failed for some files.`, 'error');
+        if (deleteFromCloud) {
+            // Google Drive
+            if (this.app.driveSyncManager) {
+                try {
+                    await this.app.driveSyncManager.deleteSyncFiles(fp, true);
+                } catch (err) {
+                    console.error(`[ScoreManager] Drive deletion failed for ${fp}:`, err);
+                }
+            }
+            
+            // Supabase
+            if (this.app.supabaseManager) {
+                try {
+                    await this.app.supabaseManager.deleteScore(fp);
+                } catch (err) {
+                    console.error(`[ScoreManager] Supabase deletion failed for ${fp}:`, err);
+                }
             }
         }
 
@@ -498,12 +512,29 @@ export class ScoreManager {
                 try {
                     const blob = await this.app.supabaseManager.downloadPDFBuffer(fp);
                     if (blob) {
-                        buffer = await blob.arrayBuffer();
+                        // Compatibility fix: Use FileReader fallback if arrayBuffer() is missing
+                        const safeGetBuffer = async (b) => {
+                            if (b.arrayBuffer) return await b.arrayBuffer();
+                            return new Promise((r, j) => {
+                                const fr = new FileReader();
+                                fr.onload = () => r(fr.result);
+                                fr.onerror = j;
+                                fr.readAsArrayBuffer(b);
+                            });
+                        };
+                        buffer = await safeGetBuffer(blob);
                         await db.set(`score_buf_${fp}`, buffer);
                         score.isCloudOnly = false;
                         score.storageMode = 'cached';
+                    } else {
+                        console.warn(`[ScoreManager] downloadPDFBuffer returned null for ${fp}`);
                     }
-                } catch (e) { console.warn('[ScoreManager] Supabase download failed:', e); }
+                } catch (e) { 
+                    console.warn(`[ScoreManager] Supabase download failed for ${fp}:`, e.message || e); 
+                    if (e.message?.includes('CORS') || e.message?.includes('Network Error')) {
+                        this.app.showMessage('下載失敗：請檢查 Supabase CORS 設定或暫時關閉廣告攔截器。', 'error', 8000);
+                    }
+                }
             }
 
             // Priority 2: Google Drive Legacy
@@ -572,12 +603,21 @@ export class ScoreManager {
                     try {
                         const blob = await this.app.supabaseManager?.downloadPDFBuffer(fp);
                         if (blob) {
-                            const buf = await blob.arrayBuffer();
+                            const safeGetBuffer = async (b) => {
+                                if (b.arrayBuffer) return await b.arrayBuffer();
+                                return new Promise((r, j) => {
+                                    const fr = new FileReader();
+                                    fr.onload = () => r(fr.result);
+                                    fr.onerror = j;
+                                    fr.readAsArrayBuffer(b);
+                                });
+                            };
+                            const buf = await safeGetBuffer(blob);
                             await db.set(`score_buf_${fp}`, buf);
                             score.isCloudOnly = false;
                         }
                     } catch (e) {
-                        console.error('[ScoreManager] Storage mode switch download failed:', e);
+                        console.error('[ScoreManager] Storage mode switch download failed:', e.message || e);
                     }
                 }
             }
@@ -654,10 +694,15 @@ export class ScoreManager {
 
     toggleSelectionMode(val) {
         this.isSelectionMode = val !== undefined ? val : !this.isSelectionMode;
+        console.log('[ScoreManager] toggleSelectionMode:', this.isSelectionMode);
         
+        // Re-query elements to ensure they aren't stale
         const btnSelect = document.getElementById('btn-library-select');
+        this.batchBar = document.getElementById('library-batch-bar');
+        this.grid = document.getElementById('library-grid');
+        
         if (btnSelect) {
-            btnSelect.textContent = this.isSelectionMode ? 'Done' : 'Edit';
+            btnSelect.textContent = this.isSelectionMode ? 'Cancel' : 'Edit';
             btnSelect.classList.toggle('btn-primary', this.isSelectionMode);
         }
 
@@ -665,6 +710,7 @@ export class ScoreManager {
             this.selectedFingerprints.clear();
             if (this.batchBar) this.batchBar.classList.add('hidden');
         } else {
+            console.log('[ScoreManager] Entering selection mode');
             this.updateBatchBar();
         }
         
@@ -672,13 +718,20 @@ export class ScoreManager {
     }
 
     updateBatchBar() {
-        if (!this.batchBar) return;
-        const count = this.selectedFingerprints.size;
-        const active = this.isSelectionMode && count > 0;
-        this.batchBar.classList.toggle('hidden', !active);
+        const bar = this.batchBar || document.getElementById('library-batch-bar');
+        if (!bar) return;
         
-        const countEl = this.batchBar.querySelector('.batch-count');
-        if (countEl) countEl.textContent = `${count} score${count !== 1 ? 's' : ''} selected`;
+        const count = this.selectedFingerprints.size;
+        // Make it visible as soon as we enter selection mode for better feedback
+        const shouldShow = this.isSelectionMode; 
+        bar.classList.toggle('hidden', !shouldShow);
+        
+        const countEl = bar.querySelector('.batch-count');
+        if (countEl) {
+            countEl.textContent = count > 0 
+                ? `${count} score${count !== 1 ? 's' : ''} selected`
+                : 'Select scores to modify';
+        }
     }
 
     toggleSelectScore(fp) {
@@ -693,8 +746,29 @@ export class ScoreManager {
         const score = this.registry.find(s => s.fingerprint === fp);
         if (score) {
             Object.assign(score, meta);
+            score.updatedAt = Date.now();
             await this.helper.saveRegistry(this.registry);
             this.render();
+
+            // Sync update to Detail record and Active UI
+            try {
+                const detail = await db.get(`detail_${fp}`);
+                if (detail) {
+                    if (meta.title) detail.name = meta.title;
+                    if (meta.composer) detail.composer = meta.composer;
+                    await db.set(`detail_${fp}`, detail);
+                }
+
+                // If this is the active score, refresh display labels
+                if (fp === this.app.pdfFingerprint) {
+                    this.app.viewerManager?.updateFloatingTitle();
+                    if (this.app.scoreDetailManager?.currentFp === fp) {
+                        this.app.scoreDetailManager.render(fp);
+                    }
+                }
+            } catch (e) {
+                console.warn('[ScoreManager] Detail update failed during metadata change:', e);
+            }
         }
     }
 }

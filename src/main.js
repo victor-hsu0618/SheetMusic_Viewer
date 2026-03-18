@@ -1,3 +1,22 @@
+/* eslint-disable */
+if (process.env.NODE_ENV === 'development') {
+    (function() {
+        const HOST = '192.168.0.200'; // 偵測到的您的 Mac IP
+        const PORT = '3001';
+        const log = (type, args) => {
+            fetch(`http://${HOST}:${PORT}`, {
+                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, msg: Array.from(args) })
+            }).catch(() => {});
+        };
+        ['log', 'error', 'warn', 'info'].forEach(t => {
+            const o = console[t];
+            console[t] = (...a) => { log(t, a); o.apply(console, a); };
+        });
+        window.onerror = (m, u, l, c, e) => log('WINDOW_ERROR', { m, u, l, c, stack: e?.stack });
+    })();
+}
+
 import './style.css'
 import { registerSW } from 'virtual:pwa-register'
 import * as pdfjsLib from 'pdfjs-dist'
@@ -133,7 +152,6 @@ class ScoreFlow {
     this.scoreDetailManager.init()
     this.driveSyncManager.init()
     this.playbackManager.init()
-    this.scoreManager.init()
     this.gistShareManager.init()
     this.settingsPanelManager.init()
     this.setlistManager.init()

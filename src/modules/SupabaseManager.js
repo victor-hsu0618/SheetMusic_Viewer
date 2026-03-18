@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import * as db from '../db.js'
 
 export class SupabaseManager {
     constructor(app) {
@@ -432,16 +433,44 @@ export class SupabaseManager {
                     registryChanged = true;
                     console.log(`[Supabase] ↓ New placeholder: ${placeholder.title}`);
                 } else {
-                    // Update existing local entry
+                    // Update existing local entry if cloud data is newer
                     let itemChanged = false;
-                    if (exists.isSynced === undefined) { exists.isSynced = true; itemChanged = true; }
                     
-                    // If local entry thinks it's cloud-only but doesn't have metadata, sync it
-                    if (exists.isCloudOnly && !exists.title) {
-                        exists.title = cloudRecord.title;
-                        exists.composer = cloudRecord.composer;
+                    const cloudUpdate = cloudRecord.updated_at ? new Date(cloudRecord.updated_at).getTime() : 0;
+                    const localUpdate = exists.updatedAt || 0;
+
+                    if (cloudUpdate > localUpdate) {
+                        console.log(`[Supabase] ↑ Updating local metadata for ${exists.title} from cloud.`);
+                        const oldTitle = exists.title;
+                        exists.title = cloudRecord.title || exists.title;
+                        exists.composer = cloudRecord.composer || exists.composer;
+                        exists.updatedAt = cloudUpdate;
                         itemChanged = true;
+
+                        // Also update Detail record in IndexedDB if it exists
+                        (async () => {
+                            try {
+                                const detail = await db.get(`detail_${fp}`);
+                                if (detail) {
+                                    detail.name = exists.title;
+                                    detail.composer = exists.composer;
+                                    await db.set(`detail_${fp}`, detail);
+                                    
+                                    // If active score updated, refresh its UI
+                                    if (fp === this.app.pdfFingerprint) {
+                                        this.app.viewerManager?.updateFloatingTitle();
+                                        if (this.app.scoreDetailManager?.currentFp === fp) {
+                                            this.app.scoreDetailManager.render(fp);
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('[Supabase] Failed to update detail record during sync:', e);
+                            }
+                        })();
                     }
+
+                    if (exists.isSynced === undefined) { exists.isSynced = true; itemChanged = true; }
                     
                     if (itemChanged) registryChanged = true;
                 }
@@ -532,26 +561,108 @@ export class SupabaseManager {
      * Downloads a PDF from Supabase Storage.
      */
     async downloadPDFBuffer(fingerprint) {
-        if (!this.client || !this.user) return null;
+        if (!this.client || !this.user) {
+            console.warn('[Supabase] Missing client or user during download.');
+            return null;
+        }
         
         const path = `${this.user.id}/${fingerprint}.pdf`;
-        console.log(`[Supabase] ↓ Downloading PDF from storage: ${path}`);
-        
-        const { data, error } = await this.client.storage
-            .from('pdfs')
-            .download(path);
+        let lastError = null;
 
-        if (error) {
-            console.warn('[Supabase] PDF download failed (might not exist):', error.message);
-            return null;
+        // Strategy 1: Standard Authenticated Download with Retries
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                console.log(`[Supabase] ↓ Download attempt ${attempt} for: ${fingerprint.substring(0,8)}...`);
+                const { data, error } = await this.client.storage
+                    .from('pdfs')
+                    .download(path, {
+                        cacheControl: 'no-store' // Avoid caching artifacts in middleware
+                    });
+
+                if (!error && data && data.size > 0) return data;
+                if (error) lastError = error.message;
+            } catch (e) {
+                lastError = e.message || e;
+                console.warn(`[Supabase] Download attempt ${attempt} failed:`, lastError);
+            }
+            if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
         }
-        
-        if (!data || data.size === 0) {
-            console.warn('[Supabase] PDF downloaded but it is 0 bytes.');
-            return null;
+
+        // Strategy 2: Fallback to Signed URL + fetch
+        console.log(`[Supabase] 🔄 Falling back to Signed URL for ${fingerprint.substring(0,8)}...`);
+        let signedUrl = null;
+        try {
+            const { data: signData, error: signError } = await this.client.storage
+                .from('pdfs')
+                .createSignedUrl(path, 60);
+
+            if (signError) throw new Error(signError.message);
+            signedUrl = signData.signedUrl;
+
+            // --- DEV PROXY HACK ---
+            // On localhost, we use Vite's proxy to bypass CORS
+            if (this.app.isDev && signedUrl.includes('supabase.co/storage/v1/object')) {
+                const proxyUrl = signedUrl.replace(/https:\/\/.*\.supabase\.co\/storage\/v1\/object/, window.location.origin + '/SheetMusic_Viewer/api-proxy');
+                console.log(`[Supabase] 🛡️ Using Dev Proxy:`, proxyUrl);
+                signedUrl = proxyUrl;
+            } else if (this.app.isDev) {
+                console.log(`[Supabase] 🔗 Private Link (60s):`, signedUrl);
+            }
+            // --- END HACK ---
+
+            // Strategy 2: Fallback to Signed URL + fetch (Clean request)
+            const response = await fetch(signedUrl, {
+                mode: 'cors',
+                credentials: 'omit', 
+                referrerPolicy: 'no-referrer',
+                cache: 'no-store', // This acts like cacheControl: '0'
+                headers: {
+                    'Accept': 'application/pdf'
+                }
+            });
+            
+            if (response.ok) {
+                const blob = await response.blob();
+                if (blob.size > 0) return blob;
+            } else {
+                console.warn(`[Supabase] Signed URL fetch returned status: ${response.status}`);
+            }
+        } catch (e) {
+            console.warn(`[Supabase] fetch strategy failed, trying Strategy 3 (XHR)...`, e.message);
         }
-        
-        return data;
+
+        // Strategy 3: XMLHttpRequest (The "Safe" Option)
+        if (signedUrl) {
+            console.log(`[Supabase] 🚀 Initializing XHR binary transfer for ${fingerprint.substring(0,8)}...`);
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', signedUrl, true);
+                xhr.responseType = 'blob';
+                xhr.setRequestHeader('Accept', 'application/pdf');
+                xhr.withCredentials = false;
+                
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const blob = xhr.response;
+                        if (blob && blob.size > 0) {
+                            console.log(`[Supabase] ✅ XHR download successful (${blob.size} bytes)`);
+                            resolve(blob);
+                        } else {
+                            reject(new Error('XHR returned empty blob'));
+                        }
+                    } else {
+                        reject(new Error(`XHR Status: ${xhr.status}`));
+                    }
+                };
+                
+                xhr.onerror = () => reject(new Error('XHR Network Error (CORS, AdBlocker, or Blocked)'));
+                xhr.ontimeout = () => reject(new Error('XHR Timeout'));
+                xhr.timeout = 45000;
+                xhr.send();
+            });
+        }
+
+        throw new Error('All download strategies (Download, Fetch, XHR) exhausted.');
     }
 
     /**
@@ -582,7 +693,47 @@ export class SupabaseManager {
         // Ensure the file is not 0 bytes
         const file = data[0];
         const size = file.metadata?.size || file.size || 0;
-        console.log(`[Supabase] 🔍 Found file. Size: ${size} bytes.`);
         return size > 0;
+    }
+
+    /**
+     * Deletes a score and all its associated data from Supabase (DB + Storage).
+     */
+    async deleteScore(fingerprint) {
+        if (!this.client || !this.user) return;
+        
+        console.log(`[Supabase] 🗑️ DELETING SCORE: ${fingerprint}`);
+        
+        // 1. Delete from storage (bucket: 'pdfs')
+        const path = `${this.user.id}/${fingerprint}.pdf`;
+        const { error: storageError } = await this.client.storage
+            .from('pdfs')
+            .remove([path]);
+        
+        if (storageError) {
+            console.warn('[Supabase] Storage deletion warning:', storageError.message);
+        }
+
+        // 2. Delete annotations
+        const { error: annError } = await this.client
+            .from('annotations')
+            .delete()
+            .eq('fingerprint', fingerprint)
+            .eq('user_id', this.user.id);
+        
+        if (annError) console.warn('[Supabase] Annotation deletion warning:', annError.message);
+
+        // 3. Delete from 'scores' metadata table
+        const { error: dbError } = await this.client
+            .from('scores')
+            .delete()
+            .eq('fingerprint', fingerprint)
+            .eq('user_id', this.user.id);
+
+        if (dbError) {
+            console.error('[Supabase] ❌ DB Score deletion error:', dbError.message);
+        } else {
+            console.log('[Supabase] ✅ Score deleted successfully from cloud.');
+        }
     }
 }

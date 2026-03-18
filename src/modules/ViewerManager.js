@@ -176,15 +176,30 @@ export class ViewerManager {
         const loadingId = ++this.latestLoadingId;
         console.log(`[ViewerManager] loadPDF started (id: ${loadingId}) for: ${filename || 'unknown'}`);
 
+        // --- ATOMIC TRANSITION: Clear stale state immediately ---
+        // If we know the target FP (switching from library), set it early so UI can update.
+        // If it's a new upload, clear it so we don't show previous score info while hashing.
+        this.pdf = null;
+        this.pdfFingerprint = expectedFp || null;
+        this.app.pdfFingerprint = expectedFp || null;
+        this.app.stamps = []; // Clear stale annotations immediately
+        
         if (filename) this.activeScoreName = filename;
         this.isFitToHeight = false;
         this._pageMetrics = {};
 
-        // Only save current session data if a PDF was actually active.
-        // This prevents wiping out IndexedDB data if we have a fingerprint but haven't loaded stamps yet (e.g., after refresh).
-        if (this.pdf && this.pdfFingerprint) {
-            await this.app.saveToStorage()
+        // Update UI to "Loading" or new Title immediately
+        this.updateFloatingTitle();
+        if (this.app.scoreDetailManager && expectedFp) {
+            this.app.scoreDetailManager.load(expectedFp);
         }
+
+        // Only save current session data if we had a valid fingerprint before clearing
+        // (This usually happens before calling loadPDF in the caller, but here is a safety)
+        // Note: this.pdf was just cleared, but we mean "was there a pdf before"
+        // In practice, ScoreManager handles the "Save before switch" logic.
+        
+        // --- End Atomic Transition ---
 
         if (filename) {
             this.app.addToRecentSoloScores(filename)
@@ -400,20 +415,30 @@ export class ViewerManager {
     async updateFloatingTitle() {
         if (!this.app.floatingScoreTitle) return;
         
-        if (!this.pdf || !this.pdfFingerprint) {
-            this.app.floatingScoreTitle.classList.remove('active');
+        const fp = this.pdfFingerprint;
+        if (!fp) {
+            if (this.activeScoreName) {
+                this.app.floatingScoreTitle.textContent = "Loading " + this.activeScoreName.replace(/\.pdf$/i, '') + "...";
+                this.app.floatingScoreTitle.classList.add('active');
+            } else {
+                this.app.floatingScoreTitle.classList.remove('active');
+            }
             return;
         }
 
         let displayName = "";
         if (this.app.scoreDetailManager) {
-            const meta = await this.app.scoreDetailManager.getMetadata(this.pdfFingerprint);
+            // Get cached or stored metadata
+            const meta = await this.app.scoreDetailManager.getMetadata(fp);
             displayName = meta?.name || "";
         }
         
         if (!displayName) {
-            displayName = this.activeScoreName ? this.activeScoreName.replace(/\.pdf$/i, '') : "Untitled";
+            displayName = this.activeScoreName ? this.activeScoreName.replace(/\.pdf$/i, '') : "Opening Score...";
         }
+
+        // If we are still hashing/parsing, add a visual cue
+        if (!this.pdf) displayName = "⏳ " + displayName;
 
         this.app.floatingScoreTitle.textContent = displayName;
         this.app.floatingScoreTitle.classList.add('active');

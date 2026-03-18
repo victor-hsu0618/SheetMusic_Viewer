@@ -236,4 +236,50 @@ export class ScoreRegistryHelper {
             this.app.showMessage('Rebuild failed: ' + err.message, 'error');
         }
     }
+    async healLibrary() {
+        console.log('[ScoreRegistryHelper] 🏥 Healing Library Registry...');
+        let changed = false;
+
+        for (const entry of this.manager.registry) {
+            if (!entry.fileName) continue;
+
+            const baseFileName = entry.fileName.replace(/\.pdf$/i, '').trim();
+            const currentTitle = (entry.title || '').trim();
+
+            // HEURISTIC: If title and fileName are radically different, 
+            // the metadata was likely corrupted during some migration.
+            // (Ignoring common variations like underscores vs spaces)
+            const clean = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (clean(baseFileName) !== clean(currentTitle) && currentTitle && !currentTitle.includes(baseFileName)) {
+                console.warn(`[ScoreRegistryHelper] 🚨 Mismatch detected for ${entry.fingerprint.slice(0, 8)}:`);
+                console.warn(`   Current Title: "${currentTitle}"`);
+                console.warn(`   Real Filename: "${baseFileName}"`);
+                
+                // RESTORE IDENTITY
+                entry.title = baseFileName;
+                entry.updatedAt = Date.now();
+                changed = true;
+                
+                // Also update the detailed metadata record
+                const detail = await db.get(`detail_${entry.fingerprint}`);
+                if (detail) {
+                    detail.name = baseFileName;
+                    detail.updatedAt = Date.now();
+                    await db.set(`detail_${entry.fingerprint}`, detail);
+                }
+            }
+        }
+
+        if (changed) {
+            await this.saveRegistry(this.manager.registry);
+            this.app.showMessage('Library metadata healed and synchronized.', 'success');
+            // Sync up the healed data to Supabase
+            if (this.app.supabaseManager?.user) {
+                await this.app.supabaseManager.syncScoreRegistry(this.manager.registry);
+            }
+            this.manager.render();
+        } else {
+            console.log('[ScoreRegistryHelper] No mismatches found.');
+        }
+    }
 }
