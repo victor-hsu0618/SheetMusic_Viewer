@@ -1206,33 +1206,15 @@ export class DriveSyncManager {
                         }
                     }
 
-                    // 3. Merge Setlists
+                    // 3. Setlists — Drive is backup-only, never sync back to local.
+                    // Only check if local is newer than last push (to trigger a push).
                     if (Array.isArray(remoteData.setlists) && this.app.setlistManager) {
-                        let setlistChanged = false;
-                        const remoteSetlists = remoteData.setlists;
-
-                        remoteSetlists.forEach(remoteSet => {
-                            const localSet = this.app.setlistManager.setlists.find(s => s.id === remoteSet.id);
-                            if (!localSet) {
-                                this.app.setlistManager.setlists.push(remoteSet);
-                                setlistChanged = true;
-                            } else if ((remoteSet.updatedAt || 0) > (localSet.updatedAt || 0)) {
-                                Object.assign(localSet, remoteSet);
-                                setlistChanged = true;
-                            }
-                        });
-
                         this.app.setlistManager.setlists.forEach(ls => {
-                            const rs = remoteSetlists.find(s => s.id === ls.id);
+                            const rs = remoteData.setlists.find(s => s.id === ls.id);
                             if (!rs || (ls.updatedAt || 0) > (rs.updatedAt || 0)) {
                                 shouldPush = true;
                             }
                         });
-
-                        if (setlistChanged) {
-                            await this.app.setlistManager.save();
-                            this.app.setlistManager.render();
-                        }
                     }
                 } else {
                     if (localProfile.updatedAt > (this.lastProfileSyncTime || 0)) shouldPush = true;

@@ -53,7 +53,11 @@ export class SetlistManager {
     }
 
     async deleteSetlist(id) {
-        this.setlists = this.setlists.filter(list => list.id !== id)
+        const list = this.setlists.find(l => l.id === id)
+        if (list) {
+            list.deleted = true
+            list.updatedAt = Date.now()
+        }
         if (this.activeSetlistId === id) this.exitPerformanceMode()
         await this.save()
     }
@@ -68,7 +72,7 @@ export class SetlistManager {
     }
 
     getSetlist(id) {
-        return this.setlists.find(list => list.id === id)
+        return this.setlists.find(list => list.id === id && !list.deleted)
     }
 
     async addScore(setId, fingerprint) {
@@ -179,7 +183,8 @@ export class SetlistManager {
         const actionsArea = document.getElementById('setlist-actions-area');
         const btnCreateMini = document.getElementById('btn-create-setlist-mini');
 
-        if (countEl) countEl.textContent = `All Setlists (${this.setlists.length})`;
+        const activeSetlists = this.setlists.filter(l => !l.deleted)
+        if (countEl) countEl.textContent = `All Setlists (${activeSetlists.length})`;
         if (actionsArea) actionsArea.classList.remove('hidden');
 
         if (btnCreateMini && !btnCreateMini.onclick) {
@@ -198,7 +203,7 @@ export class SetlistManager {
             }
         }
 
-        if (this.setlists.length === 0) {
+        if (activeSetlists.length === 0) {
             this.grid.innerHTML = `
                 <div class="library-empty">
                     <div style="margin-bottom:15px; font-size: 2rem;">🎵</div>
@@ -208,8 +213,8 @@ export class SetlistManager {
             return
         }
 
-        // Render existing setlists
-        this.setlists.forEach(list => {
+        // Render existing setlists (skip deleted/tombstoned)
+        activeSetlists.forEach(list => {
             const card = document.createElement('div')
             card.className = 'score-card'
 
