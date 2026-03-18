@@ -34,7 +34,6 @@ export class ScoreLibraryUIManager {
         header.className = "library-grid-header";
         header.innerHTML = `
             <div class="header-item col-select">#</div>
-            <div class="header-item col-icon"></div>
             <div class="header-item col-title">Piece Title</div>
             <div class="header-item col-time">Last Viewed</div>
             <div class="header-item col-status">Status</div>
@@ -114,7 +113,6 @@ export class ScoreLibraryUIManager {
 
             card.innerHTML = `
                 ${cellSelect}
-                <div class="col-icon score-thumb">${thumbContent}</div>
                 <div class="col-title score-title-cell">
                     <span class="score-title" title="${displayTitle}">${displayTitle}</span>
                 </div>
