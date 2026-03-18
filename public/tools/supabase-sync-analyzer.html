@@ -409,12 +409,13 @@
                     const fileNameHasHash = hashSuffix.test(fileNameBase);
                     const fileNameIsFingerprint = /^[0-9a-f]{64}$/i.test(fileNameBase);
                     if (titleHasHash && local.fileName && !fileNameHasHash) {
-                        // title has hash suffix but fileName is clean → fix title from fileName
                         actionHtml += `<button class="btn-outline" style="font-size:9px; color:#f59e0b; border-color:#f59e0b" onclick="window.fixTitle('${fp}')">Fix title ← fileName</button>`;
                     } else if (!local.fileName || fileNameHasHash || fileNameIsFingerprint) {
-                        // fileName is missing/has hash/is fingerprint → fix fileName from title
                         actionHtml += `<button class="btn-outline" style="font-size:9px; color:#f59e0b; border-color:#f59e0b" onclick="window.fixFileName('${fp}')">Fix fileName → title</button>`;
                     }
+                }
+                if (cloud) {
+                    actionHtml += `<button class="btn-outline" style="font-size:9px; color:var(--danger); border-color:var(--danger)" onclick="window.deleteFromCloud('${fp}')">Delete from Supabase</button>`;
                 }
                 actionHtml += `</div>`;
 
@@ -548,6 +549,35 @@
             const { error } = await supabaseClient.from('scores').upsert(record);
             if (error) alert(err.message);
             else { log('Push success.'); runAnalysis(); }
+        }
+
+        window.deleteFromCloud = async (fp) => {
+            if (!confirm(`Are you sure you want to PERMANENTLY delete this score and all its data from SUPABASE (Table + Bucket)?\n\nFingerprint: ${fp}`)) return;
+
+            log(`🗑️ Deleting ${fp} from Supabase...`);
+            
+            try {
+                // 1. Delete from storage bucket
+                const path = `${currentUser.id}/${fp}.pdf`;
+                const { error: storageError } = await supabaseClient.storage.from('pdfs').remove([path]);
+                if (storageError) log(`- Storage deletion skip/warn: ${storageError.message}`, 'warn');
+                else log('✓ PDF removed from bucket.');
+
+                // 2. Delete annotations
+                const { error: annError } = await supabaseClient.from('annotations').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
+                if (annError) log(`- Annotation deletion warn: ${annError.message}`, 'warn');
+                else log('✓ Annotations removed.');
+
+                // 3. Delete score record
+                const { error: scoreError } = await supabaseClient.from('scores').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
+                if (scoreError) throw scoreError;
+                else log('✓ Score record removed from SQL table.');
+
+                log(`✅ Successfully deleted ${fp} from cloud.`);
+                runAnalysis();
+            } catch (err) {
+                log(`❌ Deletion failed: ${err.message}`, 'error');
+            }
         }
 
         window.syncToLocal = async (fp) => {

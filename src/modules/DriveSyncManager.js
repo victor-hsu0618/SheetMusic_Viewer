@@ -187,9 +187,10 @@ export class DriveSyncManager {
 
             if (!this.hasScanned) {
                 this.hasScanned = true;
-                await this.scanRemoteSyncFiles();
+                // Only load manifest for file reference, don't update registry placeholders automatically
+                await this.loadManifest();
             } else {
-                await this.refreshManifest();
+                await this.loadManifest();
             }
 
             await this.checkGlobalReset();
@@ -214,8 +215,8 @@ export class DriveSyncManager {
                         if (pdfData) await this.uploadPDF(fingerprint, pdfData, title);
                     }
 
-                    const remoteVersion = await this.pull();
-                    await this.push(remoteVersion);
+                    // Backup-Only: Skip pull, only push local changes
+                    await this.push(0);
                 }
             }
 
@@ -261,30 +262,12 @@ export class DriveSyncManager {
                 if (this.app.scoreManager.registry.length < before) registryChanged = true;
             }
 
-            // 2. Add cloud-only placeholders for new manifest entries
+            // 2. Add cloud-only placeholders? (DISABLED in Backup-Only mode)
+            /*
             for (const [fp, entry] of Object.entries(this.manifest)) {
-                if (entry.deleted) continue;
-                if (!entry.syncId && !entry.pdfId) continue;
-                const exists = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
-                if (!exists) {
-                    const placeholder = {
-                        fingerprint: fp,
-                        title: entry.name || `雲端 PDF (${fp.slice(0, 8)})`,
-                        fileName: '',
-                        composer: 'Unknown',
-                        thumbnail: null,
-                        dateImported: 0,
-                        lastAccessed: 0,
-                        tags: [],
-                        isSynced: false,
-                        isCloudOnly: true,
-                        isPdfAvailable: !!entry.pdfId
-                    };
-                    this.app.scoreManager.registry.push(placeholder);
-                    registryChanged = true;
-                    console.log(`[DriveSync] ↓ new file in cloud: "${placeholder.title}" (${fp.slice(0, 8)})`);
-                }
+                // ... logic to add placeholders ...
             }
+            */
 
             if (registryChanged) {
                 await this.app.scoreManager.saveRegistry();
