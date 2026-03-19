@@ -350,6 +350,15 @@
                 </div>
             </div>
             <hr class="divider">
+            <div class="backup-card">
+                <h3>🛠️ Maintenance & Repair</h3>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-outline" id="btn-rebuild-library-hub">Rebuild Library (Local Scan)</button>
+                    <button class="btn btn-outline" id="btn-heal-library-hub">Heal Metadata & Titles</button>
+                </div>
+                <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">Advanced tools to repair local registry and sync with cloud.</p>
+            </div>
+            <hr class="divider">
             <div id="backup-log" style="background:#000;color:#6b7280;padding:10px 14px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;height:110px;overflow-y:auto;border:1px solid #1f2937;"></div>
         </div>
     </div>
@@ -903,6 +912,80 @@ function dateStr(){return new Date().toISOString().slice(0,10);}
 function downloadFile(content,name,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download=name;a.click();}
 
 init();
+// ══════════ MAINTENANCE ══════════
+document.getElementById('btn-rebuild-library-hub').onclick = async () => {
+    if (!confirm('Rebuild library will scan all local PDF buffers and recreate your registry index. Proceed?')) return;
+    try {
+        console.log('[ScoreAdmin] Rebuilding library from IndexedDB buffers...');
+        const allKeys = await db.getAllKeys(); 
+        const bufferKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith('score_buf_'));
+        
+        const currentReg = (await db.get('score_registry')) || [];
+        const newRegistry = [];
+        
+        for (const key of bufferKeys) {
+            const fp = key.replace('score_buf_', '');
+            const buffer = await db.get(key);
+            if (!buffer) continue;
+
+            const detail = await db.get(`detail_${fp}`);
+            const score = currentReg.find(s => s.fingerprint === fp);
+
+            newRegistry.push({
+                fingerprint: fp,
+                title: detail?.name || (score?.title && score.title !== 'Unknown' ? score.title : `Recovered (${fp.slice(0, 6)})`),
+                fileName: detail?.name ? detail.name + '.pdf' : (score?.fileName || 'recovered.pdf'),
+                composer: detail?.composer || (score?.composer !== 'Unknown' ? score.composer : 'Unknown'),
+                dateImported: score?.dateImported || Date.now(),
+                lastAccessed: score?.lastAccessed || Date.now(),
+                tags: score?.tags || [],
+                storageMode: score?.storageMode || 'cached'
+            });
+        }
+
+        await db.set('score_registry', newRegistry);
+        alert(`Library rebuilt! ${newRegistry.length} scores recovered.`);
+        location.reload();
+    } catch (err) {
+        console.error('[ScoreAdmin] Rebuild failed:', err);
+        alert('Rebuild failed: ' + err.message);
+    }
+};
+
+document.getElementById('btn-heal-library-hub').onclick = async () => {
+    try {
+        const reg = (await db.get('score_registry')) || [];
+        let changed = false;
+        for (const entry of reg) {
+            if (entry.thumbnail) { entry.thumbnail = null; changed = true; }
+        }
+        if (changed) {
+            await db.set('score_registry', reg);
+            // Sync to cloud
+            if (sbClient && currentUser) {
+                await sbClient.from('scores').upsert(
+                    reg.map(s => ({
+                        fingerprint: s.fingerprint,
+                        user_id: currentUser.id,
+                        title: s.title,
+                        composer: s.composer,
+                        genre: s.genre,
+                        tags: s.tags,
+                        updated_at: new Date().toISOString()
+                    }))
+                );
+            }
+            alert('Metadata fixed and thumbnails purged!');
+            location.reload();
+        } else {
+            alert('Your library is already healthy.');
+        }
+    } catch (err) {
+        console.error('[ScoreAdmin] Heal failed:', err);
+        alert('Heal failed: ' + err.message);
+    }
+};
+
 </script>
 </body>
 </html>

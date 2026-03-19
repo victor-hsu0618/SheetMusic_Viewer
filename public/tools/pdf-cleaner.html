@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,24 +9,41 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- ScoreFlow Modularized Logic -->
+    <script src="BarlineStaffDetector.js"></script>
+    <script src="ImageProcessor.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         :root {
             --bg: #0f172a;
             --sidebar-bg: #1e293b;
-            --border: rgba(255,255,255,0.1);
+            --border: rgba(255, 255, 255, 0.1);
             --primary: #6366f1;
             --text: #f1f5f9;
             --text-muted: #94a3b8;
-            --card-bg: rgba(255,255,255,0.04);
+            --card-bg: rgba(255, 255, 255, 0.04);
             --sidebar-w: 260px;
         }
 
-        html, body { height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
 
         /* ── Layout ── */
-        #app { display: flex; height: 100vh; }
+        #app {
+            display: flex;
+            height: 100vh;
+        }
 
         /* ── Sidebar ── */
         #sidebar {
@@ -37,82 +55,274 @@
             flex-direction: column;
             overflow: hidden;
         }
+
         #sidebar-header {
             padding: 16px;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
         }
+
         #sidebar-header a {
-            display: inline-flex; align-items: center; gap: 5px;
-            color: var(--primary); font-size: 11px; font-weight: 700;
-            text-decoration: none; opacity: 0.7; margin-bottom: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: none;
+            opacity: 0.7;
+            margin-bottom: 10px;
         }
-        #sidebar-header a:hover { opacity: 1; }
-        #sidebar-header h1 { font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; }
-        #sidebar-header p  { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
 
-        #sidebar-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
-        #sidebar-body::-webkit-scrollbar { width: 4px; }
-        #sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        #sidebar-header a:hover {
+            opacity: 1;
+        }
 
-        #sidebar-footer { padding: 12px 14px; border-top: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+        #sidebar-header h1 {
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        #sidebar-header p {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        #sidebar-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        #sidebar-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #sidebar-body::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        #sidebar-footer {
+            padding: 12px 14px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
         /* section */
-        .s-section { display: flex; flex-direction: column; gap: 8px; }
-        .s-title {
-            font-size: 10px; font-weight: 800; text-transform: uppercase;
-            letter-spacing: 0.1em; color: var(--text-muted);
-            display: flex; align-items: center; gap: 6px;
+        .s-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        .s-title::after { content:''; flex:1; height:1px; background: var(--border); }
 
-        .ctrl { display: flex; flex-direction: column; gap: 4px; }
-        .ctrl label { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; }
-        .ctrl label span { color: var(--primary); font-weight: 700; }
-        input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; height: 4px; }
+        .s-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .s-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .ctrl {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .ctrl label {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .ctrl label span {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--primary);
+            cursor: pointer;
+            height: 4px;
+        }
+
         select {
-            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
-            border-radius: 6px; color: var(--text); padding: 6px 8px;
-            font-family: inherit; font-size: 12px; cursor: pointer;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 6px 8px;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
         }
+
         .check-label {
-            display: flex; align-items: center; gap: 7px;
-            font-size: 12px; color: var(--text); cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12px;
+            color: var(--text);
+            cursor: pointer;
         }
-        input[type=checkbox] { accent-color: var(--primary); width: 14px; height: 14px; cursor: pointer; }
-        .hint { font-size: 10px; color: var(--text-muted); line-height: 1.5; margin-top: 2px; }
-        .slider-row { display: flex; align-items: center; gap: 5px; }
-        .slider-row input[type=range] { flex: 1; }
+
+        input[type=checkbox] {
+            accent-color: var(--primary);
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        .hint {
+            font-size: 10px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-top: 2px;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .slider-row input[type=range] {
+            flex: 1;
+        }
+
         .step-btn {
-            width: 22px; height: 22px; flex-shrink: 0;
-            background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-            border-radius: 5px; color: var(--text); font-size: 14px; line-height: 1;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            user-select: none; transition: background 0.15s;
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: background 0.15s;
         }
-        .step-btn:hover { background: rgba(255,255,255,0.14); border-color: var(--primary); color: var(--primary); }
-        .step-btn:active { background: rgba(99,102,241,0.2); }
+
+        .step-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .step-btn:active {
+            background: rgba(99, 102, 241, 0.2);
+        }
 
         .btn {
-            font-family: inherit; display: flex; align-items: center; justify-content: center;
-            gap: 6px; padding: 9px 14px; border-radius: 8px; font-weight: 700;
-            font-size: 12px; cursor: pointer; border: none; transition: all 0.18s; width: 100%;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.18s;
+            width: 100%;
         }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { filter: brightness(1.15); }
-        .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-        .btn-outline:hover { border-color: rgba(255,255,255,0.25); }
-        .btn-danger  { background: transparent; border: 1px solid rgba(239,68,68,0.3); color: #ef4444; }
-        .btn-danger:hover { background: rgba(239,68,68,0.08); }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.15);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-danger {
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.08);
+        }
 
         /* Progress */
-        .prog-wrap { display: none; }
-        .prog-bar-bg { background: rgba(255,255,255,0.08); border-radius: 99px; height: 5px; overflow: hidden; margin-top: 4px; }
-        .prog-bar-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.25s; width: 0; }
-        .prog-label { font-size: 11px; color: var(--text-muted); }
+        .prog-wrap {
+            display: none;
+        }
 
-        #status-msg { font-size: 11px; color: var(--primary); font-weight: 700; text-align: center; min-height: 16px; }
+        .prog-bar-bg {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 99px;
+            height: 5px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .prog-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 99px;
+            transition: width 0.25s;
+            width: 0;
+        }
+
+        .prog-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        #status-msg {
+            font-size: 11px;
+            color: var(--primary);
+            font-weight: 700;
+            text-align: center;
+            min-height: 16px;
+        }
 
         /* ── Main View ── */
         #main {
@@ -134,28 +344,87 @@
             flex-shrink: 0;
             background: var(--sidebar-bg);
         }
-        #topbar .file-name { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        #topbar .file-name span { color: var(--text-muted); font-weight: 400; font-size: 11px; margin-left: 8px; }
+
+        #topbar .file-name {
+            font-size: 13px;
+            font-weight: 600;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #topbar .file-name span {
+            color: var(--text-muted);
+            font-weight: 400;
+            font-size: 11px;
+            margin-left: 8px;
+        }
 
         /* View mode toggle */
-        .seg-btns { display: flex; gap: 2px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 3px; }
-        .seg-btn {
-            font-family: inherit; font-size: 11px; font-weight: 700; padding: 4px 12px;
-            border: none; border-radius: 6px; cursor: pointer; background: transparent;
-            color: var(--text-muted); transition: all 0.15s;
+        .seg-btns {
+            display: flex;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 3px;
         }
-        .seg-btn.active { background: var(--primary); color: white; }
+
+        .seg-btn {
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .seg-btn.active {
+            background: var(--primary);
+            color: white;
+        }
 
         /* Page nav */
-        .page-nav { display: flex; align-items: center; gap: 8px; }
-        .nav-btn {
-            font-family: inherit; width: 28px; height: 28px; border: 1px solid var(--border);
-            background: transparent; color: var(--text); border-radius: 6px;
-            cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+        .page-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .nav-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        #page-indicator { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+        .nav-btn {
+            font-family: inherit;
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        #page-indicator {
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
 
         /* Canvas area */
         #canvas-area {
@@ -168,6 +437,7 @@
             padding: 12px;
             position: relative;
         }
+
         .page-col {
             display: flex;
             flex-direction: column;
@@ -176,19 +446,26 @@
             flex: 1;
             min-width: 0;
         }
+
         .col-label {
-            font-size: 10px; font-weight: 800; text-transform: uppercase;
-            letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
         }
+
         .page-col canvas {
             max-width: 100%;
             max-height: calc(100% - 24px);
             object-fit: contain;
             border-radius: 4px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
             cursor: zoom-in;
             display: block;
         }
+
         #canvas-staff-overlay {
             display: none;
             box-shadow: none;
@@ -202,24 +479,27 @@
             position: fixed;
             z-index: 2000;
             background: #0a1628;
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 14px;
             padding: 10px 10px 8px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.85);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85);
             pointer-events: none;
             gap: 8px;
             flex-direction: column;
         }
+
         #loupe .loupe-row {
             display: flex;
             gap: 8px;
         }
+
         #loupe .loupe-col {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 4px;
         }
+
         #loupe .loupe-label {
             font-size: 9px;
             font-weight: 800;
@@ -227,2104 +507,1704 @@
             letter-spacing: 0.1em;
             color: #64748b;
         }
+
         #loupe canvas {
             display: block;
             border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
+
         #loupe .loupe-zoom {
             font-size: 9px;
             color: #475569;
             text-align: center;
             padding-top: 2px;
         }
-        .loupe-active-cursor { cursor: crosshair !important; }
-        #btn-loupe { font-size: 11px; padding: 4px 10px; }
-        #btn-loupe.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .loupe-ctrl-label { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+
+        .loupe-active-cursor {
+            cursor: crosshair !important;
+        }
+
+        #btn-loupe {
+            font-size: 11px;
+            padding: 4px 10px;
+        }
+
+        #btn-loupe.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .loupe-ctrl-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
 
         /* Pipeline order */
         .pipeline-step {
-            display: flex; align-items: center; gap: 5px;
-            padding: 5px 7px; border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 7px;
+            border-radius: 6px;
             border: 1px solid var(--border);
-            background: rgba(255,255,255,0.02);
-            font-size: 11px; margin-bottom: 4px;
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 11px;
+            margin-bottom: 4px;
             transition: opacity 0.2s;
         }
-        .pipeline-step.inactive { opacity: 0.35; }
-        .pipeline-step .step-num { color: var(--text-muted); font-size: 10px; width: 12px; flex-shrink: 0; }
-        .pipeline-step .step-name { flex: 1; }
-        .pipeline-step .step-move {
-            width: 20px; height: 20px; flex-shrink: 0;
-            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-            border-radius: 4px; color: var(--text); font-size: 11px;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
+
+        .pipeline-step.inactive {
+            opacity: 0.35;
         }
-        .pipeline-step .step-move:hover:not(:disabled) { background: rgba(255,255,255,0.14); border-color: var(--primary); color: var(--primary); }
-        .pipeline-step .step-move:disabled { opacity: 0.2; cursor: not-allowed; }
+
+        .pipeline-step .step-num {
+            color: var(--text-muted);
+            font-size: 10px;
+            width: 12px;
+            flex-shrink: 0;
+        }
+
+        .pipeline-step .step-name {
+            flex: 1;
+        }
+
+        .pipeline-step .step-move {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pipeline-step .step-move:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .pipeline-step .step-move:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
 
         #divider {
-            width: 1px; height: 80%; background: var(--border); flex-shrink: 0; align-self: center;
+            width: 1px;
+            height: 80%;
+            background: var(--border);
+            flex-shrink: 0;
+            align-self: center;
         }
 
         /* Drop overlay (full main area) */
         #drop-overlay {
-            position: absolute; inset: 0;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 12px; cursor: pointer;
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
         }
-        #drop-overlay.drag-over { background: rgba(99,102,241,0.06); }
-        #drop-overlay .drop-icon { font-size: 4rem; }
-        #drop-overlay strong { font-size: 1.1rem; font-weight: 700; }
-        #drop-overlay p { font-size: 13px; color: var(--text-muted); }
-        input[type=file] { display: none; }
+
+        #drop-overlay.drag-over {
+            background: rgba(99, 102, 241, 0.06);
+        }
+
+        #drop-overlay .drop-icon {
+            font-size: 4rem;
+        }
+
+        #drop-overlay strong {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        #drop-overlay p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        input[type=file] {
+            display: none;
+        }
 
         /* Lightbox */
         #lightbox {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.94); z-index: 9999;
-            align-items: center; justify-content: center; cursor: zoom-out;
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.94);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-out;
         }
-        #lightbox.open { display: flex; }
-        #lightbox img { max-width: 96vw; max-height: 96vh; border-radius: 4px; object-fit: contain; }
-        #lightbox-close { position: fixed; top: 16px; right: 20px; font-size: 26px; color: #fff; cursor: pointer; opacity: 0.6; }
-        #lightbox-close:hover { opacity: 1; }
+
+        #lightbox.open {
+            display: flex;
+        }
+
+        #lightbox img {
+            max-width: 96vw;
+            max-height: 96vh;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
+        #lightbox-close {
+            position: fixed;
+            top: 16px;
+            right: 20px;
+            font-size: 26px;
+            color: #fff;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+
+        #lightbox-close:hover {
+            opacity: 1;
+        }
     </style>
 </head>
+
 <body>
-<div id="app">
+    <div id="app">
 
-    <!-- ── Sidebar ── -->
-    <div id="sidebar">
-        <div id="sidebar-header">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <a href="index.html" style="margin-bottom: 0;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg>
-                    返回工具門戶
-                </a>
-                <button class="btn btn-outline" id="btn-open-side" style="width: auto; padding: 4px 10px; font-size: 11px; height: 26px;">📂 開啟 PDF</button>
-            </div>
-            <h1>🧹 Score Cleaner</h1>
-            <p>清除影印髒污，重建五線譜與音符</p>
-        </div>
-
-        <div id="sidebar-body">
-            <!-- Basic -->
-            <div class="s-section">
-                <div class="s-title">清理模式</div>
-                <div class="ctrl">
-                    <label>處理模式</label>
-                    <select id="ctrl-mode">
-                        <option value="adaptive">自適應二值化（推薦）</option>
-                        <option value="otsu">Otsu 自動閾值</option>
-                        <option value="simple">簡單閾值</option>
-                        <option value="denoise">去雜訊 + 增強</option>
-                    </select>
-                    <p class="hint" id="hint-mode"></p>
+        <!-- ── Sidebar ── -->
+        <div id="sidebar">
+            <div id="sidebar-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <a href="index.html" style="margin-bottom: 0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="3">
+                            <path d="m15 18-6-6 6-6" />
+                        </svg>
+                        返回工具門戶
+                    </a>
+                    <button class="btn btn-outline" id="btn-open-side"
+                        style="width: auto; padding: 4px 10px; font-size: 11px; height: 26px;">📂 開啟 PDF</button>
                 </div>
-                <div class="ctrl">
-                    <label>閾值（簡單模式）<span id="val-threshold">128</span></label>
-                    <div class="slider-row">
-                        <button class="step-btn" data-target="ctrl-threshold" data-dir="-1">−</button>
-                        <input type="range" id="ctrl-threshold" min="80" max="220" value="128">
-                        <button class="step-btn" data-target="ctrl-threshold" data-dir="1">+</button>
-                    </div>
-                    <p class="hint">數值越低，越多灰色被判為黑色（線條更多）；越高，只保留最深的黑色。</p>
-                </div>
-                <div class="ctrl">
-                    <label>對比增強<span id="val-contrast">1.0×</span></label>
-                    <div class="slider-row">
-                        <button class="step-btn" data-target="ctrl-contrast" data-dir="-1">−</button>
-                        <input type="range" id="ctrl-contrast" min="0.5" max="3" value="1.0" step="0.05">
-                        <button class="step-btn" data-target="ctrl-contrast" data-dir="1">+</button>
-                    </div>
-                    <p class="hint">拉大黑白之間的差距。灰色背景嚴重時先調高對比，再套用二值化效果更好。</p>
-                </div>
-                <div class="ctrl">
-                    <label>去雜訊<span id="val-denoise">0</span></label>
-                    <div class="slider-row">
-                        <button class="step-btn" data-target="ctrl-denoise" data-dir="-1">−</button>
-                        <input type="range" id="ctrl-denoise" min="0" max="5" value="0">
-                        <button class="step-btn" data-target="ctrl-denoise" data-dir="1">+</button>
-                    </div>
-                    <p class="hint">用模糊平滑消除細小雜點。值越高越模糊，可能使細線或小音符變淡，建議用 1–2。</p>
-                </div>
-                <div class="ctrl">
-                    <label>渲染解析度</label>
-                    <select id="ctrl-scale">
-                        <option value="1.5">150 dpi（快）</option>
-                        <option value="2" selected>200 dpi（推薦）</option>
-                        <option value="3">300 dpi（高品質）</option>
-                    </select>
-                    <p class="hint">影響處理速度與輸出精細度。300 dpi 適合列印，200 dpi 適合螢幕閱讀。</p>
-                </div>
+                <h1>🧹 Score Cleaner</h1>
+                <p>清除影印髒污，重建五線譜與音符</p>
             </div>
 
-            <!-- Staff -->
-            <div class="s-section">
-                <div class="s-title">五線譜加強</div>
-                <label class="check-label">
-                    <input type="checkbox" id="ctrl-staff-enhance">
-                    偵測並加黑五線譜
-                </label>
-                <p class="hint">掃描每行的深色像素比例，找出橫跨整頁的水平線條（五線譜），並將其塗成純黑色，修復因影印造成的斷線或淡色。</p>
-                <button class="btn btn-outline" id="btn-staff-preview" disabled style="margin-top:4px; font-size:11px; padding:5px 10px;">🔍 預覽偵測線條</button>
-                <p class="hint" id="staff-preview-hint" style="display:none; color:#4ade80;">綠色＝將加強，紅色＝已排除。點擊線條切換。青色終止線可左右拖曳手動調整。</p>
-                <div class="ctrl" id="staff-density-group" style="display:none;">
-                    <label>偵測靈敏度<span id="val-staff-density">20%</span></label>
-                    <div class="slider-row">
-                        <button class="step-btn" data-target="ctrl-staff-density" data-dir="-1">−</button>
-                        <input type="range" id="ctrl-staff-density" min="5" max="60" value="20">
-                        <button class="step-btn" data-target="ctrl-staff-density" data-dir="1">+</button>
-                    </div>
-                    <p class="hint">該行有多少 % 的像素是深色才算五線譜。太低會把文字也誤抓；太高可能漏掉淡色的線。</p>
-                    <label style="margin-top:8px;">線條粗細<span id="val-staff-thickness"> 自動</span></label>
-                    <div class="slider-row">
-                        <button class="step-btn" data-target="ctrl-staff-thickness" data-dir="-1">−</button>
-                        <input type="range" id="ctrl-staff-thickness" min="0" max="10" value="0" step="1">
-                        <button class="step-btn" data-target="ctrl-staff-thickness" data-dir="1">+</button>
-                    </div>
-                    <p class="hint" id="staff-thickness-detected"></p>
-                    <p class="hint">0 = 自動沿用偵測到的粗細；1–10 = 強制指定像素寬度，以線段中心為基準重畫。</p>
-                    
-                    <!-- Advanced System Detection Settings -->
-                    <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:8px;">
-                        <div class="s-title" style="margin-bottom:8px;">進階 System 偵測設定</div>
-                        <div class="ctrl">
-                            <label>高密度行門檻<span id="val-sys-gap">40%</span></label>
-                            <div class="slider-row">
-                                <button class="step-btn" data-target="ctrl-sys-gap" data-dir="-5">−</button>
-                                <input type="range" id="ctrl-sys-gap" min="10" max="80" value="40">
-                                <button class="step-btn" data-target="ctrl-sys-gap" data-dir="5">+</button>
-                            </div>
-                            <p class="hint">每行暗像素比率超過此值才視為高密度（五線譜）行。</p>
-                        </div>
-                        <div class="ctrl">
-                            <label>Bracket 掃描範圍<span id="val-sys-range">10%</span></label>
-                            <div class="slider-row">
-                                <button class="step-btn" data-target="ctrl-sys-range" data-dir="-1">−</button>
-                                <input type="range" id="ctrl-sys-range" min="2" max="25" value="10" step="1">
-                                <button class="step-btn" data-target="ctrl-sys-range" data-dir="1">+</button>
-                            </div>
-                            <p class="hint">在頁面左側多少 % 範圍內搜尋連結兩行的垂直 Bracket 線。</p>
-                        </div>
-                        <div class="ctrl">
-                            <label>最大合併距離上限<span id="val-sys-conn-dens">80px</span></label>
-                            <div class="slider-row">
-                                <button class="step-btn" data-target="ctrl-sys-conn-dens" data-dir="-5">−</button>
-                                <input type="range" id="ctrl-sys-conn-dens" min="10" max="200" value="80" step="5">
-                                <button class="step-btn" data-target="ctrl-sys-conn-dens" data-dir="5">+</button>
-                            </div>
-                            <p class="hint">超過此距離的群組絕對不合併（防止跨 System 誤合）。</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Noteheads -->
-            <div class="s-section">
-                <div class="s-title">音符頭清理</div>
-                <label class="check-label">
-                    <input type="checkbox" id="ctrl-notehead-clean">
-                    偵測並重繪音符頭
-                </label>
-                <p class="hint">找出符合橢圓形狀的黑色連通區域，判斷是實心（四分音符）或空心（二分音符），重新畫成乾淨的幾何橢圓形。</p>
-                <div id="notehead-size-group" style="display:none; flex-direction:column; gap:6px;">
+            <div id="sidebar-body">
+                <!-- Basic -->
+                <div class="s-section">
+                    <div class="s-title">清理模式</div>
                     <div class="ctrl">
-                        <label>最小尺寸<span id="val-notehead-min">6</span>px</label>
-                        <div class="slider-row">
-                            <button class="step-btn" data-target="ctrl-notehead-min" data-dir="-1">−</button>
-                            <input type="range" id="ctrl-notehead-min" min="3" max="20" value="6">
-                            <button class="step-btn" data-target="ctrl-notehead-min" data-dir="1">+</button>
-                        </div>
-                        <p class="hint">太小會把雜點誤認為音符。若漏抓小音符，往左調低。</p>
+                        <label>處理模式</label>
+                        <select id="ctrl-mode">
+                            <option value="adaptive">自適應二值化（推薦）</option>
+                            <option value="otsu">Otsu 自動閾值</option>
+                            <option value="simple">簡單閾值</option>
+                            <option value="denoise">去雜訊 + 增強</option>
+                        </select>
+                        <p class="hint" id="hint-mode"></p>
                     </div>
                     <div class="ctrl">
-                        <label>最大尺寸<span id="val-notehead-max">28</span>px</label>
+                        <label>閾值（簡單模式）<span id="val-threshold">128</span></label>
                         <div class="slider-row">
-                            <button class="step-btn" data-target="ctrl-notehead-max" data-dir="-1">−</button>
-                            <input type="range" id="ctrl-notehead-max" min="10" max="60" value="28">
-                            <button class="step-btn" data-target="ctrl-notehead-max" data-dir="1">+</button>
+                            <button class="step-btn" data-target="ctrl-threshold" data-dir="-1">−</button>
+                            <input type="range" id="ctrl-threshold" min="80" max="220" value="128">
+                            <button class="step-btn" data-target="ctrl-threshold" data-dir="1">+</button>
                         </div>
-                        <p class="hint">太大會把文字區塊或休止符誤判。依樂譜字體大小調整。</p>
+                        <p class="hint">數值越低，越多灰色被判為黑色（線條更多）；越高，只保留最深的黑色。</p>
                     </div>
+                    <div class="ctrl">
+                        <label>對比增強<span id="val-contrast">1.0×</span></label>
+                        <div class="slider-row">
+                            <button class="step-btn" data-target="ctrl-contrast" data-dir="-1">−</button>
+                            <input type="range" id="ctrl-contrast" min="0.5" max="3" value="1.0" step="0.05">
+                            <button class="step-btn" data-target="ctrl-contrast" data-dir="1">+</button>
+                        </div>
+                        <p class="hint">拉大黑白之間的差距。灰色背景嚴重時先調高對比，再套用二值化效果更好。</p>
+                    </div>
+                    <div class="ctrl">
+                        <label>去雜訊<span id="val-denoise">0</span></label>
+                        <div class="slider-row">
+                            <button class="step-btn" data-target="ctrl-denoise" data-dir="-1">−</button>
+                            <input type="range" id="ctrl-denoise" min="0" max="5" value="0">
+                            <button class="step-btn" data-target="ctrl-denoise" data-dir="1">+</button>
+                        </div>
+                        <p class="hint">用模糊平滑消除細小雜點。值越高越模糊，可能使細線或小音符變淡，建議用 1–2。</p>
+                    </div>
+                    <div class="ctrl">
+                        <label>渲染解析度</label>
+                        <select id="ctrl-scale">
+                            <option value="1.5">150 dpi（快）</option>
+                            <option value="2" selected>200 dpi（推薦）</option>
+                            <option value="3">300 dpi（高品質）</option>
+                        </select>
+                        <p class="hint">影響處理速度與輸出精細度。300 dpi 適合列印，200 dpi 適合螢幕閱讀。</p>
+                    </div>
+                </div>
+
+                <!-- Staff -->
+                <div class="s-section">
+                    <div class="s-title">五線譜加強</div>
+                    <label class="check-label">
+                        <input type="checkbox" id="ctrl-staff-enhance">
+                        偵測並加黑五線譜
+                    </label>
+                    <p class="hint">掃描每行的深色像素比例，找出橫跨整頁的水平線條（五線譜），並將其塗成純黑色，修復因影印造成的斷線或淡色。</p>
+                    <button class="btn btn-outline" id="btn-staff-preview" disabled
+                        style="margin-top:4px; font-size:11px; padding:5px 10px;">🔍 預覽偵測線條</button>
+                    <p class="hint" id="staff-preview-hint" style="display:none; color:#4ade80;">
+                        綠色＝將加強，紅色＝已排除。點擊線條切換。青色終止線可左右拖曳手動調整。</p>
+                    <div class="ctrl" id="staff-density-group" style="display:none;">
+                        <label>偵測靈敏度<span id="val-staff-density">20%</span></label>
+                        <div class="slider-row">
+                            <button class="step-btn" data-target="ctrl-staff-density" data-dir="-1">−</button>
+                            <input type="range" id="ctrl-staff-density" min="5" max="60" value="20">
+                            <button class="step-btn" data-target="ctrl-staff-density" data-dir="1">+</button>
+                        </div>
+                        <p class="hint">該行有多少 % 的像素是深色才算五線譜。太低會把文字也誤抓；太高可能漏掉淡色的線。</p>
+                        <label style="margin-top:8px;">線條粗細<span id="val-staff-thickness"> 自動</span></label>
+                        <div class="slider-row">
+                            <button class="step-btn" data-target="ctrl-staff-thickness" data-dir="-1">−</button>
+                            <input type="range" id="ctrl-staff-thickness" min="0" max="10" value="0" step="1">
+                            <button class="step-btn" data-target="ctrl-staff-thickness" data-dir="1">+</button>
+                        </div>
+                        <p class="hint" id="staff-thickness-detected"></p>
+                        <p class="hint">0 = 自動沿用偵測到的粗細；1–10 = 強制指定像素寬度，以線段中心為基準重畫。</p>
+
+                        <!-- Advanced System Detection Settings -->
+                        <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:8px;">
+                            <div class="s-title" style="margin-bottom:8px;">進階 System 偵測設定</div>
+                            <div class="ctrl">
+                                <label>高密度行門檻<span id="val-sys-gap">40%</span></label>
+                                <div class="slider-row">
+                                    <button class="step-btn" data-target="ctrl-sys-gap" data-dir="-5">−</button>
+                                    <input type="range" id="ctrl-sys-gap" min="10" max="80" value="40">
+                                    <button class="step-btn" data-target="ctrl-sys-gap" data-dir="5">+</button>
+                                </div>
+                                <p class="hint">每行暗像素比率超過此值才視為高密度（五線譜）行。</p>
+                            </div>
+                            <div class="ctrl">
+                                <label>自適應合併靈敏度<span id="val-sys-range">1.8×</span></label>
+                                <div class="slider-row">
+                                    <button class="step-btn" data-target="ctrl-sys-range" data-dir="-0.1">−</button>
+                                    <input type="range" id="ctrl-sys-range" min="1.2" max="5.0" value="1.8" step="0.1">
+                                    <button class="step-btn" data-target="ctrl-sys-range" data-dir="0.1">+</button>
+                                </div>
+                                <p class="hint">間距比率超過此倍數才切為不同 System（越大越不易合併）。</p>
+                            </div>
+                            <div class="ctrl">
+                                <label>最大合併距離上限<span id="val-sys-conn-dens">80px</span></label>
+                                <div class="slider-row">
+                                    <button class="step-btn" data-target="ctrl-sys-conn-dens" data-dir="-5">−</button>
+                                    <input type="range" id="ctrl-sys-conn-dens" min="10" max="200" value="80" step="5">
+                                    <button class="step-btn" data-target="ctrl-sys-conn-dens" data-dir="5">+</button>
+                                </div>
+                                <p class="hint">超過此距離的群組絕對不合併（防止跨 System 誤合）。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Noteheads -->
+                <div class="s-section">
+                    <div class="s-title">音符頭清理</div>
+                    <label class="check-label">
+                        <input type="checkbox" id="ctrl-notehead-clean">
+                        偵測並重繪音符頭
+                    </label>
+                    <p class="hint">找出符合橢圓形狀的黑色連通區域，判斷是實心（四分音符）或空心（二分音符），重新畫成乾淨的幾何橢圓形。</p>
+                    <div id="notehead-size-group" style="display:none; flex-direction:column; gap:6px;">
+                        <div class="ctrl">
+                            <label>最小尺寸<span id="val-notehead-min">6</span>px</label>
+                            <div class="slider-row">
+                                <button class="step-btn" data-target="ctrl-notehead-min" data-dir="-1">−</button>
+                                <input type="range" id="ctrl-notehead-min" min="3" max="20" value="6">
+                                <button class="step-btn" data-target="ctrl-notehead-min" data-dir="1">+</button>
+                            </div>
+                            <p class="hint">太小會把雜點誤認為音符。若漏抓小音符，往左調低。</p>
+                        </div>
+                        <div class="ctrl">
+                            <label>最大尺寸<span id="val-notehead-max">28</span>px</label>
+                            <div class="slider-row">
+                                <button class="step-btn" data-target="ctrl-notehead-max" data-dir="-1">−</button>
+                                <input type="range" id="ctrl-notehead-max" min="10" max="60" value="28">
+                                <button class="step-btn" data-target="ctrl-notehead-max" data-dir="1">+</button>
+                            </div>
+                            <p class="hint">太大會把文字區塊或休止符誤判。依樂譜字體大小調整。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pipeline Order -->
+                <div class="s-section">
+                    <div class="s-title">處理順序</div>
+                    <p class="hint">↑↓ 調整執行順序。灰色＝目前未啟用。不同順序對影印稿效果不同。</p>
+                    <div id="pipeline-list"></div>
+                </div>
+
+                <!-- Progress -->
+                <div class="prog-wrap" id="progress-wrap">
+                    <div class="prog-label" id="progress-label">處理中…</div>
+                    <div class="prog-bar-bg">
+                        <div class="prog-bar-fill" id="progress-bar"></div>
+                    </div>
+                </div>
+
+                <div id="status-msg"></div>
+            </div>
+
+            <div id="sidebar-footer">
+                <button class="btn btn-primary" id="btn-process-page" disabled>⚡ 處理此頁</button>
+                <button class="btn btn-outline" id="btn-process-all" disabled>⚡ 處理所有頁</button>
+                <button class="btn btn-primary" id="btn-download" disabled>↓ 下載清理後 PDF</button>
+                <button class="btn btn-danger" id="btn-reset" style="display:none;">✕ 重置</button>
+            </div>
+        </div>
+
+        <!-- ── Main ── -->
+        <div id="main">
+            <!-- Topbar -->
+            <div id="topbar" style="display:none;">
+                <button class="btn btn-outline" id="btn-open-top"
+                    style="width: auto; height: 32px; padding: 0 12px; font-size: 12px; flex-shrink: 0;">📂 開啟</button>
+                <span class="file-name" id="file-name-label">—</span>
+                <div class="seg-btns">
+                    <button class="seg-btn active" id="btn-split">並排比較</button>
+                    <button class="seg-btn" id="btn-single">單頁清理</button>
+                </div>
+                <button class="btn btn-outline" id="btn-loupe">🔎 放大鏡</button>
+                <div id="loupe-controls" style="display:none; align-items:center; gap:3px;">
+                    <span class="loupe-ctrl-label">面板</span>
+                    <button class="nav-btn" id="loupe-panel-minus" title="縮小面板">−</button>
+                    <button class="nav-btn" id="loupe-panel-plus" title="放大面板">+</button>
+                    <span class="loupe-ctrl-label" style="margin-left:6px;">倍率</span>
+                    <button class="nav-btn" id="loupe-zoom-minus" title="降低放大倍率">−</button>
+                    <button class="nav-btn" id="loupe-zoom-plus" title="提高放大倍率">+</button>
+                </div>
+                <div class="page-nav">
+                    <button class="nav-btn" id="btn-prev">‹</button>
+                    <span id="page-indicator">— / —</span>
+                    <button class="nav-btn" id="btn-next">›</button>
                 </div>
             </div>
 
-            <!-- Pipeline Order -->
-            <div class="s-section">
-                <div class="s-title">處理順序</div>
-                <p class="hint">↑↓ 調整執行順序。灰色＝目前未啟用。不同順序對影印稿效果不同。</p>
-                <div id="pipeline-list"></div>
-            </div>
+            <!-- Canvas area -->
+            <div id="canvas-area">
+                <!-- Drop overlay (shown when no PDF) -->
+                <div id="drop-overlay">
+                    <div class="drop-icon">📄</div>
+                    <strong>拖曳 PDF 到這裡</strong>
+                    <p>或點擊選取檔案</p>
+                    <input type="file" id="file-input" accept=".pdf">
+                </div>
 
-            <!-- Progress -->
-            <div class="prog-wrap" id="progress-wrap">
-                <div class="prog-label" id="progress-label">處理中…</div>
-                <div class="prog-bar-bg"><div class="prog-bar-fill" id="progress-bar"></div></div>
-            </div>
+                <!-- Original col -->
+                <div class="page-col" id="col-orig" style="display:none; position:relative;">
+                    <div class="col-label">原始</div>
+                    <canvas id="canvas-orig"></canvas>
+                    <canvas id="canvas-staff-overlay"
+                        style="position:absolute; top:0; left:0; pointer-events:none; cursor:crosshair; display:none;"></canvas>
+                </div>
 
-            <div id="status-msg"></div>
-        </div>
+                <div id="divider" style="display:none;"></div>
 
-        <div id="sidebar-footer">
-            <button class="btn btn-primary" id="btn-process-page" disabled>⚡ 處理此頁</button>
-            <button class="btn btn-outline" id="btn-process-all"  disabled>⚡ 處理所有頁</button>
-            <button class="btn btn-primary" id="btn-download"     disabled>↓ 下載清理後 PDF</button>
-            <button class="btn btn-danger"  id="btn-reset"        style="display:none;">✕ 重置</button>
-        </div>
-    </div>
-
-    <!-- ── Main ── -->
-    <div id="main">
-        <!-- Topbar -->
-        <div id="topbar" style="display:none;">
-            <button class="btn btn-outline" id="btn-open-top" style="width: auto; height: 32px; padding: 0 12px; font-size: 12px; flex-shrink: 0;">📂 開啟</button>
-            <span class="file-name" id="file-name-label">—</span>
-            <div class="seg-btns">
-                <button class="seg-btn active" id="btn-split">並排比較</button>
-                <button class="seg-btn"        id="btn-single">單頁清理</button>
-            </div>
-            <button class="btn btn-outline" id="btn-loupe">🔎 放大鏡</button>
-            <div id="loupe-controls" style="display:none; align-items:center; gap:3px;">
-                <span class="loupe-ctrl-label">面板</span>
-                <button class="nav-btn" id="loupe-panel-minus" title="縮小面板">−</button>
-                <button class="nav-btn" id="loupe-panel-plus"  title="放大面板">+</button>
-                <span class="loupe-ctrl-label" style="margin-left:6px;">倍率</span>
-                <button class="nav-btn" id="loupe-zoom-minus" title="降低放大倍率">−</button>
-                <button class="nav-btn" id="loupe-zoom-plus"  title="提高放大倍率">+</button>
-            </div>
-            <div class="page-nav">
-                <button class="nav-btn" id="btn-prev">‹</button>
-                <span id="page-indicator">— / —</span>
-                <button class="nav-btn" id="btn-next">›</button>
-            </div>
-        </div>
-
-        <!-- Canvas area -->
-        <div id="canvas-area">
-            <!-- Drop overlay (shown when no PDF) -->
-            <div id="drop-overlay">
-                <div class="drop-icon">📄</div>
-                <strong>拖曳 PDF 到這裡</strong>
-                <p>或點擊選取檔案</p>
-                <input type="file" id="file-input" accept=".pdf">
-            </div>
-
-            <!-- Original col -->
-            <div class="page-col" id="col-orig" style="display:none; position:relative;">
-                <div class="col-label">原始</div>
-                <canvas id="canvas-orig"></canvas>
-                <canvas id="canvas-staff-overlay" style="position:absolute; top:0; left:0; pointer-events:none; cursor:crosshair; display:none;"></canvas>
-            </div>
-
-            <div id="divider" style="display:none;"></div>
-
-            <!-- Cleaned col -->
-            <div class="page-col" id="col-clean" style="display:none;">
-                <div class="col-label" id="label-clean">清理後</div>
-                <canvas id="canvas-clean"></canvas>
+                <!-- Cleaned col -->
+                <div class="page-col" id="col-clean" style="display:none;">
+                    <div class="col-label" id="label-clean">清理後</div>
+                    <canvas id="canvas-clean"></canvas>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Loupe -->
-<div id="loupe">
-    <div class="loupe-row">
-        <div class="loupe-col">
-            <div class="loupe-label">原始</div>
-            <canvas id="loupe-orig" width="220" height="220"></canvas>
+    <!-- Loupe -->
+    <div id="loupe">
+        <div class="loupe-row">
+            <div class="loupe-col">
+                <div class="loupe-label">原始</div>
+                <canvas id="loupe-orig" width="220" height="220"></canvas>
+            </div>
+            <div class="loupe-col">
+                <div class="loupe-label">清理後</div>
+                <canvas id="loupe-clean" width="220" height="220"></canvas>
+            </div>
         </div>
-        <div class="loupe-col">
-            <div class="loupe-label">清理後</div>
-            <canvas id="loupe-clean" width="220" height="220"></canvas>
-        </div>
+        <div class="loupe-zoom" id="loupe-zoom-label"></div>
     </div>
-    <div class="loupe-zoom" id="loupe-zoom-label"></div>
-</div>
 
-<!-- Lightbox -->
-<div id="lightbox">
-    <span id="lightbox-close">✕</span>
-    <img id="lightbox-img" src="" alt="">
-</div>
+    <!-- Lightbox -->
+    <div id="lightbox">
+        <span id="lightbox-close">✕</span>
+        <img id="lightbox-img" src="" alt="">
+    </div>
 
-<script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ── Last-file persistence (IndexedDB) ──
-const _DB_NAME  = 'pdf-cleaner';
-const _DB_STORE = 'lastFile';
-function _openDB() {
-    return new Promise((res, rej) => {
-        const req = indexedDB.open(_DB_NAME, 1);
-        req.onupgradeneeded = e => e.target.result.createObjectStore(_DB_STORE);
-        req.onsuccess = e => res(e.target.result);
-        req.onerror   = e => rej(e.target.error);
-    });
-}
-async function _saveLastFile(name, buf) {
-    try {
-        const db = await _openDB();
-        const tx = db.transaction(_DB_STORE, 'readwrite');
-        tx.objectStore(_DB_STORE).put({ name, buf }, 'last');
-    } catch(e) { /* non-critical */ }
-}
-async function _loadLastFile() {
-    try {
-        const db = await _openDB();
-        return await new Promise((res, rej) => {
-            const req = db.transaction(_DB_STORE, 'readonly').objectStore(_DB_STORE).get('last');
-            req.onsuccess = e => res(e.target.result);
-            req.onerror   = e => rej(e.target.error);
-        });
-    } catch(e) { return null; }
-}
-
-let pdfDoc = null;
-let totalPages = 0;
-let cachedOtsuThreshold = null; // computed from full page, shared by processPage + loupe
-let cachedGrayData     = null; // { gray: Uint8Array, width, height } — computed once per page
-let cachedLiveStaff    = null; // { density, segs } — staff segs from full-page scan for loupe
-
-let pipelineOrder = ['staff', 'contrast', 'denoise', 'threshold', 'notehead'];
-const PIPELINE_LABELS = {
-    contrast:  '對比增強',
-    denoise:   '去雜訊',
-    threshold: '二值化 / 閾值',
-    staff:     '五線譜加強',
-    notehead:  '音符頭清理',
-};
-let currentPage = 1;
-let viewMode = 'split'; // 'split' | 'single'
-let originalCanvases  = []; // full-res original per page
-let processedCanvases = []; // full-res cleaned per page
-let originalFile = null;
-
-// ── Drop / File ──
-const dropOverlay = document.getElementById('drop-overlay');
-const fileInput   = document.getElementById('file-input');
-const canvasArea  = document.getElementById('canvas-area');
-
-dropOverlay.addEventListener('click', () => fileInput.click());
-document.getElementById('btn-open-side').addEventListener('click', () => fileInput.click());
-document.getElementById('btn-open-top').addEventListener('click', () => fileInput.click());
-canvasArea.addEventListener('dragover',  e => { e.preventDefault(); dropOverlay.classList.add('drag-over'); });
-canvasArea.addEventListener('dragleave', () => dropOverlay.classList.remove('drag-over'));
-canvasArea.addEventListener('drop', e => {
-    e.preventDefault(); dropOverlay.classList.remove('drag-over');
-    const f = e.dataTransfer.files[0];
-    if (f?.type === 'application/pdf') loadPDF(f);
-});
-fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadPDF(fileInput.files[0]); });
-
-// ── Sliders ──
-[
-    ['ctrl-threshold', 'val-threshold', v => Math.round(v)],
-    ['ctrl-contrast',  'val-contrast',  v => parseFloat(v).toFixed(2)+'×'],
-    ['ctrl-denoise',   'val-denoise',   v => Math.round(v)],
-    ['ctrl-staff-density',    'val-staff-density',    v => v+'%'],
-    ['ctrl-staff-thickness',  'val-staff-thickness',  v => parseInt(v) === 0 ? ' 自動' : ' '+v+'px'],
-    ['ctrl-notehead-min',  'val-notehead-min',  v => Math.round(v)],
-    ['ctrl-notehead-max',  'val-notehead-max',  v => Math.round(v)],
-    ['ctrl-sys-gap',       'val-sys-gap',       v => v+'%'],
-    ['ctrl-sys-range',     'val-sys-range',     v => v+'%'],
-    ['ctrl-sys-conn-dens', 'val-sys-conn-dens', v => v+'px'],
-].forEach(([id, vid, fmt]) => {
-    document.getElementById(id).addEventListener('input', function() {
-        document.getElementById(vid).textContent = fmt(this.value);
-        if (loupeActive) processLoupePatch();
-        // If staff preview is active, re-run detection immediately
-        if (staffPreviewActive && id.startsWith('ctrl-sys-')) {
-            document.getElementById('btn-staff-preview').click(); // Toggle off
-            document.getElementById('btn-staff-preview').click(); // Toggle on (refresh)
+        // ── Last-file persistence (IndexedDB) ──
+        const _DB_NAME = 'pdf-cleaner';
+        const _DB_STORE = 'lastFile';
+        function _openDB() {
+            return new Promise((res, rej) => {
+                const req = indexedDB.open(_DB_NAME, 1);
+                req.onupgradeneeded = e => e.target.result.createObjectStore(_DB_STORE);
+                req.onsuccess = e => res(e.target.result);
+                req.onerror = e => rej(e.target.error);
+            });
         }
-    });
-});
+        async function _saveLastFile(name, buf) {
+            try {
+                const db = await _openDB();
+                const tx = db.transaction(_DB_STORE, 'readwrite');
+                tx.objectStore(_DB_STORE).put({ name, buf }, 'last');
+            } catch (e) { /* non-critical */ }
+        }
+        async function _loadLastFile() {
+            try {
+                const db = await _openDB();
+                return await new Promise((res, rej) => {
+                    const req = db.transaction(_DB_STORE, 'readonly').objectStore(_DB_STORE).get('last');
+                    req.onsuccess = e => res(e.target.result);
+                    req.onerror = e => rej(e.target.error);
+                });
+            } catch (e) { return null; }
+        }
 
-// ── Step Buttons (+/−) ──
-document.querySelectorAll('.step-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const slider = document.getElementById(btn.dataset.target);
-        const step   = parseFloat(slider.step) || 1;
-        const dir    = parseFloat(btn.dataset.dir);
-        slider.value = Math.min(parseFloat(slider.max),
-                        Math.max(parseFloat(slider.min),
+        let pdfDoc = null;
+        let totalPages = 0;
+        let cachedOtsuThreshold = null; // computed from full page, shared by processPage + loupe
+        let cachedGrayData = null; // { gray: Uint8Array, width, height } — computed once per page
+        let cachedLiveStaff = null; // { density, segs } — staff segs from full-page scan for loupe
+
+        let pipelineOrder = ['staff', 'contrast', 'denoise', 'threshold', 'notehead'];
+        const PIPELINE_LABELS = {
+            contrast: '對比增強',
+            denoise: '去雜訊',
+            threshold: '二值化 / 閾值',
+            staff: '五線譜加強',
+            notehead: '音符頭清理',
+        };
+        let currentPage = 1;
+        let viewMode = 'split'; // 'split' | 'single'
+        let originalCanvases = []; // full-res original per page
+        let processedCanvases = []; // full-res cleaned per page
+        let originalFile = null;
+
+        // ── Drop / File ──
+        const dropOverlay = document.getElementById('drop-overlay');
+        const fileInput = document.getElementById('file-input');
+        const canvasArea = document.getElementById('canvas-area');
+
+        dropOverlay.addEventListener('click', () => fileInput.click());
+        document.getElementById('btn-open-side').addEventListener('click', () => fileInput.click());
+        document.getElementById('btn-open-top').addEventListener('click', () => fileInput.click());
+        canvasArea.addEventListener('dragover', e => { e.preventDefault(); dropOverlay.classList.add('drag-over'); });
+        canvasArea.addEventListener('dragleave', () => dropOverlay.classList.remove('drag-over'));
+        canvasArea.addEventListener('drop', e => {
+            e.preventDefault(); dropOverlay.classList.remove('drag-over');
+            const f = e.dataTransfer.files[0];
+            if (f?.type === 'application/pdf') loadPDF(f);
+        });
+        fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadPDF(fileInput.files[0]); });
+
+        // ── Sliders ──
+        [
+            ['ctrl-threshold', 'val-threshold', v => Math.round(v)],
+            ['ctrl-contrast', 'val-contrast', v => parseFloat(v).toFixed(2) + '×'],
+            ['ctrl-denoise', 'val-denoise', v => Math.round(v)],
+            ['ctrl-staff-density', 'val-staff-density', v => v + '%'],
+            ['ctrl-staff-thickness', 'val-staff-thickness', v => parseInt(v) === 0 ? ' 自動' : ' ' + v + 'px'],
+            ['ctrl-notehead-min', 'val-notehead-min', v => Math.round(v)],
+            ['ctrl-notehead-max', 'val-notehead-max', v => Math.round(v)],
+            ['ctrl-sys-gap', 'val-sys-gap', v => v + '%'],
+            ['ctrl-sys-range', 'val-sys-range', v => parseFloat(v).toFixed(1) + '×'],
+            ['ctrl-sys-conn-dens', 'val-sys-conn-dens', v => v + 'px'],
+        ].forEach(([id, vid, fmt]) => {
+            document.getElementById(id).addEventListener('input', function () {
+                document.getElementById(vid).textContent = fmt(this.value);
+                if (loupeActive) processLoupePatch();
+                // If staff preview is active, re-run detection immediately
+                if (staffPreviewActive && id.startsWith('ctrl-sys-')) {
+                    document.getElementById('btn-staff-preview').click(); // Toggle off
+                    document.getElementById('btn-staff-preview').click(); // Toggle on (refresh)
+                }
+            });
+        });
+
+        // ── Step Buttons (+/−) ──
+        document.querySelectorAll('.step-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const slider = document.getElementById(btn.dataset.target);
+                const step = parseFloat(slider.step) || 1;
+                const dir = parseFloat(btn.dataset.dir);
+                slider.value = Math.min(parseFloat(slider.max),
+                    Math.max(parseFloat(slider.min),
                         parseFloat(slider.value) + step * dir));
-        slider.dispatchEvent(new Event('input'));
-    });
-});
+                slider.dispatchEvent(new Event('input'));
+            });
+        });
 
-const MODE_HINTS = {
-    adaptive: '將每個小區塊的平均亮度當作基準，各自決定黑白門檻。最適合亮度不均勻的影印稿（推薦首選）。',
-    otsu:     '自動分析整頁的灰階分佈，找出最佳的全域門檻值。適合整體亮度一致的掃描稿。',
-    simple:   '用單一固定閾值將全頁轉黑白。速度最快，但對亮度不均勻的頁面效果差，需手動調整閾值。',
-    denoise:  '不做二值化，只做對比拉伸與去雜訊，保留灰階。適合原稿品質尚可但背景偏灰的情況。',
-};
-document.getElementById('ctrl-mode').addEventListener('change', function() {
-    document.getElementById('hint-mode').textContent = MODE_HINTS[this.value] || '';
-    updateControlVisibility();
-    if (loupeActive) processLoupePatch();
-});
-document.getElementById('hint-mode').textContent = MODE_HINTS['adaptive'];
+        const MODE_HINTS = {
+            adaptive: '將每個小區塊的平均亮度當作基準，各自決定黑白門檻。最適合亮度不均勻的影印稿（推薦首選）。',
+            otsu: '自動分析整頁的灰階分佈，找出最佳的全域門檻值。適合整體亮度一致的掃描稿。',
+            simple: '用單一固定閾值將全頁轉黑白。速度最快，但對亮度不均勻的頁面效果差，需手動調整閾值。',
+            denoise: '不做二值化，只做對比拉伸與去雜訊，保留灰階。適合原稿品質尚可但背景偏灰的情況。',
+        };
+        document.getElementById('ctrl-mode').addEventListener('change', function () {
+            document.getElementById('hint-mode').textContent = MODE_HINTS[this.value] || '';
+            updateControlVisibility();
+            if (loupeActive) processLoupePatch();
+        });
+        document.getElementById('hint-mode').textContent = MODE_HINTS['adaptive'];
 
-document.getElementById('ctrl-staff-enhance').addEventListener('change', function() {
-    document.getElementById('staff-density-group').style.display = this.checked ? 'flex' : 'none';
-    renderPipelineList();
-    if (loupeActive) processLoupePatch();
-});
-document.getElementById('ctrl-notehead-clean').addEventListener('change', function() {
-    document.getElementById('notehead-size-group').style.display = this.checked ? 'flex' : 'none';
-    renderPipelineList();
-    if (loupeActive) processLoupePatch();
-});
+        document.getElementById('ctrl-staff-enhance').addEventListener('change', function () {
+            document.getElementById('staff-density-group').style.display = this.checked ? 'flex' : 'none';
+            renderPipelineList();
+            if (loupeActive) processLoupePatch();
+        });
+        document.getElementById('ctrl-notehead-clean').addEventListener('change', function () {
+            document.getElementById('notehead-size-group').style.display = this.checked ? 'flex' : 'none';
+            renderPipelineList();
+            if (loupeActive) processLoupePatch();
+        });
 
-renderPipelineList(); // initial render
+        updateControlVisibility();
+        renderPipelineList(); // initial render
 
-// ── View Mode ──
-document.getElementById('btn-split').addEventListener('click',  () => setViewMode('split'));
-document.getElementById('btn-single').addEventListener('click', () => setViewMode('single'));
-function setViewMode(mode) {
-    viewMode = mode;
-    document.getElementById('btn-split').classList.toggle('active',  mode === 'split');
-    document.getElementById('btn-single').classList.toggle('active', mode === 'single');
-    document.getElementById('col-orig').style.display  = (mode === 'split') ? 'flex' : 'none';
-    document.getElementById('divider').style.display   = (mode === 'split') ? 'block' : 'none';
-    document.getElementById('label-clean').textContent = (mode === 'single') ? '清理後' : '清理後';
-    showPage(currentPage);
-}
+        // ── View Mode ──
+        document.getElementById('btn-split').addEventListener('click', () => setViewMode('split'));
+        document.getElementById('btn-single').addEventListener('click', () => setViewMode('single'));
+        function setViewMode(mode) {
+            viewMode = mode;
+            document.getElementById('btn-split').classList.toggle('active', mode === 'split');
+            document.getElementById('btn-single').classList.toggle('active', mode === 'single');
+            document.getElementById('col-orig').style.display = (mode === 'split') ? 'flex' : 'none';
+            document.getElementById('divider').style.display = (mode === 'split') ? 'block' : 'none';
+            document.getElementById('label-clean').textContent = (mode === 'single') ? '清理後' : '清理後';
+            showPage(currentPage);
+        }
 
-// ── Page Nav ──
-document.getElementById('btn-prev').addEventListener('click', () => showPage(currentPage - 1));
-document.getElementById('btn-next').addEventListener('click', () => showPage(currentPage + 1));
-document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft')  showPage(currentPage - 1);
-    if (e.key === 'ArrowRight') showPage(currentPage + 1);
-});
+        // ── Page Nav ──
+        document.getElementById('btn-prev').addEventListener('click', () => showPage(currentPage - 1));
+        document.getElementById('btn-next').addEventListener('click', () => showPage(currentPage + 1));
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft') showPage(currentPage - 1);
+            if (e.key === 'ArrowRight') showPage(currentPage + 1);
+        });
 
-async function showPage(n) {
-    if (!totalPages) return;
-    currentPage = Math.max(1, Math.min(totalPages, n));
-    document.getElementById('page-indicator').textContent = `${currentPage} / ${totalPages}`;
-    document.getElementById('btn-prev').disabled = currentPage <= 1;
-    document.getElementById('btn-next').disabled = currentPage >= totalPages;
+        async function showPage(n) {
+            if (!totalPages) return;
+            currentPage = Math.max(1, Math.min(totalPages, n));
+            document.getElementById('page-indicator').textContent = `${currentPage} / ${totalPages}`;
+            document.getElementById('btn-prev').disabled = currentPage <= 1;
+            document.getElementById('btn-next').disabled = currentPage >= totalPages;
 
-    // Lazy-render original if needed
-    if (!originalCanvases[currentPage - 1]) {
-        setStatus('載入頁面…');
-        await renderOriginal(currentPage);
-        setStatus('');
-    }
+            // Lazy-render original if needed
+            if (!originalCanvases[currentPage - 1]) {
+                setStatus('載入頁面…');
+                await renderOriginal(currentPage);
+                setStatus('');
+            }
 
-    const origSrc  = originalCanvases[currentPage - 1];
-    const cleanSrc = processedCanvases[currentPage - 1];
+            const origSrc = originalCanvases[currentPage - 1];
+            const cleanSrc = processedCanvases[currentPage - 1];
 
-    if (origSrc)  drawFit(origSrc,  document.getElementById('canvas-orig'));
-    // Reset per-page caches on page change
-    cachedOtsuThreshold = null;
-    cachedGrayData = null;
-    cachedLiveStaff = null;
-    loupePinned = false;
-    document.getElementById('loupe').style.borderColor = '';
+            if (origSrc) drawFit(origSrc, document.getElementById('canvas-orig'));
+            // Reset per-page caches on page change
+            cachedOtsuThreshold = null;
+            cachedGrayData = null;
+            cachedLiveStaff = null;
+            loupePinned = false;
+            document.getElementById('loupe').style.borderColor = '';
 
-    // Clear staff preview when changing pages (segs are per-page)
-    if (staffPreviewActive) {
-        staffPreviewActive = false; detectedStaffSegs = []; excludedStaffIdxs.clear(); detectedBarlineX = null;
-        document.getElementById('canvas-staff-overlay').style.display = 'none';
-        document.getElementById('staff-preview-hint').style.display = 'none';
-        document.getElementById('btn-staff-preview').textContent = '🔍 預覽偵測線條';
-    }
+            // Refresh staff preview instead of clearing it (if active)
+            if (staffPreviewActive) {
+                runStaffDetection();
+            } else {
+                document.getElementById('canvas-staff-overlay').style.display = 'none';
+                document.getElementById('staff-preview-hint').style.display = 'none';
+                document.getElementById('btn-staff-preview').textContent = '🔍 預覽偵測線條';
+            }
 
-    const cleanCanvas = document.getElementById('canvas-clean');
-    if (cleanSrc) {
-        drawFit(cleanSrc, cleanCanvas);
-        cleanCanvas.style.opacity = '1';
-    } else {
-        // Show placeholder when not yet processed
-        cleanCanvas.width = 200; cleanCanvas.height = 280;
-        const ctx = cleanCanvas.getContext('2d');
-        ctx.fillStyle = '#1a2236';
-        ctx.fillRect(0, 0, 200, 280);
-        ctx.fillStyle = '#475569';
-        ctx.font = '13px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('尚未處理', 100, 140);
-        ctx.font = '11px Inter, sans-serif';
-        ctx.fillText('按「處理此頁」', 100, 160);
-    }
-}
+            const cleanCanvas = document.getElementById('canvas-clean');
+            if (cleanSrc) {
+                drawFit(cleanSrc, cleanCanvas);
+                cleanCanvas.style.opacity = '1';
+            } else {
+                // Show placeholder when not yet processed
+                cleanCanvas.width = 200; cleanCanvas.height = 280;
+                const ctx = cleanCanvas.getContext('2d');
+                ctx.fillStyle = '#1a2236';
+                ctx.fillRect(0, 0, 200, 280);
+                ctx.fillStyle = '#475569';
+                ctx.font = '13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('尚未處理', 100, 140);
+                ctx.font = '11px Inter, sans-serif';
+                ctx.fillText('按「處理此頁」', 100, 160);
+            }
+        }
 
-function drawFit(src, dst) {
-    const area = document.getElementById('canvas-area');
-    const cols = viewMode === 'split' ? 2 : 1;
-    const gap  = viewMode === 'split' ? 12 : 0;
-    const availW = (area.clientWidth - 24 - gap * (cols - 1)) / cols;
-    const availH = area.clientHeight - 24 - 24; // minus label
+        function drawFit(src, dst) {
+            const area = document.getElementById('canvas-area');
+            const cols = viewMode === 'split' ? 2 : 1;
+            const gap = viewMode === 'split' ? 12 : 0;
+            const availW = (area.clientWidth - 24 - gap * (cols - 1)) / cols;
+            const availH = area.clientHeight - 24 - 24; // minus label
 
-    const ratio = Math.min(availW / src.width, availH / src.height);
-    dst.width  = Math.round(src.width  * ratio);
-    dst.height = Math.round(src.height * ratio);
-    dst.getContext('2d').drawImage(src, 0, 0, dst.width, dst.height);
-}
+            const ratio = Math.min(availW / src.width, availH / src.height);
+            dst.width = Math.round(src.width * ratio);
+            dst.height = Math.round(src.height * ratio);
+            dst.getContext('2d').drawImage(src, 0, 0, dst.width, dst.height);
+        }
 
-window.addEventListener('resize', () => showPage(currentPage));
+        window.addEventListener('resize', () => showPage(currentPage));
 
-// ── Load PDF ──
-async function loadPDF(file) {
-    originalFile = file;
-    originalCanvases  = [];
-    processedCanvases = [];
-    cachedOtsuThreshold = null;
-    cachedGrayData = null;
-    cachedLiveStaff = null;
-    currentPage = 1;
+        // ── Load PDF ──
+        async function loadPDF(file) {
+            originalFile = file;
+            originalCanvases = [];
+            processedCanvases = [];
+            cachedOtsuThreshold = null;
+            cachedGrayData = null;
+            cachedLiveStaff = null;
+            currentPage = 1;
 
-    const buf = await file.arrayBuffer();
-    _saveLastFile(file.name, buf); // persist for next session
-    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
-    totalPages = pdfDoc.numPages;
+            const buf = await file.arrayBuffer();
+            _saveLastFile(file.name, buf); // persist for next session
+            pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+            totalPages = pdfDoc.numPages;
 
-    // Pre-allocate arrays (null = not yet rendered)
-    originalCanvases  = new Array(totalPages).fill(null);
-    processedCanvases = new Array(totalPages).fill(null);
+            // Pre-allocate arrays (null = not yet rendered)
+            originalCanvases = new Array(totalPages).fill(null);
+            processedCanvases = new Array(totalPages).fill(null);
 
-    document.getElementById('file-name-label').innerHTML =
-        `<strong>${file.name}</strong> <span>${totalPages} 頁 · ${(file.size/1024/1024).toFixed(1)} MB</span>`;
+            document.getElementById('file-name-label').innerHTML =
+                `<strong>${file.name}</strong> <span>${totalPages} 頁 · ${(file.size / 1024 / 1024).toFixed(1)} MB</span>`;
 
-    dropOverlay.style.display = 'none';
-    document.getElementById('topbar').style.display = 'flex';
-    document.getElementById('col-orig').style.display  = 'flex';
-    document.getElementById('col-clean').style.display = 'flex';
-    document.getElementById('divider').style.display   = 'block';
-    document.getElementById('btn-reset').style.display = 'block';
-    document.getElementById('btn-process-page').disabled = false;
-    document.getElementById('btn-process-all').disabled  = false;
-    document.getElementById('btn-staff-preview').disabled = false;
+            dropOverlay.style.display = 'none';
+            document.getElementById('topbar').style.display = 'flex';
+            document.getElementById('col-orig').style.display = 'flex';
+            document.getElementById('col-clean').style.display = 'flex';
+            document.getElementById('divider').style.display = 'block';
+            document.getElementById('btn-reset').style.display = 'block';
+            document.getElementById('btn-process-page').disabled = false;
+            document.getElementById('btn-process-all').disabled = false;
+            document.getElementById('btn-staff-preview').disabled = false;
 
-    // Render and show page 1 immediately (original only, no processing)
-    await renderOriginal(1);
-    showPage(1);
-    setStatus('載入完成，按「處理此頁」開始清理');
-}
+            // Render and show page 1 immediately (original only, no processing)
+            await renderOriginal(1);
+            showPage(1);
+            setStatus('載入完成，按「處理此頁」開始清理');
+        }
 
-// ── Render original for a page (lazy) ──
-async function renderOriginal(pageNum) {
-    if (originalCanvases[pageNum - 1]) return; // already rendered
-    const scale    = parseFloat(document.getElementById('ctrl-scale').value);
-    const page     = await pdfDoc.getPage(pageNum);
-    const viewport = page.getViewport({ scale });
-    const canvas   = document.createElement('canvas');
-    canvas.width = viewport.width; canvas.height = viewport.height;
-    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-    originalCanvases[pageNum - 1] = canvas;
-}
+        // ── Render original for a page (lazy) ──
+        async function renderOriginal(pageNum) {
+            if (originalCanvases[pageNum - 1]) return; // already rendered
+            const scale = parseFloat(document.getElementById('ctrl-scale').value);
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d', { willReadFrequently: true }), viewport }).promise;
+            originalCanvases[pageNum - 1] = canvas;
+        }
 
-// ── Get current processing params ──
-function getParams() {
-    return {
-        scale:        parseFloat(document.getElementById('ctrl-scale').value),
-        mode:         document.getElementById('ctrl-mode').value,
-        threshold:    parseInt(document.getElementById('ctrl-threshold').value),
-        contrast:     parseFloat(document.getElementById('ctrl-contrast').value),
-        denoiseR:     parseInt(document.getElementById('ctrl-denoise').value),
-        staffEnhance:    document.getElementById('ctrl-staff-enhance').checked,
-        staffDensity:    parseInt(document.getElementById('ctrl-staff-density').value) / 100,
-        staffThickness:  parseInt(document.getElementById('ctrl-staff-thickness').value),
-        noteClean:    document.getElementById('ctrl-notehead-clean').checked,
-        noteMin:      parseInt(document.getElementById('ctrl-notehead-min').value),
-        noteMax:      parseInt(document.getElementById('ctrl-notehead-max').value),
-        // Advanced System Params
-        sysHighDens:    parseInt(document.getElementById('ctrl-sys-gap').value) / 100,
-        sysBracketRange: parseInt(document.getElementById('ctrl-sys-range').value) / 100,
-        sysMaxMerge:    parseInt(document.getElementById('ctrl-sys-conn-dens').value),
-    };
-}
+        // ── Get current processing params ──
+        function getParams() {
+            return {
+                scale: parseFloat(document.getElementById('ctrl-scale').value),
+                mode: document.getElementById('ctrl-mode').value,
+                threshold: parseInt(document.getElementById('ctrl-threshold').value),
+                contrast: parseFloat(document.getElementById('ctrl-contrast').value),
+                denoiseR: parseInt(document.getElementById('ctrl-denoise').value),
+                staffEnhance: document.getElementById('ctrl-staff-enhance').checked,
+                staffDensity: parseInt(document.getElementById('ctrl-staff-density').value) / 100,
+                staffThickness: parseInt(document.getElementById('ctrl-staff-thickness').value),
+                noteClean: document.getElementById('ctrl-notehead-clean').checked,
+                noteMin: parseInt(document.getElementById('ctrl-notehead-min').value),
+                noteMax: parseInt(document.getElementById('ctrl-notehead-max').value),
+                // Advanced System Params
+                sysGap: parseInt(document.getElementById('ctrl-sys-gap').value) / 100,
+                sysRange: parseFloat(document.getElementById('ctrl-sys-range').value),
+                sysConnDens: parseInt(document.getElementById('ctrl-sys-conn-dens').value),
+            };
+        }
 
-// ── Pipeline order UI ──
-function isStepActive(step) {
-    const p = getParams();
-    if (step === 'contrast')  return p.contrast !== 1.0;
-    if (step === 'denoise')   return p.denoiseR > 0;
-    if (step === 'threshold') return true;
-    if (step === 'staff')     return p.staffEnhance;
-    if (step === 'notehead')  return p.noteClean;
-    return true;
-}
+        // ── Pipeline order UI ──
+        function isStepActive(step) {
+            const p = getParams();
+            if (step === 'contrast') return p.contrast !== 1.0;
+            if (step === 'denoise') return p.denoiseR > 0;
+            if (step === 'threshold') return true;
+            if (step === 'staff') return p.staffEnhance;
+            if (step === 'notehead') return p.noteClean;
+            return true;
+        }
 
-function renderPipelineList() {
-    const list = document.getElementById('pipeline-list');
-    list.innerHTML = '';
-    pipelineOrder.forEach((step, idx) => {
-        const div = document.createElement('div');
-        div.className = 'pipeline-step' + (isStepActive(step) ? '' : ' inactive');
-        div.innerHTML = `
+        function renderPipelineList() {
+            const list = document.getElementById('pipeline-list');
+            list.innerHTML = '';
+            pipelineOrder.forEach((step, idx) => {
+                const div = document.createElement('div');
+                div.className = 'pipeline-step' + (isStepActive(step) ? '' : ' inactive');
+                div.innerHTML = `
             <span class="step-num">${idx + 1}</span>
             <span class="step-name">${PIPELINE_LABELS[step]}</span>
             <button class="step-move" data-dir="-1" ${idx === 0 ? 'disabled' : ''}>↑</button>
             <button class="step-move" data-dir="1"  ${idx === pipelineOrder.length - 1 ? 'disabled' : ''}>↓</button>`;
-        div.querySelectorAll('.step-move').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const newIdx = idx + parseInt(btn.dataset.dir);
-                if (newIdx < 0 || newIdx >= pipelineOrder.length) return;
-                [pipelineOrder[idx], pipelineOrder[newIdx]] = [pipelineOrder[newIdx], pipelineOrder[idx]];
-                renderPipelineList();
-                if (loupeActive) processLoupePatch();
+                div.querySelectorAll('.step-move').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const newIdx = idx + parseInt(btn.dataset.dir);
+                        if (newIdx < 0 || newIdx >= pipelineOrder.length) return;
+                        [pipelineOrder[idx], pipelineOrder[newIdx]] = [pipelineOrder[newIdx], pipelineOrder[idx]];
+                        renderPipelineList();
+                        if (loupeActive) processLoupePatch();
+                    });
+                });
+                list.appendChild(div);
             });
-        });
-        list.appendChild(div);
-    });
-}
-
-// ── Unified pipeline runner ──
-// ctx must already have the source image drawn; w/h are pixel dimensions
-function runPipeline(ctx, w, h, p, otsuT, staffSegs, staffExcl) {
-    let imgData = ctx.getImageData(0, 0, w, h);
-    const d = imgData.data;
-
-    // Grayscale always first
-    for (let i = 0; i < d.length; i += 4) {
-        const g = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-        d[i] = d[i+1] = d[i+2] = g;
-    }
-
-    for (const step of pipelineOrder) {
-        if (step === 'contrast' && p.contrast !== 1.0) {
-            for (let i = 0; i < d.length; i += 4) {
-                const v = Math.min(255, Math.max(0, (d[i] - 128) * p.contrast + 128));
-                d[i] = d[i+1] = d[i+2] = v;
-            }
-        } else if (step === 'denoise' && p.denoiseR > 0) {
-            const temp = new Uint8ClampedArray(w * h);
-            for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-                let sum = 0, cnt = 0;
-                for (let dy = -p.denoiseR; dy <= p.denoiseR; dy++)
-                    for (let dx = -p.denoiseR; dx <= p.denoiseR; dx++) {
-                        const ny = y + dy, nx = x + dx;
-                        if (ny >= 0 && ny < h && nx >= 0 && nx < w) { sum += d[(ny * w + nx) * 4]; cnt++; }
-                    }
-                temp[y * w + x] = sum / cnt;
-            }
-            for (let i = 0; i < w * h; i++) d[i*4] = d[i*4+1] = d[i*4+2] = temp[i];
-        } else if (step === 'threshold') {
-            if (p.mode === 'simple') {
-                for (let i = 0; i < d.length; i += 4) { const v = d[i] < p.threshold ? 0 : 255; d[i] = d[i+1] = d[i+2] = v; }
-            } else if (p.mode === 'otsu') {
-                const t = otsuT !== null ? otsuT : otsuThreshold(d);
-                for (let i = 0; i < d.length; i += 4) { const v = d[i] < t ? 0 : 255; d[i] = d[i+1] = d[i+2] = v; }
-            } else if (p.mode === 'adaptive') {
-                adaptiveThreshold(d, w, h, 31);
-            } else { // denoise-only mode
-                for (let i = 0; i < d.length; i += 4) { const v = Math.min(255, Math.max(0, (d[i]-100)*1.8+100)); d[i] = d[i+1] = d[i+2] = v; }
-            }
-        } else if (step === 'staff' && p.staffEnhance) {
-            enhanceStaffLines(imgData, p.staffDensity, staffSegs, staffExcl, p.staffThickness);
-        } else if (step === 'notehead' && p.noteClean) {
-            // notehead operates on canvas ctx; flush + read back if more steps follow
-            ctx.putImageData(imgData, 0, 0);
-            cleanNoteheads(ctx, w, h, p.noteMin, p.noteMax);
-            imgData = ctx.getImageData(0, 0, w, h);
-        }
-    }
-    ctx.putImageData(imgData, 0, 0);
-}
-
-// ── Process single page ──
-async function processPage(pageNum) {
-    await renderOriginal(pageNum);
-    const orig = originalCanvases[pageNum - 1];
-    const p = getParams();
-
-    const cleanCanvas = document.createElement('canvas');
-    cleanCanvas.width = orig.width; cleanCanvas.height = orig.height;
-    const cleanCtx = cleanCanvas.getContext('2d');
-    cleanCtx.drawImage(orig, 0, 0);
-
-    const otsuT = (p.mode === 'otsu') ? computePageOtsu() : null;
-    const isCurrentPage = (pageNum === currentPage);
-    const staffSegs = (isCurrentPage && staffPreviewActive && detectedStaffSegs.length) ? detectedStaffSegs : null;
-    const staffExcl = (isCurrentPage && staffPreviewActive && excludedStaffIdxs.size)  ? excludedStaffIdxs : null;
-    runPipeline(cleanCtx, orig.width, orig.height, p, otsuT, staffSegs, staffExcl);
-
-    processedCanvases[pageNum - 1] = cleanCanvas;
-}
-
-// ── Process All ──
-async function processAll() {
-    if (!pdfDoc) return;
-    document.getElementById('btn-download').disabled = true;
-    showProgress(true);
-
-    for (let i = 1; i <= totalPages; i++) {
-        setProgress(((i-1)/totalPages)*100, `處理第 ${i} / ${totalPages} 頁…`);
-        await processPage(i);
-        await new Promise(r => setTimeout(r, 0));
-    }
-
-    setProgress(100, '完成');
-    setTimeout(() => showProgress(false), 600);
-    document.getElementById('btn-download').disabled = false;
-    setStatus(`✓ 全部 ${totalPages} 頁處理完成`);
-    showPage(currentPage);
-}
-
-// ── Image Processing ──
-
-// Compute and cache per-page grayscale array (avoid repeated getImageData on full page)
-function getPageGray() {
-    if (cachedGrayData) return cachedGrayData;
-    const orig = originalCanvases[currentPage - 1];
-    if (!orig) return null;
-    const d = orig.getContext('2d').getImageData(0, 0, orig.width, orig.height).data;
-    const gray = new Uint8Array(orig.width * orig.height);
-    for (let i = 0; i < gray.length; i++)
-        gray[i] = 0.299 * d[i*4] + 0.587 * d[i*4+1] + 0.114 * d[i*4+2];
-    cachedGrayData = { gray, width: orig.width, height: orig.height };
-    return cachedGrayData;
-}
-
-// Staff detection directly on Uint8Array (no ImageData needed)
-function detectStaffLinesFromGray(gray, w, h, densityThreshold) {
-    const margin = Math.floor(w * 0.05), scanL = margin, scanR = w - margin;
-    const cands = [];
-    for (let y = 0; y < h; y++) {
-        let dark = 0, tot = 0;
-        for (let x = scanL; x < scanR; x += 2) { if (gray[y * w + x] < 128) dark++; tot++; }
-        if (dark / tot >= densityThreshold) cands.push(y);
-    }
-    const segs = []; let i = 0;
-    while (i < cands.length) {
-        let s = cands[i], e = s;
-        while (i < cands.length && cands[i] <= e + 2) { e = cands[i]; i++; }
-        const thickness = e - s + 1;
-        if (thickness <= 12) segs.push({ top: s, bottom: e, thickness });
-    }
-    return segs;
-}
-
-// Get staff segs for the loupe from full-page scan, cached by density
-function getLiveStaffSegs(density) {
-    if (cachedLiveStaff && cachedLiveStaff.density === density) return cachedLiveStaff.segs;
-    const gd = getPageGray();
-    if (!gd) return [];
-    const segs = detectStaffLinesFromGray(gd.gray, gd.width, gd.height, density);
-    cachedLiveStaff = { density, segs };
-    return segs;
-}
-
-function computePageOtsu() {
-    if (cachedOtsuThreshold !== null) return cachedOtsuThreshold;
-    const gd = getPageGray();
-    if (!gd) return 128;
-    const hist = new Array(256).fill(0);
-    for (let i = 0; i < gd.gray.length; i++) hist[gd.gray[i]]++;
-    cachedOtsuThreshold = otsuThresholdFromHist(hist, gd.gray.length);
-    return cachedOtsuThreshold;
-}
-
-function processPixels(imageData, mode, threshold, contrast, denoiseR, precomputedOtsu=null) {
-    const d = imageData.data, w = imageData.width, h = imageData.height;
-    // Grayscale
-    for (let i = 0; i < d.length; i += 4) {
-        const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-        d[i] = d[i+1] = d[i+2] = g;
-    }
-    // Contrast
-    if (contrast !== 1.0) {
-        for (let i = 0; i < d.length; i += 4) {
-            const v = Math.min(255, Math.max(0, (d[i]-128)*contrast+128));
-            d[i] = d[i+1] = d[i+2] = v;
-        }
-    }
-    // Denoise
-    if (denoiseR > 0) {
-        const temp = new Uint8ClampedArray(w*h);
-        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-            let sum = 0, cnt = 0;
-            for (let dy = -denoiseR; dy <= denoiseR; dy++) for (let dx = -denoiseR; dx <= denoiseR; dx++) {
-                const ny = y+dy, nx = x+dx;
-                if (ny>=0&&ny<h&&nx>=0&&nx<w) { sum += d[(ny*w+nx)*4]; cnt++; }
-            }
-            temp[y*w+x] = sum/cnt;
-        }
-        for (let i = 0; i < w*h; i++) d[i*4] = d[i*4+1] = d[i*4+2] = temp[i];
-    }
-    // Threshold
-    if (mode === 'simple') {
-        for (let i = 0; i < d.length; i += 4) { const v = d[i]<threshold?0:255; d[i]=d[i+1]=d[i+2]=v; }
-    } else if (mode === 'otsu') {
-        const t = precomputedOtsu !== null ? precomputedOtsu : otsuThreshold(d);
-        for (let i = 0; i < d.length; i += 4) { const v = d[i]<t?0:255; d[i]=d[i+1]=d[i+2]=v; }
-    } else if (mode === 'adaptive') {
-        adaptiveThreshold(d, w, h, 31);
-    } else {
-        for (let i = 0; i < d.length; i += 4) { const v = Math.min(255,Math.max(0,(d[i]-100)*1.8+100)); d[i]=d[i+1]=d[i+2]=v; }
-    }
-}
-
-function otsuThresholdFromHist(hist, total) {
-    let sum = 0; for (let t=0;t<256;t++) sum+=t*hist[t];
-    let sumB=0,wB=0,max=0,best=128;
-    for (let t=0;t<256;t++) {
-        wB+=hist[t]; if(!wB)continue; const wF=total-wB; if(!wF)break;
-        sumB+=t*hist[t]; const mB=sumB/wB,mF=(sum-sumB)/wF,b=wB*wF*(mB-mF)**2;
-        if(b>max){max=b;best=t;}
-    }
-    return best;
-}
-function otsuThreshold(d) {
-    const hist = new Array(256).fill(0), total = d.length/4;
-    for (let i = 0; i < d.length; i += 4) hist[d[i]]++;
-    return otsuThresholdFromHist(hist, total);
-}
-
-function adaptiveThreshold(d, w, h, blockSize) {
-    const half = Math.floor(blockSize/2);
-    const gray = new Uint8ClampedArray(w*h);
-    for (let i=0;i<w*h;i++) gray[i]=d[i*4];
-    const integral = new Float64Array((w+1)*(h+1));
-    for (let y=0;y<h;y++) for (let x=0;x<w;x++) {
-        integral[(y+1)*(w+1)+(x+1)] = gray[y*w+x]+integral[y*(w+1)+(x+1)]+integral[(y+1)*(w+1)+x]-integral[y*(w+1)+x];
-    }
-    for (let y=0;y<h;y++) for (let x=0;x<w;x++) {
-        const x1=Math.max(0,x-half),y1=Math.max(0,y-half),x2=Math.min(w,x+half+1),y2=Math.min(h,y+half+1);
-        const area=(x2-x1)*(y2-y1);
-        const sum=integral[y2*(w+1)+x2]-integral[y1*(w+1)+x2]-integral[y2*(w+1)+x1]+integral[y1*(w+1)+x1];
-        const v=gray[y*w+x]<sum/area-8?0:255;
-        const idx=(y*w+x)*4; d[idx]=d[idx+1]=d[idx+2]=v;
-    }
-}
-
-function enhanceStaffLines(imageData, densityThreshold=0.20, previewSegs=null, excludedIdxs=null, targetThickness=0) {
-    const segs = previewSegs || detectStaffLinesFromImage(imageData, densityThreshold);
-    const d=imageData.data, w=imageData.width, h=imageData.height;
-    segs.forEach((seg, idx) => {
-        if (excludedIdxs && excludedIdxs.has(idx)) return;
-        const mid = Math.round((seg.top + seg.bottom) / 2);
-        const thick = targetThickness > 0 ? targetThickness : (seg.bottom - seg.top + 1);
-        const yStart = Math.max(0, mid - Math.floor(thick / 2));
-        const yEnd   = Math.min(h - 1, yStart + thick - 1);
-        for(let y=yStart;y<=yEnd;y++) for(let x=0;x<w;x++) {
-            const i=(y*w+x)*4; d[i]=d[i+1]=d[i+2]=0; d[i+3]=255;
-        }
-    });
-}
-
-function cleanNoteheads(ctx, w, h, minSize, maxSize) {
-    const imageData=ctx.getImageData(0,0,w,h), d=imageData.data;
-    const visited=new Uint8Array(w*h);
-    const blobs=[];
-    for(let y=0;y<h;y++) for(let x=0;x<w;x++) {
-        const idx=y*w+x;
-        if(visited[idx]||d[idx*4]>64) continue;
-        const queue=[idx]; visited[idx]=1;
-        let minX=x,maxX=x,minY=y,maxY=y,pixels=[];
-        let qi=0;
-        while(qi<queue.length) {
-            const cur=queue[qi++], cx=cur%w, cy=Math.floor(cur/w);
-            pixels.push(cur);
-            if(cx<minX)minX=cx; if(cx>maxX)maxX=cx; if(cy<minY)minY=cy; if(cy>maxY)maxY=cy;
-            for(const nb of[cur-1,cur+1,cur-w,cur+w]) {
-                if(nb<0||nb>=w*h)continue;
-                const nx=nb%w,ny=Math.floor(nb/w);
-                if(Math.abs(nx-cx)+Math.abs(ny-cy)>1)continue;
-                if(!visited[nb]&&d[nb*4]<=64){visited[nb]=1;queue.push(nb);}
-            }
-        }
-        const bw=maxX-minX+1,bh=maxY-minY+1;
-        blobs.push({minX,maxX,minY,maxY,bw,bh,pixels});
-    }
-    const noteheads=blobs.filter(b=>{
-        if(b.bw<minSize||b.bh<minSize||b.bw>maxSize||b.bh>maxSize)return false;
-        const ratio=b.bw/b.bh; if(ratio<0.5||ratio>2.5)return false;
-        return b.pixels.length/(b.bw*b.bh)>=0.2;
-    });
-    ctx.save();
-    noteheads.forEach(b=>{
-        const cx=(b.minX+b.maxX)/2, cy=(b.minY+b.maxY)/2;
-        const rx=b.bw/2, ry=b.bh/2;
-        const isHollow=b.pixels.length/(b.bw*b.bh)<0.55;
-        ctx.fillStyle='white'; ctx.fillRect(b.minX-1,b.minY-1,b.bw+2,b.bh+2);
-        ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
-        if(isHollow){ ctx.strokeStyle='black'; ctx.lineWidth=Math.max(1.5,Math.min(rx,ry)*0.25); ctx.stroke(); }
-        else { ctx.fillStyle='black'; ctx.fill(); }
-    });
-    ctx.restore();
-}
-
-// ── Download ──
-document.getElementById('btn-download').addEventListener('click', async () => {
-    if (!processedCanvases.length) return;
-    setStatus('正在生成 PDF…');
-    document.getElementById('btn-download').disabled = true;
-    const { jsPDF } = window.jspdf;
-    const first = processedCanvases[0];
-    const pdf = new jsPDF({
-        orientation: first.width>first.height?'landscape':'portrait',
-        unit: 'px', format: [first.width, first.height], hotfixes: ['px_scaling']
-    });
-    for (let i=0;i<processedCanvases.length;i++) {
-        setStatus(`生成 ${i+1}/${processedCanvases.length}…`);
-        if (i>0) { const c=processedCanvases[i]; pdf.addPage([c.width,c.height],c.width>c.height?'landscape':'portrait'); }
-        pdf.addImage(processedCanvases[i].toDataURL('image/jpeg',0.92),'JPEG',0,0,processedCanvases[i].width,processedCanvases[i].height);
-        await new Promise(r=>setTimeout(r,0));
-    }
-    pdf.save((originalFile?.name||'score').replace(/\.pdf$/i,'')+'_cleaned.pdf');
-    setStatus('✓ 下載完成');
-    document.getElementById('btn-download').disabled = false;
-});
-
-// ── Buttons ──
-document.getElementById('btn-process-page').addEventListener('click', async () => {
-    setStatus(`處理第 ${currentPage} 頁…`);
-    showProgress(true);
-    setProgress(50, `處理第 ${currentPage} / ${totalPages} 頁…`);
-    await processPage(currentPage);
-    setProgress(100, '完成');
-    setTimeout(() => showProgress(false), 400);
-    setStatus(`✓ 第 ${currentPage} 頁完成`);
-    showPage(currentPage);
-    // Enable download if all pages processed
-    if (processedCanvases.every(c => c !== null)) {
-        document.getElementById('btn-download').disabled = false;
-    }
-});
-document.getElementById('btn-process-all').addEventListener('click', processAll);
-document.getElementById('btn-reset').addEventListener('click', () => {
-    pdfDoc=null; originalFile=null; originalCanvases=[]; processedCanvases=[]; totalPages=0; currentPage=1;
-    dropOverlay.style.display='flex';
-    document.getElementById('topbar').style.display='none';
-    document.getElementById('col-orig').style.display='none';
-    document.getElementById('col-clean').style.display='none';
-    document.getElementById('divider').style.display='none';
-    document.getElementById('btn-reset').style.display='none';
-    document.getElementById('btn-process-page').disabled=true;
-    document.getElementById('btn-process-all').disabled=true;
-    document.getElementById('btn-download').disabled=true;
-    fileInput.value=''; setStatus('');
-    staffPreviewActive=false; detectedStaffSegs=[]; excludedStaffIdxs.clear(); detectedBarlineX=null;
-    document.getElementById('canvas-staff-overlay').style.display='none';
-    document.getElementById('staff-preview-hint').style.display='none';
-    document.getElementById('btn-staff-preview').textContent='🔍 預覽偵測線條';
-    document.getElementById('btn-staff-preview').disabled=true;
-});
-
-// ── Staff Line Preview ──
-let staffPreviewActive = false;
-let detectedStaffSegs  = [];      // [{top, bottom, thickness, confirmed}]
-let excludedStaffIdxs  = new Set(); // indices to skip during enhance
-let detectedBarlineX   = null;    // x coordinate of right-side final barline (primary)
-let detectedBarlineXs  = [];      // all detected barline x positions (one per system)
-let detectedSystems    = [];      // [{top, bottom}] system y-ranges
-
-// ═══════════════════════════════════════════════════════════════════════════
-// BarlineStaffDetector — reusable module (extract to separate file when needed)
-//
-// Key insight:  The final barline (終止線) is a solid vertical line that spans
-//   the full height of each staff system.  At the barline column every pixel
-//   from line-1 top to line-5 bottom is dark (the barline fills the inter-line
-//   gaps too).  Just 3-4 pixels to the LEFT only the 5 actual staff lines are
-//   dark; everything else (gaps, notes, text) is light.  This makes the strip
-//   left of the barline the cleanest possible signal for staff-line detection.
-//
-// Usage:
-//   const { barlineX, segments } = BarlineStaffDetector.detect(gray, w, h, opts);
-//   segments: [{top, bottom, thickness, confirmed:true}, ...]
-// ═══════════════════════════════════════════════════════════════════════════
-const BarlineStaffDetector = (() => {
-    // ── Key insight ──────────────────────────────────────────────────────────
-    // Final barlines are the RIGHTMOST dark element in their rows — blank paper
-    // lies to their right.  Interior barlines are never rightmost (notes/content
-    // follow them).  Building a histogram of "per-row rightmost dark x" therefore
-    // peaks exactly at each system's final barline, even when different systems
-    // have drifted horizontally due to scanning distortion.
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * findAllBarlines — histogram approach.
-     * For every pixel row, record the x of the rightmost dark pixel.
-     * Smooth the resulting histogram and return all prominent peaks,
-     * sorted right→left.  Each peak = one system's final barline.
-     */
-    // 驗證候選 barlineX：左側 strip 是否有 ≥ minThinBands 條細橫帶（五線譜線）。
-    // 固定跳過 20px（足以清過最寬的雙終止線結構 ~14px），再掃 6px 五線譜內容區。
-    // 這能區分「真正的終止線」與「文字/頁碼等假 peak」。
-    function _hasStaffBands(gray, w, h, bx, darkThreshold, minThinBands = 3) {
-        const skip = 20;   // 跳過終止線結構
-        const stripW = 6;
-        const x1 = Math.max(0, bx - skip - stripW);
-        const x2 = Math.max(0, bx - skip);
-        let thinRuns = 0, inRun = false, runStart = 0;
-        for (let y = 0; y <= h; y++) {
-            let dark = false;
-            if (y < h) {
-                for (let px = x1; px <= x2; px++) {
-                    if (gray[y * w + px] < darkThreshold) { dark = true; break; }
-                }
-            }
-            if (dark && !inRun)      { inRun = true;  runStart = y; }
-            else if (!dark && inRun) {
-                inRun = false;
-                const rh = y - runStart;
-                if (rh >= 1 && rh <= 10) thinRuns++; // 一條五線譜線的厚度
-            }
-        }
-        return thinRuns >= minThinBands;
-    }
-
-    function findAllBarlines(gray, w, h, darkThreshold) {
-        const scanStart = Math.floor(w * 0.12);
-        const minX      = Math.floor(w * 0.45); // 忽略左側邊距內容
-        const xCounts   = new Int32Array(w);
-
-        for (let y = 0; y < h; y++) {
-            const rowBase = y * w;
-            for (let x = w - 1; x >= scanStart; x--) {
-                if (gray[rowBase + x] < darkThreshold) {
-                    if (x >= minX) xCounts[x]++;
-                    break;
-                }
-            }
         }
 
-        // 平滑 ±5px
-        const smooth = new Float32Array(w);
-        for (let x = minX; x < w; x++) {
-            let sum = 0, cnt = 0;
-            for (let dx = -5; dx <= 5; dx++) {
-                const nx = x + dx;
-                if (nx >= 0 && nx < w) { sum += xCounts[nx]; cnt++; }
-            }
-            smooth[x] = sum / cnt;
+        // ── Unified pipeline runner ──
+        // ctx must already have the source image drawn; w/h are pixel dimensions
+        function runPipeline(ctx, w, h, p, otsuT, staffSegs, staffExcl) {
+            ImageProcessor.runPipeline(ctx, w, h, p, otsuT, staffSegs, staffExcl, pipelineOrder, PIPELINE_LABELS);
         }
 
-        // 終止線至少跨越頁高 1.5% 的行數
-        const minCount = Math.max(4, Math.floor(h * 0.005));
+        // ── Process single page ──
+        async function processPage(pageNum) {
+            await renderOriginal(pageNum);
+            const orig = originalCanvases[pageNum - 1];
+            const p = getParams();
 
-        // 收集局部最大值
-        const peaks = [];
-        for (let x = minX + 1; x < w - 1; x++) {
-            if (smooth[x] >= minCount &&
-                smooth[x] >= smooth[x - 1] &&
-                smooth[x] >= smooth[x + 1]) {
-                peaks.push(x);
-            }
+            const cleanCanvas = document.createElement('canvas');
+            cleanCanvas.width = orig.width; cleanCanvas.height = orig.height;
+            const cleanCtx = cleanCanvas.getContext('2d', { willReadFrequently: true });
+            cleanCtx.drawImage(orig, 0, 0);
+
+            const otsuT = (p.mode === 'otsu') ? computePageOtsu() : null;
+            const isCurrentPage = (pageNum === currentPage);
+            const staffSegs = (isCurrentPage && staffPreviewActive && detectedStaffSegs.length) ? detectedStaffSegs : null;
+            const staffExcl = (isCurrentPage && staffPreviewActive && excludedStaffIdxs.size) ? excludedStaffIdxs : null;
+            runPipeline(cleanCtx, orig.width, orig.height, p, otsuT, staffSegs, staffExcl);
+
+            processedCanvases[pageNum - 1] = cleanCanvas;
         }
 
-        // 在 15px 窗口內合併相鄰 peak（保留較高者）
-        const merged = [];
-        for (const x of peaks) {
-            if (!merged.length) { merged.push(x); continue; }
-            const last = merged[merged.length - 1];
-            if (Math.abs(x - last) <= 15) {
-                if (smooth[x] > smooth[last]) merged[merged.length - 1] = x;
-            } else {
-                merged.push(x);
+        // ── Process All ──
+        async function processAll() {
+            if (!pdfDoc) return;
+            document.getElementById('btn-download').disabled = true;
+            showProgress(true);
+
+            for (let i = 1; i <= totalPages; i++) {
+                setProgress(((i - 1) / totalPages) * 100, `處理第 ${i} / ${totalPages} 頁…`);
+                await processPage(i);
+                await new Promise(r => setTimeout(r, 0));
             }
+
+            setProgress(100, '完成');
+            setTimeout(() => showProgress(false), 600);
+            document.getElementById('btn-download').disabled = false;
+            setStatus(`✓ 全部 ${totalPages} 頁處理完成`);
+            showPage(currentPage);
         }
 
-        // 驗證：左側必須有五線譜的細橫帶，否則是文字/頁碼等雜訊
-        const validated = merged.filter(x => _hasStaffBands(gray, w, h, x, darkThreshold));
+        // ── Image Processing ──
 
-        validated.sort((a, b) => b - a); // 從右到左
-        return validated;
-    }
+        // Compute and cache per-page grayscale array (avoid repeated getImageData on full page)
+        function getPageGray() {
+            if (cachedGrayData) return cachedGrayData;
+            const orig = originalCanvases[currentPage - 1];
+            if (!orig) return null;
+            const d = orig.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, orig.width, orig.height).data;
+            const gray = new Uint8Array(orig.width * orig.height);
+            for (let i = 0; i < gray.length; i++)
+                gray[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+            cachedGrayData = { gray, width: orig.width, height: orig.height };
+            return cachedGrayData;
+        }
 
-    /**
-     * extractStaff — multi-try strip scan for staff lines near a barlineX.
-     *
-     * 從緊貼終止線的位置開始掃（強弱記號不在此），若找不到 5 條線
-     * 則往左移 4px 再試，直到找到足夠數量或超過最大偏移為止。
-     * 這樣普通終止線一次就找到，粗雙終止線靠後幾次的嘗試來處理，
-     * 不會掃進強弱記號區域。
-     */
-    function extractStaff(gray, w, h, barlineX, darkThreshold, maxLineThick = 8, stripW = 4) {
-        const minDensity = 0.70;
-        const STEP = 4;   // 每次往左移 4px
-        const MAX_TRIES = 6; // 最多嘗試到 bx - 24
-
-        function scanAt(rightEdge) {
-            const x2 = Math.max(0, rightEdge);
-            const x1 = Math.max(0, x2 - stripW + 1);
-            const stripLen = x2 - x1 + 1;
-            const segs = [];
-            let inSeg = false, segStart = 0;
-            for (let y = 0; y <= h; y++) {
-                let darkCount = 0;
-                if (y < h) {
-                    for (let x = x1; x <= x2; x++) {
-                        if (gray[y * w + x] < darkThreshold) darkCount++;
-                    }
-                }
-                const dark = (darkCount / stripLen) >= minDensity;
-                if (dark && !inSeg)      { inSeg = true;  segStart = y; }
-                else if (!dark && inSeg) {
-                    inSeg = false;
-                    const thick = y - segStart;
-                    if (thick >= 1 && thick <= maxLineThick)
-                        segs.push({ top: segStart, bottom: y - 1, thickness: thick, confirmed: true });
-                }
+        // Staff detection directly on Uint8Array (no ImageData needed)
+        function detectStaffLinesFromGray(gray, w, h, densityThreshold) {
+            const margin = Math.floor(w * 0.05), scanL = margin, scanR = w - margin;
+            const cands = [];
+            for (let y = 0; y < h; y++) {
+                let dark = 0, tot = 0;
+                for (let x = scanL; x < scanR; x += 2) { if (gray[y * w + x] < 128) dark++; tot++; }
+                if (dark / tot >= densityThreshold) cands.push(y);
+            }
+            const segs = []; let i = 0;
+            while (i < cands.length) {
+                let s = cands[i], e = s;
+                while (i < cands.length && cands[i] <= e + 2) { e = cands[i]; i++; }
+                const thickness = e - s + 1;
+                if (thickness <= 12) segs.push({ top: s, bottom: e, thickness });
             }
             return segs;
         }
 
-        let best = [];
-        for (let t = 0; t < MAX_TRIES; t++) {
-            const rightEdge = barlineX - 1 - t * STEP;
-            const segs = scanAt(rightEdge);
-            if (segs.length > best.length) best = segs;
-            if (best.length >= 5) break; // 已找到足夠線條，停止
+        // Get staff segs for the loupe from full-page scan, cached by density
+        function getLiveStaffSegs(density) {
+            if (cachedLiveStaff && cachedLiveStaff.density === density) return cachedLiveStaff.segs;
+            const gd = getPageGray();
+            if (!gd) return [];
+            const segs = detectStaffLinesFromGray(gd.gray, gd.width, gd.height, density);
+            cachedLiveStaff = { density, segs };
+            return segs;
         }
-        return best;
-    }
 
-    // ── 五線譜嚴格驗證 ──────────────────────────────────────────────────────
-    // 五線譜永遠是五條線，等間距。
-    // 策略：在所有候選 seg 中，找出能組成「剛好 5 條、間距一致」的鏈，
-    // 其餘的（文字、雜訊、單條線）一律丟棄。
-    // 回傳值：flat 陣列，只包含通過驗證的五線譜線，維持 top 排序。
-    function findStaves(segs, maxLineThick) {
-        if (segs.length < 5) return [];
-        const center = s => (s.top + s.bottom) / 2;
-        const centers = segs.map(center);
-
-        // 從「小間距」（同一 staff 內）推算 linespace
-        const smallGaps = [];
-        for (let i = 1; i < centers.length; i++) {
-            const g = centers[i] - centers[i - 1];
-            if (g > maxLineThick && g < maxLineThick * 10) smallGaps.push(g);
+        function computePageOtsu() {
+            if (cachedOtsuThreshold !== null) return cachedOtsuThreshold;
+            const gd = getPageGray();
+            if (!gd) return 128;
+            const hist = new Array(256).fill(0);
+            for (let i = 0; i < gd.gray.length; i++) hist[gd.gray[i]]++;
+            cachedOtsuThreshold = ImageProcessor.otsuThresholdFromHist(hist, gd.gray.length);
+            return cachedOtsuThreshold;
         }
-        if (smallGaps.length < 2) return [];
-        smallGaps.sort((a, b) => a - b);
-        const linespace = smallGaps[Math.floor(smallGaps.length / 2)];
-        const tol = linespace * 0.40;
 
-        // 對每個 seg 當起點，嘗試往下找 4 條在 k*linespace 位置的 seg
-        const used = new Set();
-        const staves = [];
-
-        for (let si = 0; si < segs.length; si++) {
-            if (used.has(si)) continue;
-            const chain = [si];
-            for (let k = 1; k <= 4; k++) {
-                const expected = centers[si] + k * linespace;
-                let bestIdx = -1, bestDist = tol + 1;
-                for (let j = 0; j < segs.length; j++) {
-                    if (used.has(j) || chain.includes(j)) continue;
-                    const dist = Math.abs(centers[j] - expected);
-                    if (dist <= tol && dist < bestDist) { bestDist = dist; bestIdx = j; }
+        function processPixels(imageData, mode, threshold, contrast, denoiseR, precomputedOtsu = null) {
+            const d = imageData.data, w = imageData.width, h = imageData.height;
+            // Grayscale
+            for (let i = 0; i < d.length; i += 4) {
+                const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                d[i] = d[i + 1] = d[i + 2] = g;
+            }
+            // Contrast
+            if (contrast !== 1.0) {
+                for (let i = 0; i < d.length; i += 4) {
+                    const v = Math.min(255, Math.max(0, (d[i] - 128) * contrast + 128));
+                    d[i] = d[i + 1] = d[i + 2] = v;
                 }
-                if (bestIdx === -1) break;
-                chain.push(bestIdx);
             }
-            if (chain.length === 5) {
-                chain.forEach(i => used.add(i));
-                staves.push(chain.map(i => segs[i]));
+            // Denoise
+            if (denoiseR > 0) {
+                const temp = new Uint8ClampedArray(w * h);
+                for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+                    let sum = 0, cnt = 0;
+                    for (let dy = -denoiseR; dy <= denoiseR; dy++) for (let dx = -denoiseR; dx <= denoiseR; dx++) {
+                        const ny = y + dy, nx = x + dx;
+                        if (ny >= 0 && ny < h && nx >= 0 && nx < w) { sum += d[(ny * w + nx) * 4]; cnt++; }
+                    }
+                    temp[y * w + x] = sum / cnt;
+                }
+                for (let i = 0; i < w * h; i++) d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = temp[i];
             }
-        }
-
-        // 攤平並排序
-        return staves.flat().sort((a, b) => a.top - b.top);
-    }
-
-    /**
-     * detect — barline-anchored，使用極窄 strip（4px）+ 高密度門檻（70%）。
-     *
-     * 為何窄 strip 優於寬 strip：
-     *   - 音符頭距終止線至少 2-3px，不會進入 4px strip
-     *   - 符幹雖然可能貼著終止線，但是垂直的（高度 > maxLineThick → 被過濾）
-     *   - 五線譜線水平延伸到終止線 → 4px strip 內密度 100%
-     *   - 每個 system 有自己的 barlineX（histogram），不存在橫向偏移問題
-     */
-    function detect(gray, w, h, opts = {}) {
-        const { darkThreshold = 128, maxLineThick = 8, stripW = 4 } = opts;
-        const barlineXs = findAllBarlines(gray, w, h, darkThreshold);
-
-        if (!barlineXs.length) return { barlineX: null, barlineXs: [], segments: [] };
-
-        // 每個 system 的 barlineX 各自掃描極窄 strip
-        const allSegs = [];
-        for (const bx of barlineXs) {
-            const segs = extractStaff(gray, w, h, bx, darkThreshold, maxLineThick, stripW);
-            allSegs.push(...segs);
-        }
-
-        // 去重
-        allSegs.sort((a, b) => a.top - b.top);
-        const merged = [];
-        for (const seg of allSegs) {
-            if (!merged.length) { merged.push({ ...seg }); continue; }
-            const last = merged[merged.length - 1];
-            if (seg.top <= last.bottom + 3) {
-                last.bottom    = Math.max(last.bottom, seg.bottom);
-                last.thickness = last.bottom - last.top + 1;
+            // Threshold
+            if (mode === 'simple') {
+                for (let i = 0; i < d.length; i += 4) { const v = d[i] < threshold ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; }
+            } else if (mode === 'otsu') {
+                const t = precomputedOtsu !== null ? precomputedOtsu : ImageProcessor.otsuThreshold(d);
+                for (let i = 0; i < d.length; i += 4) { const v = d[i] < t ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; }
+            } else if (mode === 'adaptive') {
+                ImageProcessor.adaptiveThreshold(d, w, h, 31);
             } else {
-                merged.push({ ...seg });
+                for (let i = 0; i < d.length; i += 4) { const v = Math.min(255, Math.max(0, (d[i] - 100) * 1.8 + 100)); d[i] = d[i + 1] = d[i + 2] = v; }
+            }
+        }
+        function updateControlVisibility() {
+            const mode = document.getElementById('ctrl-mode').value;
+            // Simple threshold slider only relevant for 'simple' or 'otsu' (to some extent)
+            // But usually 'simple' is the only one where it's a direct manual control.
+            const thresholdCtrl = document.getElementById('ctrl-threshold').closest('.ctrl');
+            if (thresholdCtrl) {
+                thresholdCtrl.style.opacity = (mode === 'simple') ? '1' : '0.35';
+                thresholdCtrl.style.pointerEvents = (mode === 'simple') ? 'auto' : 'none';
             }
         }
 
-        // 嚴格 5 條等間距驗證
-        const validated = findStaves(merged, maxLineThick);
-        const segments  = validated.length >= 5 ? validated : merged;
+        // Inlined functions removed, now using ImageProcessor module.
 
-        return { barlineX: barlineXs[0], barlineXs, segments };
-    }
+        // ── Download ──
+        document.getElementById('btn-download').addEventListener('click', async () => {
+            if (!processedCanvases.length) return;
+            setStatus('正在生成 PDF…');
+            document.getElementById('btn-download').disabled = true;
+            const { jsPDF } = window.jspdf;
+            const first = processedCanvases[0];
+            const pdf = new jsPDF({
+                orientation: first.width > first.height ? 'landscape' : 'portrait',
+                unit: 'px', format: [first.width, first.height], hotfixes: ['px_scaling']
+            });
+            for (let i = 0; i < processedCanvases.length; i++) {
+                setStatus(`生成 ${i + 1}/${processedCanvases.length}…`);
+                if (i > 0) { const c = processedCanvases[i]; pdf.addPage([c.width, c.height], c.width > c.height ? 'landscape' : 'portrait'); }
+                pdf.addImage(processedCanvases[i].toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, processedCanvases[i].width, processedCanvases[i].height);
+                await new Promise(r => setTimeout(r, 0));
+            }
+            pdf.save((originalFile?.name || 'score').replace(/\.pdf$/i, '') + '_cleaned.pdf');
+            setStatus('✓ 下載完成');
+            document.getElementById('btn-download').disabled = false;
+        });
 
-    /**
-     * detectSystems — 找出每個 system 的 y 範圍。
-     *
-     * 關鍵洞察：
-     *   - 五線譜線橫跨整頁 → 水平密度 80-100%
-     *   - 標題/文字/力度記號只佔局部 → 密度 < 30%
-     *   → 只用「高密度行 ≥ 40%」當 anchor，天然排除標題與文字
-     *
-     * 流程：
-     *   1. 找高密度行（五線譜線本身）→ 填補 ≤ 12px 的行距空隙
-     *   2. 找出高密度行的連續群組（每群 ≥ 5 行才算 system）
-     *   3. 往上下各擴展 20px，把音符/力度記號也框進去
-     *   4. 最終合併仍然相鄰（gap ≤ 10px）的群組
-     */
-    function detectSystems(gray, w, h, darkThreshold, opts = {}) {
-        const scanX1       = Math.floor(w * 0.05);
-        const scanX2       = Math.floor(w * 0.95);
-        const scanLen      = scanX2 - scanX1 + 1;
-        const highDens     = opts.highDens     !== undefined ? opts.highDens     : 0.40;
-        const bracketRange = opts.bracketRange !== undefined ? opts.bracketRange : 0.10;
-        const bracketDens  = opts.bracketDens  !== undefined ? opts.bracketDens  : 0.55;
-        const maxMerge     = opts.maxMerge     !== undefined ? opts.maxMerge     : 120;
+        // ── Buttons ──
+        document.getElementById('btn-process-page').addEventListener('click', async () => {
+            setStatus(`處理第 ${currentPage} 頁…`);
+            showProgress(true);
+            setProgress(50, `處理第 ${currentPage} / ${totalPages} 頁…`);
+            await processPage(currentPage);
+            setProgress(100, '完成');
+            setTimeout(() => showProgress(false), 400);
+            setStatus(`✓ 第 ${currentPage} 頁完成`);
+            showPage(currentPage);
+            // Enable download if all pages processed
+            if (processedCanvases.every(c => c !== null)) {
+                document.getElementById('btn-download').disabled = false;
+            }
+        });
+        document.getElementById('btn-process-all').addEventListener('click', processAll);
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            pdfDoc = null; originalFile = null; originalCanvases = []; processedCanvases = []; totalPages = 0; currentPage = 1;
+            dropOverlay.style.display = 'flex';
+            document.getElementById('topbar').style.display = 'none';
+            document.getElementById('col-orig').style.display = 'none';
+            document.getElementById('col-clean').style.display = 'none';
+            document.getElementById('divider').style.display = 'none';
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('btn-process-page').disabled = true;
+            document.getElementById('btn-process-all').disabled = true;
+            document.getElementById('btn-download').disabled = true;
+            fileInput.value = ''; setStatus('');
+            staffPreviewActive = false; detectedStaffSegs = []; excludedStaffIdxs.clear(); detectedBarlineX = null;
+            document.getElementById('canvas-staff-overlay').style.display = 'none';
+            document.getElementById('staff-preview-hint').style.display = 'none';
+            document.getElementById('btn-staff-preview').textContent = '🔍 預覽偵測線條';
+            document.getElementById('btn-staff-preview').disabled = true;
+        });
 
-        // Step 1: 標記高密度行（全寬掃描，≥ highDens）
-        const isHigh = new Uint8Array(h);
-        for (let y = 0; y < h; y++) {
-            let cnt = 0;
-            for (let x = scanX1; x <= scanX2; x++) { if (gray[y * w + x] < darkThreshold) cnt++; }
-            if (cnt / scanLen >= highDens) isHigh[y] = 1;
-        }
+        // ── Staff Line Preview ──
+        let staffPreviewActive = false;
+        let detectedStaffSegs = [];      // [{top, bottom, thickness, confirmed}]
+        let excludedStaffIdxs = new Set(); // indices to skip during enhance
+        let detectedBarlineX = null;    // x coordinate of right-side final barline (primary)
+        let detectedBarlineXs = [];      // all detected barline x positions (one per system)
+        let detectedSystems = [];      // [{top, bottom}] system y-ranges
 
-        // Step 2: 填補 ≤12px 空隙
-        for (let y = 1; y < h - 1; y++) {
-            if (!isHigh[y]) {
-                let gapEnd = y;
-                while (gapEnd < h && !isHigh[gapEnd]) gapEnd++;
-                if (gapEnd - y <= 12 && isHigh[y - 1] && gapEnd < h && isHigh[gapEnd]) {
-                    for (let fy = y; fy < gapEnd; fy++) isHigh[fy] = 1;
+        // ═══════════════════════════════════════════════════════════════════════════
+        // BarlineStaffDetector — reusable module (extract to separate file when needed)
+        //
+        // Key insight:  The final barline (終止線) is a solid vertical line that spans
+        //   the full height of each staff system.  At the barline column every pixel
+        //   from line-1 top to line-5 bottom is dark (the barline fills the inter-line
+        //   gaps too).  Just 3-4 pixels to the LEFT only the 5 actual staff lines are
+        //   dark; everything else (gaps, notes, text) is light.  This makes the strip
+        //   left of the barline the cleanest possible signal for staff-line detection.
+        //
+        // Usage:
+        //   const { barlineX, segments } = BarlineStaffDetector.detect(gray, w, h, opts);
+        //   segments: [{top, bottom, thickness, confirmed:true}, ...]
+        // ═══════════════════════════════════════════════════════════════════════════
+        // Modularized BarlineStaffDetector is now used.
+        // ═══════════════════════════════════════════════════════════════════════════
+
+        // Redundant helper functions removed.
+        function drawStaffOverlay() {
+            const origSrc = originalCanvases[currentPage - 1];
+            const displayCanvas = document.getElementById('canvas-orig');
+            const colOrig = document.getElementById('col-orig');
+            const overlay = document.getElementById('canvas-staff-overlay');
+            if (!origSrc || !staffPreviewActive) { overlay.style.display = 'none'; return; }
+
+            // Use the *rendered* (CSS) size of canvas-orig — it may be CSS-scaled down via max-width.
+            // getBoundingClientRect gives the actual on-screen pixel box.
+            const cRect = displayCanvas.getBoundingClientRect();
+            const colRect = colOrig.getBoundingClientRect();
+            const cW = Math.round(cRect.width);
+            const cH = Math.round(cRect.height);
+
+            // Size the overlay buffer to match the rendered canvas exactly
+            overlay.width = cW;
+            overlay.height = cH;
+            // Position overlay to sit exactly over canvas-orig (account for col-label above it)
+            overlay.style.width = cW + 'px';
+            overlay.style.height = cH + 'px';
+            overlay.style.left = Math.round(cRect.left - colRect.left) + 'px';
+            overlay.style.top = Math.round(cRect.top - colRect.top) + 'px';
+            overlay.style.display = 'block';
+
+            // scaleX/scaleY: from original image coords → overlay display coords
+            const scaleX = cW / origSrc.width;
+            const scaleY = cH / origSrc.height;
+            const ctx = overlay.getContext('2d', { willReadFrequently: true });
+            ctx.clearRect(0, 0, cW, cH);
+
+            // ── System 邊界（半透明色帶） ──
+            const sysColors = ['rgba(99,102,241,0.12)', 'rgba(16,185,129,0.10)'];
+            detectedSystems.forEach((sys, idx) => {
+                const sy1 = Math.round(sys.top * scaleY);
+                const sy2 = Math.round(sys.bottom * scaleY);
+                ctx.fillStyle = sysColors[idx % 2];
+                ctx.fillRect(0, sy1, cW, sy2 - sy1);
+                // 上下邊界線
+                ctx.strokeStyle = 'rgba(148,163,184,0.6)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 3]);
+                ctx.beginPath(); ctx.moveTo(0, sy1); ctx.lineTo(cW, sy1); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, sy2); ctx.lineTo(cW, sy2); ctx.stroke();
+                ctx.setLineDash([]);
+                // 標籤
+                ctx.fillStyle = 'rgba(148,163,184,0.9)';
+                ctx.font = 'bold 11px Inter, monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(`S${idx + 1}`, 6, sy1 + 13);
+            });
+
+            // ── 畫出每個 barlineX 的掃描 strip 與垂直線 ──
+            // 橙色半透明矩形 = 掃描 strip 範圍 [barlineX-stripW, barlineX-1]
+            // 青色虛線 = barlineX 位置
+            const STRIP_W = 20; // 對應 extractStaff 的 stripW
+            const bxList = (detectedBarlineXs && detectedBarlineXs.length)
+                ? detectedBarlineXs : (detectedBarlineX !== null ? [detectedBarlineX] : []);
+
+            bxList.forEach((rawBx, idx) => {
+                const bx = Math.round(rawBx * scaleX);
+                const stripX1 = Math.round(Math.max(0, rawBx - STRIP_W) * scaleX);
+                const stripW = bx - stripX1;
+
+                // Strip 掃描範圍（橙色半透明）
+                ctx.fillStyle = 'rgba(251,146,60,0.18)';
+                ctx.fillRect(stripX1, 0, stripW, cH);
+                // Strip 左右邊框線
+                ctx.strokeStyle = 'rgba(251,146,60,0.5)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(stripX1, 0); ctx.lineTo(stripX1, cH);
+                ctx.moveTo(bx, 0); ctx.lineTo(bx, cH);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // barlineX 本身（青色虛線）
+                ctx.strokeStyle = idx === 0 ? 'rgba(34,211,238,0.9)' : 'rgba(34,211,238,0.6)';
+                ctx.lineWidth = idx === 0 ? 2 : 1;
+                ctx.setLineDash([6, 3]);
+                ctx.beginPath();
+                ctx.moveTo(bx, 0); ctx.lineTo(bx, cH);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 標籤
+                ctx.fillStyle = 'rgba(34,211,238,0.95)';
+                ctx.font = 'bold 10px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(`終止線${bxList.length > 1 ? ' ' + (idx + 1) : ''}`, bx - 4, 14 + idx * 16);
+                ctx.textAlign = 'left';
+            });
+
+            // Draw horizontal staff segs — three states:
+            //   excluded             → red
+            //   confirmed by barline → bright green
+            //   not confirmed        → orange (suspicious, auto-excluded)
+            detectedStaffSegs.forEach((seg, idx) => {
+                const y1 = Math.round(seg.top * scaleY);
+                const y2 = Math.round((seg.bottom + 1) * scaleY);
+                const h = Math.max(y2 - y1, 2);
+                const excluded = excludedStaffIdxs.has(idx);
+                let color;
+                if (excluded) {
+                    color = 'rgba(239,68,68,0.55)';
+                } else if (seg.confirmed === false) {
+                    color = 'rgba(251,146,60,0.65)';
+                } else {
+                    color = 'rgba(34,197,94,0.45)';
                 }
-            }
-        }
+                ctx.fillStyle = color;
+                ctx.fillRect(0, y1, overlay.width, h);
+            });
 
-        // Step 3: 找連續群組（≥5px 才算）
-        const groups = [];
-        let inRun = false, runStart = 0;
-        for (let y = 0; y <= h; y++) {
-            const c = y < h && isHigh[y];
-            if (c && !inRun)  { inRun = true; runStart = y; }
-            else if (!c && inRun) { inRun = false; if (y - runStart >= 5) groups.push({ top: runStart, bottom: y - 1 }); }
-        }
-
-        if (groups.length <= 1) return groups.map(g => ({ ...g }));
-
-        // Step 4: Bracket 偵測
-        // 在兩個 group 的 raw gap 內，掃描左側是否有連續垂直暗線（bracket/barline 連結兩行）
-        // 關鍵：使用 raw group 座標而非 expanded，避免 scanH < 0 而跳過偵測
-        const bx1 = Math.floor(w * 0.01);
-        const bx2 = Math.floor(w * bracketRange);
-
-        function hasBracket(yTop, yBottom) {
-            const span = yBottom - yTop;
-            if (span <= 2) return false;
-            for (let x = bx1; x <= bx2; x++) {
-                let dark = 0;
-                for (let y = yTop; y <= yBottom; y++) {
-                    if (gray[y * w + x] < darkThreshold) dark++;
-                }
-                if (dark / (span + 1) >= bracketDens) return true;
-            }
-            return false;
-        }
-
-        // Step 5: 合併 — bracket 存在就合併，否則不合併
-        const systems = [{ ...groups[0] }];
-        for (let i = 1; i < groups.length; i++) {
-            const last = systems[systems.length - 1];
-            const gap = groups[i].top - last.bottom;
-            if (gap <= maxMerge && hasBracket(last.bottom, groups[i].top)) {
-                last.bottom = groups[i].bottom;
-            } else {
-                systems.push({ ...groups[i] });
-            }
-        }
-        return systems;
-    }
-
-    return { findAllBarlines, extractStaff, detect, detectSystems };
-})();
-// ═══════════════════════════════════════════════════════════════════════════
-
-// Detect right-side final barline using detected staff segs.
-// Strategy: for each staff line segment, find its rightmost dark pixel.
-// All lines in a system should end at the same x (the final barline).
-// Take the x value agreed upon by the most segments (mode within ±8px tolerance).
-function detectFinalBarline(gray, w, h, hSegs) {
-    if (!hSegs || !hSegs.length) return null;
-
-    // Strategy: scan columns right→left. The final barline is the FIRST column
-    // (from the right) where most segments have a dark pixel in their vertical range.
-    // To the right of the final barline is blank space (hitCount ≈ 0).
-    // Interior barlines are further LEFT, so we never reach them before the final barline.
-    const minHit = Math.max(2, Math.ceil(hSegs.length * 0.4));
-
-    for (let x = Math.floor(w * 0.98); x >= Math.floor(w * 0.20); x--) {
-        let hitCount = 0;
-        for (const seg of hSegs) {
-            for (let y = seg.top; y <= seg.bottom; y++) {
-                if (gray[y * w + x] < 100) { hitCount++; break; }
-            }
-        }
-        if (hitCount >= minHit) return x;
-    }
-    return null;
-}
-
-// Check whether a horizontal seg touches the barline column (confirms it's a real staff line)
-function segTouchesBarline(seg, gray, w, bx) {
-    if (bx === null) return null; // unknown
-    let dark = 0;
-    for (let y = seg.top; y <= seg.bottom; y++)
-        if (gray[y * w + bx] < 128) dark++;
-    return dark / (seg.bottom - seg.top + 1) >= 0.5;
-}
-
-function detectStaffLinesFromImage(imageData, densityThreshold) {
-    const d = imageData.data, w = imageData.width, h = imageData.height;
-    const margin = Math.floor(w * 0.05), scanL = margin, scanR = w - margin;
-    const rowDensity = new Float32Array(h);
-    for (let y = 0; y < h; y++) {
-        let dark = 0, tot = 0;
-        for (let x = scanL; x < scanR; x += 2) { if (d[(y * w + x) * 4] < 128) dark++; tot++; }
-        rowDensity[y] = dark / tot;
-    }
-    const cands = []; for (let y = 0; y < h; y++) if (rowDensity[y] >= densityThreshold) cands.push(y);
-    const segs = []; let i = 0;
-    while (i < cands.length) {
-        let s = cands[i], e = s;
-        while (i < cands.length && cands[i] <= e + 2) { e = cands[i]; i++; }
-        const thickness = e - s + 1;
-        if (thickness <= 12) segs.push({ top: s, bottom: e, thickness });
-    }
-    return segs;
-}
-
-function drawStaffOverlay() {
-    const origSrc = originalCanvases[currentPage - 1];
-    const displayCanvas = document.getElementById('canvas-orig');
-    const colOrig = document.getElementById('col-orig');
-    const overlay = document.getElementById('canvas-staff-overlay');
-    if (!origSrc || !staffPreviewActive) { overlay.style.display = 'none'; return; }
-
-    // Use the *rendered* (CSS) size of canvas-orig — it may be CSS-scaled down via max-width.
-    // getBoundingClientRect gives the actual on-screen pixel box.
-    const cRect   = displayCanvas.getBoundingClientRect();
-    const colRect = colOrig.getBoundingClientRect();
-    const cW = Math.round(cRect.width);
-    const cH = Math.round(cRect.height);
-
-    // Size the overlay buffer to match the rendered canvas exactly
-    overlay.width  = cW;
-    overlay.height = cH;
-    // Position overlay to sit exactly over canvas-orig (account for col-label above it)
-    overlay.style.width  = cW + 'px';
-    overlay.style.height = cH + 'px';
-    overlay.style.left   = Math.round(cRect.left - colRect.left) + 'px';
-    overlay.style.top    = Math.round(cRect.top  - colRect.top)  + 'px';
-    overlay.style.display = 'block';
-
-    // scaleX/scaleY: from original image coords → overlay display coords
-    const scaleX = cW / origSrc.width;
-    const scaleY = cH / origSrc.height;
-    const ctx = overlay.getContext('2d');
-    ctx.clearRect(0, 0, cW, cH);
-
-    // ── System 邊界（半透明色帶） ──
-    const sysColors = ['rgba(99,102,241,0.12)', 'rgba(16,185,129,0.10)'];
-    detectedSystems.forEach((sys, idx) => {
-        const sy1 = Math.round(sys.top    * scaleY);
-        const sy2 = Math.round(sys.bottom * scaleY);
-        ctx.fillStyle = sysColors[idx % 2];
-        ctx.fillRect(0, sy1, cW, sy2 - sy1);
-        // 上下邊界線
-        ctx.strokeStyle = 'rgba(148,163,184,0.6)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 3]);
-        ctx.beginPath(); ctx.moveTo(0, sy1); ctx.lineTo(cW, sy1); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, sy2); ctx.lineTo(cW, sy2); ctx.stroke();
-        ctx.setLineDash([]);
-        // 標籤
-        ctx.fillStyle = 'rgba(148,163,184,0.9)';
-        ctx.font = 'bold 11px Inter, monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(`S${idx + 1}`, 6, sy1 + 13);
-    });
-
-    // ── 畫出每個 barlineX 的掃描 strip 與垂直線 ──
-    // 橙色半透明矩形 = 掃描 strip 範圍 [barlineX-stripW, barlineX-1]
-    // 青色虛線 = barlineX 位置
-    const STRIP_W = 20; // 對應 extractStaff 的 stripW
-    const bxList = (detectedBarlineXs && detectedBarlineXs.length)
-        ? detectedBarlineXs : (detectedBarlineX !== null ? [detectedBarlineX] : []);
-
-    bxList.forEach((rawBx, idx) => {
-        const bx      = Math.round(rawBx * scaleX);
-        const stripX1 = Math.round(Math.max(0, rawBx - STRIP_W) * scaleX);
-        const stripW  = bx - stripX1;
-
-        // Strip 掃描範圍（橙色半透明）
-        ctx.fillStyle = 'rgba(251,146,60,0.18)';
-        ctx.fillRect(stripX1, 0, stripW, cH);
-        // Strip 左右邊框線
-        ctx.strokeStyle = 'rgba(251,146,60,0.5)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.moveTo(stripX1, 0); ctx.lineTo(stripX1, cH);
-        ctx.moveTo(bx,      0); ctx.lineTo(bx,      cH);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // barlineX 本身（青色虛線）
-        ctx.strokeStyle = idx === 0 ? 'rgba(34,211,238,0.9)' : 'rgba(34,211,238,0.6)';
-        ctx.lineWidth = idx === 0 ? 2 : 1;
-        ctx.setLineDash([6, 3]);
-        ctx.beginPath();
-        ctx.moveTo(bx, 0); ctx.lineTo(bx, cH);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // 標籤
-        ctx.fillStyle = 'rgba(34,211,238,0.95)';
-        ctx.font = 'bold 10px Inter, sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText(`終止線${bxList.length > 1 ? ' ' + (idx + 1) : ''}`, bx - 4, 14 + idx * 16);
-        ctx.textAlign = 'left';
-    });
-
-    // Draw horizontal staff segs — three states:
-    //   excluded             → red
-    //   confirmed by barline → bright green
-    //   not confirmed        → orange (suspicious, auto-excluded)
-    detectedStaffSegs.forEach((seg, idx) => {
-        const y1 = Math.round(seg.top      * scaleY);
-        const y2 = Math.round((seg.bottom + 1) * scaleY);
-        const h  = Math.max(y2 - y1, 2);
-        const excluded = excludedStaffIdxs.has(idx);
-        let color;
-        if (excluded) {
-            color = 'rgba(239,68,68,0.55)';
-        } else if (seg.confirmed === false) {
-            color = 'rgba(251,146,60,0.65)';
-        } else {
-            color = 'rgba(34,197,94,0.45)';
-        }
-        ctx.fillStyle = color;
-        ctx.fillRect(0, y1, overlay.width, h);
-    });
-
-    // ── System grouping brackets (right side) ──
-    // 使用 detectSystems 偵測出的核心邊界作為顯示基準
-    if (detectedSystems && detectedSystems.length > 0) {
-        // Cache mapping for interaction
-        overlay._systems = detectedSystems.map(sys => {
-            const group = detectedStaffSegs
+            // ── System grouping brackets (right side) ──
+            const activeItems = detectedStaffSegs
                 .map((seg, idx) => ({ seg, idx }))
-                .filter(({ idx }) => !excludedStaffIdxs.has(idx))
-                .filter(({ seg }) => {
-                    const midY = (seg.top + seg.bottom) / 2;
-                    return midY >= sys.top - 8 && midY <= sys.bottom + 8;
+                .filter(({ idx }) => !excludedStaffIdxs.has(idx));
+
+            if (activeItems.length >= 2) {
+                // Use the systems detected by the module for brackets too
+                const systems = [];
+                // Group segments that fall within each detected system
+                detectedSystems.forEach(sys => {
+                    const group = activeItems.filter(({ seg }) => {
+                        const midY = (seg.top + seg.bottom) / 2;
+                        return midY >= sys.top && midY <= sys.bottom;
+                    });
+                    if (group.length > 0) systems.push(group);
                 });
-            return { sys, group };
-        }).filter(item => item.group.length > 0);
 
-        overlay._scaleY = scaleY;
+                // Cache for drag interaction
+                overlay._systems = systems;
+                overlay._scaleY = scaleY;
 
-        // Draw bracket on the RIGHT edge
-        const bx = cW - 14;
-        overlay._systems.forEach((item, sIdx) => {
-            const top    = Math.round(item.sys.top    * scaleY);
-            const bottom = Math.round(item.sys.bottom * scaleY);
-            const n = item.group.length;
-            const bracketColor = (n % 5 === 0) ? 'rgba(34,211,238,0.9)' : 'rgba(251,146,60,0.95)';
+                // Draw bracket on the RIGHT edge
+                const bx = cW - 14;
+                systems.forEach(group => {
+                    const top = Math.round(group[0].seg.top * scaleY);
+                    const bottom = Math.round(group[group.length - 1].seg.bottom * scaleY);
+                    const n = group.length;
+                    const bracketColor = (n % 5 === 0) ? 'rgba(34,211,238,0.9)' : 'rgba(251,146,60,0.95)';
 
-            ctx.strokeStyle = bracketColor;
-            ctx.lineWidth = 2;
-            ctx.setLineDash([]);
-            ctx.beginPath();
-            ctx.moveTo(bx, top); ctx.lineTo(bx, bottom);
-            ctx.stroke();
+                    ctx.strokeStyle = bracketColor;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([]);
+                    ctx.beginPath();
+                    ctx.moveTo(bx, top); ctx.lineTo(bx, bottom);
+                    ctx.stroke();
 
-            // Handles
-            ctx.fillStyle = bracketColor;
-            ctx.beginPath(); ctx.arc(bx, top,    5, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(bx, bottom, 5, 0, Math.PI * 2); ctx.fill();
+                    // Top handle dot
+                    ctx.fillStyle = bracketColor;
+                    ctx.beginPath(); ctx.arc(bx, top, 5, 0, Math.PI * 2); ctx.fill();
+                    // Bottom handle dot
+                    ctx.beginPath(); ctx.arc(bx, bottom, 5, 0, Math.PI * 2); ctx.fill();
 
-            // Label
-            ctx.fillStyle = bracketColor;
-            ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'right';
-            ctx.fillText(`${n}L`, bx - 3, Math.round((top + bottom) / 2) + 3);
-        });
-        ctx.textAlign = 'left';
-        ctx.setLineDash([]);
-    } else {
-        overlay._systems = null;
-    }
-}
-
-document.getElementById('btn-staff-preview').addEventListener('click', () => {
-    const origSrc = originalCanvases[currentPage - 1];
-    if (!origSrc) return;
-
-    if (staffPreviewActive) {
-        // Toggle off
-        staffPreviewActive = false;
-        document.getElementById('canvas-staff-overlay').style.display = 'none';
-        document.getElementById('canvas-staff-overlay').style.pointerEvents = 'none';
-        document.getElementById('staff-preview-hint').style.display = 'none';
-        document.getElementById('staff-thickness-detected').textContent = '';
-        document.getElementById('btn-staff-preview').textContent = '🔍 預覽偵測線條';
-        return;
-    }
-
-    excludedStaffIdxs.clear();
-
-    // ── Primary: BarlineStaffDetector (barline-anchored, no full-page scan) ──
-    const gd        = getPageGray();
-    const threshold = computePageOtsu() ?? 128;
-    const p         = getParams();
-    // 最小 16px：讓音符頭（6-10px）壓在五線譜線（2-4px）時合併的 run 也能通過。
-    // findStaves 的嚴格 5 條等間距規則會過濾掉由此多出來的假線。
-    const maxThick  = Math.max(parseInt(document.getElementById('ctrl-staff-thickness').value) || 0, 8);
-
-    let usedNewDetector = false;
-    if (gd) {
-        const result = BarlineStaffDetector.detect(gd.gray, gd.width, gd.height, {
-            darkThreshold: threshold,
-            maxLineThick:  maxThick,
-            stripW:        4,
-        });
-        // 傳入進階參數 p (依據 UI 標籤對應)
-        detectedSystems = BarlineStaffDetector.detectSystems(gd.gray, gd.width, gd.height, threshold, {
-            highDens:     p.sysHighDens,
-            bracketRange: p.sysBracketRange,
-            maxMerge:     p.sysMaxMerge,
-        });
-
-        if (result.barlineX !== null && result.segments.length >= 3) {
-            detectedBarlineX  = result.barlineX;
-            detectedBarlineXs = result.barlineXs ?? [result.barlineX];
-            detectedStaffSegs = result.segments; // all confirmed:true
-            usedNewDetector   = true;
+                    // Line count label (to the left of bracket)
+                    ctx.fillStyle = bracketColor;
+                    ctx.font = 'bold 9px monospace';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(`${n}L`, bx - 3, Math.round((top + bottom) / 2) + 3);
+                });
+                ctx.textAlign = 'left';
+                ctx.setLineDash([]);
+            } else {
+                overlay._systems = null;
+            }
         }
-    }
 
-    // ── Fallback: original full-page density scan ──
-    if (!usedNewDetector) {
-        const density = parseInt(document.getElementById('ctrl-staff-density').value) / 100 ||
-                        parseInt(document.getElementById('ctrl-staff-density').getAttribute('value')) / 100 || 0.20;
-        const tmp  = document.createElement('canvas');
-        tmp.width  = origSrc.width; tmp.height = origSrc.height;
-        const tCtx = tmp.getContext('2d');
-        tCtx.drawImage(origSrc, 0, 0);
-        const imgData = tCtx.getImageData(0, 0, tmp.width, tmp.height);
-        const d = imgData.data;
-        for (let i = 0; i < d.length; i += 4) {
-            const g = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-            d[i] = d[i+1] = d[i+2] = g;
-        }
-        detectedStaffSegs = detectStaffLinesFromImage(imgData,
-            parseInt(document.getElementById('ctrl-staff-density').value) / 100 || 0.20);
-        detectedBarlineX = gd
-            ? detectFinalBarline(gd.gray, gd.width, gd.height, detectedStaffSegs)
-            : null;
-        detectedStaffSegs.forEach(seg => {
-            seg.confirmed = gd ? segTouchesBarline(seg, gd.gray, gd.width, detectedBarlineX) : null;
-        });
-        // Auto-exclude logic (放寬條件)
-        // 舊邏輯：沒碰到終止線 (confirmed === false) 就直接排除。這對長休止符或掃描歪斜的譜太嚴格。
-        // 新邏輯：
-        // 1. 如果有偵測到 System 區域 (detectedSystems)，且線條落在某個 System 範圍內 -> 保留 (不排除)。
-        // 2. 只有當線條既沒碰到終止線，又不在任何已知的 System 範圍內時，才排除。
-        
-        detectedStaffSegs.forEach((seg, idx) => {
-            let shouldExclude = false;
-            
-            if (seg.confirmed === false) {
-                // 檢查是否在某個 System 範圍內
-                let inSystem = false;
-                if (detectedSystems.length > 0) {
-                    // 將 seg 的 y 座標映射回原始圖片座標 (這裡 detectSystems 用的就是原始座標)
+        async function runStaffDetection() {
+            const origSrc = originalCanvases[currentPage - 1];
+            if (!origSrc) return;
+
+            excludedStaffIdxs.clear();
+
+            // ── Primary: BarlineStaffDetector (barline-anchored, no full-page scan) ──
+            const gd = getPageGray();
+            const threshold = computePageOtsu() ?? 128;
+            const p = getParams();
+            // 最小 16px：讓音符頭（6-10px）壓在五線譜線（2-4px）時合併的 run 也能通過。
+            // findStaves 的嚴格 5 條等間距規則會過濾掉由此多出來的假線。
+            const maxThick = Math.max(parseInt(document.getElementById('ctrl-staff-thickness').value) || 0, 8);
+
+            let usedNewDetector = false;
+            if (gd) {
+                const result = BarlineStaffDetector.detect(gd.gray, gd.width, gd.height, {
+                    darkThreshold: threshold,
+                    maxLineThick: maxThick,
+                    stripW: 4,
+                });
+                // 無論五線譜線偵測是否成功，先偵測 system 邊界（非常可靠）
+                // 傳入進階參數 p
+                detectedSystems = BarlineStaffDetector.detectSystems(gd.gray, gd.width, gd.height, threshold, {
+                    highDens: p.sysGap,
+                    mergeRatio: p.sysRange,
+                    maxMerge: p.sysConnDens,
+                });
+
+                if (result.barlineX !== null && result.segments.length >= 3) {
+                    detectedBarlineX = result.barlineX;
+                    detectedBarlineXs = result.barlineXs ?? [result.barlineX];
+                    detectedStaffSegs = result.segments; // all confirmed:true
+                    usedNewDetector = true;
+                }
+            }
+
+            // ── Fallback: original full-page density scan ──
+            if (!usedNewDetector) {
+                const density = parseInt(document.getElementById('ctrl-staff-density').value) / 100 ||
+                    parseInt(document.getElementById('ctrl-staff-density').getAttribute('value')) / 100 || 0.20;
+                const tmp = document.createElement('canvas');
+                tmp.width = origSrc.width; tmp.height = origSrc.height;
+                const tCtx = tmp.getContext('2d', { willReadFrequently: true });
+                tCtx.drawImage(origSrc, 0, 0);
+                const imgData = tCtx.getImageData(0, 0, tmp.width, tmp.height);
+
+                detectedStaffSegs = ImageProcessor.detectStaffLinesFromImage(imgData, density);
+                // We could still use a simplified barline check if needed, but the modular result is preferred.
+                // For fallback, we'll use a basic column scan if result.barlineX was null.
+                detectedBarlineX = gd ? BarlineStaffDetector.findAllBarlines(gd.gray, gd.width, gd.height, threshold)[0] : null;
+
+                detectedStaffSegs.forEach((seg, idx) => {
+                    // Simple confirm: does it exist in the density scan? (already true)
+                    // We'll mark as confirmed if it's within a detected system.
+                    let inSystem = false;
                     const midY = (seg.top + seg.bottom) / 2;
                     for (const sys of detectedSystems) {
-                        // 稍微放寬 System 邊界判定
                         if (midY >= sys.top - 5 && midY <= sys.bottom + 5) {
                             inSystem = true;
                             break;
                         }
                     }
-                }
-                
-                // 如果不在任何 System 內，才排除
-                if (!inSystem) {
-                    shouldExclude = true;
-                }
+                    if (!inSystem) excludedStaffIdxs.add(idx);
+                });
             }
-            
-            if (shouldExclude) excludedStaffIdxs.add(idx);
-        });
-    }
 
-    // Show thickness stats and update hint
-    if (detectedStaffSegs.length) {
-        const thicknesses = detectedStaffSegs.map(s => s.thickness);
-        const avg  = (thicknesses.reduce((a,b) => a+b, 0) / thicknesses.length).toFixed(1);
-        const minT = Math.min(...thicknesses);
-        const maxT = Math.max(...thicknesses);
-        document.getElementById('staff-thickness-detected').textContent =
-            `偵測結果：平均 ${avg} px，最細 ${minT} px，最粗 ${maxT} px`;
-        // Auto-suggest thickness slider if currently at 0 (auto)
-        const thickSlider = document.getElementById('ctrl-staff-thickness');
-        if (parseInt(thickSlider.value) === 0) {
-            // Leave at auto — just inform user
-        }
-    } else {
-        document.getElementById('staff-thickness-detected').textContent = '';
-    }
-
-    staffPreviewActive = true;
-    document.getElementById('canvas-staff-overlay').style.pointerEvents = 'auto';
-    document.getElementById('staff-preview-hint').style.display = 'block';
-    document.getElementById('btn-staff-preview').textContent = '✕ 關閉預覽';
-    const n = detectedStaffSegs.length;
-    const method = usedNewDetector ? '終止線錨定法' : '全頁密度掃描（備援）';
-    setStatus(n ? `${method}：偵測到 ${n} 條線。右側拖曳系統括弧，點擊線條切換排除。` : '未偵測到五線譜，請降低靈敏度閾值。');
-    drawStaffOverlay();
-});
-
-// ── Staff overlay interactions ──
-// Three drag modes:
-//   'barline'  — horizontal drag of the cyan終止線
-//   'bracket'  — vertical drag of a system bracket top/bottom handle
-//   null       — no drag (click to toggle seg exclusion)
-let _dragMode          = null;
-let _dragMoved         = false;
-let _dragStartClientX  = 0;
-let _dragStartClientY  = 0;
-let _dragStartBarlineX = 0;
-let _bracketDragInfo   = null; // { sysIdx, isTop }
-
-(function () {
-    const overlay = document.getElementById('canvas-staff-overlay');
-
-    // ── Helpers ──
-    function overlayCoords(e) {
-        const rect = overlay.getBoundingClientRect();
-        return {
-            x: (e.clientX - rect.left),
-            y: (e.clientY - rect.top),
-            rect
-        };
-    }
-    function nearBarline(x) {
-        if (detectedBarlineX === null) return false;
-        const origSrc = originalCanvases[currentPage - 1];
-        if (!origSrc) return false;
-        const bxDisplay = detectedBarlineX * (overlay.width / origSrc.width);
-        return Math.abs(x - bxDisplay) <= 12;
-    }
-    // Find bracket handle near (x, y): returns { sysIdx, isTop } or null
-    function nearBracket(x, y) {
-        const systems = overlay._systems;
-        if (!systems) return null;
-        const scaleY = overlay._scaleY || 1;
-        const bx = overlay.width - 14; // bracket x
-        if (Math.abs(x - bx) > 18) return null; // must be near right edge
-        for (let i = 0; i < systems.length; i++) {
-            const g = systems[i];
-            const top    = Math.round(g[0].seg.top                  * scaleY);
-            const bottom = Math.round(g[g.length-1].seg.bottom      * scaleY);
-            if (Math.abs(y - top)    <= 10) return { sysIdx: i, isTop: true };
-            if (Math.abs(y - bottom) <= 10) return { sysIdx: i, isTop: false };
-        }
-        return null;
-    }
-
-    // ── Cursor on hover ──
-    overlay.addEventListener('mousemove', e => {
-        if (!staffPreviewActive || _dragMode) return;
-        const { x, y } = overlayCoords(e);
-        if (nearBarline(x))       { overlay.style.cursor = 'ew-resize'; return; }
-        if (nearBracket(x, y))    { overlay.style.cursor = 'ns-resize'; return; }
-        overlay.style.cursor = 'pointer';
-    });
-
-    // ── Mousedown: choose drag mode ──
-    overlay.addEventListener('mousedown', e => {
-        if (!staffPreviewActive) return;
-        const { x, y } = overlayCoords(e);
-
-        // Priority 1: bracket handle (right side)
-        const bh = nearBracket(x, y);
-        if (bh) {
-            _dragMode         = 'bracket';
-            _dragMoved        = false;
-            _dragStartClientY = e.clientY;
-            _bracketDragInfo  = bh;
-            e.preventDefault(); return;
-        }
-        // Priority 2: barline
-        if (nearBarline(x)) {
-            const origSrc = originalCanvases[currentPage - 1];
-            if (!origSrc) return;
-            _dragMode         = 'barline';
-            _dragMoved        = false;
-            _dragStartClientX = e.clientX;
-            _dragStartBarlineX = detectedBarlineX;
-            e.preventDefault();
-        }
-    });
-
-    // ── Window mousemove: handle active drag ──
-    window.addEventListener('mousemove', e => {
-        if (!_dragMode) return;
-        _dragMoved = true;
-
-        if (_dragMode === 'barline') {
-            const origSrc = originalCanvases[currentPage - 1];
-            if (!origSrc) return;
-            const rect = overlay.getBoundingClientRect();
-            const dxScreen = e.clientX - _dragStartClientX;
-            const scaleX   = rect.width / origSrc.width;
-            const newX     = Math.round(_dragStartBarlineX + dxScreen / scaleX);
-            detectedBarlineX = Math.max(0, Math.min(origSrc.width - 1, newX));
-            const gd = getPageGray();
-            if (gd) detectedStaffSegs.forEach(seg => {
-                seg.confirmed = segTouchesBarline(seg, gd.gray, gd.width, detectedBarlineX);
-            });
-            drawStaffOverlay();
-
-        } else if (_dragMode === 'bracket') {
-            const { sysIdx, isTop } = _bracketDragInfo;
-            const systems = overlay._systems;
-            if (!systems || !systems[sysIdx]) return;
-            const group   = systems[sysIdx];
-            const scaleY  = overlay._scaleY || 1;
-            const dy      = e.clientY - _dragStartClientY; // px in display coords
-            const dyImage = dy / scaleY;                   // convert to image coords
-
-            if (isTop) {
-                // Drag top handle: positive dy → exclude current top seg
-                //                  negative dy → include seg above (un-exclude it)
-                const topSeg = group[0];
-                if (dy > 15) {
-                    // Exclude top seg of this system
-                    excludedStaffIdxs.add(topSeg.idx);
-                    _dragStartClientY = e.clientY;
-                    drawStaffOverlay();
-                } else if (dy < -15) {
-                    // Find the seg just above this system and include it
-                    const firstIdx = topSeg.idx;
-                    for (let i = firstIdx - 1; i >= 0; i--) {
-                        if (excludedStaffIdxs.has(i)) {
-                            excludedStaffIdxs.delete(i);
-                            _dragStartClientY = e.clientY;
-                            drawStaffOverlay();
-                            break;
-                        }
-                    }
-                }
+            // Show thickness stats and update hint
+            if (detectedStaffSegs.length) {
+                const thicknesses = detectedStaffSegs.map(s => s.thickness);
+                const avg = (thicknesses.reduce((a, b) => a + b, 0) / thicknesses.length).toFixed(1);
+                const minT = Math.min(...thicknesses);
+                const maxT = Math.max(...thicknesses);
+                document.getElementById('staff-thickness-detected').textContent =
+                    `偵測結果：平均 ${avg} px，最細 ${minT} px，最粗 ${maxT} px`;
             } else {
-                // Drag bottom handle: negative dy → exclude current bottom seg
-                //                     positive dy → include seg below (un-exclude it)
-                const botSeg = group[group.length - 1];
-                if (dy < -15) {
-                    excludedStaffIdxs.add(botSeg.idx);
-                    _dragStartClientY = e.clientY;
-                    drawStaffOverlay();
-                } else if (dy > 15) {
-                    const lastIdx = botSeg.idx;
-                    for (let i = lastIdx + 1; i < detectedStaffSegs.length; i++) {
-                        if (excludedStaffIdxs.has(i)) {
-                            excludedStaffIdxs.delete(i);
-                            _dragStartClientY = e.clientY;
-                            drawStaffOverlay();
-                            break;
-                        }
-                    }
-                }
+                document.getElementById('staff-thickness-detected').textContent = '';
             }
-        }
-    });
 
-    window.addEventListener('mouseup', () => { _dragMode = null; });
-
-    // ── Click: toggle segment exclusion (only if no drag happened) ──
-    overlay.addEventListener('click', e => {
-        if (!staffPreviewActive || !detectedStaffSegs.length) return;
-        if (_dragMoved) { _dragMoved = false; return; }
-        const { x, y } = overlayCoords(e);
-        // Ignore clicks near bracket handles or barline
-        if (nearBracket(x, y) || nearBarline(x)) return;
-
-        const origSrc = originalCanvases[currentPage - 1];
-        if (!origSrc) return;
-        const scaleY = overlay.height / origSrc.height;
-
-        let closest = -1, bestDist = Infinity;
-        detectedStaffSegs.forEach((seg, idx) => {
-            const midY = (seg.top + seg.bottom) / 2 * scaleY;
-            const dist = Math.abs(y - midY);
-            if (dist < bestDist) { bestDist = dist; closest = idx; }
-        });
-        if (closest >= 0 && bestDist < 20) {
-            if (excludedStaffIdxs.has(closest)) excludedStaffIdxs.delete(closest);
-            else excludedStaffIdxs.add(closest);
+            staffPreviewActive = true;
+            document.getElementById('canvas-staff-overlay').style.pointerEvents = 'auto';
+            document.getElementById('staff-preview-hint').style.display = 'block';
+            document.getElementById('btn-staff-preview').textContent = '✕ 關閉預覽';
+            const n = detectedStaffSegs.length;
+            const method = usedNewDetector ? '終止線錨定法' : '全頁密度掃描（備援）';
+            setStatus(n ? `${method}：偵測到 ${n} 條線。右側拖曳系統括弧，點擊線條切換排除。` : '未偵測到五線譜，請降低靈敏度閾值。');
             drawStaffOverlay();
-            const excl  = excludedStaffIdxs.size;
-            const seg   = detectedStaffSegs[closest];
-            const state = excludedStaffIdxs.has(closest) ? '已排除' : '已加入';
-            const conf  = seg.confirmed === true ? '✓終止線確認' : seg.confirmed === false ? '⚠未碰終止線' : '';
-            setStatus(`第 ${closest+1} 條線（粗細 ${seg.thickness} px ${conf}）${state}｜共 ${detectedStaffSegs.length} 條，排除 ${excl} 條`);
         }
-    });
-}());
 
-// ── Loupe ──
-let loupeActive = false;
-let loupePinned = false;
-let loupeDisplaySize = 220; // px — physical size of each loupe canvas (resizable)
-let loupeCropPx      = 80;  // source pixels to crop (controls zoom level)
-let loupeRelX = 0.5, loupeRelY = 0.5; // current normalized position
+        document.getElementById('btn-staff-preview').addEventListener('click', () => {
+            if (staffPreviewActive) {
+                // Toggle off
+                staffPreviewActive = false;
+                document.getElementById('canvas-staff-overlay').style.display = 'none';
+                document.getElementById('canvas-staff-overlay').style.pointerEvents = 'none';
+                document.getElementById('staff-preview-hint').style.display = 'none';
+                document.getElementById('staff-thickness-detected').textContent = '';
+                document.getElementById('btn-staff-preview').textContent = '🔍 預覽偵測線條';
+                return;
+            }
+            runStaffDetection();
+        });
 
-function setLoupeSize(newSize) {
-    loupeDisplaySize = Math.max(80, Math.min(400, newSize));
-    document.getElementById('loupe-orig').width  = loupeDisplaySize;
-    document.getElementById('loupe-orig').height = loupeDisplaySize;
-    document.getElementById('loupe-clean').width  = loupeDisplaySize;
-    document.getElementById('loupe-clean').height = loupeDisplaySize;
-}
+        // ── Staff overlay interactions ──
+        // Three drag modes:
+        //   'barline'  — horizontal drag of the cyan終止線
+        //   'bracket'  — vertical drag of a system bracket top/bottom handle
+        //   null       — no drag (click to toggle seg exclusion)
+        let _dragMode = null;
+        let _dragMoved = false;
+        let _dragStartClientX = 0;
+        let _dragStartClientY = 0;
+        let _dragStartBarlineX = 0;
+        let _bracketDragInfo = null; // { sysIdx, isTop }
 
-document.getElementById('btn-loupe').addEventListener('click', () => {
-    loupeActive = !loupeActive;
-    loupePinned = false;
-    document.getElementById('btn-loupe').classList.toggle('active', loupeActive);
-    document.getElementById('loupe-controls').style.display = loupeActive ? 'flex' : 'none';
-    const loupe = document.getElementById('loupe');
-    loupe.style.display = 'none';
-    loupe.style.borderColor = '';
-    // Toggle crosshair cursor on canvases when loupe is on
-    ['canvas-orig', 'canvas-clean'].forEach(id => {
-        document.getElementById(id).classList.toggle('loupe-active-cursor', loupeActive);
-    });
-});
+        (function () {
+            const overlay = document.getElementById('canvas-staff-overlay');
 
-// Loupe panel size / zoom buttons
-document.getElementById('loupe-panel-minus').addEventListener('click', () => { setLoupeSize(loupeDisplaySize - 20); refreshLoupePinned(); });
-document.getElementById('loupe-panel-plus') .addEventListener('click', () => { setLoupeSize(loupeDisplaySize + 20); refreshLoupePinned(); });
-document.getElementById('loupe-zoom-minus') .addEventListener('click', () => { loupeCropPx = Math.max(20,  Math.min(300, loupeCropPx + 10)); refreshLoupePinned(); });
-document.getElementById('loupe-zoom-plus')  .addEventListener('click', () => { loupeCropPx = Math.max(20,  Math.min(300, loupeCropPx - 10)); refreshLoupePinned(); });
-
-function refreshLoupePinned() {
-    if (!loupePinned) return;
-    const origSrc = originalCanvases[currentPage - 1];
-    drawLoupeCanvas(document.getElementById('loupe-orig'), origSrc, loupeRelX, loupeRelY);
-    processLoupePatch();
-}
-
-function drawLoupeCanvas(canvas, src, relX, relY) {
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#0a1628';
-    ctx.fillRect(0, 0, loupeDisplaySize, loupeDisplaySize);
-    if (!src) {
-        ctx.fillStyle = '#334155';
-        ctx.font = '11px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('尚未處理', loupeDisplaySize / 2, loupeDisplaySize / 2);
-        return;
-    }
-    const halfCrop = loupeCropPx / 2;
-    const sx = Math.round(relX * src.width  - halfCrop);
-    const sy = Math.round(relY * src.height - halfCrop);
-    // Clamp to source bounds
-    const csx = Math.max(0, Math.min(src.width  - loupeCropPx, sx));
-    const csy = Math.max(0, Math.min(src.height - loupeCropPx, sy));
-    ctx.drawImage(src, csx, csy, loupeCropPx, loupeCropPx, 0, 0, loupeDisplaySize, loupeDisplaySize);
-    // Crosshair at center
-    ctx.strokeStyle = 'rgba(99,102,241,0.7)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(loupeDisplaySize / 2, 0); ctx.lineTo(loupeDisplaySize / 2, loupeDisplaySize);
-    ctx.moveTo(0, loupeDisplaySize / 2); ctx.lineTo(loupeDisplaySize, loupeDisplaySize / 2);
-    ctx.stroke();
-}
-
-function positionLoupe(e) {
-    const loupe  = document.getElementById('loupe');
-    const lw     = loupe.offsetWidth  || (loupeDisplaySize * 2 + 36);
-    const lh     = loupe.offsetHeight || (loupeDisplaySize + 60);
-    const margin = 16;
-    let lx = e.clientX + 24;
-    let ly = e.clientY - lh / 2;
-    if (lx + lw > window.innerWidth  - margin) lx = e.clientX - lw - 24;
-    if (ly < margin) ly = margin;
-    if (ly + lh > window.innerHeight - margin) ly = window.innerHeight - lh - margin;
-    loupe.style.left = lx + 'px';
-    loupe.style.top  = ly + 'px';
-}
-
-function handleLoupeMove(e, sourceCanvas) {
-    if (!loupeActive || loupePinned) return;
-    const rect = sourceCanvas.getBoundingClientRect();
-    const relX = (e.clientX - rect.left) / rect.width;
-    const relY = (e.clientY - rect.top)  / rect.height;
-    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return;
-
-    loupeRelX = relX; loupeRelY = relY;
-
-    const origSrc = originalCanvases[currentPage - 1];
-    drawLoupeCanvas(document.getElementById('loupe-orig'), origSrc, relX, relY);
-    processLoupePatch();
-
-    const zoomFactor = origSrc ? (loupeDisplaySize / loupeCropPx * (origSrc.width / rect.width)).toFixed(1) : '?';
-    updateLoupeLabel(zoomFactor);
-
-    const loupe = document.getElementById('loupe');
-    loupe.style.display = 'flex';
-    positionLoupe(e);
-}
-
-function processLoupePatch() {
-    const origSrc = originalCanvases[currentPage - 1];
-    const lClean  = document.getElementById('loupe-clean');
-    const lCtx    = lClean.getContext('2d');
-
-    if (!origSrc) {
-        lCtx.fillStyle = '#0a1628'; lCtx.fillRect(0, 0, loupeDisplaySize, loupeDisplaySize);
-        lCtx.fillStyle = '#334155'; lCtx.font = '11px Inter,sans-serif'; lCtx.textAlign = 'center';
-        lCtx.fillText('尚未載入', loupeDisplaySize / 2, loupeDisplaySize / 2);
-        return;
-    }
-
-    const halfCrop = loupeCropPx / 2;
-    const sx = Math.max(0, Math.min(origSrc.width  - loupeCropPx, Math.round(loupeRelX * origSrc.width  - halfCrop)));
-    const sy = Math.max(0, Math.min(origSrc.height - loupeCropPx, Math.round(loupeRelY * origSrc.height - halfCrop)));
-
-    // Extract patch
-    const patch = document.createElement('canvas');
-    patch.width = loupeCropPx; patch.height = loupeCropPx;
-    const pCtx = patch.getContext('2d');
-    pCtx.drawImage(origSrc, sx, sy, loupeCropPx, loupeCropPx, 0, 0, loupeCropPx, loupeCropPx);
-
-    const p = getParams();
-    const otsuT = (p.mode === 'otsu') ? computePageOtsu() : null;
-
-    // Staff segs for this patch: use preview segs (user-curated) if available,
-    // otherwise auto-detect from full-page gray cache (accurate + fast)
-    let patchSegs = null;
-    if (p.staffEnhance) {
-        const fullSegs = (staffPreviewActive && detectedStaffSegs.length)
-            ? detectedStaffSegs.filter((_, idx) => !excludedStaffIdxs.has(idx))
-            : getLiveStaffSegs(p.staffDensity);
-        patchSegs = fullSegs
-            .filter(seg => seg.bottom >= sy && seg.top <= sy + loupeCropPx)
-            .map(seg => ({ top: seg.top - sy, bottom: seg.bottom - sy, thickness: seg.thickness }));
-    }
-    runPipeline(pCtx, loupeCropPx, loupeCropPx, p, otsuT, patchSegs, null);
-
-    // Draw patch → loupe canvas at display size
-    lCtx.drawImage(patch, 0, 0, loupeCropPx, loupeCropPx, 0, 0, loupeDisplaySize, loupeDisplaySize);
-    // Crosshair
-    lCtx.strokeStyle = 'rgba(99,102,241,0.7)'; lCtx.lineWidth = 1;
-    lCtx.beginPath();
-    lCtx.moveTo(loupeDisplaySize/2, 0); lCtx.lineTo(loupeDisplaySize/2, loupeDisplaySize);
-    lCtx.moveTo(0, loupeDisplaySize/2); lCtx.lineTo(loupeDisplaySize, loupeDisplaySize/2);
-    lCtx.stroke();
-}
-
-function updateLoupeLabel(zoomFactor) {
-    document.getElementById('loupe-zoom-label').textContent =
-        (loupePinned ? '📌 已固定  ' : '') + `×${zoomFactor} 放大`;
-}
-
-['canvas-orig', 'canvas-clean'].forEach(id => {
-    const c = document.getElementById(id);
-    c.addEventListener('mousemove', e => handleLoupeMove(e, c));
-    c.addEventListener('mouseleave', () => {
-        if (loupeActive && !loupePinned) document.getElementById('loupe').style.display = 'none';
-    });
-});
-
-// Scroll wheel: resize loupe panel; Shift+scroll: adjust zoom level
-document.getElementById('canvas-area').addEventListener('wheel', e => {
-    if (!loupeActive) return;
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 1 : -1;
-    if (e.shiftKey) {
-        loupeCropPx = Math.max(20, Math.min(300, loupeCropPx + delta * 10));
-    } else {
-        setLoupeSize(loupeDisplaySize + delta * -20); // scroll up = bigger, down = smaller
-    }
-    if (loupePinned) {
-        const origSrc = originalCanvases[currentPage - 1];
-        drawLoupeCanvas(document.getElementById('loupe-orig'), origSrc, loupeRelX, loupeRelY);
-        processLoupePatch();
-    }
-}, { passive: false });
-
-// ── Lightbox ──
-[document.getElementById('canvas-orig'), document.getElementById('canvas-clean')].forEach(c => {
-    c.addEventListener('click', e => {
-        if (loupeActive) {
-            // Toggle pin
-            loupePinned = !loupePinned;
-            const loupe = document.getElementById('loupe');
-            loupe.style.borderColor = loupePinned ? 'rgba(99,102,241,0.7)' : 'rgba(255,255,255,0.15)';
-            if (loupePinned) {
-                // Freeze position of loupe panel where it currently is
+            // ── Helpers ──
+            function overlayCoords(e) {
+                const rect = overlay.getBoundingClientRect();
+                return {
+                    x: (e.clientX - rect.left),
+                    y: (e.clientY - rect.top),
+                    rect
+                };
+            }
+            function nearBarline(x) {
+                if (detectedBarlineX === null) return false;
                 const origSrc = originalCanvases[currentPage - 1];
-                const zoomFactor = origSrc ? (loupeDisplaySize / loupeCropPx * (origSrc.width / c.getBoundingClientRect().width)).toFixed(1) : '?';
-                updateLoupeLabel(zoomFactor);
-            } else {
-                // Unpin: hide until mouse re-enters canvas
-                loupe.style.display = 'none';
+                if (!origSrc) return false;
+                const bxDisplay = detectedBarlineX * (overlay.width / origSrc.width);
+                return Math.abs(x - bxDisplay) <= 12;
             }
-            return;
+            // Find bracket handle near (x, y): returns { sysIdx, isTop } or null
+            function nearBracket(x, y) {
+                const systems = overlay._systems;
+                if (!systems) return null;
+                const scaleY = overlay._scaleY || 1;
+                const bx = overlay.width - 14; // bracket x
+                if (Math.abs(x - bx) > 18) return null; // must be near right edge
+                for (let i = 0; i < systems.length; i++) {
+                    const g = systems[i];
+                    const top = Math.round(g[0].seg.top * scaleY);
+                    const bottom = Math.round(g[g.length - 1].seg.bottom * scaleY);
+                    if (Math.abs(y - top) <= 10) return { sysIdx: i, isTop: true };
+                    if (Math.abs(y - bottom) <= 10) return { sysIdx: i, isTop: false };
+                }
+                return null;
+            }
+
+            // ── Cursor on hover ──
+            overlay.addEventListener('mousemove', e => {
+                if (!staffPreviewActive || _dragMode) return;
+                const { x, y } = overlayCoords(e);
+                if (nearBarline(x)) { overlay.style.cursor = 'ew-resize'; return; }
+                if (nearBracket(x, y)) { overlay.style.cursor = 'ns-resize'; return; }
+                overlay.style.cursor = 'pointer';
+            });
+
+            // ── Mousedown: choose drag mode ──
+            overlay.addEventListener('mousedown', e => {
+                if (!staffPreviewActive) return;
+                const { x, y } = overlayCoords(e);
+
+                // Priority 1: bracket handle (right side)
+                const bh = nearBracket(x, y);
+                if (bh) {
+                    _dragMode = 'bracket';
+                    _dragMoved = false;
+                    _dragStartClientY = e.clientY;
+                    _bracketDragInfo = bh;
+                    e.preventDefault(); return;
+                }
+                // Priority 2: barline
+                if (nearBarline(x)) {
+                    const origSrc = originalCanvases[currentPage - 1];
+                    if (!origSrc) return;
+                    _dragMode = 'barline';
+                    _dragMoved = false;
+                    _dragStartClientX = e.clientX;
+                    _dragStartBarlineX = detectedBarlineX;
+                    e.preventDefault();
+                }
+            });
+
+            // ── Window mousemove: handle active drag ──
+            window.addEventListener('mousemove', e => {
+                if (!_dragMode) return;
+                _dragMoved = true;
+
+                if (_dragMode === 'barline') {
+                    const origSrc = originalCanvases[currentPage - 1];
+                    if (!origSrc) return;
+                    const rect = overlay.getBoundingClientRect();
+                    const dxScreen = e.clientX - _dragStartClientX;
+                    const scaleX = rect.width / origSrc.width;
+                    const newX = Math.round(_dragStartBarlineX + dxScreen / scaleX);
+                    detectedBarlineX = Math.max(0, Math.min(origSrc.width - 1, newX));
+                    const gd = getPageGray();
+                    if (gd) detectedStaffSegs.forEach(seg => {
+                        seg.confirmed = segTouchesBarline(seg, gd.gray, gd.width, detectedBarlineX);
+                    });
+                    drawStaffOverlay();
+
+                } else if (_dragMode === 'bracket') {
+                    const { sysIdx, isTop } = _bracketDragInfo;
+                    const systems = overlay._systems;
+                    if (!systems || !systems[sysIdx]) return;
+                    const group = systems[sysIdx];
+                    const scaleY = overlay._scaleY || 1;
+                    const dy = e.clientY - _dragStartClientY; // px in display coords
+                    const dyImage = dy / scaleY;                   // convert to image coords
+
+                    if (isTop) {
+                        // Drag top handle: positive dy → exclude current top seg
+                        //                  negative dy → include seg above (un-exclude it)
+                        const topSeg = group[0];
+                        if (dy > 15) {
+                            // Exclude top seg of this system
+                            excludedStaffIdxs.add(topSeg.idx);
+                            _dragStartClientY = e.clientY;
+                            drawStaffOverlay();
+                        } else if (dy < -15) {
+                            // Find the seg just above this system and include it
+                            const firstIdx = topSeg.idx;
+                            for (let i = firstIdx - 1; i >= 0; i--) {
+                                if (excludedStaffIdxs.has(i)) {
+                                    excludedStaffIdxs.delete(i);
+                                    _dragStartClientY = e.clientY;
+                                    drawStaffOverlay();
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        // Drag bottom handle: negative dy → exclude current bottom seg
+                        //                     positive dy → include seg below (un-exclude it)
+                        const botSeg = group[group.length - 1];
+                        if (dy < -15) {
+                            excludedStaffIdxs.add(botSeg.idx);
+                            _dragStartClientY = e.clientY;
+                            drawStaffOverlay();
+                        } else if (dy > 15) {
+                            const lastIdx = botSeg.idx;
+                            for (let i = lastIdx + 1; i < detectedStaffSegs.length; i++) {
+                                if (excludedStaffIdxs.has(i)) {
+                                    excludedStaffIdxs.delete(i);
+                                    _dragStartClientY = e.clientY;
+                                    drawStaffOverlay();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            window.addEventListener('mouseup', () => { _dragMode = null; });
+
+            // ── Click: toggle segment exclusion (only if no drag happened) ──
+            overlay.addEventListener('click', e => {
+                if (!staffPreviewActive || !detectedStaffSegs.length) return;
+                if (_dragMoved) { _dragMoved = false; return; }
+                const { x, y } = overlayCoords(e);
+                // Ignore clicks near bracket handles or barline
+                if (nearBracket(x, y) || nearBarline(x)) return;
+
+                const origSrc = originalCanvases[currentPage - 1];
+                if (!origSrc) return;
+                const scaleY = overlay.height / origSrc.height;
+
+                let closest = -1, bestDist = Infinity;
+                detectedStaffSegs.forEach((seg, idx) => {
+                    const midY = (seg.top + seg.bottom) / 2 * scaleY;
+                    const dist = Math.abs(y - midY);
+                    if (dist < bestDist) { bestDist = dist; closest = idx; }
+                });
+                if (closest >= 0 && bestDist < 20) {
+                    if (excludedStaffIdxs.has(closest)) excludedStaffIdxs.delete(closest);
+                    else excludedStaffIdxs.add(closest);
+                    drawStaffOverlay();
+                    const excl = excludedStaffIdxs.size;
+                    const seg = detectedStaffSegs[closest];
+                    const state = excludedStaffIdxs.has(closest) ? '已排除' : '已加入';
+                    const conf = seg.confirmed === true ? '✓終止線確認' : seg.confirmed === false ? '⚠未碰終止線' : '';
+                    setStatus(`第 ${closest + 1} 條線（粗細 ${seg.thickness} px ${conf}）${state}｜共 ${detectedStaffSegs.length} 條，排除 ${excl} 條`);
+                }
+            });
+        }());
+
+        // ── Loupe ──
+        let loupeActive = false;
+        let loupePinned = false;
+        let loupeDisplaySize = 220; // px — physical size of each loupe canvas (resizable)
+        let loupeCropPx = 80;  // source pixels to crop (controls zoom level)
+        let loupeRelX = 0.5, loupeRelY = 0.5; // current normalized position
+
+        function setLoupeSize(newSize) {
+            loupeDisplaySize = Math.max(80, Math.min(400, newSize));
+            document.getElementById('loupe-orig').width = loupeDisplaySize;
+            document.getElementById('loupe-orig').height = loupeDisplaySize;
+            document.getElementById('loupe-clean').width = loupeDisplaySize;
+            document.getElementById('loupe-clean').height = loupeDisplaySize;
         }
-        document.getElementById('lightbox-img').src = c.toDataURL('image/jpeg', 0.95);
-        document.getElementById('lightbox').classList.add('open');
-    });
-});
-document.getElementById('lightbox').addEventListener('click', closeLightbox);
-document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox(); });
-function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
 
-// ── Auto-restore last file on page load ──
-(async () => {
-    const saved = await _loadLastFile();
-    if (!saved) return;
-    setStatus(`正在還原上次檔案：${saved.name}…`);
-    const blob = new Blob([saved.buf], { type: 'application/pdf' });
-    const file = new File([blob], saved.name, { type: 'application/pdf' });
-    await loadPDF(file);
-})();
+        document.getElementById('btn-loupe').addEventListener('click', () => {
+            loupeActive = !loupeActive;
+            loupePinned = false;
+            document.getElementById('btn-loupe').classList.toggle('active', loupeActive);
+            document.getElementById('loupe-controls').style.display = loupeActive ? 'flex' : 'none';
+            const loupe = document.getElementById('loupe');
+            loupe.style.display = 'none';
+            loupe.style.borderColor = '';
+            // Toggle crosshair cursor on canvases when loupe is on
+            ['canvas-orig', 'canvas-clean'].forEach(id => {
+                document.getElementById(id).classList.toggle('loupe-active-cursor', loupeActive);
+            });
+        });
 
-// ── Helpers ──
-function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
-function showProgress(v) { document.getElementById('progress-wrap').style.display = v?'block':'none'; }
-function setProgress(pct, label) {
-    document.getElementById('progress-bar').style.width = pct+'%';
-    document.getElementById('progress-label').textContent = label;
-}
-</script>
+        // Loupe panel size / zoom buttons
+        document.getElementById('loupe-panel-minus').addEventListener('click', () => { setLoupeSize(loupeDisplaySize - 20); refreshLoupePinned(); });
+        document.getElementById('loupe-panel-plus').addEventListener('click', () => { setLoupeSize(loupeDisplaySize + 20); refreshLoupePinned(); });
+        document.getElementById('loupe-zoom-minus').addEventListener('click', () => { loupeCropPx = Math.max(20, Math.min(300, loupeCropPx + 10)); updateLoupeRendering(); });
+        document.getElementById('loupe-zoom-plus').addEventListener('click', () => { loupeCropPx = Math.max(20, Math.min(300, loupeCropPx - 10)); updateLoupeRendering(); });
+
+        function updateLoupeRendering() {
+            const origSrc = originalCanvases[currentPage - 1];
+            if (!origSrc) return;
+            drawLoupeCanvas(document.getElementById('loupe-orig'), origSrc, loupeRelX, loupeRelY);
+            processLoupePatch();
+            // Update the zoom factor label
+            const rect = document.getElementById('canvas-orig').getBoundingClientRect();
+            const zoomFactor = (loupeDisplaySize / loupeCropPx * (origSrc.width / rect.width)).toFixed(1);
+            updateLoupeLabel(zoomFactor);
+        }
+
+        function refreshLoupePinned() {
+            if (loupePinned) updateLoupeRendering();
+        }
+
+        function drawLoupeCanvas(canvas, src, relX, relY) {
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.fillStyle = '#0a1628';
+            ctx.fillRect(0, 0, loupeDisplaySize, loupeDisplaySize);
+            if (!src) {
+                ctx.fillStyle = '#334155';
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('尚未處理', loupeDisplaySize / 2, loupeDisplaySize / 2);
+                return;
+            }
+            const halfCrop = loupeCropPx / 2;
+            const sx = Math.round(relX * src.width - halfCrop);
+            const sy = Math.round(relY * src.height - halfCrop);
+            // Clamp to source bounds
+            const csx = Math.max(0, Math.min(src.width - loupeCropPx, sx));
+            const csy = Math.max(0, Math.min(src.height - loupeCropPx, sy));
+            ctx.drawImage(src, csx, csy, loupeCropPx, loupeCropPx, 0, 0, loupeDisplaySize, loupeDisplaySize);
+            // Crosshair at center
+            ctx.strokeStyle = 'rgba(99,102,241,0.7)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(loupeDisplaySize / 2, 0); ctx.lineTo(loupeDisplaySize / 2, loupeDisplaySize);
+            ctx.moveTo(0, loupeDisplaySize / 2); ctx.lineTo(loupeDisplaySize, loupeDisplaySize / 2);
+            ctx.stroke();
+        }
+
+        function positionLoupe(e) {
+            const loupe = document.getElementById('loupe');
+            const lw = loupe.offsetWidth || (loupeDisplaySize * 2 + 36);
+            const lh = loupe.offsetHeight || (loupeDisplaySize + 60);
+            const margin = 16;
+            let lx = e.clientX + 24;
+            let ly = e.clientY - lh / 2;
+            if (lx + lw > window.innerWidth - margin) lx = e.clientX - lw - 24;
+            if (ly < margin) ly = margin;
+            if (ly + lh > window.innerHeight - margin) ly = window.innerHeight - lh - margin;
+            loupe.style.left = lx + 'px';
+            loupe.style.top = ly + 'px';
+        }
+
+        function handleLoupeMove(e, sourceCanvas) {
+            if (!loupeActive || loupePinned) return;
+            const rect = sourceCanvas.getBoundingClientRect();
+            const relX = (e.clientX - rect.left) / rect.width;
+            const relY = (e.clientY - rect.top) / rect.height;
+            if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return;
+
+            loupeRelX = relX; loupeRelY = relY;
+
+            const origSrc = originalCanvases[currentPage - 1];
+            drawLoupeCanvas(document.getElementById('loupe-orig'), origSrc, relX, relY);
+            processLoupePatch();
+
+            const zoomFactor = origSrc ? (loupeDisplaySize / loupeCropPx * (origSrc.width / rect.width)).toFixed(1) : '?';
+            updateLoupeLabel(zoomFactor);
+
+            const loupe = document.getElementById('loupe');
+            loupe.style.display = 'flex';
+            positionLoupe(e);
+        }
+
+        function processLoupePatch() {
+            const origSrc = originalCanvases[currentPage - 1];
+            const lClean = document.getElementById('loupe-clean');
+            const lCtx = lClean.getContext('2d', { willReadFrequently: true });
+
+            if (!origSrc) {
+                lCtx.fillStyle = '#0a1628'; lCtx.fillRect(0, 0, loupeDisplaySize, loupeDisplaySize);
+                lCtx.fillStyle = '#334155'; lCtx.font = '11px Inter,sans-serif'; lCtx.textAlign = 'center';
+                lCtx.fillText('尚未載入', loupeDisplaySize / 2, loupeDisplaySize / 2);
+                return;
+            }
+
+            const halfCrop = loupeCropPx / 2;
+            const sx = Math.max(0, Math.min(origSrc.width - loupeCropPx, Math.round(loupeRelX * origSrc.width - halfCrop)));
+            const sy = Math.max(0, Math.min(origSrc.height - loupeCropPx, Math.round(loupeRelY * origSrc.height - halfCrop)));
+
+            // Extract patch
+            const patch = document.createElement('canvas');
+            patch.width = loupeCropPx; patch.height = loupeCropPx;
+            const pCtx = patch.getContext('2d', { willReadFrequently: true });
+            pCtx.drawImage(origSrc, sx, sy, loupeCropPx, loupeCropPx, 0, 0, loupeCropPx, loupeCropPx);
+
+            const p = getParams();
+            const otsuT = (p.mode === 'otsu') ? computePageOtsu() : null;
+
+            // Staff segs for this patch: use preview segs (user-curated) if available,
+            // otherwise auto-detect from full-page gray cache (accurate + fast)
+            let patchSegs = null;
+            if (p.staffEnhance) {
+                const fullSegs = (staffPreviewActive && detectedStaffSegs.length)
+                    ? detectedStaffSegs.filter((_, idx) => !excludedStaffIdxs.has(idx))
+                    : getLiveStaffSegs(p.staffDensity);
+                patchSegs = fullSegs
+                    .filter(seg => seg.bottom >= sy && seg.top <= sy + loupeCropPx)
+                    .map(seg => ({ top: seg.top - sy, bottom: seg.bottom - sy, thickness: seg.thickness }));
+            }
+            runPipeline(pCtx, loupeCropPx, loupeCropPx, p, otsuT, patchSegs, null);
+
+            // Draw patch → loupe canvas at display size
+            lCtx.drawImage(patch, 0, 0, loupeCropPx, loupeCropPx, 0, 0, loupeDisplaySize, loupeDisplaySize);
+            // Crosshair
+            lCtx.strokeStyle = 'rgba(99,102,241,0.7)'; lCtx.lineWidth = 1;
+            lCtx.beginPath();
+            lCtx.moveTo(loupeDisplaySize / 2, 0); lCtx.lineTo(loupeDisplaySize / 2, loupeDisplaySize);
+            lCtx.moveTo(0, loupeDisplaySize / 2); lCtx.lineTo(loupeDisplaySize, loupeDisplaySize / 2);
+            lCtx.stroke();
+        }
+
+        function updateLoupeLabel(zoomFactor) {
+            document.getElementById('loupe-zoom-label').textContent =
+                (loupePinned ? '📌 已固定  ' : '') + `×${zoomFactor} 放大`;
+        }
+
+        ['canvas-orig', 'canvas-clean'].forEach(id => {
+            const c = document.getElementById(id);
+            c.addEventListener('mousemove', e => handleLoupeMove(e, c));
+            c.addEventListener('mouseleave', () => {
+                if (loupeActive && !loupePinned) document.getElementById('loupe').style.display = 'none';
+            });
+        });
+
+        // Scroll wheel: resize loupe panel; Shift+scroll: adjust zoom level
+        document.getElementById('canvas-area').addEventListener('wheel', e => {
+            if (!loupeActive) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 1 : -1;
+            if (e.shiftKey) {
+                loupeCropPx = Math.max(20, Math.min(300, loupeCropPx + delta * 10));
+            } else {
+                setLoupeSize(loupeDisplaySize + delta * -20); // scroll up = bigger, down = smaller
+            }
+            if (loupePinned) {
+                const origSrc = originalCanvases[currentPage - 1];
+                drawLoupeCanvas(document.getElementById('loupe-orig'), origSrc, loupeRelX, loupeRelY);
+                processLoupePatch();
+            }
+        }, { passive: false });
+
+        // ── Lightbox ──
+        [document.getElementById('canvas-orig'), document.getElementById('canvas-clean')].forEach(c => {
+            c.addEventListener('click', e => {
+                if (loupeActive) {
+                    // Toggle pin
+                    loupePinned = !loupePinned;
+                    const loupe = document.getElementById('loupe');
+                    loupe.style.borderColor = loupePinned ? 'rgba(99,102,241,0.7)' : 'rgba(255,255,255,0.15)';
+                    if (loupePinned) {
+                        // Freeze position of loupe panel where it currently is
+                        const origSrc = originalCanvases[currentPage - 1];
+                        const zoomFactor = origSrc ? (loupeDisplaySize / loupeCropPx * (origSrc.width / c.getBoundingClientRect().width)).toFixed(1) : '?';
+                        updateLoupeLabel(zoomFactor);
+                    } else {
+                        // Unpin: hide until mouse re-enters canvas
+                        loupe.style.display = 'none';
+                    }
+                    return;
+                }
+                document.getElementById('lightbox-img').src = c.toDataURL('image/jpeg', 0.95);
+                document.getElementById('lightbox').classList.add('open');
+            });
+        });
+        document.getElementById('lightbox').addEventListener('click', closeLightbox);
+        document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+        function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+
+        // ── Auto-restore last file on page load ──
+        (async () => {
+            const saved = await _loadLastFile();
+            if (!saved) return;
+            setStatus(`正在還原上次檔案：${saved.name}…`);
+            const blob = new Blob([saved.buf], { type: 'application/pdf' });
+            const file = new File([blob], saved.name, { type: 'application/pdf' });
+            await loadPDF(file);
+        })();
+
+        // ── Helpers ──
+        function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
+        function showProgress(v) { document.getElementById('progress-wrap').style.display = v ? 'block' : 'none'; }
+        function setProgress(pct, label) {
+            document.getElementById('progress-bar').style.width = pct + '%';
+            document.getElementById('progress-label').textContent = label;
+        }
+    </script>
 </body>
+
 </html>
