@@ -242,6 +242,18 @@
             <label>偵測靈敏度 <span class="val" id="val-staff-density">20%</span></label>
             <input type="range" id="ctrl-staff-density" min="5" max="60" value="20" step="1">
         </div>
+        <div class="ctrl-group" style="min-width:200px;">
+            <label>音符頭清理</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);text-transform:none;letter-spacing:0;margin-top:4px;">
+                <input type="checkbox" id="ctrl-notehead-clean" style="accent-color:var(--primary);width:15px;height:15px;">
+                偵測並重繪音符頭
+            </label>
+        </div>
+        <div class="ctrl-group" id="notehead-size-group" style="display:none;">
+            <label>音符頭大小範圍 <span class="val" id="val-notehead-min">6</span>–<span class="val" id="val-notehead-max">28</span>px</label>
+            <input type="range" id="ctrl-notehead-min" min="3" max="20" value="6" step="1" style="margin-bottom:4px;">
+            <input type="range" id="ctrl-notehead-max" min="10" max="60" value="28" step="1">
+        </div>
         <button class="btn btn-primary" id="btn-process">⚡ 重新處理</button>
     </div>
 
@@ -344,6 +356,9 @@ async function processAll() {
     const denoiseRadius = parseInt(document.getElementById('ctrl-denoise').value);
     const staffEnhance = document.getElementById('ctrl-staff-enhance').checked;
     const staffDensity = parseInt(document.getElementById('ctrl-staff-density').value) / 100;
+    const noteheadClean = document.getElementById('ctrl-notehead-clean').checked;
+    const noteheadMin = parseInt(document.getElementById('ctrl-notehead-min').value);
+    const noteheadMax = parseInt(document.getElementById('ctrl-notehead-max').value);
 
     for (let i = 1; i <= totalPages; i++) {
         setProgress(((i - 1) / totalPages) * 100, `處理第 ${i} / ${totalPages} 頁…`);
@@ -367,6 +382,7 @@ async function processAll() {
         processPixels(imageData, mode, threshold, contrast, denoiseRadius);
         if (staffEnhance) enhanceStaffLines(imageData, staffDensity);
         cleanCtx.putImageData(imageData, 0, 0);
+        if (noteheadClean) cleanNoteheads(cleanCtx, cleanCanvas.width, cleanCanvas.height, noteheadMin, noteheadMax);
 
         processedCanvases.push(cleanCanvas);
 
@@ -623,12 +639,116 @@ function enhanceStaffLines(imageData, densityThreshold = 0.20) {
     });
 }
 
+// ── Notehead Cleaning ──
+function cleanNoteheads(ctx, w, h, minSize, maxSize) {
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const d = imageData.data;
+    const visited = new Uint8Array(w * h);
+
+    const blobs = [];
+
+    // BFS flood fill to find connected dark blobs
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const idx = y * w + x;
+            if (visited[idx] || d[idx * 4] > 64) continue; // skip white or visited
+
+            // BFS
+            const queue = [idx];
+            visited[idx] = 1;
+            let minX = x, maxX = x, minY = y, maxY = y;
+            let pixels = [];
+
+            let qi = 0;
+            while (qi < queue.length) {
+                const cur = queue[qi++];
+                const cx = cur % w, cy = Math.floor(cur / w);
+                pixels.push(cur);
+                if (cx < minX) minX = cx;
+                if (cx > maxX) maxX = cx;
+                if (cy < minY) minY = cy;
+                if (cy > maxY) maxY = cy;
+
+                const neighbors = [cur-1, cur+1, cur-w, cur+w];
+                for (const nb of neighbors) {
+                    if (nb < 0 || nb >= w * h) continue;
+                    const nx = nb % w, ny = Math.floor(nb / w);
+                    if (Math.abs(nx - cx) + Math.abs(ny - cy) > 1) continue; // no diagonal wrap
+                    if (!visited[nb] && d[nb * 4] <= 64) {
+                        visited[nb] = 1;
+                        queue.push(nb);
+                    }
+                }
+            }
+
+            const bw = maxX - minX + 1;
+            const bh = maxY - minY + 1;
+            blobs.push({ minX, maxX, minY, maxY, bw, bh, pixels });
+        }
+    }
+
+    // Filter blobs that look like noteheads
+    const noteheads = blobs.filter(b => {
+        if (b.bw < minSize || b.bh < minSize) return false;
+        if (b.bw > maxSize || b.bh > maxSize) return false;
+        // Aspect ratio: noteheads are roughly oval (width slightly > height)
+        const ratio = b.bw / b.bh;
+        if (ratio < 0.5 || ratio > 2.5) return false;
+        // Fill ratio: solid noteheads are >50% filled; hollow ~25-55%
+        const area = b.bw * b.bh;
+        const fillRatio = b.pixels.length / area;
+        if (fillRatio < 0.2) return false; // too sparse = noise
+        return true;
+    });
+
+    // Redraw each notehead cleanly
+    ctx.save();
+    noteheads.forEach(b => {
+        const cx = (b.minX + b.maxX) / 2;
+        const cy = (b.minY + b.maxY) / 2;
+        const rx = b.bw / 2;
+        const ry = b.bh / 2;
+
+        // Determine filled vs hollow by fill ratio
+        const fillRatio = b.pixels.length / (b.bw * b.bh);
+        const isHollow = fillRatio < 0.55;
+
+        // Erase original blob area (add small margin)
+        ctx.clearRect(b.minX - 1, b.minY - 1, b.bw + 2, b.bh + 2);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(b.minX - 1, b.minY - 1, b.bw + 2, b.bh + 2);
+
+        // Draw clean ellipse
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+
+        if (isHollow) {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = Math.max(1.5, Math.min(rx, ry) * 0.25);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        }
+    });
+    ctx.restore();
+}
+
 // ── Controls ──
 document.getElementById('ctrl-staff-enhance').addEventListener('change', function() {
     document.getElementById('staff-density-group').style.display = this.checked ? 'flex' : 'none';
 });
 document.getElementById('ctrl-staff-density').addEventListener('input', function() {
     document.getElementById('val-staff-density').textContent = this.value + '%';
+});
+document.getElementById('ctrl-notehead-clean').addEventListener('change', function() {
+    document.getElementById('notehead-size-group').style.display = this.checked ? 'flex' : 'none';
+});
+document.getElementById('ctrl-notehead-min').addEventListener('input', function() {
+    document.getElementById('val-notehead-min').textContent = this.value;
+});
+document.getElementById('ctrl-notehead-max').addEventListener('input', function() {
+    document.getElementById('val-notehead-max').textContent = this.value;
 });
 document.getElementById('btn-process').onclick = processAll;
 document.getElementById('btn-reset').onclick = () => {
