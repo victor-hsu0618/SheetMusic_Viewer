@@ -231,6 +231,17 @@
                 <option value="3">300 dpi（高品質）</option>
             </select>
         </div>
+        <div class="ctrl-group" style="min-width:200px;">
+            <label>五線譜線條加強</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);text-transform:none;letter-spacing:0;margin-top:4px;">
+                <input type="checkbox" id="ctrl-staff-enhance" style="accent-color:var(--primary);width:15px;height:15px;">
+                偵測並加黑線條
+            </label>
+        </div>
+        <div class="ctrl-group" id="staff-density-group" style="display:none;">
+            <label>偵測靈敏度 <span class="val" id="val-staff-density">20%</span></label>
+            <input type="range" id="ctrl-staff-density" min="5" max="60" value="20" step="1">
+        </div>
         <button class="btn btn-primary" id="btn-process">⚡ 重新處理</button>
     </div>
 
@@ -331,6 +342,8 @@ async function processAll() {
     const threshold = parseInt(document.getElementById('ctrl-threshold').value);
     const contrast = parseFloat(document.getElementById('ctrl-contrast').value);
     const denoiseRadius = parseInt(document.getElementById('ctrl-denoise').value);
+    const staffEnhance = document.getElementById('ctrl-staff-enhance').checked;
+    const staffDensity = parseInt(document.getElementById('ctrl-staff-density').value) / 100;
 
     for (let i = 1; i <= totalPages; i++) {
         setProgress(((i - 1) / totalPages) * 100, `處理第 ${i} / ${totalPages} 頁…`);
@@ -352,6 +365,7 @@ async function processAll() {
         cleanCtx.drawImage(origCanvas, 0, 0);
         const imageData = cleanCtx.getImageData(0, 0, cleanCanvas.width, cleanCanvas.height);
         processPixels(imageData, mode, threshold, contrast, denoiseRadius);
+        if (staffEnhance) enhanceStaffLines(imageData, staffDensity);
         cleanCtx.putImageData(imageData, 0, 0);
 
         processedCanvases.push(cleanCanvas);
@@ -561,7 +575,61 @@ document.getElementById('btn-download').onclick = async () => {
     document.getElementById('btn-download').disabled = false;
 };
 
+// ── Staff Line Enhancement ──
+function enhanceStaffLines(imageData, densityThreshold = 0.20) {
+    const d = imageData.data;
+    const w = imageData.width;
+    const h = imageData.height;
+    const margin = Math.floor(w * 0.05);
+    const scanLeft = margin, scanRight = w - margin;
+    const sampleStep = 2;
+
+    // 1. Row density scan
+    const rowDensity = new Float32Array(h);
+    for (let y = 0; y < h; y++) {
+        let dark = 0, total = 0;
+        for (let x = scanLeft; x < scanRight; x += sampleStep) {
+            if (d[(y * w + x) * 4] < 128) dark++;
+            total++;
+        }
+        rowDensity[y] = dark / total;
+    }
+
+    // 2. Candidate rows
+    const candidates = [];
+    for (let y = 0; y < h; y++) {
+        if (rowDensity[y] >= densityThreshold) candidates.push(y);
+    }
+
+    // 3. Cluster into segments (max thickness 12px to avoid notes/text)
+    const segments = [];
+    let i = 0;
+    while (i < candidates.length) {
+        let start = candidates[i], end = start;
+        while (i < candidates.length && candidates[i] <= end + 2) { end = candidates[i]; i++; }
+        const thick = end - start + 1;
+        if (thick <= 12) segments.push({ top: start, bottom: end });
+    }
+
+    // 4. Paint each detected staff line fully black across entire width
+    segments.forEach(seg => {
+        for (let y = seg.top; y <= seg.bottom; y++) {
+            for (let x = 0; x < w; x++) {
+                const idx = (y * w + x) * 4;
+                d[idx] = d[idx+1] = d[idx+2] = 0;
+                d[idx+3] = 255;
+            }
+        }
+    });
+}
+
 // ── Controls ──
+document.getElementById('ctrl-staff-enhance').addEventListener('change', function() {
+    document.getElementById('staff-density-group').style.display = this.checked ? 'flex' : 'none';
+});
+document.getElementById('ctrl-staff-density').addEventListener('input', function() {
+    document.getElementById('val-staff-density').textContent = this.value + '%';
+});
 document.getElementById('btn-process').onclick = processAll;
 document.getElementById('btn-reset').onclick = () => {
     pdfDoc = null; originalFile = null; processedCanvases = [];
