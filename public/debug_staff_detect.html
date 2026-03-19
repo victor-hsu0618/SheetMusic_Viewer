@@ -104,22 +104,22 @@
       <span class="param-val" id="v-dark">128</span>
     </div>
 
-    <label>行密度門檻（深色像素比率 &gt;）</label>
+    <label>高密度行門檻（≥ 此比率視為高密度）</label>
     <div class="param-row">
-      <input type="range" id="p-density" min="0.1" max="0.9" step="0.05" value="0.35" oninput="updateParam('density',this.value)">
-      <span class="param-val" id="v-density">35%</span>
+      <input type="range" id="p-density" min="0.1" max="0.9" step="0.05" value="0.40" oninput="updateParam('density',this.value)">
+      <span class="param-val" id="v-density">40%</span>
     </div>
 
-    <label>最大線條厚度（px，超過視為非五線）</label>
+    <label>自適應合併靈敏度（間距比率 &gt; 此值才分組）</label>
     <div class="param-row">
-      <input type="range" id="p-maxthick" min="2" max="20" step="1" value="8" oninput="updateParam('maxthick',this.value)">
-      <span class="param-val" id="v-maxthick">8px</span>
+      <input type="range" id="p-mergeRatio" min="1.2" max="5.0" step="0.1" value="1.8" oninput="updateParam('mergeRatio',this.value)">
+      <span class="param-val" id="v-mergeRatio">1.8×</span>
     </div>
 
-    <label>System 間距門檻（px，超過視為換行）</label>
+    <label>最大合併距離上限（px）</label>
     <div class="param-row">
-      <input type="range" id="p-sysgap" min="10" max="100" step="5" value="30" oninput="updateParam('sysgap',this.value)">
-      <span class="param-val" id="v-sysgap">30px</span>
+      <input type="range" id="p-maxMerge" min="10" max="200" step="5" value="80" oninput="updateParam('maxMerge',this.value)">
+      <span class="param-val" id="v-maxMerge">80px</span>
     </div>
 
     <label>左右邊距排除（%）</label>
@@ -169,9 +169,9 @@ const state = {
   params: {
     scale: 2,
     dark: 128,
-    density: 0.35,
-    maxthick: 8,
-    sysgap: 30,
+    density: 0.40,
+    mergeRatio: 1.8,
+    maxMerge: 80,
     margin: 3,
   },
   systems: [],
@@ -185,8 +185,8 @@ window.updateParam = (key, val) => {
     scale: v => `${v}×`,
     dark: v => `${v}`,
     density: v => `${Math.round(v*100)}%`,
-    maxthick: v => `${v}px`,
-    sysgap: v => `${v}px`,
+    mergeRatio: v => `${parseFloat(v).toFixed(1)}×`,
+    maxMerge: v => `${v}px`,
     margin: v => `${v}%`,
   }
   document.getElementById(`v-${key}`).textContent = labels[key](val)
@@ -263,144 +263,149 @@ async function renderPage(pageNum, scale) {
 window.runDetection = async () => {
   const pdfCanvas = document.getElementById('pdf-canvas')
   const ctx = pdfCanvas.getContext('2d')
-  const { width, height } = pdfCanvas
+  const { width: w, height: h } = pdfCanvas
 
-  if (!width || !height) return
+  if (!w || !h) return
 
   const t0 = performance.now()
-  document.getElementById('s-size').textContent = `${width} × ${height}  (scale ${state.renderScale.toFixed(2)}×)`
-  const imageData = ctx.getImageData(0, 0, width, height)
-  const data = imageData.data
+  document.getElementById('s-size').textContent = `${w} × ${h}  (scale ${state.renderScale.toFixed(2)}×)`
+  const { data } = ctx.getImageData(0, 0, w, h)
   const p = state.params
 
-  const marginPx = Math.floor(width * (p.margin / 100))
-  const scanLeft = marginPx
-  const scanRight = width - marginPx
-  const sampleStep = 2  // sample every 2px for speed
+  const scanX1 = Math.floor(w * (p.margin / 100))
+  const scanX2 = Math.floor(w * (1 - p.margin / 100))
+  const scanLen = scanX2 - scanX1 + 1
 
-  // Step 1: Row density scan
-  const rowDensity = new Float32Array(height)
-  for (let y = 0; y < height; y++) {
-    let darkCount = 0
-    let total = 0
-    for (let x = scanLeft; x < scanRight; x += sampleStep) {
-      const idx = (y * width + x) * 4
-      const lum = (data[idx] * 0.299 + data[idx+1] * 0.587 + data[idx+2] * 0.114)
-      if (lum < p.dark) darkCount++
-      total++
+  // Step 1: 標記高密度行（≥ p.density 比率暗像素）
+  const isHigh = new Uint8Array(h)
+  for (let y = 0; y < h; y++) {
+    let cnt = 0
+    for (let x = scanX1; x <= scanX2; x++) {
+      const i = (y * w + x) * 4
+      if (data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114 < p.dark) cnt++
     }
-    rowDensity[y] = darkCount / total
+    if (cnt / scanLen >= p.density) isHigh[y] = 1
   }
 
-  // Step 2: Find candidate rows
-  const candidates = []
-  for (let y = 0; y < height; y++) {
-    if (rowDensity[y] >= p.density) candidates.push(y)
-  }
-
-  // Step 3: Cluster consecutive rows into line segments
-  const segments = []
-  let i = 0
-  while (i < candidates.length) {
-    let start = candidates[i]
-    let end = start
-    while (i < candidates.length && candidates[i] <= end + 2) {
-      end = candidates[i]; i++
-    }
-    const thickness = end - start + 1
-    if (thickness <= p.maxthick) {
-      segments.push({ top: start, bottom: end, midY: Math.round((start + end) / 2), thickness })
-    // Do NOT i++ here — inner loop already advanced i past this segment.
-    }
-  }
-
-  // Step 4: Group segments into systems
-  // Gap between lines WITHIN a system is small; gap BETWEEN systems is large
-  const systems = []
-  let currentGroup = []
-  for (let j = 0; j < segments.length; j++) {
-    if (currentGroup.length === 0) {
-      currentGroup.push(segments[j])
-    } else {
-      const gap = segments[j].top - currentGroup[currentGroup.length - 1].bottom
-      if (gap > p.sysgap) {
-        if (currentGroup.length >= 2) systems.push(buildSystem(currentGroup))
-        currentGroup = [segments[j]]
-      } else {
-        currentGroup.push(segments[j])
+  // Step 2: 填補 ≤12px 空隙
+  for (let y = 1; y < h - 1; y++) {
+    if (!isHigh[y]) {
+      let gapEnd = y
+      while (gapEnd < h && !isHigh[gapEnd]) gapEnd++
+      if (gapEnd - y <= 12 && isHigh[y - 1] && gapEnd < h && isHigh[gapEnd]) {
+        for (let fy = y; fy < gapEnd; fy++) isHigh[fy] = 1
       }
     }
   }
-  if (currentGroup.length >= 2) systems.push(buildSystem(currentGroup))
+
+  // Step 3: 找連續群組（≥5px 才算）
+  const groups = []
+  let inGroup = false, groupStart = 0
+  for (let y = 0; y <= h; y++) {
+    const high = y < h && isHigh[y]
+    if (high && !inGroup)      { inGroup = true; groupStart = y }
+    else if (!high && inGroup) {
+      inGroup = false
+      if (y - groupStart >= 5) groups.push({ top: groupStart, bottom: y - 1 })
+    }
+  }
+
+  // Step 4: 自適應合併 — 從 gap 分佈找臨界值
+  let systems = []
+  if (groups.length <= 1) {
+    systems = groups.map(g => ({ ...g, lineCount: 1, lines: [] }))
+  } else {
+    const rawGaps = []
+    for (let i = 1; i < groups.length; i++) {
+      rawGaps.push(groups[i].top - groups[i - 1].bottom)
+    }
+    const sortedGaps = [...rawGaps].sort((a, b) => a - b)
+
+    let mergeThreshold = 0
+    let maxRatio = p.mergeRatio
+    for (let i = 1; i < sortedGaps.length; i++) {
+      const ratio = (sortedGaps[i] + 1) / (sortedGaps[i - 1] + 1)
+      if (ratio > maxRatio) {
+        maxRatio = ratio
+        mergeThreshold = (sortedGaps[i - 1] + sortedGaps[i]) / 2
+      }
+    }
+    mergeThreshold = Math.min(mergeThreshold, p.maxMerge)
+    state.mergeThreshold = mergeThreshold  // for display
+
+    const merged = [{ ...groups[0] }]
+    for (let i = 1; i < groups.length; i++) {
+      const gap = groups[i].top - merged[merged.length - 1].bottom
+      if (gap <= mergeThreshold) {
+        merged[merged.length - 1].bottom = groups[i].bottom
+      } else {
+        merged.push({ ...groups[i] })
+      }
+    }
+    systems = merged.map(g => ({
+      ...g,
+      height: g.bottom - g.top,
+      midY: Math.round((g.top + g.bottom) / 2),
+      lineCount: 1,
+      lines: [],
+      avgLineGap: '—',
+    }))
+  }
 
   state.systems = systems
+  state.isHigh = isHigh
   const elapsed = (performance.now() - t0).toFixed(1)
   document.getElementById('s-time').textContent = `${elapsed} ms`
 
-  drawOverlay(systems, width, height)
-  renderResults(systems, segments)
-}
-
-function buildSystem(lines) {
-  const top = lines[0].top
-  const bottom = lines[lines.length - 1].bottom
-  const gaps = []
-  for (let i = 1; i < lines.length; i++) {
-    gaps.push(lines[i].top - lines[i-1].bottom)
-  }
-  const avgGap = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : 0
-  return {
-    top,
-    bottom,
-    midY: Math.round((top + bottom) / 2),
-    height: bottom - top,
-    lineCount: lines.length,
-    lines,
-    avgLineGap: avgGap.toFixed(1),
-  }
+  drawOverlay(systems, w, h, isHigh)
+  renderResults(systems, groups)
 }
 
 // ── Overlay Drawing ──
-function drawOverlay(systems, width, height) {
+function drawOverlay(systems, w, h, isHigh) {
   const canvas = document.getElementById('overlay-canvas')
   const ctx = canvas.getContext('2d')
-  ctx.clearRect(0, 0, width, height)
+  ctx.clearRect(0, 0, w, h)
+
+  // 高密度行 — 淡綠色半透明
+  if (isHigh) {
+    ctx.fillStyle = 'rgba(80,220,120,0.18)'
+    for (let y = 0; y < h; y++) {
+      if (isHigh[y]) ctx.fillRect(0, y, w, 1)
+    }
+  }
 
   systems.forEach((sys, idx) => {
     const isHL = state.highlightedSystem === idx
     // Background fill
-    ctx.fillStyle = isHL ? 'rgba(255,158,74,0.12)' : 'rgba(74,158,255,0.07)'
-    ctx.fillRect(0, sys.top - 4, width, sys.height + 8)
+    ctx.fillStyle = isHL ? 'rgba(255,158,74,0.15)' : 'rgba(74,158,255,0.09)'
+    ctx.fillRect(0, sys.top, w, sys.bottom - sys.top)
 
     // Top/bottom border
     ctx.strokeStyle = isHL ? '#ff9e4a' : '#4a9eff'
     ctx.lineWidth = isHL ? 2 : 1.5
     ctx.setLineDash([6, 4])
     ctx.beginPath()
-    ctx.moveTo(0, sys.top); ctx.lineTo(width, sys.top)
-    ctx.moveTo(0, sys.bottom); ctx.lineTo(width, sys.bottom)
+    ctx.moveTo(0, sys.top); ctx.lineTo(w, sys.top)
+    ctx.moveTo(0, sys.bottom); ctx.lineTo(w, sys.bottom)
     ctx.stroke()
     ctx.setLineDash([])
 
     // Label
     ctx.fillStyle = isHL ? '#ff9e4a' : '#4a9eff'
     ctx.font = 'bold 12px system-ui'
-    ctx.fillText(`System ${idx + 1}  (${sys.lineCount} lines)`, 8, sys.top - 6)
-
-    // Individual staff lines
-    sys.lines.forEach(line => {
-      ctx.fillStyle = 'rgba(255,80,80,0.5)'
-      ctx.fillRect(0, line.midY, width, 1)
-    })
+    ctx.fillText(`S${idx + 1}`, 8, sys.top + 14)
   })
 }
 
 // ── Results Panel ──
-function renderResults(systems, allSegments) {
+function renderResults(systems, groups) {
   const statsEl = document.getElementById('stats')
+  const mt = state.mergeThreshold != null ? `${Math.round(state.mergeThreshold)}px` : '—'
   statsEl.innerHTML = `
-    <div class="stat-row"><span class="stat-label">偵測到線段</span><span class="stat-val">${allSegments.length} 條</span></div>
-    <div class="stat-row"><span class="stat-label">樂譜行（Systems）</span><span class="stat-val">${systems.length} 行</span></div>
+    <div class="stat-row"><span class="stat-label">高密度群組</span><span class="stat-val">${groups.length} 組</span></div>
+    <div class="stat-row"><span class="stat-label">自適應合併臨界值</span><span class="stat-val">${mt}</span></div>
+    <div class="stat-row"><span class="stat-label">偵測到 Systems</span><span class="stat-val">${systems.length} 行</span></div>
   `
 
   const resultsEl = document.getElementById('results')
@@ -418,9 +423,7 @@ function renderResults(systems, allSegments) {
       <div class="system-info">
         頂部 Y：<span>${sys.top} px</span><br>
         底部 Y：<span>${sys.bottom} px</span><br>
-        高度：<span>${sys.height} px</span><br>
-        偵測到線條：<span>${sys.lineCount} 條</span><br>
-        平均線間距：<span>${sys.avgLineGap} px</span>
+        高度：<span>${sys.bottom - sys.top} px</span>
       </div>
     `
     card.addEventListener('click', () => {
