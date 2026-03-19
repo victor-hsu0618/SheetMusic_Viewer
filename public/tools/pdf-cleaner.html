@@ -402,10 +402,10 @@
                             <p class="hint">每行暗像素比率超過此值才視為高密度（五線譜）行。</p>
                         </div>
                         <div class="ctrl">
-                            <label>Bracket 掃描範圍<span id="val-sys-range">8%</span></label>
+                            <label>Bracket 掃描範圍<span id="val-sys-range">10%</span></label>
                             <div class="slider-row">
                                 <button class="step-btn" data-target="ctrl-sys-range" data-dir="-1">−</button>
-                                <input type="range" id="ctrl-sys-range" min="2" max="25" value="8" step="1">
+                                <input type="range" id="ctrl-sys-range" min="2" max="25" value="10" step="1">
                                 <button class="step-btn" data-target="ctrl-sys-range" data-dir="1">+</button>
                             </div>
                             <p class="hint">在頁面左側多少 % 範圍內搜尋連結兩行的垂直 Bracket 線。</p>
@@ -1476,7 +1476,7 @@ const BarlineStaffDetector = (() => {
         const scanX2       = Math.floor(w * 0.95);
         const scanLen      = scanX2 - scanX1 + 1;
         const highDens     = opts.highDens     !== undefined ? opts.highDens     : 0.40;
-        const bracketRange = opts.bracketRange !== undefined ? opts.bracketRange : 0.08;
+        const bracketRange = opts.bracketRange !== undefined ? opts.bracketRange : 0.10;
         const bracketDens  = opts.bracketDens  !== undefined ? opts.bracketDens  : 0.55;
         const maxMerge     = opts.maxMerge     !== undefined ? opts.maxMerge     : 120;
 
@@ -1529,7 +1529,7 @@ const BarlineStaffDetector = (() => {
             return false;
         }
 
-        // Step 5: 合併 — bracket 存在就合併（不受 maxMerge 限制），否則不合併
+        // Step 5: 合併 — bracket 存在就合併，否則不合併
         const systems = [{ ...groups[0] }];
         for (let i = 1; i < groups.length; i++) {
             const last = systems[systems.length - 1];
