@@ -51,34 +51,57 @@ export class EditScrollbarManager {
   }
 
   _onThumbDown(e) {
+    if (e.button !== 0 && e.pointerType === 'mouse') return
+    
     e.preventDefault()
     e.stopPropagation()
+    
+    // 確保第一時間抓取 Pointer，這對解決 iPad 第一次觸碰沒反應非常重要
     this.thumb.setPointerCapture(e.pointerId)
     this.thumb.classList.add('dragging')
+    
     this._dragging = true
     this._dragStartY = e.clientY
     this._dragStartScrollTop = this.viewer.scrollTop
 
     const onMove = ev => {
       if (!this._dragging) return
+      
       const { scrollHeight, clientHeight } = this.viewer
-      const thumbH = parseFloat(this.thumb.style.height) || 40
       const trackH = clientHeight
+      const thumbH = parseFloat(this.thumb.style.height) || 40
       const maxThumbTop = trackH - thumbH
       const scrollRange = scrollHeight - clientHeight
+      
+      if (maxThumbTop <= 0) return
+
       const dy = ev.clientY - this._dragStartY
-      const scrollDelta = -(dy / maxThumbTop) * scrollRange
-      this.viewer.scrollTop = Math.max(0, Math.min(scrollRange, this._dragStartScrollTop + scrollDelta))
+      
+      // 計算新的捲動位置
+      // 靈敏度調整：乘以 0.66 (減慢約 1/3)，提供更精確的手指控制感
+      const SENSITIVITY = 0.66
+      const scrollDelta = -(dy / maxThumbTop) * scrollRange * SENSITIVITY
+      const targetTop = this._dragStartScrollTop + scrollDelta
+      
+      // 使用 requestAnimationFrame 來平滑化捲動，減少 iPad 上的抖動感
+      if (this._scrollRaf) cancelAnimationFrame(this._scrollRaf)
+      this._scrollRaf = requestAnimationFrame(() => {
+        this.viewer.scrollTop = Math.max(0, Math.min(scrollRange, targetTop))
+      })
     }
 
-    const onUp = () => {
+    const onUp = ev => {
       this._dragging = false
+      if (this._scrollRaf) cancelAnimationFrame(this._scrollRaf)
+      this.thumb.releasePointerCapture(ev.pointerId)
       this.thumb.classList.remove('dragging')
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
     }
 
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
   }
 }

@@ -479,20 +479,45 @@ export class ScoreDetailManager {
         }
 
         const confirmed = await this.app.showDialog({
-            title: 'Force Pull from Supabase?',
-            message: 'This will pull all cloud annotations and merge them with your local data. Continue?',
+            title: 'Force Resync from Cloud?',
+            message: 'This will DELETE your local markings and metadata for this score and replace them with the cloud version. This cannot be undone. Continue?',
             type: 'confirm',
             icon: '☁️'
         })
         if (!confirmed) return
 
-        this.app.showMessage('Pulling from Supabase...', 'system')
-        const cloudData = await this.app.supabaseManager.pullAnnotations(fp)
-        if (cloudData) {
-            this.app.showMessage('Data pulled from Supabase successfully.', 'success')
+        this.app.showMessage('Resyncing from Supabase...', 'system')
+        
+        try {
+            // 1. Pull Annotations (Force Replace)
+            const cloudStamps = await this.app.supabaseManager.pullAnnotations(fp, true)
+            
+            // 2. Pull Metadata
+            const cloudMeta = await this.app.supabaseManager.pullScoreMetadata(fp)
+            if (cloudMeta) {
+                console.log(`[ScoreDetail] Syncing cloud metadata: "${cloudMeta.title}" by ${cloudMeta.composer}`)
+                this.currentInfo.name = cloudMeta.title || this.currentInfo.name
+                this.currentInfo.composer = cloudMeta.composer || this.currentInfo.composer
+                
+                // Update Local DB
+                await this.save(fp)
+                
+                // Update Registry
+                if (this.app.scoreManager) {
+                    await this.app.scoreManager.updateMetadata(fp, {
+                        title: this.currentInfo.name,
+                        composer: this.currentInfo.composer
+                    })
+                }
+            }
+
+            this.app.showMessage('Cloud resync complete!', 'success')
+            this.render(fp)
             this.refreshStats()
-        } else {
-            this.app.showMessage('No data found or pull failed.', 'info')
+            if (this.app.viewerManager?.updateFloatingTitle) this.app.viewerManager.updateFloatingTitle()
+        } catch (err) {
+            console.error('[ScoreDetail] Force pull failed:', err)
+            this.app.showMessage('Cloud resync failed.', 'error')
         }
     }
 

@@ -1,78 +1,92 @@
+/**
+ * StaffDetector — Enhanced System Detection for ScoreFlow
+ * 
+ * Version 2.0: Integrated Barline-Anchored Detection with Evidence Verification
+ */
 export class StaffDetector {
   constructor(app) {
     this.app = app
-    this.params = { scale: 1.0, maxthick: 8, sysgap: 17 }
+    this.params = { 
+      scale: 1.5,      // Higher scale for better precision
+      maxthick: 12,    // Max staff line thickness
+      sysgap: 20,      // Gap between systems
+      highDens: 0.40   // Horizontal density threshold
+    }
   }
 
   // Auto-detect all pages, push results to app.stamps, save
   async autoDetect(pdf, onProgress) {
-    const fp = this.app.pdfFingerprint  // capture fingerprint at start
+    const fp = this.app.pdfFingerprint
+    const now = Date.now()
+
+    // 1. LOGICAL DELETE: Mark existing auto-generated system stamps as deleted
+    // Keeping the ID in the array with deleted:true is essential for sync engines 
+    // to know that these specific records should be removed from the cloud too.
+    if (this.app.stamps) {
+      this.app.stamps.forEach(s => {
+        if (s.type === 'system' && s.auto && !s.deleted) {
+          s.deleted = true
+          s.updatedAt = now // Must update timestamp to win the sync merge
+        }
+      })
+    }
+
     const results = []
     for (let p = 1; p <= pdf.numPages; p++) {
-      if (this.app.pdfFingerprint !== fp) return  // PDF changed mid-detection, discard
+      if (this.app.pdfFingerprint !== fp) return 
       const page = await pdf.getPage(p)
       const systems = await this.detectPage(page, p)
       results.push(...systems)
       if (onProgress) onProgress(p, pdf.numPages)
     }
-    if (this.app.pdfFingerprint !== fp) return  // discard if switched after last page
+    
+    if (this.app.pdfFingerprint !== fp) return
+    
+    // 2. Add new results
     this.app.stamps.push(...results)
+    
+    // 3. Persist and trigger authoritative sync
     this.app.saveToStorage(true)
     this.app.updateRulerMarks()
-  }
-
-  // ── BarlineStaffDetector (same algorithm as pdf-cleaner tool) ──
-  //
-  // Key insight: final barlines are the RIGHTMOST dark element in their rows —
-  // blank paper lies to their right.  Interior barlines are never rightmost
-  // (notes/content follow them).  Histogram of per-row rightmost-dark-x peaks
-  // at each system's final barline, even when systems drift horizontally.
-
-  // 驗證候選 barlineX：左側 strip 是否有 ≥ minThinBands 條細橫帶（五線譜線）
-  _hasStaffBands(data, w, h, bx, darkThreshold, minThinBands = 3) {
-    const stripW = 6
-    const x1 = Math.max(0, bx - stripW)
-    const x2 = Math.max(0, bx - 1)
-    let thinRuns = 0, inRun = false, runStart = 0
-    for (let y = 0; y <= h; y++) {
-      let dark = false
-      if (y < h) {
-        for (let px = x1; px <= x2; px++) {
-          const i = (y * w + px) * 4
-          if (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114 < darkThreshold) {
-            dark = true; break
-          }
-        }
-      }
-      if (dark && !inRun)      { inRun = true;  runStart = y }
-      else if (!dark && inRun) {
-        inRun = false
-        const rh = y - runStart
-        if (rh >= 1 && rh <= 10) thinRuns++
-      }
+    
+    // Explicitly trigger authoritative cloud push if available
+    if (this.app.driveSyncManager) {
+      console.log('[StaffDetector] Triggering authoritative cloud push...')
+      // push(0, true) means: reset cloud version and treat as manual/forced action
+      this.app.driveSyncManager.push(0, true)
     }
-    return thinRuns >= minThinBands
   }
 
-  // Step 1: find ALL system barlines via rightmost-dark-pixel histogram.
-  // Peaks are validated by staff-band check to reject text/page-number false positives.
-  _findAllBarlines(data, w, h, darkThreshold) {
+  /**
+   * Helper: Convert RGBA to Grayscale Uint8Array
+   */
+  _toGray(rgba, w, h) {
+    const gray = new Uint8Array(w * h)
+    for (let i = 0; i < gray.length; i++) {
+      const idx = i * 4
+      gray[i] = rgba[idx] * 0.299 + rgba[idx + 1] * 0.587 + rgba[idx + 2] * 0.114
+    }
+    return gray
+  }
+
+  /**
+   * find ALL potential final barlines
+   */
+  _findAllBarlines(gray, w, h, darkThreshold) {
     const scanStart = Math.floor(w * 0.12)
     const minX      = Math.floor(w * 0.45)
     const xCounts   = new Int32Array(w)
 
     for (let y = 0; y < h; y++) {
+      const rowBase = y * w
       for (let x = w - 1; x >= scanStart; x--) {
-        const i = (y * w + x) * 4
-        const lum = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114
-        if (lum < darkThreshold) {
+        if (gray[rowBase + x] < darkThreshold) {
           if (x >= minX) xCounts[x]++
           break
         }
       }
     }
 
-    // Smooth ±5px
     const smooth = new Float32Array(w)
     for (let x = minX; x < w; x++) {
       let sum = 0, cnt = 0
@@ -83,13 +97,10 @@ export class StaffDetector {
       smooth[x] = sum / cnt
     }
 
-    const minCount = Math.max(8, Math.floor(h * 0.015))
-
+    const minCount = Math.max(4, Math.floor(h * 0.005))
     const peaks = []
     for (let x = minX + 1; x < w - 1; x++) {
-      if (smooth[x] >= minCount &&
-          smooth[x] >= smooth[x - 1] &&
-          smooth[x] >= smooth[x + 1]) {
+      if (smooth[x] >= minCount && smooth[x] >= smooth[x - 1] && smooth[x] >= smooth[x + 1]) {
         peaks.push(x)
       }
     }
@@ -100,202 +111,206 @@ export class StaffDetector {
       const last = merged[merged.length - 1]
       if (Math.abs(x - last) <= 15) {
         if (smooth[x] > smooth[last]) merged[merged.length - 1] = x
-      } else {
-        merged.push(x)
-      }
+      } else { merged.push(x) }
     }
 
-    // 驗證：過濾掉沒有五線譜細橫帶的假 peak（文字、頁碼等）
-    const validated = merged.filter(x => this._hasStaffBands(data, w, h, x, darkThreshold))
-    validated.sort((a, b) => b - a)
-    return validated
+    // Validate barlines by checking for horizontal staff bands to the left
+    return merged.filter(x => {
+      const skip = 20, stripW = 6
+      const x1 = Math.max(0, x - skip - stripW), x2 = Math.max(0, x - skip)
+      let thinRuns = 0, inRun = false, runStart = 0
+      for (let y = 0; y <= h; y++) {
+        let dark = false
+        if (y < h) {
+          for (let px = x1; px <= x2; px++) { if (gray[y * w + px] < darkThreshold) { dark = true; break } }
+        }
+        if (dark && !inRun) { inRun = true; runStart = y }
+        else if (!dark && inRun) { inRun = false; if (y - runStart >= 1 && y - runStart <= 12) thinRuns++ }
+      }
+      return thinRuns >= 3
+    }).sort((a, b) => b - a)
   }
 
-  // 五線譜嚴格驗證：只保留能組成剛好 5 條等間距的線鏈，其餘丟棄
-  _findStaves(segs, maxthick) {
-    if (segs.length < 5) return []
-    const center = s => (s.top + s.bottom) / 2
-    const centers = segs.map(center)
+  /**
+   * Extract staff segments near a barline
+   */
+  _extractStaff(gray, w, h, barlineX, darkThreshold) {
+    const stripW = 4, minDensity = 0.70, STEP = 5, MAX_TRIES = 10
+    const scanAt = (rightEdge) => {
+      const x2 = Math.max(0, rightEdge), x1 = Math.max(0, x2 - stripW + 1)
+      const stripLen = x2 - x1 + 1, segs = []
+      let inSeg = false, segStart = 0
+      for (let y = 0; y <= h; y++) {
+        let darkCount = 0
+        if (y < h) { for (let x = x1; x <= x2; x++) { if (gray[y * w + x] < darkThreshold) darkCount++ } }
+        const dark = (darkCount / stripLen) >= minDensity
+        if (dark && !inSeg) { inSeg = true; segStart = y }
+        else if (!dark && inSeg) { inSeg = false; const thick = y - segStart; if (thick >= 1 && thick <= 18) segs.push({ top: segStart, bottom: y - 1, thickness: thick }) }
+      }
+      return segs
+    }
+    let best = []
+    for (let t = 0; t < MAX_TRIES; t++) {
+      const segs = scanAt(barlineX - 1 - t * STEP)
+      if (segs.length >= 5 && segs.length <= 15) { best = segs; break }
+      if (segs.length > best.length) best = segs
+    }
+    return best
+  }
 
+  /**
+   * Validate 5-line staff pattern
+   */
+  _findStaves(segs) {
+    if (segs.length < 5) return []
+    const centers = segs.map(s => (s.top + s.bottom) / 2)
     const smallGaps = []
     for (let i = 1; i < centers.length; i++) {
       const g = centers[i] - centers[i - 1]
-      if (g > maxthick && g < maxthick * 10) smallGaps.push(g)
+      if (g > 3 && g < 40) smallGaps.push(g)
     }
     if (smallGaps.length < 2) return []
     smallGaps.sort((a, b) => a - b)
     const linespace = smallGaps[Math.floor(smallGaps.length / 2)]
-    const tol = linespace * 0.40
-
-    const used = new Set()
-    const staves = []
+    const tol = linespace * 0.45, used = new Set(), staves = []
     for (let si = 0; si < segs.length; si++) {
       if (used.has(si)) continue
       const chain = [si]
       for (let k = 1; k <= 4; k++) {
         const expected = centers[si] + k * linespace
         let bestIdx = -1, bestDist = tol + 1
-        for (let j = 0; j < segs.length; j++) {
-          if (used.has(j) || chain.includes(j)) continue
+        for (let j = si + 1; j < segs.length; j++) {
+          if (used.has(j)) continue
           const dist = Math.abs(centers[j] - expected)
           if (dist <= tol && dist < bestDist) { bestDist = dist; bestIdx = j }
         }
         if (bestIdx === -1) break
         chain.push(bestIdx)
       }
-      if (chain.length === 5) {
-        chain.forEach(i => used.add(i))
-        staves.push(chain.map(i => segs[i]))
-      }
+      if (chain.length === 5) { chain.forEach(i => used.add(i)); staves.push(chain.map(i => segs[i])) }
     }
     return staves.flat().sort((a, b) => a.top - b.top)
   }
 
-  // Step 2: 極窄 strip（4px）+ 高密度（70%）— 音符不入，五線譜線必入
-  _extractStaff(data, w, h, barlineX, darkThreshold, maxthick) {
-    const stripW     = 4
-    const minDensity = 0.70
-    const x1 = Math.max(0, barlineX - stripW)
-    const x2 = Math.max(0, barlineX - 1)
-    const stripLen = x2 - x1 + 1
-    const segs = []
-    let inSeg = false, segStart = 0
-    for (let y = 0; y <= h; y++) {
-      let darkCount = 0
-      if (y < h) {
-        for (let x = x1; x <= x2; x++) {
-          const i = (y * w + x) * 4
-          if (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114 < darkThreshold) darkCount++
-        }
-      }
-      const dark = (darkCount / stripLen) >= minDensity
-      if (dark && !inSeg)      { inSeg = true;  segStart = y }
-      else if (!dark && inSeg) {
-        inSeg = false
-        const thick = y - segStart
-        if (thick >= 1 && thick <= maxthick) segs.push({ top: segStart, bottom: y - 1 })
-      }
-    }
-    return segs
-  }
-
-  // 高密度行 anchor 找 system y 邊界（≥40% 水平暗像素密度）
-  // Step 4 改用 bracket detection：掃左側邊緣有無連續垂直暗線來判斷雙行 system
-  _detectSystems(data, w, h, darkThreshold, bracketRange = 0.20, maxMerge = 120) {
-    const scanX1 = Math.floor(w * 0.05)
-    const scanX2 = Math.floor(w * 0.95)
-    const scanLen = scanX2 - scanX1 + 1
-    const highDens = 0.40
-
-    // Step 1: 標記高密度行
+  /**
+   * Main System Detection logic with Evidence Verification
+   */
+  _detectSystems(gray, w, h, darkThreshold, staffSegs = []) {
+    const scanX1 = Math.floor(w * 0.05), scanX2 = Math.floor(w * 0.95), scanLen = scanX2 - scanX1 + 1
+    const highDens = this.params.highDens, maxMerge = 120, bracketRange = 0.10, bracketDens = 0.55
     const isHigh = new Uint8Array(h)
+
+    // Track A: Density Scan (Segmented for skew tolerance)
+    const segCount = 3, segW = Math.floor(scanLen / segCount)
     for (let y = 0; y < h; y++) {
-      let cnt = 0
-      for (let x = scanX1; x <= scanX2; x++) {
-        const i = (y * w + x) * 4
-        if (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114 < darkThreshold) cnt++
+      let hits = 0, midHigh = false
+      for (let s = 0; s < segCount; s++) {
+        const sx1 = scanX1 + s * segW, sx2 = sx1 + segW
+        let cnt = 0
+        for (let x = sx1; x < sx2; x++) { if (gray[y * w + x] < darkThreshold) cnt++ }
+        const dens = cnt / segW
+        if (dens >= Math.min(highDens * 0.8, 0.35)) hits++
+        if (s === 1 && dens >= 0.55) midHigh = true
       }
-      if (cnt / scanLen >= highDens) isHigh[y] = 1
+      if (hits >= 2 || midHigh) isHigh[y] = 1
     }
 
-    // Step 2: 填補 ≤12px 空隙
+    // Track B: Staff Evidence
+    staffSegs.forEach(seg => { for (let y = Math.max(0, seg.top - 2); y <= Math.min(h - 1, seg.bottom + 2); y++) isHigh[y] = 1 })
+
+    // Step 2: Fill gaps
     for (let y = 1; y < h - 1; y++) {
-      if (!isHigh[y]) {
-        let gapEnd = y
-        while (gapEnd < h && !isHigh[gapEnd]) gapEnd++
-        if (gapEnd - y <= 12 && isHigh[y - 1] && gapEnd < h && isHigh[gapEnd]) {
-          for (let fy = y; fy < gapEnd; fy++) isHigh[fy] = 1
-        }
+      if (!isHigh[y] && isHigh[y - 1]) {
+        let gapEnd = -1
+        for (let g = 1; g <= 20 && y + g < h; g++) { if (isHigh[y + g]) { gapEnd = y + g; break } }
+        if (gapEnd >= 0) for (let fy = y; fy < gapEnd; fy++) isHigh[fy] = 1
       }
     }
 
-    // Step 3: 找連續群組（≥5px 才算）
-    const groups = []
-    let inGroup = false, groupStart = 0
+    // Step 3: Find continuous anchors
+    const anchors = []
+    let inRun = false, runStart = 0
     for (let y = 0; y <= h; y++) {
-      const high = y < h && isHigh[y]
-      if (high && !inGroup)      { inGroup = true; groupStart = y }
-      else if (!high && inGroup) {
-        inGroup = false
-        if (y - groupStart >= 5) groups.push({ top: groupStart, bottom: y - 1 })
+      const c = y < h && isHigh[y]
+      if (c && !inRun) { inRun = true; runStart = y }
+      else if (!c && inRun) { 
+        inRun = false
+        const height = y - runStart
+        const hasStaff = staffSegs.some(s => (s.top + s.bottom)/2 >= runStart && (s.top + s.bottom)/2 <= y)
+        if (height >= 12 || hasStaff) anchors.push({ top: runStart, bottom: y - 1 }) 
       }
     }
 
-    if (!groups.length) return []
-    if (groups.length === 1) return [{ ...groups[0] }]
+    // Step 4: Expand Y-range to cover notes
+    const expanded = anchors.map(a => ({ top: Math.max(0, a.top - 24), bottom: Math.min(h - 1, a.bottom + 24), anchor: a }))
+    if (expanded.length <= 1) return expanded
 
-    // Step 4: bracket detection — 掃左側 [1%, bracketRange] 範圍
-    // 若兩 group 之間的空隙有連續垂直暗線（bracket），代表同一 system
-    const bx1 = Math.floor(w * 0.01)
-    const bx2 = Math.floor(w * bracketRange)
-    const bracketDens = 0.40
-
+    // Step 5: Bracket-based merging
     const hasBracket = (yTop, yBottom) => {
-      // 往上下各延伸 5px 進入五線譜本身，避免 gap 太小偵測不到
-      const y1 = Math.max(0, yTop - 5)
-      const y2 = Math.min(h - 1, yBottom + 5)
-      const span = y2 - y1
+      const bx1 = Math.floor(w * 0.01), bx2 = Math.floor(w * bracketRange), span = yBottom - yTop
       if (span <= 2) return false
       for (let x = bx1; x <= bx2; x++) {
         let dark = 0
-        for (let y = y1; y <= y2; y++) {
-          const idx = (y * w + x) * 4
-          if (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114 < darkThreshold) dark++
-        }
+        for (let y = yTop; y <= yBottom; y++) { if (gray[y * w + x] < darkThreshold) dark++ }
         if (dark / (span + 1) >= bracketDens) return true
       }
       return false
     }
 
-    // Step 5: 合併有 bracket 且 gap ≤ maxMerge 的相鄰 group
-    const systems = [{ ...groups[0] }]
-    for (let i = 1; i < groups.length; i++) {
-      const last = systems[systems.length - 1]
-      const gap = groups[i].top - last.bottom
-      if (gap <= maxMerge && hasBracket(last.bottom, groups[i].top)) {
-        last.bottom = groups[i].bottom
-      } else {
-        systems.push({ ...groups[i] })
-      }
+    const systems = [{ ...expanded[0] }]
+    for (let i = 1; i < expanded.length; i++) {
+      const last = systems[systems.length - 1], rawGap = anchors[i].top - anchors[i - 1].bottom
+      const hasConn = hasBracket(anchors[i - 1].bottom, anchors[i].top)
+      if (rawGap <= maxMerge && (hasConn || rawGap <= 25)) last.bottom = expanded[i].bottom
+      else systems.push({ ...expanded[i] })
     }
-
-    return systems  // [{top, bottom}]
+    return systems
   }
 
   async detectPage(pdfPage, pageNum) {
     const { scale } = this.params
     const viewport = pdfPage.getViewport({ scale })
     const canvas = document.createElement('canvas')
-    canvas.width = viewport.width
-    canvas.height = viewport.height
-    const ctx = canvas.getContext('2d')
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    canvas.width = viewport.width; canvas.height = viewport.height
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height)
     await pdfPage.render({ canvasContext: ctx, viewport }).promise
 
     const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
     const w = canvas.width, h = canvas.height
+    const gray = this._toGray(data, w, h)
 
     // Adaptive dark threshold from background sample
     let bgSum = 0, bgCount = 0
     const regions = [[10, 10], [w - 30, 10], [10, h - 30], [w - 30, h - 30], [10, h >> 1], [w - 30, h >> 1]]
     regions.forEach(([rx, ry]) => {
       for (let dy = 0; dy < 20; dy++) for (let dx = 0; dx < 20; dx++) {
-        const i = ((ry + dy) * w + (rx + dx)) * 4
-        bgSum += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114
-        bgCount++
+        const i = (ry + dy) * w + (rx + dx)
+        bgSum += gray[i]; bgCount++
       }
     })
     const darkThreshold = (bgSum / bgCount) * 0.75
 
-    const systemBounds = this._detectSystems(data, w, h, darkThreshold)
+    // 1. Find Barlines
+    const barlineXs = this._findAllBarlines(gray, w, h, darkThreshold)
+    
+    // 2. Find Staff Evidence
+    let allStaffSegs = []
+    for (const bx of barlineXs) {
+      const segs = this._extractStaff(gray, w, h, bx, darkThreshold)
+      allStaffSegs.push(...segs)
+    }
+    const validatedStaff = this._findStaves(allStaffSegs)
+
+    // 3. Detect Systems using Staff Evidence
+    const systemBounds = this._detectSystems(gray, w, h, darkThreshold, validatedStaff)
     if (!systemBounds.length) return []
 
     // Convert to System Stamps using ratio (scale-independent)
     const naturalH = pdfPage.getViewport({ scale: 1 }).height
     const toRatio = px => px / (naturalH * scale)
-
     const now = Date.now()
+
     return systemBounds.map(({ top, bottom }) => ({
       type: 'system',
       id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `sys-${Date.now()}-${Math.random().toString(36).slice(2)}`,

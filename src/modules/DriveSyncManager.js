@@ -31,7 +31,7 @@ export class DriveSyncManager {
         this.isPaused = false;
         this.lastSyncTime = 0;
         this.lastProfileSyncTime = 0;
-        this.syncInterval = 30000; // 30 seconds
+        this.syncInterval = 60 * 60 * 1000; // 1 hour (changed from 30s)
         this.syncTimer = null;
         this.pushDebounceTimer = null;
         this.lastSyncRequest = 0;
@@ -923,11 +923,14 @@ export class DriveSyncManager {
                     const t = remoteS.type || remoteS.stampType || 'unknown';
                     const localS = localMap.get(remoteS.id);
                     if (!localS) {
+                        // Only add if not already marked deleted in the incoming data
+                        // or if we want to preserve the deletion marker for sync
                         this.app.stamps.push(remoteS);
                         hasChanges = true;
                         newStamps++;
                         newByType[t] = (newByType[t] || 0) + 1;
-                    } else if (remoteS.updatedAt > (localS.updatedAt || 0)) {
+                    } else if ((remoteS.updatedAt || 0) > (localS.updatedAt || 0)) {
+                        // Update local with remote data if remote is newer
                         Object.assign(localS, remoteS);
                         hasChanges = true;
                         updatedStamps++;

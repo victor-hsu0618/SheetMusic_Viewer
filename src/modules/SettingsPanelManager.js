@@ -428,6 +428,29 @@ export class SettingsPanelManager {
             })
         }
 
+        // --- NEW: Global Cloud Resync ---
+        const globalResyncBtn = document.getElementById('btn-supabase-force-resync-all')
+        if (globalResyncBtn) {
+            globalResyncBtn.addEventListener('click', async () => {
+                const confirmed = await this.app.showDialog({
+                    title: '☢️ CRITICAL: Global Cloud Resync?',
+                    message: 'This will DELETE ALL local markings and metadata for ALL scores and rebuild them from the cloud. Continue?',
+                    type: 'confirm',
+                    icon: '☢️'
+                })
+                if (!confirmed) return
+                
+                this.app.showMessage('Full Resync in progress...', 'system')
+                const success = await this.app.supabaseManager.forceFullCloudResync()
+                if (success) {
+                    this.app.showMessage('Global Resync Complete! Reloading...', 'success')
+                    setTimeout(() => location.reload(), 1500)
+                } else {
+                    this.app.showMessage('Resync failed.', 'error')
+                }
+            })
+        }
+
 
 
         // Initialize adjustment buttons for ALL sliders in this panel

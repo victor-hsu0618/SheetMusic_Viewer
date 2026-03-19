@@ -310,10 +310,10 @@ export class SupabaseManager {
     /**
      * Fetches all annotations for a score from Supabase.
      */
-    async pullAnnotations(fingerprint) {
+    async pullAnnotations(fingerprint, force = false) {
         if (!this.client || !this.user) return []
         
-        console.log('[Supabase] Pulling annotations for:', fingerprint)
+        console.log(`[Supabase] Pulling annotations for ${fingerprint} (Force: ${force})`)
         const { data, error } = await this.client
             .from('annotations')
             .select('*')
@@ -321,12 +321,16 @@ export class SupabaseManager {
 
         if (error) {
             console.error('[Supabase] Pull annotations error:', error)
-            return []
+            return null
         }
 
-        if (data && data.length > 0) {
-            const cloudStamps = data.map(record => record.data)
-            
+        const cloudStamps = (data || []).map(record => record.data)
+        
+        if (force) {
+            console.log(`[Supabase] Force Sync: Replacing all ${this.app.stamps.length} local stamps with ${cloudStamps.length} cloud stamps.`)
+            this.app.stamps = cloudStamps
+            this.app.redrawAllAnnotationLayers()
+        } else if (data && data.length > 0) {
             // Merge logic: Add new ones, update existing if cloud is newer
             let changed = false
             cloudStamps.forEach(cloudS => {
@@ -346,12 +350,33 @@ export class SupabaseManager {
                 this.app.redrawAllAnnotationLayers()
                 console.log(`[Supabase] Merged ${cloudStamps.length} stamps from cloud.`)
             }
-            
-            // Start listening for live changes after initial pull
-            this.subscribeToAnnotations(fingerprint)
         }
         
-        return data.map(record => record.data)
+        // Always update local storage with the final state
+        import('../db.js').then(db => db.set(`stamps_${fingerprint}`, this.app.stamps))
+        
+        // Start listening for live changes after initial pull
+        this.subscribeToAnnotations(fingerprint)
+        
+        return this.app.stamps
+    }
+
+    /**
+     * Pulls metadata for a single score.
+     */
+    async pullScoreMetadata(fingerprint) {
+        if (!this.client || !this.user) return null
+        const { data, error } = await this.client
+            .from('scores')
+            .select('*')
+            .eq('fingerprint', fingerprint)
+            .maybeSingle()
+        
+        if (error) {
+            console.warn('[Supabase] Metadata pull error:', error.message)
+            return null
+        }
+        return data
     }
 
     // --- NEW: Global State Sync (Profile & Registry) ---
@@ -735,6 +760,37 @@ export class SupabaseManager {
             console.error('[Supabase] ❌ DB Score deletion error:', dbError.message);
         } else {
             console.log('[Supabase] ✅ Score deleted successfully from cloud.');
+        }
+    }
+
+    /**
+     * Wipes local state and rebuilds the library from cloud data.
+     */
+    async forceFullCloudResync() {
+        if (!this.client || !this.user) return false;
+        
+        try {
+            console.log('[Supabase] ☢️ STARTING GLOBAL CLOUD RESYNC...');
+            
+            // 1. Wipe local IndexDB
+            await db.clear();
+            
+            // 2. Clear relevant local storage
+            localStorage.removeItem('scoreflow_session_fp');
+            
+            // 3. Reset ScoreManager registry
+            if (this.app.scoreManager) {
+                this.app.scoreManager.registry = [];
+            }
+            
+            // 4. Re-pull metadata and placeholders from cloud
+            await this.pullScoreRegistry();
+            
+            console.log('[Supabase] ✅ Global Cloud Resync successful.');
+            return true;
+        } catch (err) {
+            console.error('[Supabase] ❌ Global Cloud Resync failed:', err);
+            return false;
         }
     }
 }

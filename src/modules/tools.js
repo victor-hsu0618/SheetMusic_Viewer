@@ -43,11 +43,11 @@ export class ToolManager {
 
         el.addEventListener('mousedown', (e) => start(e.pageX))
         el.addEventListener('touchstart', (e) => start(e.touches[0].pageX), { passive: true })
-        
+
         el.addEventListener('mouseleave', end)
         el.addEventListener('mouseup', end)
         el.addEventListener('touchend', end)
-        
+
         el.addEventListener('mousemove', (e) => {
             if (isDown) e.preventDefault()
             move(e.pageX)
@@ -152,11 +152,12 @@ export class ToolManager {
                 el.style.transform = ''
                 el._positionMaterialized = false
             }
-            // Finally show it
             el.classList.add('expanded')
+            this._updateFabIcon(true)
         } else {
             el.classList.remove('expanded')
             this.isStampPaletteOpen = false
+            this._updateFabIcon(false)
 
             // Revert to view/navigation mode when palette closes
             this.app.activeStampType = 'view'
@@ -304,9 +305,9 @@ export class ToolManager {
             } else if (el.contains(e.target)) {
                 e.stopPropagation()
                 // Do NOT preventDefault if we are touching an input or button
-                const isInteractive = e.target.tagName === 'INPUT' || 
-                                     e.target.tagName === 'BUTTON' || 
-                                     e.target.closest('button')
+                const isInteractive = e.target.tagName === 'INPUT' ||
+                    e.target.tagName === 'BUTTON' ||
+                    e.target.closest('button')
                 const isScrollableRow = e.target.closest('.text-cloud-row, .tools-row, .recent-tools-ribbon, .category-ribbon, .settings-vtab-content')
                 if (!isInteractive && !isScrollableRow && el.style.overflowY !== 'auto') {
                     e.preventDefault()
@@ -325,6 +326,176 @@ export class ToolManager {
                 if (dt < 300 && dy > 60) this.toggleStampPalette()
             }
         })
+    }
+
+    initFloatingFab() {
+        console.log('[StampFAB] DYNAMIC INJECTION START');
+        
+        // 1. Inject Styles
+        if (!document.getElementById('sf-fab-style')) {
+            const style = document.createElement('style')
+            style.id = 'sf-fab-style'
+            style.textContent = `
+                .sf-dynamic-fab {
+                    position: fixed !important;
+                    width: 48px !important;
+                    height: 48px !important;
+                    background: rgba(30, 41, 59, 0.7) !important; /* Slate-800 Glass */
+                    backdrop-filter: blur(15px) !important;
+                    -webkit-backdrop-filter: blur(15px) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                    border-radius: 50% !important;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    color: white !important;
+                    cursor: grab !important;
+                    z-index: 2000000000 !important;
+                    touch-action: none !important;
+                    user-select: none !important;
+                    -webkit-user-select: none !important;
+                    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+                .sf-dynamic-fab.active { 
+                    background: #6366f1 !important; /* Indigo for active */
+                    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6) !important;
+                }
+                .sf-dynamic-fab.active { background: #6366f1 !important; }
+                .sf-dynamic-fab:hover { transform: scale(1.1); }
+                .sf-dynamic-fab:active { cursor: grabbing !important; }
+                .sf-dynamic-fab svg { pointer-events: none !important; }
+            `
+            document.head.appendChild(style)
+        }
+
+        // 2. Create Element
+        let fab = document.getElementById('floating-stamp-fab')
+        if (fab) fab.remove() // Remove old one if exists
+        
+        fab = document.createElement('div')
+        fab.id = 'floating-stamp-fab'
+        fab.className = 'sf-dynamic-fab'
+        document.body.appendChild(fab)
+
+        const updateIcon = (isExpanded) => {
+            fab.classList.toggle('active', isExpanded)
+            if (isExpanded) {
+                fab.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`
+            } else {
+                fab.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>`
+            }
+        }
+        
+        this._updateFabIcon = updateIcon // Override placeholder
+        updateIcon(this.isStampPaletteOpen)
+
+        // 3. Persistent Position
+        const savedPos = JSON.parse(localStorage.getItem('scoreflow_stamp_fab_pos'))
+        let curX = window.innerWidth - 64
+        let curY = window.innerHeight - 150
+        
+        if (savedPos && typeof savedPos.x === 'number') {
+            curX = savedPos.x
+            curY = savedPos.y
+        }
+        
+        fab.style.setProperty('transform', `translate3d(${curX}px, ${curY}px, 0)`, 'important')
+        
+        fab.style.setProperty('left', '0', 'important')
+        fab.style.setProperty('top', '0', 'important')
+        fab.style.setProperty('right', 'auto', 'important')
+        fab.style.setProperty('bottom', 'auto', 'important')
+
+        // 4. Robust Events (Touch + Mouse)
+        let isDragging = false
+        let hasMoved = false
+        let startX, startY, startFabX, startFabY
+
+        const startDrag = (e) => {
+            const pageX = e.type.startsWith('touch') ? e.touches[0].pageX : e.pageX
+            const pageY = e.type.startsWith('touch') ? e.touches[0].pageY : e.pageY
+            
+            isDragging = true
+            hasMoved = false
+            startX = pageX
+            startY = pageY
+            startFabX = curX
+            startFabY = curY
+            
+            fab.style.transition = 'none'
+            
+            window.addEventListener('mousemove', moveDrag, { passive: false })
+            window.addEventListener('mouseup', endDrag)
+            window.addEventListener('touchmove', moveDrag, { passive: false })
+            window.addEventListener('touchend', endDrag)
+            
+            e.stopPropagation()
+        }
+
+        const moveDrag = (e) => {
+            if (!isDragging) return
+            const pageX = e.type.startsWith('touch') ? e.touches[0].pageX : e.pageX
+            const pageY = e.type.startsWith('touch') ? e.touches[0].pageY : e.pageY
+            
+            const dx = pageX - startX
+            const dy = pageY - startY
+            
+            if (!hasMoved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+                hasMoved = true
+            }
+
+            if (hasMoved) {
+                curX = startFabX + dx
+                curY = startFabY + dy
+                fab.style.setProperty('transform', `translate3d(${curX}px, ${curY}px, 0)`, 'important')
+                if (e.cancelable) e.preventDefault()
+            }
+        }
+
+        const endDrag = (e) => {
+            if (!isDragging) return
+            isDragging = false
+            
+            window.removeEventListener('mousemove', moveDrag)
+            window.removeEventListener('mouseup', endDrag)
+            window.removeEventListener('touchmove', moveDrag)
+            window.removeEventListener('touchend', endDrag)
+            
+            if (hasMoved) {
+                // Persistent storage (no snapping per user request)
+                localStorage.setItem('scoreflow_stamp_fab_pos', JSON.stringify({
+                    x: curX,
+                    y: curY
+                }))
+            } else {
+                // Click
+                this.toggleStampPalette()
+            }
+        }
+
+        fab.addEventListener('mousedown', startDrag)
+        fab.addEventListener('touchstart', startDrag, { passive: false })
+    }
+
+    _updateFabIcon(isExpanded) {
+        const fab = document.getElementById('floating-stamp-fab')
+        if (!fab) return
+        
+        const penIcon = `
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>`
+            
+        const closeIcon = `
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>`
+            
+        fab.innerHTML = isExpanded ? closeIcon : penIcon
+        fab.classList.toggle('active', isExpanded)
     }
 
     updateActiveTools(forceShowDropdown = false) {
@@ -349,7 +520,7 @@ export class ToolManager {
 
             // SYNC TOUCH ACTIONS: Ensure overlays are updated to match the NEW active tool immediately
             this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
-            
+
             // REFRESH RULER: Ensure measure marks pointer-events are updated for scrolling safety
             this.app?.rulerManager?.updateRulerMarks();
         }
@@ -489,12 +660,12 @@ export class ToolManager {
                 const pill = document.createElement("button")
                 pill.className = `cat-pill ${isActive ? "active" : ""}`
                 pill.textContent = group.name
-                
+
                 pill.onclick = (e) => {
                     e.stopPropagation()
                     // Fixed: Single category selection only - no toggle, no multi-select
                     this.app.activeCategories = [group.name]
-                    
+
                     // Automatically switch active layer to match chosen category
                     const targetLayer = this.app.layers.find(l => l.name === group.name || l.type === group.type);
                     if (targetLayer) {
@@ -502,10 +673,10 @@ export class ToolManager {
                         // Fix "Jumping Color": Sync app.activeColor with the layer's own color when switching
                         this.app.activeColor = targetLayer.color;
                     }
-                    
+
                     this.app.saveToStorage()
                     this.updateActiveTools()
-                    
+
                     // Reset scroll position to help consistency
                     const grid = this.app.activeToolsContainer.querySelector('.active-tools-rows')
                     if (grid) grid.scrollLeft = 0
@@ -557,13 +728,13 @@ export class ToolManager {
             swatch.onclick = (e) => {
                 e.stopPropagation()
                 this.app.activeColor = color.value
-                
+
                 // Persist to active layer so it doesn't "jump" back when returning to this category
                 const layer = this.app.layers.find(l => l.id === this.app.activeLayerId)
                 if (layer) {
                     layer.color = color.value
                 }
-                
+
                 this.updateActiveTools()
             }
             ribbon.appendChild(swatch)
@@ -695,7 +866,7 @@ export class ToolManager {
                     const hasIcon = tool.icon && tool.icon.includes('<path')
                     btn.innerHTML = hasIcon ? this.getIcon(tool, 20) : (tool.icon || tool.label)
                     btn.style.color = isSelected ? '#ffffff' : rowColor
-                    
+
                     // Apply font styling from tool definition if available
                     if (tool.draw && tool.draw.type === 'text') {
                         const hasCJK = /[\u4e00-\u9fa5]/.test(tool.label || '')
@@ -709,11 +880,11 @@ export class ToolManager {
                         }
                         if (tool.draw.fontFace) btn.style.fontFamily = tool.draw.fontFace;
                         if (tool.draw.weight) btn.style.fontWeight = tool.draw.weight;
-                        
+
                         // Scale down CJK labels slightly on buttons too
                         if (hasCJK) btn.style.fontSize = '12px';
                     }
-                    
+
                     btn.onclick = (e) => {
                         e.stopPropagation()
                         this.app.activeStampType = tool.id
@@ -735,7 +906,7 @@ export class ToolManager {
                     const isSelected = this.app.activeStampType === `custom-text-${idx}`
                     btn.className = `text-tool-pill user-custom ${isSelected ? "active" : ""}`
                     btn.style.color = isSelected ? '#ffffff' : rowColor
-                    
+
                     const hasCJK = /[\u4e00-\u9fa5]/.test(text || '')
                     if (hasCJK) {
                         btn.style.fontStyle = 'normal';
@@ -794,7 +965,7 @@ export class ToolManager {
                 input.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); commit() } }
                 input.onclick = (e) => e.stopPropagation()
                 r3.appendChild(addWrapper)
-                
+
                 // Append directly to container for cleaner column stacking
                 if (r1.children.length > 0) {
                     container.appendChild(r1)
@@ -819,9 +990,9 @@ export class ToolManager {
                     const btn = document.createElement("button")
                     const isSelected = this.app.activeStampType === tool.id
                     btn.className = `stamp-tool ${isSelected ? "active" : ""}`
-                    
+
                     btn.innerHTML = this.getIcon(tool, 28, isSelected ? '#ffffff' : rowColor)
-                    
+
                     btn.onclick = (e) => {
                         e.stopPropagation()
                         if (tool.id === 'erase-all') {
@@ -840,7 +1011,7 @@ export class ToolManager {
                         }
                         this.updateActiveTools()
                     }
-                    
+
                     // Distribute to row 1 or 2 based on tool.row property
                     if (tool.row === 1) r1.appendChild(btn)
                     else r2.appendChild(btn)
@@ -1001,10 +1172,10 @@ export class ToolManager {
                         <div class="setting-item mb-15" style="margin-top:10px">
                             <div class="setting-label" style="margin-bottom:10px">斗篷標籤（Cloak Labels）</div>
                             ${[
-                                { id: 'black', label: '黑色斗篷', color: '#374151' },
-                                { id: 'red',   label: '紅色斗篷', color: '#dc2626' },
-                                { id: 'blue',  label: '藍色斗篷', color: '#2563eb' },
-                            ].map(c => `
+                { id: 'black', label: '黑色斗篷', color: '#374151' },
+                { id: 'red', label: '紅色斗篷', color: '#dc2626' },
+                { id: 'blue', label: '藍色斗篷', color: '#2563eb' },
+            ].map(c => `
                             <div class="setting-row-compact" style="margin-bottom:8px">
                                 <div style="display:flex;align-items:center;gap:8px">
                                     <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.color}"></span>
