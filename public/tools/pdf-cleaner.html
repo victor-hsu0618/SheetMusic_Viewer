@@ -6,278 +6,349 @@
     <title>PDF Score Cleaner — ScoreFlow Tools</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="shared-styles.css">
-    <script src="theme-manager.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 32px 20px; min-height: 100vh; }
-        .container { max-width: 1100px; margin: 0 auto; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 700; font-size: 13px; text-decoration: none; opacity: 0.8; margin-bottom: 28px; }
-        .back-btn:hover { opacity: 1; }
-        h1 { font-size: 2rem; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.03em; }
-        .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; }
-
-        /* Drop zone */
-        .drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: 20px;
-            padding: 60px 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 24px;
-            background: var(--card-bg);
-        }
-        .drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: rgba(99,102,241,0.05); }
-        .drop-zone .icon { font-size: 3rem; margin-bottom: 12px; }
-        .drop-zone p { color: var(--text-muted); margin: 0; font-size: 14px; }
-        .drop-zone strong { color: var(--text); }
-        input[type=file] { display: none; }
-
-        /* Controls */
-        .controls-bar {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px 24px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 24px;
-            align-items: flex-end;
-            margin-bottom: 24px;
-        }
-        .ctrl-group { display: flex; flex-direction: column; gap: 6px; min-width: 140px; }
-        .ctrl-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
-        .ctrl-group .val { font-size: 12px; font-weight: 600; color: var(--primary); text-align: right; }
-        input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; }
-
-        .ctrl-group select {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            padding: 6px 10px;
-            font-family: inherit;
-            font-size: 13px;
-            cursor: pointer;
+        :root {
+            --bg: #0f172a;
+            --sidebar-bg: #1e293b;
+            --border: rgba(255,255,255,0.1);
+            --primary: #6366f1;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --card-bg: rgba(255,255,255,0.04);
+            --sidebar-w: 260px;
         }
 
-        .btn {
-            font-family: inherit;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
-        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-        .btn-outline:hover { border-color: rgba(255,255,255,0.3); }
+        html, body { height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
 
-        /* Progress */
-        .progress-wrap { margin-bottom: 16px; display: none; }
-        .progress-bar-bg { background: rgba(255,255,255,0.08); border-radius: 99px; height: 6px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.3s; width: 0%; }
-        .progress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+        /* ── Layout ── */
+        #app { display: flex; height: 100vh; }
 
-        /* Preview grid */
-        .page-grid {
+        /* ── Sidebar ── */
+        #sidebar {
+            width: var(--sidebar-w);
+            min-width: var(--sidebar-w);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            gap: 28px;
+            overflow: hidden;
         }
-        .page-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
+        #sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
         }
-        .page-card-hd {
+        #sidebar-header a {
+            display: inline-flex; align-items: center; gap: 5px;
+            color: var(--primary); font-size: 11px; font-weight: 700;
+            text-decoration: none; opacity: 0.7; margin-bottom: 10px;
+        }
+        #sidebar-header a:hover { opacity: 1; }
+        #sidebar-header h1 { font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; }
+        #sidebar-header p  { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+        #sidebar-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+        #sidebar-body::-webkit-scrollbar { width: 4px; }
+        #sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        #sidebar-footer { padding: 12px 14px; border-top: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+
+        /* section */
+        .s-section { display: flex; flex-direction: column; gap: 8px; }
+        .s-title {
+            font-size: 10px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--text-muted);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .s-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+        .ctrl { display: flex; flex-direction: column; gap: 4px; }
+        .ctrl label { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; }
+        .ctrl label span { color: var(--primary); font-weight: 700; }
+        input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; height: 4px; }
+        select {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+            border-radius: 6px; color: var(--text); padding: 6px 8px;
+            font-family: inherit; font-size: 12px; cursor: pointer;
+        }
+        .check-label {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 12px; color: var(--text); cursor: pointer;
+        }
+        input[type=checkbox] { accent-color: var(--primary); width: 14px; height: 14px; cursor: pointer; }
+
+        .btn {
+            font-family: inherit; display: flex; align-items: center; justify-content: center;
+            gap: 6px; padding: 9px 14px; border-radius: 8px; font-weight: 700;
+            font-size: 12px; cursor: pointer; border: none; transition: all 0.18s; width: 100%;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { filter: brightness(1.15); }
+        .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: rgba(255,255,255,0.25); }
+        .btn-danger  { background: transparent; border: 1px solid rgba(239,68,68,0.3); color: #ef4444; }
+        .btn-danger:hover { background: rgba(239,68,68,0.08); }
+
+        /* Progress */
+        .prog-wrap { display: none; }
+        .prog-bar-bg { background: rgba(255,255,255,0.08); border-radius: 99px; height: 5px; overflow: hidden; margin-top: 4px; }
+        .prog-bar-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.25s; width: 0; }
+        .prog-label { font-size: 11px; color: var(--text-muted); }
+
+        #status-msg { font-size: 11px; color: var(--primary); font-weight: 700; text-align: center; min-height: 16px; }
+
+        /* ── Main View ── */
+        #main {
+            flex: 1;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-        .compare-wrap {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        .compare-wrap canvas {
-            width: 100%;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            display: block;
-            cursor: zoom-in;
-        }
-        .compare-label {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-muted);
-            text-align: center;
-            margin-bottom: 6px;
+            flex-direction: column;
+            overflow: hidden;
+            background: #080f1e;
         }
 
-        /* Lightbox */
-        .lightbox {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.92);
-            z-index: 1000;
+        /* Top bar */
+        #topbar {
+            height: 48px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 16px;
+            flex-shrink: 0;
+            background: var(--sidebar-bg);
+        }
+        #topbar .file-name { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #topbar .file-name span { color: var(--text-muted); font-weight: 400; font-size: 11px; margin-left: 8px; }
+
+        /* View mode toggle */
+        .seg-btns { display: flex; gap: 2px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 3px; }
+        .seg-btn {
+            font-family: inherit; font-size: 11px; font-weight: 700; padding: 4px 12px;
+            border: none; border-radius: 6px; cursor: pointer; background: transparent;
+            color: var(--text-muted); transition: all 0.15s;
+        }
+        .seg-btn.active { background: var(--primary); color: white; }
+
+        /* Page nav */
+        .page-nav { display: flex; align-items: center; gap: 8px; }
+        .nav-btn {
+            font-family: inherit; width: 28px; height: 28px; border: 1px solid var(--border);
+            background: transparent; color: var(--text); border-radius: 6px;
+            cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+        }
+        .nav-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        #page-indicator { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+        /* Canvas area */
+        #canvas-area {
+            flex: 1;
+            display: flex;
             align-items: center;
             justify-content: center;
-            cursor: zoom-out;
-        }
-        .lightbox.open { display: flex; }
-        .lightbox img {
-            max-width: 95vw;
-            max-height: 95vh;
-            border-radius: 8px;
-            object-fit: contain;
-        }
-        .lightbox-close {
-            position: fixed;
-            top: 20px;
-            right: 28px;
-            font-size: 28px;
-            color: white;
-            cursor: pointer;
-            opacity: 0.7;
-            line-height: 1;
-        }
-        .lightbox-close:hover { opacity: 1; }
-
-        /* Action bar */
-        .action-bar {
-            display: flex;
+            overflow: hidden;
             gap: 12px;
-            align-items: center;
-            justify-content: flex-end;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
+            padding: 12px;
+            position: relative;
         }
-        .file-info { font-size: 13px; color: var(--text-muted); flex: 1; }
-        .file-info strong { color: var(--text); }
+        .page-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            flex: 1;
+            min-width: 0;
+        }
+        .col-label {
+            font-size: 10px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px;
+        }
+        .page-col canvas {
+            max-width: 100%;
+            max-height: calc(100% - 24px);
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            cursor: zoom-in;
+            display: block;
+        }
+        #divider {
+            width: 1px; height: 80%; background: var(--border); flex-shrink: 0; align-self: center;
+        }
 
-        #status-msg { font-size: 13px; color: var(--primary); font-weight: 600; }
+        /* Drop overlay (full main area) */
+        #drop-overlay {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 12px; cursor: pointer;
+        }
+        #drop-overlay.drag-over { background: rgba(99,102,241,0.06); }
+        #drop-overlay .drop-icon { font-size: 4rem; }
+        #drop-overlay strong { font-size: 1.1rem; font-weight: 700; }
+        #drop-overlay p { font-size: 13px; color: var(--text-muted); }
+        input[type=file] { display: none; }
+
+        /* Lightbox */
+        #lightbox {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.94); z-index: 9999;
+            align-items: center; justify-content: center; cursor: zoom-out;
+        }
+        #lightbox.open { display: flex; }
+        #lightbox img { max-width: 96vw; max-height: 96vh; border-radius: 4px; object-fit: contain; }
+        #lightbox-close { position: fixed; top: 16px; right: 20px; font-size: 26px; color: #fff; cursor: pointer; opacity: 0.6; }
+        #lightbox-close:hover { opacity: 1; }
     </style>
 </head>
 <body>
-<div class="container">
-    <a href="index.html" class="back-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg>
-        返回工具門戶
-    </a>
+<div id="app">
 
-    <h1>🧹 PDF Score Cleaner</h1>
-    <p class="subtitle">清除影印樂譜的髒污、灰色背景與雜訊，輸出乾淨的黑白 PDF。</p>
+    <!-- ── Sidebar ── -->
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <a href="index.html">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg>
+                返回工具門戶
+            </a>
+            <h1>🧹 Score Cleaner</h1>
+            <p>清除影印髒污，重建五線譜與音符</p>
+        </div>
 
-    <!-- Drop Zone -->
-    <div class="drop-zone" id="drop-zone">
-        <div class="icon">📄</div>
-        <strong>拖曳 PDF 到這裡</strong>
-        <p style="margin-top:8px;">或點擊選取檔案</p>
-        <input type="file" id="file-input" accept=".pdf">
+        <div id="sidebar-body">
+            <!-- Basic -->
+            <div class="s-section">
+                <div class="s-title">清理模式</div>
+                <div class="ctrl">
+                    <label>處理模式</label>
+                    <select id="ctrl-mode">
+                        <option value="adaptive">自適應二值化（推薦）</option>
+                        <option value="otsu">Otsu 自動閾值</option>
+                        <option value="simple">簡單閾值</option>
+                        <option value="denoise">去雜訊 + 增強</option>
+                    </select>
+                </div>
+                <div class="ctrl">
+                    <label>閾值（簡單模式）<span id="val-threshold">128</span></label>
+                    <input type="range" id="ctrl-threshold" min="80" max="220" value="128">
+                </div>
+                <div class="ctrl">
+                    <label>對比增強<span id="val-contrast">1.0×</span></label>
+                    <input type="range" id="ctrl-contrast" min="0.5" max="3" value="1.0" step="0.05">
+                </div>
+                <div class="ctrl">
+                    <label>去雜訊<span id="val-denoise">0</span></label>
+                    <input type="range" id="ctrl-denoise" min="0" max="5" value="0">
+                </div>
+                <div class="ctrl">
+                    <label>渲染解析度</label>
+                    <select id="ctrl-scale">
+                        <option value="1.5">150 dpi（快）</option>
+                        <option value="2" selected>200 dpi（推薦）</option>
+                        <option value="3">300 dpi（高品質）</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Staff -->
+            <div class="s-section">
+                <div class="s-title">五線譜加強</div>
+                <label class="check-label">
+                    <input type="checkbox" id="ctrl-staff-enhance">
+                    偵測並加黑五線譜
+                </label>
+                <div class="ctrl" id="staff-density-group" style="display:none;">
+                    <label>偵測靈敏度<span id="val-staff-density">20%</span></label>
+                    <input type="range" id="ctrl-staff-density" min="5" max="60" value="20">
+                </div>
+            </div>
+
+            <!-- Noteheads -->
+            <div class="s-section">
+                <div class="s-title">音符頭清理</div>
+                <label class="check-label">
+                    <input type="checkbox" id="ctrl-notehead-clean">
+                    偵測並重繪音符頭
+                </label>
+                <div id="notehead-size-group" style="display:none; flex-direction:column; gap:6px;">
+                    <div class="ctrl">
+                        <label>最小尺寸<span id="val-notehead-min">6</span>px</label>
+                        <input type="range" id="ctrl-notehead-min" min="3" max="20" value="6">
+                    </div>
+                    <div class="ctrl">
+                        <label>最大尺寸<span id="val-notehead-max">28</span>px</label>
+                        <input type="range" id="ctrl-notehead-max" min="10" max="60" value="28">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="prog-wrap" id="progress-wrap">
+                <div class="prog-label" id="progress-label">處理中…</div>
+                <div class="prog-bar-bg"><div class="prog-bar-fill" id="progress-bar"></div></div>
+            </div>
+
+            <div id="status-msg"></div>
+        </div>
+
+        <div id="sidebar-footer">
+            <button class="btn btn-primary" id="btn-process" disabled>⚡ 重新處理所有頁</button>
+            <button class="btn btn-primary" id="btn-download" disabled>↓ 下載清理後 PDF</button>
+            <button class="btn btn-danger"  id="btn-reset"   style="display:none;">✕ 重置</button>
+        </div>
     </div>
 
-    <!-- Controls -->
-    <div class="controls-bar" id="controls-bar" style="display:none;">
-        <div class="ctrl-group">
-            <label>處理模式</label>
-            <select id="ctrl-mode">
-                <option value="adaptive">自適應二值化（推薦）</option>
-                <option value="otsu">Otsu 自動閾值</option>
-                <option value="simple">簡單閾值</option>
-                <option value="denoise">去雜訊 + 增強</option>
-            </select>
+    <!-- ── Main ── -->
+    <div id="main">
+        <!-- Topbar -->
+        <div id="topbar" style="display:none;">
+            <span class="file-name" id="file-name-label">—</span>
+            <div class="seg-btns">
+                <button class="seg-btn active" id="btn-split">並排比較</button>
+                <button class="seg-btn"        id="btn-single">單頁清理</button>
+            </div>
+            <div class="page-nav">
+                <button class="nav-btn" id="btn-prev">‹</button>
+                <span id="page-indicator">— / —</span>
+                <button class="nav-btn" id="btn-next">›</button>
+            </div>
         </div>
-        <div class="ctrl-group">
-            <label>閾值 <span class="val" id="val-threshold">128</span></label>
-            <input type="range" id="ctrl-threshold" min="80" max="220" value="128" step="1">
-        </div>
-        <div class="ctrl-group">
-            <label>對比增強 <span class="val" id="val-contrast">1.0×</span></label>
-            <input type="range" id="ctrl-contrast" min="0.5" max="3" value="1.0" step="0.05">
-        </div>
-        <div class="ctrl-group">
-            <label>去雜訊強度 <span class="val" id="val-denoise">0</span></label>
-            <input type="range" id="ctrl-denoise" min="0" max="5" value="0" step="1">
-        </div>
-        <div class="ctrl-group">
-            <label>渲染解析度</label>
-            <select id="ctrl-scale">
-                <option value="1.5">150 dpi（快）</option>
-                <option value="2" selected>200 dpi（推薦）</option>
-                <option value="3">300 dpi（高品質）</option>
-            </select>
-        </div>
-        <div class="ctrl-group" style="min-width:200px;">
-            <label>五線譜線條加強</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);text-transform:none;letter-spacing:0;margin-top:4px;">
-                <input type="checkbox" id="ctrl-staff-enhance" style="accent-color:var(--primary);width:15px;height:15px;">
-                偵測並加黑線條
-            </label>
-        </div>
-        <div class="ctrl-group" id="staff-density-group" style="display:none;">
-            <label>偵測靈敏度 <span class="val" id="val-staff-density">20%</span></label>
-            <input type="range" id="ctrl-staff-density" min="5" max="60" value="20" step="1">
-        </div>
-        <div class="ctrl-group" style="min-width:200px;">
-            <label>音符頭清理</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);text-transform:none;letter-spacing:0;margin-top:4px;">
-                <input type="checkbox" id="ctrl-notehead-clean" style="accent-color:var(--primary);width:15px;height:15px;">
-                偵測並重繪音符頭
-            </label>
-        </div>
-        <div class="ctrl-group" id="notehead-size-group" style="display:none;">
-            <label>音符頭大小範圍 <span class="val" id="val-notehead-min">6</span>–<span class="val" id="val-notehead-max">28</span>px</label>
-            <input type="range" id="ctrl-notehead-min" min="3" max="20" value="6" step="1" style="margin-bottom:4px;">
-            <input type="range" id="ctrl-notehead-max" min="10" max="60" value="28" step="1">
-        </div>
-        <button class="btn btn-primary" id="btn-process">⚡ 重新處理</button>
-    </div>
 
-    <!-- Action bar -->
-    <div class="action-bar" id="action-bar" style="display:none;">
-        <span class="file-info" id="file-info"></span>
-        <span id="status-msg"></span>
-        <button class="btn btn-outline" id="btn-reset">✕ 重置</button>
-        <button class="btn btn-primary" id="btn-download" disabled>↓ 下載清理後 PDF</button>
-    </div>
+        <!-- Canvas area -->
+        <div id="canvas-area">
+            <!-- Drop overlay (shown when no PDF) -->
+            <div id="drop-overlay">
+                <div class="drop-icon">📄</div>
+                <strong>拖曳 PDF 到這裡</strong>
+                <p>或點擊選取檔案</p>
+                <input type="file" id="file-input" accept=".pdf">
+            </div>
 
-    <!-- Progress -->
-    <div class="progress-wrap" id="progress-wrap">
-        <div class="progress-label" id="progress-label">處理中…</div>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar"></div></div>
-    </div>
+            <!-- Original col -->
+            <div class="page-col" id="col-orig" style="display:none;">
+                <div class="col-label">原始</div>
+                <canvas id="canvas-orig"></canvas>
+            </div>
 
-    <!-- Page Preview Grid -->
-    <div class="page-grid" id="page-grid"></div>
+            <div id="divider" style="display:none;"></div>
+
+            <!-- Cleaned col -->
+            <div class="page-col" id="col-clean" style="display:none;">
+                <div class="col-label" id="label-clean">清理後</div>
+                <canvas id="canvas-clean"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Lightbox -->
-<div class="lightbox" id="lightbox">
-    <span class="lightbox-close" id="lightbox-close">✕</span>
+<div id="lightbox">
+    <span id="lightbox-close">✕</span>
     <img id="lightbox-img" src="" alt="">
 </div>
 
@@ -286,489 +357,368 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
 let pdfDoc = null;
 let totalPages = 0;
-let processedCanvases = []; // cleaned canvases per page
+let currentPage = 1;
+let viewMode = 'split'; // 'split' | 'single'
+let originalCanvases  = []; // full-res original per page
+let processedCanvases = []; // full-res cleaned per page
 let originalFile = null;
 
-// ── Drop Zone ──
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
+// ── Drop / File ──
+const dropOverlay = document.getElementById('drop-overlay');
+const fileInput   = document.getElementById('file-input');
+const canvasArea  = document.getElementById('canvas-area');
 
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file?.type === 'application/pdf') loadPDF(file);
+dropOverlay.addEventListener('click', () => fileInput.click());
+canvasArea.addEventListener('dragover',  e => { e.preventDefault(); dropOverlay.classList.add('drag-over'); });
+canvasArea.addEventListener('dragleave', () => dropOverlay.classList.remove('drag-over'));
+canvasArea.addEventListener('drop', e => {
+    e.preventDefault(); dropOverlay.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f?.type === 'application/pdf') loadPDF(f);
 });
-fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) loadPDF(fileInput.files[0]);
-});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadPDF(fileInput.files[0]); });
 
 // ── Sliders ──
-const sliders = [
+[
     ['ctrl-threshold', 'val-threshold', v => Math.round(v)],
-    ['ctrl-contrast',  'val-contrast',  v => parseFloat(v).toFixed(2) + '×'],
+    ['ctrl-contrast',  'val-contrast',  v => parseFloat(v).toFixed(2)+'×'],
     ['ctrl-denoise',   'val-denoise',   v => Math.round(v)],
-];
-sliders.forEach(([id, valId, fmt]) => {
-    const el = document.getElementById(id);
-    const vEl = document.getElementById(valId);
-    el.addEventListener('input', () => { vEl.textContent = fmt(el.value); });
+    ['ctrl-staff-density', 'val-staff-density', v => v+'%'],
+    ['ctrl-notehead-min',  'val-notehead-min',  v => Math.round(v)],
+    ['ctrl-notehead-max',  'val-notehead-max',  v => Math.round(v)],
+].forEach(([id, vid, fmt]) => {
+    document.getElementById(id).addEventListener('input', function() {
+        document.getElementById(vid).textContent = fmt(this.value);
+    });
 });
 
-document.getElementById('ctrl-mode').addEventListener('change', updateControlVisibility);
-function updateControlVisibility() {
-    const mode = document.getElementById('ctrl-mode').value;
-    const thresholdGroup = document.getElementById('ctrl-threshold').closest('.ctrl-group');
-    thresholdGroup.style.opacity = (mode === 'simple') ? '1' : '0.4';
+document.getElementById('ctrl-staff-enhance').addEventListener('change', function() {
+    document.getElementById('staff-density-group').style.display = this.checked ? 'flex' : 'none';
+});
+document.getElementById('ctrl-notehead-clean').addEventListener('change', function() {
+    document.getElementById('notehead-size-group').style.display = this.checked ? 'flex' : 'none';
+});
+
+// ── View Mode ──
+document.getElementById('btn-split').addEventListener('click',  () => setViewMode('split'));
+document.getElementById('btn-single').addEventListener('click', () => setViewMode('single'));
+function setViewMode(mode) {
+    viewMode = mode;
+    document.getElementById('btn-split').classList.toggle('active',  mode === 'split');
+    document.getElementById('btn-single').classList.toggle('active', mode === 'single');
+    document.getElementById('col-orig').style.display  = (mode === 'split') ? 'flex' : 'none';
+    document.getElementById('divider').style.display   = (mode === 'split') ? 'block' : 'none';
+    document.getElementById('label-clean').textContent = (mode === 'single') ? '清理後' : '清理後';
+    showPage(currentPage);
 }
+
+// ── Page Nav ──
+document.getElementById('btn-prev').addEventListener('click', () => showPage(currentPage - 1));
+document.getElementById('btn-next').addEventListener('click', () => showPage(currentPage + 1));
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft')  showPage(currentPage - 1);
+    if (e.key === 'ArrowRight') showPage(currentPage + 1);
+});
+
+function showPage(n) {
+    if (!totalPages) return;
+    currentPage = Math.max(1, Math.min(totalPages, n));
+    document.getElementById('page-indicator').textContent = `${currentPage} / ${totalPages}`;
+    document.getElementById('btn-prev').disabled = currentPage <= 1;
+    document.getElementById('btn-next').disabled = currentPage >= totalPages;
+
+    const origSrc  = originalCanvases[currentPage - 1];
+    const cleanSrc = processedCanvases[currentPage - 1];
+
+    if (origSrc)  drawFit(origSrc,  document.getElementById('canvas-orig'));
+    if (cleanSrc) drawFit(cleanSrc, document.getElementById('canvas-clean'));
+}
+
+function drawFit(src, dst) {
+    const area = document.getElementById('canvas-area');
+    const cols = viewMode === 'split' ? 2 : 1;
+    const gap  = viewMode === 'split' ? 12 : 0;
+    const availW = (area.clientWidth - 24 - gap * (cols - 1)) / cols;
+    const availH = area.clientHeight - 24 - 24; // minus label
+
+    const ratio = Math.min(availW / src.width, availH / src.height);
+    dst.width  = Math.round(src.width  * ratio);
+    dst.height = Math.round(src.height * ratio);
+    dst.getContext('2d').drawImage(src, 0, 0, dst.width, dst.height);
+}
+
+window.addEventListener('resize', () => showPage(currentPage));
 
 // ── Load PDF ──
 async function loadPDF(file) {
     originalFile = file;
-    setStatus('正在載入 PDF…');
-    const arrayBuf = await file.arrayBuffer();
-    pdfDoc = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
+    originalCanvases  = [];
+    processedCanvases = [];
+    currentPage = 1;
+
+    const buf = await file.arrayBuffer();
+    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
     totalPages = pdfDoc.numPages;
-    document.getElementById('file-info').innerHTML =
-        `<strong>${file.name}</strong> &nbsp;·&nbsp; ${totalPages} 頁 &nbsp;·&nbsp; ${(file.size/1024/1024).toFixed(1)} MB`;
-    document.getElementById('controls-bar').style.display = 'flex';
-    document.getElementById('action-bar').style.display = 'flex';
-    dropZone.style.display = 'none';
+
+    document.getElementById('file-name-label').innerHTML =
+        `<strong>${file.name}</strong> <span>${totalPages} 頁 · ${(file.size/1024/1024).toFixed(1)} MB</span>`;
+
+    dropOverlay.style.display = 'none';
+    document.getElementById('topbar').style.display = 'flex';
+    document.getElementById('col-orig').style.display  = 'flex';
+    document.getElementById('col-clean').style.display = 'flex';
+    document.getElementById('divider').style.display   = 'block';
+    document.getElementById('btn-reset').style.display = 'block';
+    document.getElementById('btn-process').disabled = false;
+
     await processAll();
 }
 
-// ── Process All Pages ──
+// ── Process All ──
 async function processAll() {
     if (!pdfDoc) return;
+    originalCanvases  = [];
     processedCanvases = [];
-    const grid = document.getElementById('page-grid');
-    grid.innerHTML = '';
     document.getElementById('btn-download').disabled = true;
     showProgress(true);
 
-    const scale = parseFloat(document.getElementById('ctrl-scale').value);
-    const mode = document.getElementById('ctrl-mode').value;
-    const threshold = parseInt(document.getElementById('ctrl-threshold').value);
-    const contrast = parseFloat(document.getElementById('ctrl-contrast').value);
-    const denoiseRadius = parseInt(document.getElementById('ctrl-denoise').value);
+    const scale        = parseFloat(document.getElementById('ctrl-scale').value);
+    const mode         = document.getElementById('ctrl-mode').value;
+    const threshold    = parseInt(document.getElementById('ctrl-threshold').value);
+    const contrast     = parseFloat(document.getElementById('ctrl-contrast').value);
+    const denoiseR     = parseInt(document.getElementById('ctrl-denoise').value);
     const staffEnhance = document.getElementById('ctrl-staff-enhance').checked;
     const staffDensity = parseInt(document.getElementById('ctrl-staff-density').value) / 100;
-    const noteheadClean = document.getElementById('ctrl-notehead-clean').checked;
-    const noteheadMin = parseInt(document.getElementById('ctrl-notehead-min').value);
-    const noteheadMax = parseInt(document.getElementById('ctrl-notehead-max').value);
+    const noteClean    = document.getElementById('ctrl-notehead-clean').checked;
+    const noteMin      = parseInt(document.getElementById('ctrl-notehead-min').value);
+    const noteMax      = parseInt(document.getElementById('ctrl-notehead-max').value);
 
     for (let i = 1; i <= totalPages; i++) {
-        setProgress(((i - 1) / totalPages) * 100, `處理第 ${i} / ${totalPages} 頁…`);
+        setProgress(((i-1)/totalPages)*100, `處理第 ${i} / ${totalPages} 頁…`);
 
-        const page = await pdfDoc.getPage(i);
+        const page     = await pdfDoc.getPage(i);
         const viewport = page.getViewport({ scale });
 
-        // Render original
+        // Original
         const origCanvas = document.createElement('canvas');
-        origCanvas.width = viewport.width;
-        origCanvas.height = viewport.height;
+        origCanvas.width = viewport.width; origCanvas.height = viewport.height;
         await page.render({ canvasContext: origCanvas.getContext('2d'), viewport }).promise;
+        originalCanvases.push(origCanvas);
 
-        // Clean
+        // Clean copy
         const cleanCanvas = document.createElement('canvas');
-        cleanCanvas.width = origCanvas.width;
-        cleanCanvas.height = origCanvas.height;
+        cleanCanvas.width = origCanvas.width; cleanCanvas.height = origCanvas.height;
         const cleanCtx = cleanCanvas.getContext('2d');
         cleanCtx.drawImage(origCanvas, 0, 0);
-        const imageData = cleanCtx.getImageData(0, 0, cleanCanvas.width, cleanCanvas.height);
-        processPixels(imageData, mode, threshold, contrast, denoiseRadius);
-        if (staffEnhance) enhanceStaffLines(imageData, staffDensity);
-        cleanCtx.putImageData(imageData, 0, 0);
-        if (noteheadClean) cleanNoteheads(cleanCtx, cleanCanvas.width, cleanCanvas.height, noteheadMin, noteheadMax);
+        const imgData = cleanCtx.getImageData(0, 0, cleanCanvas.width, cleanCanvas.height);
+        processPixels(imgData, mode, threshold, contrast, denoiseR);
+        if (staffEnhance) enhanceStaffLines(imgData, staffDensity);
+        cleanCtx.putImageData(imgData, 0, 0);
+        if (noteClean) cleanNoteheads(cleanCtx, cleanCanvas.width, cleanCanvas.height, noteMin, noteMax);
 
         processedCanvases.push(cleanCanvas);
-
-        // Card
-        const card = document.createElement('div');
-        card.className = 'page-card';
-        card.innerHTML = `
-            <div class="page-card-hd">
-                <span>第 ${i} 頁</span>
-                <span>${Math.round(viewport.width)} × ${Math.round(viewport.height)} px</span>
-            </div>
-            <div class="compare-wrap">
-                <div>
-                    <div class="compare-label">原始</div>
-                    <canvas id="orig-${i}"></canvas>
-                </div>
-                <div>
-                    <div class="compare-label">清理後</div>
-                    <canvas id="clean-${i}"></canvas>
-                </div>
-            </div>`;
-        grid.appendChild(card);
-
-        // Draw thumbnails (scaled down for display)
-        drawThumb(origCanvas,  document.getElementById(`orig-${i}`));
-        drawThumb(cleanCanvas, document.getElementById(`clean-${i}`));
-
-        // Let browser breathe
         await new Promise(r => setTimeout(r, 0));
     }
 
-    setProgress(100, '處理完成！');
-    setTimeout(() => showProgress(false), 800);
+    setProgress(100, '完成');
+    setTimeout(() => showProgress(false), 600);
     document.getElementById('btn-download').disabled = false;
     setStatus(`✓ ${totalPages} 頁處理完成`);
+    showPage(currentPage);
 }
-
-function drawThumb(src, dst) {
-    const maxW = 1200;
-    const ratio = Math.min(1, maxW / src.width);
-    dst.width  = Math.round(src.width  * ratio);
-    dst.height = Math.round(src.height * ratio);
-    dst.getContext('2d').drawImage(src, 0, 0, dst.width, dst.height);
-    // Click to open lightbox
-    dst.addEventListener('click', () => {
-        document.getElementById('lightbox-img').src = dst.toDataURL('image/jpeg', 0.95);
-        document.getElementById('lightbox').classList.add('open');
-    });
-}
-
-// Lightbox close
-document.getElementById('lightbox').addEventListener('click', closeLightbox);
-document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
-function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
 
 // ── Image Processing ──
 function processPixels(imageData, mode, threshold, contrast, denoiseR) {
-    const d = imageData.data;
-    const w = imageData.width;
-    const h = imageData.height;
-
-    // 1. Grayscale
+    const d = imageData.data, w = imageData.width, h = imageData.height;
+    // Grayscale
     for (let i = 0; i < d.length; i += 4) {
-        const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-        d[i] = d[i+1] = d[i+2] = gray;
+        const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+        d[i] = d[i+1] = d[i+2] = g;
     }
-
-    // 2. Contrast stretch
+    // Contrast
     if (contrast !== 1.0) {
         for (let i = 0; i < d.length; i += 4) {
-            const v = Math.min(255, Math.max(0, (d[i] - 128) * contrast + 128));
+            const v = Math.min(255, Math.max(0, (d[i]-128)*contrast+128));
             d[i] = d[i+1] = d[i+2] = v;
         }
     }
-
-    // 3. Denoise (simple median-like box blur on gray channel)
+    // Denoise
     if (denoiseR > 0) {
-        const size = denoiseR * 2 + 1;
-        const temp = new Uint8ClampedArray(w * h);
-        for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-                let sum = 0, count = 0;
-                for (let dy = -denoiseR; dy <= denoiseR; dy++) {
-                    for (let dx = -denoiseR; dx <= denoiseR; dx++) {
-                        const ny = y + dy, nx = x + dx;
-                        if (ny >= 0 && ny < h && nx >= 0 && nx < w) {
-                            sum += d[(ny * w + nx) * 4];
-                            count++;
-                        }
-                    }
-                }
-                temp[y * w + x] = sum / count;
+        const temp = new Uint8ClampedArray(w*h);
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            let sum = 0, cnt = 0;
+            for (let dy = -denoiseR; dy <= denoiseR; dy++) for (let dx = -denoiseR; dx <= denoiseR; dx++) {
+                const ny = y+dy, nx = x+dx;
+                if (ny>=0&&ny<h&&nx>=0&&nx<w) { sum += d[(ny*w+nx)*4]; cnt++; }
             }
+            temp[y*w+x] = sum/cnt;
         }
-        for (let i = 0; i < w * h; i++) {
-            d[i*4] = d[i*4+1] = d[i*4+2] = temp[i];
-        }
+        for (let i = 0; i < w*h; i++) d[i*4] = d[i*4+1] = d[i*4+2] = temp[i];
     }
-
-    // 4. Thresholding
+    // Threshold
     if (mode === 'simple') {
-        for (let i = 0; i < d.length; i += 4) {
-            const v = d[i] < threshold ? 0 : 255;
-            d[i] = d[i+1] = d[i+2] = v;
-        }
+        for (let i = 0; i < d.length; i += 4) { const v = d[i]<threshold?0:255; d[i]=d[i+1]=d[i+2]=v; }
     } else if (mode === 'otsu') {
         const t = otsuThreshold(d);
-        for (let i = 0; i < d.length; i += 4) {
-            const v = d[i] < t ? 0 : 255;
-            d[i] = d[i+1] = d[i+2] = v;
-        }
+        for (let i = 0; i < d.length; i += 4) { const v = d[i]<t?0:255; d[i]=d[i+1]=d[i+2]=v; }
     } else if (mode === 'adaptive') {
         adaptiveThreshold(d, w, h, 31);
-    } else if (mode === 'denoise') {
-        // Gentle: just boost contrast, no hard threshold
-        for (let i = 0; i < d.length; i += 4) {
-            const v = Math.min(255, Math.max(0, (d[i] - 100) * 1.8 + 100));
-            d[i] = d[i+1] = d[i+2] = v;
-        }
+    } else {
+        for (let i = 0; i < d.length; i += 4) { const v = Math.min(255,Math.max(0,(d[i]-100)*1.8+100)); d[i]=d[i+1]=d[i+2]=v; }
     }
 }
 
 function otsuThreshold(d) {
-    const hist = new Array(256).fill(0);
-    const total = d.length / 4;
+    const hist = new Array(256).fill(0), total = d.length/4;
     for (let i = 0; i < d.length; i += 4) hist[d[i]]++;
-    let sum = 0;
-    for (let t = 0; t < 256; t++) sum += t * hist[t];
-    let sumB = 0, wB = 0, max = 0, best = 128;
-    for (let t = 0; t < 256; t++) {
-        wB += hist[t];
-        if (!wB) continue;
-        const wF = total - wB;
-        if (!wF) break;
-        sumB += t * hist[t];
-        const mB = sumB / wB;
-        const mF = (sum - sumB) / wF;
-        const between = wB * wF * (mB - mF) ** 2;
-        if (between > max) { max = between; best = t; }
+    let sum = 0; for (let t=0;t<256;t++) sum+=t*hist[t];
+    let sumB=0,wB=0,max=0,best=128;
+    for (let t=0;t<256;t++) {
+        wB+=hist[t]; if(!wB)continue; const wF=total-wB; if(!wF)break;
+        sumB+=t*hist[t]; const mB=sumB/wB,mF=(sum-sumB)/wF,b=wB*wF*(mB-mF)**2;
+        if(b>max){max=b;best=t;}
     }
     return best;
 }
 
 function adaptiveThreshold(d, w, h, blockSize) {
-    const half = Math.floor(blockSize / 2);
-    const gray = new Uint8ClampedArray(w * h);
-    for (let i = 0; i < w * h; i++) gray[i] = d[i * 4];
-
-    // Integral image for fast block mean
-    const integral = new Float64Array((w + 1) * (h + 1));
-    for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-            integral[(y+1)*(w+1)+(x+1)] = gray[y*w+x]
-                + integral[y*(w+1)+(x+1)]
-                + integral[(y+1)*(w+1)+x]
-                - integral[y*(w+1)+x];
-        }
+    const half = Math.floor(blockSize/2);
+    const gray = new Uint8ClampedArray(w*h);
+    for (let i=0;i<w*h;i++) gray[i]=d[i*4];
+    const integral = new Float64Array((w+1)*(h+1));
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++) {
+        integral[(y+1)*(w+1)+(x+1)] = gray[y*w+x]+integral[y*(w+1)+(x+1)]+integral[(y+1)*(w+1)+x]-integral[y*(w+1)+x];
     }
-
-    for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-            const x1 = Math.max(0, x - half), y1 = Math.max(0, y - half);
-            const x2 = Math.min(w, x + half + 1), y2 = Math.min(h, y + half + 1);
-            const area = (x2 - x1) * (y2 - y1);
-            const sum = integral[y2*(w+1)+x2] - integral[y1*(w+1)+x2]
-                      - integral[y2*(w+1)+x1] + integral[y1*(w+1)+x1];
-            const mean = sum / area;
-            const v = gray[y*w+x] < mean - 8 ? 0 : 255;
-            const idx = (y * w + x) * 4;
-            d[idx] = d[idx+1] = d[idx+2] = v;
-        }
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++) {
+        const x1=Math.max(0,x-half),y1=Math.max(0,y-half),x2=Math.min(w,x+half+1),y2=Math.min(h,y+half+1);
+        const area=(x2-x1)*(y2-y1);
+        const sum=integral[y2*(w+1)+x2]-integral[y1*(w+1)+x2]-integral[y2*(w+1)+x1]+integral[y1*(w+1)+x1];
+        const v=gray[y*w+x]<sum/area-8?0:255;
+        const idx=(y*w+x)*4; d[idx]=d[idx+1]=d[idx+2]=v;
     }
 }
 
-// ── Download PDF ──
-document.getElementById('btn-download').onclick = async () => {
-    if (!processedCanvases.length) return;
-    setStatus('正在生成 PDF…');
-    document.getElementById('btn-download').disabled = true;
-
-    const { jsPDF } = window.jspdf;
-    const first = processedCanvases[0];
-    const isLandscape = first.width > first.height;
-    const pdf = new jsPDF({
-        orientation: isLandscape ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [first.width, first.height],
-        hotfixes: ['px_scaling']
-    });
-
-    for (let i = 0; i < processedCanvases.length; i++) {
-        setStatus(`生成第 ${i+1} / ${processedCanvases.length} 頁…`);
-        if (i > 0) {
-            const c = processedCanvases[i];
-            pdf.addPage([c.width, c.height], c.width > c.height ? 'landscape' : 'portrait');
-        }
-        const imgData = processedCanvases[i].toDataURL('image/jpeg', 0.92);
-        pdf.addImage(imgData, 'JPEG', 0, 0, processedCanvases[i].width, processedCanvases[i].height);
-        await new Promise(r => setTimeout(r, 0));
+function enhanceStaffLines(imageData, densityThreshold=0.20) {
+    const d=imageData.data, w=imageData.width, h=imageData.height;
+    const margin=Math.floor(w*0.05), scanL=margin, scanR=w-margin;
+    const rowDensity=new Float32Array(h);
+    for (let y=0;y<h;y++) {
+        let dark=0,tot=0;
+        for (let x=scanL;x<scanR;x+=2) { if(d[(y*w+x)*4]<128)dark++; tot++; }
+        rowDensity[y]=dark/tot;
     }
-
-    const outName = (originalFile?.name || 'score').replace(/\.pdf$/i, '') + '_cleaned.pdf';
-    pdf.save(outName);
-    setStatus('✓ 下載完成');
-    document.getElementById('btn-download').disabled = false;
-};
-
-// ── Staff Line Enhancement ──
-function enhanceStaffLines(imageData, densityThreshold = 0.20) {
-    const d = imageData.data;
-    const w = imageData.width;
-    const h = imageData.height;
-    const margin = Math.floor(w * 0.05);
-    const scanLeft = margin, scanRight = w - margin;
-    const sampleStep = 2;
-
-    // 1. Row density scan
-    const rowDensity = new Float32Array(h);
-    for (let y = 0; y < h; y++) {
-        let dark = 0, total = 0;
-        for (let x = scanLeft; x < scanRight; x += sampleStep) {
-            if (d[(y * w + x) * 4] < 128) dark++;
-            total++;
-        }
-        rowDensity[y] = dark / total;
+    const cands=[]; for(let y=0;y<h;y++) if(rowDensity[y]>=densityThreshold) cands.push(y);
+    const segs=[]; let i=0;
+    while(i<cands.length) {
+        let s=cands[i],e=s;
+        while(i<cands.length&&cands[i]<=e+2){e=cands[i];i++;}
+        if(e-s+1<=12) segs.push({top:s,bottom:e});
     }
-
-    // 2. Candidate rows
-    const candidates = [];
-    for (let y = 0; y < h; y++) {
-        if (rowDensity[y] >= densityThreshold) candidates.push(y);
-    }
-
-    // 3. Cluster into segments (max thickness 12px to avoid notes/text)
-    const segments = [];
-    let i = 0;
-    while (i < candidates.length) {
-        let start = candidates[i], end = start;
-        while (i < candidates.length && candidates[i] <= end + 2) { end = candidates[i]; i++; }
-        const thick = end - start + 1;
-        if (thick <= 12) segments.push({ top: start, bottom: end });
-    }
-
-    // 4. Paint each detected staff line fully black across entire width
-    segments.forEach(seg => {
-        for (let y = seg.top; y <= seg.bottom; y++) {
-            for (let x = 0; x < w; x++) {
-                const idx = (y * w + x) * 4;
-                d[idx] = d[idx+1] = d[idx+2] = 0;
-                d[idx+3] = 255;
-            }
+    segs.forEach(seg=>{
+        for(let y=seg.top;y<=seg.bottom;y++) for(let x=0;x<w;x++) {
+            const idx=(y*w+x)*4; d[idx]=d[idx+1]=d[idx+2]=0; d[idx+3]=255;
         }
     });
 }
 
-// ── Notehead Cleaning ──
 function cleanNoteheads(ctx, w, h, minSize, maxSize) {
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const d = imageData.data;
-    const visited = new Uint8Array(w * h);
-
-    const blobs = [];
-
-    // BFS flood fill to find connected dark blobs
-    for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-            const idx = y * w + x;
-            if (visited[idx] || d[idx * 4] > 64) continue; // skip white or visited
-
-            // BFS
-            const queue = [idx];
-            visited[idx] = 1;
-            let minX = x, maxX = x, minY = y, maxY = y;
-            let pixels = [];
-
-            let qi = 0;
-            while (qi < queue.length) {
-                const cur = queue[qi++];
-                const cx = cur % w, cy = Math.floor(cur / w);
-                pixels.push(cur);
-                if (cx < minX) minX = cx;
-                if (cx > maxX) maxX = cx;
-                if (cy < minY) minY = cy;
-                if (cy > maxY) maxY = cy;
-
-                const neighbors = [cur-1, cur+1, cur-w, cur+w];
-                for (const nb of neighbors) {
-                    if (nb < 0 || nb >= w * h) continue;
-                    const nx = nb % w, ny = Math.floor(nb / w);
-                    if (Math.abs(nx - cx) + Math.abs(ny - cy) > 1) continue; // no diagonal wrap
-                    if (!visited[nb] && d[nb * 4] <= 64) {
-                        visited[nb] = 1;
-                        queue.push(nb);
-                    }
-                }
+    const imageData=ctx.getImageData(0,0,w,h), d=imageData.data;
+    const visited=new Uint8Array(w*h);
+    const blobs=[];
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++) {
+        const idx=y*w+x;
+        if(visited[idx]||d[idx*4]>64) continue;
+        const queue=[idx]; visited[idx]=1;
+        let minX=x,maxX=x,minY=y,maxY=y,pixels=[];
+        let qi=0;
+        while(qi<queue.length) {
+            const cur=queue[qi++], cx=cur%w, cy=Math.floor(cur/w);
+            pixels.push(cur);
+            if(cx<minX)minX=cx; if(cx>maxX)maxX=cx; if(cy<minY)minY=cy; if(cy>maxY)maxY=cy;
+            for(const nb of[cur-1,cur+1,cur-w,cur+w]) {
+                if(nb<0||nb>=w*h)continue;
+                const nx=nb%w,ny=Math.floor(nb/w);
+                if(Math.abs(nx-cx)+Math.abs(ny-cy)>1)continue;
+                if(!visited[nb]&&d[nb*4]<=64){visited[nb]=1;queue.push(nb);}
             }
-
-            const bw = maxX - minX + 1;
-            const bh = maxY - minY + 1;
-            blobs.push({ minX, maxX, minY, maxY, bw, bh, pixels });
         }
+        const bw=maxX-minX+1,bh=maxY-minY+1;
+        blobs.push({minX,maxX,minY,maxY,bw,bh,pixels});
     }
-
-    // Filter blobs that look like noteheads
-    const noteheads = blobs.filter(b => {
-        if (b.bw < minSize || b.bh < minSize) return false;
-        if (b.bw > maxSize || b.bh > maxSize) return false;
-        // Aspect ratio: noteheads are roughly oval (width slightly > height)
-        const ratio = b.bw / b.bh;
-        if (ratio < 0.5 || ratio > 2.5) return false;
-        // Fill ratio: solid noteheads are >50% filled; hollow ~25-55%
-        const area = b.bw * b.bh;
-        const fillRatio = b.pixels.length / area;
-        if (fillRatio < 0.2) return false; // too sparse = noise
-        return true;
+    const noteheads=blobs.filter(b=>{
+        if(b.bw<minSize||b.bh<minSize||b.bw>maxSize||b.bh>maxSize)return false;
+        const ratio=b.bw/b.bh; if(ratio<0.5||ratio>2.5)return false;
+        return b.pixels.length/(b.bw*b.bh)>=0.2;
     });
-
-    // Redraw each notehead cleanly
     ctx.save();
-    noteheads.forEach(b => {
-        const cx = (b.minX + b.maxX) / 2;
-        const cy = (b.minY + b.maxY) / 2;
-        const rx = b.bw / 2;
-        const ry = b.bh / 2;
-
-        // Determine filled vs hollow by fill ratio
-        const fillRatio = b.pixels.length / (b.bw * b.bh);
-        const isHollow = fillRatio < 0.55;
-
-        // Erase original blob area (add small margin)
-        ctx.clearRect(b.minX - 1, b.minY - 1, b.bw + 2, b.bh + 2);
-        ctx.fillStyle = 'white';
-        ctx.fillRect(b.minX - 1, b.minY - 1, b.bw + 2, b.bh + 2);
-
-        // Draw clean ellipse
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-
-        if (isHollow) {
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = Math.max(1.5, Math.min(rx, ry) * 0.25);
-            ctx.stroke();
-        } else {
-            ctx.fillStyle = 'black';
-            ctx.fill();
-        }
+    noteheads.forEach(b=>{
+        const cx=(b.minX+b.maxX)/2, cy=(b.minY+b.maxY)/2;
+        const rx=b.bw/2, ry=b.bh/2;
+        const isHollow=b.pixels.length/(b.bw*b.bh)<0.55;
+        ctx.fillStyle='white'; ctx.fillRect(b.minX-1,b.minY-1,b.bw+2,b.bh+2);
+        ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+        if(isHollow){ ctx.strokeStyle='black'; ctx.lineWidth=Math.max(1.5,Math.min(rx,ry)*0.25); ctx.stroke(); }
+        else { ctx.fillStyle='black'; ctx.fill(); }
     });
     ctx.restore();
 }
 
-// ── Controls ──
-document.getElementById('ctrl-staff-enhance').addEventListener('change', function() {
-    document.getElementById('staff-density-group').style.display = this.checked ? 'flex' : 'none';
+// ── Download ──
+document.getElementById('btn-download').addEventListener('click', async () => {
+    if (!processedCanvases.length) return;
+    setStatus('正在生成 PDF…');
+    document.getElementById('btn-download').disabled = true;
+    const { jsPDF } = window.jspdf;
+    const first = processedCanvases[0];
+    const pdf = new jsPDF({
+        orientation: first.width>first.height?'landscape':'portrait',
+        unit: 'px', format: [first.width, first.height], hotfixes: ['px_scaling']
+    });
+    for (let i=0;i<processedCanvases.length;i++) {
+        setStatus(`生成 ${i+1}/${processedCanvases.length}…`);
+        if (i>0) { const c=processedCanvases[i]; pdf.addPage([c.width,c.height],c.width>c.height?'landscape':'portrait'); }
+        pdf.addImage(processedCanvases[i].toDataURL('image/jpeg',0.92),'JPEG',0,0,processedCanvases[i].width,processedCanvases[i].height);
+        await new Promise(r=>setTimeout(r,0));
+    }
+    pdf.save((originalFile?.name||'score').replace(/\.pdf$/i,'')+'_cleaned.pdf');
+    setStatus('✓ 下載完成');
+    document.getElementById('btn-download').disabled = false;
 });
-document.getElementById('ctrl-staff-density').addEventListener('input', function() {
-    document.getElementById('val-staff-density').textContent = this.value + '%';
+
+// ── Buttons ──
+document.getElementById('btn-process').addEventListener('click', processAll);
+document.getElementById('btn-reset').addEventListener('click', () => {
+    pdfDoc=null; originalFile=null; originalCanvases=[]; processedCanvases=[]; totalPages=0; currentPage=1;
+    dropOverlay.style.display='flex';
+    document.getElementById('topbar').style.display='none';
+    document.getElementById('col-orig').style.display='none';
+    document.getElementById('col-clean').style.display='none';
+    document.getElementById('divider').style.display='none';
+    document.getElementById('btn-reset').style.display='none';
+    document.getElementById('btn-process').disabled=true;
+    document.getElementById('btn-download').disabled=true;
+    fileInput.value=''; setStatus('');
 });
-document.getElementById('ctrl-notehead-clean').addEventListener('change', function() {
-    document.getElementById('notehead-size-group').style.display = this.checked ? 'flex' : 'none';
+
+// ── Lightbox ──
+[document.getElementById('canvas-orig'), document.getElementById('canvas-clean')].forEach(c => {
+    c.addEventListener('click', () => {
+        document.getElementById('lightbox-img').src = c.toDataURL('image/jpeg', 0.95);
+        document.getElementById('lightbox').classList.add('open');
+    });
 });
-document.getElementById('ctrl-notehead-min').addEventListener('input', function() {
-    document.getElementById('val-notehead-min').textContent = this.value;
-});
-document.getElementById('ctrl-notehead-max').addEventListener('input', function() {
-    document.getElementById('val-notehead-max').textContent = this.value;
-});
-document.getElementById('btn-process').onclick = processAll;
-document.getElementById('btn-reset').onclick = () => {
-    pdfDoc = null; originalFile = null; processedCanvases = [];
-    document.getElementById('page-grid').innerHTML = '';
-    document.getElementById('controls-bar').style.display = 'none';
-    document.getElementById('action-bar').style.display = 'none';
-    dropZone.style.display = '';
-    fileInput.value = '';
-    setStatus('');
-};
+document.getElementById('lightbox').addEventListener('click', closeLightbox);
+document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox(); });
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
 
 // ── Helpers ──
 function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
-function showProgress(show) { document.getElementById('progress-wrap').style.display = show ? 'block' : 'none'; }
+function showProgress(v) { document.getElementById('progress-wrap').style.display = v?'block':'none'; }
 function setProgress(pct, label) {
-    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-bar').style.width = pct+'%';
     document.getElementById('progress-label').textContent = label;
 }
-updateControlVisibility();
 </script>
 </body>
 </html>
