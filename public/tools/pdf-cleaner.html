@@ -1248,30 +1248,14 @@ const BarlineStaffDetector = (() => {
      * Smooth the resulting histogram and return all prominent peaks,
      * sorted right→left.  Each peak = one system's final barline.
      */
-    // 找到終止線結構的左邊緣（動態跳過粗終止線）。
-    // 實心終止線的每一列幾乎都暗；五線譜區域只有五條線才暗。
-    // 從 bx 往左掃，直到遇到「非實心」的 column（暗行比例 < 50%）。
-    function _barlineLeftEdge(gray, w, h, bx, darkThreshold) {
-        const step     = Math.max(1, Math.floor(h / 80)); // 取樣最多 80 行
-        const minLimit = Math.floor(w * 0.3);
-        let x = bx - 1;
-        while (x > minLimit) {
-            let dark = 0, cnt = 0;
-            for (let y = 0; y < h; y += step) { if (gray[y * w + x] < darkThreshold) dark++; cnt++; }
-            if (dark / cnt < 0.5) break; // 離開實心終止線區域
-            x--;
-        }
-        return x; // 終止線左邊緣的第一個「非實心」column
-    }
-
     // 驗證候選 barlineX：左側 strip 是否有 ≥ minThinBands 條細橫帶（五線譜線）。
+    // 固定跳過 20px（足以清過最寬的雙終止線結構 ~14px），再掃 6px 五線譜內容區。
     // 這能區分「真正的終止線」與「文字/頁碼等假 peak」。
-    // 使用 _barlineLeftEdge 跳過粗終止線，確保掃描範圍在五線譜內容區。
     function _hasStaffBands(gray, w, h, bx, darkThreshold, minThinBands = 3) {
-        const leftEdge = _barlineLeftEdge(gray, w, h, bx, darkThreshold);
+        const skip = 20;   // 跳過終止線結構
         const stripW = 6;
-        const x1 = Math.max(0, leftEdge - stripW);
-        const x2 = leftEdge;
+        const x1 = Math.max(0, bx - skip - stripW);
+        const x2 = Math.max(0, bx - skip);
         let thinRuns = 0, inRun = false, runStart = 0;
         for (let y = 0; y <= h; y++) {
             let dark = false;
@@ -1357,12 +1341,13 @@ const BarlineStaffDetector = (() => {
      *   - stripW 越寬，音符的干擾越小；現在每個 system 都有自己的 barlineX，
      *     不再有橫向偏移問題，可以安心用寬 strip。
      */
-    function extractStaff(gray, w, h, barlineX, darkThreshold, maxLineThick = 8, stripW = 4) {
-        const minDensity = 0.70; // 窄 strip → 只有橫跨整體的五線譜線才能達到 70%
-        // 動態跳過粗終止線，確保掃描起點在五線譜內容區
-        const leftEdge = _barlineLeftEdge(gray, w, h, barlineX, darkThreshold);
-        const x1 = Math.max(0, leftEdge - stripW);
-        const x2 = leftEdge;
+    function extractStaff(gray, w, h, barlineX, darkThreshold, maxLineThick = 8, stripW = 20) {
+        const minDensity = 0.70;
+        // 固定跳過 20px 清過終止線結構，再用寬 strip 讓音符頭密度稀釋到 < 70%
+        // （音符頭 8px / 20px strip = 40%；五線譜線橫跨全寬 = 100%）
+        const skip = 20;
+        const x1 = Math.max(0, barlineX - skip - stripW);
+        const x2 = Math.max(0, barlineX - skip);
         const stripLen = x2 - x1 + 1;
         const segs = [];
         let inSeg = false, segStart = 0;
@@ -1815,7 +1800,7 @@ document.getElementById('btn-staff-preview').addEventListener('click', () => {
         const result = BarlineStaffDetector.detect(gd.gray, gd.width, gd.height, {
             darkThreshold: threshold,
             maxLineThick:  maxThick,
-            stripW:        4,
+            stripW:        20,
         });
         // 傳入進階參數 p (依據 UI 標籤對應)
         detectedSystems = BarlineStaffDetector.detectSystems(gd.gray, gd.width, gd.height, threshold, {
