@@ -181,7 +181,7 @@ export class StaffDetector {
 
   // 高密度行 anchor 找 system y 邊界（≥40% 水平暗像素密度）
   // Step 4 改用 bracket detection：掃左側邊緣有無連續垂直暗線來判斷雙行 system
-  _detectSystems(data, w, h, darkThreshold, bracketRange = 0.10, maxMerge = 120) {
+  _detectSystems(data, w, h, darkThreshold, bracketRange = 0.20, maxMerge = 120) {
     const scanX1 = Math.floor(w * 0.05)
     const scanX2 = Math.floor(w * 0.95)
     const scanLen = scanX2 - scanX1 + 1
@@ -228,14 +228,17 @@ export class StaffDetector {
     // 若兩 group 之間的空隙有連續垂直暗線（bracket），代表同一 system
     const bx1 = Math.floor(w * 0.01)
     const bx2 = Math.floor(w * bracketRange)
-    const bracketDens = 0.55
+    const bracketDens = 0.40
 
     const hasBracket = (yTop, yBottom) => {
-      const span = yBottom - yTop
+      // 往上下各延伸 5px 進入五線譜本身，避免 gap 太小偵測不到
+      const y1 = Math.max(0, yTop - 5)
+      const y2 = Math.min(h - 1, yBottom + 5)
+      const span = y2 - y1
       if (span <= 2) return false
       for (let x = bx1; x <= bx2; x++) {
         let dark = 0
-        for (let y = yTop; y <= yBottom; y++) {
+        for (let y = y1; y <= y2; y++) {
           const idx = (y * w + x) * 4
           if (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114 < darkThreshold) dark++
         }

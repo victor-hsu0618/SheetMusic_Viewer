@@ -1301,7 +1301,7 @@ const BarlineStaffDetector = (() => {
         }
 
         // 終止線至少跨越頁高 1.5% 的行數
-        const minCount = Math.max(8, Math.floor(h * 0.015));
+        const minCount = Math.max(4, Math.floor(h * 0.005));
 
         // 收集局部最大值
         const peaks = [];
