@@ -667,7 +667,7 @@ export class InteractionManager {
                         const targetObj = activeObject;
                         const defaultLabel = targetObj.type === 'page-bookmark' ? `Page ${targetObj.page}` : `Music at Pg ${targetObj.page}`;
                         const dialogTitle = targetObj.type === 'page-bookmark' ? 'Add Page Bookmark' : 'Add Music Anchor';
-                        
+
                         this.app.docActionManager?.showDialog({
                             title: dialogTitle,
                             message: '',
@@ -681,12 +681,12 @@ export class InteractionManager {
                                 targetObj.updatedAt = Date.now();
                                 this.app.stamps.push(targetObj);
                                 await this.app.saveToStorage(true);
-                                
+
                                 // Refresh Jump Panel if it's a page bookmark
                                 if (targetObj.type === 'page-bookmark') {
                                     this.app.jumpManager?.renderBookmarks();
                                 }
-                                
+
                                 if (this.app.supabaseManager) {
                                     targetObj.updatedAt = Date.now();
                                     this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);

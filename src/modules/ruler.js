@@ -336,7 +336,8 @@ export class RulerManager {
                     const m = metrics[sys.page]
                     if (!m) return false
                     const absY = m.top + sys.y * m.height
-                    return absY > effectiveScroll && absY < effectiveScroll + viewportHeight
+                    // Stricter visibility: must be significantly above the bottom to be considered 'fully visible'
+                    return absY > effectiveScroll && absY < (effectiveScroll + viewportHeight - 30)
                 })
                 const overlapSystem = visibleSystems[Math.max(0, visibleSystems.length - overlap)]
                 if (overlapSystem) {
@@ -502,7 +503,8 @@ export class RulerManager {
                 const m = metrics[sys.page]
                 if (!m) return false
                 const absY = m.top + sys.y * m.height
-                return absY > scrollY && absY < scrollY + vH
+                // Sync with jump() logic: stricter visibility threshold
+                return absY > scrollY && absY < (scrollY + vH - 30)
             })
             const candidate = visibleSystems[Math.max(0, visibleSystems.length - overlap)]
             if (candidate) {
@@ -539,11 +541,11 @@ export class RulerManager {
                     } else if (stamp.type === 'measure' || stamp.type === 'measure-free') {
                         mark.className = 'ruler-measure-mark'
                         mark.textContent = stamp.data
-                        // Only allow dragging if NOT in View mode
-                        const isViewMode = this.app.activeStampType === 'view';
-                        mark.style.pointerEvents = isViewMode ? 'none' : 'auto'
-                        mark.style.cursor = isViewMode ? 'default' : 'ns-resize'
-                        if (!isViewMode) {
+                        // Only allow dragging when actively using the measure tool
+                        const isMeasureMode = this.app.activeStampType === 'measure' || this.app.activeStampType === 'measure-free';
+                        mark.style.pointerEvents = isMeasureMode ? 'auto' : 'none'
+                        mark.style.cursor = isMeasureMode ? 'ns-resize' : 'default'
+                        if (isMeasureMode) {
                             mark.addEventListener('mousedown', (e) => this._startMeasureDrag(e, stamp, mark))
                             mark.addEventListener('touchstart', (e) => this._startMeasureDrag(e, stamp, mark), { passive: false })
                         }

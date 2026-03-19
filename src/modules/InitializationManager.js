@@ -218,13 +218,7 @@ export class InitializationManager {
         document.getElementById('btn-drive-signout')?.addEventListener('click', (e) => { e.preventDefault(); app.driveSyncManager.signOut() })
         document.getElementById('btn-drive-pause')?.addEventListener('click', (e) => { e.preventDefault(); app.togglePauseSync() })
 
-        document.getElementById('btn-purge-cloud-data')?.addEventListener('click', () => {
-            console.log('[InitializationManager] Purge button clicked');
-            app.purgeAllCloudData();
-        })
         document.getElementById('btn-drive-force-push')?.addEventListener('click', () => app.driveSyncManager.forcePushAll())
-        document.getElementById('btn-rebuild-library')?.addEventListener('click', () => app.scoreManager.rebuildLibrary())
-        document.getElementById('btn-heal-library')?.addEventListener('click', () => app.scoreManager.healLibrary())
         document.getElementById('btn-gist-share')?.addEventListener('click', () => app.gistShareManager?.share())
 
         // Activity tracking: record user presence for Drive sync idle detection

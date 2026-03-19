@@ -126,7 +126,7 @@ export class GestureManager {
                 const dt = Date.now() - this._startTime
 
                 // Page Swipes
-                if (dt < 400 && Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                if (this.app.activeStampType === 'view' && dt < 400 && Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
                     dx > 0 ? this.app.jump(1) : this.app.jump(-1)
                     return
                 }

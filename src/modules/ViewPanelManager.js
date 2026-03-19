@@ -73,7 +73,7 @@ export class ViewPanelManager {
     togglePanel(force = null) {
         if (!this.panel) return
         const active = force !== null ? force : !this.panel.classList.contains('active')
-        
+
         // If clicking same button and panel is open, toggle it off
         if (force === null && !active) {
             this.togglePanel(false)

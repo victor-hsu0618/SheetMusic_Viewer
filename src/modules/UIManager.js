@@ -67,11 +67,11 @@ export class UIManager {
             panels.forEach(p => {
                 const el = document.getElementById(p.id);
                 const btn = document.getElementById(p.toggleBtn);
-                
-                if (el && el.classList.contains('active') && 
-                    !el.contains(e.target) && 
+
+                if (el && el.classList.contains('active') &&
+                    !el.contains(e.target) &&
                     (!btn || !btn.contains(e.target))) {
-                    
+
                     if (this.app[p.manager] && this.app[p.manager].togglePanel) {
                         this.app[p.manager].togglePanel(false);
                     }

@@ -553,7 +553,7 @@ export class AnnotationRenderer {
                         ctx.fillText(stamp.data || '#', x, y)
                     } else if (d.variant === 'playback') {
                         // Restore missing Music Anchor / Playback Head
-                        const s = size * 0.45 
+                        const s = size * 0.45
                         ctx.strokeStyle = color
                         ctx.lineWidth = 1.2 * globalScale
                         ctx.beginPath()
@@ -561,6 +561,27 @@ export class AnnotationRenderer {
                         ctx.lineTo(x, y + s)
                         ctx.arc(x, y - s, 6 * globalScale, 0, Math.PI * 2)
                         ctx.stroke()
+                    } else if (d.variant === 'page-bookmark') {
+                        // Bookmark ribbon flag shape with V-notch at bottom
+                        const s = size * 0.55
+                        ctx.fillStyle = color
+                        ctx.beginPath()
+                        ctx.moveTo(x - s * 0.38, y - s * 0.65)  // top-left
+                        ctx.lineTo(x + s * 0.38, y - s * 0.65)  // top-right
+                        ctx.lineTo(x + s * 0.38, y + s * 0.65)  // bottom-right
+                        ctx.lineTo(x,            y + s * 0.2)   // V-notch point
+                        ctx.lineTo(x - s * 0.38, y + s * 0.65)  // bottom-left
+                        ctx.closePath()
+                        ctx.fill()
+                        // Label text to the right of the flag
+                        if (stamp.data) {
+                            ctx.fillStyle = color
+                            ctx.globalAlpha = Math.min(ctx.globalAlpha * 1.0, 1)
+                            ctx.font = `600 ${10 * textScale}px Outfit`
+                            ctx.textAlign = 'left'
+                            ctx.textBaseline = 'middle'
+                            ctx.fillText(stamp.data.substring(0, 12), x + s * 0.5, y - s * 0.1)
+                        }
                     }
                     break
 

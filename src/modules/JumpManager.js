@@ -98,7 +98,7 @@ export class JumpManager {
     async togglePanel(force = null) {
         if (!this.panel) return
         const active = force !== null ? force : !this.panel.classList.contains('active')
-        
+
         // If clicking same button and panel is open, toggle it off
         if (force === null && !active) {
             this.togglePanel(false)
@@ -110,7 +110,7 @@ export class JumpManager {
         }
 
         this.panel.classList.toggle('active', active)
-        
+
         // Sync button visual state
         const btn = document.getElementById('btn-jump-panel-toggle')
         if (btn) btn.classList.toggle('active', active)
@@ -120,14 +120,14 @@ export class JumpManager {
             this.panel.style.left = ''
             this.panel.style.bottom = ''
             this.panel.style.transform = ''
-            
+
             this.updateDisplay()
             this.displayValue = this.currentPage.toString()
             this.isTyping = true
             this.refreshCalcDisplay()
             await this.loadBookmarks()
             this.renderMeasures()
-            
+
             // Default to keypad when opening
             this.switchTab('keypad')
         }
@@ -348,35 +348,55 @@ export class JumpManager {
 
     renderBookmarks() {
         if (!this.bookmarkList) return
-        if (this.bookmarks.length === 0) {
+
+        // Merge keypad bookmarks (IndexedDB) with page-bookmark stamps
+        const stampBookmarks = (this.app.stamps || [])
+            .filter(s => s.type === 'page-bookmark' && !s.deleted)
+            .map(s => ({ id: s.id, page: s.page, label: s.data || `Page ${s.page}`, isStamp: true, stamp: s }))
+
+        const all = [...this.bookmarks, ...stampBookmarks]
+
+        if (all.length === 0) {
             this.bookmarkList.innerHTML = '<div class="empty-state">No bookmarks yet</div>'
             return
         }
 
         this.bookmarkList.innerHTML = ''
-        // Sort by page number
-        const sorted = [...this.bookmarks].sort((a, b) => a.page - b.page)
+        const sorted = [...all].sort((a, b) => a.page - b.page)
 
         sorted.forEach(bm => {
             const item = document.createElement('div')
             item.className = 'bookmark-item'
+            const badge = bm.isStamp
+                ? `<span style="font-size:0.65rem;opacity:0.55;margin-left:4px">📌</span>`
+                : ''
             item.innerHTML = `
                 <div class="bm-info">
                     <span class="bm-page">${bm.page}</span>
-                    <span class="bm-label">${bm.label}</span>
+                    <span class="bm-label">${bm.label}${badge}</span>
                 </div>
                 <button class="bm-delete" title="Delete">&times;</button>
             `
             item.onclick = (e) => {
                 if (e.target.classList.contains('bm-delete')) return
-                this.goToPage(bm.page)
+                if (bm.isStamp) this.jumpToStamp(bm.stamp)
+                else this.goToPage(bm.page)
             }
             item.querySelector('.bm-delete').onclick = (e) => {
                 e.stopPropagation()
-                this.deleteBookmark(bm.id)
+                if (bm.isStamp) this.deleteStampBookmark(bm.stamp)
+                else this.deleteBookmark(bm.id)
             }
             this.bookmarkList.appendChild(item)
         })
+    }
+
+    deleteStampBookmark(stamp) {
+        stamp.deleted = true
+        stamp.updatedAt = Date.now()
+        this.app.saveToStorage(true)
+        this.app.redrawStamps(stamp.page)
+        this.renderBookmarks()
     }
 
     initDraggable() {

@@ -167,6 +167,7 @@ class ScoreFlow {
     this.setlistManager.init()
     this.toolManager.initDraggable()
     this.toolManager.initToolbarResizable()
+    this.toolManager.initFloatingFab()
 
     const initAll = async () => {
         await this.scoreManager.init()
