@@ -94,21 +94,21 @@
 
         /* Preview grid */
         .page-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
-            gap: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
         }
         .page-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 16px;
+            padding: 20px;
         }
         .page-card-hd {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             font-size: 12px;
             font-weight: 700;
             color: var(--text-muted);
@@ -118,23 +118,54 @@
         .compare-wrap {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 12px;
         }
         .compare-wrap canvas {
             width: 100%;
             border-radius: 8px;
             border: 1px solid var(--border);
             display: block;
+            cursor: zoom-in;
         }
         .compare-label {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.06em;
             color: var(--text-muted);
             text-align: center;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-out;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 95vw;
+            max-height: 95vh;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+        .lightbox-close {
+            position: fixed;
+            top: 20px;
+            right: 28px;
+            font-size: 28px;
+            color: white;
+            cursor: pointer;
+            opacity: 0.7;
+            line-height: 1;
+        }
+        .lightbox-close:hover { opacity: 1; }
 
         /* Action bar */
         .action-bar {
@@ -219,6 +250,12 @@
 
     <!-- Page Preview Grid -->
     <div class="page-grid" id="page-grid"></div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+    <span class="lightbox-close" id="lightbox-close">✕</span>
+    <img id="lightbox-img" src="" alt="">
 </div>
 
 <script>
@@ -354,12 +391,23 @@ async function processAll() {
 }
 
 function drawThumb(src, dst) {
-    const maxW = 500;
+    const maxW = 1200;
     const ratio = Math.min(1, maxW / src.width);
     dst.width  = Math.round(src.width  * ratio);
     dst.height = Math.round(src.height * ratio);
     dst.getContext('2d').drawImage(src, 0, 0, dst.width, dst.height);
+    // Click to open lightbox
+    dst.addEventListener('click', () => {
+        document.getElementById('lightbox-img').src = dst.toDataURL('image/jpeg', 0.95);
+        document.getElementById('lightbox').classList.add('open');
+    });
 }
+
+// Lightbox close
+document.getElementById('lightbox').addEventListener('click', closeLightbox);
+document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
 
 // ── Image Processing ──
 function processPixels(imageData, mode, threshold, contrast, denoiseR) {
