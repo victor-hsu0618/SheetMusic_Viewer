@@ -80,6 +80,7 @@
             font-size: 12px; color: var(--text); cursor: pointer;
         }
         input[type=checkbox] { accent-color: var(--primary); width: 14px; height: 14px; cursor: pointer; }
+        .hint { font-size: 10px; color: var(--text-muted); line-height: 1.5; margin-top: 2px; }
 
         .btn {
             font-family: inherit; display: flex; align-items: center; justify-content: center;
@@ -232,18 +233,22 @@
                         <option value="simple">簡單閾值</option>
                         <option value="denoise">去雜訊 + 增強</option>
                     </select>
+                    <p class="hint" id="hint-mode"></p>
                 </div>
                 <div class="ctrl">
                     <label>閾值（簡單模式）<span id="val-threshold">128</span></label>
                     <input type="range" id="ctrl-threshold" min="80" max="220" value="128">
+                    <p class="hint">數值越低，越多灰色被判為黑色（線條更多）；越高，只保留最深的黑色。</p>
                 </div>
                 <div class="ctrl">
                     <label>對比增強<span id="val-contrast">1.0×</span></label>
                     <input type="range" id="ctrl-contrast" min="0.5" max="3" value="1.0" step="0.05">
+                    <p class="hint">拉大黑白之間的差距。灰色背景嚴重時先調高對比，再套用二值化效果更好。</p>
                 </div>
                 <div class="ctrl">
                     <label>去雜訊<span id="val-denoise">0</span></label>
                     <input type="range" id="ctrl-denoise" min="0" max="5" value="0">
+                    <p class="hint">用模糊平滑消除細小雜點。值越高越模糊，可能使細線或小音符變淡，建議用 1–2。</p>
                 </div>
                 <div class="ctrl">
                     <label>渲染解析度</label>
@@ -252,6 +257,7 @@
                         <option value="2" selected>200 dpi（推薦）</option>
                         <option value="3">300 dpi（高品質）</option>
                     </select>
+                    <p class="hint">影響處理速度與輸出精細度。300 dpi 適合列印，200 dpi 適合螢幕閱讀。</p>
                 </div>
             </div>
 
@@ -262,9 +268,11 @@
                     <input type="checkbox" id="ctrl-staff-enhance">
                     偵測並加黑五線譜
                 </label>
+                <p class="hint">掃描每行的深色像素比例，找出橫跨整頁的水平線條（五線譜），並將其塗成純黑色，修復因影印造成的斷線或淡色。</p>
                 <div class="ctrl" id="staff-density-group" style="display:none;">
                     <label>偵測靈敏度<span id="val-staff-density">20%</span></label>
                     <input type="range" id="ctrl-staff-density" min="5" max="60" value="20">
+                    <p class="hint">該行有多少 % 的像素是深色才算五線譜。太低會把文字也誤抓；太高可能漏掉淡色的線。</p>
                 </div>
             </div>
 
@@ -275,14 +283,17 @@
                     <input type="checkbox" id="ctrl-notehead-clean">
                     偵測並重繪音符頭
                 </label>
+                <p class="hint">找出符合橢圓形狀的黑色連通區域，判斷是實心（四分音符）或空心（二分音符），重新畫成乾淨的幾何橢圓形。</p>
                 <div id="notehead-size-group" style="display:none; flex-direction:column; gap:6px;">
                     <div class="ctrl">
                         <label>最小尺寸<span id="val-notehead-min">6</span>px</label>
                         <input type="range" id="ctrl-notehead-min" min="3" max="20" value="6">
+                        <p class="hint">太小會把雜點誤認為音符。若漏抓小音符，往左調低。</p>
                     </div>
                     <div class="ctrl">
                         <label>最大尺寸<span id="val-notehead-max">28</span>px</label>
                         <input type="range" id="ctrl-notehead-max" min="10" max="60" value="28">
+                        <p class="hint">太大會把文字區塊或休止符誤判。依樂譜字體大小調整。</p>
                     </div>
                 </div>
             </div>
@@ -392,6 +403,18 @@ fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadPDF(fil
         document.getElementById(vid).textContent = fmt(this.value);
     });
 });
+
+const MODE_HINTS = {
+    adaptive: '將每個小區塊的平均亮度當作基準，各自決定黑白門檻。最適合亮度不均勻的影印稿（推薦首選）。',
+    otsu:     '自動分析整頁的灰階分佈，找出最佳的全域門檻值。適合整體亮度一致的掃描稿。',
+    simple:   '用單一固定閾值將全頁轉黑白。速度最快，但對亮度不均勻的頁面效果差，需手動調整閾值。',
+    denoise:  '不做二值化，只做對比拉伸與去雜訊，保留灰階。適合原稿品質尚可但背景偏灰的情況。',
+};
+document.getElementById('ctrl-mode').addEventListener('change', function() {
+    document.getElementById('hint-mode').textContent = MODE_HINTS[this.value] || '';
+    updateControlVisibility();
+});
+document.getElementById('hint-mode').textContent = MODE_HINTS['adaptive'];
 
 document.getElementById('ctrl-staff-enhance').addEventListener('change', function() {
     document.getElementById('staff-density-group').style.display = this.checked ? 'flex' : 'none';
