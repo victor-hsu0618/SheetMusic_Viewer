@@ -180,8 +180,8 @@ export class StaffDetector {
   }
 
   // 高密度行 anchor 找 system y 邊界（≥40% 水平暗像素密度）
-  // 成功排除標題/文字（通常 <30%），只抓到五線譜密集區域
-  _detectSystems(data, w, h, darkThreshold) {
+  // Step 4 改用 bracket detection：掃左側邊緣有無連續垂直暗線來判斷雙行 system
+  _detectSystems(data, w, h, darkThreshold, bracketRange = 0.10, maxMerge = 120) {
     const scanX1 = Math.floor(w * 0.05)
     const scanX2 = Math.floor(w * 0.95)
     const scanLen = scanX2 - scanX1 + 1
@@ -221,34 +221,36 @@ export class StaffDetector {
       }
     }
 
-    // Step 4: 自適應合併 — 從各 group 間距分佈找臨界值
-    // 原則：同一 system 內的 staff 間距（小）vs system 間距（大）存在明顯跳躍
     if (!groups.length) return []
     if (groups.length === 1) return [{ ...groups[0] }]
 
-    const rawGaps = []
-    for (let i = 1; i < groups.length; i++) {
-      rawGaps.push(groups[i].top - groups[i - 1].bottom)
-    }
+    // Step 4: bracket detection — 掃左側 [1%, bracketRange] 範圍
+    // 若兩 group 之間的空隙有連續垂直暗線（bracket），代表同一 system
+    const bx1 = Math.floor(w * 0.01)
+    const bx2 = Math.floor(w * bracketRange)
+    const bracketDens = 0.55
 
-    // 找排序後最大的比例跳躍點，作為「合併 vs 不合併」臨界值
-    const sortedGaps = [...rawGaps].sort((a, b) => a - b)
-    let mergeThreshold = 0  // 預設不合併
-    let maxRatio = 1.8      // 至少要這個倍數才算有意義的跳躍
-    for (let i = 1; i < sortedGaps.length; i++) {
-      const ratio = (sortedGaps[i] + 1) / (sortedGaps[i - 1] + 1)
-      if (ratio > maxRatio) {
-        maxRatio = ratio
-        mergeThreshold = (sortedGaps[i - 1] + sortedGaps[i]) / 2
+    const hasBracket = (yTop, yBottom) => {
+      const span = yBottom - yTop
+      if (span <= 2) return false
+      for (let x = bx1; x <= bx2; x++) {
+        let dark = 0
+        for (let y = yTop; y <= yBottom; y++) {
+          const idx = (y * w + x) * 4
+          if (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114 < darkThreshold) dark++
+        }
+        if (dark / (span + 1) >= bracketDens) return true
       }
+      return false
     }
-    mergeThreshold = Math.min(mergeThreshold, 80)  // 超過 80px 絕對不合併
 
+    // Step 5: 合併有 bracket 且 gap ≤ maxMerge 的相鄰 group
     const systems = [{ ...groups[0] }]
     for (let i = 1; i < groups.length; i++) {
-      const gap = groups[i].top - systems[systems.length - 1].bottom
-      if (gap <= mergeThreshold) {
-        systems[systems.length - 1].bottom = groups[i].bottom
+      const last = systems[systems.length - 1]
+      const gap = groups[i].top - last.bottom
+      if (gap <= maxMerge && hasBracket(last.bottom, groups[i].top)) {
+        last.bottom = groups[i].bottom
       } else {
         systems.push({ ...groups[i] })
       }
