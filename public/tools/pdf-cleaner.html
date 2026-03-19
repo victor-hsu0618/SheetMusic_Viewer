@@ -297,9 +297,10 @@
         </div>
 
         <div id="sidebar-footer">
-            <button class="btn btn-primary" id="btn-process" disabled>⚡ 重新處理所有頁</button>
-            <button class="btn btn-primary" id="btn-download" disabled>↓ 下載清理後 PDF</button>
-            <button class="btn btn-danger"  id="btn-reset"   style="display:none;">✕ 重置</button>
+            <button class="btn btn-primary" id="btn-process-page" disabled>⚡ 處理此頁</button>
+            <button class="btn btn-outline" id="btn-process-all"  disabled>⚡ 處理所有頁</button>
+            <button class="btn btn-primary" id="btn-download"     disabled>↓ 下載清理後 PDF</button>
+            <button class="btn btn-danger"  id="btn-reset"        style="display:none;">✕ 重置</button>
         </div>
     </div>
 
@@ -420,18 +421,42 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight') showPage(currentPage + 1);
 });
 
-function showPage(n) {
+async function showPage(n) {
     if (!totalPages) return;
     currentPage = Math.max(1, Math.min(totalPages, n));
     document.getElementById('page-indicator').textContent = `${currentPage} / ${totalPages}`;
     document.getElementById('btn-prev').disabled = currentPage <= 1;
     document.getElementById('btn-next').disabled = currentPage >= totalPages;
 
+    // Lazy-render original if needed
+    if (!originalCanvases[currentPage - 1]) {
+        setStatus('載入頁面…');
+        await renderOriginal(currentPage);
+        setStatus('');
+    }
+
     const origSrc  = originalCanvases[currentPage - 1];
     const cleanSrc = processedCanvases[currentPage - 1];
 
     if (origSrc)  drawFit(origSrc,  document.getElementById('canvas-orig'));
-    if (cleanSrc) drawFit(cleanSrc, document.getElementById('canvas-clean'));
+
+    const cleanCanvas = document.getElementById('canvas-clean');
+    if (cleanSrc) {
+        drawFit(cleanSrc, cleanCanvas);
+        cleanCanvas.style.opacity = '1';
+    } else {
+        // Show placeholder when not yet processed
+        cleanCanvas.width = 200; cleanCanvas.height = 280;
+        const ctx = cleanCanvas.getContext('2d');
+        ctx.fillStyle = '#1a2236';
+        ctx.fillRect(0, 0, 200, 280);
+        ctx.fillStyle = '#475569';
+        ctx.font = '13px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('尚未處理', 100, 140);
+        ctx.font = '11px Inter, sans-serif';
+        ctx.fillText('按「處理此頁」', 100, 160);
+    }
 }
 
 function drawFit(src, dst) {
@@ -460,6 +485,10 @@ async function loadPDF(file) {
     pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
     totalPages = pdfDoc.numPages;
 
+    // Pre-allocate arrays (null = not yet rendered)
+    originalCanvases  = new Array(totalPages).fill(null);
+    processedCanvases = new Array(totalPages).fill(null);
+
     document.getElementById('file-name-label').innerHTML =
         `<strong>${file.name}</strong> <span>${totalPages} 頁 · ${(file.size/1024/1024).toFixed(1)} MB</span>`;
 
@@ -469,61 +498,78 @@ async function loadPDF(file) {
     document.getElementById('col-clean').style.display = 'flex';
     document.getElementById('divider').style.display   = 'block';
     document.getElementById('btn-reset').style.display = 'block';
-    document.getElementById('btn-process').disabled = false;
+    document.getElementById('btn-process-page').disabled = false;
+    document.getElementById('btn-process-all').disabled  = false;
 
-    await processAll();
+    // Render and show page 1 immediately (original only, no processing)
+    await renderOriginal(1);
+    showPage(1);
+    setStatus('載入完成，按「處理此頁」開始清理');
+}
+
+// ── Render original for a page (lazy) ──
+async function renderOriginal(pageNum) {
+    if (originalCanvases[pageNum - 1]) return; // already rendered
+    const scale    = parseFloat(document.getElementById('ctrl-scale').value);
+    const page     = await pdfDoc.getPage(pageNum);
+    const viewport = page.getViewport({ scale });
+    const canvas   = document.createElement('canvas');
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    originalCanvases[pageNum - 1] = canvas;
+}
+
+// ── Get current processing params ──
+function getParams() {
+    return {
+        scale:        parseFloat(document.getElementById('ctrl-scale').value),
+        mode:         document.getElementById('ctrl-mode').value,
+        threshold:    parseInt(document.getElementById('ctrl-threshold').value),
+        contrast:     parseFloat(document.getElementById('ctrl-contrast').value),
+        denoiseR:     parseInt(document.getElementById('ctrl-denoise').value),
+        staffEnhance: document.getElementById('ctrl-staff-enhance').checked,
+        staffDensity: parseInt(document.getElementById('ctrl-staff-density').value) / 100,
+        noteClean:    document.getElementById('ctrl-notehead-clean').checked,
+        noteMin:      parseInt(document.getElementById('ctrl-notehead-min').value),
+        noteMax:      parseInt(document.getElementById('ctrl-notehead-max').value),
+    };
+}
+
+// ── Process single page ──
+async function processPage(pageNum) {
+    await renderOriginal(pageNum);
+    const orig = originalCanvases[pageNum - 1];
+    const p = getParams();
+
+    const cleanCanvas = document.createElement('canvas');
+    cleanCanvas.width = orig.width; cleanCanvas.height = orig.height;
+    const cleanCtx = cleanCanvas.getContext('2d');
+    cleanCtx.drawImage(orig, 0, 0);
+    const imgData = cleanCtx.getImageData(0, 0, cleanCanvas.width, cleanCanvas.height);
+    processPixels(imgData, p.mode, p.threshold, p.contrast, p.denoiseR);
+    if (p.staffEnhance) enhanceStaffLines(imgData, p.staffDensity);
+    cleanCtx.putImageData(imgData, 0, 0);
+    if (p.noteClean) cleanNoteheads(cleanCtx, cleanCanvas.width, cleanCanvas.height, p.noteMin, p.noteMax);
+
+    processedCanvases[pageNum - 1] = cleanCanvas;
 }
 
 // ── Process All ──
 async function processAll() {
     if (!pdfDoc) return;
-    originalCanvases  = [];
-    processedCanvases = [];
     document.getElementById('btn-download').disabled = true;
     showProgress(true);
 
-    const scale        = parseFloat(document.getElementById('ctrl-scale').value);
-    const mode         = document.getElementById('ctrl-mode').value;
-    const threshold    = parseInt(document.getElementById('ctrl-threshold').value);
-    const contrast     = parseFloat(document.getElementById('ctrl-contrast').value);
-    const denoiseR     = parseInt(document.getElementById('ctrl-denoise').value);
-    const staffEnhance = document.getElementById('ctrl-staff-enhance').checked;
-    const staffDensity = parseInt(document.getElementById('ctrl-staff-density').value) / 100;
-    const noteClean    = document.getElementById('ctrl-notehead-clean').checked;
-    const noteMin      = parseInt(document.getElementById('ctrl-notehead-min').value);
-    const noteMax      = parseInt(document.getElementById('ctrl-notehead-max').value);
-
     for (let i = 1; i <= totalPages; i++) {
         setProgress(((i-1)/totalPages)*100, `處理第 ${i} / ${totalPages} 頁…`);
-
-        const page     = await pdfDoc.getPage(i);
-        const viewport = page.getViewport({ scale });
-
-        // Original
-        const origCanvas = document.createElement('canvas');
-        origCanvas.width = viewport.width; origCanvas.height = viewport.height;
-        await page.render({ canvasContext: origCanvas.getContext('2d'), viewport }).promise;
-        originalCanvases.push(origCanvas);
-
-        // Clean copy
-        const cleanCanvas = document.createElement('canvas');
-        cleanCanvas.width = origCanvas.width; cleanCanvas.height = origCanvas.height;
-        const cleanCtx = cleanCanvas.getContext('2d');
-        cleanCtx.drawImage(origCanvas, 0, 0);
-        const imgData = cleanCtx.getImageData(0, 0, cleanCanvas.width, cleanCanvas.height);
-        processPixels(imgData, mode, threshold, contrast, denoiseR);
-        if (staffEnhance) enhanceStaffLines(imgData, staffDensity);
-        cleanCtx.putImageData(imgData, 0, 0);
-        if (noteClean) cleanNoteheads(cleanCtx, cleanCanvas.width, cleanCanvas.height, noteMin, noteMax);
-
-        processedCanvases.push(cleanCanvas);
+        await processPage(i);
         await new Promise(r => setTimeout(r, 0));
     }
 
     setProgress(100, '完成');
     setTimeout(() => showProgress(false), 600);
     document.getElementById('btn-download').disabled = false;
-    setStatus(`✓ ${totalPages} 頁處理完成`);
+    setStatus(`✓ 全部 ${totalPages} 頁處理完成`);
     showPage(currentPage);
 }
 
@@ -686,7 +732,21 @@ document.getElementById('btn-download').addEventListener('click', async () => {
 });
 
 // ── Buttons ──
-document.getElementById('btn-process').addEventListener('click', processAll);
+document.getElementById('btn-process-page').addEventListener('click', async () => {
+    setStatus(`處理第 ${currentPage} 頁…`);
+    showProgress(true);
+    setProgress(50, `處理第 ${currentPage} / ${totalPages} 頁…`);
+    await processPage(currentPage);
+    setProgress(100, '完成');
+    setTimeout(() => showProgress(false), 400);
+    setStatus(`✓ 第 ${currentPage} 頁完成`);
+    showPage(currentPage);
+    // Enable download if all pages processed
+    if (processedCanvases.every(c => c !== null)) {
+        document.getElementById('btn-download').disabled = false;
+    }
+});
+document.getElementById('btn-process-all').addEventListener('click', processAll);
 document.getElementById('btn-reset').addEventListener('click', () => {
     pdfDoc=null; originalFile=null; originalCanvases=[]; processedCanvases=[]; totalPages=0; currentPage=1;
     dropOverlay.style.display='flex';
@@ -695,7 +755,8 @@ document.getElementById('btn-reset').addEventListener('click', () => {
     document.getElementById('col-clean').style.display='none';
     document.getElementById('divider').style.display='none';
     document.getElementById('btn-reset').style.display='none';
-    document.getElementById('btn-process').disabled=true;
+    document.getElementById('btn-process-page').disabled=true;
+    document.getElementById('btn-process-all').disabled=true;
     document.getElementById('btn-download').disabled=true;
     fileInput.value=''; setStatus('');
 });
