@@ -1251,7 +1251,7 @@ const BarlineStaffDetector = (() => {
     // 驗證候選 barlineX：左側 strip 是否有 ≥ minThinBands 條細橫帶（五線譜線）。
     // 這能區分「真正的終止線」與「文字/頁碼等假 peak」。
     function _hasStaffBands(gray, w, h, bx, darkThreshold, minThinBands = 3) {
-        const stripW = 6;
+        const stripW = 20;
         const x1 = Math.max(0, bx - stripW);
         const x2 = Math.max(0, bx - 1);
         let thinRuns = 0, inRun = false, runStart = 0;
