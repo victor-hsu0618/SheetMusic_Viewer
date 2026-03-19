@@ -1333,41 +1333,51 @@ const BarlineStaffDetector = (() => {
     }
 
     /**
-     * extractStaff — scan a strip [barlineX-stripW … barlineX-1] with density threshold.
+     * extractStaff — multi-try strip scan for staff lines near a barlineX.
      *
-     * 為何用密度而非「任意暗像素」：
-     *   - 五線譜線是水平連續的 → 在 20px strip 裡每個 x 都暗 → 密度 ≥ 80%
-     *   - 音符/符幹只佔 1-3px → 密度 < 15% → 被過濾掉
-     *   - stripW 越寬，音符的干擾越小；現在每個 system 都有自己的 barlineX，
-     *     不再有橫向偏移問題，可以安心用寬 strip。
+     * 從緊貼終止線的位置開始掃（強弱記號不在此），若找不到 5 條線
+     * 則往左移 4px 再試，直到找到足夠數量或超過最大偏移為止。
+     * 這樣普通終止線一次就找到，粗雙終止線靠後幾次的嘗試來處理，
+     * 不會掃進強弱記號區域。
      */
-    function extractStaff(gray, w, h, barlineX, darkThreshold, maxLineThick = 8, stripW = 20) {
+    function extractStaff(gray, w, h, barlineX, darkThreshold, maxLineThick = 8, stripW = 4) {
         const minDensity = 0.70;
-        // 固定跳過 20px 清過終止線結構，再用寬 strip 讓音符頭密度稀釋到 < 70%
-        // （音符頭 8px / 20px strip = 40%；五線譜線橫跨全寬 = 100%）
-        const skip = 20;
-        const x1 = Math.max(0, barlineX - skip - stripW);
-        const x2 = Math.max(0, barlineX - skip);
-        const stripLen = x2 - x1 + 1;
-        const segs = [];
-        let inSeg = false, segStart = 0;
-        for (let y = 0; y <= h; y++) {
-            let darkCount = 0;
-            if (y < h) {
-                for (let x = x1; x <= x2; x++) {
-                    if (gray[y * w + x] < darkThreshold) darkCount++;
+        const STEP = 4;   // 每次往左移 4px
+        const MAX_TRIES = 6; // 最多嘗試到 bx - 24
+
+        function scanAt(rightEdge) {
+            const x2 = Math.max(0, rightEdge);
+            const x1 = Math.max(0, x2 - stripW + 1);
+            const stripLen = x2 - x1 + 1;
+            const segs = [];
+            let inSeg = false, segStart = 0;
+            for (let y = 0; y <= h; y++) {
+                let darkCount = 0;
+                if (y < h) {
+                    for (let x = x1; x <= x2; x++) {
+                        if (gray[y * w + x] < darkThreshold) darkCount++;
+                    }
+                }
+                const dark = (darkCount / stripLen) >= minDensity;
+                if (dark && !inSeg)      { inSeg = true;  segStart = y; }
+                else if (!dark && inSeg) {
+                    inSeg = false;
+                    const thick = y - segStart;
+                    if (thick >= 1 && thick <= maxLineThick)
+                        segs.push({ top: segStart, bottom: y - 1, thickness: thick, confirmed: true });
                 }
             }
-            const dark = (darkCount / stripLen) >= minDensity;
-            if (dark && !inSeg)      { inSeg = true;  segStart = y; }
-            else if (!dark && inSeg) {
-                inSeg = false;
-                const thick = y - segStart;
-                if (thick >= 1 && thick <= maxLineThick)
-                    segs.push({ top: segStart, bottom: y - 1, thickness: thick, confirmed: true });
-            }
+            return segs;
         }
-        return segs;
+
+        let best = [];
+        for (let t = 0; t < MAX_TRIES; t++) {
+            const rightEdge = barlineX - 1 - t * STEP;
+            const segs = scanAt(rightEdge);
+            if (segs.length > best.length) best = segs;
+            if (best.length >= 5) break; // 已找到足夠線條，停止
+        }
+        return best;
     }
 
     // ── 五線譜嚴格驗證 ──────────────────────────────────────────────────────
@@ -1800,7 +1810,7 @@ document.getElementById('btn-staff-preview').addEventListener('click', () => {
         const result = BarlineStaffDetector.detect(gd.gray, gd.width, gd.height, {
             darkThreshold: threshold,
             maxLineThick:  maxThick,
-            stripW:        20,
+            stripW:        4,
         });
         // 傳入進階參數 p (依據 UI 標籤對應)
         detectedSystems = BarlineStaffDetector.detectSystems(gd.gray, gd.width, gd.height, threshold, {
