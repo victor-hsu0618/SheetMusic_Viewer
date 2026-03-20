@@ -10,12 +10,28 @@ export class SetlistManager {
     }
 
     async init() {
+        if (this.isInitialized) return
+        this.isInitialized = true
+        
         this.grid = document.getElementById('setlist-grid')
         this.detailView = document.getElementById('setlist-detail-view')
         this.detailList = document.getElementById('setlist-detail-list')
         this.detailTitle = document.getElementById('setlist-detail-title')
         this.btnBack = document.getElementById('btn-setlist-back')
         this.btnAddScore = document.getElementById('btn-setlist-add-score')
+
+        try {
+            const stored = await db.get('score_setlists')
+            if (stored) {
+                this.setlists = stored
+                console.log(`[SetlistManager] Local IDB loaded: ${this.setlists.length} setlists.`);
+                this.isLoaded = true
+            } else {
+                console.log('[SetlistManager] Local IDB is empty.');
+            }
+        } catch (err) {
+            console.error('[SetlistManager] IDB Load error:', err);
+        }
 
         if (this.btnBack) {
             this.btnBack.addEventListener('click', () => this.closeDetailView())
@@ -35,6 +51,44 @@ export class SetlistManager {
 
     async save() {
         await db.set('score_setlists', this.setlists)
+        
+        // --- NEW: Sync to Supabase ---
+        if (this.app.supabaseManager) {
+            this.app.supabaseManager.pushSetlists(this.setlists);
+        }
+    }
+
+    async mergeSetlists(cloudSetlists) {
+        if (!cloudSetlists || !Array.isArray(cloudSetlists) || cloudSetlists.length === 0) {
+            console.log('[SetlistManager] No cloud setlists to merge.');
+            return;
+        }
+        
+        console.log(`[SetlistManager] 🔄 Merging ${cloudSetlists.length} cloud setlists...`);
+        let changed = false;
+        
+        cloudSetlists.forEach(cloudList => {
+            const localIdx = this.setlists.findIndex(l => l.id === cloudList.id);
+            if (localIdx === -1) {
+                this.setlists.push(cloudList);
+                changed = true;
+            } else {
+                // Take the one with the newer updatedAt timestamp
+                const cloudUpdate = cloudList.updatedAt || 0;
+                const localUpdate = this.setlists[localIdx].updatedAt || 0;
+                if (cloudUpdate > localUpdate) {
+                    this.setlists[localIdx] = cloudList;
+                    changed = true;
+                }
+            }
+        });
+        
+        if (changed) {
+            await db.set('score_setlists', this.setlists);
+            if (this.app.scoreManager?.overlay?.classList.contains('active')) {
+                this.render();
+            }
+        }
     }
 
     async createSetlist(title) {

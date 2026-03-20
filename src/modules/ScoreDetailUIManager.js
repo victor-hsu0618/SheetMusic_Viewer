@@ -20,7 +20,7 @@ export class ScoreDetailUIManager {
         this.btnSave = document.getElementById('btn-save-score-detail')
 
 
-        this.mediaListContainer = document.getElementById('score-media-list')
+        this.mediaLabelInput = document.getElementById('sidebar-media-label')
         this.mediaUrlInput = document.getElementById('sidebar-media-url')
         this.mediaListContainer = document.getElementById('sidebar-media-list')
         this.btnAddYoutube = document.getElementById('sidebar-add-youtube')

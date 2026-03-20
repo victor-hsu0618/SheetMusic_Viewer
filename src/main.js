@@ -61,7 +61,7 @@ const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'jus
 class ScoreFlow {
   constructor() {
     window.app = this
-    this.DEBUG_VERSION = '2026.03.17.v6'
+    this.DEBUG_VERSION = 'V3.1.4'
     this.isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
     this.isDev = window.location.hostname === 'localhost' || 
                  window.location.hostname === '127.0.0.1' || 
@@ -169,19 +169,90 @@ class ScoreFlow {
     this.toolManager.initToolbarResizable()
     this.toolManager.initFloatingFab()
 
-    const initAll = async () => {
-        await this.scoreManager.init()
-        await this.loadFromStorage()
-        
-        this.renderLayerUI()
-        this.renderSourceUI()
-        this.toolManager.updateActiveTools()
-        this.viewerManager.checkInitialView()
-        this.toolManager.preloadSvgs()
-        this.renderBuildInfo()
-        console.log('[ScoreFlow] Initialized - Version 2.3.5')
+    const boot = async () => {
+        try {
+            this.showMessage('[Boot] 初始化系統 V3.1.4...', 'system')
+            console.log('[ScoreFlow] Boot sequence started V3.1.4')
+            await this.scoreManager.init()
+            await this.setlistManager.init()
+
+            // Wait for Supabase Auth to resolve (up to 2 seconds)
+            if (this.supabaseManager) {
+                let authAttempts = 0;
+                while (!this.supabaseManager.user && authAttempts < 15) {
+                    await new Promise(r => setTimeout(r, 100));
+                    authAttempts++;
+                }
+
+                if (this.supabaseManager.user) {
+                    console.log('[ScoreFlow] 📡 Supabase Auth ready, pulling setlists...');
+                    const cloudSetlists = await this.supabaseManager.pullSetlists();
+                    if (cloudSetlists && cloudSetlists.length > 0) {
+                        await this.setlistManager.mergeSetlists(cloudSetlists);
+                    } else if (this.setlistManager.setlists.length > 0) {
+                        console.log('[ScoreFlow] Cloud is empty but local has data, pushing first flight...');
+                        await this.supabaseManager.pushSetlists(this.setlistManager.setlists);
+                    }
+                } else {
+                    console.log('[ScoreFlow] ⚠️ Supabase Auth not ready after wait, skipping early sync.');
+                }
+            }
+            this.showMessage(`[Boot] 已載入 ${this.setlistManager.setlists.length} 個歌單`, 'system')
+            await this.loadFromStorage()
+            
+            // 1. Primary Restore: Fingerprint-First (Most Reliable)
+            const lastFp = localStorage.getItem('scoreflow_current_fingerprint')
+            const lastScore = localStorage.getItem('scoreflow_last_opened_score')
+            let restored = false
+
+            if (lastFp) {
+                this.showMessage(`[Boot] 嘗試指紋還原: ${lastFp.slice(0, 8)}`, 'system')
+                const buf = await db.get(`score_buf_${lastFp}`)
+                if (buf) {
+                    console.log(`[ScoreFlow] Fingerprint buffer found for ${lastFp}`)
+                    await this.loadPDF(new Uint8Array(buf), lastScore || 'Restored Score', lastFp)
+                    restored = true
+                } else {
+                    console.warn(`[ScoreFlow] Registry fingerprint exists but buffer missing: ${lastFp}`)
+                }
+            }
+
+            // 2. Secondary Restore: Filename/Registry lookup (Fallback)
+            if (!restored && lastScore) {
+                this.showMessage(`[Boot] 嘗試檔名還原: ${lastScore}`, 'system')
+                try {
+                    restored = await this.openRecentScore(lastScore)
+                } catch (err) {
+                    console.warn('[ScoreFlow] Filename restore failed:', err)
+                }
+            }
+
+            // 3. Tertiary Restore: Use ScoreManager auto-load (Library recent)
+            if (!restored) {
+                this.showMessage('[Boot] 嘗試載入最近庫存樂譜...', 'system')
+                await this.scoreManager._autoLoadOnStartup()
+            }
+
+            // --- FINAL INSURANCE: If still no PDF loaded, force User Guide instead of Welcome screen ---
+            if (!this.viewerManager.pdf) {
+                this.showMessage('[Boot] 自動還原皆失敗，載入教學手冊...', 'info')
+                await this.scoreManager.loadUserGuide()
+            }
+            
+            this.renderLayerUI()
+            this.renderSourceUI()
+            this.toolManager.updateActiveTools()
+            this.viewerManager.checkInitialView()
+            this.toolManager.preloadSvgs()
+            this.renderBuildInfo()
+            console.log('[ScoreFlow] Boot complete - Version 3.1.4')
+        } catch (err) {
+            console.error('[ScoreFlow] CRITICAL BOOT ERROR:', err)
+            this.showMessage('啟動出錯: ' + err.message, 'error')
+            this.viewerManager.checkInitialView()
+        }
     }
-    initAll()
+    boot()
 
     this.restoreTheme()
   }
@@ -219,17 +290,40 @@ class ScoreFlow {
 
   async openRecentScore(name) {
     if (this.sidebar) this.sidebar.classList.remove('open')
+    
+    // 1. Check Transient Buffer (Solo uploads)
     const buf = await db.get(`recent_buf_${name}`)
-    if (buf) return this.loadPDF(new Uint8Array(buf), name)
+    if (buf) {
+        await this.loadPDF(new Uint8Array(buf), name)
+        return true
+    }
+
+    // 2. NEW: Check Library Registry (Persisted scores)
+    if (this.scoreManager?.registry?.length > 0) {
+        const entry = this.scoreManager.registry.find(s => s.fileName === name || s.title === name)
+        if (entry) {
+            console.log(`[ScoreFlow] Found "${name}" in library registry. Using fingerprint: ${entry.fingerprint.slice(0, 8)}`)
+            const libBuf = await db.get(`score_buf_${entry.fingerprint}`)
+            if (libBuf) {
+                await this.loadPDF(new Uint8Array(libBuf), entry.fileName || name, entry.fingerprint)
+                return true
+            }
+        }
+    }
+    
+    // 3. Check FileSystemHandle (Desktop only)
     const handle = await db.get(`recent_handle_${name}`)
     if (handle) {
       const file = await this.viewerManager.openFileHandle(handle)
       if (file) {
         const b = await file.arrayBuffer()
-        return this.loadPDF(new Uint8Array(b), name)
+        await this.loadPDF(new Uint8Array(b), name)
+        return true
       }
     }
-    alert(`Could not find the original file for "${name}". Please re-upload it.`)
+    
+    console.warn(`[ScoreFlow] Could not find the original file for "${name}".`)
+    return false
   }
 
   onAnnotationChanged() {
@@ -434,7 +528,9 @@ new ScoreFlow()
 // Register Service Worker for offline support
 registerSW({
   onNeedRefresh() {
-    console.log('[PWA] New content available, please refresh.')
+    if (confirm('ScoreFlow 偵測到重大更新 (V3.1.4)，是否立即重新載入以啟用歌單雲端同步？')) {
+      window.location.reload();
+    }
   },
   onOfflineReady() {
     console.log('[PWA] App ready to work offline.')

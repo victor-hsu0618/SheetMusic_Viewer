@@ -32,12 +32,20 @@ export class StaffDetector {
     }
 
     const results = []
-    for (let p = 1; p <= pdf.numPages; p++) {
-      if (this.app.pdfFingerprint !== fp) return 
-      const page = await pdf.getPage(p)
-      const systems = await this.detectPage(page, p)
-      results.push(...systems)
-      if (onProgress) onProgress(p, pdf.numPages)
+    const tempCanvas = document.createElement('canvas') // REUSE SINGLE CANVAS
+    
+    try {
+      for (let p = 1; p <= pdf.numPages; p++) {
+        if (this.app.pdfFingerprint !== fp) break 
+        const page = await pdf.getPage(p)
+        const systems = await this.detectPage(page, p, tempCanvas)
+        results.push(...systems)
+        if (onProgress) onProgress(p, pdf.numPages)
+      }
+    } finally {
+      // Clean up the temporary canvas to free iPad memory
+      tempCanvas.width = 0
+      tempCanvas.height = 0
     }
     
     if (this.app.pdfFingerprint !== fp) return
@@ -267,14 +275,35 @@ export class StaffDetector {
     return systems
   }
 
-  async detectPage(pdfPage, pageNum) {
+  async detectPage(pdfPage, pageNum, canvas = null) {
     const { scale } = this.params
     const viewport = pdfPage.getViewport({ scale })
-    const canvas = document.createElement('canvas')
-    canvas.width = viewport.width; canvas.height = viewport.height
+    
+    if (!canvas) canvas = document.createElement('canvas')
+    
+    // Canvas Size Capping for Staff Detection (iPad memory safety)
+    const MAX_AREA = 9437184; // 9M pixels (3000x3000)
+    const currentArea = viewport.width * viewport.height;
+    let renderScale = 1.0;
+    
+    if (currentArea > MAX_AREA && currentArea > 0) {
+      renderScale = Math.sqrt(MAX_AREA / currentArea);
+      console.warn(`[StaffDetector] Page ${pageNum} exceeds MAX_AREA. Capping to 9M pixels (scale: ${renderScale.toFixed(2)}x)`);
+    } else if (currentArea <= 0) {
+      console.error(`[StaffDetector] Invalid area for page ${pageNum}. Skipping.`);
+      return [];
+    }
+
+    canvas.width = Math.floor(viewport.width * renderScale)
+    canvas.height = Math.floor(viewport.height * renderScale)
+
     const ctx = canvas.getContext('2d', { willReadFrequently: true })
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height)
-    await pdfPage.render({ canvasContext: ctx, viewport }).promise
+    
+    await pdfPage.render({ 
+      canvasContext: ctx, 
+      viewport: pdfPage.getViewport({ scale: scale * renderScale }) 
+    }).promise
 
     const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
     const w = canvas.width, h = canvas.height

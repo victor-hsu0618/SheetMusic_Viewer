@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Bookmark Importer | ScoreFlow Dev Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles.css">
+    <script src="theme-manager.js"></script>
+    <style>
+        .wrap { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        .tool-header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
+        .tool-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+        .tool-header p { color: var(--text-muted); font-size: 14px; }
+
+        .drop-zone { 
+            border: 2px dashed var(--border); 
+            border-radius: 16px; 
+            padding: 40px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all .2s; 
+            margin-bottom: 24px; 
+            background: rgba(255,255,255,0.02);
+            color: var(--text-muted);
+        }
+        .drop-zone:hover, .drop-zone.drag-over { 
+            border-color: var(--primary); 
+            background: rgba(99,102,241,0.06); 
+            color: var(--text); 
+        }
+
+        .section { margin-bottom: 32px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: none; }
+        .section.active { display: block; }
+        .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 16px; }
+
+        .video-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 8px; }
+        .video-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 12px; 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all .15s;
+        }
+        .video-item:hover { background: rgba(255,255,255,0.06); border-color: var(--primary); }
+        .video-item.selected { border-color: var(--primary); background: rgba(99,102,241,0.1); }
+        .video-item img { width: 80px; height: 45px; object-fit: cover; border-radius: 4px; }
+        .video-info { flex: 1; min-width: 0; }
+        .video-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .video-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        .mapping-card { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; margin-top: 16px; }
+        .score-box { 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid var(--border); 
+            border-radius: 16px; 
+            padding: 24px; 
+            text-align: left; /* Changed from center */
+            transition: all 0.3s ease;
+        }
+        .score-box.matched { border-color: #10b981; background: rgba(16,185,129,0.08); }
+        .score-box h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+        .score-box p { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+
+        #score-select {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            appearance: none; /* Modern style */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+        }
+        #score-select:focus { outline: none; border-color: var(--primary); background-color: rgba(99, 102, 241, 0.1); }
+
+        .bookmark-preview { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+        .bm-list { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+        .bm-item { display: flex; justify-content: space-between; font-size: 12px; padding: 6px 10px; background: rgba(255,255,255,0.02); border-radius: 6px; }
+        .bm-time { font-family: 'JetBrains Mono', monospace; color: var(--primary); }
+
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700; transition: all .15s; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .status { margin-top: 12px; font-size: 12px; padding: 10px; border-radius: 8px; display: none; }
+        .status.success { display: block; background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+        .status.error { display: block; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <nav style="margin-bottom: 32px;">
+            <a href="index.html" style="text-decoration:none; color:var(--primary); font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg>
+                Dev Hub
+            </a>
+        </nav>
+
+        <header class="tool-header">
+            <div style="font-size: 32px; margin-bottom: 12px;">📑</div>
+            <h1>YouTube Bookmark Importer</h1>
+            <p>Import bookmarks from YouTube Study Companion or compatible JSON exports into your ScoreFlow library.</p>
+        </header>
+
+        <!-- STEP 1: Upload -->
+        <div id="drop-zone" class="drop-zone">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">📁</div>
+            <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px;">Click or drop your backup JSON here</div>
+            <p style="font-size: 12px; opacity: 0.6;">Supports "YouTube Study Companion" export format</p>
+            <input type="file" id="file-input" accept=".json" style="display:none;">
+        </div>
+
+        <!-- STEP 2: Selection -->
+        <div id="section-select" class="section">
+            <div class="section-title">Step 2: Select Video & Target Score</div>
+            
+            <div class="step2-container" style="display: flex; gap: 24px; flex-wrap: wrap;">
+                <div class="video-pane" style="flex: 1.5; min-width: 320px;">
+                    <p style="font-size: 12px; margin-bottom: 10px;">Videos found in JSON:</p>
+                    <div id="video-list" class="video-list"></div>
+                </div>
+
+                <div class="mapping-pane" style="flex: 1; min-width: 280px;">
+                    <div id="mapping-status">
+                        <div class="score-box" id="target-score-display">
+                            <h4>Target Score</h4>
+                            <p>Select a score from the list below</p>
+                            <select id="score-select"></select>
+                        </div>
+                        
+                        <div id="bookmark-preview" class="bookmark-preview" style="display:none;">
+                            <div class="section-title">Bookmarks to Import</div>
+                            <div id="bm-list" class="bm-list"></div>
+                            
+                            <div style="margin-top:24px;">
+                                <button id="btn-import" class="btn btn-primary" style="width:100%;">Import to ScoreFlow</button>
+                                <div id="import-status" class="status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ── IndexedDB Wrapper ──
+        const DB_NAME = 'ScoreFlowStorage';
+        const db = {
+            _open() { return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore('store');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}); },
+            async get(k) { const d=await this._open(); return new Promise((res,rej)=>{const q=d.transaction('store','readonly').objectStore('store').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);}); },
+            async set(k,v) { const d=await this._open(); return new Promise((res,rej)=>{const tx=d.transaction('store','readwrite');tx.objectStore('store').put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);}); }
+        };
+
+        // ── State ──
+        let jsonData = null;
+        let scoreRegistry = [];
+        let selectedVideo = null;
+        let selectedFingerprint = null;
+
+        // ── Init ──
+        init();
+
+        async function init() {
+            scoreRegistry = await db.get('score_registry') || [];
+            populateScoreSelect();
+            initUI();
+        }
+
+        function populateScoreSelect() {
+            const select = document.getElementById('score-select');
+            select.innerHTML = '<option value="">-- Choose Target Score --</option>' + 
+                scoreRegistry.map(s => `<option value="${s.fingerprint}">${s.title} (${s.composer || 'Unknown'})</option>`).join('');
+            
+            select.onchange = (e) => {
+                selectedFingerprint = e.target.value;
+                updateMapping();
+            };
+        }
+
+        function initUI() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+
+            dropZone.onclick = () => fileInput.click();
+            fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+            dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); };
+            dropZone.ondragleave = () => dropZone.classList.remove('drag-over');
+            dropZone.ondrop = (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                handleFile(e.dataTransfer.files[0]);
+            };
+
+            document.getElementById('btn-import').onclick = performImport;
+        }
+
+        async function handleFile(file) {
+            if (!file) return;
+            try {
+                const text = await file.text();
+                jsonData = JSON.parse(text);
+                processJson();
+                document.getElementById('section-select').classList.add('active');
+            } catch (err) {
+                alert('Failed to parse JSON: ' + err.message);
+            }
+        }
+
+        function processJson() {
+            const listEl = document.getElementById('video-list');
+            listEl.innerHTML = '';
+
+            // Filter entries starting with 'v_'
+            const videos = Object.keys(jsonData)
+                .filter(key => key.startsWith('v_'))
+                .map(key => jsonData[key]);
+
+            if (videos.length === 0) {
+                listEl.innerHTML = '<p style="color:red">No video data found in JSON.</p>';
+                return;
+            }
+
+            videos.forEach(v => {
+                const item = document.createElement('div');
+                item.className = 'video-item';
+                item.innerHTML = `
+                    <img src="https://img.youtube.com/vi/${v.id}/mqdefault.jpg">
+                    <div class="video-info">
+                        <div class="video-title">${v.title}</div>
+                        <div class="video-meta">ID: ${v.id} • ${v.tagGroups?.Default?.length || 0} bookmarks</div>
+                    </div>
+                `;
+                item.onclick = () => selectVideo(v, item);
+                listEl.appendChild(item);
+            });
+        }
+
+        function selectVideo(v, itemEl) {
+            selectedVideo = v;
+            document.querySelectorAll('.video-item').forEach(i => i.classList.remove('selected'));
+            itemEl.classList.add('selected');
+            
+            // Try to auto-match score by YouTube ID
+            // Match against scoreRegistry.mediaList (if exists)
+            const match = scoreRegistry.find(s => {
+                const list = s.mediaList || s.media || [];
+                return Array.isArray(list) && list.some(m => m.source && m.source.includes(v.id));
+            });
+            
+            if (match) {
+                selectedFingerprint = match.fingerprint;
+                document.getElementById('score-select').value = match.fingerprint;
+            }
+            
+            updateMapping();
+        }
+
+        function updateMapping() {
+            const display = document.getElementById('target-score-display');
+            const preview = document.getElementById('bookmark-preview');
+            const bmList = document.getElementById('bm-list');
+            const btnImport = document.getElementById('btn-import');
+
+            if (selectedFingerprint) {
+                display.classList.add('matched');
+                const score = scoreRegistry.find(s => s.fingerprint === selectedFingerprint);
+                display.querySelector('p').textContent = `✓ Selected Score: ${score.title}`;
+            } else {
+                display.classList.remove('matched');
+                display.querySelector('p').textContent = `Select a score from the list below`;
+            }
+
+            if (selectedVideo) {
+                preview.style.display = 'block';
+                const bookmarks = getBookmarks(selectedVideo);
+                bmList.innerHTML = bookmarks.length > 0 
+                    ? bookmarks.map(b => `<div class="bm-item"><span>${b.label || 'Unnamed'}</span> <span class="bm-time">${formatTime(b.time)}</span></div>`).join('')
+                    : '<p style="font-size:12px; color:var(--text-muted)">No bookmarks in this video entry.</p>';
+            }
+
+            // Sync import button state
+            if (selectedVideo && selectedFingerprint) {
+                btnImport.disabled = false;
+                btnImport.innerHTML = `Import ${getBookmarks(selectedVideo).length} Bookmarks to ScoreFlow`;
+                btnImport.style.opacity = '1';
+            } else if (!selectedVideo && selectedFingerprint) {
+                btnImport.disabled = true;
+                btnImport.innerHTML = `Step 2: Please select a video on the left`;
+                btnImport.style.opacity = '0.5';
+            } else {
+                btnImport.disabled = true;
+                btnImport.innerHTML = `Step 3: Ready to Import`;
+                btnImport.style.opacity = '0.5';
+            }
+        }
+
+        function getBookmarks(v) {
+            let allRaw = [];
+            // Check for tagGroups (YouTube Sidebar Control format)
+            if (v.tagGroups) {
+                Object.values(v.tagGroups).forEach(group => {
+                    if (Array.isArray(group)) allRaw = allRaw.concat(group);
+                });
+            }
+            // Check for top-level bookmarks or markers
+            if (Array.isArray(v.bookmarks)) allRaw = allRaw.concat(v.bookmarks);
+            if (Array.isArray(v.markers)) allRaw = allRaw.concat(v.markers);
+
+            // Standardize: ensure each bookmark has a 'time' and 'label' (or fallback to 'desc')
+            return allRaw.map(b => ({
+                id: b.id || 'bm_' + Math.random().toString(36).substr(2, 9),
+                time: typeof b.time === 'number' ? b.time : 0,
+                label: b.label || b.desc || b.description || ''
+            }));
+        }
+
+        async function performImport() {
+            if (!selectedVideo || !selectedFingerprint) return;
+
+            const status = document.getElementById('import-status');
+            const btn = document.getElementById('btn-import');
+            btn.disabled = true;
+
+            try {
+                // 1. Get existing detail
+                const detail = await db.get(`detail_${selectedFingerprint}`);
+                if (!detail) throw new Error('Could not find score detail in DB.');
+
+                // 2. Prepare bookmarks
+                const rawBookmarks = getBookmarks(selectedVideo);
+                const newBookmarks = rawBookmarks.map(b => ({
+                    id: 'bm_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                    time: b.time,
+                    label: b.label || `Point at ${formatTime(b.time)}`
+                }));
+
+                // 3. Find target media in the score
+                // ScoreFlow uses 'mediaList' instead of 'media'
+                if (!detail.mediaList || !Array.isArray(detail.mediaList)) {
+                    detail.mediaList = Array.isArray(detail.media) ? detail.media : [];
+                }
+                
+                let targetMedia = detail.mediaList.find(m => m.source && (m.source.includes(selectedVideo.id) || (m.videoId === selectedVideo.id)));
+                
+                if (!targetMedia) {
+                    // Create new media entry if none matches the video ID
+                    targetMedia = {
+                        id: 'm_' + Date.now(),
+                        label: selectedVideo.title,
+                        source: `https://www.youtube.com/watch?v=${selectedVideo.id}`,
+                        type: 'youtube',
+                        bookmarks: []
+                    };
+                    detail.mediaList.push(targetMedia);
+                }
+
+                if (!targetMedia.bookmarks) targetMedia.bookmarks = [];
+                
+                // 4. Merge (avoid duplicates by time?)
+                let addedCount = 0;
+                newBookmarks.forEach(nb => {
+                    const exists = targetMedia.bookmarks.some(eb => Math.abs(eb.time - nb.time) < 0.5);
+                    if (!exists) {
+                        targetMedia.bookmarks.push(nb);
+                        addedCount++;
+                    }
+                });
+
+                // 5. Save back
+                await db.set(`detail_${selectedFingerprint}`, detail);
+                
+                // Update registry updated timestamp
+                const reg = await db.get('score_registry');
+                const idx = reg.findIndex(s => s.fingerprint === selectedFingerprint);
+                if (idx !== -1) {
+                    reg[idx].updatedAt = Date.now();
+                    await db.set('score_registry', reg);
+                }
+
+                status.className = 'status success';
+                status.textContent = `Successfully imported ${addedCount} bookmarks to "${detail.name}".`;
+
+                // Trigger cloud sync if possible
+                if (window.opener && window.opener.app && window.opener.app.supabaseManager) {
+                    console.log('[Importer] Triggering cloud sync via opener app...');
+                    window.opener.app.supabaseManager.syncScore(selectedFingerprint, {
+                        title: detail.name,
+                        composer: detail.composer,
+                        mediaList: detail.mediaList
+                    });
+                }
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = 'Import failed: ' + err.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // Utils
+        function formatTime(sec) {
+            if (sec === null || sec === undefined) return '--:--';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+    </script>
+</body>
+</html>

@@ -44,6 +44,13 @@ export class SupabaseManager {
                     }
                 });
 
+                // Setlist Sync - Dedicated Table
+                this.pullSetlists().then(cloudSetlists => {
+                    if (cloudSetlists && this.app.setlistManager) {
+                        this.app.setlistManager.mergeSetlists(cloudSetlists);
+                    }
+                });
+
                 if (this.app.scoreManager) {
                     this.pullScoreRegistry();
                 }
@@ -419,6 +426,40 @@ export class SupabaseManager {
     }
 
     /**
+     * Pushes setlists to Supabase.
+     */
+    async pushSetlists(setlists) {
+        if (!this.client || !this.user) return;
+        console.log(`[Supabase] ⬆️ Syncing ${setlists.length} Setlists to profiles...`);
+        
+        // We store everything in the 'data' JSONB column of the profiles table
+        const currentProfile = await this.pullProfile() || {};
+        const updatedData = { ...currentProfile, setlists: setlists };
+
+        const { error } = await this.client
+            .from('profiles')
+            .upsert({
+                id: this.user.id,
+                email: this.user.email,
+                data: updatedData,
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) console.error('[Supabase] Setlist push failed:', error.message);
+        else console.log('[Supabase] ✅ Setlists synced to profiles.');
+    }
+
+    /**
+     * Pulls setlists from Supabase profiles data field. (Maximum Compatibility)
+     */
+    async pullSetlists() {
+        if (!this.client || !this.user) return null;
+        console.log('[Supabase] ↓ Pulling Setlists from profiles...');
+        const data = await this.pullProfile();
+        return data?.setlists || null;
+    }
+
+    /**
      * Pulls all scores registered to this user to populate the Library placeholders.
      */
     async pullScoreRegistry() {
@@ -465,11 +506,6 @@ export class SupabaseManager {
                     const localUpdate = exists.updatedAt || 0;
 
                     if (cloudUpdate > localUpdate) {
-                        console.log(`[Supabase] ↑ Updating local metadata for ${exists.title} from cloud.`);
-                        const oldTitle = exists.title;
-                        exists.title = cloudRecord.title || exists.title;
-                        exists.composer = cloudRecord.composer || exists.composer;
-                        if (cloudRecord.filename) exists.fileName = cloudRecord.filename;
                         exists.updatedAt = cloudUpdate;
                         itemChanged = true;
 
@@ -480,6 +516,13 @@ export class SupabaseManager {
                                 if (detail) {
                                     detail.name = exists.title;
                                     detail.composer = exists.composer;
+                                    
+                                    // Sync media_list from cloud if present
+                                    if (cloudRecord.media_list) {
+                                        detail.mediaList = cloudRecord.media_list;
+                                        console.log(`[Supabase] ↓ Updated mediaList for ${exists.title}`);
+                                    }
+                                    
                                     await db.set(`detail_${fp}`, detail);
                                     
                                     // If active score updated, refresh its UI
@@ -515,6 +558,15 @@ export class SupabaseManager {
     async syncScore(fingerprint, metadata) {
         if (!this.client || !this.user) return;
         
+        // Fetch detail to get latest mediaList if not provided
+        let scoreMediaList = metadata?.mediaList;
+        if (!scoreMediaList) {
+            try {
+                const detail = await db.get(`detail_${fingerprint}`);
+                scoreMediaList = detail?.mediaList || [];
+            } catch (e) {}
+        }
+
         const scoreData = {
             fingerprint: fingerprint,
             user_id: this.user.id,
@@ -522,6 +574,7 @@ export class SupabaseManager {
             composer: metadata?.composer || 'Unknown',
             filename: metadata?.fileName || '',
             tags: metadata?.tags || [],
+            media_list: scoreMediaList || [], // SYNC NEW COLUMN
             last_accessed: metadata?.lastAccessed || Date.now(),
             updated_at: new Date().toISOString()
         }

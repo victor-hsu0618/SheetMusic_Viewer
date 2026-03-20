@@ -281,6 +281,24 @@ export class SettingsPanelManager {
             })
         }
 
+        // Hide Ruler Measures
+        const hideRulerMeasuresToggle = document.getElementById('settings-hide-ruler-measures')
+        if (hideRulerMeasuresToggle) {
+            const stored = localStorage.getItem('scoreflow_hide_ruler_measures')
+            const hide = stored === 'true'
+            hideRulerMeasuresToggle.checked = hide
+            this.app.hideRulerMeasures = hide
+
+            hideRulerMeasuresToggle.addEventListener('change', (e) => {
+                const checked = e.target.checked
+                this.app.hideRulerMeasures = checked
+                localStorage.setItem('scoreflow_hide_ruler_measures', checked)
+                if (this.app.rulerManager) {
+                    this.app.rulerManager.updateRulerMarks()
+                }
+            })
+        }
+
         // Application Theme Selection
         const themeSelect = document.getElementById('settings-app-theme')
         if (themeSelect) {

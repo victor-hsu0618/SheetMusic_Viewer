@@ -56,12 +56,38 @@
     position: absolute;
     right: 0;
     bottom: 0;
-    width: 20px;
-    height: 20px;
-    cursor: nwse-resize;
-    background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.1) 75%, transparent 75%);
-    background-size: 8px 8px;
+    width: 16px; /* Smaller size */
+    height: 16px;
+    cursor: nwse-resize !important;
+    background: linear-gradient(135deg, 
+        transparent 50%, 
+        rgba(0, 0, 0, 0.2) 50%, 
+        rgba(0, 0, 0, 0.2) 70%, 
+        transparent 70%,
+        transparent 80%,
+        rgba(0, 0, 0, 0.2) 80%,
+        rgba(0, 0, 0, 0.15) 100%
+    );
+    background-size: 8px 8px; /* Adjusted pattern */
     border-radius: 0 0 20px 0;
+    z-index: 10001;
+    opacity: 0.6;
+    transition: opacity 0.2s, background 0.2s;
+    pointer-events: auto !important;
+}
+
+.panel-resize-handle:hover {
+    opacity: 1;
+    background: linear-gradient(135deg, 
+        transparent 50%, 
+        var(--primary) 50%, 
+        var(--primary) 70%, 
+        transparent 70%,
+        transparent 80%, 
+        var(--primary) 80%, 
+        var(--primary) 100%
+    );
+    background-size: 10px 10px;
 }
 
 .jump-drag-handle {

@@ -34,7 +34,7 @@ export function applyAppProxies(app) {
     // --- AnnotationManager Proxies ---
     app.redrawStamps = (p) => app.annotationManager.redrawStamps(p);
     app.redrawAllAnnotationLayers = () => app.annotationManager.redrawAllAnnotationLayers();
-    app.createAnnotationLayers = (w, p, width, height) => app.viewerManager.createAnnotationLayers(w, p, width, height);
+    app.createAnnotationLayers = (...args) => app.viewerManager.createAnnotationLayers(...args);
     app.drawPathOnCanvas = (...a) => app.annotationManager.drawPathOnCanvas(...a);
     app.drawStampOnCanvas = (...a) => app.annotationManager.drawStampOnCanvas(...a);
     app.createCaptureOverlay = (...a) => app.annotationManager.createCaptureOverlay(...a);

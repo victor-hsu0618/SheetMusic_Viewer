@@ -21,22 +21,32 @@ export class ViewerManager {
 
     init() {
         // Redundant listener removed. Listeners are now attached in main.js initElements.
-        // Initialize IntersectionObserver for Lazy Rendering
+        // Initialize rendering queue
         this._renderQueue = []
         this._activeRenderCount = 0
         this._maxActiveRenders = 2 // Limit simultaneous renders to prevent UI lag
 
+        // Initialize IntersectionObserver for Lazy Rendering and Virtualization (Memory Cleanup)
+        // More conservative rootMargin (600px) to reduce number of active canvases
         this.observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
+                const pageNum = parseInt(entry.target.dataset.page)
                 if (entry.isIntersecting) {
-                    const pageNum = parseInt(entry.target.dataset.page)
                     if (entry.target.dataset.rendered === 'false') {
                         this.enqueueRender(pageNum, entry.target)
+                    }
+                } else {
+                    // OFF-SCREEN VIRTUALIZATION:
+                    const rect = entry.boundingClientRect;
+                    const vh = window.innerHeight;
+                    // Unrender if farther than 1200px (approx 1.5 screen heights)
+                    if (entry.target.dataset.rendered === 'true' && (rect.bottom < -1200 || rect.top > vh + 1200)) {
+                        this.unrenderPage(pageNum, entry.target);
                     }
                 }
             })
         }, {
-            rootMargin: '1000px 0px', // More aggressive pre-rendering (1000px)
+            rootMargin: '600px 0px', 
             threshold: 0.01
         })
 
@@ -217,11 +227,29 @@ export class ViewerManager {
             console.error('[ViewerManager] Unsupported data type for loadPDF:', typeof data);
             throw new Error('Unsupported data type');
         }
+        
+        // --- ADDED: Persist buffer to IndexedDB for iPad restore support ---
+        if (filename) {
+            await db.set(`recent_buf_${filename}`, uint8Data);
+        }
 
         if (loadingId !== this.latestLoadingId) return;
 
         if (loadingId !== this.latestLoadingId) return;
         const newFingerprint = await this.getFingerprint(uint8Data)
+        
+        // --- SAFE CACHE: Persist buffer to IndexedDB for BOTH transient and library restore support ---
+        try {
+            if (filename) {
+                await db.set(`recent_buf_${filename}`, uint8Data);
+            }
+            if (newFingerprint) {
+                await db.set(`score_buf_${newFingerprint}`, uint8Data);
+            }
+        } catch (err) {
+            console.warn('[ViewerManager] Storage cache failed (likely QuotaExceeded):', err);
+            // Non-blocking: continue loading PDF even if caching fails
+        }
         if (loadingId !== this.latestLoadingId) return;
 
         // --- AUTOMATIC REPAIR: Detect Fingerprint Drift ---
@@ -287,6 +315,11 @@ export class ViewerManager {
         }
 
         const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
+        // canvasMaxAreaInBytes: Tells PDF.js the canvas pixel limit (67,108,864 px × 4 bytes = 256MB).
+        // Without this, PDF.js v5 runs a binary search using OffscreenCanvas to auto-detect the
+        // platform limit, which intentionally tries over-limit sizes and triggers Safari's
+        // "[Warning] Canvas area exceeds the maximum limit" 5+ times on iPad.
+        const canvasMaxAreaInBytes = 67108864 * 4  // 67M pixels (iOS/Safari limit)
         const loadingTask = pdfjsLib.getDocument({
             data: uint8Data,
             cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
@@ -295,7 +328,8 @@ export class ViewerManager {
             jbig2WasmUrl: new URL('pdfjs/wasm/jbig2.wasm', baseUrl).href,
             wasmUrl: new URL('pdfjs/wasm/', baseUrl).href,
             isEvalSupported: false,
-            stopAtErrors: false
+            stopAtErrors: false,
+            canvasMaxAreaInBytes
         })
 
         try {
@@ -642,24 +676,70 @@ export class ViewerManager {
             wrapper.style.minHeight = `${viewport.height}px`
             wrapper.style.width = `${viewport.width}px`
 
-            canvas.height = viewport.height
-            canvas.width = viewport.width
+            // --- iPad Canvas Memory Optimization (Capping & Safety) ---
+            // Safari/iOS has strict individual (67M px) and cumulative canvas limits.
+            // 9M pixels (3000x3000) is plenty for iPad sharpness and much safer for total memory.
+            const MAX_AREA = 9437184; 
+            const currentArea = viewport.width * viewport.height;
+            let renderScale = 1.0;
+            
+            if (currentArea > MAX_AREA && currentArea > 0) {
+                renderScale = Math.sqrt(MAX_AREA / currentArea);
+                console.warn(`[ViewerManager] Page ${pageNum} is massive (${Math.floor(viewport.width)}x${Math.floor(viewport.height)}). Capping to 9M pixels (Scale: ${renderScale.toFixed(2)}x)`);
+            } else if (currentArea <= 0) {
+                console.error(`[ViewerManager] Invalid viewport area for page ${pageNum}: ${currentArea}. Aborting.`);
+                wrapper.dataset.rendering = 'false';
+                return;
+            }
+
+            canvas.width = Math.floor(viewport.width * renderScale)
+            canvas.height = Math.floor(viewport.height * renderScale)
+
+            // If we are downscaling, use CSS to stretch it back to the visual size
+            if (renderScale < 1.0) {
+                canvas.style.width = `${viewport.width}px`;
+                canvas.style.height = `${viewport.height}px`;
+            } else {
+                canvas.style.width = '';
+                canvas.style.height = '';
+            }
 
             const renderTask = page.render({ 
                 canvasContext: context, 
-                viewport,
+                viewport: page.getViewport({ scale: specificScale * renderScale }),
                 intent: 'display'
             })
 
-            await renderTask.promise
+            try {
+                await renderTask.promise
+            } catch (renderErr) {
+                // If PDF.js render fails with a Type error (common on iPad memory limit),
+                // or any other fatal error, try ONE retry with a forced 0.5x downscale.
+                if (renderErr?.name === 'RenderingCancelledException') return;
+                
+                console.error(`[ViewerManager] Page ${pageNum} render FAILED. Attempting recovery with 0.5x scale...`, renderErr);
+                
+                // Clear and shrink the canvas for retry
+                const fallbackScale = renderScale * 0.5;
+                canvas.width = Math.floor(viewport.width * fallbackScale);
+                canvas.height = Math.floor(viewport.height * fallbackScale);
+                
+                const retryTask = page.render({
+                    canvasContext: context,
+                    viewport: page.getViewport({ scale: specificScale * fallbackScale }),
+                    intent: 'display'
+                });
+                await retryTask.promise;
+                console.log(`[ViewerManager] Page ${pageNum} rendered via fallback (Resolution: ${canvas.width}x${canvas.height})`);
+            }
 
             // Attach annotation layers once the real canvas is ready
-            this.app.createAnnotationLayers(wrapper, pageNum, viewport.width, viewport.height)
+            this.app.createAnnotationLayers(wrapper, pageNum, viewport.width, viewport.height, renderScale) // Use original renderScale for ann matching
             this.app.createCaptureOverlay(wrapper, pageNum, viewport.width, viewport.height)
             this.app.redrawStamps(pageNum)
 
             wrapper.dataset.rendered = 'true'
-            console.log(`[ViewerManager] Page ${pageNum} rendered lazily.`)
+            console.log(`[ViewerManager] Page ${pageNum} rendered lazily (Resolution: ${canvas.width}x${canvas.height})`)
         } catch (err) {
             // PDF.js throws a plain object when a render is cancelled (e.g. zoom change mid-flight)
             if (err?.name === 'RenderingCancelledException') return
@@ -667,6 +747,32 @@ export class ViewerManager {
         } finally {
             wrapper.dataset.rendering = 'false'
         }
+    }
+
+    /**
+     * Clear page canvases to free up memory on mobile devices.
+     */
+    unrenderPage(pageNum, wrapper) {
+        if (wrapper.dataset.rendered === 'false') return;
+        
+        console.log(`[ViewerManager] Virtualization: Unrendering page ${pageNum} to save memory.`);
+        
+        const pdfCanvas = wrapper.querySelector('.pdf-canvas');
+        if (pdfCanvas) {
+            pdfCanvas.width = 0;
+            pdfCanvas.height = 0;
+        }
+        
+        const annCanvas = wrapper.querySelector('.annotation-layer');
+        if (annCanvas) {
+            annCanvas.width = 0;
+            annCanvas.height = 0;
+        }
+
+        const overlay = wrapper.querySelector('.capture-overlay');
+        if (overlay) overlay.remove();
+
+        wrapper.dataset.rendered = 'false';
     }
 
     /**
@@ -702,17 +808,27 @@ export class ViewerManager {
         return div
     }
 
-    createAnnotationLayers(wrapper, pageNum, width, height) {
+    createAnnotationLayers(wrapper, pageNum, width, height, renderScale = 1.0) {
         // Find or create annotation layer
         let canvas = wrapper.querySelector('.annotation-layer')
         if (!canvas) {
             canvas = document.createElement('canvas')
-            canvas.className = 'annotation-layer virtual-canvas'
             canvas.dataset.page = pageNum
             wrapper.appendChild(canvas)
         }
-        canvas.width = width
-        canvas.height = height
+        // Always ensure the correct classes are present for the renderer to find it
+        canvas.className = 'annotation-layer virtual-canvas'
+        
+        canvas.width = Math.floor(width * renderScale)
+        canvas.height = Math.floor(height * renderScale)
+        
+        if (renderScale < 1.0) {
+            canvas.style.width = `${width}px`
+            canvas.style.height = `${height}px`
+        } else {
+            canvas.style.width = ''
+            canvas.style.height = ''
+        }
     }
 
     async changeZoom(delta) {

@@ -18,6 +18,10 @@ export class AnnotationRenderer {
         const ctx = canvas.getContext('2d')
         ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+        if (this.app.stamps.length > 0) {
+            console.log(`[AnnotationRenderer] Page ${page}: Redrawing ${this.app.stamps.filter(s => s.page === page && !s.deleted).length} stamps on canvas ${canvas.width}x${canvas.height}`);
+        }
+
         let drawnCount = 0;
         let skippedCount = 0;
         const skipReasons = {};
@@ -369,7 +373,15 @@ export class AnnotationRenderer {
         const individualScale = stamp.userScale || 1.0
         
         // Unified Scale Factor (Standardizing on zoom=1.5 as base)
-        const globalScale = (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale;
+        let globalScale = (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale;
+        
+        // SANITY CAP: Prevent anchors/stamps from becoming ridiculously large (e.g. if multipliers are stacked)
+        // Hard cap at 5x the base size at zoom 1.5
+        const MAX_SANITY_SCALE = 5.0;
+        if (globalScale > MAX_SANITY_SCALE) {
+            // console.warn(`[AnnotationRenderer] Sanity Cap triggered for ${stamp.type}: ${globalScale.toFixed(2)} -> ${MAX_SANITY_SCALE}`);
+            globalScale = MAX_SANITY_SCALE;
+        }
         
         // Final pixel size for paths/shapes
         const size = toolSize * globalScale;
@@ -561,6 +573,15 @@ export class AnnotationRenderer {
                         ctx.lineTo(x, y + s)
                         ctx.arc(x, y - s, 6 * globalScale, 0, Math.PI * 2)
                         ctx.stroke()
+
+                        // Label text to the right (NEW: Fix missing description)
+                        if (stamp.data) {
+                            ctx.fillStyle = color
+                            ctx.font = `600 ${10 * textScale}px Outfit`
+                            ctx.textAlign = 'left'
+                            ctx.textBaseline = 'middle'
+                            ctx.fillText(stamp.data.substring(0, 16), x + 8 * globalScale, y)
+                        }
                     } else if (d.variant === 'page-bookmark') {
                         // Bookmark ribbon flag shape with V-notch at bottom
                         const s = size * 0.55

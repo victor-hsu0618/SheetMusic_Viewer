@@ -42,6 +42,7 @@ export class PersistenceManager {
         if (this.app.activeScoreName) {
             localStorage.setItem('scoreflow_last_opened_score', this.app.activeScoreName)
             if (this.app.pdfFingerprint) {
+                localStorage.setItem('scoreflow_current_fingerprint', this.app.pdfFingerprint)
                 const map = JSON.parse(localStorage.getItem('scoreflow_fingerprint_map') || '{}')
                 map[this.app.activeScoreName] = this.app.pdfFingerprint
                 localStorage.setItem('scoreflow_fingerprint_map', JSON.stringify(map))

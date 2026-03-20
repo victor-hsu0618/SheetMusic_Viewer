@@ -480,7 +480,7 @@ export class RulerManager {
             if (!layer || !layer.visible) return false;
             
             // Global Measure visibility (Note: measure-free ignores this toggle)
-            if (isMeasure && this.app.hideMeasureNumbers) return false;
+            if (isMeasure && (this.app.hideMeasureNumbers || this.app.hideRulerMeasures)) return false;
             
             return true;
         })

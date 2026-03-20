@@ -61,6 +61,26 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
+  <script>
+    // --- CACHE BUSTER & HARD RESET V3.1.2 ---
+    (function() {
+      const TARGET_VER = 'V3.1.3';
+      const currentVerToken = localStorage.getItem('scoreflow_boot_token');
+      if (currentVerToken !== TARGET_VER) {
+        console.warn('[BOOT] Version mismatch or stale cache. Unregistering SW and reloading...');
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            for(let reg of regs) reg.unregister();
+            localStorage.setItem('scoreflow_boot_token', TARGET_VER);
+            window.location.reload(true);
+          });
+        } else {
+          localStorage.setItem('scoreflow_boot_token', TARGET_VER);
+          window.location.reload(true);
+        }
+      }
+    })();
+  </script>
 </head>
 
 <body ontouchstart="" style="touch-action: manipulation;">
@@ -719,6 +739,17 @@
 
           <div class="setting-item mb-15">
             <div class="flex-row-center flex-space-between w-full">
+              <label class="setting-label" for="settings-hide-ruler-measures">Hide measure number in Ruler</label>
+              <label class="switch">
+                <input type="checkbox" id="settings-hide-ruler-measures">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <span class="setting-hint">僅隱藏垂直尺規上的小節號碼，不影響樂譜本體的標記。</span>
+          </div>
+
+          <div class="setting-item mb-15">
+            <div class="flex-row-center flex-space-between w-full">
               <label class="setting-label" for="settings-edit-scrollbar">Edit Mode Scroll Bar</label>
               <label class="switch">
                 <input type="checkbox" id="settings-edit-scrollbar" checked>
@@ -878,7 +909,6 @@
         </div>
 
       </div>
-      <div class="panel-resize-handle"></div>
     </div>
 
 
@@ -1179,6 +1209,11 @@
               <option value="1.5">1.5x</option>
               <option value="2">2.0x</option>
             </select>
+            <button class="control-btn add-media-bookmark" title="Capture Current Time">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </button>
           </div>
 
           <div class="loop-controls">
@@ -1186,23 +1221,37 @@
               <span>START A</span>
               <button class="set-btn set-a a-time">--:--</button>
             </div>
-            <button class="toggle-loop" title="Toggle A-B Loop">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 2.1l4 4-4 4" />
-                <path d="M3 12.2v-2a4 4 0 0 1 4-4h14M7 21.9l-4-4 4-4" />
-                <path d="M21 11.8v2a4 4 0 0 1-4 4H3" />
-              </svg>
-            </button>
+            <div class="loop-actions">
+              <button class="toggle-loop" title="Toggle A-B Loop">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 2.1l4 4-4 4" />
+                  <path d="M3 12.2v-2a4 4 0 0 1 4-4h14M7 21.9l-4-4 4-4" />
+                  <path d="M21 11.8v2a4 4 0 0 1-4 4H3" />
+                </svg>
+              </button>
+              <button class="clear-loop" title="Clear A-B Points">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
             <div class="loop-point">
               <span>END B</span>
               <button class="set-btn set-b b-time">--:--</button>
             </div>
           </div>
         </div>
+        <div class="playback-bookmarks">
+          <div class="bookmarks-header">
+            <span>Bookmarks</span>
+          </div>
+          <div class="bookmarks-list">
+            <!-- Populated via PlaybackManager -->
+          </div>
+        </div>
       </div>
+      <div class="panel-resize-handle"></div>
     </div>
-
-  </div>
 
   <!-- Score Details Inspector (Floating Panel) -->
   <div id="score-detail-panel" class="jump-sub-panel calculator-style">

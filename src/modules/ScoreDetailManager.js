@@ -134,6 +134,15 @@ export class ScoreDetailManager {
         const saveData = { ...this.currentInfo }
         saveData.mediaList = saveData.mediaList.map(m => m.type === 'local' ? { ...m, source: null } : m)
         await db.set(`detail_${fingerprint}`, saveData)
+
+        // Sync to Cloud
+        if (this.app.supabaseManager) {
+            this.app.supabaseManager.syncScore(fingerprint, {
+                title: saveData.name,
+                composer: saveData.composer,
+                mediaList: saveData.mediaList
+            });
+        }
     }
 
     /**

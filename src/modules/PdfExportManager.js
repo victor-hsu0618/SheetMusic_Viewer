@@ -47,6 +47,10 @@ export class PdfExportManager {
         const currentActiveTools = document.getElementById('active-tools-container');
         if (currentActiveTools) currentActiveTools.style.display = 'none'; // Hide tools during capture
 
+        // REUSE CANVASES
+        const baseCanvas = document.createElement('canvas');
+        const annoCanvas = document.createElement('canvas');
+
         try {
             console.log('[PdfExportManager] Starting export loop...');
             for (let pageNum = 1; pageNum <= numPages; pageNum++) {
@@ -55,11 +59,19 @@ export class PdfExportManager {
                 
                 // 1. Render Base PDF Page to offscreen canvas
                 const page = await pdfViewer.getPage(pageNum);
-                // Use scale 2.0 for higher quality export
-                const viewport = page.getViewport({ scale: 2.0 });
-                console.log(`[PdfExportManager] Viewport: ${viewport.width}x${viewport.height}`);
                 
-                const baseCanvas = document.createElement('canvas');
+                // --- Canvas Size Capping for Export Stability ---
+                // Lowering export cap to 16M pixels to ensure stability on memory-constrained iPads
+                const MAX_AREA = 16777216; 
+                let baseViewport = page.getViewport({ scale: 2.0 });
+                let exportRenderScale = 1.0;
+                
+                if (baseViewport.width * baseViewport.height > MAX_AREA && (baseViewport.width * baseViewport.height) > 0) {
+                    exportRenderScale = Math.sqrt(MAX_AREA / (baseViewport.width * baseViewport.height));
+                    console.warn(`[PdfExportManager] Page ${pageNum} exceeds MAX_AREA. Falling back to scale ${ (2.0 * exportRenderScale).toFixed(2) }x`);
+                }
+                const viewport = page.getViewport({ scale: 2.0 * exportRenderScale });
+
                 const baseCtx = baseCanvas.getContext('2d', { alpha: false });
                 baseCanvas.width = viewport.width;
                 baseCanvas.height = viewport.height;
@@ -70,10 +82,9 @@ export class PdfExportManager {
                     intent: 'display'
                 });
                 await renderTask.promise;
-                console.log(`[PdfExportManager] Base canvas rendered`);
+                console.log(`[PdfExportManager] Base canvas rendered (${baseCanvas.width}x${baseCanvas.height})`);
 
                 // 2. Render Annotations to offscreen canvas
-                const annoCanvas = document.createElement('canvas');
                 annoCanvas.width = viewport.width;
                 annoCanvas.height = viewport.height;
                 const annoCtx = annoCanvas.getContext('2d');
@@ -335,6 +346,10 @@ export class PdfExportManager {
             console.error('[PdfExportManager] PDF Export Failed Details:', err.name, err.message, err.stack);
             this.app.showMessage(`PDF 匯出失敗: ${err.message || 'Unknown Error'}`, 'error');
         } finally {
+            // Memory Cleanup
+            baseCanvas.width = 0; baseCanvas.height = 0;
+            annoCanvas.width = 0; annoCanvas.height = 0;
+            
             if (currentActiveTools) currentActiveTools.style.display = '';
             this.app.cloakVisible = savedCloakVisible; // Restore cloak visibility
         }

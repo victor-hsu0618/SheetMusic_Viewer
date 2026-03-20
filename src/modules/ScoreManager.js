@@ -45,7 +45,8 @@ export class ScoreManager {
         this.initSearch();
 
         // Auto-load last score (or User Guide if library is empty)
-        this._autoLoadOnStartup();
+        // [REVISION] Centered in main.js to avoid startup race conditions
+        // this._autoLoadOnStartup();
     }
 
     findByFingerprint(fp) {
