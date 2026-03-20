@@ -16,6 +16,7 @@ export class ViewerManager {
         this.isFitToHeight = false
         this.isApplyingZoom = false  // blocks touch gestures during zoom/re-render
         this.latestLoadingId = 0 // Race condition protection
+        this._loadingPdf = false // True while any loadPDF is actively in progress
         this.baseNaturalWidth = 0 // Reference width for uniform rendering
     }
 
@@ -184,6 +185,7 @@ export class ViewerManager {
 
     async loadPDF(data, filename = null, expectedFp = null) {
         const loadingId = ++this.latestLoadingId;
+        this._loadingPdf = true;
         console.log(`[ViewerManager] loadPDF started (id: ${loadingId}) for: ${filename || 'unknown'}`);
 
         // --- ATOMIC TRANSITION: Clear stale state immediately ---
@@ -228,41 +230,44 @@ export class ViewerManager {
             throw new Error('Unsupported data type');
         }
         
-        // --- ADDED: Persist buffer to IndexedDB for iPad restore support ---
-        if (filename) {
-            await db.set(`recent_buf_${filename}`, uint8Data);
+        if (loadingId !== this.latestLoadingId) return;
+
+        // --- FINGERPRINT: Use expectedFp when available to skip slow SHA-256 computation ---
+        // When loading from the library (expectedFp is known), trust it immediately and verify
+        // in the background. This is the main performance bottleneck on LAN/HTTP where
+        // WebCrypto is unavailable and the JS fallback is slow (blocks main thread).
+        let newFingerprint;
+        if (expectedFp) {
+            newFingerprint = expectedFp;
+            // Background drift check — non-blocking
+            this.getFingerprint(uint8Data).then(computed => {
+                if (computed !== expectedFp) {
+                    console.warn(`[ViewerManager] 🛠️ FP drift (bg): ${expectedFp.slice(0,8)} → ${computed.slice(0,8)}`);
+                    const entry = this.app.scoreManager?.registry?.find(s => s.fingerprint === expectedFp);
+                    if (entry && this.app.scoreManager?.helper?.migrateFingerprint) {
+                        this.app.scoreManager.helper.migrateFingerprint(expectedFp, computed, filename);
+                    }
+                }
+            }).catch(() => {});
+        } else {
+            newFingerprint = await this.getFingerprint(uint8Data);
         }
 
-        if (loadingId !== this.latestLoadingId) return;
-
-        if (loadingId !== this.latestLoadingId) return;
-        const newFingerprint = await this.getFingerprint(uint8Data)
-        
-        // --- SAFE CACHE: Persist buffer to IndexedDB for BOTH transient and library restore support ---
+        // --- SAFE CACHE: Persist buffer to IndexedDB ---
+        // Skip writing score_buf if we loaded FROM that exact key (no-op write).
         try {
             if (filename) {
                 await db.set(`recent_buf_${filename}`, uint8Data);
             }
-            if (newFingerprint) {
+            if (newFingerprint && !expectedFp) {
+                // Only write score_buf for new uploads (expectedFp = null).
+                // Library restores already have the buffer stored under this key.
                 await db.set(`score_buf_${newFingerprint}`, uint8Data);
             }
         } catch (err) {
             console.warn('[ViewerManager] Storage cache failed (likely QuotaExceeded):', err);
-            // Non-blocking: continue loading PDF even if caching fails
         }
         if (loadingId !== this.latestLoadingId) return;
-
-        // --- AUTOMATIC REPAIR: Detect Fingerprint Drift ---
-        // If we are loading a score from the registry with an expected FP, but the calculated fingerprint changed, migrate it.
-        if (expectedFp && expectedFp !== newFingerprint) {
-            const entry = this.app.scoreManager?.registry?.find(s => s.fingerprint === expectedFp);
-            if (entry) {
-                console.log(`[ViewerManager] 🛠️ Fingerprint drift detected! Auto-repairing ${expectedFp.slice(0,8)} to ${newFingerprint.slice(0,8)}...`);
-                if (this.app.scoreManager?.helper?.migrateFingerprint) {
-                    await this.app.scoreManager.helper.migrateFingerprint(expectedFp, newFingerprint, filename);
-                }
-            }
-        }
 
         console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
         this.pdfFingerprint = newFingerprint
@@ -284,6 +289,10 @@ export class ViewerManager {
         if (this.app.supabaseManager) {
             console.log(`[ViewerManager] 📡 Updating Supabase sync for: ${newFingerprint.slice(0, 8)}`);
             this.app.supabaseManager.subscribeToAnnotations(newFingerprint);
+            // Pull existing cloud annotations immediately if user is authenticated.
+            // If auth is not ready yet, the SIGNED_IN handler will call pullAnnotations
+            // once the session is restored, covering the delayed-auth race condition.
+            this.app.supabaseManager.pullAnnotations(newFingerprint);
         }
 
         // Notify GistShareManager in case a share link is pending PDF upload
@@ -315,11 +324,6 @@ export class ViewerManager {
         }
 
         const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
-        // canvasMaxAreaInBytes: Tells PDF.js the canvas pixel limit (67,108,864 px × 4 bytes = 256MB).
-        // Without this, PDF.js v5 runs a binary search using OffscreenCanvas to auto-detect the
-        // platform limit, which intentionally tries over-limit sizes and triggers Safari's
-        // "[Warning] Canvas area exceeds the maximum limit" 5+ times on iPad.
-        const canvasMaxAreaInBytes = 67108864 * 4  // 67M pixels (iOS/Safari limit)
         const loadingTask = pdfjsLib.getDocument({
             data: uint8Data,
             cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
@@ -329,7 +333,6 @@ export class ViewerManager {
             wasmUrl: new URL('pdfjs/wasm/', baseUrl).href,
             isEvalSupported: false,
             stopAtErrors: false,
-            canvasMaxAreaInBytes
         })
 
         try {
@@ -350,6 +353,7 @@ export class ViewerManager {
             }
         } catch (err) {
             if (loadingId !== this.latestLoadingId) return;
+            this._loadingPdf = false;
             console.error('[ViewerManager] PDF.js failed to load document:', err);
             if (err.name === 'InvalidPDFException') {
                 throw new Error('InvalidPDFException: 樂譜檔案格式損毀或無效 (Invalid PDF structure)');
@@ -370,6 +374,7 @@ export class ViewerManager {
         this.app.updateJumpLinePosition()
         this.app.updateRulerClip()
         this.updateFloatingTitle()
+        this._loadingPdf = false;
     }
 
     /**
@@ -656,11 +661,18 @@ export class ViewerManager {
             const context = canvas.getContext('2d', { alpha: false })
             // iOS limits simultaneous canvas contexts; getContext returns null when exceeded
             if (!context) {
-                console.warn(`[ViewerManager] No 2D context for page ${pageNum}, will retry`)
+                const retries = (parseInt(wrapper.dataset.ctxRetries) || 0) + 1
+                if (retries > 5) {
+                    console.warn(`[ViewerManager] Page ${pageNum}: gave up after ${retries} context retries`)
+                    return
+                }
+                wrapper.dataset.ctxRetries = retries
+                console.warn(`[ViewerManager] No 2D context for page ${pageNum}, retry ${retries}/5`)
                 wrapper.dataset.rendering = 'false'
                 setTimeout(() => this.enqueueRender(pageNum, wrapper), 1000)
                 return
             }
+            wrapper.dataset.ctxRetries = '0' // reset on success
             
             // Calculate specific scale to match baseNaturalWidth * global scale
             const naturalViewport = page.getViewport({ scale: 1.0 })
@@ -740,10 +752,35 @@ export class ViewerManager {
 
             wrapper.dataset.rendered = 'true'
             console.log(`[ViewerManager] Page ${pageNum} rendered lazily (Resolution: ${canvas.width}x${canvas.height})`)
+
+            // If this page scrolled off-screen while rendering, unrender it now.
+            // (IntersectionObserver won't re-fire since the intersection didn't change after render.)
+            const rect = wrapper.getBoundingClientRect()
+            const vh = window.innerHeight
+            if (rect.bottom < -1200 || rect.top > vh + 1200) {
+                this.unrenderPage(pageNum, wrapper)
+            }
         } catch (err) {
             // PDF.js throws a plain object when a render is cancelled (e.g. zoom change mid-flight)
             if (err?.name === 'RenderingCancelledException') return
             console.error(`[ViewerManager] Lazy render failed for page ${pageNum}:`, err)
+            // Draw a visible error indicator so the user doesn't see a silent white page.
+            // Common cause: ultra-high-DPI scanned PDFs (e.g. 1200 DPI) exceed iOS memory limits.
+            try {
+                const errCanvas = wrapper.querySelector('.pdf-canvas')
+                if (errCanvas && errCanvas.width > 0 && errCanvas.height > 0) {
+                    const ectx = errCanvas.getContext('2d')
+                    if (ectx) {
+                        ectx.fillStyle = '#f8f8f8'
+                        ectx.fillRect(0, 0, errCanvas.width, errCanvas.height)
+                        ectx.fillStyle = '#999'
+                        ectx.font = `${Math.floor(errCanvas.width * 0.03)}px sans-serif`
+                        ectx.textAlign = 'center'
+                        ectx.fillText(`⚠ 第 ${pageNum} 頁圖片解析度過高`, errCanvas.width / 2, errCanvas.height * 0.48)
+                        ectx.fillText(`無法在此裝置上顯示`, errCanvas.width / 2, errCanvas.height * 0.52)
+                    }
+                }
+            } catch (_) { /* ignore drawing errors */ }
         } finally {
             wrapper.dataset.rendering = 'false'
         }

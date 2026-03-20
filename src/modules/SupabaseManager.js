@@ -57,6 +57,10 @@ export class SupabaseManager {
 
                 if (this.app.pdfFingerprint) {
                     this.subscribeToAnnotations(this.app.pdfFingerprint)
+                    // Pull existing cloud annotations now that auth is ready.
+                    // This covers the race where pullAnnotations was called before
+                    // the auth session was fully restored (user was null at the time).
+                    this.pullAnnotations(this.app.pdfFingerprint)
                 }
             } else if (event === 'SIGNED_OUT') {
                 this.unsubscribeAnnotations()
@@ -361,10 +365,7 @@ export class SupabaseManager {
         
         // Always update local storage with the final state
         import('../db.js').then(db => db.set(`stamps_${fingerprint}`, this.app.stamps))
-        
-        // Start listening for live changes after initial pull
-        this.subscribeToAnnotations(fingerprint)
-        
+
         return this.app.stamps
     }
 

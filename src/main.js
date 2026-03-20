@@ -210,7 +210,7 @@ class ScoreFlow {
                 const buf = await db.get(`score_buf_${lastFp}`)
                 if (buf) {
                     console.log(`[ScoreFlow] Fingerprint buffer found for ${lastFp}`)
-                    await this.loadPDF(new Uint8Array(buf), lastScore || 'Restored Score', lastFp)
+                    await this.loadPDF(new Uint8Array(buf), null, lastFp)
                     restored = true
                 } else {
                     console.warn(`[ScoreFlow] Registry fingerprint exists but buffer missing: ${lastFp}`)
@@ -233,8 +233,9 @@ class ScoreFlow {
                 await this.scoreManager._autoLoadOnStartup()
             }
 
-            // --- FINAL INSURANCE: If still no PDF loaded, force User Guide instead of Welcome screen ---
-            if (!this.viewerManager.pdf) {
+            // --- FINAL INSURANCE: If still no PDF loaded AND no load is currently in progress
+            // (e.g. user clicked a library card while boot was running), load User Guide.
+            if (!this.viewerManager.pdf && !this.viewerManager._loadingPdf) {
                 this.showMessage('[Boot] 自動還原皆失敗，載入教學手冊...', 'info')
                 await this.scoreManager.loadUserGuide()
             }

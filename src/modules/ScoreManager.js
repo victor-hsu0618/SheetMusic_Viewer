@@ -562,15 +562,6 @@ export class ScoreManager {
         if (buffer && buffer.byteLength > 0) {
             score.lastAccessed = Date.now();
             
-            // --- ADDED: Auto-generate missing thumbnail ---
-            if (!score.thumbnail) {
-                console.log('[ScoreManager] Generating missing thumbnail...');
-                const thumb = await this.helper.generateThumbnail(buffer.slice(0));
-                if (thumb) {
-                    score.thumbnail = thumb;
-                }
-            }
-
             await this.helper.saveRegistry(this.registry);
             await this.app.loadPDF(new Uint8Array(buffer), score.fileName, fp);
         } else {
@@ -582,10 +573,9 @@ export class ScoreManager {
 
             // --- Supabase Sync ---
             if (this.app.supabaseManager) {
-                // 1. Sync score metadata
+                // Sync score metadata (fire-and-forget)
+                // Note: pullAnnotations is handled inside ViewerManager after loadPDF completes.
                 this.app.supabaseManager.syncScore(fp, score);
-                // 2. Pull external annotations and merge with local data
-                this.app.supabaseManager.pullAnnotations(fp);
             }
     }
 
