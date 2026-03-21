@@ -164,7 +164,7 @@ export class AnnotationManager {
 
         // --- Supabase Sync ---
         if (this.app.supabaseManager) {
-            this.app.supabaseManager.deleteAnnotation(stamp.id);
+            this.app.supabaseManager.pushAnnotation(stamp, this.app.pdfFingerprint);
         }
 
         if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
@@ -419,10 +419,13 @@ export class AnnotationManager {
         // Physically remove stamps from the array
         const idsToRemove = new Set(stampsToErase.map(s => s.id))
         this.app.stamps = this.app.stamps.filter(s => !idsToRemove.has(s.id))
-        
+
         // --- Supabase Sync ---
         if (this.app.supabaseManager) {
-            idsToRemove.forEach(id => this.app.supabaseManager.deleteAnnotation(id));
+            const now = Date.now()
+            stampsToErase.forEach(s => {
+                this.app.supabaseManager.pushAnnotation({...s, deleted: true, updatedAt: now}, this.app.pdfFingerprint)
+            });
         }
         
         this.app.updateRulerMarks()

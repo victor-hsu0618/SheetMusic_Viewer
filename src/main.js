@@ -469,13 +469,13 @@ class ScoreFlow {
       const idx = this.stamps.findIndex(s => s.id === action.obj.id)
       if (idx !== -1) {
         const removed = this.stamps.splice(idx, 1)[0]
-        if (this.supabaseManager) this.supabaseManager.deleteAnnotation(removed.id)
+        if (this.supabaseManager) this.supabaseManager.pushAnnotation({...removed, deleted: true, updatedAt: Date.now()}, this.pdfFingerprint)
       }
     } else if (action.type === 'delete') {
       this.stamps.push(action.obj)
-      if (this.supabaseManager) this.supabaseManager.saveAnnotation(action.obj)
+      if (this.supabaseManager) this.supabaseManager.pushAnnotation(action.obj, this.pdfFingerprint)
     }
-    
+
     await this.saveToStorage(true)
     this.redrawAllAnnotationLayers()
     if (this.onAnnotationChanged) this.onAnnotationChanged()
@@ -485,18 +485,18 @@ class ScoreFlow {
     if (this.redoStack.length === 0) return
     const action = this.redoStack.pop()
     this.history.push(action)
-    
+
     if (action.type === 'add') {
       this.stamps.push(action.obj)
-      if (this.supabaseManager) this.supabaseManager.saveAnnotation(action.obj)
+      if (this.supabaseManager) this.supabaseManager.pushAnnotation(action.obj, this.pdfFingerprint)
     } else if (action.type === 'delete') {
       const idx = this.stamps.findIndex(s => s.id === action.obj.id)
       if (idx !== -1) {
         const removed = this.stamps.splice(idx, 1)[0]
-        if (this.supabaseManager) this.supabaseManager.deleteAnnotation(removed.id)
+        if (this.supabaseManager) this.supabaseManager.pushAnnotation({...removed, deleted: true, updatedAt: Date.now()}, this.pdfFingerprint)
       }
     }
-    
+
     await this.saveToStorage(true)
     this.redrawAllAnnotationLayers()
     if (this.onAnnotationChanged) this.onAnnotationChanged()
