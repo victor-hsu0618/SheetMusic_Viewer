@@ -409,26 +409,27 @@
         }
         .lp-bar-handle span { display:block; width:14px; height:2px; background:#fff; border-radius:1px; }
 
-        .lp-bar-divider { width:1px; background:var(--sf-border); flex-shrink:0; align-self:stretch; margin:0 4px; }
+        /* All lp-* inside scene hard-coded dark — independent of page theme */
+        .lp-bar-divider { width:1px; background:rgba(255,255,255,0.12); flex-shrink:0; align-self:stretch; margin:0 4px; }
 
         /* Cells in stamp bar */
         .lp-cell {
             width: 44px; height: 44px; flex-shrink:0;
             background: rgba(255,255,255,0.06);
-            border: 1px solid var(--sf-border);
+            border: 1px solid rgba(255,255,255,0.14);
             border-radius: 8px;
             display:flex; align-items:center; justify-content:center;
             cursor:pointer; transition: background .15s, border-color .15s;
             position:relative;
         }
-        .lp-cell:hover { background:rgba(255,255,255,0.12); }
-        .lp-cell.active-stamp { background:rgba(99,102,241,0.25); border-color:rgba(99,102,241,0.6); }
-        .lp-cell.edit-cell { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.25); }
+        .lp-cell:hover { background:rgba(255,255,255,0.13); }
+        .lp-cell.active-stamp { background:rgba(99,102,241,0.3); border-color:rgba(99,102,241,0.7); }
+        .lp-cell.edit-cell { background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.35); }
         .lp-cell svg { width:20px; height:20px; pointer-events:none; }
-        .lp-cell .lp-cell-text { font-size:12px; font-weight:700; color:var(--sf-text); pointer-events:none; }
+        .lp-cell .lp-cell-text { font-size:12px; font-weight:700; color:#f9fafb; pointer-events:none; }
         .lp-cell .lp-cell-tip {
             position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
-            background:var(--sf-card); border:1px solid var(--sf-border); color:var(--sf-text);
+            background:#374151; border:1px solid rgba(255,255,255,0.15); color:#f9fafb;
             font-size:10px; font-weight:600; padding:2px 7px; border-radius:6px;
             white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .15s; z-index:99;
         }
@@ -437,24 +438,24 @@
         /* Right: scrollbar + doc bar */
         .lp-right {
             width: 44px; flex-shrink:0;
-            background: var(--sf-card);
-            border-left: 1px solid var(--sf-border);
+            background: #1f2937;
+            border-left: 1px solid rgba(255,255,255,0.1);
             display:flex; flex-direction:column; align-items:center;
             padding: 6px 0; gap:4px;
         }
         .lp-docbar-btn {
-            width:32px; height:32px; background:rgba(255,255,255,0.05);
-            border:1px solid var(--sf-border); border-radius:8px;
+            width:32px; height:32px; background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.12); border-radius:8px;
             display:flex; align-items:center; justify-content:center; flex-shrink:0;
             cursor:pointer; transition: background .15s;
         }
-        .lp-docbar-btn:hover { background: rgba(255,255,255,0.12); }
+        .lp-docbar-btn:hover { background: rgba(255,255,255,0.14); }
         .lp-docbar-primary {
-            color: var(--sf-text);
-            background: rgba(99,102,241,0.12);
-            border-color: rgba(99,102,241,0.35);
+            color: #f9fafb;
+            background: rgba(99,102,241,0.18);
+            border-color: rgba(99,102,241,0.45);
         }
-        .lp-docbar-primary:hover { background: rgba(99,102,241,0.25) !important; }
+        .lp-docbar-primary:hover { background: rgba(99,102,241,0.3) !important; }
         .lp-scrollbar-track {
             flex: 1; width: 8px;
             background: rgba(255,255,255,0.05);
@@ -470,8 +471,8 @@
 
         .lp-bar-y-info {
             position:absolute; right:8px; top:8px;
-            background:var(--sf-card); border:1px solid var(--sf-border);
-            color:var(--sf-muted); font-size:10px; font-family:'JetBrains Mono',monospace;
+            background:#1f2937; border:1px solid rgba(255,255,255,0.12);
+            color:#9ca3af; font-size:10px; font-family:'JetBrains Mono',monospace;
             padding:3px 8px; border-radius:6px; z-index:30; pointer-events:none;
         }
 
