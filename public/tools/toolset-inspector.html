@@ -296,7 +296,7 @@
             background: rgba(99,102,241,0.25);
             border-color: rgba(99,102,241,0.6);
         }
-        .lp-strip-tool svg { width:18px; height:18px; }
+        .lp-strip-tool svg { width:18px; height:18px; color:#e2e8f0; stroke:#e2e8f0; }
         .lp-strip-tool .lp-tooltip {
             position: absolute; left: 46px; top: 50%; transform: translateY(-50%);
             background: #1e293b; border: 1px solid rgba(255,255,255,0.12);
@@ -333,17 +333,21 @@
             flex-shrink:0;
         }
         .lp-color-dot.active-color { border-color: #fff; }
-        .lp-size-row { display:flex; flex-direction:column; gap:4px; align-items:center; }
+        .lp-size-row { display:flex; flex-direction:column; gap:3px; align-items:center; }
         .lp-size-dot {
-            border-radius: 3px;
-            background: rgba(255,255,255,0.3);
+            width: 28px; height: 22px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.07);
             border: 1px solid rgba(255,255,255,0.15);
             cursor: pointer;
-            transition: background .15s, border-color .15s;
+            transition: background .15s, border-color .15s, color .15s;
             flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            color: rgba(255,255,255,0.5);
+            font-family: 'JetBrains Mono', monospace;
         }
-        .lp-size-dot:hover { background: rgba(255,255,255,0.5); }
-        .lp-size-dot.active-size { background: #fff; border-color: #fff; }
+        .lp-size-dot:hover { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.8); }
+        .lp-size-dot.active-size { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.6); color: #fff; }
 
         /* Score area */
         .lp-score-area {
@@ -1164,9 +1168,9 @@ const COLORS = [
     { hex: '#fde047', label: 'Yellow' },
 ]
 const SIZES = [
-    { w: 20, h: 4,  label: 'S' },
-    { w: 20, h: 7,  label: 'M' },
-    { w: 20, h: 11, label: 'L' },
+    { label: 'S', fontSize: '9px'  },
+    { label: 'M', fontSize: '11px' },
+    { label: 'L', fontSize: '13px' },
 ]
 
 let lpActiveTool = 'view'
@@ -1236,8 +1240,9 @@ function renderLpLeftStrip() {
     SIZES.forEach(s => {
         const dot = document.createElement('div')
         dot.className = 'lp-size-dot' + (lpActiveSize === s.label ? ' active-size' : '')
-        dot.style.width = s.w + 'px'
-        dot.style.height = s.h + 'px'
+        dot.style.fontSize = s.fontSize
+        dot.style.fontWeight = '700'
+        dot.textContent = s.label
         dot.title = s.label
         dot.addEventListener('click', () => { lpActiveSize = s.label; renderLpLeftStrip() })
         sizeDiv.appendChild(dot)
