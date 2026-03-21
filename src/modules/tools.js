@@ -652,11 +652,9 @@ export class ToolManager {
         if (this.app.activeStampType !== "settings" && this.app.activeStampType !== "recycle-bin") {
             const ribbon = document.createElement("div")
             ribbon.className = "category-ribbon"
-            this._orderedToolsets().forEach(group => {
+            this.app.toolsets.forEach(group => {
                 // SKIP EDIT CATEGORY (Handled in top ribbon)
                 if (group.name === 'Edit') return
-                // SKIP hidden groups
-                if (this.app.hiddenGroups?.has(group.name)) return
 
                 const isActive = this.app.activeCategories.includes(group.name)
                 const pill = document.createElement("button")
@@ -826,85 +824,6 @@ export class ToolManager {
             binContainer.appendChild(binGrid)
         }
         this.app.activeToolsContainer.appendChild(binContainer)
-    }
-
-    _saveGroupConfig(order, hidden) {
-        localStorage.setItem('scoreflow_group_order', JSON.stringify(order))
-        localStorage.setItem('scoreflow_hidden_groups', JSON.stringify([...hidden]))
-        this.app.groupOrder = order
-        this.app.hiddenGroups = hidden
-        this.updateActiveTools()
-    }
-
-    _renderGroupConfigList(container) {
-        if (!container) return
-        const nonEditGroups = this.app.toolsets.filter(g => g.name !== 'Edit')
-        // Build current ordered list (respecting groupOrder if set)
-        const order = this.app.groupOrder?.length
-            ? this.app.groupOrder.filter(n => nonEditGroups.find(g => g.name === n))
-            : nonEditGroups.map(g => g.name)
-        // Append any not in order
-        nonEditGroups.forEach(g => { if (!order.includes(g.name)) order.push(g.name) })
-
-        const rebuild = () => {
-            container.innerHTML = ''
-            order.forEach((name, idx) => {
-                const isHidden = this.app.hiddenGroups.has(name)
-                const row = document.createElement('div')
-                row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06)'
-                row.innerHTML = `
-                    <label class="toggle-switch" style="flex-shrink:0">
-                        <input type="checkbox" class="grp-toggle" data-name="${name}" ${isHidden ? '' : 'checked'}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span style="flex:1;font-size:12px;opacity:${isHidden ? 0.4 : 1}">${name}</span>
-                    <button class="grp-up slider-adj-btn" data-idx="${idx}" ${idx === 0 ? 'disabled' : ''} style="padding:2px 6px">▲</button>
-                    <button class="grp-down slider-adj-btn" data-idx="${idx}" ${idx === order.length - 1 ? 'disabled' : ''} style="padding:2px 6px">▼</button>
-                `
-                container.appendChild(row)
-            })
-
-            container.querySelectorAll('.grp-toggle').forEach(chk => {
-                chk.addEventListener('change', () => {
-                    const name = chk.dataset.name
-                    if (chk.checked) this.app.hiddenGroups.delete(name)
-                    else this.app.hiddenGroups.add(name)
-                    this._saveGroupConfig(order, this.app.hiddenGroups)
-                    rebuild()
-                })
-            })
-            container.querySelectorAll('.grp-up').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const i = parseInt(btn.dataset.idx)
-                    if (i > 0) { [order[i - 1], order[i]] = [order[i], order[i - 1]] }
-                    this._saveGroupConfig(order, this.app.hiddenGroups)
-                    rebuild()
-                })
-            })
-            container.querySelectorAll('.grp-down').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const i = parseInt(btn.dataset.idx)
-                    if (i < order.length - 1) { [order[i], order[i + 1]] = [order[i + 1], order[i]] }
-                    this._saveGroupConfig(order, this.app.hiddenGroups)
-                    rebuild()
-                })
-            })
-        }
-        rebuild()
-    }
-
-    // Returns toolsets in user-defined order (Edit always first)
-    _orderedToolsets() {
-        const order = this.app.groupOrder
-        if (!order || !order.length) return this.app.toolsets
-        const editGroup = this.app.toolsets.find(g => g.name === 'Edit')
-        const rest = order
-            .map(name => this.app.toolsets.find(g => g.name === name))
-            .filter(Boolean)
-        // Append any toolsets not in the saved order (new groups added later)
-        const inOrder = new Set(order)
-        const extra = this.app.toolsets.filter(g => g.name !== 'Edit' && !inOrder.has(g.name))
-        return [editGroup, ...rest, ...extra].filter(Boolean)
     }
 
     renderToolsGrid() {
@@ -1133,10 +1052,6 @@ export class ToolManager {
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
                         <span>Categ.</span>
                     </button>
-                    <button class="settings-vtab-btn" data-tab="groups">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                        <span>Groups</span>
-                    </button>
                     <button class="settings-vtab-btn" data-tab="more">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"></path></svg>
                         <span>More</span>
@@ -1222,14 +1137,6 @@ export class ToolManager {
                                 </button>
                             </div>
                             <div id="settings-layer-list" class="layer-list-mini mt-10"></div>
-                        </div>
-                    </div>
-
-                    <div class="vtab-pane" data-pane="groups">
-                        <div class="setting-item">
-                            <div class="setting-label" style="margin-bottom:8px">工具群組顯示與排序</div>
-                            <p class="setting-hint" style="margin-bottom:10px">開關控制群組是否出現在下方 ribbon，上下箭頭調整順序。</p>
-                            <div id="group-config-list"></div>
                         </div>
                     </div>
 
@@ -1421,9 +1328,6 @@ export class ToolManager {
         // Render the layer list into the new container
         this.app.externalLayerList = panel.querySelector('#settings-layer-list')
         if (this.app.layerManager) this.app.layerManager.renderLayerUI()
-
-        // Render group config list
-        this._renderGroupConfigList(panel.querySelector('#group-config-list'))
 
         // Overlap stepper
         const updateOverlap = (val) => {
