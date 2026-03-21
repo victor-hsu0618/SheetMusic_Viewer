@@ -339,6 +339,72 @@
             background: rgba(99,102,241,0.25) !important;
             border-color: rgba(99,102,241,0.6) !important;
         }
+
+        /* Pen picker — pops out from strip next to pen button */
+        .lp-pen-bar {
+            position: absolute;
+            left: 56px;
+            background: rgba(15,23,42,0.97);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 10px;
+            z-index: 30;
+            transform: translateX(-8px) scale(0.92);
+            transform-origin: left center;
+            transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), opacity 0.18s;
+            opacity: 0;
+            pointer-events: none;
+            box-shadow: 4px 8px 24px rgba(0,0,0,0.55);
+            white-space: nowrap;
+        }
+        .lp-pen-bar.open {
+            transform: translateX(0) scale(1);
+            opacity: 1;
+            pointer-events: all;
+        }
+        /* small arrow pointing left back to strip */
+        .lp-pen-bar::before {
+            content: '';
+            position: absolute;
+            left: -6px; top: 50%; transform: translateY(-50%);
+            border: 6px solid transparent;
+            border-right-color: rgba(255,255,255,0.14);
+        }
+        .lp-pen-bar::after {
+            content: '';
+            position: absolute;
+            left: -5px; top: 50%; transform: translateY(-50%);
+            border: 6px solid transparent;
+            border-right-color: rgba(15,23,42,0.97);
+        }
+        .lp-pen-divider {
+            width: 1px; height: 28px;
+            background: rgba(255,255,255,0.12); flex-shrink: 0; margin: 0 2px;
+        }
+        .lp-pen-cell {
+            width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background .15s, border-color .15s;
+        }
+        .lp-pen-cell:hover { background: rgba(255,255,255,0.14); }
+        .lp-pen-cell.active-pen { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.6); }
+        .lp-pen-cell svg { width: 16px; height: 16px; }
+        .lp-pen-label {
+            font-size: 8px; font-weight:700; text-transform:uppercase;
+            letter-spacing:.08em; color:rgba(255,255,255,0.3); flex-shrink:0;
+        }
+        .lp-strip-tool.has-sub::after {
+            content: '';
+            position: absolute; bottom: 3px; right: 3px;
+            width: 4px; height: 4px; border-radius: 50%;
+            background: rgba(255,255,255,0.4);
+        }
         .lp-strip-tool {
             width: 40px; height: 40px;
             background: rgba(255,255,255,0.06);
@@ -1216,7 +1282,28 @@ function renderState() {
 }
 
 // ── Layout Preview ────────────────────────────────────────────────────────────
-const EDIT_TOOLS = TOOLSETS.find(g => g.type === 'edit').tools
+const EDIT_TOOLS = [
+    ...TOOLSETS.find(g => g.type === 'edit').tools,
+    { id: 'highlighter', label: 'Highlight', hasSub: false,
+      icon: '<rect x="3" y="8" width="18" height="8" rx="2" fill="#fde047" opacity="0.55"/><line x1="3" y1="8" x2="21" y2="8" stroke="#ca8a04" stroke-width="1.2"/><line x1="3" y1="16" x2="21" y2="16" stroke="#ca8a04" stroke-width="1.2"/>' },
+]
+
+// Pen variants for the picker bar
+const PEN_VARIANTS = [
+    { id:'pen',         label:'Pen',      stroke:'#e2e8f0' },
+    { id:'red-pen',     label:'Red',      stroke:'#ef4444' },
+    { id:'blue-pen',    label:'Blue',     stroke:'#3b82f6' },
+    { id:'green-pen',   label:'Green',    stroke:'#22c55e' },
+    { id:'purple-pen',  label:'Purple',   stroke:'#a855f7' },
+    { id:'dashed-pen',  label:'Dashed',   stroke:'#e2e8f0', dashed: true },
+    { id:'arrow-pen',   label:'Arrow',    stroke:'#e2e8f0', arrow: true },
+]
+const HL_VARIANTS = [
+    { id:'hl-yellow', label:'Yellow HL', color:'#fde047' },
+    { id:'hl-green',  label:'Green HL',  color:'#86efac' },
+    { id:'hl-blue',   label:'Blue HL',   color:'#93c5fd' },
+    { id:'hl-pink',   label:'Pink HL',   color:'#f9a8d4' },
+]
 
 const COLORS = [
     { hex: '#e2e8f0', label: 'Default' },
@@ -1236,6 +1323,70 @@ let lpActiveColor = '#e2e8f0'
 let lpActiveSize = 'M'
 let lpActiveStamp = null
 let lpOthersOpen = false
+let lpPenBarOpen = false
+let lpActivePen = 'pen'
+
+function renderLpPenBar() {
+    const area = document.getElementById('lp-score-area')
+    if (!area) return
+    let bar = document.getElementById('lp-pen-bar')
+    if (!bar) {
+        bar = document.createElement('div')
+        bar.id = 'lp-pen-bar'
+        area.appendChild(bar)
+    }
+    bar.className = 'lp-pen-bar' + (lpPenBarOpen ? ' open' : '')
+
+    // Position vertically: align to roughly where pen btn sits in the strip
+    const strip = document.getElementById('lp-left-strip')
+    const penBtnEl = strip?.querySelector('[data-tool="pen"]') || strip?.querySelector('[data-tool="highlighter"]')
+    if (penBtnEl) {
+        const stripRect = strip.getBoundingClientRect()
+        const btnRect = penBtnEl.getBoundingClientRect()
+        const relY = btnRect.top - stripRect.top + btnRect.height / 2
+        bar.style.top = relY + 'px'
+        bar.style.transform = lpPenBarOpen
+            ? `translateX(0) scale(1) translateY(-50%)`
+            : `translateX(-8px) scale(0.92) translateY(-50%)`
+    }
+
+    bar.innerHTML = ''
+
+    const penIcon = (s) => `<svg viewBox="0 0 24 24" fill="none" stroke="${s.stroke}" stroke-width="${s.dashed?'2':'1.8'}" ${s.dashed?'stroke-dasharray="3,2"':''} width="16" height="16"><path d="M12 19l7-7M19 12l3 3M22 15l-7 7M15 22l-3-3M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5"/>${s.arrow?'<path d="M3 13h15M14 9l4 4-4 4" stroke="'+s.stroke+'" stroke-width="2"/>':''}</svg>`
+
+    // Pens section
+    const pl = document.createElement('div'); pl.className='lp-pen-label'; pl.textContent='Pen'
+    bar.appendChild(pl)
+
+    PEN_VARIANTS.forEach(p => {
+        const cell = document.createElement('div')
+        cell.className = 'lp-pen-cell' + (lpActivePen === p.id ? ' active-pen' : '')
+        cell.title = p.label
+        cell.innerHTML = p.arrow
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="${p.stroke}" stroke-width="2" width="16" height="16"><path d="M3 12h15"/><path d="M14 8l4 4-4 4"/></svg>`
+            : `<svg viewBox="0 0 24 24" fill="none" stroke="${p.stroke}" stroke-width="${p.dashed?'2':'1.8'}" ${p.dashed?'stroke-dasharray="4,2"':''} width="16" height="16"><path d="M12 19l7-7M19 12l3 3M22 15l-7 7M15 22l-3-3M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5"/></svg>`
+        cell.addEventListener('click', () => { lpActivePen = p.id; renderLpPenBar() })
+        bar.appendChild(cell)
+    })
+
+    // Divider
+    const d = document.createElement('div'); d.className='lp-pen-divider'; bar.appendChild(d)
+
+    // Highlighters section
+    const hl = document.createElement('div'); hl.className='lp-pen-label'; hl.textContent='HL'
+    bar.appendChild(hl)
+
+    HL_VARIANTS.forEach(h => {
+        const cell = document.createElement('div')
+        cell.className = 'lp-pen-cell' + (lpActivePen === h.id ? ' active-pen' : '')
+        cell.title = h.label
+        cell.style.background = h.color + '44'
+        cell.style.borderColor = h.color + '88'
+        cell.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="8" width="20" height="8" rx="2" fill="${h.color}" opacity="0.7"/></svg>`
+        cell.addEventListener('click', () => { lpActivePen = h.id; renderLpPenBar() })
+        bar.appendChild(cell)
+    })
+}
 
 function renderLpOthersBar() {
     const area = document.getElementById('lp-score-area')
@@ -1300,6 +1451,7 @@ function renderLpOthersBar() {
 function renderLayoutPreview() {
     renderLpLeftStrip()
     renderLpOthersBar()
+    renderLpPenBar()
     renderLpStampBar()
     renderLpRight()
     initLpDrag()
@@ -1343,11 +1495,32 @@ function renderLpLeftStrip() {
 
     // Edit tools
     EDIT_TOOLS.forEach(t => {
+        const isPenTool = (t.id === 'pen' || t.id === 'highlighter')
+        const isActive = lpActiveTool === t.id || (isPenTool && lpActiveTool === t.id)
+        const penBarActive = isPenTool && lpPenBarOpen && lpActiveTool === t.id
         const btn = document.createElement('div')
-        btn.className = 'lp-strip-tool' + (lpActiveTool === t.id ? ' active-tool' : '')
-        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${t.icon}</svg>
+        btn.className = 'lp-strip-tool'
+            + (isActive ? ' active-tool' : '')
+            + (isPenTool ? ' has-sub' : '')
+            + (penBarActive ? ' open' : '')
+        btn.dataset.tool = t.id
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5">${t.icon}</svg>
             <div class="lp-tooltip">${t.label}</div>`
-        btn.addEventListener('click', () => { lpActiveTool = t.id; renderLpLeftStrip() })
+        btn.addEventListener('click', () => {
+            if (isPenTool) {
+                if (lpActiveTool === t.id) {
+                    lpPenBarOpen = !lpPenBarOpen
+                } else {
+                    lpActiveTool = t.id
+                    lpPenBarOpen = true
+                }
+            } else {
+                lpActiveTool = t.id
+                lpPenBarOpen = false
+            }
+            renderLpLeftStrip()
+            renderLpPenBar()
+        })
         strip.appendChild(btn)
     })
 
