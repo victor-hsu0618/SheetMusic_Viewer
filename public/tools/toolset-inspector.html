@@ -43,12 +43,26 @@
         .preview-label span { background:var(--primary); color:#fff; border-radius:4px; padding:1px 7px; font-size:9px; }
 
         /* Mock panel shell */
+        .mock-panel-outer {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
         .mock-panel {
             background: #111827;
             border-radius: 12px;
             padding: 10px 8px;
             min-height: 80px;
+            width: 320px;
+            flex-shrink: 0;
         }
+        .mock-panel-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            padding-top: 4px;
+        }
+        .mock-panel-hint b { color: var(--text); }
         .mock-edit-row {
             display: flex;
             gap: 4px;
@@ -209,10 +223,18 @@
                 <span id="count-badge">0 stamps</span>
             </div>
             <!-- Mock panel shell -->
-            <div class="mock-panel">
-                <div class="mock-edit-row" id="preview-edit"></div>
-                <div class="mock-stamp-grid" id="preview-stamps">
-                    <div class="empty-hint">← 從下方勾選 stamp 加入面板</div>
+            <div class="mock-panel-outer">
+                <div class="mock-panel">
+                    <div class="mock-edit-row" id="preview-edit"></div>
+                    <div class="mock-stamp-grid" id="preview-stamps">
+                        <div class="empty-hint">← 從下方勾選 stamp 加入面板</div>
+                    </div>
+                </div>
+                <div class="mock-panel-hint">
+                    <b>Panel 寬度：320px</b><br>
+                    Cell：44px + 4px gap<br>
+                    <b>一行最多 6 個</b><br><br>
+                    拖曳 stamp 可調整順序
                 </div>
             </div>
         </div>
