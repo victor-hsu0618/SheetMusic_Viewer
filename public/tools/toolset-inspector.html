@@ -436,7 +436,15 @@
             width:32px; height:32px; background:rgba(255,255,255,0.05);
             border:1px solid var(--sf-border); border-radius:8px;
             display:flex; align-items:center; justify-content:center; flex-shrink:0;
+            cursor:pointer; transition: background .15s;
         }
+        .lp-docbar-btn:hover { background: rgba(255,255,255,0.12); }
+        .lp-docbar-primary {
+            color: var(--sf-text);
+            background: rgba(99,102,241,0.12);
+            border-color: rgba(99,102,241,0.35);
+        }
+        .lp-docbar-primary:hover { background: rgba(99,102,241,0.25) !important; }
         .lp-scrollbar-track {
             flex: 1; width: 8px;
             background: rgba(255,255,255,0.05);
@@ -1286,7 +1294,26 @@ function renderLpRight() {
     if (!right || !scene) return
     right.innerHTML = ''
 
-    // Mock doc bar buttons
+    // ── Primary buttons: Fit Width / Fit Height / Jump ──
+    const primaryBtns = [
+        { label: 'W', title: 'Fit to Width',  icon: '<path d="M4 12h16M4 12l3-3M4 12l3 3M20 12l-3-3M20 12l-3 3"/>' },
+        { label: 'F', title: 'Fit to Height', icon: '<path d="M12 4v16M12 4l-3 3M12 4l3 3M12 20l-3-3M12 20l3-3"/>' },
+        { label: '▶', title: 'Jump Forward',  icon: '<polygon points="5,3 19,12 5,21"/>' },
+    ]
+    primaryBtns.forEach(b => {
+        const btn = document.createElement('div')
+        btn.className = 'lp-docbar-btn lp-docbar-primary'
+        btn.title = b.title
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">${b.icon}</svg>`
+        right.appendChild(btn)
+    })
+
+    // Divider between primary and misc buttons
+    const primDiv = document.createElement('div')
+    primDiv.style.cssText = 'width:18px;height:1px;background:rgba(255,255,255,0.1);margin:2px 0;flex-shrink:0'
+    right.appendChild(primDiv)
+
+    // ── Secondary (misc) doc bar buttons ──
     const docIcons = [
         '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
         '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',
