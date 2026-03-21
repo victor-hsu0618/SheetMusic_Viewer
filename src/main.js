@@ -193,6 +193,11 @@ class ScoreFlow {
                         console.log('[ScoreFlow] Cloud is empty but local has data, pushing first flight...');
                         await this.supabaseManager.pushSetlists(this.setlistManager.setlists);
                     }
+                    // Pull score registry AFTER scoreManager.init() completes.
+                    // This prevents a race where SIGNED_IN fires during init() and
+                    // the cloud-populated registry gets overwritten by the empty IndexedDB read.
+                    // Critical for recovery when Safari purges IndexedDB storage.
+                    await this.supabaseManager.pullScoreRegistry();
                 } else {
                     console.log('[ScoreFlow] ⚠️ Supabase Auth not ready after wait, skipping early sync.');
                 }
