@@ -242,38 +242,9 @@ export class DriveManifestManager {
                 if (changed) { registryChanged = true; foundCount++; }
             }
 
-            // Add cloud-only placeholders for manifest entries not yet in local registry
-            for (const [fp, entry] of Object.entries(this.sync.manifest)) {
-                if (entry.deleted) continue;
-                if (!entry.syncId && !entry.pdfId) continue;
-                if (!entry.syncId && !entry.name) continue;
-
-                const exists = this.sync.app.scoreManager.registry.find(s => s.fingerprint === fp);
-                if (!exists) {
-                    const fallbackTitle = entry.name || `雲端 PDF (${fp.slice(0, 8)})`;
-
-                    const placeholder = {
-                        fingerprint: fp,
-                        title: fallbackTitle,
-                        fileName: '',
-                        composer: 'Unknown',
-                        thumbnail: null,
-                        dateImported: entry.updated || Date.now(),
-                        lastAccessed: 0,
-                        tags: [],
-                        isSynced: false,
-                        isCloudOnly: true,
-                        isPdfAvailable: !!entry.pdfId
-                    };
-                    this.sync.app.scoreManager.registry.push(placeholder);
-                    registryChanged = true;
-                    newCloudOnlyCount++;
-
-                    if (entry.syncId && !entry.name) {
-                        this.fetchCloudScoreDetails(entry.syncId, fp);
-                    }
-                }
-            }
+            // NOTE: Drive is backup-only. We do NOT restore scores from Drive manifest
+            // back into the local registry — that is Supabase's responsibility.
+            // Re-adding placeholders from Drive would resurrect deleted scores.
 
             if (registryChanged) {
                 await this.sync.app.scoreManager.saveRegistry();
