@@ -336,7 +336,15 @@ export class SupabaseManager {
         }
 
         const cloudStamps = (data || []).map(record => record.data)
-        
+
+        // Guard: if user switched scores while pull was in flight, do NOT touch this.app.stamps.
+        // Only update local IndexedDB so the correct data is available next time this score loads.
+        if (this.app.pdfFingerprint !== fingerprint) {
+            console.warn(`[Supabase] pullAnnotations: fp mismatch — pull was for ${fingerprint.slice(0,8)}, current is ${this.app.pdfFingerprint?.slice(0,8)}. Saving to IndexedDB only.`)
+            db.set(`stamps_${fingerprint}`, cloudStamps)
+            return cloudStamps
+        }
+
         if (force) {
             console.log(`[Supabase] Force Sync: Replacing all ${this.app.stamps.length} local stamps with ${cloudStamps.length} cloud stamps.`)
             this.app.stamps = cloudStamps
@@ -362,9 +370,9 @@ export class SupabaseManager {
                 console.log(`[Supabase] Merged ${cloudStamps.length} stamps from cloud.`)
             }
         }
-        
+
         // Always update local storage with the final state
-        import('../db.js').then(db => db.set(`stamps_${fingerprint}`, this.app.stamps))
+        db.set(`stamps_${fingerprint}`, this.app.stamps)
 
         return this.app.stamps
     }
