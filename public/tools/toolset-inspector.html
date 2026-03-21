@@ -42,40 +42,90 @@
         }
         .preview-label span { background:var(--primary); color:#fff; border-radius:4px; padding:1px 7px; font-size:9px; }
 
-        /* Mock panel shell */
-        .mock-panel-outer {
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
+        /* ── Mock viewer scene ── */
+        .mock-scene {
+            background: #0a0a14;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
         }
-        .mock-panel {
-            background: #111827;
-            border-radius: 12px;
-            padding: 10px 8px;
-            min-height: 80px;
-            width: 320px;
+        /* Score area with left/right rulers */
+        .mock-viewer {
+            display: flex;
+            height: 120px;
+            position: relative;
+        }
+        .mock-ruler {
+            width: 36px;
+            background: rgba(255,255,255,0.03);
+            border-right: 1px solid rgba(255,255,255,0.06);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 9px; color: rgba(255,255,255,0.2); writing-mode: vertical-rl;
             flex-shrink: 0;
         }
-        .mock-panel-hint {
-            font-size: 11px;
-            color: var(--text-muted);
-            line-height: 1.7;
-            padding-top: 4px;
+        .mock-ruler.right {
+            border-right: none; border-left: 1px solid rgba(255,255,255,0.06);
         }
-        .mock-panel-hint b { color: var(--text); }
-        .mock-edit-row {
+        .mock-score-area {
+            flex: 1;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 18px,
+                rgba(255,255,255,0.03) 18px, rgba(255,255,255,0.03) 19px
+            );
+            position: relative;
+        }
+        .mock-score-label {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            font-size: 10px; color: rgba(255,255,255,0.15); white-space: nowrap;
+        }
+        /* Scrollbar strip on right */
+        .mock-scrollbar {
+            width: 10px;
+            background: rgba(255,255,255,0.02);
+            border-left: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+        /* Doc bar */
+        .mock-docbar {
+            position: absolute; right: 10px; top: 10px;
+            width: 28px; background: rgba(30,41,59,0.9);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+            padding: 4px; display: flex; flex-direction: column; gap: 3px; align-items: center;
+        }
+        .mock-docbar-dot { width: 16px; height: 16px; background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+        /* Panel bar (bottom of score area) */
+        .mock-panel-bar {
+            background: #111827;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 6px 8px;
             display: flex;
             gap: 4px;
-            padding-bottom: 8px;
-            margin-bottom: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            flex-wrap: wrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.15) transparent;
         }
-        .mock-stamp-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            min-height: 44px;
+        .mock-panel-bar::-webkit-scrollbar { height: 3px; }
+        .mock-panel-bar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius:2px; }
+
+        /* Divider between edit and stamps */
+        .mock-divider {
+            width: 1px; height: 44px; background: rgba(255,255,255,0.12);
+            flex-shrink: 0; align-self: center; margin: 0 2px;
+        }
+
+        .mock-cell {
+            width: 44px; height: 44px; flex-shrink: 0;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex; align-items:center; justify-content:center;
+            cursor: grab;
+            position: relative;
+            transition: background .15s;
+            user-select: none;
         }
         .mock-cell {
             width: 44px; height: 44px;
@@ -222,20 +272,28 @@
                 My Panel Preview
                 <span id="count-badge">0 stamps</span>
             </div>
-            <!-- Mock panel shell -->
-            <div class="mock-panel-outer">
-                <div class="mock-panel">
-                    <div class="mock-edit-row" id="preview-edit"></div>
-                    <div class="mock-stamp-grid" id="preview-stamps">
-                        <div class="empty-hint">← 從下方勾選 stamp 加入面板</div>
+            <!-- Mock scene: viewer + panel bar at bottom -->
+            <div class="mock-scene">
+                <div class="mock-viewer">
+                    <div class="mock-ruler">RULER</div>
+                    <div class="mock-score-area">
+                        <div class="mock-score-label">樂譜區域 (95% 寬)</div>
+                        <div class="mock-docbar">
+                            <div class="mock-docbar-dot"></div>
+                            <div class="mock-docbar-dot"></div>
+                            <div class="mock-docbar-dot"></div>
+                        </div>
                     </div>
+                    <div class="mock-scrollbar"></div>
+                    <div class="mock-ruler right">RULER</div>
                 </div>
-                <div class="mock-panel-hint">
-                    <b>Panel 寬度：320px</b><br>
-                    Cell：44px + 4px gap<br>
-                    <b>一行最多 6 個</b><br><br>
-                    拖曳 stamp 可調整順序
+                <!-- Horizontal panel bar -->
+                <div class="mock-panel-bar" id="preview-bar">
+                    <div class="empty-hint" style="white-space:nowrap;padding:12px 4px">← 從下方勾選 stamp 加入面板</div>
                 </div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
+                Cell 44px · 拖曳排序 · 超出寬度可橫向捲動
             </div>
         </div>
 
@@ -435,34 +493,41 @@ function renderIcon(tool, size = 20) {
 // ── Preview rendering ─────────────────────────────────────────────────────────
 function renderMyPanel() {
     const editGroup = TOOLSETS.find(g => g.type === 'edit')
-    const editRow = document.getElementById('preview-edit')
-    const stampsGrid = document.getElementById('preview-stamps')
+    const bar = document.getElementById('preview-bar')
     const countBadge = document.getElementById('count-badge')
 
-    // Edit row (always fixed)
-    editRow.innerHTML = ''
-    editGroup.tools.forEach(t => {
-        const cell = document.createElement('div')
-        cell.className = 'mock-cell edit-cell'
-        cell.title = t.label
-        cell.innerHTML = renderIcon(t, 20) + `<span class="cell-label">${t.label}</span>`
-        editRow.appendChild(cell)
-    })
-
-    // Stamps grid
     const stampItems = myPanel.filter(s => {
         const group = TOOLSETS.find(g => g.name === s.category)
         return group?.type !== 'edit'
     })
 
     countBadge.textContent = `${stampItems.length} stamps`
+    bar.innerHTML = ''
+
+    // Edit tools (fixed, no remove)
+    editGroup.tools.forEach(t => {
+        const cell = document.createElement('div')
+        cell.className = 'mock-cell edit-cell'
+        cell.title = t.label
+        cell.innerHTML = renderIcon(t, 20) + `<span class="cell-label">${t.label}</span>`
+        bar.appendChild(cell)
+    })
 
     if (stampItems.length === 0) {
-        stampsGrid.innerHTML = '<div class="empty-hint">← 從下方勾選 stamp 加入面板</div>'
+        const hint = document.createElement('div')
+        hint.className = 'empty-hint'
+        hint.style.cssText = 'white-space:nowrap;padding:12px 8px;align-self:center'
+        hint.textContent = '← 從下方勾選 stamp 加入'
+        bar.appendChild(hint)
         return
     }
 
-    stampsGrid.innerHTML = ''
+    // Divider
+    const div = document.createElement('div')
+    div.className = 'mock-divider'
+    bar.appendChild(div)
+
+    // Stamp cells (draggable)
     let dragSrc = null
 
     stampItems.forEach((item, idx) => {
@@ -472,7 +537,7 @@ function renderMyPanel() {
         cell.className = 'mock-cell'
         cell.draggable = true
         cell.dataset.idx = idx
-        cell.style.borderColor = group?.color ? group.color + '44' : ''
+        cell.style.borderColor = group?.color ? group.color + '55' : ''
         cell.innerHTML = renderIcon(tool, 20)
             + `<span class="cell-label">${tool?.label || item.id}</span>`
             + `<button class="remove-btn" title="移除">✕</button>`
@@ -482,34 +547,28 @@ function renderMyPanel() {
             removeTool(item.id, item.category)
         })
 
-        // Drag reorder
         cell.addEventListener('dragstart', e => {
             dragSrc = idx
             cell.classList.add('dragging')
             e.dataTransfer.effectAllowed = 'move'
         })
         cell.addEventListener('dragend', () => cell.classList.remove('dragging'))
-        cell.addEventListener('dragover', e => {
-            e.preventDefault()
-            cell.classList.add('drag-over')
-        })
+        cell.addEventListener('dragover', e => { e.preventDefault(); cell.classList.add('drag-over') })
         cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'))
         cell.addEventListener('drop', e => {
             e.preventDefault()
             cell.classList.remove('drag-over')
             const destIdx = parseInt(cell.dataset.idx)
             if (dragSrc === null || dragSrc === destIdx) return
-            // Reorder within myPanel (only stamp items)
             const stampOrder = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
             const [moved] = stampOrder.splice(dragSrc, 1)
             stampOrder.splice(destIdx, 0, moved)
-            // Rebuild myPanel preserving any edit items at start (none currently, but future-proof)
             myPanel = stampOrder
             saveMyPanel()
             renderMyPanel()
         })
 
-        stampsGrid.appendChild(cell)
+        bar.appendChild(cell)
     })
 }
 
