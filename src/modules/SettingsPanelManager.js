@@ -389,6 +389,24 @@ export class SettingsPanelManager {
             turnerSelect.addEventListener('change', () => this.app.saveToStorage())
         }
 
+        // Local Backup — Export
+        const exportBtn = document.getElementById('btn-export-backup')
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.app.localBackupManager.exportBackup())
+        }
+
+        // Local Backup — Import
+        const importInput = document.getElementById('input-import-backup')
+        if (importInput) {
+            importInput.addEventListener('change', (e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                    this.app.localBackupManager.importBackup(file)
+                    e.target.value = '' // reset so same file can be re-selected
+                }
+            })
+        }
+
         // Reload App
         const reloadAppBtn = document.getElementById('btn-reload-app')
         if (reloadAppBtn) {

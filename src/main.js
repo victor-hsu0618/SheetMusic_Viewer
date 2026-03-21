@@ -48,6 +48,7 @@ import { PdfExportManager } from './modules/PdfExportManager.js'
 import { applyAppProxies } from './modules/AppProxyHandler.js'
 import { StaffDetector } from './modules/StaffDetector.js'
 import { GistShareManager } from './modules/GistShareManager.js'
+import { LocalBackupManager } from './modules/LocalBackupManager.js'
 import { EditScrollbarManager } from './modules/EditScrollbarManager.js'
 import { SupabaseManager } from './modules/SupabaseManager.js'
 
@@ -136,6 +137,7 @@ this.setlistManager = new SetlistManager(this)
     this.initManager = new InitializationManager(this)
     this.staffDetector = new StaffDetector(this)
     this.gistShareManager = new GistShareManager(this)
+    this.localBackupManager = new LocalBackupManager(this)
     this.supabaseManager = new SupabaseManager(this)
 
     // Apply Proxies
