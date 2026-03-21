@@ -499,35 +499,70 @@
         .lp-stamp-bar {
             position: absolute;
             left: 8px; right: 8px;
-            background: rgba(31, 41, 55, 0.95);
-            border: 1px solid var(--sf-border);
-            border-radius: 12px;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(20, 28, 42, 0.96);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 6px 8px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.15) transparent;
-            cursor: grab;
+            flex-direction: row;
             z-index: 20;
             box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+            overflow: hidden;
         }
-        /* 2-row stamp grid inside bar */
-        .lp-stamp-grid {
-            display: grid;
-            grid-template-rows: 44px 44px;
-            grid-auto-flow: column;
-            grid-auto-columns: 44px;
-            gap: 4px;
+        .lp-stamp-bar.is-dragging { cursor: grabbing; }
+
+        /* Handle column (left, spans full height, for dragging) */
+        .lp-bar-handle-col {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 0 7px;
+            cursor: grab; opacity: 0.35;
+            border-right: 1px solid rgba(255,255,255,0.08);
             flex-shrink: 0;
         }
-        .lp-stamp-bar::-webkit-scrollbar { height:3px; }
-        .lp-stamp-bar::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
-        .lp-stamp-bar.is-dragging { cursor:grabbing; }
+        .lp-bar-handle-col span { display:block; width:12px; height:2px; background:#fff; border-radius:1px; margin: 2px 0; }
+
+        /* Right content: tabs + grid */
+        .lp-stamp-content {
+            flex: 1; display: flex; flex-direction: column;
+            min-width: 0; padding: 5px 6px 6px;
+        }
+
+        /* Category tabs row */
+        .lp-stamp-tabs {
+            display: flex; align-items: center; gap: 4px;
+            margin-bottom: 5px; overflow-x: auto; overflow-y: hidden;
+            scrollbar-width: none;
+            flex-shrink: 0;
+        }
+        .lp-stamp-tabs::-webkit-scrollbar { display: none; }
+        .lp-stamp-tab {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700;
+            cursor: pointer; flex-shrink: 0; white-space: nowrap;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.45);
+            transition: background .15s, color .15s, border-color .15s;
+        }
+        .lp-stamp-tab:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
+        .lp-stamp-tab.active-tab {
+            color: #fff; border-color: transparent;
+        }
+        .lp-stamp-tab .tab-dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        }
+
+        /* 2-row stamp grid inside bar — fixed, no scroll */
+        .lp-stamp-grid {
+            display: grid;
+            grid-template-rows: 28px 28px;
+            grid-auto-flow: column;
+            grid-auto-columns: 28px;
+            gap: 3px;
+            flex-shrink: 0;
+        }
 
         /* Drag handle on left of bar */
         .lp-bar-handle {
@@ -718,20 +753,8 @@
             height: 100%;
         }
 
-        /* Smaller stamp cells in layout preview to show realistic density */
-        .lp-stamp-grid {
-            grid-template-rows: 28px 28px !important;
-            grid-auto-columns: 28px !important;
-        }
-        .lp-cell {
-            width: 28px !important; height: 28px !important;
-            border-radius: 5px !important;
-        }
-        .lp-cell svg { width: 14px !important; height: 14px !important; }
-        .lp-cell .lp-cell-text { font-size: 9px !important; }
-        .lp-stamp-bar { gap: 3px !important; padding: 4px 6px !important; }
-        .lp-strip-tool { width: 34px !important; height: 34px !important; }
-        .lp-strip-score-name { font-size: 10px !important; }
+        .lp-strip-tool { width: 34px; height: 34px; }
+        .lp-strip-score-name { font-size: 10px; }
     </style>
 </head>
 <body>
@@ -819,12 +842,8 @@
                 <!-- Score area -->
                 <div class="lp-score-area" id="lp-score-area">
                     <div class="lp-bar-y-info" id="lp-y-info">y: —</div>
-                    <!-- Stamp bar (draggable) -->
-                    <div class="lp-stamp-bar" id="lp-stamp-bar" style="bottom:60px;">
-                        <div class="lp-bar-handle">
-                            <span></span><span></span><span></span>
-                        </div>
-                    </div>
+                    <!-- Stamp bar (draggable, paged) -->
+                    <div class="lp-stamp-bar" id="lp-stamp-bar" style="bottom:60px;"></div>
                 </div>
 
                 <!-- Right: doc bar + scrollbar -->
@@ -1325,6 +1344,7 @@ let lpActiveStamp = null
 let lpOthersOpen = false
 let lpPenBarOpen = false
 let lpActivePen = 'pen'
+let lpActiveStampPage = null  // active category name for stamp bar paging
 
 function renderLpPenBar() {
     const area = document.getElementById('lp-score-area')
@@ -1561,46 +1581,76 @@ function renderLpLeftStrip() {
 function renderLpStampBar() {
     const bar = document.getElementById('lp-stamp-bar')
     if (!bar) return
-
-    // Keep handle, rebuild rest
-    const handle = bar.querySelector('.lp-bar-handle')
     bar.innerHTML = ''
-    bar.appendChild(handle)
 
+    // Build pages: group stamps by category (non-edit only)
     const stampItems = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
 
-    // Divider after handle
-    const div = document.createElement('div')
-    div.className = 'lp-bar-divider'
-    div.style.height = '60px'
-    bar.appendChild(div)
+    // Pages from TOOLSETS (non-edit), or demo pages if empty
+    const stampGroups = TOOLSETS.filter(g => g.type !== 'edit')
+    const demoPages = stampGroups.map(g => ({
+        name: g.name, color: g.color,
+        items: Array.from({ length: 18 }, (_, i) => ({ id: `_ph${i}`, category: '_ghost', _color: g.color }))
+    }))
+    const realPages = stampGroups.map(g => ({
+        name: g.name, color: g.color,
+        items: stampItems.filter(s => s.category === g.name)
+    })).filter(p => p.items.length > 0)
 
-    // 2-row grid container
+    const pages = realPages.length > 0 ? realPages : demoPages
+
+    // Default active page
+    if (!lpActiveStampPage || !pages.find(p => p.name === lpActiveStampPage)) {
+        lpActiveStampPage = pages[0]?.name
+    }
+    const activePage = pages.find(p => p.name === lpActiveStampPage) || pages[0]
+
+    // ── Handle column ──
+    const handleCol = document.createElement('div')
+    handleCol.className = 'lp-bar-handle-col'
+    handleCol.innerHTML = '<span></span><span></span><span></span>'
+    bar.appendChild(handleCol)
+
+    // ── Content column ──
+    const content = document.createElement('div')
+    content.className = 'lp-stamp-content'
+    bar.appendChild(content)
+
+    // Category tabs
+    const tabs = document.createElement('div')
+    tabs.className = 'lp-stamp-tabs'
+    pages.forEach(page => {
+        const tab = document.createElement('div')
+        tab.className = 'lp-stamp-tab' + (page.name === lpActiveStampPage ? ' active-tab' : '')
+        if (page.name === lpActiveStampPage) tab.style.background = page.color + '33'
+        if (page.name === lpActiveStampPage) tab.style.borderColor = page.color + '88'
+        tab.innerHTML = `<span class="tab-dot" style="background:${page.color}"></span>${page.name}`
+        tab.addEventListener('click', () => { lpActiveStampPage = page.name; renderLpStampBar() })
+        tabs.appendChild(tab)
+    })
+    content.appendChild(tabs)
+
+    // 2-row grid for active page
     const grid = document.createElement('div')
     grid.className = 'lp-stamp-grid'
-    bar.appendChild(grid)
+    content.appendChild(grid)
 
-    // If no stamps configured, show ghost placeholders to demonstrate density
-    const displayItems = stampItems.length > 0 ? stampItems
-        : Array.from({ length: 32 }, (_, i) => ({ id: `_ph${i}`, category: '_ghost' }))
-
-    displayItems.forEach(item => {
+    activePage.items.forEach(item => {
         const isGhost = item.category === '_ghost'
+        const cell = document.createElement('div')
         if (isGhost) {
-            const cell = document.createElement('div')
             cell.className = 'lp-cell'
-            cell.style.cssText = 'opacity:0.2;cursor:default'
+            cell.style.cssText = `opacity:0.25;cursor:default;border-color:${item._color}44`
             grid.appendChild(cell)
             return
         }
         const tool = findTool(item.id, item.category)
         const group = TOOLSETS.find(g => g.name === item.category)
-        const cell = document.createElement('div')
         const isActive = lpActiveStamp === item.id + '_' + item.category
         cell.className = 'lp-cell' + (isActive ? ' active-stamp' : '')
         cell.style.borderColor = group?.color ? group.color + '55' : ''
         cell.innerHTML = (tool?.icon
-            ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${tool.icon}</svg>`
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5">${tool.icon}</svg>`
             : `<span class="lp-cell-text">${tool?.textIcon || tool?.label || item.id}</span>`)
             + `<div class="lp-cell-tip">${tool?.label || item.id}</div>`
         cell.addEventListener('click', () => {
@@ -1709,7 +1759,7 @@ function initLpDrag() {
     function clamp(val, min, max) { return Math.max(min, Math.min(max, val)) }
 
     bar.addEventListener('mousedown', e => {
-        if (e.target.closest('.lp-cell') || e.target.closest('.lp-strip-tool')) return
+        if (e.target.closest('.lp-cell') || e.target.closest('.lp-strip-tool') || e.target.closest('.lp-stamp-tab')) return
         dragging = true
         bar.classList.add('is-dragging')
         startY = e.clientY
