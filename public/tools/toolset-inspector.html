@@ -268,12 +268,12 @@
         .lp-info-row b { color: var(--sf-text); }
         .lp-info-row .dot { flex-shrink:0; }
 
-        /* Left Edit tools strip */
+        /* Left Edit tools strip — always dark (inside dark simulation) */
         .lp-left-strip {
             width: 52px;
             flex-shrink: 0;
-            background: var(--sf-card);
-            border-right: 1px solid var(--sf-border);
+            background: #1f2937;
+            border-right: 1px solid rgba(255,255,255,0.1);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -299,13 +299,13 @@
         .lp-strip-tool svg { width:18px; height:18px; }
         .lp-strip-tool .lp-tooltip {
             position: absolute; left: 46px; top: 50%; transform: translateY(-50%);
-            background: var(--sf-card2); border: 1px solid var(--sf-border);
-            color: #fff; font-size: 10px; font-weight:600;
+            background: #1e293b; border: 1px solid rgba(255,255,255,0.12);
+            color: #f1f5f9; font-size: 10px; font-weight:600;
             padding: 3px 8px; border-radius: 5px; white-space:nowrap;
             pointer-events:none; opacity:0; transition:opacity .15s; z-index:99;
         }
         .lp-strip-tool:hover .lp-tooltip { opacity:1; }
-        .lp-strip-divider { width:24px; height:1px; background:rgba(255,255,255,0.08); margin:2px 0; flex-shrink:0; }
+        .lp-strip-divider { width:28px; height:1px; background:rgba(255,255,255,0.12); margin:3px 0; flex-shrink:0; }
 
         /* Score name — rotated, reads bottom-to-top like a book spine */
         .lp-strip-score-name {
@@ -333,12 +333,17 @@
             flex-shrink:0;
         }
         .lp-color-dot.active-color { border-color: #fff; }
-        .lp-size-row { display:flex; flex-direction:column; gap:3px; align-items:center; }
+        .lp-size-row { display:flex; flex-direction:column; gap:4px; align-items:center; }
         .lp-size-dot {
-            border-radius:50%; background:rgba(255,255,255,0.4); cursor:pointer;
-            transition: background .15s; flex-shrink:0;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+            transition: background .15s, border-color .15s;
+            flex-shrink: 0;
         }
-        .lp-size-dot.active-size { background:#fff; }
+        .lp-size-dot:hover { background: rgba(255,255,255,0.5); }
+        .lp-size-dot.active-size { background: #fff; border-color: #fff; }
 
         /* Score area */
         .lp-score-area {
@@ -1158,9 +1163,9 @@ const COLORS = [
     { hex: '#fde047', label: 'Yellow' },
 ]
 const SIZES = [
-    { w: 8, h: 8, label: 'S' },
-    { w: 12, h: 12, label: 'M' },
-    { w: 16, h: 16, label: 'L' },
+    { w: 20, h: 4,  label: 'S' },
+    { w: 20, h: 7,  label: 'M' },
+    { w: 20, h: 11, label: 'L' },
 ]
 
 let lpActiveTool = 'view'
