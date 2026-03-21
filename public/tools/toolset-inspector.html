@@ -10,47 +10,62 @@
     <link rel="stylesheet" href="shared-styles.css">
     <script src="theme-manager.js"></script>
     <style>
+        /* ── ScoreFlow design tokens ── */
+        :root {
+            --sf-bg:       #111827;
+            --sf-card:     #1f2937;
+            --sf-card2:    #374151;
+            --sf-border:   rgba(255,255,255,0.12);
+            --sf-primary:  #6366f1;
+            --sf-primary-h:#4f46e5;
+            --sf-text:     #f9fafb;
+            --sf-muted:    #9ca3af;
+            --sf-success:  #10b981;
+            --sf-warn:     #f59e0b;
+            --sf-danger:   #ef4444;
+        }
+        body { background: var(--sf-bg); color: var(--sf-text); }
+
         nav { margin-bottom: 32px; }
-        nav a { text-decoration:none; color:var(--primary); font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:6px; opacity:0.8; }
+        nav a { text-decoration:none; color:var(--sf-primary); font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:6px; opacity:0.8; }
 
         .page-header { margin-bottom: 32px; }
         .page-header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; }
-        .page-header p { color: var(--text-muted); margin-top: 6px; font-size: 0.9rem; }
+        .page-header p { color: var(--sf-muted); margin-top: 6px; font-size: 0.9rem; }
 
         /* ── Tab nav ── */
-        .tab-nav { display:flex; gap:8px; margin-bottom:28px; border-bottom:1px solid var(--border); padding-bottom:0; }
+        .tab-nav { display:flex; gap:8px; margin-bottom:28px; border-bottom:1px solid var(--sf-border); padding-bottom:0; }
         .tab-btn {
             padding: 8px 18px; font-size:13px; font-weight:600; border:none; background:none;
-            color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent;
+            color:var(--sf-muted); cursor:pointer; border-bottom:2px solid transparent;
             margin-bottom:-1px; font-family:inherit; transition: color .2s, border-color .2s;
         }
-        .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
+        .tab-btn.active { color:var(--sf-primary); border-bottom-color:var(--sf-primary); }
         .tab-pane { display:none; }
         .tab-pane.active { display:block; }
 
         /* ── My Panel preview ── */
         .preview-wrap {
-            background: #1a1a2e;
-            border: 1px solid var(--border);
+            background: var(--sf-card);
+            border: 1px solid var(--sf-border);
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 24px;
         }
         .preview-label {
             font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
-            color:var(--text-muted); margin-bottom:12px; display:flex; align-items:center; gap:8px;
+            color:var(--sf-muted); margin-bottom:12px; display:flex; align-items:center; gap:8px;
         }
-        .preview-label span { background:var(--primary); color:#fff; border-radius:4px; padding:1px 7px; font-size:9px; }
+        .preview-label span { background:var(--sf-primary); color:#fff; border-radius:4px; padding:1px 7px; font-size:9px; }
 
         /* ── Mock viewer scene ── */
         .mock-scene {
-            background: #0a0a14;
-            border: 1px solid var(--border);
-            border-radius: 16px;
+            background: var(--sf-bg);
+            border: 1px solid var(--sf-border);
+            border-radius: 12px;
             overflow: hidden;
             position: relative;
         }
-        /* Score area with left/right rulers */
         .mock-viewer {
             display: flex;
             height: 120px;
@@ -58,172 +73,131 @@
         }
         .mock-ruler {
             width: 36px;
-            background: rgba(255,255,255,0.03);
-            border-right: 1px solid rgba(255,255,255,0.06);
+            background: var(--sf-card);
+            border-right: 1px solid var(--sf-border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 9px; color: rgba(255,255,255,0.2); writing-mode: vertical-rl;
+            font-size: 9px; color: var(--sf-muted); writing-mode: vertical-rl;
             flex-shrink: 0;
         }
-        .mock-ruler.right {
-            border-right: none; border-left: 1px solid rgba(255,255,255,0.06);
-        }
+        .mock-ruler.right { border-right: none; border-left: 1px solid var(--sf-border); }
         .mock-score-area {
             flex: 1;
             background: repeating-linear-gradient(
                 0deg, transparent, transparent 18px,
-                rgba(255,255,255,0.03) 18px, rgba(255,255,255,0.03) 19px
+                rgba(255,255,255,0.04) 18px, rgba(255,255,255,0.04) 19px
             );
             position: relative;
         }
         .mock-score-label {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-            font-size: 10px; color: rgba(255,255,255,0.15); white-space: nowrap;
+            font-size: 10px; color: var(--sf-muted); white-space: nowrap; opacity: .5;
         }
-        /* Scrollbar strip on right */
         .mock-scrollbar {
-            width: 10px;
-            background: rgba(255,255,255,0.02);
-            border-left: 1px solid rgba(255,255,255,0.05);
-            flex-shrink: 0;
+            width: 10px; background: var(--sf-card);
+            border-left: 1px solid var(--sf-border); flex-shrink: 0;
         }
-        /* Doc bar */
         .mock-docbar {
             position: absolute; right: 10px; top: 10px;
-            width: 28px; background: rgba(30,41,59,0.9);
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+            width: 28px; background: var(--sf-card);
+            border: 1px solid var(--sf-border); border-radius: 8px;
             padding: 4px; display: flex; flex-direction: column; gap: 3px; align-items: center;
         }
         .mock-docbar-dot { width: 16px; height: 16px; background: rgba(255,255,255,0.08); border-radius: 4px; }
 
-        /* Panel bar (bottom of score area) */
+        /* Panel bar */
         .mock-panel-bar {
-            background: #111827;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            background: var(--sf-card);
+            border-top: 1px solid var(--sf-border);
             padding: 6px 8px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.15) transparent;
+            display: flex; align-items: center; gap: 4px;
+            overflow-x: auto; overflow-y: hidden;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent;
         }
         .mock-stamp-grid-2row {
-            display: grid;
-            grid-template-rows: 44px 44px;
-            grid-auto-flow: column;
-            grid-auto-columns: 44px;
-            gap: 4px;
-            flex-shrink: 0;
+            display: grid; grid-template-rows: 44px 44px;
+            grid-auto-flow: column; grid-auto-columns: 44px;
+            gap: 4px; flex-shrink: 0;
         }
         .mock-panel-bar::-webkit-scrollbar { height: 3px; }
         .mock-panel-bar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius:2px; }
-
-        /* Divider between edit and stamps */
         .mock-divider {
-            width: 1px; height: 44px; background: rgba(255,255,255,0.12);
-            flex-shrink: 0; align-self: center; margin: 0 2px;
+            width: 1px; background: var(--sf-border);
+            flex-shrink: 0; align-self: stretch; margin: 0 4px;
         }
 
         .mock-cell {
             width: 44px; height: 44px; flex-shrink: 0;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--sf-border);
             border-radius: 8px;
             display: flex; align-items:center; justify-content:center;
-            cursor: grab;
-            position: relative;
-            transition: background .15s;
-            user-select: none;
+            cursor: grab; position: relative;
+            transition: background .15s; user-select: none;
         }
-        .mock-cell {
-            width: 44px; height: 44px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            display: flex; align-items:center; justify-content:center;
-            cursor: grab;
-            position: relative;
-            transition: background .15s;
-            user-select: none;
-        }
-        .mock-cell:hover { background: rgba(255,255,255,0.12); }
+        .mock-cell:hover { background: rgba(255,255,255,0.1); }
         .mock-cell.dragging { opacity: .4; }
-        .mock-cell.drag-over { border-color: var(--primary); background: rgba(99,102,241,0.15); }
+        .mock-cell.drag-over { border-color: var(--sf-primary); background: rgba(99,102,241,0.15); }
         .mock-cell svg { width:20px; height:20px; flex-shrink:0; }
-        .mock-cell .cell-text { font-size:11px; font-weight:600; color:#fff; text-align:center; line-height:1.2; font-family:'JetBrains Mono',monospace; }
+        .mock-cell .cell-text { font-size:11px; font-weight:600; color:var(--sf-text); text-align:center; line-height:1.2; font-family:'JetBrains Mono',monospace; }
         .mock-cell .cell-label {
             position:absolute; bottom:-16px; left:50%; transform:translateX(-50%);
-            font-size:9px; color:var(--text-muted); white-space:nowrap;
+            font-size:9px; color:var(--sf-muted); white-space:nowrap;
             opacity:0; transition:opacity .15s; pointer-events:none;
         }
         .mock-cell:hover .cell-label { opacity:1; }
         .mock-cell .remove-btn {
             position:absolute; top:-5px; right:-5px;
-            width:14px; height:14px; background:#ef4444; border-radius:50%;
+            width:14px; height:14px; background:var(--sf-danger); border-radius:50%;
             font-size:9px; color:#fff; display:flex; align-items:center; justify-content:center;
-            cursor:pointer; opacity:0; transition:opacity .15s; line-height:1;
-            border:none;
+            cursor:pointer; opacity:0; transition:opacity .15s; line-height:1; border:none;
         }
         .mock-cell:hover .remove-btn { opacity:1; }
-        .mock-cell.edit-cell { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.2); }
+        .mock-cell.edit-cell { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); }
 
-        .empty-hint { color:var(--text-muted); font-size:12px; padding:12px 0; }
+        .empty-hint { color:var(--sf-muted); font-size:12px; padding:12px 0; }
 
         /* ── Stamp selector ── */
-        .selector-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 16px;
-        }
-        .cat-block {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
-        }
+        .selector-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; }
+        .cat-block { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:14px; }
         .cat-block-header {
             display:flex; align-items:center; gap:8px;
             margin-bottom:10px; padding-bottom:8px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid var(--sf-border);
         }
         .cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
         .cat-block-name { font-size:12px; font-weight:700; flex:1; }
         .select-all-btn {
-            font-size:10px; color:var(--primary); cursor:pointer; background:none;
-            border:none; font-family:inherit; font-weight:600; padding:2px 6px;
-            border-radius:4px;
+            font-size:10px; color:var(--sf-primary); cursor:pointer; background:none;
+            border:none; font-family:inherit; font-weight:600; padding:2px 6px; border-radius:4px;
         }
-        .select-all-btn:hover { background: rgba(99,102,241,0.1); }
-
+        .select-all-btn:hover { background: rgba(99,102,241,0.12); }
         .tool-rows { display:flex; flex-direction:column; gap:2px; }
-        .tool-row-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,0.25); margin-top:6px; margin-bottom:2px; }
+        .tool-row-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--sf-muted); opacity:.5; margin-top:6px; margin-bottom:2px; }
         .tool-row-items { display:flex; flex-wrap:wrap; gap:4px; }
-
         .tool-item {
             display:flex; align-items:center; gap:6px;
             padding:4px 8px; border-radius:6px; cursor:pointer;
-            border: 1px solid rgba(255,255,255,0.06);
+            border: 1px solid var(--sf-border);
             background: rgba(255,255,255,0.03);
             transition: background .15s, border-color .15s;
         }
         .tool-item:hover { background: rgba(255,255,255,0.07); }
-        .tool-item.selected { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); }
+        .tool-item.selected { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.45); }
         .tool-item input[type=checkbox] { display:none; }
         .tool-item .ti-icon { width:20px; height:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .tool-item .ti-icon svg { width:16px; height:16px; }
-        .tool-item .ti-label { font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
-        .tool-item.selected .ti-label { color:var(--text); }
+        .tool-item .ti-label { font-size:11px; color:var(--sf-muted); font-family:'JetBrains Mono',monospace; }
+        .tool-item.selected .ti-label { color:var(--sf-text); }
 
         /* ── State tab ── */
         .status-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:24px; }
-        .status-pill { display:inline-flex; align-items:center; gap:6px; background:var(--card-bg); border:1px solid var(--border); border-radius:99px; padding:5px 14px; font-size:12px; font-weight:600; }
+        .status-pill { display:inline-flex; align-items:center; gap:6px; background:var(--sf-card); border:1px solid var(--sf-border); border-radius:99px; padding:5px 14px; font-size:12px; font-weight:600; }
         .dot { width:7px; height:7px; border-radius:50%; }
-        .dot.green { background:var(--success); }
-        .dot.yellow { background:var(--warn); }
-        .dot.gray { background:#64748b; }
+        .dot.green { background:var(--sf-success); }
+        .dot.yellow { background:var(--sf-warn); }
+        .dot.gray { background:var(--sf-muted); }
         .categories-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:20px; }
-        .cat-card { background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:20px; }
+        .cat-card { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:20px; }
         .cat-card.active { border-color:rgba(99,102,241,0.5); box-shadow:0 0 0 1px rgba(99,102,241,0.2); }
         .cat-card.hidden-layer { opacity:.5; }
         .cat-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
@@ -232,47 +206,74 @@
         .cat-badge { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 8px; border-radius:4px; }
         .badge-active { background:rgba(99,102,241,0.2); color:#818cf8; border:1px solid rgba(99,102,241,0.3); }
         .badge-visible { background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
-        .badge-hidden { background:rgba(100,116,139,0.15); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
+        .badge-hidden { background:rgba(100,116,139,0.15); color:var(--sf-muted); border:1px solid var(--sf-border); }
         .badge-edit { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
-        .layer-info { display:flex; gap:8px; align-items:center; margin-bottom:12px; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:8px; font-size:11px; color:var(--text-muted); }
-        .layer-info code { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--primary); background:rgba(99,102,241,0.1); padding:1px 5px; border-radius:3px; }
+        .layer-info { display:flex; gap:8px; align-items:center; margin-bottom:12px; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:8px; font-size:11px; color:var(--sf-muted); }
+        .layer-info code { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--sf-primary); background:rgba(99,102,241,0.1); padding:1px 5px; border-radius:3px; }
         .tools-list { display:flex; flex-wrap:wrap; gap:6px; }
-        .tool-chip { display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:3px 8px; font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+        .tool-chip { display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.05); border:1px solid var(--sf-border); border-radius:6px; padding:3px 8px; font-size:11px; color:var(--sf-muted); font-family:'JetBrains Mono',monospace; }
         .tool-chip-row { font-size:9px; opacity:.5; }
         .summary-row { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:12px; margin-bottom:28px; }
-        .summary-card { background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
-        .summary-card .num { font-size:1.8rem; font-weight:800; color:var(--primary); }
-        .summary-card .lbl { font-size:11px; color:var(--text-muted); margin-top:2px; }
-        .section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); margin:28px 0 12px; }
+        .summary-card { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:14px 16px; }
+        .summary-card .num { font-size:1.8rem; font-weight:800; color:var(--sf-primary); }
+        .summary-card .lbl { font-size:11px; color:var(--sf-muted); margin-top:2px; }
+        .section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--sf-muted); margin:28px 0 12px; }
 
         .action-row { display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
-        .btn { padding:7px 16px; font-size:12px; font-weight:700; border:none; border-radius:8px; cursor:pointer; font-family:inherit; }
-        .btn-primary { background:var(--primary); color:#fff; }
-        .btn-ghost { background:rgba(255,255,255,0.07); color:var(--text); border:1px solid var(--border); }
+        .btn { padding:8px 18px; font-size:13px; font-weight:700; border:none; border-radius:12px; cursor:pointer; font-family:inherit; transition: opacity .2s; }
+        .btn-primary { background:var(--sf-primary); color:#fff; box-shadow:0 4px 15px rgba(99,102,241,0.3); }
+        .btn-ghost { background:rgba(255,255,255,0.07); color:var(--sf-text); border:1px solid var(--sf-border); }
         .btn:hover { opacity:.85; }
-        .save-status { font-size:11px; color:var(--success); margin-left:auto; }
+        .save-status { font-size:11px; color:var(--sf-success); margin-left:auto; }
 
         /* ── Layout Preview tab ── */
-        .lp-hint { font-size:11px; color:var(--text-muted); margin-bottom:12px; }
-        .lp-hint b { color:var(--text); }
+        .lp-hint { font-size:11px; color:var(--sf-muted); margin-bottom:12px; }
+        .lp-hint b { color:var(--sf-text); }
 
+        /* Portrait layout: scene + info side by side */
+        .lp-wrapper {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
         .lp-scene {
-            background: #0d1117;
-            border: 1px solid var(--border);
+            background: var(--sf-bg);
+            border: 1px solid var(--sf-border);
             border-radius: 16px;
             overflow: hidden;
             position: relative;
-            height: 560px;
+            /* iPad portrait: 768×1024 aspect ratio scaled down */
+            width: 320px;
+            height: 426px;
+            flex-shrink: 0;
             display: flex;
             user-select: none;
         }
+        .lp-info-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-top: 4px;
+        }
+        .lp-info-title {
+            font-size: 13px; font-weight: 700; color: var(--sf-text); margin-bottom: 2px;
+        }
+        .lp-info-row {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 12px; color: var(--sf-muted);
+            background: var(--sf-card); border: 1px solid var(--sf-border);
+            border-radius: 8px; padding: 8px 12px;
+        }
+        .lp-info-row b { color: var(--sf-text); }
+        .lp-info-row .dot { flex-shrink:0; }
 
         /* Left Edit tools strip */
         .lp-left-strip {
             width: 44px;
             flex-shrink: 0;
-            background: #111827;
-            border-right: 1px solid rgba(255,255,255,0.08);
+            background: var(--sf-card);
+            border-right: 1px solid var(--sf-border);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -347,8 +348,8 @@
         .lp-stamp-bar {
             position: absolute;
             left: 8px; right: 8px;
-            background: rgba(17, 24, 39, 0.92);
-            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(31, 41, 55, 0.95);
+            border: 1px solid var(--sf-border);
             border-radius: 12px;
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
@@ -385,27 +386,27 @@
         }
         .lp-bar-handle span { display:block; width:14px; height:2px; background:#fff; border-radius:1px; }
 
-        .lp-bar-divider { width:1px; height:36px; background:rgba(255,255,255,0.12); flex-shrink:0; margin:0 2px; }
+        .lp-bar-divider { width:1px; background:var(--sf-border); flex-shrink:0; align-self:stretch; margin:0 4px; }
 
         /* Cells in stamp bar */
         .lp-cell {
             width: 44px; height: 44px; flex-shrink:0;
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--sf-border);
             border-radius: 8px;
             display:flex; align-items:center; justify-content:center;
             cursor:pointer; transition: background .15s, border-color .15s;
             position:relative;
         }
-        .lp-cell:hover { background:rgba(255,255,255,0.14); }
-        .lp-cell.active-stamp { background:rgba(99,102,241,0.3); border-color:rgba(99,102,241,0.7); }
-        .lp-cell.edit-cell { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.2); }
+        .lp-cell:hover { background:rgba(255,255,255,0.12); }
+        .lp-cell.active-stamp { background:rgba(99,102,241,0.25); border-color:rgba(99,102,241,0.6); }
+        .lp-cell.edit-cell { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.25); }
         .lp-cell svg { width:20px; height:20px; pointer-events:none; }
-        .lp-cell .lp-cell-text { font-size:12px; font-weight:700; color:#fff; pointer-events:none; }
+        .lp-cell .lp-cell-text { font-size:12px; font-weight:700; color:var(--sf-text); pointer-events:none; }
         .lp-cell .lp-cell-tip {
             position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
-            background:#1e293b; border:1px solid var(--border); color:#fff;
-            font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;
+            background:var(--sf-card); border:1px solid var(--sf-border); color:var(--sf-text);
+            font-size:10px; font-weight:600; padding:2px 7px; border-radius:6px;
             white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .15s; z-index:99;
         }
         .lp-cell:hover .lp-cell-tip { opacity:1; }
@@ -413,43 +414,34 @@
         /* Right: scrollbar + doc bar */
         .lp-right {
             width: 44px; flex-shrink:0;
-            background: #0d1117;
-            border-left: 1px solid rgba(255,255,255,0.06);
+            background: var(--sf-card);
+            border-left: 1px solid var(--sf-border);
             display:flex; flex-direction:column; align-items:center;
             padding: 6px 0; gap:4px;
         }
         .lp-docbar-btn {
             width:32px; height:32px; background:rgba(255,255,255,0.05);
-            border:1px solid rgba(255,255,255,0.08); border-radius:7px;
+            border:1px solid var(--sf-border); border-radius:8px;
             display:flex; align-items:center; justify-content:center; flex-shrink:0;
         }
-        /* Scrollbar track */
         .lp-scrollbar-track {
-            flex: 1;
-            width: 8px;
-            background: rgba(255,255,255,0.04);
-            border-radius: 4px;
-            position: relative;
-            margin: 4px 0;
-            cursor: pointer;
+            flex: 1; width: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px; position: relative; margin: 4px 0; cursor: pointer;
         }
         .lp-scrollbar-thumb {
-            position: absolute;
-            width: 8px;
-            left: 0;
+            position: absolute; width: 8px; left: 0;
             background: rgba(255,255,255,0.25);
-            border-radius: 4px;
-            cursor: grab;
-            transition: background .15s;
+            border-radius: 4px; cursor: grab; transition: background .15s;
         }
         .lp-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
         .lp-scrollbar-thumb.grabbing { cursor:grabbing; background:rgba(255,255,255,0.5); }
 
         .lp-bar-y-info {
             position:absolute; right:8px; top:8px;
-            background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.1);
-            color:var(--text-muted); font-size:10px; font-family:'JetBrains Mono',monospace;
-            padding:3px 8px; border-radius:5px; z-index:30; pointer-events:none;
+            background:var(--sf-card); border:1px solid var(--sf-border);
+            color:var(--sf-muted); font-size:10px; font-family:'JetBrains Mono',monospace;
+            padding:3px 8px; border-radius:6px; z-index:30; pointer-events:none;
         }
     </style>
 </head>
@@ -462,9 +454,16 @@
         </a>
     </nav>
 
-    <div class="page-header">
-        <h1>🗂 Toolset Inspector</h1>
-        <p>配置 My Panel 的工具組合，即時預覽面板佈局。</p>
+    <div class="page-header" style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+            <h1>🗂 Toolset Inspector</h1>
+            <p>配置 My Panel 的工具組合，即時預覽面板佈局。</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-primary" onclick="saveMyPanel()">💾 儲存</button>
+            <button class="btn btn-ghost" onclick="clearMyPanel()">✕ 清除</button>
+            <span class="save-status" id="save-status-header"></span>
+        </div>
     </div>
 
     <div class="tab-nav">
@@ -521,27 +520,36 @@
     <!-- ══ TAB: Layout Preview ══ -->
     <div class="tab-pane" id="tab-layout">
         <div class="lp-hint">
-            <b>Stamp bar</b> 可上下拖移 · Edit tools 固定在左側 · Color/Size 在左側底部 · 從「My Panel 配置」選好 stamp 後切回這裡
+            iPad 直式比例 (320×426px) · <b>Stamp bar</b> 可上下拖移 · Edit tools 固定在左側
         </div>
-        <div class="lp-scene" id="lp-scene">
+        <div class="lp-wrapper">
+            <div class="lp-scene" id="lp-scene">
+                <!-- Left Edit tools strip -->
+                <div class="lp-left-strip" id="lp-left-strip"></div>
 
-            <!-- Left Edit tools strip -->
-            <div class="lp-left-strip" id="lp-left-strip"></div>
-
-            <!-- Score area -->
-            <div class="lp-score-area" id="lp-score-area">
-                <div class="lp-bar-y-info" id="lp-y-info">y: —</div>
-                <!-- Stamp bar (draggable) -->
-                <div class="lp-stamp-bar" id="lp-stamp-bar" style="bottom:80px;">
-                    <div class="lp-bar-handle">
-                        <span></span><span></span><span></span>
+                <!-- Score area -->
+                <div class="lp-score-area" id="lp-score-area">
+                    <div class="lp-bar-y-info" id="lp-y-info">y: —</div>
+                    <!-- Stamp bar (draggable) -->
+                    <div class="lp-stamp-bar" id="lp-stamp-bar" style="bottom:60px;">
+                        <div class="lp-bar-handle">
+                            <span></span><span></span><span></span>
+                        </div>
                     </div>
-                    <!-- cells injected by JS -->
                 </div>
+
+                <!-- Right: doc bar + scrollbar -->
+                <div class="lp-right" id="lp-right"></div>
             </div>
 
-            <!-- Right: doc bar -->
-            <div class="lp-right" id="lp-right"></div>
+            <!-- Info panel beside the scene -->
+            <div class="lp-info-panel">
+                <div class="lp-info-title">佈局說明</div>
+                <div class="lp-info-row"><div class="dot" style="background:#f59e0b"></div><b>左側條</b> — Edit tools + Color + Size</div>
+                <div class="lp-info-row"><div class="dot" style="background:#6366f1"></div><b>Stamp bar</b> — 上下拖移，Y 自由停靠</div>
+                <div class="lp-info-row"><div class="dot" style="background:#10b981"></div><b>右側</b> — Scrollbar + Doc bar</div>
+                <div class="lp-info-row" id="lp-stamp-count" style="margin-top:4px"><b>Stamps：</b><span>—</span></div>
+            </div>
         </div>
     </div>
 
@@ -675,9 +683,10 @@ function loadMyPanel() {
 
 function saveMyPanel() {
     localStorage.setItem(LS_KEY, JSON.stringify(myPanel))
-    const el = document.getElementById('save-status')
-    el.textContent = '✓ 已儲存'
-    setTimeout(() => el.textContent = '', 2000)
+    ;['save-status', 'save-status-header'].forEach(id => {
+        const el = document.getElementById(id)
+        if (el) { el.textContent = '✓ 已儲存'; setTimeout(() => el.textContent = '', 2000) }
+    })
 }
 
 function clearMyPanel() {
@@ -1007,6 +1016,11 @@ function renderLayoutPreview() {
     renderLpStampBar()
     renderLpRight()
     initLpDrag()
+    const countEl = document.querySelector('#lp-stamp-count span')
+    if (countEl) {
+        const n = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit').length
+        countEl.textContent = `${n} 個`
+    }
 }
 
 function renderLpLeftStrip() {
