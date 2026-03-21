@@ -230,15 +230,24 @@
         .lp-hint { font-size:11px; color:var(--sf-muted); margin-bottom:12px; }
         .lp-hint b { color:var(--sf-text); }
 
-        .lp-wrapper { display: flex; flex-direction: column; gap: 12px; }
+        .lp-wrapper { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+        .lp-scene-frame {
+            /* iPad-like portrait bezel */
+            background: #1a1a1e;
+            border-radius: 36px;
+            padding: 16px 10px;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(0,0,0,0.7);
+            width: min(520px, 90%);
+            flex-shrink: 0;
+        }
         .lp-scene {
             background: var(--sf-bg);
             border: 1px solid var(--sf-border);
-            border-radius: 16px;
+            border-radius: 22px;
             overflow: hidden;
             position: relative;
             width: 100%;
-            height: 680px;
+            aspect-ratio: 3 / 4;
             display: flex;
             user-select: none;
         }
@@ -524,9 +533,10 @@
     <!-- ══ TAB: Layout Preview ══ -->
     <div class="tab-pane" id="tab-layout">
         <div class="lp-hint">
-            iPad 直式比例 (320×426px) · <b>Stamp bar</b> 可上下拖移 · Edit tools 固定在左側
+            iPad 直式比例 3:4 · <b>Stamp bar</b> 可上下拖移 · Edit tools 固定在左側
         </div>
         <div class="lp-wrapper">
+            <div class="lp-scene-frame">
             <div class="lp-scene" id="lp-scene">
                 <!-- Left Edit tools strip -->
                 <div class="lp-left-strip" id="lp-left-strip"></div>
@@ -544,6 +554,7 @@
 
                 <!-- Right: doc bar + scrollbar -->
                 <div class="lp-right" id="lp-right"></div>
+            </div>
             </div>
 
             <!-- Info bar below scene -->
