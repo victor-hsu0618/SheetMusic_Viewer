@@ -76,7 +76,7 @@ export class InteractionManager {
         // Previously left-side stamps (x<0.15) had trash BELOW, but the upward offset
         // meant the finger had to travel past the trash bin — unreachable in practice.
         const getTrashPos = (normX, wCentX, wCentY) => {
-            return { x: wCentX, y: wCentY - 70 };
+            return { x: wCentX, y: wCentY - 210 };
         };
 
         const updateTouchAction = () => {
