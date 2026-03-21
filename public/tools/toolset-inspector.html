@@ -10,153 +10,174 @@
     <link rel="stylesheet" href="shared-styles.css">
     <script src="theme-manager.js"></script>
     <style>
-        .page-header { margin-bottom: 40px; }
+        nav { margin-bottom: 32px; }
+        nav a { text-decoration:none; color:var(--primary); font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:6px; opacity:0.8; }
+
+        .page-header { margin-bottom: 32px; }
         .page-header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; }
         .page-header p { color: var(--text-muted); margin-top: 6px; font-size: 0.9rem; }
 
-        .status-bar {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 28px;
+        /* ── Tab nav ── */
+        .tab-nav { display:flex; gap:8px; margin-bottom:28px; border-bottom:1px solid var(--border); padding-bottom:0; }
+        .tab-btn {
+            padding: 8px 18px; font-size:13px; font-weight:600; border:none; background:none;
+            color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent;
+            margin-bottom:-1px; font-family:inherit; transition: color .2s, border-color .2s;
         }
-        .status-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 99px;
-            padding: 5px 14px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .dot { width: 7px; height: 7px; border-radius: 50%; }
-        .dot.green { background: var(--success); }
-        .dot.yellow { background: var(--warn); }
-        .dot.gray { background: #64748b; }
+        .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
+        .tab-pane { display:none; }
+        .tab-pane.active { display:block; }
 
-        .refresh-btn {
-            margin-left: auto;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 7px 16px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .refresh-btn:hover { opacity: 0.85; }
-
-        .categories-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 20px;
-        }
-
-        .cat-card {
-            background: var(--card-bg);
+        /* ── My Panel preview ── */
+        .preview-wrap {
+            background: #1a1a2e;
             border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 20px;
-            position: relative;
+            padding: 16px;
+            margin-bottom: 24px;
         }
-        .cat-card.active { border-color: rgba(99,102,241,0.5); box-shadow: 0 0 0 1px rgba(99,102,241,0.2); }
-        .cat-card.hidden-layer { opacity: 0.5; }
+        .preview-label {
+            font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+            color:var(--text-muted); margin-bottom:12px; display:flex; align-items:center; gap:8px;
+        }
+        .preview-label span { background:var(--primary); color:#fff; border-radius:4px; padding:1px 7px; font-size:9px; }
 
-        .cat-header {
+        /* Mock panel shell */
+        .mock-panel {
+            background: #111827;
+            border-radius: 12px;
+            padding: 10px 8px;
+            min-height: 80px;
+        }
+        .mock-edit-row {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 14px;
+            gap: 4px;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-wrap: wrap;
         }
-        .cat-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-        .cat-name { font-size: 1rem; font-weight: 700; flex: 1; }
-        .cat-badge {
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-        .badge-active { background: rgba(99,102,241,0.2); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
-        .badge-visible { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-        .badge-hidden { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
-        .badge-edit { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-
-        .layer-info {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 12px;
-            padding: 6px 10px;
-            background: rgba(255,255,255,0.04);
-            border-radius: 8px;
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-        .layer-info code {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            color: var(--primary);
-            background: rgba(99,102,241,0.1);
-            padding: 1px 5px;
-            border-radius: 3px;
-        }
-
-        .tools-list {
+        .mock-stamp-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-        }
-        .tool-chip {
-            display: inline-flex;
-            align-items: center;
             gap: 4px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 6px;
-            padding: 3px 8px;
-            font-size: 11px;
-            color: var(--text-muted);
-            font-family: 'JetBrains Mono', monospace;
+            min-height: 44px;
         }
-        .tool-chip-row { font-size: 9px; opacity: 0.5; }
-
-        .section-label {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-muted);
-            margin: 28px 0 12px;
+        .mock-cell {
+            width: 44px; height: 44px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex; align-items:center; justify-content:center;
+            cursor: grab;
+            position: relative;
+            transition: background .15s;
+            user-select: none;
         }
+        .mock-cell:hover { background: rgba(255,255,255,0.12); }
+        .mock-cell.dragging { opacity: .4; }
+        .mock-cell.drag-over { border-color: var(--primary); background: rgba(99,102,241,0.15); }
+        .mock-cell svg { width:20px; height:20px; flex-shrink:0; }
+        .mock-cell .cell-text { font-size:11px; font-weight:600; color:#fff; text-align:center; line-height:1.2; font-family:'JetBrains Mono',monospace; }
+        .mock-cell .cell-label {
+            position:absolute; bottom:-16px; left:50%; transform:translateX(-50%);
+            font-size:9px; color:var(--text-muted); white-space:nowrap;
+            opacity:0; transition:opacity .15s; pointer-events:none;
+        }
+        .mock-cell:hover .cell-label { opacity:1; }
+        .mock-cell .remove-btn {
+            position:absolute; top:-5px; right:-5px;
+            width:14px; height:14px; background:#ef4444; border-radius:50%;
+            font-size:9px; color:#fff; display:flex; align-items:center; justify-content:center;
+            cursor:pointer; opacity:0; transition:opacity .15s; line-height:1;
+            border:none;
+        }
+        .mock-cell:hover .remove-btn { opacity:1; }
+        .mock-cell.edit-cell { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.2); }
 
-        .summary-row {
+        .empty-hint { color:var(--text-muted); font-size:12px; padding:12px 0; }
+
+        /* ── Stamp selector ── */
+        .selector-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 12px;
-            margin-bottom: 28px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
         }
-        .summary-card {
+        .cat-block {
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 14px 16px;
+            padding: 14px;
         }
-        .summary-card .num { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
-        .summary-card .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .cat-block-header {
+            display:flex; align-items:center; gap:8px;
+            margin-bottom:10px; padding-bottom:8px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+        .cat-block-name { font-size:12px; font-weight:700; flex:1; }
+        .select-all-btn {
+            font-size:10px; color:var(--primary); cursor:pointer; background:none;
+            border:none; font-family:inherit; font-weight:600; padding:2px 6px;
+            border-radius:4px;
+        }
+        .select-all-btn:hover { background: rgba(99,102,241,0.1); }
 
-        nav { margin-bottom: 32px; }
-        nav a {
-            text-decoration: none; color: var(--primary); font-weight: 700;
-            font-size: 14px; display: inline-flex; align-items: center;
-            gap: 6px; opacity: 0.8;
+        .tool-rows { display:flex; flex-direction:column; gap:2px; }
+        .tool-row-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,0.25); margin-top:6px; margin-bottom:2px; }
+        .tool-row-items { display:flex; flex-wrap:wrap; gap:4px; }
+
+        .tool-item {
+            display:flex; align-items:center; gap:6px;
+            padding:4px 8px; border-radius:6px; cursor:pointer;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.03);
+            transition: background .15s, border-color .15s;
         }
+        .tool-item:hover { background: rgba(255,255,255,0.07); }
+        .tool-item.selected { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); }
+        .tool-item input[type=checkbox] { display:none; }
+        .tool-item .ti-icon { width:20px; height:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .tool-item .ti-icon svg { width:16px; height:16px; }
+        .tool-item .ti-label { font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+        .tool-item.selected .ti-label { color:var(--text); }
+
+        /* ── State tab ── */
+        .status-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:24px; }
+        .status-pill { display:inline-flex; align-items:center; gap:6px; background:var(--card-bg); border:1px solid var(--border); border-radius:99px; padding:5px 14px; font-size:12px; font-weight:600; }
+        .dot { width:7px; height:7px; border-radius:50%; }
+        .dot.green { background:var(--success); }
+        .dot.yellow { background:var(--warn); }
+        .dot.gray { background:#64748b; }
+        .categories-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:20px; }
+        .cat-card { background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:20px; }
+        .cat-card.active { border-color:rgba(99,102,241,0.5); box-shadow:0 0 0 1px rgba(99,102,241,0.2); }
+        .cat-card.hidden-layer { opacity:.5; }
+        .cat-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+        .cat-color-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+        .cat-name { font-size:1rem; font-weight:700; flex:1; }
+        .cat-badge { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 8px; border-radius:4px; }
+        .badge-active { background:rgba(99,102,241,0.2); color:#818cf8; border:1px solid rgba(99,102,241,0.3); }
+        .badge-visible { background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
+        .badge-hidden { background:rgba(100,116,139,0.15); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
+        .badge-edit { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+        .layer-info { display:flex; gap:8px; align-items:center; margin-bottom:12px; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:8px; font-size:11px; color:var(--text-muted); }
+        .layer-info code { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--primary); background:rgba(99,102,241,0.1); padding:1px 5px; border-radius:3px; }
+        .tools-list { display:flex; flex-wrap:wrap; gap:6px; }
+        .tool-chip { display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:3px 8px; font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+        .tool-chip-row { font-size:9px; opacity:.5; }
+        .summary-row { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:12px; margin-bottom:28px; }
+        .summary-card { background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+        .summary-card .num { font-size:1.8rem; font-weight:800; color:var(--primary); }
+        .summary-card .lbl { font-size:11px; color:var(--text-muted); margin-top:2px; }
+        .section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); margin:28px 0 12px; }
+
+        .action-row { display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+        .btn { padding:7px 16px; font-size:12px; font-weight:700; border:none; border-radius:8px; cursor:pointer; font-family:inherit; }
+        .btn-primary { background:var(--primary); color:#fff; }
+        .btn-ghost { background:rgba(255,255,255,0.07); color:var(--text); border:1px solid var(--border); }
+        .btn:hover { opacity:.85; }
+        .save-status { font-size:11px; color:var(--success); margin-left:auto; }
     </style>
 </head>
 <body>
@@ -170,125 +191,433 @@
 
     <div class="page-header">
         <h1>🗂 Toolset Inspector</h1>
-        <p>顯示 TOOLSETS 定義、Layer 狀態、以及目前 App 中啟動的分類。</p>
+        <p>配置 My Panel 的工具組合，即時預覽面板佈局。</p>
     </div>
 
-    <div class="status-bar">
-        <div class="status-pill"><div class="dot" id="ls-dot"></div><span id="ls-status">讀取中...</span></div>
-        <div class="status-pill"><div class="dot" id="active-dot"></div><span id="active-status">—</span></div>
-        <button class="refresh-btn" onclick="render()">↻ Refresh</button>
+    <div class="tab-nav">
+        <button class="tab-btn active" data-tab="mypanel">My Panel 配置</button>
+        <button class="tab-btn" data-tab="state">分類狀態</button>
     </div>
 
-    <div class="summary-row" id="summary-row"></div>
-    <div class="section-label">所有分類 (TOOLSETS)</div>
-    <div class="categories-grid" id="categories-grid"></div>
+    <!-- ══ TAB: My Panel ══ -->
+    <div class="tab-pane active" id="tab-mypanel">
+
+        <!-- Preview -->
+        <div class="preview-wrap">
+            <div class="preview-label">
+                My Panel Preview
+                <span id="count-badge">0 stamps</span>
+            </div>
+            <!-- Mock panel shell -->
+            <div class="mock-panel">
+                <div class="mock-edit-row" id="preview-edit"></div>
+                <div class="mock-stamp-grid" id="preview-stamps">
+                    <div class="empty-hint">← 從下方勾選 stamp 加入面板</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-row">
+            <button class="btn btn-primary" onclick="saveMyPanel()">💾 儲存設定</button>
+            <button class="btn btn-ghost" onclick="clearMyPanel()">✕ 清除全部</button>
+            <span class="save-status" id="save-status"></span>
+        </div>
+
+        <!-- Stamp selector -->
+        <div class="section-label">選擇 Stamp（點擊加入 / 取消）</div>
+        <div class="selector-grid" id="selector-grid"></div>
+    </div>
+
+    <!-- ══ TAB: State ══ -->
+    <div class="tab-pane" id="tab-state">
+        <div class="status-bar">
+            <div class="status-pill"><div class="dot" id="ls-dot"></div><span id="ls-status">讀取中...</span></div>
+            <div class="status-pill"><div class="dot" id="active-dot"></div><span id="active-status">—</span></div>
+            <button class="btn btn-ghost" style="margin-left:auto" onclick="renderState()">↻ Refresh</button>
+        </div>
+        <div class="summary-row" id="summary-row"></div>
+        <div class="section-label">所有分類 (TOOLSETS)</div>
+        <div class="categories-grid" id="categories-grid"></div>
+    </div>
 </div>
 
 <script>
-// ── Mirrored from src/constants.js ───────────────────────────────────────────
-// Keep in sync when constants.js is updated.
+// ── Mirrored from src/constants.js — keep in sync ────────────────────────────
 const INITIAL_LAYERS = [
     { id: 'draw',         name: 'Pens',         color: '#1d4ed8', type: 'draw' },
     { id: 'fingering',    name: 'B.Fingering',  color: '#be123c', type: 'fingering' },
     { id: 'articulation', name: 'Articulation', color: '#15803d', type: 'articulation' },
     { id: 'text',         name: 'Text',         color: '#b45309', type: 'text' },
     { id: 'others',       name: 'Others',       color: '#94a3b8', type: 'others' },
-];
+]
 
 const TOOLSETS = [
-    { name: 'Edit', type: 'edit', tools: [
-        { id: 'view' }, { id: 'select' }, { id: 'quick-text' }, { id: 'pen' },
-        { id: 'cycle' }, { id: 'eraser' }, { id: 'undo' }, { id: 'redo' }
+    { name: 'Edit', type: 'edit', color: '#f59e0b', tools: [
+        { id: 'view',       label: 'View',    icon: '<path d="M5 12.55V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6.55" /><path d="M12 22a2.98 2.98 0 0 0 2.81-2H9.18a3 3 0 0 0 2.82 2z" /><path d="M20 13a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4v-2z" />' },
+        { id: 'select',     label: 'Select',  icon: '<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="M13 13l6 6" />' },
+        { id: 'quick-text', label: 'Text+',   icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8" fill="none" stroke="currentColor" stroke-width="2" />' },
+        { id: 'pen',        label: 'Pen',     icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2" />' },
+        { id: 'cycle',      label: 'Cycle',   icon: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="21 3 21 8 16 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' },
+        { id: 'eraser',     label: 'Eraser',  icon: '<path d="M16.5 4.5 L19.5 7.5 L9 18 L4.5 18 L4.5 13.5 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="15" y2="10.5" stroke="currentColor" stroke-width="1.6"/><line x1="4.5" y1="18" x2="19.5" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
+        { id: 'undo',       label: 'Undo',    icon: '<path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20v-7a4 4 0 0 0-4-4H4" fill="none" stroke="currentColor" stroke-width="2"/>' },
+        { id: 'redo',       label: 'Redo',    icon: '<path d="M15 14l5-5-5-5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20v-7a4 4 0 0 1 4-4h12" fill="none" stroke="currentColor" stroke-width="2"/>' },
     ]},
-    { name: 'Pens', type: 'draw', tools: [
-        { id: 'pen', row:1 }, { id: 'red-pen', row:1 }, { id: 'green-pen', row:1 }, { id: 'blue-pen', row:1 },
-        { id: 'dashed-pen', row:1 }, { id: 'arrow-pen', row:1 },
-        { id: 'highlighter', row:2 }, { id: 'highlighter-red', row:2 }, { id: 'highlighter-blue', row:2 }, { id: 'highlighter-green', row:2 },
-        { id: 'line', row:2 }, { id: 'slur', row:2 }, { id: 'bracket-left', row:2 }, { id: 'bracket-right', row:2 }
+    { name: 'Pens', type: 'draw', color: '#1d4ed8', tools: [
+        { id: 'pen',              label: 'Pen',        row:1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2" />' },
+        { id: 'red-pen',          label: 'Red',        row:1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#be123c" stroke-width="2.5" />' },
+        { id: 'green-pen',        label: 'Green',      row:1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#15803d" stroke-width="2.5" />' },
+        { id: 'blue-pen',         label: 'Blue',       row:1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#1d4ed8" stroke-width="2.5" />' },
+        { id: 'dashed-pen',       label: 'Dashed',     row:1, icon: '<path d="M4 12h16" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3"/>' },
+        { id: 'arrow-pen',        label: 'Arrow',      row:1, icon: '<path d="M3 13h15 M14 9l4 4-4 4" stroke="currentColor" stroke-width="2.5" fill="none"/>' },
+        { id: 'highlighter',      label: 'H.Yellow',   row:2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#fde047" opacity="0.4" stroke="#fde047" stroke-width="1" />' },
+        { id: 'highlighter-red',  label: 'H.Red',      row:2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#be123c" opacity="0.4" stroke="#be123c" stroke-width="1" />' },
+        { id: 'highlighter-blue', label: 'H.Blue',     row:2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#1d4ed8" opacity="0.4" stroke="#1d4ed8" stroke-width="1" />' },
+        { id: 'highlighter-green',label: 'H.Green',    row:2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#15803d" opacity="0.4" stroke="#15803d" stroke-width="1" />' },
+        { id: 'line',             label: 'Line',       row:2, icon: '<line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2" />' },
+        { id: 'slur',             label: 'Slur',       row:2, icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />' },
+        { id: 'bracket-left',     label: '[',          row:2, icon: '<path d="M15 5 L9 5 L9 19 L15 19" fill="none" stroke="currentColor" stroke-width="2" />' },
+        { id: 'bracket-right',    label: ']',          row:2, icon: '<path d="M9 5 L15 5 L15 19 L9 19" fill="none" stroke="currentColor" stroke-width="2" />' },
     ]},
-    { name: 'B.Fingering', type: 'fingering', tools: [
-        { id: 'thumb', row:1 }, { id: 'f1', row:1 }, { id: 'f2', row:1 }, { id: 'f3', row:1 },
-        { id: 'f4', row:1 }, { id: 'f5', row:1 }, { id: 'f0', row:1 }, { id: 'f-exp', row:1 }, { id: 'f-shift', row:1 },
-        { id: 'down-bow', row:2 }, { id: 'up-bow', row:2 }, { id: 'open_string', row:2 },
-        { id: 'i', row:2 }, { id: 'ii', row:2 }, { id: 'iii', row:2 }, { id: 'iv', row:2 }
+    { name: 'B.Fingering', type: 'fingering', color: '#be123c', tools: [
+        { id: 'thumb',       label: 'Thumb', row:1, textIcon: '⊙' },
+        { id: 'f1',          label: '1',     row:1, textIcon: '1' },
+        { id: 'f2',          label: '2',     row:1, textIcon: '2' },
+        { id: 'f3',          label: '3',     row:1, textIcon: '3' },
+        { id: 'f4',          label: '4',     row:1, textIcon: '4' },
+        { id: 'f5',          label: '5',     row:1, textIcon: '5' },
+        { id: 'f0',          label: '0',     row:1, textIcon: '0' },
+        { id: 'f-exp',       label: 'x',     row:1, textIcon: 'x' },
+        { id: 'f-shift',     label: '+',     row:1, textIcon: '+' },
+        { id: 'down-bow',    label: 'Down',  row:2, icon: '<path d="M8 17 L8 10 L16 10 L16 17" fill="none" stroke="currentColor" stroke-width="1.6" />' },
+        { id: 'up-bow',      label: 'Up',    row:2, icon: '<path d="M8 8 L12 17 L16 8" fill="none" stroke="currentColor" stroke-width="1.6" />' },
+        { id: 'open_string', label: 'o',     row:2, icon: '<circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="1.0" />' },
+        { id: 'i',           label: 'I',     row:2, textIcon: 'I' },
+        { id: 'ii',          label: 'II',    row:2, textIcon: 'II' },
+        { id: 'iii',         label: 'III',   row:2, textIcon: 'III' },
+        { id: 'iv',          label: 'IV',    row:2, textIcon: 'IV' },
     ]},
-    { name: 'Articulation', type: 'articulation', tools: [
-        { id: 'accent', row:1 }, { id: 'marcato', row:1 }, { id: 'staccato', row:1 },
-        { id: 'tenuto', row:1 }, { id: 'fermata', row:1 },
-        { id: 'sharp', row:2 }, { id: 'flat', row:2 }, { id: 'natural', row:2 },
-        { id: 'double-sharp', row:2 }, { id: 'double-flat', row:2 }
+    { name: 'Articulation', type: 'articulation', color: '#15803d', tools: [
+        { id: 'accent',      label: 'Accent',   row:1, icon: '<path d="M6 10 L18 12 L6 14" fill="none" stroke="currentColor" stroke-width="1.2"/>' },
+        { id: 'marcato',     label: 'Marcato',  row:1, icon: '<path d="M8 17 L12 8 L16 17" fill="none" stroke="currentColor" stroke-width="1.2"/>' },
+        { id: 'staccato',    label: 'Staccato', row:1, icon: '<circle cx="12" cy="12" r="2.0" fill="currentColor" />' },
+        { id: 'tenuto',      label: 'Tenuto',   row:1, icon: '<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.2" />' },
+        { id: 'fermata',     label: 'Fermata',  row:1, icon: '<path d="M4 16a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="12" r="1.3" fill="currentColor" />' },
+        { id: 'sharp',       label: '♯',        row:2, textIcon: '♯' },
+        { id: 'flat',        label: '♭',        row:2, textIcon: '♭' },
+        { id: 'natural',     label: '♮',        row:2, textIcon: '♮' },
+        { id: 'double-sharp',label: '𝄪',        row:2, textIcon: '𝄪' },
+        { id: 'double-flat', label: '𝄫',        row:2, textIcon: '𝄫' },
     ]},
-    { name: 'Text', type: 'text', tools: [
-        { id: 'text', row:1 }, { id: 'tempo-text', row:1 },
-        { id: 'text-ppp', row:1 }, { id: 'text-pp', row:1 }, { id: 'text-p', row:1 },
-        { id: 'text-mp', row:1 }, { id: 'text-mf', row:1 }, { id: 'text-f', row:1 },
-        { id: 'text-ff', row:1 }, { id: 'text-fff', row:1 }, { id: 'text-fp', row:1 }, { id: 'text-sfp', row:1 },
-        { id: 'text-cond', row:2 }, { id: 'text-v1', row:2 }, { id: 'text-vlc', row:2 },
-        { id: 'text-wind', row:2 }, { id: 'text-perc', row:2 }, { id: 'text-solo', row:2 },
-        { id: 'text-page', row:2 }, { id: 'text-score', row:2 }, { id: 'text-breath', row:2 }
+    { name: 'Text', type: 'text', color: '#b45309', tools: [
+        { id: 'text',        label: 'Text',  row:1, icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8" fill="none" stroke="currentColor" stroke-width="2" />' },
+        { id: 'tempo-text',  label: 'Tempo', row:1, icon: '<path d="M4 7V4h16v3M12 4v16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />' },
+        { id: 'text-ppp',    label: 'ppp',   row:1, textIcon: 'ppp' },
+        { id: 'text-pp',     label: 'pp',    row:1, textIcon: 'pp' },
+        { id: 'text-p',      label: 'p',     row:1, textIcon: 'p' },
+        { id: 'text-mp',     label: 'mp',    row:1, textIcon: 'mp' },
+        { id: 'text-mf',     label: 'mf',    row:1, textIcon: 'mf' },
+        { id: 'text-f',      label: 'f',     row:1, textIcon: 'f' },
+        { id: 'text-ff',     label: 'ff',    row:1, textIcon: 'ff' },
+        { id: 'text-fff',    label: 'fff',   row:1, textIcon: 'fff' },
+        { id: 'text-fp',     label: 'fp',    row:1, textIcon: 'fp' },
+        { id: 'text-sfp',    label: 'sfp',   row:1, textIcon: 'sfp' },
+        { id: 'text-cond',   label: '指揮',   row:2, textIcon: '指揮' },
+        { id: 'text-v1',     label: '小提',   row:2, textIcon: '小提' },
+        { id: 'text-vlc',    label: '大提',   row:2, textIcon: '大提' },
+        { id: 'text-wind',   label: '管樂',   row:2, textIcon: '管樂' },
+        { id: 'text-perc',   label: '打擊',   row:2, textIcon: '打擊' },
+        { id: 'text-solo',   label: '獨奏',   row:2, textIcon: '獨奏' },
+        { id: 'text-page',   label: '換頁',   row:2, textIcon: '換頁' },
+        { id: 'text-score',  label: '換譜',   row:2, textIcon: '換譜' },
+        { id: 'text-breath', label: '呼吸',   row:2, textIcon: '呼吸' },
     ]},
-    { name: 'Others', type: 'others', tools: [
-        { id: 'copy' }, { id: 'cloak-black' }, { id: 'cloak-red' }, { id: 'cloak-blue' },
-        { id: 'page-bookmark' }, { id: 'anchor' }, { id: 'music-anchor' },
-        { id: 'measure' }, { id: 'measure-free' }
+    { name: 'Others', type: 'others', color: '#94a3b8', tools: [
+        { id: 'copy',         label: 'Copy',     icon: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>' },
+        { id: 'cloak-black',  label: '黑斗篷',   icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>' },
+        { id: 'cloak-red',    label: '紅斗篷',   icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#dc2626" stroke-width="1.6" stroke-linejoin="round"/>' },
+        { id: 'cloak-blue',   label: '藍斗篷',   icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#2563eb" stroke-width="1.6" stroke-linejoin="round"/>' },
+        { id: 'page-bookmark',label: 'Bookmark', icon: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor" stroke="none"/>' },
+        { id: 'anchor',       label: 'Anchor',   icon: '<circle cx="12" cy="3" r="1.5" fill="currentColor" /><rect x="11.25" y="4.5" width="1.5" height="9" fill="currentColor" /><rect x="7.5" y="10.5" width="9" height="1.5" fill="currentColor" /><path d="M6 12 C6 18, 18 18, 18 12 L16.5 12 C16.5 16.5, 7.5 16.5, 7.5 12 Z" fill="currentColor" />' },
+        { id: 'music-anchor', label: 'Music',    icon: '<path d="M9 18V5l12-2v13" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="16" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>' },
+        { id: 'measure',      label: 'Measure',  textIcon: '#' },
+        { id: 'measure-free', label: 'Free #',   textIcon: '#•' },
     ]},
-];
+]
 // ─────────────────────────────────────────────────────────────────────────────
 
-function readAppState() {
+const LS_KEY = 'scoreflow_my_panel'
+
+// myPanel = [{ id, category }]  ordered list
+let myPanel = []
+
+function loadMyPanel() {
     try {
-        const layers = JSON.parse(localStorage.getItem('scoreflow_layers') || 'null')
-        const activeCategories = JSON.parse(localStorage.getItem('scoreflow_active_categories') || 'null')
-        const activeSource = localStorage.getItem('scoreflow_active_source') || null
-        return { layers, activeCategories, activeSource, ok: true }
-    } catch(e) {
-        return { ok: false, error: e.message }
-    }
+        myPanel = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+    } catch { myPanel = [] }
 }
 
-function render() {
-    const state = readAppState()
+function saveMyPanel() {
+    localStorage.setItem(LS_KEY, JSON.stringify(myPanel))
+    const el = document.getElementById('save-status')
+    el.textContent = '✓ 已儲存'
+    setTimeout(() => el.textContent = '', 2000)
+}
+
+function clearMyPanel() {
+    myPanel = []
+    saveMyPanel()
+    renderMyPanel()
+    renderSelector()
+}
+
+function isSelected(id, category) {
+    return myPanel.some(s => s.id === id && s.category === category)
+}
+
+function toggleTool(id, category) {
+    const idx = myPanel.findIndex(s => s.id === id && s.category === category)
+    if (idx === -1) {
+        myPanel.push({ id, category })
+    } else {
+        myPanel.splice(idx, 1)
+    }
+    saveMyPanel()
+    renderMyPanel()
+    renderSelector()
+}
+
+function removeTool(id, category) {
+    myPanel = myPanel.filter(s => !(s.id === id && s.category === category))
+    saveMyPanel()
+    renderMyPanel()
+    renderSelector()
+}
+
+// ── Icon rendering helpers ────────────────────────────────────────────────────
+function findTool(id, category) {
+    const group = TOOLSETS.find(g => g.name === category)
+    return group?.tools.find(t => t.id === id)
+}
+
+function renderIcon(tool, size = 20) {
+    if (!tool) return ''
+    if (tool.textIcon) {
+        return `<span class="cell-text" style="font-size:${size > 16 ? 12 : 9}px">${tool.textIcon}</span>`
+    }
+    if (tool.icon) {
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="${size}" height="${size}">${tool.icon}</svg>`
+    }
+    return `<span class="cell-text" style="font-size:10px">${tool.label}</span>`
+}
+
+// ── Preview rendering ─────────────────────────────────────────────────────────
+function renderMyPanel() {
+    const editGroup = TOOLSETS.find(g => g.type === 'edit')
+    const editRow = document.getElementById('preview-edit')
+    const stampsGrid = document.getElementById('preview-stamps')
+    const countBadge = document.getElementById('count-badge')
+
+    // Edit row (always fixed)
+    editRow.innerHTML = ''
+    editGroup.tools.forEach(t => {
+        const cell = document.createElement('div')
+        cell.className = 'mock-cell edit-cell'
+        cell.title = t.label
+        cell.innerHTML = renderIcon(t, 20) + `<span class="cell-label">${t.label}</span>`
+        editRow.appendChild(cell)
+    })
+
+    // Stamps grid
+    const stampItems = myPanel.filter(s => {
+        const group = TOOLSETS.find(g => g.name === s.category)
+        return group?.type !== 'edit'
+    })
+
+    countBadge.textContent = `${stampItems.length} stamps`
+
+    if (stampItems.length === 0) {
+        stampsGrid.innerHTML = '<div class="empty-hint">← 從下方勾選 stamp 加入面板</div>'
+        return
+    }
+
+    stampsGrid.innerHTML = ''
+    let dragSrc = null
+
+    stampItems.forEach((item, idx) => {
+        const tool = findTool(item.id, item.category)
+        const group = TOOLSETS.find(g => g.name === item.category)
+        const cell = document.createElement('div')
+        cell.className = 'mock-cell'
+        cell.draggable = true
+        cell.dataset.idx = idx
+        cell.style.borderColor = group?.color ? group.color + '44' : ''
+        cell.innerHTML = renderIcon(tool, 20)
+            + `<span class="cell-label">${tool?.label || item.id}</span>`
+            + `<button class="remove-btn" title="移除">✕</button>`
+
+        cell.querySelector('.remove-btn').addEventListener('click', e => {
+            e.stopPropagation()
+            removeTool(item.id, item.category)
+        })
+
+        // Drag reorder
+        cell.addEventListener('dragstart', e => {
+            dragSrc = idx
+            cell.classList.add('dragging')
+            e.dataTransfer.effectAllowed = 'move'
+        })
+        cell.addEventListener('dragend', () => cell.classList.remove('dragging'))
+        cell.addEventListener('dragover', e => {
+            e.preventDefault()
+            cell.classList.add('drag-over')
+        })
+        cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'))
+        cell.addEventListener('drop', e => {
+            e.preventDefault()
+            cell.classList.remove('drag-over')
+            const destIdx = parseInt(cell.dataset.idx)
+            if (dragSrc === null || dragSrc === destIdx) return
+            // Reorder within myPanel (only stamp items)
+            const stampOrder = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
+            const [moved] = stampOrder.splice(dragSrc, 1)
+            stampOrder.splice(destIdx, 0, moved)
+            // Rebuild myPanel preserving any edit items at start (none currently, but future-proof)
+            myPanel = stampOrder
+            saveMyPanel()
+            renderMyPanel()
+        })
+
+        stampsGrid.appendChild(cell)
+    })
+}
+
+// ── Selector rendering ────────────────────────────────────────────────────────
+function renderSelector() {
+    const grid = document.getElementById('selector-grid')
+    grid.innerHTML = ''
+
+    TOOLSETS.forEach(group => {
+        if (group.type === 'edit') return // Edit is always fixed, skip in selector
+
+        const block = document.createElement('div')
+        block.className = 'cat-block'
+
+        // Group tools by row
+        const byRow = {}
+        group.tools.forEach(t => {
+            const r = t.row ?? 0
+            if (!byRow[r]) byRow[r] = []
+            byRow[r].push(t)
+        })
+
+        const selectedCount = group.tools.filter(t => isSelected(t.id, group.name)).length
+
+        block.innerHTML = `
+            <div class="cat-block-header">
+                <div class="cat-dot" style="background:${group.color}"></div>
+                <div class="cat-block-name">${group.name} <span style="color:var(--text-muted);font-weight:400;font-size:10px">${selectedCount}/${group.tools.length}</span></div>
+                <button class="select-all-btn" data-cat="${group.name}">全選</button>
+            </div>
+            <div class="tool-rows" id="rows-${group.name.replace(/\./g,'')}"></div>
+        `
+        grid.appendChild(block)
+
+        const rowsEl = block.querySelector(`#rows-${group.name.replace(/\./g,'')}`)
+
+        Object.keys(byRow).sort().forEach(r => {
+            if (Object.keys(byRow).length > 1) {
+                const lbl = document.createElement('div')
+                lbl.className = 'tool-row-label'
+                lbl.textContent = r == 0 ? 'General' : `Row ${r}`
+                rowsEl.appendChild(lbl)
+            }
+            const rowDiv = document.createElement('div')
+            rowDiv.className = 'tool-row-items'
+            byRow[r].forEach(t => {
+                const sel = isSelected(t.id, group.name)
+                const item = document.createElement('div')
+                item.className = 'tool-item' + (sel ? ' selected' : '')
+                item.innerHTML = `
+                    <div class="ti-icon">${t.icon
+                        ? `<svg viewBox="0 0 24 24" fill="none" stroke="${sel ? '#fff' : 'currentColor'}" stroke-width="1.5" width="16" height="16">${t.icon}</svg>`
+                        : `<span style="font-size:11px;font-weight:700;color:${sel ? '#fff' : 'var(--text-muted)'}">${t.textIcon || t.label}</span>`
+                    }</div>
+                    <span class="ti-label">${t.label}</span>
+                `
+                item.addEventListener('click', () => toggleTool(t.id, group.name))
+                rowDiv.appendChild(item)
+            })
+            rowsEl.appendChild(rowDiv)
+        })
+
+        // Select all button
+        block.querySelector('.select-all-btn').addEventListener('click', () => {
+            const allSelected = group.tools.every(t => isSelected(t.id, group.name))
+            if (allSelected) {
+                group.tools.forEach(t => {
+                    myPanel = myPanel.filter(s => !(s.id === t.id && s.category === group.name))
+                })
+            } else {
+                group.tools.forEach(t => {
+                    if (!isSelected(t.id, group.name)) myPanel.push({ id: t.id, category: group.name })
+                })
+            }
+            saveMyPanel()
+            renderMyPanel()
+            renderSelector()
+        })
+    })
+}
+
+// ── State tab ─────────────────────────────────────────────────────────────────
+function renderState() {
+    const state = (() => {
+        try {
+            return {
+                layers: JSON.parse(localStorage.getItem('scoreflow_layers') || 'null'),
+                activeCategories: JSON.parse(localStorage.getItem('scoreflow_active_categories') || 'null'),
+                activeSource: localStorage.getItem('scoreflow_active_source'),
+                ok: true
+            }
+        } catch(e) { return { ok: false } }
+    })()
+
+    const liveLayerMap = {}
+    if (state.layers) state.layers.forEach(l => { liveLayerMap[l.id] = l })
+
     const lsDot = document.getElementById('ls-dot')
     const lsStatus = document.getElementById('ls-status')
-    const activeDot = document.getElementById('active-dot')
-    const activeStatus = document.getElementById('active-status')
-
-    // Layer map from live localStorage (keyed by id)
-    const liveLayerMap = {}
     if (state.layers) {
-        state.layers.forEach(l => { liveLayerMap[l.id] = l })
         lsDot.className = 'dot green'
         lsStatus.textContent = `localStorage — ${state.layers.length} layers loaded`
     } else {
         lsDot.className = 'dot yellow'
-        lsStatus.textContent = 'localStorage — 無資料（App 尚未開啟或 Safari 已清除）'
+        lsStatus.textContent = 'localStorage — 無資料'
     }
 
     const activeCategories = state.activeCategories || []
+    const activeDot = document.getElementById('active-dot')
+    const activeStatus = document.getElementById('active-status')
     if (activeCategories.length) {
         activeDot.className = 'dot green'
-        activeStatus.textContent = `Active: ${activeCategories.join(', ')} ${state.activeSource ? '· tool: ' + state.activeSource : ''}`
+        activeStatus.textContent = `Active: ${activeCategories.join(', ')}${state.activeSource ? ' · ' + state.activeSource : ''}`
     } else {
         activeDot.className = 'dot gray'
         activeStatus.textContent = 'Active category: 未知'
     }
 
-    // Summary
-    const summaryEl = document.getElementById('summary-row')
     const totalTools = TOOLSETS.reduce((s, g) => s + g.tools.length, 0)
     const visibleLayers = state.layers ? state.layers.filter(l => l.visible !== false).length : '?'
     const hiddenLayers  = state.layers ? state.layers.filter(l => l.visible === false).length : '?'
-    summaryEl.innerHTML = `
+    document.getElementById('summary-row').innerHTML = `
         <div class="summary-card"><div class="num">${TOOLSETS.length}</div><div class="lbl">Total Groups</div></div>
         <div class="summary-card"><div class="num">${totalTools}</div><div class="lbl">Total Tools</div></div>
         <div class="summary-card"><div class="num" style="color:var(--success)">${visibleLayers}</div><div class="lbl">Visible Layers</div></div>
         <div class="summary-card"><div class="num" style="color:var(--text-muted)">${hiddenLayers}</div><div class="lbl">Hidden Layers</div></div>
     `
 
-    // Categories grid
-    const grid = document.getElementById('categories-grid')
-    grid.innerHTML = ''
-
+    const catGrid = document.getElementById('categories-grid')
+    catGrid.innerHTML = ''
     TOOLSETS.forEach(group => {
         const isEdit = group.type === 'edit'
         const layer = INITIAL_LAYERS.find(l => l.type === group.type)
@@ -300,61 +629,49 @@ function render() {
         if (isActive) classes += ' active'
         if (!layerVisible && !isEdit) classes += ' hidden-layer'
 
-        // Group tools by row
         const byRow = {}
-        group.tools.forEach(t => {
-            const r = t.row || 0
-            if (!byRow[r]) byRow[r] = []
-            byRow[r].push(t)
-        })
-        const rows = Object.keys(byRow).sort()
+        group.tools.forEach(t => { const r = t.row||0; if(!byRow[r])byRow[r]=[]; byRow[r].push(t) })
+        const toolsHtml = Object.keys(byRow).sort().flatMap(r =>
+            byRow[r].map(t => `<span class="tool-chip"><span class="tool-chip-row">${r>0?'R'+r:''}</span><code>${t.id}</code></span>`)
+        ).join('')
 
-        let toolsHtml = ''
-        rows.forEach(r => {
-            const rowLabel = r > 0 ? `<span class="tool-chip-row">R${r}</span>` : ''
-            byRow[r].forEach(t => {
-                toolsHtml += `<span class="tool-chip">${rowLabel}<code>${t.id}</code></span>`
-            })
-        })
+        const visLabel = isEdit ? 'System' : (layerVisible ? 'VISIBLE' : 'HIDDEN')
+        const visCls = isEdit ? 'badge-edit' : (layerVisible ? 'badge-visible' : 'badge-hidden')
+        const layerInfoHtml = layer
+            ? `<div class="layer-info"><div class="dot" style="background:${layer.color};flex-shrink:0"></div><span>Layer: <code>${layer.id}</code></span><span>·</span><span>Type: <code>${layer.type}</code></span>${liveLayer ? `<span>·</span><span style="color:${liveLayer.visible!==false?'var(--success)':'var(--text-muted)'}">${liveLayer.visible!==false?'👁 visible':'🚫 hidden'}</span>` : ''}</div>`
+            : `<div class="layer-info" style="color:var(--warn)">⚠ No layer binding</div>`
 
-        let badgesHtml = ''
-        if (isEdit) {
-            badgesHtml += `<span class="cat-badge badge-edit">System</span>`
-        } else {
-            const visLabel = layerVisible ? 'VISIBLE' : 'HIDDEN'
-            const visCls = layerVisible ? 'badge-visible' : 'badge-hidden'
-            badgesHtml += `<span class="cat-badge ${visCls}">${visLabel}</span>`
-        }
-        if (isActive) badgesHtml += `<span class="cat-badge badge-active">ACTIVE</span>`
-
-        const layerInfoHtml = layer ? `
-            <div class="layer-info">
-                <div class="dot" style="background:${layer.color};flex-shrink:0"></div>
-                <span>Layer: <code>${layer.id}</code></span>
-                <span>·</span>
-                <span>Type: <code>${layer.type}</code></span>
-                ${liveLayer ? `<span>·</span><span style="color:${liveLayer.visible!==false?'var(--success)':'var(--text-muted)'}">
-                    ${liveLayer.visible!==false ? '👁 visible' : '🚫 hidden'}</span>` : ''}
-            </div>` : `<div class="layer-info" style="color:var(--warn)">⚠ No layer binding (system group)</div>`
-
-        grid.insertAdjacentHTML('beforeend', `
+        catGrid.insertAdjacentHTML('beforeend', `
             <div class="${classes}">
                 <div class="cat-header">
-                    <div class="cat-color-dot" style="background:${layer?.color || '#6366f1'}"></div>
+                    <div class="cat-color-dot" style="background:${layer?.color||'#6366f1'}"></div>
                     <div class="cat-name">${group.name}</div>
-                    ${badgesHtml}
+                    <span class="cat-badge ${visCls}">${visLabel}</span>
+                    ${isActive ? '<span class="cat-badge badge-active">ACTIVE</span>' : ''}
                 </div>
                 ${layerInfoHtml}
-                <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;font-weight:600">
-                    ${group.tools.length} tools
-                </div>
+                <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;font-weight:600">${group.tools.length} tools</div>
                 <div class="tools-list">${toolsHtml}</div>
             </div>
         `)
     })
 }
 
-render()
+// ── Tab switching ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
+        btn.classList.add('active')
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active')
+        if (btn.dataset.tab === 'state') renderState()
+    })
+})
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadMyPanel()
+renderMyPanel()
+renderSelector()
 </script>
 </body>
 </html>
