@@ -279,7 +279,59 @@
             align-items: center;
             padding: 8px 0;
             gap: 4px;
-            z-index: 10;
+            z-index: 20;
+            position: relative;
+        }
+
+        /* Others flyout — slides out horizontally from the strip */
+        .lp-others-flyout {
+            position: absolute;
+            left: 52px;
+            top: 0;
+            height: 100%;
+            background: #162032;
+            border-right: 1px solid rgba(255,255,255,0.12);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 6px;
+            gap: 8px;
+            z-index: 19;
+            transform: translateX(-100%);
+            transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+            pointer-events: none;
+            min-width: 48px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .lp-others-flyout.open {
+            transform: translateX(0);
+            pointer-events: all;
+        }
+        .lp-others-section-label {
+            font-size: 8px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .08em; color: rgba(255,255,255,0.3);
+            align-self: stretch; padding: 2px 4px; margin-top: 4px;
+        }
+        .lp-others-color {
+            width: 24px; height: 24px; border-radius: 50%;
+            border: 2px solid transparent; cursor: pointer;
+            transition: border-color .15s, transform .15s; flex-shrink: 0;
+        }
+        .lp-others-color:hover { transform: scale(1.15); }
+        .lp-others-color.active-oc { border-color: #fff; }
+        .lp-others-style {
+            width: 36px; height: 22px; border-radius: 5px;
+            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background .15s; flex-shrink: 0;
+        }
+        .lp-others-style:hover { background: rgba(255,255,255,0.15); }
+        .lp-others-style.active-os { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.6); }
+        /* Others toggle button highlight when open */
+        .lp-others-btn.open {
+            background: rgba(99,102,241,0.25) !important;
+            border-color: rgba(99,102,241,0.6) !important;
         }
         .lp-strip-tool {
             width: 40px; height: 40px;
@@ -1177,6 +1229,7 @@ let lpActiveTool = 'view'
 let lpActiveColor = '#e2e8f0'
 let lpActiveSize = 'M'
 let lpActiveStamp = null
+let lpOthersOpen = false
 
 function renderLayoutPreview() {
     renderLpLeftStrip()
@@ -1194,6 +1247,57 @@ function renderLpLeftStrip() {
     const strip = document.getElementById('lp-left-strip')
     if (!strip) return
     strip.innerHTML = ''
+
+    // Others toggle button (top of strip)
+    const othersBtn = document.createElement('div')
+    othersBtn.className = 'lp-strip-tool lp-others-btn' + (lpOthersOpen ? ' open' : '')
+    othersBtn.title = 'Others'
+    othersBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="2" width="18" height="18"><circle cx="5" cy="12" r="1.5" fill="#e2e8f0"/><circle cx="12" cy="12" r="1.5" fill="#e2e8f0"/><circle cx="19" cy="12" r="1.5" fill="#e2e8f0"/></svg>`
+    othersBtn.addEventListener('click', () => {
+        lpOthersOpen = !lpOthersOpen
+        renderLpLeftStrip()
+    })
+    strip.appendChild(othersBtn)
+
+    // Others flyout panel
+    const flyout = document.createElement('div')
+    flyout.className = 'lp-others-flyout' + (lpOthersOpen ? ' open' : '')
+
+    // Extra colors
+    const extraColors = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#a855f7','#ec4899','#ffffff','#94a3b8','#1e293b']
+    const colorLabel = document.createElement('div')
+    colorLabel.className = 'lp-others-section-label'
+    colorLabel.textContent = 'Color'
+    flyout.appendChild(colorLabel)
+    extraColors.forEach(hex => {
+        const c = document.createElement('div')
+        c.className = 'lp-others-color'
+        c.style.background = hex
+        c.title = hex
+        flyout.appendChild(c)
+    })
+
+    // Line styles
+    const styleLabel = document.createElement('div')
+    styleLabel.className = 'lp-others-section-label'
+    styleLabel.textContent = 'Style'
+    flyout.appendChild(styleLabel)
+    const styles = [
+        { label: '─', title: 'Solid' },
+        { label: '╌', title: 'Dashed' },
+        { label: '┄', title: 'Dotted' },
+    ]
+    styles.forEach(s => {
+        const b = document.createElement('div')
+        b.className = 'lp-others-style'
+        b.title = s.title
+        b.style.fontSize = '14px'
+        b.style.color = '#e2e8f0'
+        b.textContent = s.label
+        flyout.appendChild(b)
+    })
+
+    strip.appendChild(flyout)
 
     // Score name (rotated, book-spine style)
     const nameEl = document.createElement('div')
