@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="shared-styles.css">
     <script src="theme-manager.js"></script>
     <style>
-        /* ── ScoreFlow design tokens ── */
+        /* ── ScoreFlow design tokens (mirrors [data-theme="dark"] in variables.css) ── */
         :root {
             --sf-bg:       #111827;
             --sf-card:     #1f2937;
@@ -24,7 +24,12 @@
             --sf-warn:     #f59e0b;
             --sf-danger:   #ef4444;
         }
-        body { background: var(--sf-bg); color: var(--sf-text); }
+        /* Hard-reset shared-styles.css Dev Hub colors */
+        html, body {
+            background: var(--sf-bg) !important;
+            background-image: none !important;
+            color: var(--sf-text) !important;
+        }
 
         nav { margin-bottom: 32px; }
         nav a { text-decoration:none; color:var(--sf-primary); font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:6px; opacity:0.8; }
@@ -233,7 +238,7 @@
         .lp-wrapper { display: flex; flex-direction: column; gap: 12px; align-items: center; }
         .lp-scene-frame {
             /* iPad-like portrait bezel */
-            background: #1a1a1e;
+            background: #0d1117;
             border-radius: 36px;
             padding: 16px 10px;
             box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(0,0,0,0.7);
@@ -294,7 +299,7 @@
         .lp-strip-tool svg { width:18px; height:18px; }
         .lp-strip-tool .lp-tooltip {
             position: absolute; left: 46px; top: 50%; transform: translateY(-50%);
-            background: #1e293b; border: 1px solid var(--border);
+            background: var(--sf-card2); border: 1px solid var(--sf-border);
             color: #fff; font-size: 10px; font-weight:600;
             padding: 3px 8px; border-radius: 5px; white-space:nowrap;
             pointer-events:none; opacity:0; transition:opacity .15s; z-index:99;
@@ -479,7 +484,7 @@
 
         /* Sidebar */
         .sidebar {
-            background: #0b1220;
+            background: var(--sf-card);
             border-right: 1px solid var(--sf-border);
             display: flex;
             flex-direction: column;
