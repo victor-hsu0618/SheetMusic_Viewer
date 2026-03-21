@@ -64,34 +64,26 @@ export class GistShareManager {
             createdAt: Date.now(),
         }
 
-        // 3. Upload — prefer Google Drive if connected, else fall back to GitHub Gist
+        // 3. Upload via GitHub Gist
         const btn = document.getElementById('btn-gist-share')
         if (btn) btn.disabled = true
 
         try {
-            const drive = this.app.driveSyncManager
-            const hasDrive = drive?.isEnabled && drive?.accessToken
             let url
 
-            if (hasDrive) {
-                this.app.showMessage('正在上傳到 Google Drive...', 'system')
-                const fileId = await this._uploadToDrive(shareData)
-                url = `${location.origin}${location.pathname}?share=gdrive_${fileId}`
-            } else {
-                console.log('[GistShare] ensureAuth — token exists:', !!this._token)
-                this.app.showMessage('正在連接 GitHub...', 'system')
-                try {
-                    await this._ensureAuth()
-                } catch (e) {
-                    console.error('[GistShare] _ensureAuth failed:', e)
-                    if (e.message === 'cancelled') return
-                    this.app.showMessage('GitHub 授權失敗：' + e.message, 'error')
-                    return
-                }
-                this.app.showMessage('正在上傳分享連結...', 'system')
-                const gistId = await this._uploadGist(shareData)
-                url = `${location.origin}${location.pathname}?share=${gistId}`
+            console.log('[GistShare] ensureAuth — token exists:', !!this._token)
+            this.app.showMessage('正在連接 GitHub...', 'system')
+            try {
+                await this._ensureAuth()
+            } catch (e) {
+                console.error('[GistShare] _ensureAuth failed:', e)
+                if (e.message === 'cancelled') return
+                this.app.showMessage('GitHub 授權失敗：' + e.message, 'error')
+                return
             }
+            this.app.showMessage('正在上傳分享連結...', 'system')
+            const gistId = await this._uploadGist(shareData)
+            url = `${location.origin}${location.pathname}?share=${gistId}`
 
             // Copy to clipboard
             let copied = false
@@ -128,11 +120,7 @@ export class GistShareManager {
         this.app.showMessage('正在載入分享連結...', 'system')
         let shareData
         try {
-            if (gistId.startsWith('gdrive_')) {
-                shareData = await this._downloadFromDrive(gistId.slice(7))
-            } else {
-                shareData = await this._downloadGist(gistId)
-            }
+            shareData = await this._downloadGist(gistId)
         } catch (e) {
             this.app.showMessage('無法取得分享資料：' + (e.message || '連結可能已失效'), 'error')
             return
@@ -312,45 +300,6 @@ export class GistShareManager {
         }
         const gist = await res.json()
         return gist.id
-    }
-
-    // ── Google Drive Share ─────────────────────────────────────────────────
-    async _uploadToDrive(shareData) {
-        const drive = this.app.driveSyncManager
-        if (!drive.folderId) await drive.file.findOrCreateSyncFolder()
-
-        const metadata = { name: `scoreflow_share_${Date.now()}.json`, parents: [drive.folderId] }
-        const form = new FormData()
-        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }))
-        form.append('file', new Blob([JSON.stringify(shareData)], { type: 'application/json' }))
-
-        const res = await drive.gdriveFetch(
-            'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
-            { method: 'POST', body: form }
-        )
-        if (!res.ok) throw new Error(`Drive 上傳失敗 (${res.status})`)
-        const { id: fileId } = await res.json()
-
-        // Make publicly readable so any Drive-authenticated user can download it
-        const permRes = await drive.gdriveFetch(
-            `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
-            { method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ type: 'anyone', role: 'reader' }) }
-        )
-        if (!permRes.ok) throw new Error(`Drive 權限設定失敗 (${permRes.status})`)
-        return fileId
-    }
-
-    async _downloadFromDrive(fileId) {
-        const drive = this.app.driveSyncManager
-        if (!drive?.isEnabled || !drive?.accessToken) {
-            throw new Error('此分享連結需要登入 Google Drive 才能接收。請先在設定中開啟 Drive 同步。')
-        }
-        const res = await drive.gdriveFetch(
-            `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`
-        )
-        if (!res.ok) throw new Error(`Drive 下載失敗 (${res.status})`)
-        return await res.json()
     }
 
     async _downloadGist(gistId) {

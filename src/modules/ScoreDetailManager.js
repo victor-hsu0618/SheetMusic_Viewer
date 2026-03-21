@@ -454,29 +454,8 @@ export class ScoreDetailManager {
     }
 
     async handleForcePushDrive() {
-        const fp = this.currentFp || this.app.pdfFingerprint
-        if (!fp) return
-        
-        if (!this.app.driveSyncManager?.accessToken) {
-            return this.app.showMessage('Please sign in to Google Drive (Cloud) to sync.', 'error')
-        }
-
-        const confirmed = await this.app.showDialog({
-            title: 'Force Sync to Drive?',
-            message: 'This will push your local markings and title to Google Drive immediately. Continue?',
-            type: 'confirm',
-            icon: '☁️'
-        })
-        if (!confirmed) return
-
-        this.app.showMessage('Syncing to Google Drive...', 'system')
-        try {
-            await this.app.driveSyncManager.pushScore(fp, true)
-            this.app.showMessage('Sync to Drive successful!', 'success')
-        } catch (err) {
-            console.error('[ScoreDetail] Drive sync failed:', err)
-            this.app.showMessage('Sync to Drive failed.', 'error')
-        }
+        // Google Drive integration has been removed.
+        this.app.showMessage('Google Drive sync is no longer available.', 'info')
     }
 
     async handleForcePullSupabase() {

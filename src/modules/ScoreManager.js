@@ -162,37 +162,15 @@ export class ScoreManager {
         const count = this.selectedFingerprints.size;
         if (count === 0) return;
 
-        const sync = this.app.driveSyncManager;
-        const isDriveConnected = sync?.isEnabled && sync?.accessToken;
         let deleteFromCloud = false;
 
-        if (isDriveConnected) {
-            const actions = [
-                { id: 'local', label: 'Delete Locally Only', class: 'btn-outline-sm' },
-                { id: 'everywhere', label: 'Delete Everywhere', class: 'btn-outline-danger' },
-                { id: 'cancel', label: 'Cancel', class: 'btn-ghost' }
-            ];
-
-            const choice = await this.app.showDialog({
-                title: 'Batch Delete',
-                message: `You are about to delete ${count} score${count !== 1 ? 's' : ''}. How would you like to proceed?`,
-                type: 'actions',
-                icon: '🗑️',
-                actions: actions
-            });
-
-            if (!choice || choice === 'cancel') return;
-            deleteFromCloud = (choice === 'everywhere');
-        } else {
-            // Fallback for non-cloud users
-            const confirmed = await this.app.showDialog({
-                title: 'Batch Delete',
-                message: `Delete ${count} score${count !== 1 ? 's' : ''} from this device?`,
-                type: 'confirm',
-                icon: '🗑️'
-            });
-            if (!confirmed) return;
-        }
+        const confirmed = await this.app.showDialog({
+            title: 'Batch Delete',
+            message: `Delete ${count} score${count !== 1 ? 's' : ''} from this device?`,
+            type: 'confirm',
+            icon: '🗑️'
+        });
+        if (!confirmed) return;
 
         this.app.showMessage(`Deleting ${count} score${count !== 1 ? 's' : ''}...`, 'system');
         
@@ -395,15 +373,6 @@ export class ScoreManager {
     async deleteScore(fp, deleteFromCloud = false, skipAutoLoad = false) {
         // 1. Cloud Deletion (if requested and available)
         if (deleteFromCloud) {
-            // Google Drive
-            if (this.app.driveSyncManager) {
-                try {
-                    await this.app.driveSyncManager.deleteSyncFiles(fp, true);
-                } catch (err) {
-                    console.error(`[ScoreManager] Drive deletion failed for ${fp}:`, err);
-                }
-            }
-            
             // Supabase
             if (this.app.supabaseManager) {
                 try {
@@ -540,23 +509,12 @@ export class ScoreManager {
                 }
             }
 
-            // Priority 2: Google Drive Legacy
-            if (!buffer && score.storageMode === 'cloud') {
-                const drive = this.app.driveSyncManager;
-                if (drive?.isEnabled && drive?.accessToken) {
-                    try {
-                        this.app.showMessage('正在從 Google Drive 下載...', 'info');
-                        buffer = await drive.downloadPDF(fp);
-                    } catch (err) { console.error('Drive download failed:', err); }
-                }
-            }
-
             if (buffer) {
                 await db.set(`score_buf_${fp}`, buffer);
                 score.storageMode = 'cached';
                 await this.helper.saveRegistry(this.registry);
             } else {
-                this.app.showMessage('無法獲取樂譜檔案，請連接網路或 Google Drive', 'error');
+                this.app.showMessage('無法獲取樂譜檔案，請連接網路', 'error');
                 this.toggleOverlay(true);
                 return;
             }

@@ -41,7 +41,6 @@ import { InputManager } from './modules/InputManager.js'
 import { PlaybackManager } from './modules/PlaybackManager.js'
 import { JumpManager } from './modules/JumpManager.js'
 import { ViewPanelManager } from './modules/ViewPanelManager.js'
-import { DriveSyncManager } from './modules/DriveSyncManager.js'
 import { SetlistManager } from './modules/SetlistManager.js'
 import { UIManager } from './modules/UIManager.js'
 import { InitializationManager } from './modules/InitializationManager.js'
@@ -131,8 +130,7 @@ class ScoreFlow {
     this.collaborationManager = new CollaborationManager(this)
     this.playbackManager = new PlaybackManager(this)
     this.inputManager = new InputManager(this)
-    this.driveSyncManager = new DriveSyncManager(this)
-    this.setlistManager = new SetlistManager(this)
+this.setlistManager = new SetlistManager(this)
     this.uiManager = new UIManager(this)
     this.pdfExportManager = new PdfExportManager(this)
     this.initManager = new InitializationManager(this)
@@ -159,8 +157,7 @@ class ScoreFlow {
     this.inputManager.init()
     this.profileManager.init()
     this.scoreDetailManager.init()
-    this.driveSyncManager.init()
-    this.playbackManager.init()
+this.playbackManager.init()
     this.scoreManager.init()
     this.gistShareManager.init()
     this.settingsPanelManager.init()
@@ -333,7 +330,6 @@ class ScoreFlow {
   }
 
   onAnnotationChanged() {
-    if (this.driveSyncManager?.isEnabled) this.driveSyncManager.pushDebounce()
   }
 
   toggleFullscreen() {
@@ -401,10 +397,7 @@ class ScoreFlow {
     })
     
     if (confirmed) {
-      // 1. Stop all active background processes
-      this.driveSyncManager?.stopAutoSync()
-      
-      // 2. Clear all storage types
+      // 1. Clear all storage types
       localStorage.clear()
       sessionStorage.clear()
       

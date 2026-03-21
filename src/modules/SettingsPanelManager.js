@@ -222,10 +222,6 @@ export class SettingsPanelManager {
         if (this.app.profileManager) {
             this.app.profileManager.render()
         }
-        // Refresh Drive Status
-        if (this.app.driveSyncManager) {
-            this.app.driveSyncManager.refreshUI()
-        }
         // Refresh Supabase Status
         this.updateSupabaseUI()
     }
@@ -397,16 +393,6 @@ export class SettingsPanelManager {
         const reloadAppBtn = document.getElementById('btn-reload-app')
         if (reloadAppBtn) {
             reloadAppBtn.addEventListener('click', () => location.reload())
-        }
-
-        // Refresh Cloud Stats button
-        const refreshStatsBtn = document.getElementById('btn-refresh-cloud-stats')
-        if (refreshStatsBtn) {
-            refreshStatsBtn.addEventListener('click', () => {
-                if (this.app.driveSyncManager) {
-                    this.app.driveSyncManager.refreshCloudStats()
-                }
-            })
         }
 
         // --- Supabase Auth Binding ---

@@ -214,17 +214,6 @@ export class InitializationManager {
         document.getElementById('view-zoom-in')?.addEventListener('click', () => app.changeZoom(0.1))
         document.getElementById('view-zoom-out')?.addEventListener('click', () => app.changeZoom(-0.1))
 
-        document.getElementById('btn-drive-signin')?.addEventListener('click', (e) => { e.preventDefault(); app.driveSyncManager.signIn() })
-        document.getElementById('btn-drive-signout')?.addEventListener('click', (e) => { e.preventDefault(); app.driveSyncManager.signOut() })
-        document.getElementById('btn-drive-pause')?.addEventListener('click', (e) => { e.preventDefault(); app.togglePauseSync() })
-
-        document.getElementById('btn-drive-force-push')?.addEventListener('click', () => app.driveSyncManager.forcePushAll())
         document.getElementById('btn-gist-share')?.addEventListener('click', () => app.gistShareManager?.share())
-
-        // Activity tracking: record user presence for Drive sync idle detection
-        const recordActivity = () => app.driveSyncManager?.recordActivity()
-        document.addEventListener('pointerdown', recordActivity, { passive: true, capture: true })
-        document.addEventListener('keydown', recordActivity, { passive: true, capture: true })
-        document.addEventListener('wheel', recordActivity, { passive: true, capture: true })
     }
 }

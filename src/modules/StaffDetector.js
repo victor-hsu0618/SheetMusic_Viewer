@@ -64,11 +64,6 @@ export class StaffDetector {
         .forEach(s => this.app.supabaseManager.pushAnnotation(s, fp))
     }
 
-    // Explicitly trigger authoritative cloud push if available
-    if (this.app.driveSyncManager) {
-      console.log('[StaffDetector] Triggering authoritative cloud push...')
-      this.app.driveSyncManager.push(0, true)
-    }
   }
 
   /**

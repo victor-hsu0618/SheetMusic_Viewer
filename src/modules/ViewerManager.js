@@ -1016,12 +1016,6 @@ export class ViewerManager {
             })
 
         this.checkInitialView()
-        
-        // --- ADDED: Immediately trigger sync when entering workspace ---
-        if (this.app.driveSyncManager && this.app.driveSyncManager.isEnabled) {
-            console.log('[ViewerManager] Triggering DriveSync on PDF load');
-            this.app.driveSyncManager.sync();
-        }
         this.updateFloatingTitle();
     }
 }

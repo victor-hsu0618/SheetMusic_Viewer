@@ -91,11 +91,6 @@ export function applyAppProxies(app) {
     app.toggleSettings = (f) => app.settingsPanelManager.toggle(f);
     app.toggleLibrary = (f) => app.scoreManager.toggleOverlay(f);
     app.toggleScoreDetail = (f) => app.scoreDetailManager?.showPanel(f);
-    app.togglePauseSync = () => app.driveSyncManager?.togglePauseSync();
-    app.purgeAllCloudData = () => {
-        console.log('[AppProxy] Calling purgeAllCloudData');
-        return app.driveSyncManager?.purgeAllCloudData();
-    };
     app.toggleDocBar = () => app.docBarManager?.toggleDocBar();
     app.toggleShortcuts = (f) => {
         if (!app.shortcutsModal) return;

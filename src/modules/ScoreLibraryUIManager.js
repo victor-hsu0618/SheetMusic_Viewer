@@ -149,12 +149,6 @@ export class ScoreLibraryUIManager {
                     else if (currentMode === 'cloud') newMode = 'pinned';
 
                     await this.manager.setStorageMode(score.fingerprint, newMode);
-                    
-                    // If pinning from cloud, trigger download
-                    if (newMode === 'pinned' && currentMode === 'cloud') {
-                        this.app.driveSyncManager?.downloadAndCacheScore(score.fingerprint);
-                    }
-                    
                     this.render(); // Re-render this list
                 };
             }

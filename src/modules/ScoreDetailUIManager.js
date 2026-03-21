@@ -69,12 +69,8 @@ export class ScoreDetailUIManager {
             
             const isChecked = e.target.checked
             const newMode = isChecked ? 'pinned' : 'cached'
-            
+
             await this.app.scoreManager?.setStorageMode(fp, newMode)
-            if (newMode === 'pinned') {
-                const hasLocal = await import('../db.js').then(db => db.get(`score_buf_${fp}`))
-                if (!hasLocal) this.app.driveSyncManager?.downloadAndCacheScore(fp)
-            }
             this.app.scoreManager?.render()
         })
 

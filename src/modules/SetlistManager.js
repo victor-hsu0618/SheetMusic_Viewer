@@ -144,10 +144,6 @@ export class SetlistManager {
 
         // Auto-pin: ensure the score is always available offline
         await this.app.scoreManager?.setStorageMode(fingerprint, 'pinned')
-        const hasLocal = await import('../db.js').then(db => db.get(`score_buf_${fingerprint}`))
-        if (!hasLocal) {
-            this.app.driveSyncManager?.downloadAndCacheScore(fingerprint)
-        }
 
         return true
     }

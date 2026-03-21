@@ -636,84 +636,6 @@
           </div>
 
           <div class="tab-divider"></div>
-
-          <!-- Drive Sync Section -->
-          <div class="tab-section-label">Legacy Sync (Google Drive)</div>
-          <div class="setting-item mb-10">
-            <div class="flex-row-center flex-space-between">
-              <span class="text-mini">雲端連線狀態</span>
-              <span id="drive-sync-status-badge" class="badge">檢查中...</span>
-            </div>
-          </div>
-
-          <div class="flex-column gap-5 mt-10">
-            <button id="btn-drive-signin" class="btn btn-primary btn-full">連接 Google Drive</button>
-            <button id="btn-drive-pause" class="btn btn-outline-sm btn-full hidden">暫停自動同步</button>
-            <button id="btn-drive-signout" class="btn btn-ghost-mini btn-full hidden">完全斷開連線 (Sign Out)</button>
-          </div>
-
-          <div id="drive-sync-info" class="mt-15 hidden">
-            <div class="flex-row-center flex-space-between mb-5">
-              <span class="text-mini opacity-70">上次同步: <span id="drive-last-sync-time">---</span></span>
-            </div>
-            <div id="drive-sync-log" class="sync-log mt-10">
-              <!-- Logs will be prepended here by JS -->
-            </div>
-
-              <button id="btn-drive-force-push" class="btn btn-outline-sm btn-full"
-                title="Re-upload all local scores to Drive">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                  style="margin-right:4px;">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                Push All to Cloud
-              </button>
-            </div>
-
-          <!-- Cloud Data Statistics Section -->
-          <div class="tab-section-label">Cloud Data Statistics</div>
-          <div id="cloud-stats-container" class="stats-grid-compact mt-10">
-            <div class="stats-item-mini">
-              <div class="stats-label-mini">劃記備份 (JSON)</div>
-              <div id="cloud-stats-total-annotations" class="stats-value-mini">-</div>
-            </div>
-            <div class="stats-item-mini">
-              <div class="stats-label-mini">樂譜實體 (PDF)</div>
-              <div id="cloud-stats-total-pdfs" class="stats-value-mini">-</div>
-            </div>
-            <div class="stats-item-mini">
-              <div class="stats-label-mini">本地待上傳 (JSON)</div>
-              <div class="stats-value-wrapper">
-                <span id="local-stats-pending-json" class="stats-value-mini">-</span>
-                <span id="local-stats-json-progress" class="upload-progress-tag hidden">上傳中...</span>
-              </div>
-            </div>
-            <div class="stats-item-mini">
-              <div class="stats-label-mini">本地待上傳 (PDF)</div>
-              <div class="stats-value-wrapper">
-                <span id="local-stats-pending-pdf" class="stats-value-mini">-</span>
-                <span id="local-stats-pdf-progress" class="upload-progress-tag hidden">0%</span>
-              </div>
-              <div id="local-stats-pdf-filename" class="stats-filename-display hidden"></div>
-            </div>
-            <div class="stats-item-mini">
-              <div class="stats-label-mini" style="grid-column: span 2;">雲端檔案庫狀態</div>
-              <div id="cloud-stats-folder-status" class="stats-value-mini" style="grid-column: span 2; color: #10b981;">
-                未連結</div>
-            </div>
-          </div>
-          <button id="btn-refresh-cloud-stats" class="btn btn-outline btn-full btn-smaller mt-10">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            重新整理數據
-          </button>
-
-
-
-          <div class="tab-divider"></div>
           <div class="tab-section-label">Maintenance</div>
           <button id="btn-reload-app" class="btn btn-outline btn-full btn-smaller mb-10">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
@@ -1413,7 +1335,6 @@
         <div class="tab-divider"></div>
         <div class="tab-section-label">Cloud Synchronization</div>
         <div class="flex-row-center gap-10 mb-10">
-          <button id="btn-force-push-drive" class="btn btn-outline-sm w-full" title="Sync current score to Google Drive now">Sync to Drive</button>
           <button id="btn-force-push-supabase" class="btn btn-outline-sm w-full" title="Sync current score to Supabase now">Sync to Supabase</button>
         </div>
         <div class="flex-row-center gap-10 mb-15">
