@@ -456,34 +456,168 @@
             color:var(--sf-muted); font-size:10px; font-family:'JetBrains Mono',monospace;
             padding:3px 8px; border-radius:6px; z-index:30; pointer-events:none;
         }
+
+        /* ── App Shell: two-column layout ── */
+        html, body { height: 100%; overflow: hidden; }
+        body { background: var(--sf-bg); }
+        .container { max-width: none !important; padding: 0 !important; margin: 0 !important; }
+
+        #app-shell {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: #0b1220;
+            border-right: 1px solid var(--sf-border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 12px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            gap: 0;
+        }
+        .sidebar-nav { margin-bottom: 24px; }
+        .sidebar-nav a {
+            text-decoration:none; color:var(--sf-primary); font-weight:700;
+            font-size:13px; display:inline-flex; align-items:center; gap:6px; opacity:0.8;
+        }
+        .sidebar-identity {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--sf-border);
+        }
+        .sidebar-icon { font-size: 26px; margin-bottom: 6px; }
+        .sidebar-title-text { font-size: 0.95rem; font-weight: 800; letter-spacing: -0.02em; }
+        .sidebar-sub { font-size: 11px; color: var(--sf-muted); margin-top: 3px; line-height:1.4; }
+
+        /* Vertical tab nav */
+        .tab-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+            flex: 1;
+        }
+        .tab-btn {
+            padding: 9px 12px;
+            font-size: 13px; font-weight: 600;
+            border: none; background: none;
+            color: var(--sf-muted); cursor: pointer;
+            border-radius: 8px;
+            text-align: left;
+            border-bottom: none !important;
+            margin-bottom: 0;
+            font-family: inherit;
+            transition: color .2s, background .2s;
+            width: 100%;
+        }
+        .tab-btn.active {
+            color: var(--sf-text);
+            background: rgba(99,102,241,0.18);
+            border-color: transparent;
+        }
+        .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.05); color: var(--sf-text); }
+
+        /* Sidebar footer: save/clear */
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid var(--sf-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .sidebar-footer .save-status { font-size:11px; color:var(--sf-success); text-align:center; }
+
+        /* Main content area */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .tab-pane { display: none; flex: 1; overflow-y: auto; padding: 32px; }
+        .tab-pane.active { display: flex; flex-direction: column; }
+
+        /* Layout tab: full height, no padding, centered */
+        #tab-layout { padding: 0; }
+        #tab-layout.active {
+            overflow: hidden;
+            align-items: center;
+            justify-content: center;
+            background: var(--sf-bg);
+        }
+        .lp-wrapper {
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .lp-hint { display: none; } /* hint moved to sidebar-sub */
+        .lp-scene-frame {
+            height: calc(100vh - 40px);
+            width: auto;
+            aspect-ratio: 3 / 4;
+        }
+        .lp-scene {
+            aspect-ratio: unset;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Smaller stamp cells in layout preview to show realistic density */
+        .lp-stamp-grid {
+            grid-template-rows: 28px 28px !important;
+            grid-auto-columns: 28px !important;
+        }
+        .lp-cell {
+            width: 28px !important; height: 28px !important;
+            border-radius: 5px !important;
+        }
+        .lp-cell svg { width: 14px !important; height: 14px !important; }
+        .lp-cell .lp-cell-text { font-size: 9px !important; }
+        .lp-stamp-bar { gap: 3px !important; padding: 4px 6px !important; }
+        .lp-strip-tool { width: 34px !important; height: 34px !important; }
+        .lp-strip-score-name { font-size: 10px !important; }
     </style>
 </head>
 <body>
 <div class="container">
-    <nav>
-        <a href="index.html">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg>
-            Dev Hub
-        </a>
-    </nav>
+<div id="app-shell">
 
-    <div class="page-header" style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <div>
-            <h1>🗂 Toolset Inspector</h1>
-            <p>配置 My Panel 的工具組合，即時預覽面板佈局。</p>
+    <!-- ── Left Sidebar ── -->
+    <aside class="sidebar">
+        <div class="sidebar-nav">
+            <a href="index.html">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg>
+                Dev Hub
+            </a>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div class="sidebar-identity">
+            <div class="sidebar-icon">🗂</div>
+            <div class="sidebar-title-text">Toolset Inspector</div>
+            <div class="sidebar-sub">配置 My Panel 工具組合，即時預覽面板佈局。</div>
+        </div>
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="mypanel">My Panel 配置</button>
+            <button class="tab-btn" data-tab="layout">Layout Preview</button>
+            <button class="tab-btn" data-tab="state">分類狀態</button>
+        </div>
+        <div class="sidebar-footer">
             <button class="btn btn-primary" onclick="saveMyPanel()">💾 儲存</button>
             <button class="btn btn-ghost" onclick="clearMyPanel()">✕ 清除</button>
-            <span class="save-status" id="save-status-header"></span>
+            <span class="save-status" id="save-status"></span>
         </div>
-    </div>
+    </aside>
 
-    <div class="tab-nav">
-        <button class="tab-btn active" data-tab="mypanel">My Panel 配置</button>
-        <button class="tab-btn" data-tab="layout">Layout Preview</button>
-        <button class="tab-btn" data-tab="state">分類狀態</button>
-    </div>
+    <!-- ── Main Content ── -->
+    <main class="main-content">
 
     <!-- ══ TAB: My Panel ══ -->
     <div class="tab-pane active" id="tab-mypanel">
@@ -517,12 +651,6 @@
             <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
                 Cell 44px · 拖曳排序 · 超出寬度可橫向捲動
             </div>
-        </div>
-
-        <div class="action-row">
-            <button class="btn btn-primary" onclick="saveMyPanel()">💾 儲存設定</button>
-            <button class="btn btn-ghost" onclick="clearMyPanel()">✕ 清除全部</button>
-            <span class="save-status" id="save-status"></span>
         </div>
 
         <!-- Stamp selector -->
@@ -579,7 +707,10 @@
         <div class="section-label">所有分類 (TOOLSETS)</div>
         <div class="categories-grid" id="categories-grid"></div>
     </div>
-</div>
+
+    </main>
+</div><!-- app-shell -->
+</div><!-- container -->
 
 <script>
 // ── Mirrored from src/constants.js — keep in sync ────────────────────────────
@@ -698,10 +829,8 @@ function loadMyPanel() {
 
 function saveMyPanel() {
     localStorage.setItem(LS_KEY, JSON.stringify(myPanel))
-    ;['save-status', 'save-status-header'].forEach(id => {
-        const el = document.getElementById(id)
-        if (el) { el.textContent = '✓ 已儲存'; setTimeout(() => el.textContent = '', 2000) }
-    })
+    const el = document.getElementById('save-status')
+    if (el) { el.textContent = '✓ 已儲存'; setTimeout(() => el.textContent = '', 2000) }
 }
 
 function clearMyPanel() {
@@ -1109,18 +1238,10 @@ function renderLpStampBar() {
 
     const stampItems = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
 
-    if (stampItems.length === 0) {
-        const hint = document.createElement('span')
-        hint.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);padding:0 8px;white-space:nowrap;align-self:center'
-        hint.textContent = '← 先在「My Panel 配置」選 stamp'
-        bar.appendChild(hint)
-        return
-    }
-
     // Divider after handle
     const div = document.createElement('div')
     div.className = 'lp-bar-divider'
-    div.style.height = '92px'
+    div.style.height = '60px'
     bar.appendChild(div)
 
     // 2-row grid container
@@ -1128,7 +1249,19 @@ function renderLpStampBar() {
     grid.className = 'lp-stamp-grid'
     bar.appendChild(grid)
 
-    stampItems.forEach(item => {
+    // If no stamps configured, show ghost placeholders to demonstrate density
+    const displayItems = stampItems.length > 0 ? stampItems
+        : Array.from({ length: 32 }, (_, i) => ({ id: `_ph${i}`, category: '_ghost' }))
+
+    displayItems.forEach(item => {
+        const isGhost = item.category === '_ghost'
+        if (isGhost) {
+            const cell = document.createElement('div')
+            cell.className = 'lp-cell'
+            cell.style.cssText = 'opacity:0.2;cursor:default'
+            grid.appendChild(cell)
+            return
+        }
         const tool = findTool(item.id, item.category)
         const group = TOOLSETS.find(g => g.name === item.category)
         const cell = document.createElement('div')
