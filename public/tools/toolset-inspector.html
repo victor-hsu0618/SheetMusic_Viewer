@@ -242,6 +242,179 @@
         .btn-ghost { background:rgba(255,255,255,0.07); color:var(--text); border:1px solid var(--border); }
         .btn:hover { opacity:.85; }
         .save-status { font-size:11px; color:var(--success); margin-left:auto; }
+
+        /* ── Layout Preview tab ── */
+        .lp-hint { font-size:11px; color:var(--text-muted); margin-bottom:12px; }
+        .lp-hint b { color:var(--text); }
+
+        .lp-scene {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            height: 560px;
+            display: flex;
+            user-select: none;
+        }
+
+        /* Left Edit tools strip */
+        .lp-left-strip {
+            width: 44px;
+            flex-shrink: 0;
+            background: #111827;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            gap: 4px;
+            z-index: 10;
+        }
+        .lp-strip-tool {
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex; align-items:center; justify-content:center;
+            cursor: pointer; flex-shrink:0;
+            transition: background .15s, border-color .15s;
+            position: relative;
+        }
+        .lp-strip-tool:hover { background: rgba(255,255,255,0.12); }
+        .lp-strip-tool.active-tool {
+            background: rgba(99,102,241,0.25);
+            border-color: rgba(99,102,241,0.6);
+        }
+        .lp-strip-tool svg { width:18px; height:18px; }
+        .lp-strip-tool .lp-tooltip {
+            position: absolute; left: 46px; top: 50%; transform: translateY(-50%);
+            background: #1e293b; border: 1px solid var(--border);
+            color: #fff; font-size: 10px; font-weight:600;
+            padding: 3px 8px; border-radius: 5px; white-space:nowrap;
+            pointer-events:none; opacity:0; transition:opacity .15s; z-index:99;
+        }
+        .lp-strip-tool:hover .lp-tooltip { opacity:1; }
+        .lp-strip-divider { width:24px; height:1px; background:rgba(255,255,255,0.08); margin:2px 0; flex-shrink:0; }
+
+        /* Color / Size at bottom of strip */
+        .lp-strip-bottom { margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:5px; padding-bottom:4px; }
+        .lp-color-dot {
+            width: 18px; height: 18px; border-radius: 50%; cursor:pointer;
+            border: 2px solid transparent; transition: border-color .15s;
+            flex-shrink:0;
+        }
+        .lp-color-dot.active-color { border-color: #fff; }
+        .lp-size-row { display:flex; flex-direction:column; gap:3px; align-items:center; }
+        .lp-size-dot {
+            border-radius:50%; background:rgba(255,255,255,0.4); cursor:pointer;
+            transition: background .15s; flex-shrink:0;
+        }
+        .lp-size-dot.active-size { background:#fff; }
+
+        /* Score area */
+        .lp-score-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            /* Staff line pattern */
+            background-image: repeating-linear-gradient(
+                0deg,
+                transparent 0px, transparent 8px,
+                rgba(255,255,255,0.06) 8px, rgba(255,255,255,0.06) 9px,
+                transparent 9px, transparent 11px,
+                rgba(255,255,255,0.06) 11px, rgba(255,255,255,0.06) 12px,
+                transparent 12px, transparent 14px,
+                rgba(255,255,255,0.06) 14px, rgba(255,255,255,0.06) 15px,
+                transparent 15px, transparent 17px,
+                rgba(255,255,255,0.06) 17px, rgba(255,255,255,0.06) 18px,
+                transparent 18px, transparent 20px,
+                rgba(255,255,255,0.06) 20px, rgba(255,255,255,0.06) 21px,
+                transparent 21px, transparent 50px
+            );
+        }
+
+        /* Floating stamp bar */
+        .lp-stamp-bar {
+            position: absolute;
+            left: 8px; right: 8px;
+            background: rgba(17, 24, 39, 0.92);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.15) transparent;
+            cursor: grab;
+            z-index: 20;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+        }
+        .lp-stamp-bar::-webkit-scrollbar { height:3px; }
+        .lp-stamp-bar::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
+        .lp-stamp-bar.is-dragging { cursor:grabbing; }
+
+        /* Drag handle on left of bar */
+        .lp-bar-handle {
+            display:flex; flex-direction:column; gap:3px;
+            padding: 0 4px; flex-shrink:0; cursor:grab; opacity:0.4;
+        }
+        .lp-bar-handle span { display:block; width:14px; height:2px; background:#fff; border-radius:1px; }
+
+        .lp-bar-divider { width:1px; height:36px; background:rgba(255,255,255,0.12); flex-shrink:0; margin:0 2px; }
+
+        /* Cells in stamp bar */
+        .lp-cell {
+            width: 44px; height: 44px; flex-shrink:0;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer; transition: background .15s, border-color .15s;
+            position:relative;
+        }
+        .lp-cell:hover { background:rgba(255,255,255,0.14); }
+        .lp-cell.active-stamp { background:rgba(99,102,241,0.3); border-color:rgba(99,102,241,0.7); }
+        .lp-cell.edit-cell { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.2); }
+        .lp-cell svg { width:20px; height:20px; pointer-events:none; }
+        .lp-cell .lp-cell-text { font-size:12px; font-weight:700; color:#fff; pointer-events:none; }
+        .lp-cell .lp-cell-tip {
+            position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
+            background:#1e293b; border:1px solid var(--border); color:#fff;
+            font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;
+            white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .15s; z-index:99;
+        }
+        .lp-cell:hover .lp-cell-tip { opacity:1; }
+
+        /* Right: scrollbar + doc bar */
+        .lp-right {
+            width: 44px; flex-shrink:0;
+            background: #0d1117;
+            border-left: 1px solid rgba(255,255,255,0.06);
+            display:flex; flex-direction:column; align-items:center;
+            padding: 6px 0; gap:4px;
+        }
+        .lp-docbar-btn {
+            width:32px; height:32px; background:rgba(255,255,255,0.05);
+            border:1px solid rgba(255,255,255,0.08); border-radius:7px;
+            display:flex; align-items:center; justify-content:center; flex-shrink:0;
+        }
+        .lp-scrollbar-thumb {
+            width:4px; height:60px; background:rgba(255,255,255,0.2);
+            border-radius:2px; margin-top:auto; margin-bottom:auto;
+        }
+
+        .lp-bar-y-info {
+            position:absolute; right:8px; top:8px;
+            background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.1);
+            color:var(--text-muted); font-size:10px; font-family:'JetBrains Mono',monospace;
+            padding:3px 8px; border-radius:5px; z-index:30; pointer-events:none;
+        }
     </style>
 </head>
 <body>
@@ -260,6 +433,7 @@
 
     <div class="tab-nav">
         <button class="tab-btn active" data-tab="mypanel">My Panel 配置</button>
+        <button class="tab-btn" data-tab="layout">Layout Preview</button>
         <button class="tab-btn" data-tab="state">分類狀態</button>
     </div>
 
@@ -306,6 +480,33 @@
         <!-- Stamp selector -->
         <div class="section-label">選擇 Stamp（點擊加入 / 取消）</div>
         <div class="selector-grid" id="selector-grid"></div>
+    </div>
+
+    <!-- ══ TAB: Layout Preview ══ -->
+    <div class="tab-pane" id="tab-layout">
+        <div class="lp-hint">
+            <b>Stamp bar</b> 可上下拖移 · Edit tools 固定在左側 · Color/Size 在左側底部 · 從「My Panel 配置」選好 stamp 後切回這裡
+        </div>
+        <div class="lp-scene" id="lp-scene">
+
+            <!-- Left Edit tools strip -->
+            <div class="lp-left-strip" id="lp-left-strip"></div>
+
+            <!-- Score area -->
+            <div class="lp-score-area" id="lp-score-area">
+                <div class="lp-bar-y-info" id="lp-y-info">y: —</div>
+                <!-- Stamp bar (draggable) -->
+                <div class="lp-stamp-bar" id="lp-stamp-bar" style="bottom:60px;">
+                    <div class="lp-bar-handle">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <!-- cells injected by JS -->
+                </div>
+            </div>
+
+            <!-- Right: doc bar -->
+            <div class="lp-right" id="lp-right"></div>
+        </div>
     </div>
 
     <!-- ══ TAB: State ══ -->
@@ -738,6 +939,193 @@ function renderState() {
     })
 }
 
+// ── Layout Preview ────────────────────────────────────────────────────────────
+const EDIT_TOOLS = TOOLSETS.find(g => g.type === 'edit').tools
+
+const COLORS = [
+    { hex: '#e2e8f0', label: 'Default' },
+    { hex: '#be123c', label: 'Red' },
+    { hex: '#15803d', label: 'Green' },
+    { hex: '#1d4ed8', label: 'Blue' },
+    { hex: '#fde047', label: 'Yellow' },
+]
+const SIZES = [
+    { w: 8, h: 8, label: 'S' },
+    { w: 12, h: 12, label: 'M' },
+    { w: 16, h: 16, label: 'L' },
+]
+
+let lpActiveTool = 'view'
+let lpActiveColor = '#e2e8f0'
+let lpActiveSize = 'M'
+let lpActiveStamp = null
+
+function renderLayoutPreview() {
+    renderLpLeftStrip()
+    renderLpStampBar()
+    renderLpRight()
+    initLpDrag()
+}
+
+function renderLpLeftStrip() {
+    const strip = document.getElementById('lp-left-strip')
+    if (!strip) return
+    strip.innerHTML = ''
+
+    // Edit tools
+    EDIT_TOOLS.forEach(t => {
+        const btn = document.createElement('div')
+        btn.className = 'lp-strip-tool' + (lpActiveTool === t.id ? ' active-tool' : '')
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${t.icon}</svg>
+            <div class="lp-tooltip">${t.label}</div>`
+        btn.addEventListener('click', () => { lpActiveTool = t.id; renderLpLeftStrip() })
+        strip.appendChild(btn)
+    })
+
+    // Divider
+    const div = document.createElement('div')
+    div.className = 'lp-strip-divider'
+    strip.appendChild(div)
+
+    // Bottom: color + size
+    const bottom = document.createElement('div')
+    bottom.className = 'lp-strip-bottom'
+
+    COLORS.forEach(c => {
+        const dot = document.createElement('div')
+        dot.className = 'lp-color-dot' + (lpActiveColor === c.hex ? ' active-color' : '')
+        dot.style.background = c.hex
+        dot.title = c.label
+        dot.addEventListener('click', () => { lpActiveColor = c.hex; renderLpLeftStrip() })
+        bottom.appendChild(dot)
+    })
+
+    const sizeDiv = document.createElement('div')
+    sizeDiv.className = 'lp-size-row'
+    SIZES.forEach(s => {
+        const dot = document.createElement('div')
+        dot.className = 'lp-size-dot' + (lpActiveSize === s.label ? ' active-size' : '')
+        dot.style.width = s.w + 'px'
+        dot.style.height = s.h + 'px'
+        dot.title = s.label
+        dot.addEventListener('click', () => { lpActiveSize = s.label; renderLpLeftStrip() })
+        sizeDiv.appendChild(dot)
+    })
+    bottom.appendChild(sizeDiv)
+    strip.appendChild(bottom)
+}
+
+function renderLpStampBar() {
+    const bar = document.getElementById('lp-stamp-bar')
+    if (!bar) return
+
+    // Keep handle, rebuild rest
+    const handle = bar.querySelector('.lp-bar-handle')
+    bar.innerHTML = ''
+    bar.appendChild(handle)
+
+    const stampItems = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
+
+    if (stampItems.length === 0) {
+        const hint = document.createElement('span')
+        hint.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);padding:0 8px;white-space:nowrap'
+        hint.textContent = '← 先在「My Panel 配置」選 stamp'
+        bar.appendChild(hint)
+        return
+    }
+
+    // Divider after handle
+    const div = document.createElement('div')
+    div.className = 'lp-bar-divider'
+    bar.appendChild(div)
+
+    stampItems.forEach(item => {
+        const tool = findTool(item.id, item.category)
+        const group = TOOLSETS.find(g => g.name === item.category)
+        const cell = document.createElement('div')
+        const isActive = lpActiveStamp === item.id + '_' + item.category
+        cell.className = 'lp-cell' + (isActive ? ' active-stamp' : '')
+        cell.style.borderColor = group?.color ? group.color + '55' : ''
+        cell.innerHTML = (tool?.icon
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${tool.icon}</svg>`
+            : `<span class="lp-cell-text">${tool?.textIcon || tool?.label || item.id}</span>`)
+            + `<div class="lp-cell-tip">${tool?.label || item.id}</div>`
+        cell.addEventListener('click', () => {
+            lpActiveStamp = isActive ? null : (item.id + '_' + item.category)
+            renderLpStampBar()
+        })
+        bar.appendChild(cell)
+    })
+}
+
+function renderLpRight() {
+    const right = document.getElementById('lp-right')
+    if (!right) return
+    right.innerHTML = ''
+
+    // Mock doc bar buttons
+    const docIcons = [
+        '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+        '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',
+        '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+        '<line x1="5" y1="12" x2="19" y2="12"/>',
+        '<rect x="3" y="3" width="18" height="18" rx="2"/>',
+    ]
+    docIcons.forEach(ic => {
+        const btn = document.createElement('div')
+        btn.className = 'lp-docbar-btn'
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" width="16" height="16">${ic}</svg>`
+        right.appendChild(btn)
+    })
+
+    const thumb = document.createElement('div')
+    thumb.className = 'lp-scrollbar-thumb'
+    right.appendChild(thumb)
+}
+
+function initLpDrag() {
+    const bar = document.getElementById('lp-stamp-bar')
+    const area = document.getElementById('lp-score-area')
+    const yInfo = document.getElementById('lp-y-info')
+    if (!bar || !area) return
+
+    let dragging = false
+    let startY = 0
+    let startBarTop = 0 // offset from top of area
+
+    function getBarTopFromBottom(bottomVal) {
+        return area.clientHeight - bar.clientHeight - bottomVal
+    }
+
+    function clamp(val, min, max) { return Math.max(min, Math.min(max, val)) }
+
+    bar.addEventListener('mousedown', e => {
+        if (e.target.closest('.lp-cell') || e.target.closest('.lp-strip-tool')) return
+        dragging = true
+        bar.classList.add('is-dragging')
+        startY = e.clientY
+        // current top = area.height - bar.height - current bottom
+        const currentBottom = parseInt(bar.style.bottom) || 60
+        startBarTop = getBarTopFromBottom(currentBottom)
+        e.preventDefault()
+    })
+
+    window.addEventListener('mousemove', e => {
+        if (!dragging) return
+        const dy = e.clientY - startY
+        const newTop = clamp(startBarTop + dy, 8, area.clientHeight - bar.clientHeight - 8)
+        const newBottom = area.clientHeight - bar.clientHeight - newTop
+        bar.style.bottom = newBottom + 'px'
+        yInfo.textContent = `y: ${Math.round(newTop)}px from top`
+    })
+
+    window.addEventListener('mouseup', () => {
+        if (!dragging) return
+        dragging = false
+        bar.classList.remove('is-dragging')
+    })
+}
+
 // ── Tab switching ─────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -746,6 +1134,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.add('active')
         document.getElementById('tab-' + btn.dataset.tab).classList.add('active')
         if (btn.dataset.tab === 'state') renderState()
+        if (btn.dataset.tab === 'layout') renderLayoutPreview()
     })
 })
 
