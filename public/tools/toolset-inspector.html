@@ -293,6 +293,24 @@
         .lp-strip-tool:hover .lp-tooltip { opacity:1; }
         .lp-strip-divider { width:24px; height:1px; background:rgba(255,255,255,0.08); margin:2px 0; flex-shrink:0; }
 
+        /* Score name — rotated, reads bottom-to-top like a book spine */
+        .lp-strip-score-name {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--sf-muted);
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: 160px;
+            padding: 6px 0;
+            flex-shrink: 0;
+            cursor: default;
+            user-select: none;
+        }
+
         /* Color / Size at bottom of strip */
         .lp-strip-bottom { margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:5px; padding-bottom:4px; }
         .lp-color-dot {
@@ -1013,6 +1031,18 @@ function renderLpLeftStrip() {
     const strip = document.getElementById('lp-left-strip')
     if (!strip) return
     strip.innerHTML = ''
+
+    // Score name (rotated, book-spine style)
+    const nameEl = document.createElement('div')
+    nameEl.className = 'lp-strip-score-name'
+    nameEl.textContent = 'Chopin — Ballade No.1 in G minor'
+    nameEl.title = 'Chopin — Ballade No.1 in G minor'
+    strip.appendChild(nameEl)
+
+    // Thin divider after name
+    const nameDivider = document.createElement('div')
+    nameDivider.className = 'lp-strip-divider'
+    strip.appendChild(nameDivider)
 
     // Edit tools
     EDIT_TOOLS.forEach(t => {
