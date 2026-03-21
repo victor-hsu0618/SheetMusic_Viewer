@@ -76,9 +76,12 @@ export class ScoreManager {
             if (!res.ok) return;
             const buf = new Uint8Array(await res.arrayBuffer());
             this.toggleOverlay(false);
+            this.app._skipStaffDetect = true;
             await this.app.loadPDF(buf, 'ScoreFlow User Guide');
         } catch (e) {
             console.warn('[ScoreManager] User Guide not available:', e);
+        } finally {
+            this.app._skipStaffDetect = false;
         }
     }
 

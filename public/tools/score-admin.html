@@ -541,7 +541,7 @@ function fillGenreSelects() {
 }
 
 // ═══ IndexedDB ═══
-const db = {
+var db = {
     _open() { return new Promise((res,rej)=>{const r=indexedDB.open('ScoreFlowStorage',1);r.onupgradeneeded=()=>r.result.createObjectStore('store');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}); },
     async get(k) { const d=await this._open(); return new Promise((res,rej)=>{const q=d.transaction('store','readonly').objectStore('store').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);}); },
     async set(k,v) { const d=await this._open(); return new Promise((res,rej)=>{const tx=d.transaction('store','readwrite');tx.objectStore('store').put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);}); },
@@ -749,7 +749,7 @@ function scoreRow(s) {
         <td onclick="event.stopPropagation()"><select class="cat-select" data-fp="${s.fingerprint}">${GENRE_OPTS.replace(`value="${s.genre}"`,`value="${s.genre}" selected`)}</select></td>
         <td onclick="toggleDetail('${s.fingerprint}')">${tagChips}${moreTagsNote}</td>
         <td onclick="toggleDetail('${s.fingerprint}')">${statusPill} ${pdfPill}</td>
-        <td style="text-align:center;">${annotCell}</td>
+        <td style="text-align:center;" data-fp="${s.fingerprint}" data-title="${escHtml(s.title)}" data-cloud="${s.annotCloud}" data-local="${s.annotLocal}" onclick="annotTdClick(event,this)">${annotCell}</td>
         <td style="color:var(--text-muted);font-size:11px;" onclick="toggleDetail('${s.fingerprint}')">${accessed}</td>
         <td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-fp="${s.fingerprint}" title="Delete">🗑</button></td>
     </tr>
@@ -791,7 +791,6 @@ function renderGrouped(list) {
     const keys=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
     view.innerHTML=keys.map(c=>`<div style="margin-bottom:20px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:0 4px;margin-bottom:8px;">${escHtml(c)} <span style="color:var(--primary);">${groups[c].length}</span></div><div class="table-wrap"><table><colgroup><col style="width:28px;"><col style="width:30%;"><col style="width:16%;"><col style="width:18%;"><col style="width:10%;"><col style="width:11%;"><col style="width:50px;"></colgroup><thead><tr><th></th><th>Score Name</th><th>Genre</th><th>Tags</th><th>Status</th><th>Accessed</th><th></th></tr></thead><tbody>${groups[c].map(scoreRow).join('')}</tbody></table></div></div>`).join('');
     wireTable(view);
-    view.querySelectorAll('#lib-view tr[data-fp]').forEach(tr=>{if(!tr.classList.contains('row-detail'))tr.addEventListener('click',()=>toggleDetail(tr.dataset.fp));});
 }
 
 function wireTable(container) {
@@ -1829,25 +1828,14 @@ wire('btn-heal-library-hub', async () => {
     }
 });
 
-</script>
-<!-- Annotation Debug Modal -->
-<div id="annot-modal-overlay">
-  <div id="annot-modal">
-    <div id="annot-modal-header">
-      <h3 id="annot-modal-title">Annotations</h3>
-      <div id="annot-modal-summary" style="font-size:11px;color:var(--text-muted);"></div>
-      <button onclick="document.getElementById('annot-modal-overlay').classList.remove('open')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);padding:0 4px;">✕</button>
-    </div>
-    <div id="annot-modal-body">
-      <table>
-        <thead><tr><th>Type</th><th>Page</th><th>Layer</th><th>Deleted</th><th>In Cloud</th><th>ID (short)</th></tr></thead>
-        <tbody id="annot-modal-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
+window.annotTdClick = function(event, td) {
+    event.stopPropagation();
+    const local = parseInt(td.dataset.local) || 0;
+    if (!local) return;
+    showAnnotDebug(td.dataset.fp, td.dataset.title, parseInt(td.dataset.cloud) || 0)
+        .catch(err => alert('Annotation debug error: ' + err.message));
+};
 
-<script>
 async function showAnnotDebug(fp, title, cloudCount) {
     const stamps = (await db.get(`stamps_${fp}`)) || [];
     const { data: cloudRows } = await sbClient.from('annotations').select('id').eq('fingerprint', fp).eq('user_id', currentUser.id).limit(5000);
@@ -1886,15 +1874,24 @@ document.getElementById('annot-modal-overlay').addEventListener('click', e => {
     if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
 
-document.addEventListener('click', e => {
-    const btn = e.target.closest('.annot-debug-btn');
-    if (!btn) return;
-    e.stopPropagation();
-    const fp = btn.dataset.fp;
-    const title = btn.dataset.title;
-    const cloud = parseInt(btn.dataset.cloud) || 0;
-    showAnnotDebug(fp, title, cloud);
-});
 </script>
+<!-- Annotation Debug Modal -->
+<div id="annot-modal-overlay">
+  <div id="annot-modal">
+    <div id="annot-modal-header">
+      <h3 id="annot-modal-title">Annotations</h3>
+      <div id="annot-modal-summary" style="font-size:11px;color:var(--text-muted);"></div>
+      <button onclick="document.getElementById('annot-modal-overlay').classList.remove('open')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);padding:0 4px;">✕</button>
+    </div>
+    <div id="annot-modal-body">
+      <table>
+        <thead><tr><th>Type</th><th>Page</th><th>Layer</th><th>Deleted</th><th>In Cloud</th><th>ID (short)</th></tr></thead>
+        <tbody id="annot-modal-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
 </body>
 </html>

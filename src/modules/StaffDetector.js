@@ -56,11 +56,17 @@ export class StaffDetector {
     // 3. Persist and trigger authoritative sync
     this.app.saveToStorage(true)
     this.app.updateRulerMarks()
-    
+
+    // Push all system stamps (new + soft-deleted old) to Supabase
+    if (this.app.supabaseManager && fp) {
+      this.app.stamps
+        .filter(s => s.type === 'system' && s.auto)
+        .forEach(s => this.app.supabaseManager.pushAnnotation(s, fp))
+    }
+
     // Explicitly trigger authoritative cloud push if available
     if (this.app.driveSyncManager) {
       console.log('[StaffDetector] Triggering authoritative cloud push...')
-      // push(0, true) means: reset cloud version and treat as manual/forced action
       this.app.driveSyncManager.push(0, true)
     }
   }

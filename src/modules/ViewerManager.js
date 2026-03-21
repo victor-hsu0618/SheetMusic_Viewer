@@ -344,9 +344,9 @@ export class ViewerManager {
             this.pdf = pdf;
             console.log(`[ViewerManager] PDF.js success. Pages: ${this.pdf.numPages}`);
 
-            // Auto-detect system stamps in background if none exist
+            // Auto-detect system stamps in background if none exist (skip for User Guide)
             const hasSystems = this.app.stamps.some(s => s.type === 'system' && !s.deleted)
-            if (!hasSystems && this.app.staffDetector) {
+            if (!hasSystems && this.app.staffDetector && !this.app._skipStaffDetect) {
                 this.app.staffDetector.autoDetect(this.pdf, (page, total) => {
                     this.app.showToast?.(`正在分析樂譜結構... ${page} / ${total}`)
                 })
