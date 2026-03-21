@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toolset Inspector — ScoreFlow Dev Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles.css">
+    <script src="theme-manager.js"></script>
+    <style>
+        .page-header { margin-bottom: 40px; }
+        .page-header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; }
+        .page-header p { color: var(--text-muted); margin-top: 6px; font-size: 0.9rem; }
+
+        .status-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            padding: 5px 14px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .dot { width: 7px; height: 7px; border-radius: 50%; }
+        .dot.green { background: var(--success); }
+        .dot.yellow { background: var(--warn); }
+        .dot.gray { background: #64748b; }
+
+        .refresh-btn {
+            margin-left: auto;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 7px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .refresh-btn:hover { opacity: 0.85; }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+
+        .cat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+        }
+        .cat-card.active { border-color: rgba(99,102,241,0.5); box-shadow: 0 0 0 1px rgba(99,102,241,0.2); }
+        .cat-card.hidden-layer { opacity: 0.5; }
+
+        .cat-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .cat-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .cat-name { font-size: 1rem; font-weight: 700; flex: 1; }
+        .cat-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .badge-active { background: rgba(99,102,241,0.2); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
+        .badge-visible { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .badge-hidden { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
+        .badge-edit { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+
+        .layer-info {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .layer-info code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--primary);
+            background: rgba(99,102,241,0.1);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        .tools-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .tool-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .tool-chip-row { font-size: 9px; opacity: 0.5; }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin: 28px 0 12px;
+        }
+
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+        .summary-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+        .summary-card .num { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+        .summary-card .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        nav { margin-bottom: 32px; }
+        nav a {
+            text-decoration: none; color: var(--primary); font-weight: 700;
+            font-size: 14px; display: inline-flex; align-items: center;
+            gap: 6px; opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav>
+        <a href="index.html">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg>
+            Dev Hub
+        </a>
+    </nav>
+
+    <div class="page-header">
+        <h1>🗂 Toolset Inspector</h1>
+        <p>顯示 TOOLSETS 定義、Layer 狀態、以及目前 App 中啟動的分類。</p>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-pill"><div class="dot" id="ls-dot"></div><span id="ls-status">讀取中...</span></div>
+        <div class="status-pill"><div class="dot" id="active-dot"></div><span id="active-status">—</span></div>
+        <button class="refresh-btn" onclick="render()">↻ Refresh</button>
+    </div>
+
+    <div class="summary-row" id="summary-row"></div>
+    <div class="section-label">所有分類 (TOOLSETS)</div>
+    <div class="categories-grid" id="categories-grid"></div>
+</div>
+
+<script>
+// ── Mirrored from src/constants.js ───────────────────────────────────────────
+// Keep in sync when constants.js is updated.
+const INITIAL_LAYERS = [
+    { id: 'draw',         name: 'Pens',         color: '#1d4ed8', type: 'draw' },
+    { id: 'fingering',    name: 'B.Fingering',  color: '#be123c', type: 'fingering' },
+    { id: 'articulation', name: 'Articulation', color: '#15803d', type: 'articulation' },
+    { id: 'text',         name: 'Text',         color: '#b45309', type: 'text' },
+    { id: 'others',       name: 'Others',       color: '#94a3b8', type: 'others' },
+];
+
+const TOOLSETS = [
+    { name: 'Edit', type: 'edit', tools: [
+        { id: 'view' }, { id: 'select' }, { id: 'quick-text' }, { id: 'pen' },
+        { id: 'down-bow' }, { id: 'f1' }, { id: 'cycle' }, { id: 'eraser' },
+        { id: 'undo' }, { id: 'redo' }
+    ]},
+    { name: 'Pens', type: 'draw', tools: [
+        { id: 'pen', row:1 }, { id: 'red-pen', row:1 }, { id: 'green-pen', row:1 }, { id: 'blue-pen', row:1 },
+        { id: 'dashed-pen', row:1 }, { id: 'arrow-pen', row:1 },
+        { id: 'highlighter', row:2 }, { id: 'highlighter-red', row:2 }, { id: 'highlighter-blue', row:2 }, { id: 'highlighter-green', row:2 },
+        { id: 'line', row:2 }, { id: 'slur', row:2 }, { id: 'bracket-left', row:2 }, { id: 'bracket-right', row:2 }
+    ]},
+    { name: 'B.Fingering', type: 'fingering', tools: [
+        { id: 'thumb', row:1 }, { id: 'f1', row:1 }, { id: 'f2', row:1 }, { id: 'f3', row:1 },
+        { id: 'f4', row:1 }, { id: 'f5', row:1 }, { id: 'f0', row:1 }, { id: 'f-exp', row:1 }, { id: 'f-shift', row:1 },
+        { id: 'down-bow', row:2 }, { id: 'up-bow', row:2 }, { id: 'open_string', row:2 },
+        { id: 'i', row:2 }, { id: 'ii', row:2 }, { id: 'iii', row:2 }, { id: 'iv', row:2 }
+    ]},
+    { name: 'Articulation', type: 'articulation', tools: [
+        { id: 'accent', row:1 }, { id: 'marcato', row:1 }, { id: 'staccato', row:1 },
+        { id: 'tenuto', row:1 }, { id: 'fermata', row:1 },
+        { id: 'sharp', row:2 }, { id: 'flat', row:2 }, { id: 'natural', row:2 },
+        { id: 'double-sharp', row:2 }, { id: 'double-flat', row:2 }
+    ]},
+    { name: 'Text', type: 'text', tools: [
+        { id: 'text', row:1 }, { id: 'tempo-text', row:1 },
+        { id: 'text-ppp', row:1 }, { id: 'text-pp', row:1 }, { id: 'text-p', row:1 },
+        { id: 'text-mp', row:1 }, { id: 'text-mf', row:1 }, { id: 'text-f', row:1 },
+        { id: 'text-ff', row:1 }, { id: 'text-fff', row:1 }, { id: 'text-fp', row:1 }, { id: 'text-sfp', row:1 },
+        { id: 'text-cond', row:2 }, { id: 'text-v1', row:2 }, { id: 'text-vlc', row:2 },
+        { id: 'text-wind', row:2 }, { id: 'text-perc', row:2 }, { id: 'text-solo', row:2 },
+        { id: 'text-page', row:2 }, { id: 'text-score', row:2 }, { id: 'text-breath', row:2 }
+    ]},
+    { name: 'Others', type: 'others', tools: [
+        { id: 'copy' }, { id: 'cloak-black' }, { id: 'cloak-red' }, { id: 'cloak-blue' },
+        { id: 'page-bookmark' }, { id: 'anchor' }, { id: 'music-anchor' },
+        { id: 'measure' }, { id: 'measure-free' }
+    ]},
+];
+// ─────────────────────────────────────────────────────────────────────────────
+
+function readAppState() {
+    try {
+        const layers = JSON.parse(localStorage.getItem('scoreflow_layers') || 'null')
+        const activeCategories = JSON.parse(localStorage.getItem('scoreflow_active_categories') || 'null')
+        const activeSource = localStorage.getItem('scoreflow_active_source') || null
+        return { layers, activeCategories, activeSource, ok: true }
+    } catch(e) {
+        return { ok: false, error: e.message }
+    }
+}
+
+function render() {
+    const state = readAppState()
+    const lsDot = document.getElementById('ls-dot')
+    const lsStatus = document.getElementById('ls-status')
+    const activeDot = document.getElementById('active-dot')
+    const activeStatus = document.getElementById('active-status')
+
+    // Layer map from live localStorage (keyed by id)
+    const liveLayerMap = {}
+    if (state.layers) {
+        state.layers.forEach(l => { liveLayerMap[l.id] = l })
+        lsDot.className = 'dot green'
+        lsStatus.textContent = `localStorage — ${state.layers.length} layers loaded`
+    } else {
+        lsDot.className = 'dot yellow'
+        lsStatus.textContent = 'localStorage — 無資料（App 尚未開啟或 Safari 已清除）'
+    }
+
+    const activeCategories = state.activeCategories || []
+    if (activeCategories.length) {
+        activeDot.className = 'dot green'
+        activeStatus.textContent = `Active: ${activeCategories.join(', ')} ${state.activeSource ? '· tool: ' + state.activeSource : ''}`
+    } else {
+        activeDot.className = 'dot gray'
+        activeStatus.textContent = 'Active category: 未知'
+    }
+
+    // Summary
+    const summaryEl = document.getElementById('summary-row')
+    const totalTools = TOOLSETS.reduce((s, g) => s + g.tools.length, 0)
+    const visibleLayers = state.layers ? state.layers.filter(l => l.visible !== false).length : '?'
+    const hiddenLayers  = state.layers ? state.layers.filter(l => l.visible === false).length : '?'
+    summaryEl.innerHTML = `
+        <div class="summary-card"><div class="num">${TOOLSETS.length}</div><div class="lbl">Total Groups</div></div>
+        <div class="summary-card"><div class="num">${totalTools}</div><div class="lbl">Total Tools</div></div>
+        <div class="summary-card"><div class="num" style="color:var(--success)">${visibleLayers}</div><div class="lbl">Visible Layers</div></div>
+        <div class="summary-card"><div class="num" style="color:var(--text-muted)">${hiddenLayers}</div><div class="lbl">Hidden Layers</div></div>
+    `
+
+    // Categories grid
+    const grid = document.getElementById('categories-grid')
+    grid.innerHTML = ''
+
+    TOOLSETS.forEach(group => {
+        const isEdit = group.type === 'edit'
+        const layer = INITIAL_LAYERS.find(l => l.type === group.type)
+        const liveLayer = layer ? liveLayerMap[layer.id] : null
+        const layerVisible = liveLayer ? liveLayer.visible !== false : true
+        const isActive = activeCategories.includes(group.name)
+
+        let classes = 'cat-card'
+        if (isActive) classes += ' active'
+        if (!layerVisible && !isEdit) classes += ' hidden-layer'
+
+        // Group tools by row
+        const byRow = {}
+        group.tools.forEach(t => {
+            const r = t.row || 0
+            if (!byRow[r]) byRow[r] = []
+            byRow[r].push(t)
+        })
+        const rows = Object.keys(byRow).sort()
+
+        let toolsHtml = ''
+        rows.forEach(r => {
+            const rowLabel = r > 0 ? `<span class="tool-chip-row">R${r}</span>` : ''
+            byRow[r].forEach(t => {
+                toolsHtml += `<span class="tool-chip">${rowLabel}<code>${t.id}</code></span>`
+            })
+        })
+
+        let badgesHtml = ''
+        if (isEdit) {
+            badgesHtml += `<span class="cat-badge badge-edit">System</span>`
+        } else {
+            const visLabel = layerVisible ? 'VISIBLE' : 'HIDDEN'
+            const visCls = layerVisible ? 'badge-visible' : 'badge-hidden'
+            badgesHtml += `<span class="cat-badge ${visCls}">${visLabel}</span>`
+        }
+        if (isActive) badgesHtml += `<span class="cat-badge badge-active">ACTIVE</span>`
+
+        const layerInfoHtml = layer ? `
+            <div class="layer-info">
+                <div class="dot" style="background:${layer.color};flex-shrink:0"></div>
+                <span>Layer: <code>${layer.id}</code></span>
+                <span>·</span>
+                <span>Type: <code>${layer.type}</code></span>
+                ${liveLayer ? `<span>·</span><span style="color:${liveLayer.visible!==false?'var(--success)':'var(--text-muted)'}">
+                    ${liveLayer.visible!==false ? '👁 visible' : '🚫 hidden'}</span>` : ''}
+            </div>` : `<div class="layer-info" style="color:var(--warn)">⚠ No layer binding (system group)</div>`
+
+        grid.insertAdjacentHTML('beforeend', `
+            <div class="${classes}">
+                <div class="cat-header">
+                    <div class="cat-color-dot" style="background:${layer?.color || '#6366f1'}"></div>
+                    <div class="cat-name">${group.name}</div>
+                    ${badgesHtml}
+                </div>
+                ${layerInfoHtml}
+                <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;font-weight:600">
+                    ${group.tools.length} tools
+                </div>
+                <div class="tools-list">${toolsHtml}</div>
+            </div>
+        `)
+    })
+}
+
+render()
+</script>
+</body>
+</html>
