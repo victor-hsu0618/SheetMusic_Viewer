@@ -423,10 +423,27 @@
             border:1px solid rgba(255,255,255,0.08); border-radius:7px;
             display:flex; align-items:center; justify-content:center; flex-shrink:0;
         }
-        .lp-scrollbar-thumb {
-            width:4px; height:60px; background:rgba(255,255,255,0.2);
-            border-radius:2px; margin-top:auto; margin-bottom:auto;
+        /* Scrollbar track */
+        .lp-scrollbar-track {
+            flex: 1;
+            width: 8px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 4px;
+            position: relative;
+            margin: 4px 0;
+            cursor: pointer;
         }
+        .lp-scrollbar-thumb {
+            position: absolute;
+            width: 8px;
+            left: 0;
+            background: rgba(255,255,255,0.25);
+            border-radius: 4px;
+            cursor: grab;
+            transition: background .15s;
+        }
+        .lp-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+        .lp-scrollbar-thumb.grabbing { cursor:grabbing; background:rgba(255,255,255,0.5); }
 
         .lp-bar-y-info {
             position:absolute; right:8px; top:8px;
@@ -1091,7 +1108,8 @@ function renderLpStampBar() {
 
 function renderLpRight() {
     const right = document.getElementById('lp-right')
-    if (!right) return
+    const scene = document.getElementById('lp-scene')
+    if (!right || !scene) return
     right.innerHTML = ''
 
     // Mock doc bar buttons
@@ -1109,9 +1127,45 @@ function renderLpRight() {
         right.appendChild(btn)
     })
 
+    // Scrollbar track + thumb
+    const track = document.createElement('div')
+    track.className = 'lp-scrollbar-track'
+    right.appendChild(track)
+
+    // Thumb height = 1/5 of scene height
+    const sceneH = scene.clientHeight || 560
+    const thumbH = Math.round(sceneH / 5)
+    // Start in middle
+    let thumbTop = Math.round((sceneH - thumbH) / 2)
+    const maxTop = sceneH - thumbH - 12 // within track (with padding)
+
     const thumb = document.createElement('div')
     thumb.className = 'lp-scrollbar-thumb'
-    right.appendChild(thumb)
+    thumb.style.height = thumbH + 'px'
+    thumb.style.top = thumbTop + 'px'
+    track.appendChild(thumb)
+
+    // Drag behaviour
+    let dragging = false, startY = 0, startTop = 0
+    thumb.addEventListener('mousedown', e => {
+        dragging = true
+        startY = e.clientY
+        startTop = thumbTop
+        thumb.classList.add('grabbing')
+        e.preventDefault()
+        e.stopPropagation()
+    })
+    window.addEventListener('mousemove', e => {
+        if (!dragging) return
+        const dy = e.clientY - startY
+        thumbTop = Math.max(0, Math.min(maxTop, startTop + dy))
+        thumb.style.top = thumbTop + 'px'
+    })
+    window.addEventListener('mouseup', () => {
+        if (!dragging) return
+        dragging = false
+        thumb.classList.remove('grabbing')
+    })
 }
 
 function initLpDrag() {
