@@ -141,7 +141,8 @@
         }
         .mock-cell:hover { background: #e2e8f0; }
         .mock-cell.dragging { opacity: .4; }
-        .mock-cell.drag-over { border-color: var(--sf-primary); background: rgba(99,102,241,0.15); }
+        .mock-cell.insert-before { box-shadow: -3px 0 0 var(--sf-primary); }
+        .mock-cell.insert-after  { box-shadow:  3px 0 0 var(--sf-primary); }
         .mock-cell svg { width:20px; height:20px; flex-shrink:0; }
         .mock-cell .cell-text { font-size:11px; font-weight:600; color:var(--sf-text); text-align:center; line-height:1.2; font-family:'JetBrains Mono',monospace; }
         .mock-cell .cell-label {
@@ -193,6 +194,13 @@
         .tool-item .ti-icon svg { width:16px; height:16px; }
         .tool-item .ti-label { font-size:11px; color:var(--sf-muted); font-family:'JetBrains Mono',monospace; }
         .tool-item.selected .ti-label { color:var(--sf-text); }
+
+        /* ── Bar reorder sections ── */
+        .reorder-section { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:14px; margin-bottom:16px; }
+        .reorder-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+        .reorder-header-label { font-size:12px; font-weight:700; flex:1; }
+        .reorder-row { display:flex; flex-wrap:wrap; gap:4px; min-height:52px; align-items:center; }
+        .reorder-row .mock-cell { flex-shrink:0; }
 
         /* ── State tab ── */
         .status-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:24px; }
@@ -268,12 +276,36 @@
         .lp-info-row b { color: var(--sf-text); }
         .lp-info-row .dot { flex-shrink:0; }
 
-        /* Left Edit tools strip — always dark (inside dark simulation) */
+        /* Clean mode — hide all bars */
+        .lp-clean-mode .lp-left-strip,
+        .lp-clean-mode .lp-right,
+        .lp-clean-mode #lp-stamp-bar,
+        .lp-clean-mode #lp-shapes-bar { opacity: 0 !important; pointer-events: none !important; }
+
+        /* Floating toggle button — draggable, default bottom-right */
+        .lp-clean-toggle {
+            position: absolute;
+            bottom: 10px; right: 10px;
+            width: 28px; height: 28px;
+            background: rgba(30,41,59,0.85);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: grab; z-index: 100;
+            backdrop-filter: blur(6px);
+            transition: background .15s, border-color .15s;
+            touch-action: none;
+        }
+        .lp-clean-toggle:hover { background: rgba(99,102,241,0.4); border-color: rgba(99,102,241,0.6); }
+        .lp-clean-toggle.dragging { cursor: grabbing; }
+        .lp-clean-toggle svg { width: 14px; height: 14px; pointer-events: none; }
+
+        /* Right Edit tools strip — always dark (inside dark simulation) */
         .lp-left-strip {
             width: 52px;
             flex-shrink: 0;
             background: #1f2937;
-            border-right: 1px solid rgba(255,255,255,0.1);
+            border-left: 1px solid rgba(255,255,255,0.1);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -340,10 +372,10 @@
             border-color: rgba(99,102,241,0.6) !important;
         }
 
-        /* Pen picker — pops out from strip next to pen button */
+        /* Pen picker — pops out to the LEFT from right strip */
         .lp-pen-bar {
             position: absolute;
-            left: 56px;
+            right: 56px;
             background: rgba(15,23,42,0.97);
             -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
@@ -354,12 +386,12 @@
             gap: 5px;
             padding: 6px 10px;
             z-index: 30;
-            transform: translateX(-8px) scale(0.92);
-            transform-origin: left center;
+            transform: translateX(8px) scale(0.92);
+            transform-origin: right center;
             transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), opacity 0.18s;
             opacity: 0;
             pointer-events: none;
-            box-shadow: 4px 8px 24px rgba(0,0,0,0.55);
+            box-shadow: -4px 8px 24px rgba(0,0,0,0.55);
             white-space: nowrap;
         }
         .lp-pen-bar.open {
@@ -367,20 +399,20 @@
             opacity: 1;
             pointer-events: all;
         }
-        /* small arrow pointing left back to strip */
+        /* small arrow pointing right back to strip */
         .lp-pen-bar::before {
             content: '';
             position: absolute;
-            left: -6px; top: 50%; transform: translateY(-50%);
+            right: -6px; top: 50%; transform: translateY(-50%);
             border: 6px solid transparent;
-            border-right-color: rgba(255,255,255,0.14);
+            border-left-color: rgba(255,255,255,0.14);
         }
         .lp-pen-bar::after {
             content: '';
             position: absolute;
-            left: -5px; top: 50%; transform: translateY(-50%);
+            right: -5px; top: 50%; transform: translateY(-50%);
             border: 6px solid transparent;
-            border-right-color: rgba(15,23,42,0.97);
+            border-left-color: rgba(15,23,42,0.97);
         }
         .lp-pen-divider {
             width: 1px; height: 28px;
@@ -422,7 +454,7 @@
         }
         .lp-strip-tool svg { width:18px; height:18px; color:#e2e8f0; stroke:#e2e8f0; }
         .lp-strip-tool .lp-tooltip {
-            position: absolute; left: 46px; top: 50%; transform: translateY(-50%);
+            position: absolute; right: 46px; left: auto; top: 50%; transform: translateY(-50%);
             background: #1e293b; border: 1px solid rgba(255,255,255,0.12);
             color: #f1f5f9; font-size: 10px; font-weight:600;
             padding: 3px 8px; border-radius: 5px; white-space:nowrap;
@@ -473,88 +505,176 @@
         .lp-size-dot:hover { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.8); }
         .lp-size-dot.active-size { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.6); color: #fff; }
 
-        /* Score area */
+        /* Score area — dark canvas, like actual ScoreFlow viewer */
         .lp-score-area {
             flex: 1;
             position: relative;
             overflow: hidden;
-            /* Staff line pattern */
-            background-image: repeating-linear-gradient(
-                0deg,
-                transparent 0px, transparent 8px,
-                rgba(255,255,255,0.06) 8px, rgba(255,255,255,0.06) 9px,
-                transparent 9px, transparent 11px,
-                rgba(255,255,255,0.06) 11px, rgba(255,255,255,0.06) 12px,
-                transparent 12px, transparent 14px,
-                rgba(255,255,255,0.06) 14px, rgba(255,255,255,0.06) 15px,
-                transparent 15px, transparent 17px,
-                rgba(255,255,255,0.06) 17px, rgba(255,255,255,0.06) 18px,
-                transparent 18px, transparent 20px,
-                rgba(255,255,255,0.06) 20px, rgba(255,255,255,0.06) 21px,
-                transparent 21px, transparent 50px
-            );
+            background: #1e2130;
+            display: flex;
+            justify-content: center;
+        }
+        /* White PDF "page" — natural aspect ratio, like actual PDF rendering */
+        .lp-score-page {
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 94%;
+            background: #ffffff;
+            box-shadow: 0 2px 24px rgba(0,0,0,0.5);
+            /* height is determined by image natural ratio */
+        }
+        /* Sheet music image — full width, natural height (no cropping) */
+        .lp-score-bg {
+            display: block;
+            width: 100%;
+            height: auto;
+            pointer-events: none;
+            user-select: none;
         }
 
-        /* Floating stamp bar */
-        .lp-stamp-bar {
+        /* Shapes bar — same design as stamp bar */
+        .lp-shapes-bar {
             position: absolute;
-            left: 8px; right: 8px;
-            background: rgba(20, 28, 42, 0.96);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 14px;
-            backdrop-filter: blur(10px);
+            right: 4px;
+            width: calc(100% - 8px);
+            background: rgba(15,23,42,0.97);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 12px;
             display: flex;
             flex-direction: row;
-            z-index: 20;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+            align-items: stretch;
+            z-index: 30;
+            box-shadow: -4px 8px 24px rgba(0,0,0,0.55);
+            color: #e2e8f0;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(8px) scale(0.95) translateY(-50%);
+            transform-origin: right center;
+            transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), opacity 0.18s;
+            user-select: none;
             overflow: hidden;
         }
-        .lp-stamp-bar.is-dragging { cursor: grabbing; }
+        .lp-shapes-bar.open {
+            transform: translateX(0) scale(1) translateY(-50%);
+            opacity: 1;
+            pointer-events: all;
+        }
+        .lp-shapes-bar::before {
+            content: ''; position: absolute;
+            right: -6px; top: 50%; transform: translateY(-50%);
+            border: 6px solid transparent;
+            border-left-color: rgba(255,255,255,0.14);
+        }
+        .lp-shapes-bar::after {
+            content: ''; position: absolute;
+            right: -5px; top: 50%; transform: translateY(-50%);
+            border: 6px solid transparent;
+            border-left-color: rgba(15,23,42,0.97);
+        }
+        .lp-shapes-cell {
+            width: 28px; height: 28px; flex-shrink: 0;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background .15s, border-color .15s;
+        }
+        .lp-shapes-cell:hover { background: rgba(255,255,255,0.14); }
+        .lp-shapes-cell.active-shape { background: rgba(100,116,139,0.35); border-color: rgba(100,116,139,0.7); }
 
-        /* Handle column (left, spans full height, for dragging) */
+        /* Stamp panel — same width as PDF page, scrollable vertically */
+        .lp-stamp-bar {
+            position: absolute;
+            right: 4px;
+            width: calc(100% - 8px);
+            background: rgba(15,23,42,0.97);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            z-index: 30;
+            box-shadow: -4px 8px 24px rgba(0,0,0,0.55);
+            color: #e2e8f0;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(8px) scale(0.95) translateY(-50%);
+            transform-origin: right center;
+            transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), opacity 0.18s;
+            user-select: none;
+            overflow: hidden;
+        }
+        .lp-stamp-bar.open {
+            transform: translateX(0) scale(1) translateY(-50%);
+            opacity: 1;
+            pointer-events: all;
+        }
+        /* Arrow pointing right toward edit strip */
+        .lp-stamp-bar::before {
+            content: ''; position: absolute;
+            right: -6px; top: 50%; transform: translateY(-50%);
+            border: 6px solid transparent;
+            border-left-color: rgba(255,255,255,0.14);
+        }
+        .lp-stamp-bar::after {
+            content: ''; position: absolute;
+            right: -5px; top: 50%; transform: translateY(-50%);
+            border: 6px solid transparent;
+            border-left-color: rgba(15,23,42,0.97);
+        }
+
+        /* Handle column (right, spans full height, for dragging) */
         .lp-bar-handle-col {
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            padding: 0 7px;
+            width: 36px;
             cursor: grab; opacity: 0.35;
-            border-right: 1px solid rgba(255,255,255,0.08);
+            border-left: 1px solid rgba(255,255,255,0.08);
             flex-shrink: 0;
         }
         .lp-bar-handle-col span { display:block; width:12px; height:2px; background:#fff; border-radius:1px; margin: 2px 0; }
 
-        /* Right content: tabs + grid */
+        /* Middle content: grid only */
         .lp-stamp-content {
             flex: 1; display: flex; flex-direction: column;
             min-width: 0; padding: 5px 6px 6px;
-        }
-
-        /* Category tabs row */
-        .lp-stamp-tabs {
-            display: flex; align-items: center; gap: 4px;
-            margin-bottom: 5px; overflow-x: auto; overflow-y: hidden;
+            overflow-x: auto; overflow-y: hidden;
             scrollbar-width: none;
+            align-items: flex-start;
+        }
+        .lp-stamp-content::-webkit-scrollbar { display: none; }
+
+        /* Page nav column (left of grid) */
+        .lp-stamp-nav {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 5px; width: 36px;
             flex-shrink: 0;
         }
-        .lp-stamp-tabs::-webkit-scrollbar { display: none; }
-        .lp-stamp-tab {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700;
-            cursor: pointer; flex-shrink: 0; white-space: nowrap;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: rgba(255,255,255,0.45);
-            transition: background .15s, color .15s, border-color .15s;
+        .lp-nav-btn {
+            width: 22px; height: 22px; border-radius: 6px;
+            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: rgba(255,255,255,0.6); font-size: 13px;
+            transition: background .15s, color .15s; flex-shrink: 0; user-select: none;
         }
-        .lp-stamp-tab:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
-        .lp-stamp-tab.active-tab {
-            color: #fff; border-color: transparent;
+        .lp-nav-btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
+        .lp-nav-btn:disabled, .lp-nav-btn.disabled { opacity: 0.25; cursor: default; pointer-events: none; }
+        .lp-page-dots {
+            display: flex; flex-direction: column; gap: 4px; align-items: center;
         }
-        .lp-stamp-tab .tab-dot {
-            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        .lp-page-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); transition: background .15s;
         }
+        .lp-page-dot.active-dot { background: #fff; }
 
-        /* 2-row stamp grid inside bar — fixed, no scroll */
+        /* 2-row × 20-col stamp grid inside bar */
         .lp-stamp-grid {
             display: grid;
             grid-template-rows: 28px 28px;
@@ -575,9 +695,9 @@
         /* All lp-* inside scene hard-coded dark — independent of page theme */
         .lp-bar-divider { width:1px; background:rgba(255,255,255,0.12); flex-shrink:0; align-self:stretch; margin:0 4px; }
 
-        /* Cells in stamp bar */
+        /* Cells in stamp bar — size controlled by grid (28px) */
         .lp-cell {
-            width: 44px; height: 44px; flex-shrink:0;
+            width: 100%; height: 100%; flex-shrink:0;
             background: rgba(255,255,255,0.06);
             border: 1px solid rgba(255,255,255,0.14);
             border-radius: 8px;
@@ -588,8 +708,9 @@
         .lp-cell:hover { background:rgba(255,255,255,0.13); }
         .lp-cell.active-stamp { background:rgba(99,102,241,0.3); border-color:rgba(99,102,241,0.7); }
         .lp-cell.edit-cell { background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.35); }
-        .lp-cell svg { width:20px; height:20px; pointer-events:none; }
-        .lp-cell .lp-cell-text { font-size:12px; font-weight:700; color:#f9fafb; pointer-events:none; }
+        .lp-cell { border-radius: 5px; }
+        .lp-cell svg { width:16px; height:16px; pointer-events:none; }
+        .lp-cell .lp-cell-text { font-size:9px; font-weight:700; color:#f9fafb; pointer-events:none; }
         .lp-cell .lp-cell-tip {
             position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
             background:#374151; border:1px solid rgba(255,255,255,0.15); color:#f9fafb;
@@ -598,14 +719,57 @@
         }
         .lp-cell:hover .lp-cell-tip { opacity:1; }
 
-        /* Right: scrollbar + doc bar */
+        /* Drag scroll zone inside the edit strip */
+        .lp-strip-scrollbar-track {
+            flex: 1;
+            width: 32px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            position: relative;
+            margin: 6px 0;
+            cursor: grab;
+            align-self: center;
+        }
+        .lp-strip-scrollbar-thumb {
+            position: absolute;
+            width: 32px; left: 0;
+            background: rgba(255,255,255,0.18);
+            border-radius: 10px;
+            cursor: grab;
+            transition: background .15s, top 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .lp-strip-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
+        .lp-strip-scrollbar-thumb.grabbing {
+            cursor: grabbing;
+            background: rgba(255,255,255,0.42);
+            transition: background .15s; /* disable spring during drag */
+        }
+        /* Collapse button at bottom of edit strip */
+        .lp-strip-collapse-btn {
+            width: 28px; height: 28px; flex-shrink: 0;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; opacity: 0.5;
+            transition: opacity .15s, background .15s;
+        }
+        .lp-strip-collapse-btn:hover { opacity: 1; background: rgba(255,255,255,0.12); }
+
+        /* Left: doc bar + score name */
         .lp-right {
             width: 44px; flex-shrink:0;
             background: #1f2937;
-            border-left: 1px solid rgba(255,255,255,0.1);
+            border-right: 1px solid rgba(255,255,255,0.1);
             display:flex; flex-direction:column; align-items:center;
-            padding: 6px 0; gap:4px;
+            padding: 6px 0; gap:3px;
+            color: #f9fafb;
+            overflow-y: auto;
+            scrollbar-width: none;
         }
+        .lp-right::-webkit-scrollbar { display: none; }
+        /* Score name in left-column context */
+        .lp-right .lp-strip-score-name { max-height: 140px; }
         .lp-docbar-btn {
             width:32px; height:32px; background:rgba(255,255,255,0.06);
             border:1px solid rgba(255,255,255,0.12); border-radius:8px;
@@ -619,18 +783,6 @@
             border-color: rgba(99,102,241,0.45);
         }
         .lp-docbar-primary:hover { background: rgba(99,102,241,0.3) !important; }
-        .lp-scrollbar-track {
-            flex: 1; width: 8px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 4px; position: relative; margin: 4px 0; cursor: pointer;
-        }
-        .lp-scrollbar-thumb {
-            position: absolute; width: 8px; left: 0;
-            background: rgba(255,255,255,0.25);
-            border-radius: 4px; cursor: grab; transition: background .15s;
-        }
-        .lp-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
-        .lp-scrollbar-thumb.grabbing { cursor:grabbing; background:rgba(255,255,255,0.5); }
 
         .lp-bar-y-info {
             position:absolute; right:8px; top:8px;
@@ -748,7 +900,6 @@
             aspect-ratio: 3 / 4;
         }
         .lp-scene {
-            aspect-ratio: unset;
             width: 100%;
             height: 100%;
         }
@@ -779,6 +930,7 @@
             <button class="tab-btn" data-tab="layout">Layout Preview</button>
             <button class="tab-btn" data-tab="state">分類狀態</button>
         </div>
+
         <div class="sidebar-footer">
             <button class="btn btn-primary" onclick="saveMyPanel()">💾 儲存</button>
             <button class="btn btn-ghost" onclick="clearMyPanel()">✕ 清除</button>
@@ -823,6 +975,9 @@
             </div>
         </div>
 
+        <!-- Edit bar & Doc bar reorder -->
+        <div id="bar-reorder-sections"></div>
+
         <!-- Stamp selector -->
         <div class="section-label">選擇 Stamp（點擊加入 / 取消）</div>
         <div class="selector-grid" id="selector-grid"></div>
@@ -836,26 +991,35 @@
         <div class="lp-wrapper">
             <div class="lp-scene-frame">
             <div class="lp-scene" id="lp-scene">
-                <!-- Left Edit tools strip -->
-                <div class="lp-left-strip" id="lp-left-strip"></div>
+                <!-- Clean mode toggle — always visible -->
+                <div class="lp-clean-toggle" id="lp-clean-toggle" title="全收 / 還原">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                </div>
+                <!-- Left: doc bar + scrollbar -->
+                <div class="lp-right" id="lp-right"></div>
 
                 <!-- Score area -->
                 <div class="lp-score-area" id="lp-score-area">
+                    <div class="lp-score-page">
+                        <img class="lp-score-bg" src="score-preview.jpg" alt="" draggable="false">
+                    </div>
                     <div class="lp-bar-y-info" id="lp-y-info">y: —</div>
-                    <!-- Stamp bar (draggable, paged) -->
-                    <div class="lp-stamp-bar" id="lp-stamp-bar" style="bottom:60px;"></div>
+                    <!-- Shapes bar: dynamically created by renderLpShapesBar() -->
                 </div>
 
-                <!-- Right: doc bar + scrollbar -->
-                <div class="lp-right" id="lp-right"></div>
+                <!-- Right: Edit tools strip (includes scrollbar + collapse btn) -->
+                <div class="lp-left-strip" id="lp-left-strip"></div>
             </div>
             </div>
 
             <!-- Info bar below scene -->
             <div class="lp-info-panel">
-                <div class="lp-info-row"><div class="dot" style="background:#f59e0b"></div><b>左側</b> Edit tools + Color + Size</div>
+                <div class="lp-info-row"><div class="dot" style="background:#10b981"></div><b>左側</b> Score Name + Doc bar + Color + Size</div>
                 <div class="lp-info-row"><div class="dot" style="background:#6366f1"></div><b>Stamp bar</b> 上下拖移</div>
-                <div class="lp-info-row"><div class="dot" style="background:#10b981"></div><b>右側</b> Scrollbar + Doc bar</div>
+                <div class="lp-info-row"><div class="dot" style="background:#f59e0b"></div><b>右側</b> Edit tools + Scrollbar</div>
                 <div class="lp-info-row" id="lp-stamp-count"><b>Stamps：</b><span>—</span></div>
                 <div class="lp-info-row" style="margin-left:auto;color:var(--sf-muted);font-size:11px">拖曳 stamp bar 上下移動</div>
             </div>
@@ -910,10 +1074,12 @@ const TOOLSETS = [
         { id: 'highlighter-red',  label: 'H.Red',      row:2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#be123c" opacity="0.4" stroke="#be123c" stroke-width="1" />' },
         { id: 'highlighter-blue', label: 'H.Blue',     row:2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#1d4ed8" opacity="0.4" stroke="#1d4ed8" stroke-width="1" />' },
         { id: 'highlighter-green',label: 'H.Green',    row:2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#15803d" opacity="0.4" stroke="#15803d" stroke-width="1" />' },
-        { id: 'line',             label: 'Line',       row:2, icon: '<line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2" />' },
-        { id: 'slur',             label: 'Slur',       row:2, icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />' },
-        { id: 'bracket-left',     label: '[',          row:2, icon: '<path d="M15 5 L9 5 L9 19 L15 19" fill="none" stroke="currentColor" stroke-width="2" />' },
-        { id: 'bracket-right',    label: ']',          row:2, icon: '<path d="M9 5 L15 5 L15 19 L9 19" fill="none" stroke="currentColor" stroke-width="2" />' },
+    ]},
+    { name: 'Shapes', type: 'draw', color: '#64748b', tools: [
+        { id: 'line',          label: 'Line',  icon: '<line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2" />' },
+        { id: 'slur',          label: 'Slur',  icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />' },
+        { id: 'bracket-left',  label: '[',     icon: '<path d="M15 5 L9 5 L9 19 L15 19" fill="none" stroke="currentColor" stroke-width="2" />' },
+        { id: 'bracket-right', label: ']',     icon: '<path d="M9 5 L15 5 L15 19 L9 19" fill="none" stroke="currentColor" stroke-width="2" />' },
     ]},
     { name: 'B.Fingering', type: 'fingering', color: '#be123c', tools: [
         { id: 'thumb',       label: 'Thumb', row:1, textIcon: '⊙' },
@@ -982,28 +1148,63 @@ const TOOLSETS = [
 ]
 // ─────────────────────────────────────────────────────────────────────────────
 
-const LS_KEY = 'scoreflow_my_panel'
+const EDIT_TOOLS = [
+    ...TOOLSETS.find(g => g.type === 'edit').tools,
+    { id: 'shapes', label: 'Shapes', isShapesTrigger: true,
+      icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="16" x2="20" y2="4" stroke="currentColor" stroke-width="1.2"/><path d="M14 18 L8 18 L8 12" fill="none" stroke="currentColor" stroke-width="1.5"/>' },
+    { id: 'stamp-palette', label: 'Stamps', isStampTrigger: true,
+      icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>' },
+]
 
-// myPanel = [{ id, category }]  ordered list
-let myPanel = []
+const DOC_BAR_BTNS = [
+    // always visible
+    { id: 'page-head',     group: 'always',    label: '|↑', title: 'Jump to Head',     icon: '<polyline points="17 11 12 6 7 11"/><polyline points="17 17 12 12 7 17"/><line x1="5" y1="5" x2="19" y2="5"/>' },
+    { id: 'page-up',       group: 'always',    label: '▲',  title: 'Previous Page',    icon: '<polyline points="18 15 12 9 6 15"/>' },
+    { id: 'page-down',     group: 'always',    label: '▽',  title: 'Next Page',        icon: '<polyline points="6 9 12 15 18 9"/>' },
+    // collapsed-only quick suite
+    { id: 'fit-width',     group: 'collapsed', label: 'W',  title: 'Fit Width',        icon: '<path d="M21 12H3M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/>' },
+    { id: 'fit-height',    group: 'collapsed', label: 'F',  title: 'Fit Height',       icon: '<path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4"/>' },
+    // expanded state
+    { id: 'library',       group: 'expanded',  label: 'O',  title: 'Score Library',    icon: '<rect x="3" y="3" width="4" height="15" rx="1.5"/><rect x="10" y="6" width="4" height="12" rx="1.5"/><rect x="17" y="4.5" width="4" height="13.5" rx="1.5"/><rect x="2" y="19" width="20" height="2" rx="1"/>', fillIcon: true },
+    { id: 'jump-panel',    group: 'expanded',  label: 'G',  title: 'Go To',            icon: '<polygon points="3 11 22 2 13 21 11 13 3 11"/>', fillIcon: true },
+    { id: 'view-panel',    group: 'expanded',  label: 'V',  title: 'View Inspector',   icon: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' },
+    { id: 'settings',      group: 'always',    label: '⚙',  title: 'Global Settings',  icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
+]
+
+// ── Panel config storage (unified — stamps + edit bar + doc bar) ──────────────
+// Key: scoreflow_panel_config
+// TODO: also sync to Supabase for multi-device (user_settings table)
+const LS_PANEL_CONFIG = 'scoreflow_panel_config'
+
+let myPanel      = []   // stamps: [{id, category}]
+let editBarOrder = EDIT_TOOLS.map(t => t.id)
+let docBarOrder  = DOC_BAR_BTNS.map(b => b.id)
 
 function loadMyPanel() {
     try {
-        myPanel = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
-    } catch { myPanel = [] }
+        const cfg = JSON.parse(localStorage.getItem(LS_PANEL_CONFIG) || '{}')
+        myPanel      = cfg.stamps   || JSON.parse(localStorage.getItem('scoreflow_my_panel') || '[]')
+        editBarOrder = cfg.editBar  || EDIT_TOOLS.map(t => t.id)
+        // Filter out stale IDs that no longer exist in DOC_BAR_BTNS
+        const validDocIds = new Set(DOC_BAR_BTNS.map(b => b.id))
+        const savedDocBar = (cfg.docBar || []).filter(id => validDocIds.has(id))
+        docBarOrder = savedDocBar.length ? savedDocBar : DOC_BAR_BTNS.map(b => b.id)
+    } catch { myPanel = []; editBarOrder = EDIT_TOOLS.map(t => t.id); docBarOrder = DOC_BAR_BTNS.map(b => b.id) }
 }
 
 function saveMyPanel() {
-    localStorage.setItem(LS_KEY, JSON.stringify(myPanel))
+    const cfg = { stamps: myPanel, editBar: editBarOrder, docBar: docBarOrder }
+    localStorage.setItem(LS_PANEL_CONFIG, JSON.stringify(cfg))
+    // TODO: supabase sync → upsert user_settings({ key: 'panel_config', value: cfg })
     const el = document.getElementById('save-status')
     if (el) { el.textContent = '✓ 已儲存'; setTimeout(() => el.textContent = '', 2000) }
 }
 
 function clearMyPanel() {
-    myPanel = []
+    myPanel = []; editBarOrder = EDIT_TOOLS.map(t => t.id); docBarOrder = DOC_BAR_BTNS.map(b => b.id)
     saveMyPanel()
-    renderMyPanel()
-    renderSelector()
+    renderMyPanel(); renderSelector(); renderBarReorders()
+    maybeRefreshLayout()
 }
 
 function isSelected(id, category) {
@@ -1027,6 +1228,94 @@ function removeTool(id, category) {
     saveMyPanel()
     renderMyPanel()
     renderSelector()
+}
+
+function maybeRefreshLayout() {
+    if (document.getElementById('tab-layout')?.classList.contains('active')) {
+        renderLpLeftStrip(); renderLpShapesBar(); renderLpRight()
+    }
+}
+
+// ── Bar reorder UI ────────────────────────────────────────────────────────────
+function renderBarReorders() {
+    const wrap = document.getElementById('bar-reorder-sections')
+    if (!wrap) return
+    wrap.innerHTML = ''
+
+    const sections = [
+        { label: 'Edit Bar 順序', color: '#f59e0b', allItems: EDIT_TOOLS, getOrder: () => editBarOrder, setOrder: (o) => { editBarOrder = o } },
+        { label: 'Doc Bar 順序',  color: '#6366f1', allItems: DOC_BAR_BTNS, getOrder: () => docBarOrder,  setOrder: (o) => { docBarOrder = o  },
+          hint: '<span style="font-size:10px;color:var(--sf-muted)">● 綠=常駐 ● 黃=收起 ● 紫=展開</span>' },
+    ]
+
+    sections.forEach(sec => {
+        const block = document.createElement('div')
+        block.className = 'reorder-section'
+        block.innerHTML = `
+            <div class="reorder-header">
+                <div class="cat-dot" style="background:${sec.color}"></div>
+                <div class="reorder-header-label">${sec.label}</div>
+                ${sec.hint || '<span style="font-size:10px;color:var(--sf-muted)">拖曳排序</span>'}
+            </div>
+            <div class="reorder-row" id="reorder-row-${sec.label.replace(/\s/g,'')}"></div>
+        `
+        wrap.appendChild(block)
+
+        const row = block.querySelector('.reorder-row')
+        let dragSrc = null, insertTarget = null
+
+        function clearInsert() {
+            row.querySelectorAll('.mock-cell').forEach(c => c.classList.remove('insert-before','insert-after'))
+        }
+
+        const order = sec.getOrder()
+        const orderedItems = order.map(id => sec.allItems.find(t => t.id === id)).filter(Boolean)
+        const missing = sec.allItems.filter(t => !order.includes(t.id))
+        const items = [...orderedItems, ...missing]
+
+        const GROUP_COLORS = { always: '#10b981', collapsed: '#f59e0b', expanded: '#6366f1' }
+        items.forEach((item, idx) => {
+            const cell = document.createElement('div')
+            cell.className = 'mock-cell'
+            cell.draggable = true
+            cell.dataset.idx = idx
+            cell.title = item.title || item.label || item.id
+            const groupBadge = item.group
+                ? `<span style="position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:50%;background:${GROUP_COLORS[item.group] || '#94a3b8'}"></span>`
+                : ''
+            cell.innerHTML = item.icon
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">${item.icon}</svg>`
+                : item.textIcon
+                    ? `<span class="cell-text" style="font-size:11px;font-weight:700">${item.textIcon}</span>`
+                    : `<span class="cell-text" style="font-size:10px;font-weight:700">${item.label || item.id}</span>`
+            cell.innerHTML += `<span class="cell-label">${item.label || item.title}</span>` + groupBadge
+            cell.style.position = 'relative'
+
+            cell.addEventListener('dragstart', e => { dragSrc = idx; cell.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move' })
+            cell.addEventListener('dragend', () => { cell.classList.remove('dragging'); clearInsert() })
+            cell.addEventListener('dragover', e => {
+                e.preventDefault(); clearInsert()
+                const before = e.clientX < cell.getBoundingClientRect().left + cell.offsetWidth / 2
+                cell.classList.add(before ? 'insert-before' : 'insert-after')
+                insertTarget = { idx, before }
+            })
+            cell.addEventListener('dragleave', () => cell.classList.remove('insert-before','insert-after'))
+            cell.addEventListener('drop', e => {
+                e.preventDefault(); clearInsert()
+                if (dragSrc === null || !insertTarget) return
+                const { idx: destIdx, before } = insertTarget; insertTarget = null
+                if (dragSrc === destIdx) return
+                const arr = [...items]
+                const [moved] = arr.splice(dragSrc, 1)
+                let at = dragSrc < destIdx ? (before ? destIdx-1 : destIdx) : (before ? destIdx : destIdx+1)
+                arr.splice(Math.max(0, at), 0, moved)
+                sec.setOrder(arr.map(t => t.id))
+                saveMyPanel(); renderBarReorders(); maybeRefreshLayout()
+            })
+
+            row.appendChild(cell)
+        })
+    })
 }
 
 // ── Icon rendering helpers ────────────────────────────────────────────────────
@@ -1089,8 +1378,13 @@ function renderMyPanel() {
     grid2.className = 'mock-stamp-grid-2row'
     bar.appendChild(grid2)
 
-    // Stamp cells (draggable)
+    // Stamp cells — insert-style drag (not swap)
     let dragSrc = null
+    let insertTarget = null // { idx, before }
+
+    function clearInsert() {
+        grid2.querySelectorAll('.mock-cell').forEach(c => c.classList.remove('insert-before', 'insert-after'))
+    }
 
     stampItems.forEach((item, idx) => {
         const tool = findTool(item.id, item.category)
@@ -1114,18 +1408,35 @@ function renderMyPanel() {
             cell.classList.add('dragging')
             e.dataTransfer.effectAllowed = 'move'
         })
-        cell.addEventListener('dragend', () => cell.classList.remove('dragging'))
-        cell.addEventListener('dragover', e => { e.preventDefault(); cell.classList.add('drag-over') })
-        cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'))
+        cell.addEventListener('dragend', () => { cell.classList.remove('dragging'); clearInsert() })
+
+        cell.addEventListener('dragover', e => {
+            e.preventDefault()
+            clearInsert()
+            const rect = cell.getBoundingClientRect()
+            const before = e.clientX < rect.left + rect.width / 2
+            cell.classList.add(before ? 'insert-before' : 'insert-after')
+            insertTarget = { idx, before }
+        })
+        cell.addEventListener('dragleave', () => {
+            cell.classList.remove('insert-before', 'insert-after')
+        })
         cell.addEventListener('drop', e => {
             e.preventDefault()
-            cell.classList.remove('drag-over')
-            const destIdx = parseInt(cell.dataset.idx)
-            if (dragSrc === null || dragSrc === destIdx) return
-            const stampOrder = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
-            const [moved] = stampOrder.splice(dragSrc, 1)
-            stampOrder.splice(destIdx, 0, moved)
-            myPanel = stampOrder
+            clearInsert()
+            if (dragSrc === null || insertTarget === null) return
+            const { idx: destIdx, before } = insertTarget
+            insertTarget = null
+            if (dragSrc === destIdx) return
+
+            const order = [...stampItems]
+            const [moved] = order.splice(dragSrc, 1)
+            // after removing dragSrc, adjust destIdx
+            let at = dragSrc < destIdx
+                ? (before ? destIdx - 1 : destIdx)
+                : (before ? destIdx : destIdx + 1)
+            order.splice(Math.max(0, at), 0, moved)
+            myPanel = order
             saveMyPanel()
             renderMyPanel()
         })
@@ -1301,12 +1612,6 @@ function renderState() {
 }
 
 // ── Layout Preview ────────────────────────────────────────────────────────────
-const EDIT_TOOLS = [
-    ...TOOLSETS.find(g => g.type === 'edit').tools,
-    { id: 'highlighter', label: 'Highlight', hasSub: false,
-      icon: '<rect x="3" y="8" width="18" height="8" rx="2" fill="#fde047" opacity="0.55"/><line x1="3" y1="8" x2="21" y2="8" stroke="#ca8a04" stroke-width="1.2"/><line x1="3" y1="16" x2="21" y2="16" stroke="#ca8a04" stroke-width="1.2"/>' },
-]
-
 // Pen variants for the picker bar
 const PEN_VARIANTS = [
     { id:'pen',         label:'Pen',      stroke:'#e2e8f0' },
@@ -1337,14 +1642,20 @@ const SIZES = [
     { label: 'L', fontSize: '13px' },
 ]
 
+
 let lpActiveTool = 'view'
 let lpActiveColor = '#e2e8f0'
 let lpActiveSize = 'M'
+let lpStampBarVisible = true
+let lpShapesBarVisible = false
+let lpCleanMode = false
 let lpActiveStamp = null
 let lpOthersOpen = false
 let lpPenBarOpen = false
 let lpActivePen = 'pen'
-let lpActiveStampPage = null  // active category name for stamp bar paging
+let lpStampPage = 0           // current page index (0-based, by category)
+let lpStampBarY = null        // null = first open near bottom; number = dragged Y
+let lpShapesBarY = null       // same as above for shapes bar
 
 function renderLpPenBar() {
     const area = document.getElementById('lp-score-area')
@@ -1367,7 +1678,7 @@ function renderLpPenBar() {
         bar.style.top = relY + 'px'
         bar.style.transform = lpPenBarOpen
             ? `translateX(0) scale(1) translateY(-50%)`
-            : `translateX(-8px) scale(0.92) translateY(-50%)`
+            : `translateX(8px) scale(0.92) translateY(-50%)`
     }
 
     bar.innerHTML = ''
@@ -1472,9 +1783,72 @@ function renderLayoutPreview() {
     renderLpLeftStrip()
     renderLpOthersBar()
     renderLpPenBar()
+    renderLpShapesBar()
     renderLpStampBar()
     renderLpRight()
     initLpDrag()
+
+    // Clean mode toggle + drag
+    const toggleBtn = document.getElementById('lp-clean-toggle')
+    if (toggleBtn && !toggleBtn._dragInit) {
+        toggleBtn._dragInit = true
+        const scene = document.getElementById('lp-scene')
+
+        const updateIcon = () => {
+            toggleBtn.innerHTML = lpCleanMode
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`
+                : `<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`
+        }
+        updateIcon()
+
+        // Drag logic — position stored as {left, top} from scene origin
+        let dragging = false, moved = false
+        let startX = 0, startY = 0
+        let origLeft = 0, origTop = 0
+
+        const getPos = () => {
+            const sr = scene.getBoundingClientRect()
+            const br = toggleBtn.getBoundingClientRect()
+            return { left: br.left - sr.left, top: br.top - sr.top }
+        }
+
+        toggleBtn.addEventListener('mousedown', e => {
+            dragging = true; moved = false
+            startX = e.clientX; startY = e.clientY
+            const p = getPos()
+            origLeft = p.left; origTop = p.top
+            // switch to left/top positioning
+            toggleBtn.style.right = 'auto'; toggleBtn.style.bottom = 'auto'
+            toggleBtn.style.left = origLeft + 'px'; toggleBtn.style.top = origTop + 'px'
+            toggleBtn.classList.add('dragging')
+            e.preventDefault()
+        })
+
+        window.addEventListener('mousemove', e => {
+            if (!dragging) return
+            const dx = e.clientX - startX, dy = e.clientY - startY
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true
+            const sr = scene.getBoundingClientRect()
+            const newLeft = Math.max(4, Math.min(sr.width  - toggleBtn.offsetWidth  - 4, origLeft + dx))
+            const newTop  = Math.max(4, Math.min(sr.height - toggleBtn.offsetHeight - 4, origTop  + dy))
+            toggleBtn.style.left = newLeft + 'px'
+            toggleBtn.style.top  = newTop  + 'px'
+        })
+
+        window.addEventListener('mouseup', () => {
+            if (!dragging) return
+            dragging = false
+            toggleBtn.classList.remove('dragging')
+            if (!moved) {
+                // it's a click — toggle clean mode
+                lpCleanMode = !lpCleanMode
+                if (!lpCleanMode) lpStampBarVisible = true
+                scene.classList.toggle('lp-clean-mode', lpCleanMode)
+                renderLpStampBar()
+                updateIcon()
+            }
+        })
+    }
     const countEl = document.querySelector('#lp-stamp-count span')
     if (countEl) {
         const n = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit').length
@@ -1501,28 +1875,22 @@ function renderLpLeftStrip() {
 
     // Others bar is rendered in score area, not strip — handled in renderLpOthersBar()
 
-    // Score name (rotated, book-spine style)
-    const nameEl = document.createElement('div')
-    nameEl.className = 'lp-strip-score-name'
-    nameEl.textContent = 'Chopin — Ballade No.1 in G minor'
-    nameEl.title = 'Chopin — Ballade No.1 in G minor'
-    strip.appendChild(nameEl)
-
-    // Thin divider after name
-    const nameDivider = document.createElement('div')
-    nameDivider.className = 'lp-strip-divider'
-    strip.appendChild(nameDivider)
-
-    // Edit tools
-    EDIT_TOOLS.forEach(t => {
+    // Edit tools — in editBarOrder
+    const orderedEditTools = editBarOrder.map(id => EDIT_TOOLS.find(t => t.id === id)).filter(Boolean)
+    const extraEditTools = EDIT_TOOLS.filter(t => !editBarOrder.includes(t.id))
+    ;[...orderedEditTools, ...extraEditTools].forEach(t => {
         const isPenTool = (t.id === 'pen' || t.id === 'highlighter')
+        const isShapes = t.isShapesTrigger === true
+        const isStamp = t.isStampTrigger === true
         const isActive = lpActiveTool === t.id || (isPenTool && lpActiveTool === t.id)
         const penBarActive = isPenTool && lpPenBarOpen && lpActiveTool === t.id
+        const shapesBarActive = isShapes && lpShapesBarVisible
+        const stampBarActive = isStamp && lpStampBarVisible
         const btn = document.createElement('div')
         btn.className = 'lp-strip-tool'
-            + (isActive ? ' active-tool' : '')
-            + (isPenTool ? ' has-sub' : '')
-            + (penBarActive ? ' open' : '')
+            + (isActive || shapesBarActive || stampBarActive ? ' active-tool' : '')
+            + (isPenTool || isShapes || isStamp ? ' has-sub' : '')
+            + (penBarActive || shapesBarActive || stampBarActive ? ' open' : '')
         btn.dataset.tool = t.id
         btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5">${t.icon}</svg>
             <div class="lp-tooltip">${t.label}</div>`
@@ -1534,20 +1902,368 @@ function renderLpLeftStrip() {
                     lpActiveTool = t.id
                     lpPenBarOpen = true
                 }
+                lpShapesBarVisible = false
+                lpStampBarVisible = false
+            } else if (isShapes) {
+                lpShapesBarVisible = !lpShapesBarVisible
+                lpPenBarOpen = false
+                lpStampBarVisible = false
+            } else if (isStamp) {
+                lpStampBarVisible = !lpStampBarVisible
+                lpPenBarOpen = false
+                lpShapesBarVisible = false
             } else {
                 lpActiveTool = t.id
                 lpPenBarOpen = false
+                lpShapesBarVisible = false
+                lpStampBarVisible = false
             }
             renderLpLeftStrip()
             renderLpPenBar()
+            renderLpShapesBar()
+            renderLpStampBar()
         })
         strip.appendChild(btn)
     })
 
+    // Scrollbar track — fills remaining vertical space
+    const sbTrack = document.createElement('div')
+    sbTrack.className = 'lp-strip-scrollbar-track'
+    strip.appendChild(sbTrack)
+
+    const sbThumb = document.createElement('div')
+    sbThumb.className = 'lp-strip-scrollbar-thumb'
+    sbTrack.appendChild(sbThumb)
+
+    requestAnimationFrame(() => {
+        const trackH = sbTrack.clientHeight || 120
+        const thumbH = Math.round(trackH / 5)
+        const centerTop = Math.round((trackH - thumbH) / 2)
+        const maxTop = trackH - thumbH
+        let thumbTop = centerTop
+        sbThumb.style.height = thumbH + 'px'
+        sbThumb.style.top = thumbTop + 'px'
+        let dragging = false, startY = 0, startTop = 0
+        sbThumb.addEventListener('mousedown', e => {
+            dragging = true; startY = e.clientY; startTop = thumbTop
+            sbThumb.classList.add('grabbing'); e.preventDefault(); e.stopPropagation()
+        })
+        window.addEventListener('mousemove', e => {
+            if (!dragging) return
+            thumbTop = Math.max(0, Math.min(maxTop, startTop + (e.clientY - startY)))
+            sbThumb.style.top = thumbTop + 'px'
+        })
+        window.addEventListener('mouseup', () => {
+            if (!dragging) return
+            dragging = false
+            sbThumb.classList.remove('grabbing')
+            // snap back to center with spring animation
+            thumbTop = centerTop
+            sbThumb.style.top = centerTop + 'px'
+        })
+    })
+
+    // Collapse button at bottom
+    const collapseBtn = document.createElement('div')
+    collapseBtn.className = 'lp-strip-collapse-btn'
+    collapseBtn.title = '全域收合'
+    collapseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.8" width="14" height="14"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`
+    collapseBtn.addEventListener('click', () => {
+        const scene = document.getElementById('lp-scene')
+        scene?.classList.toggle('lp-clean-mode')
+    })
+    strip.appendChild(collapseBtn)
+}
+
+function renderLpShapesBar() {
+    const area = document.getElementById('lp-score-area')
+    if (!area) return
+    let bar = document.getElementById('lp-shapes-bar')
+    if (!bar) {
+        bar = document.createElement('div')
+        bar.id = 'lp-shapes-bar'
+        area.appendChild(bar)
+    }
+    bar.className = 'lp-shapes-bar' + (lpShapesBarVisible ? ' open' : '')
+    bar.innerHTML = ''
+
+    // Vertical position: first open near bottom, then remembers last dragged Y
+    if (lpShapesBarY === null && lpShapesBarVisible) {
+        const areaH = area.clientHeight || 400
+        lpShapesBarY = Math.round(areaH * 0.82)
+    }
+    bar.style.top = (lpShapesBarY ?? 300) + 'px'
+
+    if (!lpShapesBarVisible) return
+
+    const shapesGroup = TOOLSETS.find(g => g.name === 'Shapes')
+    const flatItems = shapesGroup ? shapesGroup.tools : []
+
+    // ── LEFT: nav column (prev / next) ──
+    const navCol = document.createElement('div')
+    navCol.className = 'lp-stamp-nav'
+
+    const prevBtn = document.createElement('div')
+    prevBtn.className = 'lp-nav-btn disabled'
+    prevBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M15 18l-6-6 6-6"/></svg>`
+
+    const nextBtn = document.createElement('div')
+    nextBtn.className = 'lp-nav-btn disabled'
+    nextBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M9 18l6-6-6-6"/></svg>`
+
+    navCol.appendChild(prevBtn)
+    navCol.appendChild(nextBtn)
+    bar.appendChild(navCol)
+
+    const div1 = document.createElement('div')
+    div1.className = 'lp-bar-divider'
+    bar.appendChild(div1)
+
+    // ── MIDDLE: content + grid (populated after layout measurement) ──
+    const content = document.createElement('div')
+    content.className = 'lp-stamp-content'
+    const grid = document.createElement('div')
+    grid.className = 'lp-stamp-grid'
+    content.appendChild(grid)
+    bar.appendChild(content)
+
+    const div2 = document.createElement('div')
+    div2.className = 'lp-bar-divider'
+    bar.appendChild(div2)
+
+    // ── RIGHT: grip column (vertical drag) ──
+    const grip = document.createElement('div')
+    grip.className = 'lp-bar-handle-col'
+    grip.innerHTML = `<span></span><span></span><span></span><span></span>`
+    grip.title = 'Drag to move'
+
+    let dragging = false, startY = 0, startBarY = 0
+    grip.addEventListener('mousedown', e => {
+        e.preventDefault()
+        dragging = true
+        startY = e.clientY
+        startBarY = lpShapesBarY ?? 300
+        grip.style.cursor = 'grabbing'
+        const onMove = ev => {
+            if (!dragging) return
+            const dy = ev.clientY - startY
+            const areaH = area.clientHeight
+            const newY = Math.max(30, Math.min(areaH - 30, startBarY + dy))
+            lpShapesBarY = newY
+            bar.style.top = newY + 'px'
+        }
+        const onUp = () => {
+            dragging = false
+            grip.style.cursor = ''
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+    })
+    bar.appendChild(grip)
+
+    // ── After layout: measure → fill grid ──
+    requestAnimationFrame(() => {
+        const CELL = 28, GAP = 3
+        const contentW = content.clientWidth
+        const cols = Math.max(1, Math.floor((contentW + GAP) / (CELL + GAP)))
+        const perPage = cols * 2
+        const pageCount = Math.max(1, Math.ceil(flatItems.length / perPage))
+
+        // Shapes are few — single page, disable nav
+        prevBtn.classList.toggle('disabled', true)
+        nextBtn.classList.toggle('disabled', pageCount <= 1)
+
+        flatItems.forEach(tool => {
+            const cell = document.createElement('div')
+            const isActive = lpActiveTool === 'shapes_' + tool.id
+            cell.className = 'lp-shapes-cell' + (isActive ? ' active-shape' : '')
+            cell.title = tool.label
+            cell.innerHTML = tool.icon
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5" width="16" height="16">${tool.icon}</svg>`
+                : `<span style="font-size:11px;font-weight:700;color:#e2e8f0">${tool.textIcon || tool.label}</span>`
+            cell.addEventListener('click', () => {
+                lpActiveTool = isActive ? 'view' : 'shapes_' + tool.id
+                renderLpShapesBar()
+            })
+            grid.appendChild(cell)
+        })
+    })
+}
+
+function renderLpStampBar() {
+    const area = document.getElementById('lp-score-area')
+    if (!area) return
+    let bar = document.getElementById('lp-stamp-bar')
+    if (!bar) {
+        bar = document.createElement('div')
+        bar.id = 'lp-stamp-bar'
+        area.appendChild(bar)
+    }
+    bar.className = 'lp-stamp-bar' + (lpStampBarVisible ? ' open' : '')
+    bar.innerHTML = ''
+
+    // ── Vertical position: first open = near bottom; subsequent = last dragged Y ──
+    if (lpStampBarY === null && lpStampBarVisible) {
+        const areaH = area.clientHeight || 400
+        lpStampBarY = Math.round(areaH * 0.82)
+    }
+    bar.style.top = (lpStampBarY ?? 300) + 'px'
+
+    if (!lpStampBarVisible) return
+
+    // ── All stamps flat (mixed categories) ──
+    const allStamps = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
+    const isDemoMode = allStamps.length === 0
+    const flatItems = isDemoMode
+        ? Array.from({ length: 80 }, (_, i) => ({ _ghost: true, _idx: i }))
+        : allStamps
+
+    // ── LEFT: nav column (prev / next) ──
+    const navCol = document.createElement('div')
+    navCol.className = 'lp-stamp-nav'
+
+    const prevBtn = document.createElement('div')
+    prevBtn.className = 'lp-nav-btn disabled'
+    prevBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M15 18l-6-6 6-6"/></svg>`
+
+    const nextBtn = document.createElement('div')
+    nextBtn.className = 'lp-nav-btn disabled'
+    nextBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M9 18l6-6-6-6"/></svg>`
+
+    navCol.appendChild(prevBtn)
+    navCol.appendChild(nextBtn)
+    bar.appendChild(navCol)
+
     // Divider
-    const div = document.createElement('div')
-    div.className = 'lp-strip-divider'
-    strip.appendChild(div)
+    const div1 = document.createElement('div')
+    div1.className = 'lp-bar-divider'
+    bar.appendChild(div1)
+
+    // ── MIDDLE: content area (grid populated after layout measurement) ──
+    const content = document.createElement('div')
+    content.className = 'lp-stamp-content'
+    const grid = document.createElement('div')
+    grid.className = 'lp-stamp-grid'
+    content.appendChild(grid)
+    bar.appendChild(content)
+
+    // Divider
+    const div2 = document.createElement('div')
+    div2.className = 'lp-bar-divider'
+    bar.appendChild(div2)
+
+    // ── RIGHT: grip column (vertical drag) ──
+    const grip = document.createElement('div')
+    grip.className = 'lp-bar-handle-col'
+    grip.innerHTML = `<span></span><span></span><span></span><span></span>`
+    grip.title = 'Drag to move'
+
+    let dragging = false, startY = 0, startBarY = 0
+    grip.addEventListener('mousedown', e => {
+        e.preventDefault()
+        dragging = true
+        startY = e.clientY
+        startBarY = lpStampBarY ?? 120
+        grip.style.cursor = 'grabbing'
+        const onMove = ev => {
+            if (!dragging) return
+            const dy = ev.clientY - startY
+            const areaH = area.clientHeight
+            const newY = Math.max(30, Math.min(areaH - 30, startBarY + dy))
+            lpStampBarY = newY
+            bar.style.top = newY + 'px'
+        }
+        const onUp = () => {
+            dragging = false
+            grip.style.cursor = ''
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+    })
+    bar.appendChild(grip)
+
+    // ── After layout: measure content width → calculate cols per page ──
+    requestAnimationFrame(() => {
+        const CELL = 28, GAP = 3
+        const contentW = content.clientWidth
+        const cols = Math.max(1, Math.floor((contentW + GAP) / (CELL + GAP)))
+        const perPage = cols * 2  // 2 rows
+
+        const pageCount = Math.max(1, Math.ceil(flatItems.length / perPage))
+        lpStampPage = Math.max(0, Math.min(lpStampPage, pageCount - 1))
+        const pageItems = flatItems.slice(lpStampPage * perPage, (lpStampPage + 1) * perPage)
+
+        // Update nav button states
+        prevBtn.classList.toggle('disabled', lpStampPage === 0)
+        nextBtn.classList.toggle('disabled', lpStampPage >= pageCount - 1)
+        prevBtn.onclick = e => { e.stopPropagation(); if (lpStampPage > 0) { lpStampPage--; renderLpStampBar() } }
+        nextBtn.onclick = e => { e.stopPropagation(); if (lpStampPage < pageCount - 1) { lpStampPage++; renderLpStampBar() } }
+
+        // Populate grid
+        pageItems.forEach(item => {
+            const cell = document.createElement('div')
+            if (item._ghost) {
+                cell.className = 'lp-cell'
+                cell.style.cssText = 'opacity:0.15;cursor:default;'
+                grid.appendChild(cell)
+                return
+            }
+            const tool = findTool(item.id, item.category)
+            const group = TOOLSETS.find(g => g.name === item.category)
+            const isActive = lpActiveStamp === item.id + '_' + item.category
+            cell.className = 'lp-cell' + (isActive ? ' active-stamp' : '')
+            cell.style.borderColor = group?.color ? group.color + '55' : ''
+            cell.innerHTML = (tool?.icon
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5">${tool.icon}</svg>`
+                : `<span class="lp-cell-text">${tool?.textIcon || tool?.label || item.id}</span>`)
+                + `<div class="lp-cell-tip">${tool?.label || item.id}</div>`
+            cell.addEventListener('click', () => {
+                lpActiveStamp = isActive ? null : (item.id + '_' + item.category)
+                renderLpStampBar()
+            })
+            grid.appendChild(cell)
+        })
+    })
+}
+
+function renderLpRight() {
+    const right = document.getElementById('lp-right')
+    if (!right) return
+    right.innerHTML = ''
+
+    // Score name — rotated, at top of left column
+    const nameEl = document.createElement('div')
+    nameEl.className = 'lp-strip-score-name'
+    nameEl.textContent = 'Chopin — Ballade No.1 in G minor'
+    nameEl.title = 'Chopin — Ballade No.1 in G minor'
+    right.appendChild(nameEl)
+
+    const nameDivider = document.createElement('div')
+    nameDivider.className = 'lp-strip-divider'
+    right.appendChild(nameDivider)
+
+    // ── Doc bar buttons in docBarOrder ──
+    const PRIMARY_IDS = ['page-head', 'page-up', 'page-down', 'fit-width', 'fit-height']
+    const orderedDocBtns = docBarOrder.map(id => DOC_BAR_BTNS.find(b => b.id === id)).filter(Boolean)
+    const extraDocBtns   = DOC_BAR_BTNS.filter(b => !docBarOrder.includes(b.id))
+    ;[...orderedDocBtns, ...extraDocBtns].forEach(b => {
+        const isPrimary = PRIMARY_IDS.includes(b.id)
+        const btn = document.createElement('div')
+        btn.className = 'lp-docbar-btn' + (isPrimary ? ' lp-docbar-primary' : '')
+        btn.title = b.title
+        if (b.fillIcon) {
+            const opacity = isPrimary ? '1' : '0.4'
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="#f9fafb" stroke="none" width="15" height="15" style="opacity:${opacity}">${b.icon}</svg>`
+        } else {
+            const stroke = isPrimary ? '#ffffff' : 'rgba(255,255,255,0.4)'
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">${b.icon}</svg>`
+        }
+        right.appendChild(btn)
+    })
 
     // Bottom: color + size
     const bottom = document.createElement('div')
@@ -1558,7 +2274,7 @@ function renderLpLeftStrip() {
         dot.className = 'lp-color-dot' + (lpActiveColor === c.hex ? ' active-color' : '')
         dot.style.background = c.hex
         dot.title = c.label
-        dot.addEventListener('click', () => { lpActiveColor = c.hex; renderLpLeftStrip() })
+        dot.addEventListener('click', () => { lpActiveColor = c.hex; renderLpRight() })
         bottom.appendChild(dot)
     })
 
@@ -1571,218 +2287,15 @@ function renderLpLeftStrip() {
         dot.style.fontWeight = '700'
         dot.textContent = s.label
         dot.title = s.label
-        dot.addEventListener('click', () => { lpActiveSize = s.label; renderLpLeftStrip() })
+        dot.addEventListener('click', () => { lpActiveSize = s.label; renderLpRight() })
         sizeDiv.appendChild(dot)
     })
     bottom.appendChild(sizeDiv)
-    strip.appendChild(bottom)
-}
-
-function renderLpStampBar() {
-    const bar = document.getElementById('lp-stamp-bar')
-    if (!bar) return
-    bar.innerHTML = ''
-
-    // Build pages: group stamps by category (non-edit only)
-    const stampItems = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
-
-    // Pages from TOOLSETS (non-edit), or demo pages if empty
-    const stampGroups = TOOLSETS.filter(g => g.type !== 'edit')
-    const demoPages = stampGroups.map(g => ({
-        name: g.name, color: g.color,
-        items: Array.from({ length: 18 }, (_, i) => ({ id: `_ph${i}`, category: '_ghost', _color: g.color }))
-    }))
-    const realPages = stampGroups.map(g => ({
-        name: g.name, color: g.color,
-        items: stampItems.filter(s => s.category === g.name)
-    })).filter(p => p.items.length > 0)
-
-    const pages = realPages.length > 0 ? realPages : demoPages
-
-    // Default active page
-    if (!lpActiveStampPage || !pages.find(p => p.name === lpActiveStampPage)) {
-        lpActiveStampPage = pages[0]?.name
-    }
-    const activePage = pages.find(p => p.name === lpActiveStampPage) || pages[0]
-
-    // ── Handle column ──
-    const handleCol = document.createElement('div')
-    handleCol.className = 'lp-bar-handle-col'
-    handleCol.innerHTML = '<span></span><span></span><span></span>'
-    bar.appendChild(handleCol)
-
-    // ── Content column ──
-    const content = document.createElement('div')
-    content.className = 'lp-stamp-content'
-    bar.appendChild(content)
-
-    // Category tabs
-    const tabs = document.createElement('div')
-    tabs.className = 'lp-stamp-tabs'
-    pages.forEach(page => {
-        const tab = document.createElement('div')
-        tab.className = 'lp-stamp-tab' + (page.name === lpActiveStampPage ? ' active-tab' : '')
-        if (page.name === lpActiveStampPage) tab.style.background = page.color + '33'
-        if (page.name === lpActiveStampPage) tab.style.borderColor = page.color + '88'
-        tab.innerHTML = `<span class="tab-dot" style="background:${page.color}"></span>${page.name}`
-        tab.addEventListener('click', () => { lpActiveStampPage = page.name; renderLpStampBar() })
-        tabs.appendChild(tab)
-    })
-    content.appendChild(tabs)
-
-    // 2-row grid for active page
-    const grid = document.createElement('div')
-    grid.className = 'lp-stamp-grid'
-    content.appendChild(grid)
-
-    activePage.items.forEach(item => {
-        const isGhost = item.category === '_ghost'
-        const cell = document.createElement('div')
-        if (isGhost) {
-            cell.className = 'lp-cell'
-            cell.style.cssText = `opacity:0.25;cursor:default;border-color:${item._color}44`
-            grid.appendChild(cell)
-            return
-        }
-        const tool = findTool(item.id, item.category)
-        const group = TOOLSETS.find(g => g.name === item.category)
-        const isActive = lpActiveStamp === item.id + '_' + item.category
-        cell.className = 'lp-cell' + (isActive ? ' active-stamp' : '')
-        cell.style.borderColor = group?.color ? group.color + '55' : ''
-        cell.innerHTML = (tool?.icon
-            ? `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5">${tool.icon}</svg>`
-            : `<span class="lp-cell-text">${tool?.textIcon || tool?.label || item.id}</span>`)
-            + `<div class="lp-cell-tip">${tool?.label || item.id}</div>`
-        cell.addEventListener('click', () => {
-            lpActiveStamp = isActive ? null : (item.id + '_' + item.category)
-            renderLpStampBar()
-        })
-        grid.appendChild(cell)
-    })
-}
-
-function renderLpRight() {
-    const right = document.getElementById('lp-right')
-    const scene = document.getElementById('lp-scene')
-    if (!right || !scene) return
-    right.innerHTML = ''
-
-    // ── Primary buttons: Fit Width / Fit Height / Jump ──
-    const primaryBtns = [
-        { label: 'W', title: 'Fit to Width',  icon: '<path d="M4 12h16M4 12l3-3M4 12l3 3M20 12l-3-3M20 12l-3 3"/>' },
-        { label: 'F', title: 'Fit to Height', icon: '<path d="M12 4v16M12 4l-3 3M12 4l3 3M12 20l-3-3M12 20l3-3"/>' },
-        { label: '▶', title: 'Jump Forward',  icon: '<polygon points="5,3 19,12 5,21"/>' },
-    ]
-    primaryBtns.forEach(b => {
-        const btn = document.createElement('div')
-        btn.className = 'lp-docbar-btn lp-docbar-primary'
-        btn.title = b.title
-        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">${b.icon}</svg>`
-        right.appendChild(btn)
-    })
-
-    // Divider between primary and misc buttons
-    const primDiv = document.createElement('div')
-    primDiv.style.cssText = 'width:18px;height:1px;background:rgba(255,255,255,0.1);margin:2px 0;flex-shrink:0'
-    right.appendChild(primDiv)
-
-    // ── Secondary (misc) doc bar buttons ──
-    const docIcons = [
-        '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-        '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',
-        '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
-        '<line x1="5" y1="12" x2="19" y2="12"/>',
-        '<rect x="3" y="3" width="18" height="18" rx="2"/>',
-    ]
-    docIcons.forEach(ic => {
-        const btn = document.createElement('div')
-        btn.className = 'lp-docbar-btn'
-        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" width="16" height="16">${ic}</svg>`
-        right.appendChild(btn)
-    })
-
-    // Scrollbar track + thumb
-    const track = document.createElement('div')
-    track.className = 'lp-scrollbar-track'
-    right.appendChild(track)
-
-    // Thumb height = 1/5 of scene height
-    const sceneH = scene.clientHeight || 560
-    const thumbH = Math.round(sceneH / 5)
-    // Start in middle
-    let thumbTop = Math.round((sceneH - thumbH) / 2)
-    const maxTop = sceneH - thumbH - 12 // within track (with padding)
-
-    const thumb = document.createElement('div')
-    thumb.className = 'lp-scrollbar-thumb'
-    thumb.style.height = thumbH + 'px'
-    thumb.style.top = thumbTop + 'px'
-    track.appendChild(thumb)
-
-    // Drag behaviour
-    let dragging = false, startY = 0, startTop = 0
-    thumb.addEventListener('mousedown', e => {
-        dragging = true
-        startY = e.clientY
-        startTop = thumbTop
-        thumb.classList.add('grabbing')
-        e.preventDefault()
-        e.stopPropagation()
-    })
-    window.addEventListener('mousemove', e => {
-        if (!dragging) return
-        const dy = e.clientY - startY
-        thumbTop = Math.max(0, Math.min(maxTop, startTop + dy))
-        thumb.style.top = thumbTop + 'px'
-    })
-    window.addEventListener('mouseup', () => {
-        if (!dragging) return
-        dragging = false
-        thumb.classList.remove('grabbing')
-    })
+    right.appendChild(bottom)
 }
 
 function initLpDrag() {
-    const bar = document.getElementById('lp-stamp-bar')
-    const area = document.getElementById('lp-score-area')
-    const yInfo = document.getElementById('lp-y-info')
-    if (!bar || !area) return
-
-    let dragging = false
-    let startY = 0
-    let startBarTop = 0 // offset from top of area
-
-    function getBarTopFromBottom(bottomVal) {
-        return area.clientHeight - bar.clientHeight - bottomVal
-    }
-
-    function clamp(val, min, max) { return Math.max(min, Math.min(max, val)) }
-
-    bar.addEventListener('mousedown', e => {
-        if (e.target.closest('.lp-cell') || e.target.closest('.lp-strip-tool') || e.target.closest('.lp-stamp-tab')) return
-        dragging = true
-        bar.classList.add('is-dragging')
-        startY = e.clientY
-        // current top = area.height - bar.height - current bottom
-        const currentBottom = parseInt(bar.style.bottom) || 60
-        startBarTop = getBarTopFromBottom(currentBottom)
-        e.preventDefault()
-    })
-
-    window.addEventListener('mousemove', e => {
-        if (!dragging) return
-        const dy = e.clientY - startY
-        const newTop = clamp(startBarTop + dy, 8, area.clientHeight - bar.clientHeight - 8)
-        const newBottom = area.clientHeight - bar.clientHeight - newTop
-        bar.style.bottom = newBottom + 'px'
-        yInfo.textContent = `y: ${Math.round(newTop)}px from top`
-    })
-
-    window.addEventListener('mouseup', () => {
-        if (!dragging) return
-        dragging = false
-        bar.classList.remove('is-dragging')
-    })
+    // stamp bar no longer draggable — it pops out from edit strip like pen bar
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
@@ -1801,6 +2314,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 loadMyPanel()
 renderMyPanel()
 renderSelector()
+renderBarReorders()
 </script>
 </body>
 </html>
