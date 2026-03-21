@@ -25,10 +25,9 @@ export class EditScrollbarManager {
 
     this.track.addEventListener('pointerdown', e => {
       if (e.target === this.thumb) return
-      e.preventDefault()
-      const rect = this.track.getBoundingClientRect()
-      const ratio = 1 - ((e.clientY - rect.top) / rect.height)
-      this.viewer.scrollTop = ratio * (this.viewer.scrollHeight - this.viewer.clientHeight)
+      // Treat a click anywhere on the track as starting a drag from that point,
+      // without jumping the scroll position.
+      this._onThumbDown(e)
     })
 
     this.syncThumb()
