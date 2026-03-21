@@ -230,47 +230,33 @@
         .lp-hint { font-size:11px; color:var(--sf-muted); margin-bottom:12px; }
         .lp-hint b { color:var(--sf-text); }
 
-        /* Portrait layout: scene + info side by side */
-        .lp-wrapper {
-            display: flex;
-            gap: 24px;
-            align-items: flex-start;
-        }
+        .lp-wrapper { display: flex; flex-direction: column; gap: 12px; }
         .lp-scene {
             background: var(--sf-bg);
             border: 1px solid var(--sf-border);
             border-radius: 16px;
             overflow: hidden;
             position: relative;
-            /* iPad portrait: 768×1024 aspect ratio scaled down */
-            width: 320px;
-            height: 426px;
-            flex-shrink: 0;
+            width: 100%;
+            height: 680px;
             display: flex;
             user-select: none;
         }
         .lp-info-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding-top: 4px;
-        }
-        .lp-info-title {
-            font-size: 13px; font-weight: 700; color: var(--sf-text); margin-bottom: 2px;
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
         }
         .lp-info-row {
-            display: flex; align-items: center; gap: 10px;
+            display: inline-flex; align-items: center; gap: 8px;
             font-size: 12px; color: var(--sf-muted);
             background: var(--sf-card); border: 1px solid var(--sf-border);
-            border-radius: 8px; padding: 8px 12px;
+            border-radius: 8px; padding: 6px 12px;
         }
         .lp-info-row b { color: var(--sf-text); }
         .lp-info-row .dot { flex-shrink:0; }
 
         /* Left Edit tools strip */
         .lp-left-strip {
-            width: 44px;
+            width: 52px;
             flex-shrink: 0;
             background: var(--sf-card);
             border-right: 1px solid var(--sf-border);
@@ -282,7 +268,7 @@
             z-index: 10;
         }
         .lp-strip-tool {
-            width: 36px; height: 36px;
+            width: 40px; height: 40px;
             background: rgba(255,255,255,0.06);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px;
@@ -542,13 +528,13 @@
                 <div class="lp-right" id="lp-right"></div>
             </div>
 
-            <!-- Info panel beside the scene -->
+            <!-- Info bar below scene -->
             <div class="lp-info-panel">
-                <div class="lp-info-title">佈局說明</div>
-                <div class="lp-info-row"><div class="dot" style="background:#f59e0b"></div><b>左側條</b> — Edit tools + Color + Size</div>
-                <div class="lp-info-row"><div class="dot" style="background:#6366f1"></div><b>Stamp bar</b> — 上下拖移，Y 自由停靠</div>
-                <div class="lp-info-row"><div class="dot" style="background:#10b981"></div><b>右側</b> — Scrollbar + Doc bar</div>
-                <div class="lp-info-row" id="lp-stamp-count" style="margin-top:4px"><b>Stamps：</b><span>—</span></div>
+                <div class="lp-info-row"><div class="dot" style="background:#f59e0b"></div><b>左側</b> Edit tools + Color + Size</div>
+                <div class="lp-info-row"><div class="dot" style="background:#6366f1"></div><b>Stamp bar</b> 上下拖移</div>
+                <div class="lp-info-row"><div class="dot" style="background:#10b981"></div><b>右側</b> Scrollbar + Doc bar</div>
+                <div class="lp-info-row" id="lp-stamp-count"><b>Stamps：</b><span>—</span></div>
+                <div class="lp-info-row" style="margin-left:auto;color:var(--sf-muted);font-size:11px">拖曳 stamp bar 上下移動</div>
             </div>
         </div>
     </div>
