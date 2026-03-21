@@ -101,11 +101,20 @@
             border-top: 1px solid rgba(255,255,255,0.1);
             padding: 6px 8px;
             display: flex;
+            align-items: center;
             gap: 4px;
             overflow-x: auto;
             overflow-y: hidden;
             scrollbar-width: thin;
             scrollbar-color: rgba(255,255,255,0.15) transparent;
+        }
+        .mock-stamp-grid-2row {
+            display: grid;
+            grid-template-rows: 44px 44px;
+            grid-auto-flow: column;
+            grid-auto-columns: 44px;
+            gap: 4px;
+            flex-shrink: 0;
         }
         .mock-panel-bar::-webkit-scrollbar { height: 3px; }
         .mock-panel-bar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius:2px; }
@@ -355,6 +364,15 @@
             z-index: 20;
             box-shadow: 0 4px 24px rgba(0,0,0,0.5);
         }
+        /* 2-row stamp grid inside bar */
+        .lp-stamp-grid {
+            display: grid;
+            grid-template-rows: 44px 44px;
+            grid-auto-flow: column;
+            grid-auto-columns: 44px;
+            gap: 4px;
+            flex-shrink: 0;
+        }
         .lp-stamp-bar::-webkit-scrollbar { height:3px; }
         .lp-stamp-bar::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
         .lp-stamp-bar.is-dragging { cursor:grabbing; }
@@ -363,6 +381,7 @@
         .lp-bar-handle {
             display:flex; flex-direction:column; gap:3px;
             padding: 0 4px; flex-shrink:0; cursor:grab; opacity:0.4;
+            align-self: stretch; justify-content: center;
         }
         .lp-bar-handle span { display:block; width:14px; height:2px; background:#fff; border-radius:1px; }
 
@@ -496,7 +515,7 @@
             <div class="lp-score-area" id="lp-score-area">
                 <div class="lp-bar-y-info" id="lp-y-info">y: —</div>
                 <!-- Stamp bar (draggable) -->
-                <div class="lp-stamp-bar" id="lp-stamp-bar" style="bottom:60px;">
+                <div class="lp-stamp-bar" id="lp-stamp-bar" style="bottom:80px;">
                     <div class="lp-bar-handle">
                         <span></span><span></span><span></span>
                     </div>
@@ -726,7 +745,13 @@ function renderMyPanel() {
     // Divider
     const div = document.createElement('div')
     div.className = 'mock-divider'
+    div.style.height = '92px'
     bar.appendChild(div)
+
+    // 2-row grid
+    const grid2 = document.createElement('div')
+    grid2.className = 'mock-stamp-grid-2row'
+    bar.appendChild(grid2)
 
     // Stamp cells (draggable)
     let dragSrc = null
@@ -769,7 +794,7 @@ function renderMyPanel() {
             renderMyPanel()
         })
 
-        bar.appendChild(cell)
+        grid2.appendChild(cell)
     })
 }
 
@@ -1028,7 +1053,7 @@ function renderLpStampBar() {
 
     if (stampItems.length === 0) {
         const hint = document.createElement('span')
-        hint.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);padding:0 8px;white-space:nowrap'
+        hint.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);padding:0 8px;white-space:nowrap;align-self:center'
         hint.textContent = '← 先在「My Panel 配置」選 stamp'
         bar.appendChild(hint)
         return
@@ -1037,7 +1062,13 @@ function renderLpStampBar() {
     // Divider after handle
     const div = document.createElement('div')
     div.className = 'lp-bar-divider'
+    div.style.height = '92px'
     bar.appendChild(div)
+
+    // 2-row grid container
+    const grid = document.createElement('div')
+    grid.className = 'lp-stamp-grid'
+    bar.appendChild(grid)
 
     stampItems.forEach(item => {
         const tool = findTool(item.id, item.category)
@@ -1054,7 +1085,7 @@ function renderLpStampBar() {
             lpActiveStamp = isActive ? null : (item.id + '_' + item.category)
             renderLpStampBar()
         })
-        bar.appendChild(cell)
+        grid.appendChild(cell)
     })
 }
 
