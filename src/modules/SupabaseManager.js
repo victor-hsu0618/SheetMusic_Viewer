@@ -47,9 +47,14 @@ export class SupabaseManager {
                 });
 
                 // Setlist Sync - Dedicated Table
-                this.pullSetlists().then(cloudSetlists => {
+                this.pullSetlists().then(async cloudSetlists => {
                     if (cloudSetlists && this.app.setlistManager) {
-                        this.app.setlistManager.mergeSetlists(cloudSetlists);
+                        await this.app.setlistManager.mergeSetlists(cloudSetlists);
+                    }
+                    // Always push merged result back to ensure new `setlists` column is populated
+                    // (migrates data from legacy data.setlists fallback on first login)
+                    if (this.app.setlistManager?.setlists?.length) {
+                        this.pushSetlists(this.app.setlistManager.setlists);
                     }
                 });
 
