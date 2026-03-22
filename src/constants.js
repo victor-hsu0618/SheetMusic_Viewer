@@ -126,8 +126,8 @@ export const TOOLSETS = [
             // Row 2: Tempo marks (note value = BPM — prompts for BPM on placement)
             { id: 'tempo-quarter',        label: '♩=',   row: 2, icon: '♩=',   draw: { type: 'tempo', noteSymbol: '♩'  } },
             { id: 'tempo-dotted-quarter', label: '♩.=',  row: 2, icon: '♩.=',  draw: { type: 'tempo', noteSymbol: '♩.' } },
-            { id: 'tempo-half',           label: 'h=',   row: 2, icon: '<ellipse cx="9" cy="14" rx="3.5" ry="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="12.5" y1="14" x2="12.5" y2="5" stroke="currentColor" stroke-width="1.5"/><text x="16" y="16" font-size="9" fill="currentColor" stroke="none">=</text>', draw: { type: 'tempo', noteSymbol: '𝅗𝅥'  } },
-            { id: 'tempo-dotted-half',    label: 'h.=',  row: 2, icon: '<ellipse cx="8" cy="14" rx="3.5" ry="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="11.5" y1="14" x2="11.5" y2="5" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="14" r="1.2" fill="currentColor"/><text x="16" y="16" font-size="9" fill="currentColor" stroke="none">=</text>', draw: { type: 'tempo', noteSymbol: '𝅗𝅥.' } },
+            { id: 'tempo-half',           label: '½=',   row: 2, icon: '½=',   draw: { type: 'tempo', noteSymbol: '½'  } },
+            { id: 'tempo-dotted-half',    label: '½.=',  row: 2, icon: '½.=',  draw: { type: 'tempo', noteSymbol: '½.' } },
             { id: 'tempo-eighth',         label: '♪=',   row: 2, icon: '♪=',   draw: { type: 'tempo', noteSymbol: '♪'  } },
             { id: 'tempo-dotted-eighth',  label: '♪.=',  row: 2, icon: '♪.=',  draw: { type: 'tempo', noteSymbol: '♪.' } },
 
