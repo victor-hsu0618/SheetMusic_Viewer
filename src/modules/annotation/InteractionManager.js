@@ -764,6 +764,29 @@ export class InteractionManager {
                             this.app.redrawStamps(targetPageNum);
                         });
                         return;
+                    } else if (activeObject.type.startsWith('tempo-') && !isMovingExisting) {
+                        if (this.app.activeStampType === 'view') {
+                            this.app.redrawStamps(targetPageNum); return;
+                        }
+                        const targetObj = activeObject
+                        const noteSymbol = targetObj.draw?.noteSymbol || '♩'
+                        this.app.annotationManager.promptBPM(noteSymbol).then(async bpm => {
+                            if (bpm !== null && bpm !== '') {
+                                targetObj.draw = { type: 'text', content: `${noteSymbol} = ${bpm}`, font: '400', size: 16, fontFace: 'serif' }
+                                targetObj.updatedAt = Date.now()
+                                this.app.stamps.push(targetObj)
+                                this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(targetObj)) })
+                                await this.app.saveToStorage(true)
+                                if (this.app.supabaseManager) {
+                                    this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint)
+                                }
+                                startGracePeriod(targetObj)
+                            } else {
+                                activeObject = null
+                            }
+                            this.app.redrawStamps(targetPageNum)
+                        })
+                        return
                     } else if (['measure', 'measure-free'].includes(activeObject.type) && !isMovingExisting) {
                         // Guard: if user switched back to view mode, don't trigger the keypad
                         if (this.app.activeStampType === 'view') {

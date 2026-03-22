@@ -652,6 +652,63 @@ export class AnnotationManager {
     /**
      * Show the measure number keypad dialog.
      */
+    async promptBPM(noteSymbol) {
+        return new Promise(resolve => {
+            const dialog = document.getElementById('bpm-dialog')
+            const noteDisplay = document.getElementById('bpm-note-display')
+            const numDisplay  = document.getElementById('bpm-num-display')
+            const cancelBtn   = document.getElementById('bpm-cancel')
+
+            if (!dialog || !numDisplay) {
+                const val = prompt(`${noteSymbol} = ?`, '80')
+                resolve(val?.trim() || null)
+                return
+            }
+
+            if (noteDisplay) noteDisplay.textContent = noteSymbol
+            let typed = ''
+            numDisplay.textContent = ''
+            numDisplay.setAttribute('placeholder', 'BPM')
+
+            const update = () => { numDisplay.textContent = typed }
+            const cleanup = () => {
+                dialog.classList.remove('active')
+                document.removeEventListener('keydown', onKey)
+            }
+            const confirm = () => {
+                cleanup()
+                resolve(typed || null)
+            }
+            const cancel = () => {
+                cleanup()
+                resolve(null)
+            }
+
+            dialog.querySelectorAll('[data-bpm-key]').forEach(btn => {
+                btn.onclick = null
+                btn.onclick = () => {
+                    const k = btn.dataset.bpmKey
+                    if (k === 'back') { typed = typed.slice(0, -1) }
+                    else if (k === 'confirm') { confirm(); return }
+                    else if (typed.length < 3) { typed += k }
+                    update()
+                }
+            })
+
+            cancelBtn.onclick = cancel
+
+            const onKey = (e) => {
+                if (e.key === 'Escape') { cancel(); return }
+                if (e.key === 'Enter')  { confirm(); return }
+                if (e.key === 'Backspace') { typed = typed.slice(0, -1); update(); return }
+                if (/^\d$/.test(e.key) && typed.length < 3) { typed += e.key; update() }
+            }
+            document.addEventListener('keydown', onKey)
+
+            dialog.classList.add('active')
+        })
+    }
+
     async promptMeasureNumber(defVal) {
         return new Promise(resolve => {
             const dialog = document.getElementById('measure-dialog')

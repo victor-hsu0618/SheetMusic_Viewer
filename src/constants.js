@@ -123,6 +123,14 @@ export const TOOLSETS = [
             { id: 'text-sfp', label: 'sfp', row: 1, icon: 'sfp', draw: { type: 'text', content: 'sfp', font: 'italic 800', size: 16, fontFace: 'serif' } },
 
 
+            // Row 2: Tempo marks (note value = BPM — prompts for BPM on placement)
+            { id: 'tempo-quarter',        label: '♩=',   row: 2, icon: '♩=',   draw: { type: 'tempo', noteSymbol: '♩'  } },
+            { id: 'tempo-dotted-quarter', label: '♩.=',  row: 2, icon: '♩.=',  draw: { type: 'tempo', noteSymbol: '♩.' } },
+            { id: 'tempo-half',           label: '𝅗𝅥=',   row: 2, icon: '𝅗𝅥=',   draw: { type: 'tempo', noteSymbol: '𝅗𝅥'  } },
+            { id: 'tempo-dotted-half',    label: '𝅗𝅥.=',  row: 2, icon: '𝅗𝅥.=',  draw: { type: 'tempo', noteSymbol: '𝅗𝅥.' } },
+            { id: 'tempo-eighth',         label: '♪=',   row: 2, icon: '♪=',   draw: { type: 'tempo', noteSymbol: '♪'  } },
+            { id: 'tempo-dotted-eighth',  label: '♪.=',  row: 2, icon: '♪.=',  draw: { type: 'tempo', noteSymbol: '♪.' } },
+
             // Row 3: Common Italian technique phrases
             { id: 'text-pizz',      label: 'pizz.',       row: 3, draw: { type: 'text', content: 'pizz.',      font: 'italic 400', size: 16, fontFace: 'serif' } },
             { id: 'text-arco',      label: 'arco.',       row: 3, draw: { type: 'text', content: 'arco.',      font: 'italic 400', size: 16, fontFace: 'serif' } },

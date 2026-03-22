@@ -37,6 +37,7 @@
     #profile-modal:not(.active),
     #system-dialog:not(.active),
     #measure-dialog:not(.active),
+    #bpm-dialog:not(.active),
     #erase-all-modal:not(.active) {
       display: none !important;
     }
@@ -941,6 +942,39 @@
           </div>
           <div class="text-center">
             <button id="measure-cancel" class="keypad-cancel-btn">Cancel (Esc)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BPM Input Dialog -->
+    <div id="bpm-dialog" class="measure-keypad-overlay">
+      <div class="measure-keypad">
+        <div class="measure-keypad-header">
+          <span class="measure-keypad-title">Tempo</span>
+        </div>
+        <div class="measure-keypad-body">
+          <div class="measure-display-area" style="justify-content:center;">
+            <div id="bpm-note-display" style="font-size:1.3rem;padding:0 8px;color:var(--text-muted);">♩</div>
+            <div style="font-size:1.1rem;color:var(--text-muted);padding:0 4px;">=</div>
+            <div id="bpm-num-display" class="measure-input-field active" placeholder="BPM"></div>
+          </div>
+          <div class="measure-keypad-grid mb-15">
+            <button class="keypad-btn" data-bpm-key="7">7</button>
+            <button class="keypad-btn" data-bpm-key="8">8</button>
+            <button class="keypad-btn" data-bpm-key="9">9</button>
+            <button class="keypad-btn" data-bpm-key="4">4</button>
+            <button class="keypad-btn" data-bpm-key="5">5</button>
+            <button class="keypad-btn" data-bpm-key="6">6</button>
+            <button class="keypad-btn" data-bpm-key="1">1</button>
+            <button class="keypad-btn" data-bpm-key="2">2</button>
+            <button class="keypad-btn" data-bpm-key="3">3</button>
+            <button class="keypad-btn action-btn" data-bpm-key="back">⌫</button>
+            <button class="keypad-btn" data-bpm-key="0">0</button>
+            <button class="keypad-btn confirm-btn" data-bpm-key="confirm">✓</button>
+          </div>
+          <div class="text-center">
+            <button id="bpm-cancel" class="keypad-cancel-btn">Cancel (Esc)</button>
           </div>
         </div>
       </div>
