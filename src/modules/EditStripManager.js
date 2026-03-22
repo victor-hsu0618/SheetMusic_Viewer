@@ -139,6 +139,17 @@ export class EditStripManager {
         fab.addEventListener('pointerup',   syncGuard)
         requestAnimationFrame(syncGuard)
 
+        // Re-clamp FAB position when window is resized so it never goes off-screen
+        window.addEventListener('resize', () => {
+            const fabW = fab.offsetWidth  || 40
+            const fabH = fab.offsetHeight || 40
+            const curLeft = parseInt(fab.style.left) || 0
+            const curTop  = parseInt(fab.style.top)  || 0
+            fab.style.left = Math.max(0, Math.min(window.innerWidth  - fabW, curLeft)) + 'px'
+            fab.style.top  = Math.max(0, Math.min(window.innerHeight - fabH, curTop))  + 'px'
+            syncGuard()
+        })
+
         document.body.appendChild(fab)
         this._expandTab = fab
     }
