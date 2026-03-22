@@ -14,6 +14,7 @@ export class ViewerManager {
         this._pageViewports = {} // Cache viewports for placeholder sizing
         this._pageMetrics = {}   // Cache offsetTop and clientHeight to avoid layout thrashing
         this.isFitToHeight = false
+        this.isFitToWidth  = false
         this.isApplyingZoom = false  // blocks touch gestures during zoom/re-render
         this.latestLoadingId = 0 // Race condition protection
         this._loadingPdf = false // True while any loadPDF is actively in progress
@@ -198,6 +199,7 @@ export class ViewerManager {
         
         if (filename) this.activeScoreName = filename;
         this.isFitToHeight = false;
+        this.isFitToWidth  = false;
         this._pageMetrics = {};
 
         // Update UI to "Loading" or new Title immediately
@@ -876,6 +878,7 @@ export class ViewerManager {
         const focalPoint = this._captureFocalPoint()
         this.scale = Math.min(Math.max(0.2, this.scale + delta), 4)
         this.isFitToHeight = false
+        this.isFitToWidth  = false
         this.updateZoomDisplay()
 
         if (this.pdf) {
@@ -901,10 +904,11 @@ export class ViewerManager {
         const availW = this.app.viewer.clientWidth - padLeft - padRight
         this.scale = Math.min(Math.max(0.2, availW / naturalWidth), 4)
         this.isFitToHeight = false
+        this.isFitToWidth  = true
         this.updateZoomDisplay()
 
         await this.renderPDF(isInitialLoad)
-        
+
         if (!isInitialLoad) {
             this._restoreFocalPoint(focalPoint)
         }
@@ -935,6 +939,7 @@ export class ViewerManager {
         const availH = this.app.viewer.clientHeight
         this.scale = Math.min(Math.max(0.2, availH / naturalHeight), 4)
         this.isFitToHeight = true
+        this.isFitToWidth  = false
         this.updateZoomDisplay()
 
         // Block touch gestures during the re-render window (prevents iOS ghost-tap jumps)
@@ -959,6 +964,12 @@ export class ViewerManager {
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()
+    }
+
+    /** Re-apply fit-to-width or fit-to-height if currently in that mode. */
+    reapplyFit() {
+        if (this.isFitToWidth)  this.fitToWidth()
+        else if (this.isFitToHeight) this.fitToHeight()
     }
 
     updateZoomDisplay() {

@@ -113,6 +113,8 @@ export class EditStripManager {
                     this._subBarMgr?.restoreState(this._subBarSnapshot)
                     this._subBarSnapshot = null
                 }
+                // Re-apply fit mode after layout shift (wait for CSS transition)
+                setTimeout(() => this.app.viewerManager?.reapplyFit(), 320)
             }
         })
 
@@ -211,6 +213,7 @@ export class EditStripManager {
             document.getElementById('sf-doc-bar-strip')?.classList.add('collapsed')
             this._subBarSnapshot = this._subBarMgr?.snapshotState()
             this._subBarMgr?.closeAll()
+            setTimeout(() => this.app.viewerManager?.reapplyFit(), 320)
         })
         el.appendChild(collapseBtn)
     }
@@ -246,6 +249,7 @@ export class EditStripManager {
         track.appendChild(thumb)
 
         requestAnimationFrame(() => {
+            const viewer = this.app.viewer
             const trackH = track.clientHeight || 120
             const thumbH = Math.max(28, Math.round(trackH / 5))
             const centerTop = Math.round((trackH - thumbH) / 2)
@@ -253,29 +257,36 @@ export class EditStripManager {
             thumb.style.top    = centerTop + 'px'
 
             let dragging = false
-            let startClientY = 0
-            let startThumbTop = centerTop
-            let thumbTop = centerTop
+            let lastClientY = 0
+            let lastTime = 0
 
             const onMove = (clientY) => {
-                if (!dragging) return
-                const dy = clientY - startClientY
-                const maxTop = trackH - thumbH
-                thumbTop = Math.max(0, Math.min(maxTop, startThumbTop + dy))
-                thumb.style.top = thumbTop + 'px'
+                if (!dragging || !viewer) return
+                const now = performance.now()
+                const dt = Math.max(1, now - lastTime)   // ms since last frame
+                const dy = clientY - lastClientY          // px since last frame
 
-                const viewer = this.app.viewer
-                if (viewer && maxTop > 0) {
-                    viewer.scrollTop = (thumbTop / maxTop) * (viewer.scrollHeight - viewer.clientHeight)
-                }
+                // Velocity-based: fast flick → bigger jump. Clamp 1×–8×.
+                const speed = Math.abs(dy) / dt           // px/ms
+                const multiplier = Math.min(8, Math.max(1, speed * 40))
+
+                const maxScroll = viewer.scrollHeight - viewer.clientHeight
+                viewer.scrollTop = Math.max(0, Math.min(maxScroll, viewer.scrollTop - dy * multiplier))
+
+                // Thumb shows displacement from centre (visual feedback only, half speed)
+                const maxTop = trackH - thumbH
+                const thumbPos = Math.max(0, Math.min(maxTop, centerTop + dy * 0.5))
+                thumb.style.top = thumbPos + 'px'
+
+                lastClientY = clientY
+                lastTime = now
             }
 
             const onUp = () => {
                 if (!dragging) return
                 dragging = false
                 thumb.classList.remove('grabbing')
-                // Spring back to center
-                thumbTop = centerTop
+                // Spring back to centre so next drag starts fresh
                 thumb.style.top = centerTop + 'px'
                 window.removeEventListener('mousemove', _mouseMove)
                 window.removeEventListener('mouseup',   _mouseUp)
@@ -290,8 +301,8 @@ export class EditStripManager {
 
             const startDrag = (clientY) => {
                 dragging = true
-                startClientY  = clientY
-                startThumbTop = thumbTop
+                lastClientY = clientY
+                lastTime = performance.now()
                 thumb.classList.add('grabbing')
                 window.addEventListener('mousemove', _mouseMove)
                 window.addEventListener('mouseup',   _mouseUp)

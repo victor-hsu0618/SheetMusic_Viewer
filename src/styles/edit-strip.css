@@ -118,12 +118,12 @@
     background: rgba(255, 255, 255, 0.18);
     border-radius: 10px;
     cursor: grab;
-    transition: background .15s, top 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: background .15s;
 }
 .sf-strip-scrollbar-thumb.grabbing {
     cursor: grabbing;
     background: rgba(255, 255, 255, 0.42);
-    transition: background .15s; /* disable spring during drag */
+    transition: background .15s; /* disable spring during drag, thumb follows finger */
 }
 
 /* ── Collapse button (bottom of strip) ── */

@@ -215,7 +215,16 @@ export class InteractionManager {
             const toolType = this.app.activeStampType;
             const pointerType = getPointerType(e);
 
-            if (isInteracting) return;
+            // Stuck-state guard: if isInteracting is true but a new pointerdown arrives,
+            // a previous endAction was likely missed (e.g. iOS pointercancel dropped).
+            // Force-reset so the user isn't stuck unable to place stamps.
+            if (isInteracting) {
+                isInteracting = false;
+                this.app.isInteracting = false;
+                activeObject = null;
+                isMovingExisting = false;
+                detachGlobalListeners();
+            }
             if (panCooldown) return; // Post-pan cooldown: ignore taps until fingers settle
 
             const pos = CoordMapper.getPos(e, overlay);
@@ -331,8 +340,7 @@ export class InteractionManager {
                     this.app._lastGraceObject = null;
                     InteractionUI.showTrash(false, wrapper);
                     this.app.redrawStamps(pageNum);
-                    // Touch tapped far from grace object: dismiss grace and don't place a new stamp
-                    if (pointerType === 'touch') return;
+                    // Fall through to place new stamp at tap position
                 }
             }
 
