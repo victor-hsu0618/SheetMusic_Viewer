@@ -1382,6 +1382,26 @@ async function _pushPanelConfigToCloud(cfg) {
     }
 }
 
+async function _pushUserContentToCloud(content) {
+    try {
+        if (typeof supabase === 'undefined') return
+        const SUPA_URL = localStorage.getItem('scoreflow_supabase_url') || 'https://tanoqdnqtxqxerwcbdlf.supabase.co'
+        const SUPA_KEY = localStorage.getItem('scoreflow_supabase_key') || 'sb_publishable_CqpxXMRonYfz25IHc3VYvQ_CSKrgFU4'
+        const client = supabase.createClient(SUPA_URL, SUPA_KEY)
+        const { data: { session } } = await client.auth.getSession()
+        if (!session?.user) return
+        await client.from('profiles').upsert({
+            id: session.user.id,
+            email: session.user.email,
+            user_content: content,
+            updated_at: new Date().toISOString()
+        })
+        console.log('[Inspector] ✅ user_content pushed to cloud')
+    } catch (e) {
+        console.warn('[Inspector] user_content push failed:', e)
+    }
+}
+
 function clearMyPanel() {
     myPanel = []; editBarOrder = EDIT_TOOLS.map(t => t.id); docBarOrder = DOC_BAR_BTNS.map(b => b.id)
     saveMyPanel()
@@ -2556,16 +2576,10 @@ async function applyTextPresets() {
     const items = ta.value.split(',').map(s => s.trim()).filter(Boolean)
 
     localStorage.setItem('scoreflow_user_text_library', JSON.stringify(items))
-
-    // Also update panel_config so it syncs to Supabase
-    const cfg = JSON.parse(localStorage.getItem(LS_PANEL_CONFIG) || '{}')
-    cfg.userTextLibrary = items
-    localStorage.setItem(LS_PANEL_CONFIG, JSON.stringify(cfg))
-
     renderTextPresetEditor()
 
-    // Push to cloud
-    await _pushPanelConfigToCloud(cfg)
+    // Push to dedicated user_content column
+    await _pushUserContentToCloud({ userTextLibrary: items })
 
     const el = document.getElementById('save-status')
     if (el) { el.textContent = '✓ Text 已同步'; el.style.color = ''; setTimeout(() => el.textContent = '', 2000) }
