@@ -380,7 +380,15 @@
             <div class="table-wrap">
                 <table>
                     <colgroup><col style="width:32%;"><col><col style="width:90px;"><col style="width:130px;"><col style="width:110px;"></colgroup>
-                    <thead><tr><th>Score Title</th><th>Stored Filename</th><th>Size</th><th>Last Modified</th><th>Actions</th></tr></thead>
+                    <thead>
+                        <tr id="storage-header">
+                            <th class="sortable" onclick="sortStorage('title')">Score Title</th>
+                            <th class="sortable" onclick="sortStorage('name')">Stored Filename</th>
+                            <th class="sortable" onclick="sortStorage('size')">Size</th>
+                            <th class="sortable" onclick="sortStorage('modified')">Last Modified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
                     <tbody id="storage-tbody"></tbody>
                 </table>
             </div>
@@ -563,6 +571,7 @@ let addToMode='collection'; // 'collection' or 'setlist'
 let setlistSearch='', setlistSort='updated-desc', setlistViewMode='cards';
 let selectedCollectionId = null;
 let collSidebarSearch = '', collScoreSearch = '', collScoreSort = 'title-asc', collGenreFilter = '';
+let storageSortField = 'title', storageSortDir = 'asc';
 
 // ═══ Init ═══
 async function init() {
@@ -1540,6 +1549,16 @@ wire('btn-refresh-setlists', () => reloadTab('setlists'));
 wire('btn-push-setlists', async() => await syncSetlistsToCloud(false));
 
 // ══════════ STORAGE ══════════
+async function sortStorage(field) {
+    if (storageSortField === field) {
+        storageSortDir = storageSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        storageSortField = field;
+        storageSortDir = 'asc';
+    }
+    await loadStorage();
+}
+
 async function loadStorage() {
     const { data: prof } = await sbClient.from('user_profiles').select('storage_used_bytes,storage_quota_bytes,plan').eq('user_id', currentUser.id).single();
     const qEl = document.getElementById('quota-section');
@@ -1547,12 +1566,77 @@ async function loadStorage() {
         const used = prof.storage_used_bytes || 0, quota = prof.storage_quota_bytes || 536870912, pct = Math.min(100, (used / quota) * 100);
         qEl.innerHTML = `<div class="quota-wrap"><div class="quota-label"><span>Storage — <strong>${prof.plan || 'Free'}</strong></span><span>${fmtBytes(used)} / ${fmtBytes(quota)}</span><span class="plan-tag">${Math.round(pct)}% used</span></div><div class="quota-bar-bg"><div class="quota-bar-fill ${pct > 90 ? 'crit' : pct > 70 ? 'warn' : ''}" style="width:${pct.toFixed(1)}%"></div></div></div>`;
     }
+    
+    // Update header UI for sorting indicators
+    const headers = document.querySelectorAll('#storage-header th');
+    const fields = ['title', 'name', 'size', 'modified'];
+    headers.forEach((th, i) => {
+        if (!th.classList.contains('sortable')) return;
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (fields[i] === storageSortField) {
+            th.classList.add(storageSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+    });
+
     const tbody = document.getElementById('storage-tbody');
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr>';
-    const { data: files } = await sbClient.storage.from('pdfs').list(currentUser.id, { limit: 200 });
-    if (!files?.length) { tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📄</div>No PDFs in cloud.</div></td></tr>`; return; }
-    const reg = (await db.get('score_registry')) || []; const m = Object.fromEntries(reg.map(s => [s.fingerprint, s.title]));
-    tbody.innerHTML = files.map(f => { const fp = f.name.replace('.pdf', ''); return `<tr><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(m[fp] || '—')}">${escHtml(m[fp] || '—')}</td><td class="mono">${escHtml(f.name)}</td><td style="color:var(--text-muted);">${fmtBytes(f.metadata?.size || 0)}</td><td style="color:var(--text-muted);font-size:11px;">${f.updated_at ? new Date(f.updated_at).toLocaleDateString() : '—'}</td><td><div style="display:flex;gap:4px;"><button class="btn btn-outline btn-sm" onclick="openPdf('${f.name}')">Open</button><button class="btn btn-danger btn-sm btn-icon" onclick="deletePdf('${f.name}')">🗑</button></div></td></tr>`; }).join('');
+    
+    const { data: files } = await sbClient.storage.from('pdfs').list(currentUser.id, { limit: 1000 });
+    if (!files?.length) { 
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📄</div>No PDFs in cloud.</div></td></tr>`; 
+        return; 
+    }
+    
+    const reg = (await db.get('score_registry')) || []; 
+    const m = Object.fromEntries(reg.map(s => [s.fingerprint, s.title]));
+
+    // Sorting logic
+    files.sort((a, b) => {
+        let va, vb;
+        const fpA = a.name.replace('.pdf', '');
+        const fpB = b.name.replace('.pdf', '');
+        
+        switch (storageSortField) {
+            case 'title':
+                va = (m[fpA] || '—').toLowerCase();
+                vb = (m[fpB] || '—').toLowerCase();
+                break;
+            case 'name':
+                va = a.name.toLowerCase();
+                vb = b.name.toLowerCase();
+                break;
+            case 'size':
+                va = a.metadata?.size || 0;
+                vb = b.metadata?.size || 0;
+                break;
+            case 'modified':
+                va = new Date(a.updated_at || 0).getTime();
+                vb = new Date(b.updated_at || 0).getTime();
+                break;
+            default:
+                return 0;
+        }
+        
+        if (va < vb) return storageSortDir === 'asc' ? -1 : 1;
+        if (va > vb) return storageSortDir === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    tbody.innerHTML = files.map(f => { 
+        const fp = f.name.replace('.pdf', ''); 
+        return `<tr>
+            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(m[fp] || '—')}">${escHtml(m[fp] || '—')}</td>
+            <td class="mono">${escHtml(f.name)}</td>
+            <td style="color:var(--text-muted);">${fmtBytes(f.metadata?.size || 0)}</td>
+            <td style="color:var(--text-muted);font-size:11px;">${f.updated_at ? new Date(f.updated_at).toLocaleDateString() : '—'}</td>
+            <td>
+                <div style="display:flex;gap:4px;">
+                    <button class="btn btn-outline btn-sm" onclick="openPdf('${f.name}')">Open</button>
+                    <button class="btn btn-danger btn-sm btn-icon" onclick="deletePdf('${f.name}')">🗑</button>
+                </div>
+            </td>
+        </tr>`; 
+    }).join('');
 }
 async function openPdf(name) {
     const { data } = await sbClient.storage.from('pdfs').createSignedUrl(`${currentUser.id}/${name}`, 300);
@@ -1706,6 +1790,7 @@ window.updateScoreSortIndex = updateScoreSortIndex;
 window.toggleDetail = toggleDetail;
 window.openPdf = openPdf;
 window.deletePdf = deletePdf;
+window.sortStorage = sortStorage;
 
 init();
 // ══════════ MAINTENANCE ══════════

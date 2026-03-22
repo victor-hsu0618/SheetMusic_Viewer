@@ -419,6 +419,7 @@
                 if (cloud) {
                     actionHtml += `<button class="btn-outline" style="font-size:9px; color:var(--danger); border-color:var(--danger)" onclick="window.deleteFromCloud('${fp}')">Delete from Supabase</button>`;
                 }
+                actionHtml += `<button class="btn-outline" style="font-size:9px; color:white; background:var(--danger); border-color:var(--danger)" onclick="window.forceDelete('${fp}')">Force Delete (Local + Cloud)</button>`;
                 actionHtml += `</div>`;
 
                 row.innerHTML = `
@@ -576,9 +577,54 @@
                 else log('✓ Score record removed from SQL table.');
 
                 log(`✅ Successfully deleted ${fp} from cloud.`);
-                runAnalysis();
+                return true; // Success
             } catch (err) {
                 log(`❌ Deletion failed: ${err.message}`, 'error');
+                return false;
+            }
+        }
+
+        window.forceDelete = async (fp) => {
+            if (!confirm(`CRITICAL ACTION: This will PERMANENTLY delete score ${fp} from BOTH Local IndexedDB and Cloud Supabase.\n\nContinue?`)) return;
+
+            log(`🚨 FORCE DELETING ${fp} (Local + Cloud)...`);
+
+            // 1. Delete from Cloud first (if exists)
+            const cloudSuccess = await window.deleteFromCloud(fp);
+            // We proceed to local deletion even if cloud delete had some warnings, 
+            // but we want the user to know.
+
+            // 2. Local Deletion
+            try {
+                const req = indexedDB.open('ScoreFlowStorage', 1);
+                req.onsuccess = async () => {
+                    const idb = req.result;
+                    const tx = idb.transaction('store', 'readwrite');
+                    const store = tx.objectStore('store');
+
+                    // Remove from registry
+                    const getReg = store.get('score_registry');
+                    getReg.onsuccess = () => {
+                        const reg = getReg.result || [];
+                        const newReg = reg.filter(s => s.fingerprint !== fp);
+                        store.put(newReg, 'score_registry');
+                        log('✓ Removed from local registry.');
+                    };
+
+                    // Remove associated keys
+                    store.delete(`detail_${fp}`);
+                    store.delete(`stamps_${fp}`);
+                    store.delete(`score_buf_${fp}`);
+                    store.delete(`interpretation_${fp}`);
+                    log('✓ Local data keys purged.');
+
+                    tx.oncomplete = () => {
+                        log(`✅ Force Delete of ${fp} sequence complete.`);
+                        runAnalysis();
+                    };
+                };
+            } catch (err) {
+                log(`❌ Local deletion error: ${err.message}`, 'error');
             }
         }
 
