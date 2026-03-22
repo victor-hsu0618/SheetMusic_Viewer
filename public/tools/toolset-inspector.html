@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="shared-styles.css">
     <script src="theme-manager.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <style>
         /* ── ScoreFlow design tokens (mirrors :root default in variables.css) ── */
         :root {
@@ -136,13 +137,10 @@
             border: 1px solid var(--sf-border);
             border-radius: 8px;
             display: flex; align-items:center; justify-content:center;
-            cursor: grab; position: relative;
+            cursor: default; position: relative;
             transition: background .15s; user-select: none;
         }
         .mock-cell:hover { background: #e2e8f0; }
-        .mock-cell.dragging { opacity: .4; }
-        .mock-cell.insert-before { box-shadow: -3px 0 0 var(--sf-primary); }
-        .mock-cell.insert-after  { box-shadow:  3px 0 0 var(--sf-primary); }
         .mock-cell svg { width:20px; height:20px; flex-shrink:0; }
         .mock-cell .cell-text { font-size:11px; font-weight:600; color:var(--sf-text); text-align:center; line-height:1.2; font-family:'JetBrains Mono',monospace; }
         .mock-cell .cell-label {
@@ -158,7 +156,50 @@
             cursor:pointer; opacity:0; transition:opacity .15s; line-height:1; border:none;
         }
         .mock-cell:hover .remove-btn { opacity:1; }
-        .mock-cell.edit-cell { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); }
+        .mock-cell.edit-cell { cursor:default; background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); }
+        /* ← → move buttons */
+        .cell-move-btns {
+            position:absolute; bottom:-1px; left:0; right:0;
+            display:flex; justify-content:space-between;
+            opacity:0; transition:opacity .15s; pointer-events:none;
+        }
+        .mock-cell:hover .cell-move-btns { opacity:1; pointer-events:all; }
+        .cell-move-btn {
+            width:18px; height:16px; border:none; border-radius:3px;
+            background:var(--sf-primary); color:#fff;
+            font-size:13px; line-height:1; cursor:pointer;
+            display:flex; align-items:center; justify-content:center; padding:0;
+        }
+        .cell-move-btn:disabled { background:var(--sf-border); cursor:default; }
+        /* Row section wrapper */
+        .mock-row-section {
+            display:flex; flex-direction:column; align-items:flex-start;
+            flex-shrink:0; gap:4px;
+        }
+        .mock-row-badge {
+            font-size:10px; font-weight:700; color:var(--sf-primary);
+            background:rgba(99,102,241,0.1); border-radius:4px;
+            padding:1px 6px; line-height:1.6; align-self:flex-start;
+        }
+        .mock-row-items {
+            display:flex; flex-direction:row; gap:4px; flex-wrap:nowrap;
+        }
+        /* Row toggle button on each cell */
+        .cell-row-btn {
+            position:absolute; top:-1px; right:18px;
+            width:16px; height:14px; border:none; border-radius:3px;
+            background:rgba(99,102,241,0.7); color:#fff;
+            font-size:9px; font-weight:700; line-height:1; cursor:pointer;
+            display:flex; align-items:center; justify-content:center; padding:0;
+            opacity:0; transition:opacity .15s; pointer-events:none;
+        }
+        .mock-cell:hover .cell-row-btn { opacity:1; pointer-events:all; }
+        .cell-row-badge {
+            position:absolute; top:2px; left:2px;
+            font-size:8px; font-weight:700; color:var(--sf-primary);
+            background:rgba(99,102,241,0.18); border-radius:3px;
+            padding:0 3px; line-height:1.5; pointer-events:none;
+        }
 
         .empty-hint { color:var(--sf-muted); font-size:12px; padding:12px 0; }
 
@@ -467,22 +508,22 @@
         .lp-strip-score-name {
             writing-mode: vertical-rl;
             transform: rotate(180deg);
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--sf-muted);
             letter-spacing: 0.06em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-height: 160px;
+            flex: 1;
+            min-height: 0;
             padding: 6px 0;
-            flex-shrink: 0;
             cursor: default;
             user-select: none;
         }
 
         /* Color / Size at bottom of strip */
-        .lp-strip-bottom { margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:5px; padding-bottom:4px; }
+        .lp-strip-bottom { display:flex; flex-direction:column; align-items:center; gap:5px; padding-bottom:4px; }
         .lp-color-dot {
             width: 18px; height: 18px; border-radius: 50%; cursor:pointer;
             border: 2px solid transparent; transition: border-color .15s;
@@ -756,9 +797,43 @@
         }
         .lp-strip-collapse-btn:hover { opacity: 1; background: rgba(255,255,255,0.12); }
 
+        /* ── Zone / element name labels (layout dev reference) ── */
+        .lp-zone-label {
+            position: absolute;
+            top: 3px; left: 0; right: 0;
+            font-size: 7px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: .07em;
+            color: rgba(100,210,255,0.4);
+            text-align: center;
+            pointer-events: none; z-index: 90;
+            white-space: nowrap;
+        }
+        .lp-elem-label {
+            position: absolute;
+            bottom: 4px; left: 0; right: 0;
+            font-size: 6px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: .05em;
+            color: rgba(100,210,255,0.28);
+            text-align: center;
+            pointer-events: none; z-index: 90;
+            white-space: nowrap;
+        }
+        /* FAB label */
+        .lp-clean-toggle::before {
+            content: 'FAB';
+            position: absolute;
+            right: calc(100% + 4px); top: 50%;
+            transform: translateY(-50%);
+            font-size: 6px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: .07em;
+            color: rgba(100,210,255,0.4);
+            white-space: nowrap; pointer-events: none;
+        }
+
         /* Left: doc bar + score name */
         .lp-right {
             width: 44px; flex-shrink:0;
+            position: relative;
             background: #1f2937;
             border-right: 1px solid rgba(255,255,255,0.1);
             display:flex; flex-direction:column; align-items:center;
@@ -768,8 +843,7 @@
             scrollbar-width: none;
         }
         .lp-right::-webkit-scrollbar { display: none; }
-        /* Score name in left-column context */
-        .lp-right .lp-strip-score-name { max-height: 140px; }
+        /* Score name fills remaining space in doc bar */
         .lp-docbar-btn {
             width:32px; height:32px; background:rgba(255,255,255,0.06);
             border:1px solid rgba(255,255,255,0.12); border-radius:8px;
@@ -1003,6 +1077,7 @@
 
                 <!-- Score area -->
                 <div class="lp-score-area" id="lp-score-area">
+                    <div class="lp-zone-label">Score Area</div>
                     <div class="lp-score-page">
                         <img class="lp-score-bg" src="score-preview.jpg" alt="" draggable="false">
                     </div>
@@ -1022,6 +1097,66 @@
                 <div class="lp-info-row"><div class="dot" style="background:#f59e0b"></div><b>右側</b> Edit tools + Scrollbar</div>
                 <div class="lp-info-row" id="lp-stamp-count"><b>Stamps：</b><span>—</span></div>
                 <div class="lp-info-row" style="margin-left:auto;color:var(--sf-muted);font-size:11px">拖曳 stamp bar 上下移動</div>
+            </div>
+
+            <!-- Zone reference table -->
+            <div style="width:100%;overflow-x:auto;margin-top:4px;">
+                <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--font-mono,'JetBrains Mono',monospace);">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--sf-border);">
+                            <th style="text-align:left;padding:5px 10px;color:var(--sf-muted);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.07em;">標注</th>
+                            <th style="text-align:left;padding:5px 10px;color:var(--sf-muted);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.07em;">位置</th>
+                            <th style="text-align:left;padding:5px 10px;color:var(--sf-muted);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.07em;">ID / Class</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom:1px solid var(--sf-border);">
+                            <td style="padding:5px 10px;"><span style="color:rgb(100,210,255);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:10px;">Doc Bar</span></td>
+                            <td style="padding:5px 10px;color:var(--sf-text);">左側條</td>
+                            <td style="padding:5px 10px;color:var(--sf-muted);">#lp-right</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--sf-border);">
+                            <td style="padding:5px 10px;"><span style="color:rgb(100,210,255);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:10px;">Score Area</span></td>
+                            <td style="padding:5px 10px;color:var(--sf-text);">中間 PDF 區</td>
+                            <td style="padding:5px 10px;color:var(--sf-muted);">#lp-score-area</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--sf-border);">
+                            <td style="padding:5px 10px;"><span style="color:rgb(100,210,255);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:10px;">Edit Strip</span></td>
+                            <td style="padding:5px 10px;color:var(--sf-text);">右側條</td>
+                            <td style="padding:5px 10px;color:var(--sf-muted);">#lp-left-strip</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--sf-border);">
+                            <td style="padding:5px 10px;"><span style="color:rgb(100,210,255);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:10px;">Scroll Drag Zone</span></td>
+                            <td style="padding:5px 10px;color:var(--sf-text);">Edit Strip 內，彈回捲軸</td>
+                            <td style="padding:5px 10px;color:var(--sf-muted);">.lp-strip-scrollbar-track</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--sf-border);">
+                            <td style="padding:5px 10px;"><span style="color:rgb(100,210,255);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:10px;">Shapes Bar</span></td>
+                            <td style="padding:5px 10px;color:var(--sf-text);">Score Area 內浮層（可上下拖）</td>
+                            <td style="padding:5px 10px;color:var(--sf-muted);">#lp-shapes-bar</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--sf-border);">
+                            <td style="padding:5px 10px;"><span style="color:rgb(100,210,255);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:10px;">Stamp Bar</span></td>
+                            <td style="padding:5px 10px;color:var(--sf-text);">Score Area 內浮層（可上下拖）</td>
+                            <td style="padding:5px 10px;color:var(--sf-muted);">#lp-stamp-bar</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--sf-border);">
+                            <td style="padding:5px 10px;"><span style="color:rgb(100,210,255);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:10px;">Pen Bar</span></td>
+                            <td style="padding:5px 10px;color:var(--sf-text);">Pen 按鈕旁橫向飛出</td>
+                            <td style="padding:5px 10px;color:var(--sf-muted);">#lp-pen-bar</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--sf-border);">
+                            <td style="padding:5px 10px;"><span style="color:rgb(100,210,255);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:10px;">Others Bar</span></td>
+                            <td style="padding:5px 10px;color:var(--sf-text);">從 Score Area 頂端滑下</td>
+                            <td style="padding:5px 10px;color:var(--sf-muted);">#lp-others-bar</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:5px 10px;"><span style="color:rgb(100,210,255);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:10px;">FAB</span></td>
+                            <td style="padding:5px 10px;color:var(--sf-text);">可拖曳浮動按鈕（預設右下角）</td>
+                            <td style="padding:5px 10px;color:var(--sf-muted);">.lp-clean-toggle</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -1193,11 +1328,36 @@ function loadMyPanel() {
 }
 
 function saveMyPanel() {
+    if (!navigator.onLine) {
+        const el = document.getElementById('save-status')
+        if (el) { el.textContent = '⚠️ 請連線後再儲存'; el.style.color = '#f59e0b'; setTimeout(() => { el.textContent = ''; el.style.color = '' }, 3000) }
+        return
+    }
     const cfg = { stamps: myPanel, editBar: editBarOrder, docBar: docBarOrder }
     localStorage.setItem(LS_PANEL_CONFIG, JSON.stringify(cfg))
-    // TODO: supabase sync → upsert user_settings({ key: 'panel_config', value: cfg })
+    _pushPanelConfigToCloud(cfg)
     const el = document.getElementById('save-status')
-    if (el) { el.textContent = '✓ 已儲存'; setTimeout(() => el.textContent = '', 2000) }
+    if (el) { el.textContent = '✓ 已儲存'; el.style.color = ''; setTimeout(() => el.textContent = '', 2000) }
+}
+
+async function _pushPanelConfigToCloud(cfg) {
+    try {
+        if (typeof supabase === 'undefined') return
+        const SUPA_URL = localStorage.getItem('scoreflow_supabase_url') || 'https://tanoqdnqtxqxerwcbdlf.supabase.co'
+        const SUPA_KEY = localStorage.getItem('scoreflow_supabase_key') || 'sb_publishable_CqpxXMRonYfz25IHc3VYvQ_CSKrgFU4'
+        const client = supabase.createClient(SUPA_URL, SUPA_KEY)
+        const { data: { session } } = await client.auth.getSession()
+        if (!session?.user) return
+        await client.from('profiles').upsert({
+            id: session.user.id,
+            email: session.user.email,
+            panel_config: cfg,
+            updated_at: new Date().toISOString()
+        })
+        console.log('[Inspector] ✅ panel_config pushed to cloud')
+    } catch (e) {
+        console.warn('[Inspector] panel_config push failed:', e)
+    }
 }
 
 function clearMyPanel() {
@@ -1214,7 +1374,8 @@ function isSelected(id, category) {
 function toggleTool(id, category) {
     const idx = myPanel.findIndex(s => s.id === id && s.category === category)
     if (idx === -1) {
-        myPanel.push({ id, category })
+        const toolDef = TOOLSETS.find(g => g.name === category)?.tools.find(t => t.id === id)
+        myPanel.push({ id, category, row: toolDef?.row ?? 1 })
     } else {
         myPanel.splice(idx, 1)
     }
@@ -1336,6 +1497,35 @@ function renderIcon(tool, size = 20) {
 }
 
 // ── Preview rendering ─────────────────────────────────────────────────────────
+// Move stamp left/right within its own row
+function moveStamp(id, category, dir) {
+    const stampItems = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
+    const idx = stampItems.findIndex(s => s.id === id && s.category === category)
+    if (idx < 0) return
+    const thisRow = stampItems[idx].row ?? 1
+    // Find adjacent item in same row
+    const rowItems = stampItems.filter(s => (s.row ?? 1) === thisRow)
+    const posInRow = rowItems.findIndex(s => s.id === id && s.category === category)
+    const targetPosInRow = posInRow + dir
+    if (targetPosInRow < 0 || targetPosInRow >= rowItems.length) return
+    // Swap in myPanel (non-edit stamps only, rebuilding full myPanel)
+    const targetItem = rowItems[targetPosInRow]
+    const idxA = myPanel.findIndex(s => s.id === id && s.category === category)
+    const idxB = myPanel.findIndex(s => s.id === targetItem.id && s.category === targetItem.category)
+    ;[myPanel[idxA], myPanel[idxB]] = [myPanel[idxB], myPanel[idxA]]
+    saveMyPanel()
+    renderMyPanel()
+}
+
+// Toggle stamp between row 1 and row 2
+function setStampRow(id, category, newRow) {
+    const entry = myPanel.find(s => s.id === id && s.category === category)
+    if (!entry) return
+    entry.row = newRow
+    saveMyPanel()
+    renderMyPanel()
+}
+
 function renderMyPanel() {
     const editGroup = TOOLSETS.find(g => g.type === 'edit')
     const bar = document.getElementById('preview-bar')
@@ -1345,8 +1535,10 @@ function renderMyPanel() {
         const group = TOOLSETS.find(g => g.name === s.category)
         return group?.type !== 'edit'
     })
+    const row1Items = stampItems.filter(s => (s.row ?? 1) !== 2)
+    const row2Items = stampItems.filter(s => s.row === 2)
 
-    countBadge.textContent = `${stampItems.length} stamps`
+    countBadge.textContent = `第1排 ${row1Items.length} · 第2排 ${row2Items.length}`
     bar.innerHTML = ''
 
     // Edit tools (fixed, no remove)
@@ -1367,82 +1559,73 @@ function renderMyPanel() {
         return
     }
 
-    // Divider
-    const div = document.createElement('div')
-    div.className = 'mock-divider'
-    div.style.height = '92px'
-    bar.appendChild(div)
+    // Render row 1 and row 2 as separate sections
+    const renderRowSection = (rowItems, rowNum) => {
+        const divider = document.createElement('div')
+        divider.className = 'mock-divider'
+        divider.style.height = '60px'
+        bar.appendChild(divider)
 
-    // 2-row grid
-    const grid2 = document.createElement('div')
-    grid2.className = 'mock-stamp-grid-2row'
-    bar.appendChild(grid2)
+        const section = document.createElement('div')
+        section.className = 'mock-row-section'
+        bar.appendChild(section)
 
-    // Stamp cells — insert-style drag (not swap)
-    let dragSrc = null
-    let insertTarget = null // { idx, before }
+        const badge = document.createElement('div')
+        badge.className = 'mock-row-badge'
+        badge.textContent = `第 ${rowNum} 排`
+        section.appendChild(badge)
 
-    function clearInsert() {
-        grid2.querySelectorAll('.mock-cell').forEach(c => c.classList.remove('insert-before', 'insert-after'))
+        const rowEl = document.createElement('div')
+        rowEl.className = 'mock-row-items'
+        section.appendChild(rowEl)
+
+        if (rowItems.length === 0) {
+            const empty = document.createElement('div')
+            empty.style.cssText = 'font-size:11px;color:var(--sf-muted);padding:8px;align-self:center'
+            empty.textContent = '空'
+            rowEl.appendChild(empty)
+            return
+        }
+
+        rowItems.forEach((item, idx) => {
+            const tool = findTool(item.id, item.category)
+            const group = TOOLSETS.find(g => g.name === item.category)
+            const otherRow = rowNum === 1 ? 2 : 1
+            const cell = document.createElement('div')
+            cell.className = 'mock-cell'
+            cell.style.borderColor = group?.color ? group.color + '55' : ''
+            cell.innerHTML = renderIcon(tool, 20)
+                + `<span class="cell-label">${tool?.label || item.id}</span>`
+                + `<div class="cell-move-btns">
+                    <button class="cell-move-btn left" title="左移" ${idx === 0 ? 'disabled' : ''}>‹</button>
+                    <button class="cell-move-btn right" title="右移" ${idx === rowItems.length - 1 ? 'disabled' : ''}>›</button>
+                   </div>`
+                + `<button class="cell-row-btn" title="移到第${otherRow}排">R${otherRow}</button>`
+                + `<button class="remove-btn" title="移除">✕</button>`
+
+            cell.querySelector('.remove-btn').addEventListener('click', e => {
+                e.stopPropagation()
+                removeTool(item.id, item.category)
+            })
+            cell.querySelector('.cell-move-btn.left').addEventListener('click', e => {
+                e.stopPropagation()
+                moveStamp(item.id, item.category, -1)
+            })
+            cell.querySelector('.cell-move-btn.right').addEventListener('click', e => {
+                e.stopPropagation()
+                moveStamp(item.id, item.category, 1)
+            })
+            cell.querySelector('.cell-row-btn').addEventListener('click', e => {
+                e.stopPropagation()
+                setStampRow(item.id, item.category, otherRow)
+            })
+
+            rowEl.appendChild(cell)
+        })
     }
 
-    stampItems.forEach((item, idx) => {
-        const tool = findTool(item.id, item.category)
-        const group = TOOLSETS.find(g => g.name === item.category)
-        const cell = document.createElement('div')
-        cell.className = 'mock-cell'
-        cell.draggable = true
-        cell.dataset.idx = idx
-        cell.style.borderColor = group?.color ? group.color + '55' : ''
-        cell.innerHTML = renderIcon(tool, 20)
-            + `<span class="cell-label">${tool?.label || item.id}</span>`
-            + `<button class="remove-btn" title="移除">✕</button>`
-
-        cell.querySelector('.remove-btn').addEventListener('click', e => {
-            e.stopPropagation()
-            removeTool(item.id, item.category)
-        })
-
-        cell.addEventListener('dragstart', e => {
-            dragSrc = idx
-            cell.classList.add('dragging')
-            e.dataTransfer.effectAllowed = 'move'
-        })
-        cell.addEventListener('dragend', () => { cell.classList.remove('dragging'); clearInsert() })
-
-        cell.addEventListener('dragover', e => {
-            e.preventDefault()
-            clearInsert()
-            const rect = cell.getBoundingClientRect()
-            const before = e.clientX < rect.left + rect.width / 2
-            cell.classList.add(before ? 'insert-before' : 'insert-after')
-            insertTarget = { idx, before }
-        })
-        cell.addEventListener('dragleave', () => {
-            cell.classList.remove('insert-before', 'insert-after')
-        })
-        cell.addEventListener('drop', e => {
-            e.preventDefault()
-            clearInsert()
-            if (dragSrc === null || insertTarget === null) return
-            const { idx: destIdx, before } = insertTarget
-            insertTarget = null
-            if (dragSrc === destIdx) return
-
-            const order = [...stampItems]
-            const [moved] = order.splice(dragSrc, 1)
-            // after removing dragSrc, adjust destIdx
-            let at = dragSrc < destIdx
-                ? (before ? destIdx - 1 : destIdx)
-                : (before ? destIdx : destIdx + 1)
-            order.splice(Math.max(0, at), 0, moved)
-            myPanel = order
-            saveMyPanel()
-            renderMyPanel()
-        })
-
-        grid2.appendChild(cell)
-    })
+    renderRowSection(row1Items, 1)
+    renderRowSection(row2Items, 2)
 }
 
 // ── Selector rendering ────────────────────────────────────────────────────────
@@ -1513,7 +1696,7 @@ function renderSelector() {
                 })
             } else {
                 group.tools.forEach(t => {
-                    if (!isSelected(t.id, group.name)) myPanel.push({ id: t.id, category: group.name })
+                    if (!isSelected(t.id, group.name)) myPanel.push({ id: t.id, category: group.name, row: t.row ?? 1 })
                 })
             }
             saveMyPanel()
@@ -1683,6 +1866,12 @@ function renderLpPenBar() {
 
     bar.innerHTML = ''
 
+    // Zone label
+    const _plLabel = document.createElement('div')
+    _plLabel.style.cssText = 'font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:rgba(100,210,255,0.4);margin-right:6px;pointer-events:none;white-space:nowrap;flex-shrink:0;'
+    _plLabel.textContent = 'Pen Bar'
+    bar.appendChild(_plLabel)
+
     const penIcon = (s) => `<svg viewBox="0 0 24 24" fill="none" stroke="${s.stroke}" stroke-width="${s.dashed?'2':'1.8'}" ${s.dashed?'stroke-dasharray="3,2"':''} width="16" height="16"><path d="M12 19l7-7M19 12l3 3M22 15l-7 7M15 22l-3-3M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5"/>${s.arrow?'<path d="M3 13h15M14 9l4 4-4 4" stroke="'+s.stroke+'" stroke-width="2"/>':''}</svg>`
 
     // Pens section
@@ -1730,6 +1919,12 @@ function renderLpOthersBar() {
     }
     bar.className = 'lp-others-bar' + (lpOthersOpen ? ' open' : '')
     bar.innerHTML = ''
+
+    // Zone label
+    const _olLabel = document.createElement('div')
+    _olLabel.style.cssText = 'font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:rgba(100,210,255,0.4);margin-right:6px;pointer-events:none;white-space:nowrap;flex-shrink:0;'
+    _olLabel.textContent = 'Others Bar'
+    bar.appendChild(_olLabel)
 
     const addLabel = txt => {
         const l = document.createElement('div')
@@ -1861,6 +2056,12 @@ function renderLpLeftStrip() {
     if (!strip) return
     strip.innerHTML = ''
 
+    // Zone label
+    const _zlS = document.createElement('div')
+    _zlS.className = 'lp-zone-label'
+    _zlS.textContent = 'Edit Strip'
+    strip.appendChild(_zlS)
+
     // Others toggle button (top of strip)
     const othersBtn = document.createElement('div')
     othersBtn.className = 'lp-strip-tool lp-others-btn' + (lpOthersOpen ? ' open' : '')
@@ -1934,6 +2135,12 @@ function renderLpLeftStrip() {
     const sbThumb = document.createElement('div')
     sbThumb.className = 'lp-strip-scrollbar-thumb'
     sbTrack.appendChild(sbThumb)
+
+    // Element label
+    const _sbLabel = document.createElement('div')
+    _sbLabel.className = 'lp-elem-label'
+    _sbLabel.textContent = 'Scroll Drag Zone'
+    sbTrack.appendChild(_sbLabel)
 
     requestAnimationFrame(() => {
         const trackH = sbTrack.clientHeight || 120
@@ -2036,6 +2243,10 @@ function renderLpShapesBar() {
     grip.className = 'lp-bar-handle-col'
     grip.innerHTML = `<span></span><span></span><span></span><span></span>`
     grip.title = 'Drag to move'
+    const _glShapes = document.createElement('div')
+    _glShapes.style.cssText = 'font-size:6px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(100,210,255,0.4);writing-mode:vertical-lr;transform:rotate(180deg);margin-top:6px;pointer-events:none;white-space:nowrap;'
+    _glShapes.textContent = 'Shapes Bar'
+    grip.appendChild(_glShapes)
 
     let dragging = false, startY = 0, startBarY = 0
     grip.addEventListener('mousedown', e => {
@@ -2159,6 +2370,10 @@ function renderLpStampBar() {
     grip.className = 'lp-bar-handle-col'
     grip.innerHTML = `<span></span><span></span><span></span><span></span>`
     grip.title = 'Drag to move'
+    const _glStamp = document.createElement('div')
+    _glStamp.style.cssText = 'font-size:6px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(100,210,255,0.4);writing-mode:vertical-lr;transform:rotate(180deg);margin-top:6px;pointer-events:none;white-space:nowrap;'
+    _glStamp.textContent = 'Stamp Bar'
+    grip.appendChild(_glStamp)
 
     let dragging = false, startY = 0, startBarY = 0
     grip.addEventListener('mousedown', e => {
@@ -2235,16 +2450,11 @@ function renderLpRight() {
     if (!right) return
     right.innerHTML = ''
 
-    // Score name — rotated, at top of left column
-    const nameEl = document.createElement('div')
-    nameEl.className = 'lp-strip-score-name'
-    nameEl.textContent = 'Chopin — Ballade No.1 in G minor'
-    nameEl.title = 'Chopin — Ballade No.1 in G minor'
-    right.appendChild(nameEl)
-
-    const nameDivider = document.createElement('div')
-    nameDivider.className = 'lp-strip-divider'
-    right.appendChild(nameDivider)
+    // Zone label
+    const _zlR = document.createElement('div')
+    _zlR.className = 'lp-zone-label'
+    _zlR.textContent = 'Doc Bar'
+    right.appendChild(_zlR)
 
     // ── Doc bar buttons in docBarOrder ──
     const PRIMARY_IDS = ['page-head', 'page-up', 'page-down', 'fit-width', 'fit-height']
@@ -2264,6 +2474,13 @@ function renderLpRight() {
         }
         right.appendChild(btn)
     })
+
+    // Score name — fills remaining space above colors
+    const nameEl = document.createElement('div')
+    nameEl.className = 'lp-strip-score-name'
+    nameEl.textContent = 'Chopin — Ballade No.1 in G minor'
+    nameEl.title = 'Chopin — Ballade No.1 in G minor'
+    right.appendChild(nameEl)
 
     // Bottom: color + size
     const bottom = document.createElement('div')

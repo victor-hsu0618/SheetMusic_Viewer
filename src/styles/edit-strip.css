@@ -1,0 +1,737 @@
+/* ═══════════════════════════════════════════════════════════════
+   EditStripManager + EditSubBarManager styles
+   Right-side vertical edit bar + floating sub-bars
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Edit Strip (right-side fixed vertical bar) ── */
+#sf-edit-strip {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 54px;
+    background: rgba(15, 23, 42, 0.97);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 0;
+    z-index: 200;
+    user-select: none;
+    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.22s, border-color 0.22s;
+}
+
+#sf-edit-strip.collapsed {
+    width: 0;
+    opacity: 0;
+    pointer-events: none;
+    border-color: transparent;
+}
+
+/* ── Others trigger button (top of strip) ── */
+.sf-strip-others-btn {
+    width: 42px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.45);
+    transition: background .15s, color .15s;
+    flex-shrink: 0;
+}
+.sf-strip-others-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+.sf-strip-others-btn.open  { background: rgba(255,255,255,0.12); color: #e2e8f0; }
+
+/* ── Tool buttons ── */
+.sf-strip-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.5);
+    transition: background .15s, color .15s, border-color .15s;
+    flex-shrink: 0;
+    position: relative;
+}
+.sf-strip-btn svg { pointer-events: none; }
+.sf-strip-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.85);
+}
+.sf-strip-btn.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #a5b4fc;
+}
+/* Sub-indicator dot for buttons that have a sub-bar */
+.sf-strip-btn.has-sub::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+}
+.sf-strip-btn.has-sub.active::after,
+.sf-strip-btn.has-sub.open::after {
+    background: #a5b4fc;
+}
+
+/* ── Dividers ── */
+.sf-strip-divider {
+    width: 24px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+    margin: 3px 0;
+}
+
+/* ── Scrollbar drag zone ── */
+.sf-strip-scrollbar-track {
+    flex: 1;
+    width: 32px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    position: relative;
+    margin: 6px 0;
+    cursor: grab;
+    align-self: center;
+    min-height: 40px;
+}
+.sf-strip-scrollbar-thumb {
+    position: absolute;
+    width: 32px;
+    left: 0;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    cursor: grab;
+    transition: background .15s, top 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sf-strip-scrollbar-thumb.grabbing {
+    cursor: grabbing;
+    background: rgba(255, 255, 255, 0.42);
+    transition: background .15s; /* disable spring during drag */
+}
+
+/* ── Collapse button (bottom of strip) ── */
+.sf-strip-collapse-btn {
+    width: 42px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.28);
+    transition: color .15s, background .15s;
+    flex-shrink: 0;
+}
+.sf-strip-collapse-btn:hover {
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Sub-bars (pen picker, shapes, stamp, others)
+   ════════════════════════════════════════════════════════════════ */
+
+.sf-sub-bar {
+    position: fixed;
+    right: 58px; /* 54px strip + 4px gap */
+    background: rgba(15, 23, 42, 0.97);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    z-index: 199;
+    box-shadow: -4px 8px 24px rgba(0, 0, 0, 0.55);
+    color: #e2e8f0;
+    user-select: none;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    /* Arrow pointing right toward edit strip */
+}
+.sf-sub-bar::before {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-left-color: rgba(255, 255, 255, 0.14);
+    pointer-events: none;
+}
+.sf-sub-bar::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-left-color: rgba(15, 23, 42, 0.97);
+    pointer-events: none;
+}
+.sf-sub-bar.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* ── Pen picker bar (horizontal flyout, small) ── */
+.sf-pen-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    white-space: nowrap;
+    transform: translateX(8px) scale(0.92) translateY(-50%);
+    transform-origin: right center;
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s;
+}
+.sf-pen-bar.open {
+    transform: translateX(0) scale(1) translateY(-50%);
+}
+
+/* ── Wide bars (shapes, stamp) ── */
+.sf-wide-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    cursor: grab;
+    touch-action: none;  /* prevent browser from hijacking touch gestures */
+    left: 54px; /* clear 50px doc bar + 4px gap */
+    transform: translateX(8px) scale(0.95) translateY(-50%);
+    transform-origin: right center;
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s;
+}
+.sf-wide-bar.open {
+    transform: translateX(0) scale(1) translateY(-50%);
+}
+
+/* ── Others bar (slides down from top) ── */
+.sf-others-bar {
+    position: fixed;
+    left: 54px; /* clear 50px doc bar + 4px gap */
+    right: 58px; /* clear 54px edit strip + 4px gap */
+    top: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+    z-index: 199;
+    transform: translateY(-110%);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s;
+}
+.sf-others-bar.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* ── Pen bar cells ── */
+.sf-pen-cell {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+.sf-pen-cell:hover { background: rgba(255,255,255,0.14); }
+.sf-pen-cell.active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.6);
+}
+.sf-pen-label {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
+}
+.sf-pen-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+    margin: 0 2px;
+}
+
+/* ── Wide bar internals ── */
+.sf-bar-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 36px;
+    flex-shrink: 0;
+}
+.sf-bar-divider {
+    width: 1px;
+    background: rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+    align-self: stretch;
+    margin: 0 4px;
+}
+.sf-bar-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 6px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    touch-action: none;  /* iOS Safari: prevent native scroll hijacking; we handle scroll in JS */
+}
+
+.sf-bar-content::-webkit-scrollbar { display: none; }
+/* Stamp bar: horizontally scrollable rows */
+.sf-stamp-row {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    flex-shrink: 0;
+    min-width: max-content; /* prevent row from collapsing */
+}
+.sf-stamp-row .sf-bar-cell {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    cursor: pointer;
+    touch-action: none;
+}
+.sf-bar-grid {
+    display: grid;
+    grid-template-rows: 48px 48px;
+    grid-auto-flow: column;
+    grid-auto-columns: 48px;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.sf-bar-grip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    cursor: grab;
+    opacity: 0.35;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    transition: opacity .15s;
+}
+.sf-bar-grip:hover { opacity: 0.7; }
+.sf-bar-grip span {
+    display: block;
+    width: 12px;
+    height: 2px;
+    background: #fff;
+    border-radius: 1px;
+    margin: 2px 0;
+}
+.sf-nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.6);
+    transition: background .15s, color .15s;
+    flex-shrink: 0;
+}
+.sf-nav-btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
+.sf-nav-btn.disabled { opacity: 0.25; cursor: default; pointer-events: none; }
+
+/* ── Stamp / Shapes cells ── */
+.sf-bar-cell {
+    width: 100%;
+    height: 100%;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    position: relative;
+    overflow: visible;
+}
+.sf-bar-cell:hover { background: rgba(255,255,255,0.14); }
+.sf-bar-cell.active {
+    background: rgba(99, 102, 241, 0.3);
+    border-color: rgba(99, 102, 241, 0.7);
+}
+.sf-bar-cell svg { width: 28px; height: 28px; pointer-events: none; }
+.sf-bar-cell-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: #e2e8f0;
+    pointer-events: none;
+}
+
+/* ── Others bar cells ── */
+.sf-others-color {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform .15s, border-color .15s;
+}
+.sf-others-color:hover { transform: scale(1.2); }
+.sf-others-color.active { border-color: #fff; }
+
+.sf-others-label {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: rgba(255, 255, 255, 0.35);
+    flex-shrink: 0;
+}
+.sf-others-style-btn {
+    width: 36px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+    transition: background .15s;
+    flex-shrink: 0;
+}
+.sf-others-style-btn:hover { background: rgba(255,255,255,0.14); }
+.sf-others-style-btn.active { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+.sf-others-divider-v {
+    width: 1px;
+    height: 28px;
+    background: rgba(255,255,255,0.12);
+    flex-shrink: 0;
+    margin: 0 4px;
+}
+
+/* ── Draggable FAB (always visible — toggles edit strip) ── */
+#sf-edit-strip-fab {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(30, 41, 59, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    z-index: 201;
+    opacity: 1;
+    pointer-events: all;
+    transition: background 0.15s, border-color 0.15s;
+    touch-action: none;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+#sf-edit-strip-fab.dragging {
+    cursor: grabbing;
+}
+
+/* ── Stamp Settings gear button ─────────────────────────────────────────── */
+.sf-nav-settings-btn {
+    margin-top: 6px;
+    opacity: 0.55;
+    transition: opacity 0.15s;
+}
+.sf-nav-settings-btn:hover { opacity: 1; }
+.sf-nav-settings-btn.active { opacity: 1; color: var(--primary, #6366f1); }
+
+/* ── Stamp Settings Panel ────────────────────────────────────────────────── */
+.sf-stamp-settings-panel {
+    position: fixed;
+    z-index: 310;
+    background: #1e293b;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    width: 360px;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+    transition: opacity 0.18s, transform 0.18s;
+}
+.sf-stamp-settings-panel.open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+}
+
+/* Tab bar */
+.sf-ss-tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+}
+.sf-ss-tab {
+    flex: 1;
+    padding: 11px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255,255,255,0.45);
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.15s;
+}
+.sf-ss-tab.active { color: var(--primary, #6366f1); border-bottom-color: var(--primary, #6366f1); }
+
+/* Content */
+.sf-ss-content {
+    flex: 1;
+    overflow-y: visible;
+    padding: 14px 16px;
+}
+
+/* Panes */
+.sf-ss-pane { display: none; }
+.sf-ss-pane.active { display: block; }
+
+/* Row / Col */
+.sf-ss-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+.sf-ss-col {
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+.sf-ss-label {
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* Slider */
+.sf-ss-slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+.sf-ss-slider {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.sf-ss-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--primary, #6366f1);
+    cursor: pointer;
+}
+.sf-ss-adj {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+    padding: 0;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.sf-ss-adj:hover { background: rgba(255,255,255,0.15); }
+.sf-ss-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    min-width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+}
+.sf-ss-reset {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.3);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.sf-ss-reset:hover { color: rgba(255,255,255,0.7); }
+
+/* Toggle switch */
+.sf-ss-toggle {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 22px;
+    flex-shrink: 0;
+}
+.sf-ss-toggle input { opacity: 0; width: 0; height: 0; }
+.sf-ss-toggle-track {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.15);
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.sf-ss-toggle-track::before {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    left: 3px; top: 3px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+}
+.sf-ss-toggle input:checked + .sf-ss-toggle-track { background: var(--primary, #6366f1); }
+.sf-ss-toggle input:checked + .sf-ss-toggle-track::before { transform: translateX(16px); }
+
+/* Buttons */
+.sf-ss-btn {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+}
+.sf-ss-btn:hover { background: rgba(255,255,255,0.14); }
+.sf-ss-danger-btn {
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+}
+.sf-ss-danger-btn:hover { background: rgba(239, 68, 68, 0.22); }
+.sf-ss-hint {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    margin: 4px 0 0;
+}
+
+/* More pane blocks */
+.sf-ss-block {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sf-ss-block:last-child { border-bottom: none; }
+
+/* Label with subtitle below */
+.sf-ss-label-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+}
+.sf-ss-sublabel {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.3;
+}
+
+/* Equal-width button pair */
+.sf-ss-btn-pair {
+    display: flex;
+    gap: 8px;
+}
+.sf-ss-btn-pair .sf-ss-btn,
+.sf-ss-btn-pair .sf-ss-btn-danger {
+    flex: 1;
+}
+
+/* Danger variant for btn-pair (no separate class needed) */
+.sf-ss-btn.sf-ss-btn-danger {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+}
+.sf-ss-btn.sf-ss-btn-danger:hover { background: rgba(239, 68, 68, 0.22); }
+
+/* Stepper (overlap) */
+.sf-ss-stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* Layer list — reuse existing .layer-list-mini styles from tools.css */
+.sf-stamp-settings-panel .layer-list-mini {
+    margin-top: 8px;
+}
+
+/* Adjust viewer to not be covered by edit strip */
+#viewer-container {
+    padding-right: 54px;
+    transition: padding-right 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+body.sf-strip-collapsed #viewer-container {
+    padding-right: 0;
+}
+
+
+

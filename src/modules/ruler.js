@@ -88,6 +88,7 @@ export class RulerManager {
             const icon = this.app.btnRulerToggle.querySelector('svg')
             if (icon) icon.style.opacity = this.rulerVisible ? '1' : '0.4'
         }
+        this.app.docBarStripManager?.update()
     }
 
     updateJumpLinePosition() {
@@ -402,56 +403,6 @@ export class RulerManager {
         }
     }
 
-    _startMeasureDrag(e, stamp, markEl) {
-        if (e.cancelable) e.preventDefault()
-        e.stopPropagation()
-
-        const metrics = this.app.viewerManager._pageMetrics
-        const viewerOffset = this.app.viewer.getBoundingClientRect().top
-        const startClientY = e.touches ? e.touches[0].clientY : e.clientY
-        const startTop = parseFloat(markEl.style.top)
-
-        markEl.classList.add('dragging')
-
-        const onMove = (ev) => {
-            const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY
-            markEl.style.top = `${startTop + (clientY - startClientY)}px`
-        }
-
-        const onEnd = () => {
-            window.removeEventListener('mousemove', onMove)
-            window.removeEventListener('touchmove', onMove)
-            window.removeEventListener('mouseup', onEnd)
-            window.removeEventListener('touchend', onEnd)
-            markEl.classList.remove('dragging')
-
-            // Convert final screen Y back to absolute scroll-space Y
-            const absY = parseFloat(markEl.style.top) - viewerOffset + this.app.viewer.scrollTop
-
-            // Find which page this Y falls on
-            let newPage = stamp.page
-            let newY = stamp.y
-            for (const [pageNum, m] of Object.entries(metrics)) {
-                if (absY >= m.top && absY < m.top + m.height) {
-                    newPage = parseInt(pageNum)
-                    newY = Math.max(0, Math.min(1, (absY - m.top) / m.height))
-                    break
-                }
-            }
-
-            stamp.page = newPage
-            stamp.y = newY
-            stamp.updatedAt = Date.now()
-            this.app.saveToStorage(true)
-            this.app.redrawAllAnnotationLayers()
-            this.updateRulerMarks()
-        }
-
-        window.addEventListener('mousemove', onMove)
-        window.addEventListener('touchmove', onMove, { passive: false })
-        window.addEventListener('mouseup', onEnd)
-        window.addEventListener('touchend', onEnd)
-    }
 
     updateRulerMarks() {
         this.computeNextTarget()
@@ -460,17 +411,13 @@ export class RulerManager {
 
         const visualMarks = this.app.stamps.filter(s => {
             if (s.deleted) return false;
-            
-            // Basic type filter
+
             const isAnchor = s.type === 'anchor';
-            const isMeasure = s.type === 'measure';
-            const isFreeMeasure = s.type === 'measure-free';
             const isSystem = s.type === 'system';
-            
-            if (!isAnchor && !isMeasure && !isFreeMeasure && !isSystem) return false;
+
+            if (!isAnchor && !isSystem) return false;
             if (isSystem && !this.app.showSystemStamps) return false;
 
-            // Visibility checks (Strict symmetry with AnnotationRenderer.js)
             const sourceId = s.sourceId || 'self';
             const source = this.app.sources.find(src => src.id === sourceId);
             if (!source || !source.visible) return false;
@@ -478,10 +425,7 @@ export class RulerManager {
             const layerId = this.app.annotationManager?.getEffectiveLayerId(s);
             const layer = this.app.layers.find(l => l.id === layerId);
             if (!layer || !layer.visible) return false;
-            
-            // Global Measure visibility (Note: measure-free ignores this toggle)
-            if (isMeasure && (this.app.hideMeasureNumbers || this.app.hideRulerMeasures)) return false;
-            
+
             return true;
         })
         const viewportHeight = window.innerHeight
@@ -538,17 +482,6 @@ export class RulerManager {
                     if (stamp.type === 'anchor') {
                         const isNextTarget = stamp === this.nextTargetAnchor
                         mark.className = isNextTarget ? 'ruler-anchor-mark ruler-next-target' : 'ruler-anchor-mark'
-                    } else if (stamp.type === 'measure' || stamp.type === 'measure-free') {
-                        mark.className = 'ruler-measure-mark'
-                        mark.textContent = stamp.data
-                        // Only allow dragging when actively using the measure tool
-                        const isMeasureMode = this.app.activeStampType === 'measure' || this.app.activeStampType === 'measure-free';
-                        mark.style.pointerEvents = isMeasureMode ? 'auto' : 'none'
-                        mark.style.cursor = isMeasureMode ? 'ns-resize' : 'default'
-                        if (isMeasureMode) {
-                            mark.addEventListener('mousedown', (e) => this._startMeasureDrag(e, stamp, mark))
-                            mark.addEventListener('touchstart', (e) => this._startMeasureDrag(e, stamp, mark), { passive: false })
-                        }
                     } else if (stamp.type === 'system') {
                         mark.className = stamp === nextSystemTarget
                             ? 'ruler-system-mark ruler-system-next-target'

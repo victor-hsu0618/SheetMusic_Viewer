@@ -1008,12 +1008,6 @@ export class InteractionManager {
             }
         }
 
-        // SAFETY: Sync EditScrollbar visibility to prevent it from getting stuck hidden
-        // when the tool state changes. The CSS rule relies on data-active-tool, but if 
-        // that attribute ever gets out of sync, the scrollbar vanishes and the user can't scroll.
-        if (this.app.editScrollbarManager?.track) {
-            this.app.editScrollbarManager.syncThumb();
-        }
 
         if (isViewMode) {
             this.app.isInteracting = false;

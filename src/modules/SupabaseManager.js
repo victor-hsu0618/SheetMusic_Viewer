@@ -28,14 +28,16 @@ export class SupabaseManager {
 
     setupAuthListener() {
         if (!this.client) return
-        
+
         this.client.auth.onAuthStateChange((event, session) => {
             this.user = session?.user || null
             console.log(`[Supabase] Auth state: ${event}`, this.user?.email)
             
-            if (event === 'SIGNED_IN') {
-                this.app.uiManager?.showToast?.(`Welcome, ${this.user.email}`, 'success')
-                
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                if (event === 'SIGNED_IN') {
+                    this.app.uiManager?.showToast?.(`Welcome, ${this.user.email}`, 'success')
+                }
+
                 // --- NEW GLUE: Sync User Profile and Global Library ---
                 this.pullProfile().then(data => {
                     if (data && this.app.profileManager) {
@@ -55,11 +57,10 @@ export class SupabaseManager {
                     this.pullScoreRegistry();
                 }
 
+                this.syncPanelConfig()
+
                 if (this.app.pdfFingerprint) {
                     this.subscribeToAnnotations(this.app.pdfFingerprint)
-                    // Pull existing cloud annotations now that auth is ready.
-                    // This covers the race where pullAnnotations was called before
-                    // the auth session was fully restored (user was null at the time).
                     this.pullAnnotations(this.app.pdfFingerprint)
                 }
             } else if (event === 'SIGNED_OUT') {
@@ -435,37 +436,94 @@ export class SupabaseManager {
     }
 
     /**
-     * Pushes setlists to Supabase.
+     * Pushes setlists to the dedicated `setlists` column — no read-modify-write race condition.
      */
     async pushSetlists(setlists) {
         if (!this.client || !this.user) return;
-        console.log(`[Supabase] ⬆️ Syncing ${setlists.length} Setlists to profiles...`);
-        
-        // We store everything in the 'data' JSONB column of the profiles table
-        const currentProfile = await this.pullProfile() || {};
-        const updatedData = { ...currentProfile, setlists: setlists };
+        console.log(`[Supabase] ⬆️ Syncing ${setlists.length} Setlists...`);
 
         const { error } = await this.client
             .from('profiles')
             .upsert({
                 id: this.user.id,
                 email: this.user.email,
-                data: updatedData,
+                setlists: setlists,
                 updated_at: new Date().toISOString()
             });
 
         if (error) console.error('[Supabase] Setlist push failed:', error.message);
-        else console.log('[Supabase] ✅ Setlists synced to profiles.');
+        else console.log('[Supabase] ✅ Setlists synced.');
     }
 
     /**
-     * Pulls setlists from Supabase profiles data field. (Maximum Compatibility)
+     * Pulls setlists from the dedicated `setlists` column.
+     * Falls back to legacy `data.setlists` for backward compatibility.
      */
     async pullSetlists() {
         if (!this.client || !this.user) return null;
-        console.log('[Supabase] ↓ Pulling Setlists from profiles...');
-        const data = await this.pullProfile();
-        return data?.setlists || null;
+        console.log('[Supabase] ↓ Pulling Setlists...');
+        const { data, error } = await this.client
+            .from('profiles')
+            .select('setlists, data')
+            .eq('id', this.user.id)
+            .maybeSingle();
+
+        if (error) {
+            console.warn('[Supabase] Setlist pull error:', error.message);
+            return null;
+        }
+        // New column takes priority; fall back to legacy data.setlists
+        return data?.setlists ?? data?.data?.setlists ?? null;
+    }
+
+    /**
+     * Pull panel config from cloud and apply to localStorage.
+     * Cloud is always authoritative (offline editing is blocked in toolset-inspector).
+     */
+    async syncPanelConfig() {
+        if (!navigator.onLine) return
+        const cfg = await this.pullPanelConfig()
+        if (!cfg) return
+        localStorage.setItem('scoreflow_panel_config', JSON.stringify(cfg))
+        console.log('[Supabase] ✅ panel_config applied from cloud')
+    }
+
+    /**
+     * Pushes panel UI config to the dedicated `panel_config` column.
+     */
+    async pushPanelConfig(cfg) {
+        if (!this.client || !this.user) return;
+        console.log('[Supabase] ⬆️ Syncing panel_config...');
+
+        const { error } = await this.client
+            .from('profiles')
+            .upsert({
+                id: this.user.id,
+                email: this.user.email,
+                panel_config: cfg,
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) console.error('[Supabase] panel_config push failed:', error.message);
+        else console.log('[Supabase] ✅ panel_config synced.');
+    }
+
+    /**
+     * Pulls panel UI config from the dedicated `panel_config` column.
+     */
+    async pullPanelConfig() {
+        if (!this.client || !this.user) return null;
+        const { data, error } = await this.client
+            .from('profiles')
+            .select('panel_config')
+            .eq('id', this.user.id)
+            .maybeSingle();
+
+        if (error) {
+            console.warn('[Supabase] panel_config pull error:', error.message);
+            return null;
+        }
+        return data?.panel_config ?? null;
     }
 
     /**

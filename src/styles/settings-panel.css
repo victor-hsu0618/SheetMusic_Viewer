@@ -1,23 +1,51 @@
-/* Global Settings Sub-Panel (Calculator Style) */
-#settings-panel {
+/* Settings & Account Panels (Calculator Style, slide up from bottom) */
+#settings-panel,
+#account-panel {
     position: fixed !important;
     bottom: 110px !important;
     left: 50% !important;
     top: auto !important;
-    transform: translate(-50%, 100%) !important; /* Initial: Slide down */
-    width: 650px;
+    transform: translate(-50%, 100%) !important;
+    width: 480px;
     max-height: calc(100vh - 180px);
     display: flex;
     flex-direction: column;
     z-index: 10000;
     pointer-events: none;
+    opacity: 0;
     transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-#settings-panel.active {
+#settings-panel.active,
+#account-panel.active {
     opacity: 1 !important;
     pointer-events: auto !important;
-    transform: translate(-50%, 0) !important; /* Active: Slide up */
+    transform: translate(-50%, 0) !important;
+}
+
+/* Sync status badge in account panel header */
+.sync-status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(100, 116, 139, 0.2);
+    color: var(--text-muted);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.sync-status-badge.online {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.sync-status-badge.offline {
+    background: rgba(100, 116, 139, 0.15);
+    color: var(--text-muted);
+    border-color: rgba(100, 116, 139, 0.2);
 }
 
 .settings-scroll-area {

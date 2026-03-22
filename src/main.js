@@ -49,8 +49,11 @@ import { applyAppProxies } from './modules/AppProxyHandler.js'
 import { StaffDetector } from './modules/StaffDetector.js'
 import { GistShareManager } from './modules/GistShareManager.js'
 import { LocalBackupManager } from './modules/LocalBackupManager.js'
-import { EditScrollbarManager } from './modules/EditScrollbarManager.js'
 import { SupabaseManager } from './modules/SupabaseManager.js'
+import { EditStripManager } from './modules/EditStripManager.js'
+import { EditSubBarManager } from './modules/EditSubBarManager.js'
+import { DocBarStripManager } from './modules/DocBarStripManager.js'
+import { AccountPanelManager } from './modules/AccountPanelManager.js'
 
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs/pdf.worker.min.mjs', baseUrl).href
@@ -119,7 +122,6 @@ class ScoreFlow {
     this.rulerManager = new RulerManager(this)
     this.docBarManager = new DocBarManager(this)
     this.viewerManager = new ViewerManager(this)
-    this.editScrollbarManager = new EditScrollbarManager(this)
     this.profileManager = new ProfileManager(this)
     this.scoreDetailManager = new ScoreDetailManager(this)
     this.annotationManager = new AnnotationManager(this)
@@ -127,6 +129,7 @@ class ScoreFlow {
     this.layerManager = new LayerManager(this)
     this.docActionManager = new DocActionManager(this)
     this.settingsPanelManager = new SettingsPanelManager(this)
+    this.accountPanelManager = new AccountPanelManager(this)
     this.scoreManager = new ScoreManager(this)
     this.collaborationManager = new CollaborationManager(this)
     this.playbackManager = new PlaybackManager(this)
@@ -139,6 +142,11 @@ this.setlistManager = new SetlistManager(this)
     this.gistShareManager = new GistShareManager(this)
     this.localBackupManager = new LocalBackupManager(this)
     this.supabaseManager = new SupabaseManager(this)
+    this.editSubBarManager = new EditSubBarManager(this)
+    this.editStripManager  = new EditStripManager(this)
+    this.docBarStripManager = new DocBarStripManager(this)
+    // Link strip ↔ sub-bar
+    this.editStripManager.setSubBarManager(this.editSubBarManager)
 
     // Apply Proxies
     applyAppProxies(this)
@@ -153,7 +161,9 @@ this.setlistManager = new SetlistManager(this)
     this.layerManager.init()
     this.initManager.initEventListeners()
     this.viewerManager.init()
-    this.editScrollbarManager.init()
+    this.editSubBarManager.init()
+    this.editStripManager.init()
+    this.docBarStripManager.init()
     this.rulerManager.init()
     this.docBarManager.init()
     this.inputManager.init()
@@ -163,10 +173,10 @@ this.playbackManager.init()
     this.scoreManager.init()
     this.gistShareManager.init()
     this.settingsPanelManager.init()
+    this.accountPanelManager.init()
     this.setlistManager.init()
     this.toolManager.initDraggable()
     this.toolManager.initToolbarResizable()
-    this.toolManager.initFloatingFab()
 
     const boot = async () => {
         try {

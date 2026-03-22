@@ -457,10 +457,13 @@ export class ViewerManager {
         const fp = this.pdfFingerprint;
         if (!fp) {
             if (this.activeScoreName) {
-                this.app.floatingScoreTitle.textContent = "Loading " + this.activeScoreName.replace(/\.pdf$/i, '') + "...";
+                const loadingName = "Loading " + this.activeScoreName.replace(/\.pdf$/i, '') + "..."
+                this.app.floatingScoreTitle.textContent = loadingName;
                 this.app.floatingScoreTitle.classList.add('active');
+                this.app.docBarStripManager?.updateTitle(loadingName);
             } else {
                 this.app.floatingScoreTitle.classList.remove('active');
+                this.app.docBarStripManager?.updateTitle('');
             }
             return;
         }
@@ -481,6 +484,7 @@ export class ViewerManager {
 
         this.app.floatingScoreTitle.textContent = displayName;
         this.app.floatingScoreTitle.classList.add('active');
+        this.app.docBarStripManager?.updateTitle(displayName);
     }
 
 
@@ -890,9 +894,11 @@ export class ViewerManager {
         const page = await this.pdf.getPage(1)
         const naturalWidth = page.getViewport({ scale: 1 }).width
 
-        // Use full viewer width — the ruler is an overlay on the PDF left margin,
-        // not a layout element, so it doesn't reduce available content width.
-        const availW = this.app.viewer.clientWidth
+        // Subtract padding from doc bar (left) and edit strip (right)
+        const style = window.getComputedStyle(this.app.viewer)
+        const padLeft  = parseFloat(style.paddingLeft)  || 0
+        const padRight = parseFloat(style.paddingRight) || 0
+        const availW = this.app.viewer.clientWidth - padLeft - padRight
         this.scale = Math.min(Math.max(0.2, availW / naturalWidth), 4)
         this.isFitToHeight = false
         this.updateZoomDisplay()
