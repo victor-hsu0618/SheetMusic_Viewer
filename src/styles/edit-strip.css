@@ -385,6 +385,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    color: #e2e8f0;  /* ensures currentColor in SVG paths and textIcon both use light color */
     transition: background .15s, border-color .15s;
     position: relative;
     overflow: visible;
@@ -398,8 +399,17 @@
 .sf-bar-cell-text {
     font-size: 12px;
     font-weight: 700;
+    pointer-events: none;
+}
+/* Plain-text icons: dynamics (ppp, pp, p, mf, f, ff, fff …) */
+.sf-bar-cell-dynamic {
+    font-size: 13px;
+    font-weight: 800;
+    font-style: italic;
+    font-family: serif;
     color: #e2e8f0;
     pointer-events: none;
+    line-height: 1;
 }
 
 /* ── Others bar cells ── */

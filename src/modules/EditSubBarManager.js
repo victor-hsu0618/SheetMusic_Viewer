@@ -89,6 +89,24 @@ export class EditSubBarManager {
         this._closeStampSettings()
     }
 
+    /** Snapshot current open state — call before hiding */
+    snapshotState() {
+        return { activeBar: this.activeBar, othersOpen: this.othersOpen }
+    }
+
+    /** Restore a previously snapshotted state — just re-shows already-positioned bars */
+    restoreState(snapshot) {
+        if (!snapshot) return
+        if (snapshot.activeBar && this._bars[snapshot.activeBar]) {
+            this.activeBar = snapshot.activeBar
+            requestAnimationFrame(() => this._bars[snapshot.activeBar]?.classList.add('open'))
+        }
+        if (snapshot.othersOpen && this._bars['others']) {
+            this.othersOpen = true
+            requestAnimationFrame(() => this._bars['others']?.classList.add('open'))
+        }
+    }
+
     _closeToolBar(name) {
         this._bars[name]?.classList.remove('open')
         this.activeBar = null
@@ -199,6 +217,21 @@ export class EditSubBarManager {
 
     // ─── Wide Bars (shapes + stamp) ───────────────────────────────────────────
 
+    /** Render the icon HTML for a stamp bar cell */
+    _cellIconHTML(item) {
+        const icon = item.icon
+        if (!icon) {
+            // No icon at all — fall back to textIcon or label
+            return `<span class="sf-bar-cell-text">${item.textIcon || item.label}</span>`
+        }
+        if (icon.trim().startsWith('<')) {
+            // SVG markup
+            return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#e2e8f0">${icon}</svg>`
+        }
+        // Plain text (e.g. dynamics: ppp, pp, p, mf, f, ff, fff …)
+        return `<span class="sf-bar-cell-dynamic">${icon}</span>`
+    }
+
     _buildWideBar(bar, type) {
         const isStamp = type === 'stamp'
 
@@ -270,9 +303,7 @@ export class EditSubBarManager {
                     const cell = document.createElement('div')
                     cell.className = 'sf-bar-cell' + (isActive ? ' active' : '')
                     if (item._group?.color) cell.style.borderColor = item._group.color + '55'
-                    cell.innerHTML = item.icon
-                        ? `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5">${item.icon}</svg>`
-                        : `<span class="sf-bar-cell-text">${item.textIcon || item.label}</span>`
+                    cell.innerHTML = this._cellIconHTML(item)
                     cell.title = item.label
                     cell.addEventListener('click', () => this._selectTool(item.id, bar, type))
                     rowEl.appendChild(cell)
@@ -307,9 +338,7 @@ export class EditSubBarManager {
                     const cell = document.createElement('div')
                     cell.className = 'sf-bar-cell' + (isActive ? ' active' : '')
                     if (item._group?.color) cell.style.borderColor = item._group.color + '55'
-                    cell.innerHTML = item.icon
-                        ? `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5">${item.icon}</svg>`
-                        : `<span class="sf-bar-cell-text">${item.textIcon || item.label}</span>`
+                    cell.innerHTML = this._cellIconHTML(item)
                     cell.title = item.label
                     cell.addEventListener('click', () => this._selectTool(item.id, bar, type))
                     grid.appendChild(cell)
@@ -438,6 +467,23 @@ export class EditSubBarManager {
             b.className = 'sf-others-style-btn'
             b.title = lbl
             b.textContent = lbl
+            bar.appendChild(b)
+        })
+
+        addVDivider()
+
+        // Stroke size
+        addLabel('Size')
+        ;[['S', 1], ['M', 2], ['L', 4]].forEach(([lbl, val]) => {
+            const b = document.createElement('div')
+            b.className = 'sf-others-style-btn' + (this.app.activeStrokeWidth === val ? ' active' : '')
+            b.title = lbl
+            b.textContent = lbl
+            b.addEventListener('click', () => {
+                this.app.activeStrokeWidth = val
+                this.app.toolManager?.updateActiveTools()
+                this._populateBar(bar, 'others')
+            })
             bar.appendChild(b)
         })
     }
@@ -782,8 +828,13 @@ export class EditSubBarManager {
     _selectTool(toolId, bar, barType) {
         this.app.activeStampType = toolId
         this.app.toolManager?.updateActiveTools()
-        // Re-render bar to update active state
-        this._populateBar(bar, barType)
+        if (barType === 'stamp' || barType === 'shapes') {
+            // Wide bars cover the entire score — close immediately so user can place annotations
+            this._closeToolBar(barType)
+        } else {
+            // Pen bar is small — update active state in-place
+            this._populateBar(bar, barType)
+        }
         // Re-render strip to update active button
         this.app.editStripManager?.update()
     }

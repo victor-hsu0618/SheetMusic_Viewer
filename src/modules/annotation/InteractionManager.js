@@ -42,6 +42,10 @@ export class InteractionManager {
             this.isAdjustingCurvature = false;
             this.app._dragLastPos = null;
             InteractionUI.showTrash(false, wrapper);
+            // Always clean up doc bar trash state
+            const _dt = document.getElementById('sf-doc-trash-btn')
+            _dt?.classList.remove('drag-over', 'drag-active')
+            this._hideDragGhost()
             detachGlobalListeners();
         };
 
@@ -566,7 +570,9 @@ export class InteractionManager {
 
             // Check if we are outside current overlay or if we have an activeObject on a different page
             const rawPos = CoordMapper.getPos(e, overlay);
-            if (rawPos.y < -0.01 || rawPos.y > 1.01 || (activeObject && activeObject.page !== pageNum)) {
+            const outsideCurrentOverlay = rawPos.x < -0.01 || rawPos.x > 1.01 || rawPos.y < -0.01 || rawPos.y > 1.01;
+            let outsideAllPages = false;
+            if (outsideCurrentOverlay || (activeObject && activeObject.page !== pageNum)) {
                 const el = document.elementFromPoint(e.clientX, e.clientY);
                 const targetOverlay = el?.closest('.capture-overlay');
                 if (targetOverlay) {
@@ -576,6 +582,8 @@ export class InteractionManager {
                         currentOverlay = targetOverlay;
                         currentWrapper = targetOverlay.parentElement;
                     }
+                } else if (outsideCurrentOverlay) {
+                    outsideAllPages = true;
                 }
             }
 
@@ -611,6 +619,21 @@ export class InteractionManager {
                 InteractionUI.syncVirtualPointer(e, toolType, currentOverlay, currentVirtualPointer, CoordMapper, this.app);
                 return;
             }
+
+            if (isMovingExisting && outsideAllPages) {
+                // Pointer is outside all PDF pages — show ghost preview
+                this._showDragGhost(e.clientX, e.clientY, activeObject)
+                // Still highlight doc bar trash if pointer is over it
+                const docTrash2 = document.getElementById('sf-doc-trash-btn')
+                if (docTrash2) {
+                    const r2 = docTrash2.getBoundingClientRect()
+                    const over2 = e.clientX >= r2.left && e.clientX <= r2.right && e.clientY >= r2.top && e.clientY <= r2.bottom
+                    docTrash2.classList.toggle('drag-over', over2)
+                    docTrash2.classList.add('drag-active')
+                }
+                return;
+            }
+            if (isMovingExisting) this._hideDragGhost()
 
             if (isMovingExisting) {
                 if (this.isAdjustingCurvature && activeObject.type === 'slur') {
@@ -679,6 +702,14 @@ export class InteractionManager {
             if (isMovingExisting) {
                 const trashBin = wrapper.querySelector('.grace-trash-bin');
                 if (trashBin) trashBin.classList.add('show');
+                // Highlight doc bar trash when pointer is over it
+                const docTrash = document.getElementById('sf-doc-trash-btn')
+                if (docTrash) {
+                    const r = docTrash.getBoundingClientRect()
+                    const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+                    docTrash.classList.toggle('drag-over', over)
+                    docTrash.classList.add('drag-active')
+                }
             }
 
             // Sync current virtual pointer and hide others
@@ -696,7 +727,15 @@ export class InteractionManager {
                 if (activeObject) {
                     const targetPageNum = activeObject.page;
                     const targetWrapper = document.querySelector(`.page-container[data-page="${targetPageNum}"]`);
-                    const isOverTrash = InteractionUI.isObjectOverTrash(activeObject, targetWrapper, CoordMapper);
+                    // Check doc bar trash (pointer position)
+                    const docTrash = document.getElementById('sf-doc-trash-btn')
+                    docTrash?.classList.remove('drag-over', 'drag-active')
+                    const docTrashRect = docTrash?.getBoundingClientRect()
+                    const isOverDocTrash = docTrashRect &&
+                        e.clientX >= docTrashRect.left && e.clientX <= docTrashRect.right &&
+                        e.clientY >= docTrashRect.top  && e.clientY <= docTrashRect.bottom
+
+                    const isOverTrash = InteractionUI.isObjectOverTrash(activeObject, targetWrapper, CoordMapper) || isOverDocTrash;
                     if (isOverTrash) {
                         if (isMovingExisting) await this.app.annotationManager.eraseStampTarget(activeObject);
                         this.app.showMessage('Object Deleted', 'success');
@@ -853,6 +892,7 @@ export class InteractionManager {
 
             if (!graceObject) InteractionUI.showTrash(false, wrapper);
             else InteractionUI.setTrashActive(false, wrapper);
+            this._hideDragGhost()
             detachGlobalListeners();
 
             // Explicitly hide pointer if no activity
@@ -1000,8 +1040,11 @@ export class InteractionManager {
 
         // SAFETY: Ensure the viewer's own touch-action is correct.
         if (this.app.viewer) {
-            // In view mode, allow both horizontal and vertical panning (important for zoomed scores)
-            this.app.viewer.style.touchAction = isViewMode ? 'pan-x pan-y' : 'pan-y';
+            // In view mode, allow native panning (important for zoomed scores).
+            // In annotation mode, set 'none' on the viewer so iOS Safari doesn't intercept
+            // finger touch for scrolling — iOS ignores overlay touch-action:none if an
+            // ancestor scroll container has pan-y. Apple Pencil / mouse are unaffected.
+            this.app.viewer.style.touchAction = isViewMode ? 'pan-x pan-y' : 'none';
             // Ensure overflow-y is never stuck at 'hidden'
             if (this.app.viewer.style.overflowY === 'hidden') {
                 this.app.viewer.style.overflowY = '';
@@ -1012,5 +1055,25 @@ export class InteractionManager {
         if (isViewMode) {
             this.app.isInteracting = false;
         }
+    }
+
+    _showDragGhost(clientX, clientY, obj) {
+        let ghost = document.getElementById('sf-drag-ghost')
+        if (!ghost) {
+            ghost = document.createElement('div')
+            ghost.id = 'sf-drag-ghost'
+            document.body.appendChild(ghost)
+        }
+        // Use label, type name, or fallback icon
+        const label = obj?.data || obj?.type || '◆'
+        ghost.textContent = label
+        ghost.style.display = 'block'
+        ghost.style.left = (clientX + 18) + 'px'
+        ghost.style.top  = (clientY - 16) + 'px'
+    }
+
+    _hideDragGhost() {
+        const ghost = document.getElementById('sf-drag-ghost')
+        if (ghost) ghost.style.display = 'none'
     }
 }

@@ -1,19 +1,5 @@
 import '../styles/doc-bar.css'
 
-// Match layout preview colors
-const DOC_COLORS = [
-    '#e2e8f0',  // Default (white-ish)
-    '#be123c',  // Red
-    '#15803d',  // Green
-    '#1d4ed8',  // Blue
-    '#fde047',  // Yellow
-]
-
-const DOC_SIZES = [
-    { label: 'S', value: 1 },
-    { label: 'M', value: 2 },
-    { label: 'L', value: 4 },
-]
 
 const NAV_BUTTONS = [
     {
@@ -136,15 +122,9 @@ export class DocBarStripManager {
         el.classList.toggle('empty', !title)
     }
 
-    /** Refresh active states (color dots, size dots, ruler toggle) */
+    /** Refresh active states (ruler toggle) */
     update() {
         if (!this.el) return
-        this.el.querySelectorAll('.sf-doc-color-dot').forEach(dot => {
-            dot.classList.toggle('active', dot.dataset.color === this.app.activeColor)
-        })
-        this.el.querySelectorAll('.sf-doc-size-btn').forEach(btn => {
-            btn.classList.toggle('active', Number(btn.dataset.size) === this.app.activeStrokeWidth)
-        })
         const rulerBtn = this.el.querySelector('[data-activeId="doc-ruler"]')
         if (rulerBtn) {
             rulerBtn.classList.toggle('active', !!this.app.rulerManager?.rulerVisible)
@@ -173,45 +153,19 @@ export class DocBarStripManager {
         title.addEventListener('click', () => this.app.scoreDetailManager?.toggle())
         el.appendChild(title)
 
-        // Bottom: color dots + size dots
-        const bottom = document.createElement('div')
-        bottom.className = 'sf-doc-bottom'
-
-        DOC_COLORS.forEach(hex => {
-            const dot = document.createElement('div')
-            dot.className = 'sf-doc-color-dot' + (this.app.activeColor === hex ? ' active' : '')
-            dot.dataset.color = hex
-            dot.style.background = hex
-            dot.title = hex
-            dot.addEventListener('click', () => {
-                this.app.activeColor = hex
-                this.app.toolManager?.updateActiveTools()
-                this.update()
-            })
-            bottom.appendChild(dot)
-        })
-
-        // Size divider
-        const sizeDivider = document.createElement('div')
-        sizeDivider.className = 'sf-doc-divider'
-        sizeDivider.style.margin = '2px 0'
-        bottom.appendChild(sizeDivider)
-
-        DOC_SIZES.forEach(s => {
-            const btn = document.createElement('div')
-            btn.className = 'sf-doc-size-btn' + (this.app.activeStrokeWidth === s.value ? ' active' : '')
-            btn.dataset.size = s.value
-            btn.textContent = s.label
-            btn.title = s.label
-            btn.addEventListener('click', () => {
-                this.app.activeStrokeWidth = s.value
-                this.app.toolManager?.updateActiveTools()
-                this.update()
-            })
-            bottom.appendChild(btn)
-        })
-
-        el.appendChild(bottom)
+        // Trash drop zone — drag annotations here to delete
+        const trash = document.createElement('div')
+        trash.id = 'sf-doc-trash-btn'
+        trash.className = 'sf-doc-trash'
+        trash.title = 'Drop here to delete'
+        trash.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4h6v2"/>
+        </svg>`
+        el.appendChild(trash)
     }
 
     _btn({ id, label, icon, fill, primary, action }) {

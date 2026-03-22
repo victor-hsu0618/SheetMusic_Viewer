@@ -1,4 +1,28 @@
 
+/* Drag ghost — floats near cursor when annotation is dragged outside PDF canvas */
+#sf-drag-ghost {
+    display: none;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    max-width: 160px;
+    padding: 5px 10px;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(165, 180, 252, 0.5);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    opacity: 0.88;
+    transform: rotate(-2deg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
 /* Viewer Container */
 .viewer-container {
   flex: 1;

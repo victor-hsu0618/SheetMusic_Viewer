@@ -103,6 +103,16 @@ export class EditStripManager {
                 this.el.classList.toggle('collapsed', this.collapsed)
                 document.body.classList.toggle('sf-strip-collapsed', this.collapsed)
                 document.getElementById('sf-doc-bar-strip')?.classList.toggle('collapsed', this.collapsed)
+
+                if (this.collapsed) {
+                    // Save sub-bar state then close all
+                    this._subBarSnapshot = this._subBarMgr?.snapshotState()
+                    this._subBarMgr?.closeAll()
+                } else {
+                    // Restore previously open sub-bars
+                    this._subBarMgr?.restoreState(this._subBarSnapshot)
+                    this._subBarSnapshot = null
+                }
             }
         })
 
@@ -199,6 +209,8 @@ export class EditStripManager {
             this.el.classList.add('collapsed')
             document.body.classList.add('sf-strip-collapsed')
             document.getElementById('sf-doc-bar-strip')?.classList.add('collapsed')
+            this._subBarSnapshot = this._subBarMgr?.snapshotState()
+            this._subBarMgr?.closeAll()
         })
         el.appendChild(collapseBtn)
     }
