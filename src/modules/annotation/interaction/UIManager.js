@@ -134,11 +134,17 @@ export const InteractionUI = {
         
         const isTargetingTool = ['select', 'copy', 'recycle-bin', 'text', 'tempo-text', 'eraser', 'measure'].includes(effectiveTool);
         
+        const isDrawingEffectiveTool = ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter',
+            'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur',
+            'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(effectiveTool);
+
         // Show virtual pointer if:
         // 1. It's touch and has an offset (to bridge finger distance)
-        // 2. It's mouse and it's a stamp tool (to show crosshair placement)
-        // 3. It's idle pan mode
-        const shouldShow = (pointerType === 'touch' && hasOffset) || 
+        // 2. It's touch, currently dragging/placing a non-drawing tool (shows icon at placement position)
+        // 3. It's mouse and it's a stamp tool (to show crosshair placement)
+        // 4. It's idle pan mode
+        const shouldShow = (pointerType === 'touch' && hasOffset) ||
+                           (pointerType === 'touch' && !!app.isInteracting && !isDrawingEffectiveTool) ||
                            (pointerType === 'mouse' && (app.isStampTool() || isIdle)) ||
                            isIdle;
         

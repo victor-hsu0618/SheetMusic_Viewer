@@ -118,6 +118,27 @@ export class EditStripManager {
             }
         })
 
+        // Dead-zone guard: transparent ring around FAB that absorbs stray taps
+        const guard = document.createElement('div')
+        guard.id = 'sf-edit-strip-fab-guard'
+        guard.addEventListener('pointerdown', (e) => e.stopPropagation())
+        guard.addEventListener('click',       (e) => e.stopPropagation())
+        document.body.appendChild(guard)
+        this._fabGuard = guard
+
+        // Keep guard centred on FAB whenever FAB moves
+        const syncGuard = () => {
+            const r = fab.getBoundingClientRect()
+            const pad = 28
+            guard.style.left   = (r.left   - pad) + 'px'
+            guard.style.top    = (r.top    - pad) + 'px'
+            guard.style.width  = (r.width  + pad * 2) + 'px'
+            guard.style.height = (r.height + pad * 2) + 'px'
+        }
+        fab.addEventListener('pointermove', syncGuard)
+        fab.addEventListener('pointerup',   syncGuard)
+        requestAnimationFrame(syncGuard)
+
         document.body.appendChild(fab)
         this._expandTab = fab
     }

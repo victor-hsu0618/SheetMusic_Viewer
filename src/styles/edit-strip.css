@@ -471,7 +471,7 @@
     align-items: center;
     justify-content: center;
     cursor: grab;
-    z-index: 201;
+    z-index: 202;
     opacity: 1;
     pointer-events: all;
     transition: background 0.15s, border-color 0.15s;
@@ -481,6 +481,12 @@
 }
 #sf-edit-strip-fab.dragging {
     cursor: grabbing;
+}
+#sf-edit-strip-fab-guard {
+    position: fixed;
+    z-index: 201; /* above doc bar (200), below FAB (202) — absorbs stray taps */
+    pointer-events: auto;
+    background: transparent;
 }
 
 /* ── Stamp Settings gear button ─────────────────────────────────────────── */

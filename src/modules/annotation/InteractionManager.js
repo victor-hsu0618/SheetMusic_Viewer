@@ -197,11 +197,23 @@ export class InteractionManager {
                     return;
                 }
                 
-                // First finger: buffer it
+                // Grace period fast-path: skip the 35ms buffer so the grab fires
+                // immediately while the pointer is still guaranteed to be down.
+                // This avoids the race where the finger lifts before the timer fires.
+                if (graceObject && !isTwoFingerPanning) {
+                    if (touchBufferTimer) { clearTimeout(touchBufferTimer); touchBufferTimer = null; }
+                    proceedWithAction(e);
+                    return;
+                }
+
+                // First finger: buffer it (waits 35ms to distinguish single-finger from two-finger)
                 if (touchBufferTimer) clearTimeout(touchBufferTimer);
                 touchBufferTimer = setTimeout(() => {
                     touchBufferTimer = null;
-                    if (activePointers.size === 1 && !isTwoFingerPanning) {
+                    // Use <= 1 (not === 1) so a quick tap that lifts in < 35ms still fires.
+                    // Two-finger gestures are guarded by isTwoFingerPanning + the size >= 2
+                    // branch above that clears touchBufferTimer before it can fire.
+                    if (activePointers.size <= 1 && !isTwoFingerPanning) {
                         proceedWithAction(e);
                     }
                 }, 35);
@@ -297,7 +309,14 @@ export class InteractionManager {
             // 1. Grace Period Interaction
             if (graceObject) {
                 const offsetPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
-                const threshold = CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 2.0;
+                const isDrawingTool = ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(toolType);
+
+                // Distance check for grab detection.
+                // Touch uses a generous threshold (4× stamp size, min 50px) — finger hit area is larger.
+                // Mouse / pen uses 2× stamp size.
+                const baseThreshold = CoordMapper.getGraceObjectPixelSize(graceObject, this.app)
+                    * (pointerType === 'touch' ? 4.0 : 2.0);
+                const threshold = pointerType === 'touch' ? Math.max(50, baseThreshold) : baseThreshold;
                 let distPx;
                 if (graceObject.points && graceObject.points.length > 0) {
                     const distFromPos = CoordMapper.getMinPathDist(pos.x, pos.y, graceObject.points) * width;
@@ -305,17 +324,18 @@ export class InteractionManager {
                     distPx = Math.min(distFromPos, distFromOffset);
                 } else {
                     const center = CoordMapper.getGraceCenter(graceObject);
-                    const dxPos = (pos.x - center.x) * width;
-                    const dyPos = (pos.y - center.y) * height;
-                    const dxOff = (offsetPos.x - center.x) * width;
-                    const dyOff = (offsetPos.y - center.y) * height;
+                    const cw = overlay.getBoundingClientRect().width || width;
+                    const ch = overlay.getBoundingClientRect().height || height;
+                    const dxPos = (pos.x - center.x) * cw;
+                    const dyPos = (pos.y - center.y) * ch;
+                    const dxOff = (offsetPos.x - center.x) * cw;
+                    const dyOff = (offsetPos.y - center.y) * ch;
                     distPx = Math.min(
                         Math.sqrt(dxPos * dxPos + dyPos * dyPos),
                         Math.sqrt(dxOff * dxOff + dyOff * dyOff)
                     );
                 }
 
-                const isDrawingTool = ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(toolType);
                 if (distPx < threshold && !isDrawingTool) {
                     activeObject = graceObject;
                     isMovingExisting = true;
@@ -683,6 +703,7 @@ export class InteractionManager {
 
         const endAction = async (e) => {
             if (!isInteracting) return;
+            let cleaned = false; // becomes true when cleanupInteraction runs before the async save
             try {
                 if (activeObject) {
                     const targetPageNum = activeObject.page;
@@ -777,6 +798,16 @@ export class InteractionManager {
                             this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(activeObject)) });
                         }
                         if (activeObject.type === 'anchor') this.app.updateRulerMarks();
+
+                        // Start grace period and clean up BEFORE the async save.
+                        // This lets the user immediately grab/drag the just-placed stamp
+                        // (grace grab) without waiting for IndexedDB to finish.
+                        this.app.redrawStamps(targetPageNum);
+                        startGracePeriod(activeObject);
+                        InteractionUI.syncVirtualPointer(e, null, overlay, virtualPointer, CoordMapper, this.app);
+                        cleanupInteraction(e);
+                        cleaned = true;
+
                         await this.app.saveToStorage(true);
 
                         // --- Supabase Sync ---
@@ -784,15 +815,15 @@ export class InteractionManager {
                             activeObject.updatedAt = Date.now();
                             this.app.supabaseManager.pushAnnotation(activeObject, this.app.pdfFingerprint);
                         }
-
-                        this.app.redrawStamps(targetPageNum);
-                        startGracePeriod(activeObject);
                     }
                 }
             } finally {
-                // HIDE POINTER on end
-                InteractionUI.syncVirtualPointer(e, null, overlay, virtualPointer, CoordMapper, this.app);
-                cleanupInteraction(e);
+                // syncVirtualPointer always runs (hides the pointer).
+                // cleanupInteraction only runs if it hasn't already been called before the await.
+                if (!cleaned) {
+                    InteractionUI.syncVirtualPointer(e, null, overlay, virtualPointer, CoordMapper, this.app);
+                    cleanupInteraction(e);
+                }
             }
         };
 
