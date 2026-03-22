@@ -622,7 +622,7 @@ function analyze(data, filename, fileType) {
   const exportTypeLabel = {
     'single_score': 'single_score（手動匯出）',
     'global_backup': 'global_backup（全量備份）',
-    'cloud_sync': 'cloud_sync（Drive 自動同步）'
+    'cloud_sync': 'cloud_sync（雲端同步）'
   }[data.exportType] || (data.exportType || '—')
 
   document.getElementById('meta-rows').innerHTML = [

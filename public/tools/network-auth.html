@@ -157,31 +157,6 @@
             <p class="subtitle">針對跨裝置偵錯與手動權限注入的進階控制中心</p>
         </header>
 
-        <div class="card">
-            <div class="section-title">Google Drive Token Injection</div>
-            <div class="hint-box">
-                由於 Google Drive API 的限制，當您使用 LAN IP (例如 <code>192.168.x.x</code>) 存取時，可能無法正常彈出授權視窗。
-                您可以從<b>已授權的電腦端</b>拷貝 Token 貼上，有效期約 1 小時。
-            </div>
-
-            <div class="form-group">
-                <label>目前儲存的憑證 (Active Access Token)</label>
-                <div style="display: flex; gap: 12px; align-items: start;">
-                    <textarea id="current-token" readonly placeholder="目前尚未取得 Token..."></textarea>
-                    <button class="btn btn-outline" style="height: 110px; width: 60px; display: flex; align-items: center; justify-content: center; font-size: 20px;" onclick="copyCurrentToken()" title="拷貝目前的 Token">📋</button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>注入新的憑證 (Inject New Token)</label>
-                <textarea id="input-token" placeholder="貼上來自其他裝置的 Token..."></textarea>
-            </div>
-
-            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="applyToken()">⚡ 套用 Token 並連線雲端</button>
-                <button class="btn btn-outline" onclick="clearToken()" style="color: var(--error); border-color: rgba(239, 68, 68, 0.2)">💣 銷毀所有憑證</button>
-            </div>
-        </div>
 
         <div class="card">
             <div class="section-title">Current Authentication Status</div>
@@ -219,42 +194,6 @@
             document.getElementById('st-hint').textContent = hint || 'None';
         }
 
-        function applyToken() {
-            const token = document.getElementById('input-token').value.trim();
-            if (!token || token.length < 20) {
-                alert('有效的 Token 通常長度超過 100 字元，請確定您貼上的格式正確。');
-                return;
-            }
-
-            // Set localStorage items to match main app's DriveSyncManager logic
-            localStorage.setItem('scoreflow_drive_sync_enabled', 'true');
-            localStorage.setItem('scoreflow_drive_access_token', token);
-            
-            // Set default 1 hour expiry
-            const expiry = Date.now() + (3600 * 1000);
-            localStorage.setItem('scoreflow_drive_token_expiry', expiry.toString());
-
-            showToast('Token 已套用，請回到主程式重新整理。');
-            updateStatus();
-            document.getElementById('input-token').value = '';
-        }
-
-        function copyCurrentToken() {
-            const token = document.getElementById('current-token').value;
-            if (!token) return;
-            navigator.clipboard.writeText(token).then(() => {
-                showToast('已拷貝目前 Token');
-            });
-        }
-
-        function clearToken() {
-            if (!confirm('確定要清除所有同步憑證嗎？這將導致主程式登出。')) return;
-            localStorage.removeItem('scoreflow_drive_access_token');
-            localStorage.removeItem('scoreflow_drive_token_expiry');
-            localStorage.setItem('scoreflow_drive_sync_enabled', 'false');
-            updateStatus();
-            showToast('已清除憑證');
-        }
 
         function showToast(msg) {
             const t = document.getElementById('toast');

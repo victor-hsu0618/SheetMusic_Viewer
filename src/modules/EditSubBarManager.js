@@ -828,13 +828,8 @@ export class EditSubBarManager {
     _selectTool(toolId, bar, barType) {
         this.app.activeStampType = toolId
         this.app.toolManager?.updateActiveTools()
-        if (barType === 'stamp' || barType === 'shapes') {
-            // Wide bars cover the entire score — close immediately so user can place annotations
-            this._closeToolBar(barType)
-        } else {
-            // Pen bar is small — update active state in-place
-            this._populateBar(bar, barType)
-        }
+        // Update active state in-place for all bar types
+        this._populateBar(bar, barType)
         // Re-render strip to update active button
         this.app.editStripManager?.update()
     }

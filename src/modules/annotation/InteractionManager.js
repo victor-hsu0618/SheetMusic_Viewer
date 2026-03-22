@@ -284,54 +284,6 @@ export class InteractionManager {
                 return;
             }
 
-            // 2. Single-finger touch in stamp mode → paper drag (same as pan mode)
-            //    Only Apple Pencil (pointerType === 'pen') goes through stamp placement.
-            //    EXCEPTION: if a grace object is active, fall through so the user can grab it.
-            if (pointerType === 'touch' && toolType !== 'view' && !graceObject) {
-                if (e.cancelable) e.preventDefault();
-                if (isPanning) return;
-                isPanning = true;
-                const startX = e.clientX, startY = e.clientY;
-                const startScrollTop = this.app.viewer.scrollTop;
-                const startScrollLeft = this.app.viewer.scrollLeft;
-                this.app.viewer.style.scrollBehavior = 'auto';
-
-                const doFingerPan = (ev) => {
-                    if (!isPanning) return;
-                    const dx = ev.clientX - startX;
-                    const dy = ev.clientY - startY;
-                    const targetTop = startScrollTop - dy;
-                    const maxScroll = this.app.viewer.scrollHeight - this.app.viewer.clientHeight;
-                    if (targetTop < 0) {
-                        this.app.viewer.scrollTop = 0;
-                        this.app.container.style.transform = `translateY(${-targetTop * 0.3}px)`;
-                    } else if (targetTop > maxScroll) {
-                        this.app.viewer.scrollTop = maxScroll;
-                        this.app.container.style.transform = `translateY(${-(targetTop - maxScroll) * 0.3}px)`;
-                    } else {
-                        this.app.viewer.scrollTop = targetTop;
-                        this.app.container.style.transform = '';
-                    }
-                    this.app.viewer.scrollLeft = startScrollLeft - dx;
-                };
-
-                const stopFingerPan = () => {
-                    if (!isPanning) return;
-                    isPanning = false;
-                    this.app.viewer.style.scrollBehavior = '';
-                    this.app.container.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                    this.app.container.style.transform = 'translateY(0)';
-                    setTimeout(() => { this.app.container.style.transition = ''; }, 400);
-                    window.removeEventListener('pointermove', doFingerPan);
-                    window.removeEventListener('pointerup', stopFingerPan);
-                    window.removeEventListener('pointercancel', stopFingerPan);
-                };
-
-                window.addEventListener('pointermove', doFingerPan, { passive: true });
-                window.addEventListener('pointerup', stopFingerPan);
-                window.addEventListener('pointercancel', stopFingerPan);
-                return;
-            }
 
             // 1. Grace Period Interaction
             if (graceObject) {
@@ -981,6 +933,16 @@ export class InteractionManager {
             window.removeEventListener('pointerup', endAction);
             window.removeEventListener('pointercancel', endAction);
         };
+
+        // iOS Safari: even with touch-action:none on overlay + viewer, the scroll
+        // container (overflow-y:auto) can still intercept finger touch. Calling
+        // preventDefault() on touchstart directly overrides this. passive:false is
+        // required. View mode is excluded so native scroll / pinch-zoom still work.
+        overlay.addEventListener('touchstart', (e) => {
+            if (this.app.activeStampType !== 'view' && e.cancelable) {
+                e.preventDefault();
+            }
+        }, { passive: false });
 
         overlay.addEventListener('pointerdown', startAction);
         overlay.addEventListener('pointermove', hoverAction);
