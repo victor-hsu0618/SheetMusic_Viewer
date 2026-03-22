@@ -272,7 +272,9 @@ export class EditStripManager {
             this._subBarMgr?.toggle('text', btn)
         } else {
             this._subBarMgr?.closeAll()
-            this.app.activeStampType = tool.id
+            // Toggle: clicking the already-active tool (eraser, select, etc.) switches back to view mode
+            const isAlreadyActive = this.app.activeStampType === tool.id && tool.id !== 'view'
+            this.app.activeStampType = isAlreadyActive ? 'view' : tool.id
             this.app.toolManager?.updateActiveTools()
         }
         this._render()
