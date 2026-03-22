@@ -16,19 +16,26 @@ import { TOOLSETS } from '../constants.js'
 
 const PEN_VARIANTS = [
     { id: 'pen',             label: 'Pen',    stroke: '#e2e8f0', dashed: false, arrow: false },
-    { id: 'red-pen',         label: 'Red',    stroke: '#be123c', dashed: false, arrow: false },
-    { id: 'green-pen',       label: 'Green',  stroke: '#15803d', dashed: false, arrow: false },
-    { id: 'blue-pen',        label: 'Blue',   stroke: '#1d4ed8', dashed: false, arrow: false },
+    { id: 'red-pen',         label: 'Red',    stroke: '#be123c', dashed: false, arrow: false, naturalColor: '#be123c' },
+    { id: 'green-pen',       label: 'Green',  stroke: '#15803d', dashed: false, arrow: false, naturalColor: '#15803d' },
+    { id: 'blue-pen',        label: 'Blue',   stroke: '#1d4ed8', dashed: false, arrow: false, naturalColor: '#1d4ed8' },
     { id: 'dashed-pen',      label: 'Dashed', stroke: '#e2e8f0', dashed: true,  arrow: false },
     { id: 'arrow-pen',       label: 'Arrow',  stroke: '#e2e8f0', dashed: false, arrow: true  },
 ]
 
 const HL_VARIANTS = [
-    { id: 'highlighter',       label: 'HL',     color: '#fde047' },
-    { id: 'highlighter-red',   label: 'H.Red',  color: '#be123c' },
-    { id: 'highlighter-blue',  label: 'H.Blue', color: '#1d4ed8' },
-    { id: 'highlighter-green', label: 'H.Green',color: '#15803d' },
+    { id: 'highlighter',       label: 'HL',     color: '#fde047', naturalColor: '#fde047' },
+    { id: 'highlighter-red',   label: 'H.Red',  color: '#be123c', naturalColor: '#be123c' },
+    { id: 'highlighter-blue',  label: 'H.Blue', color: '#1d4ed8', naturalColor: '#1d4ed8' },
+    { id: 'highlighter-green', label: 'H.Green',color: '#15803d', naturalColor: '#15803d' },
 ]
+
+// Tools that carry a "natural" default color — clicking them syncs activeColor
+const TOOL_NATURAL_COLORS = Object.fromEntries(
+    [...PEN_VARIANTS, ...HL_VARIANTS]
+        .filter(t => t.naturalColor)
+        .map(t => [t.id, t.naturalColor])
+)
 
 const EXTRA_COLORS = [
     '#ef4444','#f97316','#eab308','#22c55e',
@@ -449,38 +456,27 @@ export class EditSubBarManager {
         addLabel('Line')
         ;[['─', 'solid'], ['╌', 'dashed'], ['┄', 'dotted']].forEach(([sym, key]) => {
             const b = document.createElement('div')
-            b.className = 'sf-others-style-btn'
+            b.className = 'sf-others-style-btn' + ((this.app.activeLineStyle || 'solid') === key ? ' active' : '')
             b.title = key
             b.textContent = sym
             b.addEventListener('click', () => {
-                // Future: store activeLineStyle on app
+                this.app.activeLineStyle = key
+                this._populateBar(bar, 'others')
             })
             bar.appendChild(b)
         })
 
         addVDivider()
 
-        // Opacity (simple buttons for now)
-        addLabel('Opacity')
-        ;[['100%', 1], ['70%', 0.7], ['40%', 0.4]].forEach(([lbl, val]) => {
-            const b = document.createElement('div')
-            b.className = 'sf-others-style-btn'
-            b.title = lbl
-            b.textContent = lbl
-            bar.appendChild(b)
-        })
-
-        addVDivider()
-
-        // Stroke size
+        // Size preset (maps directly to activeToolPreset / userScale)
         addLabel('Size')
-        ;[['S', 1], ['M', 2], ['L', 4]].forEach(([lbl, val]) => {
+        ;[['S', 0.7], ['M', 1.0], ['L', 1.5]].forEach(([lbl, val]) => {
             const b = document.createElement('div')
-            b.className = 'sf-others-style-btn' + (this.app.activeStrokeWidth === val ? ' active' : '')
+            b.className = 'sf-others-style-btn' + (Math.abs((this.app.activeToolPreset || 1.0) - val) < 0.05 ? ' active' : '')
             b.title = lbl
             b.textContent = lbl
             b.addEventListener('click', () => {
-                this.app.activeStrokeWidth = val
+                this.app.activeToolPreset = val
                 this.app.toolManager?.updateActiveTools()
                 this._populateBar(bar, 'others')
             })
@@ -827,6 +823,10 @@ export class EditSubBarManager {
 
     _selectTool(toolId, bar, barType) {
         this.app.activeStampType = toolId
+        // Sync activeColor when tool has a natural color (red-pen, highlighter, etc.)
+        if (TOOL_NATURAL_COLORS[toolId] !== undefined) {
+            this.app.activeColor = TOOL_NATURAL_COLORS[toolId]
+        }
         this.app.toolManager?.updateActiveTools()
         // Update active state in-place for all bar types
         this._populateBar(bar, barType)

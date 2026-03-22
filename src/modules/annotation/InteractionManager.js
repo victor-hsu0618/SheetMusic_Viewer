@@ -470,8 +470,10 @@ export class InteractionManager {
                 activeObject = {
                     type: toolType, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
                     points: [CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay)],
-                    color: (toolDef && toolDef.draw && toolDef.draw.color) ? toolDef.draw.color : this.app.activeColor,
-                    dashed: toolDef?.draw?.dashed || false,
+                    color: this.app.activeColor,
+                    // dashed-pen has a fixed dashed style; otherwise use the user's active line style
+                    lineStyle: toolDef?.draw?.dashed ? 'dashed' : (this.app.activeLineStyle || 'solid'),
+                    dashed: toolDef?.draw?.dashed || false, // kept for backward compat with saved data
                     arrow: toolDef?.draw?.arrow || false,
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
                     createdAt: Date.now(), updatedAt: Date.now(),

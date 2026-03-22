@@ -159,9 +159,15 @@ export class AnnotationRenderer {
             ctx.strokeStyle = '#6366f1' // Blue highlight
         }
 
-        // Dashed line for foreign (shared) annotations or specialized pens
-        if (isForeign || path.dashed) {
-            ctx.setLineDash([8 * (this.app.scale / 1.5), 6 * (this.app.scale / 1.5)])
+        // Line style: resolve from lineStyle field (new) or dashed bool (legacy)
+        const _resolvedLineStyle = path.lineStyle || (path.dashed ? 'dashed' : 'solid')
+        const _s = this.app.scale / 1.5
+        if (isForeign) {
+            ctx.setLineDash([8 * _s, 6 * _s])
+        } else if (_resolvedLineStyle === 'dashed') {
+            ctx.setLineDash([8 * _s, 6 * _s])
+        } else if (_resolvedLineStyle === 'dotted') {
+            ctx.setLineDash([2 * _s, 5 * _s])
         }
 
         const pageFactor = this.app.pageScales[path.page] || 1.0
