@@ -93,7 +93,7 @@ export const TOOLSETS = [
         type: 'articulation',
         tools: [
             { id: 'accent', label: 'Accent', row: 1, icon: '<path d="M6 10 L18 12 L6 14" fill="none" stroke="currentColor" stroke-width="1.2"/>', draw: { type: 'path', data: 'M -0.35 -0.15 L 0.35 0 L -0.35 0.15', size: 20, strokeWidth: 2, fill: 'none' } },
-            { id: 'stress-above', label: 'Stress', row: 1, icon: '<path d="M6 10 L18 12 L6 14 Z" fill="currentColor" stroke="none"/>', draw: { type: 'path', data: 'M -0.35 -0.15 L 0.35 0 L -0.35 0.15 Z', size: 20, strokeWidth: 0, fill: 'currentColor' } },
+            { id: 'stress-above', label: 'Stress', row: 1, icon: '<path d="M8 7 L12 16 L16 7 Z" fill="currentColor" stroke="none"/>', draw: { type: 'path', data: 'M -0.2 -0.3 L 0 0.3 L 0.2 -0.3 Z', size: 20, strokeWidth: 0, fill: 'currentColor' } },
             { id: 'marcato', label: 'Marcato', row: 1, icon: '<path d="M8 17 L12 8 L16 17" fill="none" stroke="currentColor" stroke-width="1.2"/>', draw: { type: 'path', data: 'M -0.2 0.3 L 0 -0.3 L 0.2 0.3', size: 20, strokeWidth: 2, fill: 'none' } },
             { id: 'staccato', label: 'Staccato', row: 1, icon: '<circle cx="12" cy="12" r="2.0" fill="currentColor" />', draw: { type: 'shape', shape: 'circle', radius: 0.15, fill: true, size: 20 } },
             { id: 'tenuto', label: 'Tenuto', row: 1, icon: '<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M -0.3 0 L 0.3 0', size: 20, strokeWidth: 2, fill: 'none' } },
