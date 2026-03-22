@@ -64,6 +64,15 @@ export class SupabaseManager {
 
                 this.syncPanelConfig()
 
+                // User content sync (userTextLibrary, etc.)
+                this.pullUserContent().then(content => {
+                    if (!content) return
+                    if (Array.isArray(content.userTextLibrary)) {
+                        this.app.userTextLibrary = content.userTextLibrary
+                        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(content.userTextLibrary))
+                    }
+                })
+
                 if (this.app.pdfFingerprint) {
                     this.subscribeToAnnotations(this.app.pdfFingerprint)
                     this.pullAnnotations(this.app.pdfFingerprint)
@@ -491,12 +500,6 @@ export class SupabaseManager {
         if (!cfg) return
         localStorage.setItem('scoreflow_panel_config', JSON.stringify(cfg))
 
-        // Restore userTextLibrary
-        if (Array.isArray(cfg.userTextLibrary)) {
-            this.app.userTextLibrary = cfg.userTextLibrary
-            localStorage.setItem('scoreflow_user_text_library', JSON.stringify(cfg.userTextLibrary))
-        }
-
         // Re-render strips with updated order
         this.app.editStripManager?.applyPanelConfig()
         this.app.docBarStripManager?.applyPanelConfig()
@@ -522,6 +525,40 @@ export class SupabaseManager {
 
         if (error) console.error('[Supabase] panel_config push failed:', error.message);
         else console.log('[Supabase] ✅ panel_config synced.');
+    }
+
+    /**
+     * Pushes user content (userTextLibrary, etc.) to the dedicated `user_content` column.
+     */
+    async pushUserContent(content) {
+        if (!this.client || !this.user) return;
+        const { error } = await this.client
+            .from('profiles')
+            .upsert({
+                id: this.user.id,
+                email: this.user.email,
+                user_content: content,
+                updated_at: new Date().toISOString()
+            });
+        if (error) console.error('[Supabase] user_content push failed:', error.message);
+        else console.log('[Supabase] ✅ user_content synced.');
+    }
+
+    /**
+     * Pulls user content from the dedicated `user_content` column.
+     */
+    async pullUserContent() {
+        if (!this.client || !this.user) return null;
+        const { data, error } = await this.client
+            .from('profiles')
+            .select('user_content')
+            .eq('id', this.user.id)
+            .maybeSingle();
+        if (error) {
+            console.warn('[Supabase] user_content pull error:', error.message);
+            return null;
+        }
+        return data?.user_content ?? null;
     }
 
     /**

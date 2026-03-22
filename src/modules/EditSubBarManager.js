@@ -337,18 +337,11 @@ export class EditSubBarManager {
         bar.appendChild(editAllBtn)
     }
 
-    /** Persist userTextLibrary to localStorage + panel_config, then push to Supabase */
+    /** Persist userTextLibrary to localStorage + user_content column, then push to Supabase */
     _saveTextLibrary(bar) {
         this.app.saveToStorage?.()
-        // Merge into panel_config so it travels with the Supabase panel_config column
-        try {
-            const cfg = JSON.parse(localStorage.getItem('scoreflow_panel_config') || '{}')
-            cfg.userTextLibrary = this.app.userTextLibrary
-            localStorage.setItem('scoreflow_panel_config', JSON.stringify(cfg))
-            this.app.supabaseManager?.pushPanelConfig(cfg)
-        } catch (e) {
-            console.warn('[EditSubBar] _saveTextLibrary failed to write panel_config', e)
-        }
+        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary || []))
+        this.app.supabaseManager?.pushUserContent({ userTextLibrary: this.app.userTextLibrary || [] })
         if (bar) this.app.editStripManager?.update()
     }
 
