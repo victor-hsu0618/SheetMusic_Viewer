@@ -839,5 +839,19 @@
   z-index: 99999 !important;
   overflow: hidden;
   background: #0f0f13;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: env(safe-area-inset-top) 0 0 0;
+}
+
+/* Elevate strips above the css-fullscreen overlay so they remain tappable */
+body.sf-css-fullscreen #sf-doc-bar-strip,
+body.sf-css-fullscreen #sf-edit-strip,
+body.sf-css-fullscreen #sf-edit-strip-fab,
+body.sf-css-fullscreen #sf-edit-strip-fab-guard {
+  z-index: 100001 !important;
+}
+
+/* Elevate sub-bar panels above the css-fullscreen overlay */
+body.sf-css-fullscreen .sf-sub-bar,
+body.sf-css-fullscreen .sf-stamp-settings-panel {
+  z-index: 100003 !important;
 }

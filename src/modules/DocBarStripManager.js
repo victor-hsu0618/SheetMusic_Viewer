@@ -246,7 +246,8 @@ export class DocBarStripManager {
         btn.dataset.activeId = 'doc-fullscreen'
         btn.title = 'Full Screen'
         const updateIcon = () => {
-            const isFs = !!document.fullscreenElement
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement
+                         || document.getElementById('app-root')?.classList.contains('css-fullscreen'))
             btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">${isFs ? ICON_EXIT : ICON_EXPAND}</svg>`
                           + `<div class="sf-doc-tip">Full Screen</div>`
             btn.classList.toggle('active', isFs)

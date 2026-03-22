@@ -370,10 +370,12 @@ this.playbackManager.init()
     }
 
     if (isIOS || (isSafari && !document.fullscreenEnabled)) {
-      root?.classList.toggle('css-fullscreen', !isFs); updateBtn(!isFs)
+      root?.classList.toggle('css-fullscreen', !isFs)
+      document.body.classList.toggle('sf-css-fullscreen', !isFs)
+      updateBtn(!isFs)
     } else {
       if (!isFs) {
-        const target = root || document.body
+        const target = document.documentElement
         const req = target.requestFullscreen ? target.requestFullscreen() : target.webkitRequestFullscreen?.()
         req?.then(() => updateBtn(true)).catch(err => {
           console.warn('[Fullscreen] Request rejected:', err)
