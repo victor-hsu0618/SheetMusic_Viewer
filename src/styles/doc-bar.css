@@ -114,10 +114,27 @@
 .sf-doc-btn:hover .sf-doc-tip { opacity: 1; }
 @media (pointer: coarse) { .sf-doc-tip { display: none; } }
 
+/* ── Zoom group ── */
+.sf-doc-zoom-btn {
+    width: 38px;
+    height: 30px;
+}
+
+.sf-doc-zoom-readout {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    min-width: 36px;
+    padding: 2px 0;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+}
+
 /* ── Trash drop zone ── */
 .sf-doc-trash {
     width: 38px;
-    height: 44px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;

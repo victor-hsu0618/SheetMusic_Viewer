@@ -331,39 +331,54 @@ export class RulerManager {
                         return (ma?.top + a.y * ma?.height) - (mb?.top + b.y * mb?.height)
                     })
 
-                // Primary: jump so the Nth-from-last visible system lands at the jump line
-                const overlap = this.app.systemJumpOverlap ?? 1
-                const visibleSystems = systemStamps.filter(sys => {
-                    const m = metrics[sys.page]
-                    if (!m) return false
-                    const absY = m.top + sys.y * m.height
-                    // Stricter visibility: must be significantly above the bottom to be considered 'fully visible'
-                    return absY > effectiveScroll && absY < (effectiveScroll + viewportHeight - 30)
-                })
-                const overlapSystem = visibleSystems[Math.max(0, visibleSystems.length - overlap)]
-                if (overlapSystem) {
-                    const m = metrics[overlapSystem.page]
-                    const targetY = m.top + overlapSystem.y * m.height
-                    if (targetY > effectiveScroll + this.jumpOffsetPx + 10) {
+                if (this.app.showSystemStamps) {
+                    // ── System stamps VISIBLE: precise visible-overlap navigation ──────
+                    const overlap = this.app.systemJumpOverlap ?? 1
+                    const visibleSystems = systemStamps.filter(sys => {
+                        const m = metrics[sys.page]
+                        if (!m) return false
+                        const absY = m.top + sys.y * m.height
+                        return absY > effectiveScroll && absY < (effectiveScroll + viewportHeight - 30)
+                    })
+                    const overlapSystem = visibleSystems[Math.max(0, visibleSystems.length - overlap)]
+                    if (overlapSystem) {
+                        const m = metrics[overlapSystem.page]
+                        const targetY = m.top + overlapSystem.y * m.height
+                        if (targetY > effectiveScroll + this.jumpOffsetPx + 10) {
+                            this.jumpHistory.push(effectiveScroll)
+                            if (this.jumpHistory.length > 50) this.jumpHistory.shift()
+                            this._executeJump(targetY - this.jumpOffsetPx)
+                            return true
+                        }
+                    }
+                    // Secondary: next system after the jump line
+                    const nextSystem = systemStamps.find(sys => {
+                        const m = metrics[sys.page]
+                        if (!m) return false
+                        return m.top + sys.y * m.height > effectiveScroll + this.jumpOffsetPx + 2
+                    })
+                    if (nextSystem) {
+                        const m = metrics[nextSystem.page]
                         this.jumpHistory.push(effectiveScroll)
                         if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                        this._executeJump(targetY - this.jumpOffsetPx)
+                        this._executeJump(m.top + nextSystem.y * m.height - this.jumpOffsetPx)
                         return true
                     }
-                }
-
-                // Secondary: next system after the jump line
-                const nextSystem = systemStamps.find(sys => {
-                    const m = metrics[sys.page]
-                    if (!m) return false
-                    return m.top + sys.y * m.height > effectiveScroll + this.jumpOffsetPx + 2
-                })
-                if (nextSystem) {
-                    const m = metrics[nextSystem.page]
-                    this.jumpHistory.push(effectiveScroll)
-                    if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                    this._executeJump(m.top + nextSystem.y * m.height - this.jumpOffsetPx)
-                    return true
+                } else if (systemStamps.length) {
+                    // ── System stamps HIDDEN: jump to next off-screen system position ──
+                    // (stamps detected but not displayed — navigate to first system not in view)
+                    const firstOffscreen = systemStamps.find(sys => {
+                        const m = metrics[sys.page]
+                        if (!m) return false
+                        return m.top + sys.y * m.height > effectiveScroll + viewportHeight
+                    })
+                    if (firstOffscreen) {
+                        const m = metrics[firstOffscreen.page]
+                        this.jumpHistory.push(effectiveScroll)
+                        if (this.jumpHistory.length > 50) this.jumpHistory.shift()
+                        this._executeJump(m.top + firstOffscreen.y * m.height - this.jumpOffsetPx)
+                        return true
+                    }
                 }
 
                 // Fallback: scroll by one viewport minus jump offset for symmetric navigation

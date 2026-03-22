@@ -45,9 +45,9 @@ const EXTRA_COLORS = [
 export class EditSubBarManager {
     constructor(app) {
         this.app = app
-        this.activeBar  = null   // 'pen' | 'shapes' | 'stamp' | null  (tool bars)
+        this.activeBar  = null   // 'pen' | 'shapes' | 'stamp' | 'text' | null  (tool bars)
         this.othersOpen = false  // others bar is independent
-        this._bars      = {}     // { pen: el, shapes: el, stamp: el, others: el }
+        this._bars      = {}     // { pen: el, shapes: el, stamp: el, text: el, others: el }
         this._stampPage = 0
         this._stampBarY  = null  // null = auto (near bottom), number = last dragged Y
         this._shapesBarY = null
@@ -139,24 +139,31 @@ export class EditSubBarManager {
         bar.id = 'sf-sub-bar-' + name
         bar.className = 'sf-sub-bar'
             + (name === 'pen'    ? ' sf-pen-bar'    : '')
+            + (name === 'text'   ? ' sf-text-bar'   : '')
             + (name === 'others' ? ' sf-others-bar' : '')
             + ((name === 'shapes' || name === 'stamp') ? ' sf-wide-bar' : '')
         return bar
     }
 
     _positionBar(bar, name, triggerBtn) {
-        if (name === 'pen') {
+        if (name === 'pen' || name === 'text') {
             // Vertically center on trigger button
             const rect = triggerBtn.getBoundingClientRect()
             bar.style.top = (rect.top + rect.height / 2) + 'px'
 
         } else if (name === 'shapes' || name === 'stamp') {
-            // Use stored Y or default to near bottom
+            // Use stored Y or default to near bottom; clamp after layout so half-height is known
             const stored = name === 'stamp' ? this._stampBarY : this._shapesBarY
-            const y = stored ?? Math.round(window.innerHeight * 0.82)
-            if (name === 'stamp'  && this._stampBarY  === null) this._stampBarY  = y
-            if (name === 'shapes' && this._shapesBarY === null) this._shapesBarY = y
-            bar.style.top = y + 'px'
+            const raw = stored ?? Math.round(window.innerHeight * 0.82)
+            // Apply immediately so the bar is visible, then re-clamp once it has a measured height
+            bar.style.top = raw + 'px'
+            requestAnimationFrame(() => {
+                const halfH = (bar.offsetHeight || 120) / 2
+                const clamped = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, raw))
+                bar.style.top = clamped + 'px'
+                if (name === 'stamp')  this._stampBarY  = clamped
+                else                   this._shapesBarY = clamped
+            })
 
         } else if (name === 'others') {
             // Slides down from top — no top override needed (CSS handles it)
@@ -168,6 +175,7 @@ export class EditSubBarManager {
         if (name === 'pen')    this._buildPenBar(bar)
         if (name === 'shapes') this._buildWideBar(bar, 'shapes')
         if (name === 'stamp')  this._buildWideBar(bar, 'stamp')
+        if (name === 'text')   this._buildTextBar(bar)
         if (name === 'others') this._buildOthersBar(bar)
     }
 
@@ -220,6 +228,149 @@ export class EditSubBarManager {
             btn.addEventListener('click', () => this._selectTool(h.id, bar, 'pen'))
             bar.appendChild(btn)
         })
+    }
+
+    // ─── Text Bar ─────────────────────────────────────────────────────────────
+
+    _buildTextBar(bar) {
+        const lib = this.app.userTextLibrary || []
+
+        // [Aa] Free text button
+        const freeBtn = document.createElement('div')
+        freeBtn.className = 'sf-pen-cell sf-text-free-btn' + (this.app.activeStampType === 'quick-text' ? ' active' : '')
+        freeBtn.title = 'Free Text'
+        freeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <path d="M4 7V4h16v3M12 4v16m-4 0h8"/>
+        </svg>`
+        freeBtn.addEventListener('click', () => {
+            this.app.activeStampType = 'quick-text'
+            this.app.toolManager?.updateActiveTools()
+            this._populateBar(bar, 'text')
+            this.app.editStripManager?.update()
+        })
+        bar.appendChild(freeBtn)
+
+        if (lib.length > 0) {
+            const div = document.createElement('div')
+            div.className = 'sf-pen-divider'
+            bar.appendChild(div)
+
+            lib.forEach((text, idx) => {
+                const isActive = this.app.activeStampType === 'custom-text-' + idx
+                    && this.app._activeCustomText === text
+                const cell = document.createElement('div')
+                cell.className = 'sf-text-cell' + (isActive ? ' active' : '')
+                cell.title = text
+                const displayText = text.length > 12 ? text.slice(0, 11) + '…' : text
+                cell.textContent = displayText
+                cell.addEventListener('click', () => {
+                    this.app._activeCustomText = text
+                    this.app.activeStampType = 'custom-text-' + idx
+                    this.app.toolManager?.updateActiveTools()
+                    this._populateBar(bar, 'text')
+                    this.app.editStripManager?.update()
+                })
+
+                // Long-press to delete
+                let pressTimer = null
+                const startPress = () => { pressTimer = setTimeout(() => this._deleteUserText(idx, bar), 600) }
+                const cancelPress = () => { clearTimeout(pressTimer) }
+                cell.addEventListener('pointerdown', startPress)
+                cell.addEventListener('pointerup', cancelPress)
+                cell.addEventListener('pointercancel', cancelPress)
+
+                bar.appendChild(cell)
+            })
+        }
+
+        // Divider before [+]
+        const div2 = document.createElement('div')
+        div2.className = 'sf-pen-divider'
+        bar.appendChild(div2)
+
+        // [+] Add new text
+        const addBtn = document.createElement('div')
+        addBtn.className = 'sf-pen-cell sf-text-add-btn'
+        addBtn.title = 'Add text to library'
+        addBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>`
+        addBtn.addEventListener('click', async () => {
+            const text = await this.app.showDialog({
+                title: 'Add to Text Library',
+                message: 'Enter the text to add:',
+                type: 'input',
+                placeholder: 'e.g. Pizz., dolce, a tempo…',
+            })
+            if (!text?.trim()) return
+            if (!this.app.userTextLibrary) this.app.userTextLibrary = []
+            if (!this.app.userTextLibrary.includes(text.trim())) {
+                this.app.userTextLibrary.push(text.trim())
+                this._saveTextLibrary(bar)
+            }
+            this._populateBar(bar, 'text')
+        })
+        bar.appendChild(addBtn)
+
+        // [Edit all] — bulk edit as comma-separated
+        const editAllBtn = document.createElement('div')
+        editAllBtn.className = 'sf-pen-cell sf-text-edit-all-btn'
+        editAllBtn.title = 'Edit all (comma-separated)'
+        editAllBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>`
+        editAllBtn.addEventListener('click', async () => {
+            const current = (this.app.userTextLibrary || []).join(', ')
+            const result = await this.app.showDialog({
+                title: 'Edit Text Library',
+                message: 'Items separated by comma:',
+                type: 'input',
+                defaultValue: current,
+                placeholder: '指揮, 小提, Pizz., dolce…',
+            })
+            if (result === null || result === undefined) return
+            this.app.userTextLibrary = result.split(',').map(s => s.trim()).filter(Boolean)
+            this._saveTextLibrary(bar)
+            this._populateBar(bar, 'text')
+        })
+        bar.appendChild(editAllBtn)
+    }
+
+    /** Persist userTextLibrary to localStorage + panel_config, then push to Supabase */
+    _saveTextLibrary(bar) {
+        this.app.saveToStorage?.()
+        // Merge into panel_config so it travels with the Supabase panel_config column
+        try {
+            const cfg = JSON.parse(localStorage.getItem('scoreflow_panel_config') || '{}')
+            cfg.userTextLibrary = this.app.userTextLibrary
+            localStorage.setItem('scoreflow_panel_config', JSON.stringify(cfg))
+            this.app.supabaseManager?.pushPanelConfig(cfg)
+        } catch (e) {
+            console.warn('[EditSubBar] _saveTextLibrary failed to write panel_config', e)
+        }
+        if (bar) this.app.editStripManager?.update()
+    }
+
+    async _deleteUserText(idx, bar) {
+        if (!this.app.userTextLibrary) return
+        const text = this.app.userTextLibrary[idx]
+        const confirmed = await this.app.showDialog({
+            title: 'Remove from Library',
+            message: `Remove "${text}" from your text library?`,
+            type: 'confirm',
+        })
+        if (!confirmed) return
+        this.app.userTextLibrary.splice(idx, 1)
+        this._saveTextLibrary(null)
+        // Reset tool if it was active
+        if (this.app._activeCustomText === text) {
+            this.app._activeCustomText = null
+            this.app.activeStampType = 'view'
+            this.app.toolManager?.updateActiveTools()
+            this.app.editStripManager?.update()
+        }
+        this._populateBar(bar, 'text')
     }
 
     // ─── Wide Bars (shapes + stamp) ───────────────────────────────────────────
@@ -360,7 +511,11 @@ export class EditSubBarManager {
 
         const getY = () => (type === 'stamp' ? this._stampBarY : this._shapesBarY) ?? (window.innerHeight * 0.82)
         const setY = (y) => {
-            const v = Math.max(30, Math.min(window.innerHeight - 80, y))
+            // Bar is centered on `top` via translateY(-50%), so clamp using half-height
+            const halfH = (bar.offsetHeight || 120) / 2
+            const minY = halfH + 8
+            const maxY = window.innerHeight - halfH - 8
+            const v = Math.max(minY, Math.min(maxY, y))
             if (type === 'stamp') this._stampBarY = v
             else                  this._shapesBarY = v
             bar.style.top = v + 'px'

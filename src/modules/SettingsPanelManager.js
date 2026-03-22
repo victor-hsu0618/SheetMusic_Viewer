@@ -80,6 +80,20 @@ export class SettingsPanelManager {
             })
         }
 
+        // Scroll Offset
+        const jumpOffsetInput = document.getElementById('settings-jump-offset')
+        const jumpOffsetValue = document.getElementById('settings-jump-offset-value')
+        if (jumpOffsetInput) {
+            const currentOffset = this.app.rulerManager?.jumpOffsetPx ?? 40
+            jumpOffsetInput.value = currentOffset
+            if (jumpOffsetValue) jumpOffsetValue.textContent = `${currentOffset}px`
+            jumpOffsetInput.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value)
+                this.app.updateJumpOffset?.(val)
+                this.updateSliderGradient(jumpOffsetInput)
+            })
+        }
+
         // Jump Speed
         const jumpSpeedInput = document.getElementById('settings-jump-speed')
         const jumpSpeedValue = document.getElementById('settings-jump-speed-value')
@@ -142,8 +156,8 @@ export class SettingsPanelManager {
         // Reset buttons
         this.panel.querySelectorAll('.btn-reset-mini').forEach(btn => {
             btn.addEventListener('click', () => {
-                const defaults = { 'jump-speed': 300, 'pointer-idle': 8 }
-                const ids = { 'jump-speed': 'settings-jump-speed', 'pointer-idle': 'settings-pointer-idle' }
+                const defaults = { 'jump-offset': 40, 'jump-speed': 300, 'pointer-idle': 8 }
+                const ids = { 'jump-offset': 'settings-jump-offset', 'jump-speed': 'settings-jump-speed', 'pointer-idle': 'settings-pointer-idle' }
                 const type = btn.dataset.reset
                 const slider = document.getElementById(ids[type])
                 if (slider) { slider.value = defaults[type]; slider.dispatchEvent(new Event('input')) }

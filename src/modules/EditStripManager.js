@@ -187,16 +187,27 @@ export class EditStripManager {
                 + '<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'
         })
 
+        // Apply saved order from panel_config
+        const editOrder = this._getPanelOrder('editBar')
+        if (editOrder.length) {
+            const ordered = editOrder.map(id => editTools.find(t => t.id === id)).filter(Boolean)
+            const missing = editTools.filter(t => !editOrder.includes(t.id))
+            editTools.splice(0, editTools.length, ...ordered, ...missing)
+        }
+
         editTools.forEach(tool => {
             const isPen    = tool.id === 'pen'
             const isShapes = !!tool.isShapesTrigger
             const isStamp  = !!tool.isStampTrigger
-            const hasSub   = isPen || isShapes || isStamp
+            const isText   = tool.id === 'quick-text'
+            const hasSub   = isPen || isShapes || isStamp || isText
 
             const subActive = (isPen    && this._subBarMgr?.activeBar === 'pen')
                            || (isShapes && this._subBarMgr?.activeBar === 'shapes')
                            || (isStamp  && this._subBarMgr?.activeBar === 'stamp')
-            const toolActive = !hasSub && this.app.activeStampType === tool.id
+                           || (isText   && this._subBarMgr?.activeBar === 'text')
+            // 'view' is the neutral/default mode — don't highlight it as active
+            const toolActive = !hasSub && tool.id !== 'view' && this.app.activeStampType === tool.id
             const isActive   = toolActive || subActive
 
             const btn = document.createElement('div')
@@ -210,7 +221,7 @@ export class EditStripManager {
                 ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22">${tool.icon}</svg>`
                 : `<span style="font-size:10px;font-weight:700;color:inherit">${tool.textIcon || tool.label}</span>`
 
-            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isPen, isShapes, isStamp))
+            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isPen, isShapes, isStamp, isText))
             el.appendChild(btn)
         })
 
@@ -239,18 +250,33 @@ export class EditStripManager {
         el.appendChild(collapseBtn)
     }
 
-    _handleToolClick(tool, btn, isPen, isShapes, isStamp) {
+    _handleToolClick(tool, btn, isPen, isShapes, isStamp, isText) {
         if (isPen) {
             this._subBarMgr?.toggle('pen', btn)
         } else if (isShapes) {
             this._subBarMgr?.toggle('shapes', btn)
         } else if (isStamp) {
             this._subBarMgr?.toggle('stamp', btn)
+        } else if (isText) {
+            this._subBarMgr?.toggle('text', btn)
         } else {
             this._subBarMgr?.closeAll()
             this.app.activeStampType = tool.id
             this.app.toolManager?.updateActiveTools()
         }
+        this._render()
+    }
+
+    /** Read a saved order array from panel_config in localStorage */
+    _getPanelOrder(key) {
+        try {
+            const cfg = JSON.parse(localStorage.getItem('scoreflow_panel_config') || '{}')
+            return Array.isArray(cfg[key]) ? cfg[key] : []
+        } catch { return [] }
+    }
+
+    /** Re-render after panel_config changes (e.g. Supabase sync) */
+    applyPanelConfig() {
         this._render()
     }
 

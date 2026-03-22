@@ -16,10 +16,7 @@ export function applyAppProxies(app) {
     app.loadPDF = (data, name, expectedFp) => app.viewerManager.loadPDF(data, name, expectedFp);
     app.renderPDF = () => app.viewerManager.renderPDF();
     app.getFingerprint = (buf) => app.viewerManager.getFingerprint(buf);
-    app.updateZoomDisplay = () => {
-        app.viewerManager.updateZoomDisplay();
-        app.viewPanelManager?.updateZoomDisplay();
-    };
+    app.updateZoomDisplay = () => app.viewerManager.updateZoomDisplay();
     app.changeZoom = (delta) => app.viewerManager.changeZoom(delta);
     app.fitToWidth = () => app.viewerManager.fitToWidth();
     app.fitToHeight = () => app.viewerManager.fitToHeight();

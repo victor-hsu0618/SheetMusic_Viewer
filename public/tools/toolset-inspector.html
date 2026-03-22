@@ -203,38 +203,62 @@
 
         .empty-hint { color:var(--sf-muted); font-size:12px; padding:12px 0; }
 
-        /* ── Stamp selector ── */
-        .selector-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; }
-        .cat-block { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:14px; }
-        .cat-block-header {
-            display:flex; align-items:center; gap:8px;
-            margin-bottom:10px; padding-bottom:8px;
-            border-bottom: 1px solid var(--sf-border);
+        /* ── Row editor (text input) ── */
+        .row-editor { display:flex; flex-direction:column; gap:12px; }
+        .row-input-block { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:14px 16px; }
+        .row-input-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+        .row-input-badge {
+            font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px;
+            background: rgba(99,102,241,0.12); color:var(--sf-primary); letter-spacing:.04em;
         }
-        .cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-        .cat-block-name { font-size:12px; font-weight:700; flex:1; }
-        .select-all-btn {
-            font-size:10px; color:var(--sf-primary); cursor:pointer; background:none;
-            border:none; font-family:inherit; font-weight:600; padding:2px 6px; border-radius:4px;
+        .row-input-count { font-size:10px; color:var(--sf-muted); margin-left:auto; }
+        .row-textarea {
+            width:100%; box-sizing:border-box;
+            background: var(--sf-card2); border:1px solid var(--sf-border); border-radius:8px;
+            color:var(--sf-text); font-family:'JetBrains Mono',monospace; font-size:12px;
+            padding:8px 10px; resize:vertical; min-height:60px;
+            transition: border-color .15s;
+            outline:none;
         }
-        .select-all-btn:hover { background: rgba(99,102,241,0.12); }
-        .tool-rows { display:flex; flex-direction:column; gap:2px; }
-        .tool-row-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--sf-muted); opacity:.5; margin-top:6px; margin-bottom:2px; }
-        .tool-row-items { display:flex; flex-wrap:wrap; gap:4px; }
-        .tool-item {
-            display:flex; align-items:center; gap:6px;
-            padding:4px 8px; border-radius:6px; cursor:pointer;
-            border: 1px solid var(--sf-border);
-            background: transparent;
-            transition: background .15s, border-color .15s;
+        .row-textarea:focus { border-color: var(--sf-primary); }
+        .row-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; min-height:24px; }
+        .row-chip {
+            display:inline-flex; align-items:center; gap:4px;
+            padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600;
+            background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25); color:var(--sf-primary);
         }
-        .tool-item:hover { background: #f1f5f9; }
-        .tool-item.selected { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.45); }
-        .tool-item input[type=checkbox] { display:none; }
-        .tool-item .ti-icon { width:20px; height:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .tool-item .ti-icon svg { width:16px; height:16px; }
-        .tool-item .ti-label { font-size:11px; color:var(--sf-muted); font-family:'JetBrains Mono',monospace; }
-        .tool-item.selected .ti-label { color:var(--sf-text); }
+        .row-chip.invalid { background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.3); color:#ef4444; }
+        .row-chip .chip-icon { width:16px; height:16px; display:flex; align-items:center; justify-content:center; opacity:0.7; }
+        .row-apply-row { display:flex; align-items:center; gap:10px; margin-top:14px; }
+        .row-apply-btn {
+            padding:7px 18px; background:var(--sf-primary); color:#fff; border:none;
+            border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
+            transition: background .15s;
+        }
+        .row-apply-btn:hover { background:var(--sf-primary-h); }
+        .row-apply-hint { font-size:11px; color:var(--sf-muted); }
+
+        /* ── Reference grid ── */
+        .ref-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:12px; }
+        .ref-card { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:12px 14px; }
+        .ref-card-header { display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+        .ref-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+        .ref-card-name { font-size:12px; font-weight:700; }
+        .ref-card-subtitle { font-size:10px; color:var(--sf-muted); margin-left:auto; }
+        .ref-rows { display:flex; flex-direction:column; gap:4px; }
+        .ref-row-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--sf-muted); opacity:.5; margin-top:4px; }
+        .ref-tools { display:flex; flex-wrap:wrap; gap:4px; }
+        .ref-chip {
+            display:inline-flex; align-items:center; gap:5px;
+            padding:3px 8px 3px 5px; border-radius:6px; cursor:pointer;
+            border:1px solid var(--sf-border); background:transparent;
+            transition: background .12s, border-color .12s;
+            user-select:none;
+        }
+        .ref-chip:hover { background:#f1f5f9; border-color:var(--sf-primary); }
+        .ref-chip .rc-icon { width:18px; height:18px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .ref-chip .rc-id { font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--sf-muted); }
+        .ref-chip .rc-label { font-size:10px; font-weight:600; color:var(--sf-text); }
 
         /* ── Bar reorder sections ── */
         .reorder-section { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:14px; margin-bottom:16px; }
@@ -1018,43 +1042,37 @@
     <!-- ══ TAB: My Panel ══ -->
     <div class="tab-pane active" id="tab-mypanel">
 
-        <!-- Preview -->
-        <div class="preview-wrap">
-            <div class="preview-label">
-                My Panel Preview
-                <span id="count-badge">0 stamps</span>
-            </div>
-            <!-- Mock scene: viewer + panel bar at bottom -->
-            <div class="mock-scene">
-                <div class="mock-viewer">
-                    <div class="mock-ruler">RULER</div>
-                    <div class="mock-score-area">
-                        <div class="mock-score-label">樂譜區域 (95% 寬)</div>
-                        <div class="mock-docbar">
-                            <div class="mock-docbar-dot"></div>
-                            <div class="mock-docbar-dot"></div>
-                            <div class="mock-docbar-dot"></div>
-                        </div>
-                    </div>
-                    <div class="mock-scrollbar"></div>
-                    <div class="mock-ruler right">RULER</div>
-                </div>
-                <!-- Horizontal panel bar -->
-                <div class="mock-panel-bar" id="preview-bar">
-                    <div class="empty-hint" style="white-space:nowrap;padding:12px 4px">← 從下方勾選 stamp 加入面板</div>
-                </div>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
-                Cell 44px · 拖曳排序 · 超出寬度可橫向捲動
-            </div>
-        </div>
-
         <!-- Edit bar & Doc bar reorder -->
         <div id="bar-reorder-sections"></div>
 
-        <!-- Stamp selector -->
-        <div class="section-label">選擇 Stamp（點擊加入 / 取消）</div>
-        <div class="selector-grid" id="selector-grid"></div>
+        <!-- Row editor -->
+        <div class="section-label">設定 Stamp 排列</div>
+        <div class="row-editor" id="row-editor"></div>
+
+        <!-- Reference table -->
+        <div class="section-label" style="margin-top:28px">
+            Symbol 對照表
+            <span style="font-size:10px;color:var(--sf-muted);font-weight:400;margin-left:6px">點擊 chip 插入游標位置</span>
+        </div>
+        <div class="ref-grid" id="ref-grid"></div>
+
+        <!-- Text Preset editor -->
+        <div class="section-label" style="margin-top:36px">
+            Text Preset 清單
+            <span style="font-size:10px;color:var(--sf-muted);font-weight:400;margin-left:6px">Edit Strip › Text 按鈕的快捷文字庫</span>
+        </div>
+        <div class="row-input-block" id="text-preset-block">
+            <div class="row-input-header">
+                <div class="row-input-badge" style="background:rgba(180,83,9,0.12);color:#b45309;border-radius:4px;padding:1px 8px;font-size:10px;font-weight:700">Text Library</div>
+                <div class="row-input-count" id="text-preset-count">0 items</div>
+            </div>
+            <textarea id="text-preset-ta" class="row-textarea" placeholder="文字1, 文字2, 文字3, …  (逗號分隔)"></textarea>
+            <div class="row-chips" id="text-preset-chips"></div>
+            <div class="row-apply-row">
+                <button class="row-apply-btn" id="btn-apply-text-presets">Apply & Save</button>
+                <span class="row-apply-hint">儲存後同步到雲端</span>
+            </div>
+        </div>
     </div>
 
     <!-- ══ TAB: Layout Preview ══ -->
@@ -1247,27 +1265,28 @@ const TOOLSETS = [
         { id: 'double-flat', label: '𝄫',        row:2, textIcon: '𝄫' },
     ]},
     { name: 'Text', type: 'text', color: '#b45309', tools: [
-        { id: 'text',        label: 'Text',  row:1, icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8" fill="none" stroke="currentColor" stroke-width="2" />' },
-        { id: 'tempo-text',  label: 'Tempo', row:1, icon: '<path d="M4 7V4h16v3M12 4v16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />' },
-        { id: 'text-ppp',    label: 'ppp',   row:1, textIcon: 'ppp' },
-        { id: 'text-pp',     label: 'pp',    row:1, textIcon: 'pp' },
-        { id: 'text-p',      label: 'p',     row:1, textIcon: 'p' },
-        { id: 'text-mp',     label: 'mp',    row:1, textIcon: 'mp' },
-        { id: 'text-mf',     label: 'mf',    row:1, textIcon: 'mf' },
-        { id: 'text-f',      label: 'f',     row:1, textIcon: 'f' },
-        { id: 'text-ff',     label: 'ff',    row:1, textIcon: 'ff' },
-        { id: 'text-fff',    label: 'fff',   row:1, textIcon: 'fff' },
-        { id: 'text-fp',     label: 'fp',    row:1, textIcon: 'fp' },
-        { id: 'text-sfp',    label: 'sfp',   row:1, textIcon: 'sfp' },
-        { id: 'text-cond',   label: '指揮',   row:2, textIcon: '指揮' },
-        { id: 'text-v1',     label: '小提',   row:2, textIcon: '小提' },
-        { id: 'text-vlc',    label: '大提',   row:2, textIcon: '大提' },
-        { id: 'text-wind',   label: '管樂',   row:2, textIcon: '管樂' },
-        { id: 'text-perc',   label: '打擊',   row:2, textIcon: '打擊' },
-        { id: 'text-solo',   label: '獨奏',   row:2, textIcon: '獨奏' },
-        { id: 'text-page',   label: '換頁',   row:2, textIcon: '換頁' },
-        { id: 'text-score',  label: '換譜',   row:2, textIcon: '換譜' },
-        { id: 'text-breath', label: '呼吸',   row:2, textIcon: '呼吸' },
+        { id: 'text-ppp',        label: 'ppp',         row:1, textIcon: 'ppp' },
+        { id: 'text-pp',         label: 'pp',          row:1, textIcon: 'pp' },
+        { id: 'text-p',          label: 'p',           row:1, textIcon: 'p' },
+        { id: 'text-mp',         label: 'mp',          row:1, textIcon: 'mp' },
+        { id: 'text-mf',         label: 'mf',          row:1, textIcon: 'mf' },
+        { id: 'text-f',          label: 'f',           row:1, textIcon: 'f' },
+        { id: 'text-ff',         label: 'ff',          row:1, textIcon: 'ff' },
+        { id: 'text-fff',        label: 'fff',         row:1, textIcon: 'fff' },
+        { id: 'text-fp',         label: 'fp',          row:1, textIcon: 'fp' },
+        { id: 'text-sfp',        label: 'sfp',         row:1, textIcon: 'sfp' },
+        { id: 'text-pizz',       label: 'Pizz.',       row:3, textIcon: 'Pizz.' },
+        { id: 'text-arco',       label: 'Arco.',       row:3, textIcon: 'Arco.' },
+        { id: 'text-col-legno',  label: 'Col legno',   row:3, textIcon: 'Col l.' },
+        { id: 'text-sul-pont',   label: 'Sul pont.',   row:3, textIcon: 'S.pt.' },
+        { id: 'text-sul-tasto',  label: 'Sul tasto',   row:3, textIcon: 'S.ts.' },
+        { id: 'text-flaut',      label: 'Flautando',   row:3, textIcon: 'Flaut.' },
+        { id: 'text-spicc',      label: 'Spiccato',    row:3, textIcon: 'Spicc.' },
+        { id: 'text-trem',       label: 'Trem.',       row:3, textIcon: 'Trem.' },
+        { id: 'text-div',        label: 'Div.',        row:3, textIcon: 'Div.' },
+        { id: 'text-unis',       label: 'Unis.',       row:3, textIcon: 'Unis.' },
+        { id: 'text-con-sord',   label: 'Con sord.',   row:3, textIcon: 'C.srd.' },
+        { id: 'text-senza-sord', label: 'Senza sord.', row:3, textIcon: 'S.srd.' },
     ]},
     { name: 'Others', type: 'others', color: '#94a3b8', tools: [
         { id: 'copy',         label: 'Copy',     icon: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>' },
@@ -1292,18 +1311,21 @@ const EDIT_TOOLS = [
 ]
 
 const DOC_BAR_BTNS = [
-    // always visible
-    { id: 'page-head',     group: 'always',    label: '|↑', title: 'Jump to Head',     icon: '<polyline points="17 11 12 6 7 11"/><polyline points="17 17 12 12 7 17"/><line x1="5" y1="5" x2="19" y2="5"/>' },
-    { id: 'page-up',       group: 'always',    label: '▲',  title: 'Previous Page',    icon: '<polyline points="18 15 12 9 6 15"/>' },
-    { id: 'page-down',     group: 'always',    label: '▽',  title: 'Next Page',        icon: '<polyline points="6 9 12 15 18 9"/>' },
-    // collapsed-only quick suite
-    { id: 'fit-width',     group: 'collapsed', label: 'W',  title: 'Fit Width',        icon: '<path d="M21 12H3M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/>' },
-    { id: 'fit-height',    group: 'collapsed', label: 'F',  title: 'Fit Height',       icon: '<path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4"/>' },
-    // expanded state
-    { id: 'library',       group: 'expanded',  label: 'O',  title: 'Score Library',    icon: '<rect x="3" y="3" width="4" height="15" rx="1.5"/><rect x="10" y="6" width="4" height="12" rx="1.5"/><rect x="17" y="4.5" width="4" height="13.5" rx="1.5"/><rect x="2" y="19" width="20" height="2" rx="1"/>', fillIcon: true },
-    { id: 'jump-panel',    group: 'expanded',  label: 'G',  title: 'Go To',            icon: '<polygon points="3 11 22 2 13 21 11 13 3 11"/>', fillIcon: true },
-    { id: 'view-panel',    group: 'expanded',  label: 'V',  title: 'View Inspector',   icon: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' },
-    { id: 'settings',      group: 'always',    label: '⚙',  title: 'Global Settings',  icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
+    // Nav (always visible)
+    { id: 'doc-head',       group: 'nav',   label: 'Head',      title: 'Jump to Head',    icon: '<polyline points="17 11 12 6 7 11"/><polyline points="17 17 12 12 7 17"/><line x1="5" y1="5" x2="19" y2="5"/>' },
+    { id: 'doc-up',         group: 'nav',   label: 'Up',        title: 'Page Up',          icon: '<polyline points="18 15 12 9 6 15"/>' },
+    { id: 'doc-down',       group: 'nav',   label: 'Down',      title: 'Page Down',        icon: '<polyline points="6 9 12 15 18 9"/>' },
+    // View
+    { id: 'doc-fit-width',  group: 'view',  label: 'FitW',      title: 'Fit Width',        icon: '<path d="M21 12H3M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/>' },
+    { id: 'doc-fit-height', group: 'view',  label: 'FitH',      title: 'Fit Height',       icon: '<path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4"/>' },
+    { id: 'doc-ruler',      group: 'view',  label: 'Ruler',     title: 'Toggle Ruler',     icon: '<rect x="2" y="8" width="20" height="8" rx="1"/><line x1="6" y1="8" x2="6" y2="13"/><line x1="10" y1="8" x2="10" y2="11"/><line x1="14" y1="8" x2="14" y2="11"/><line x1="18" y1="8" x2="18" y2="13"/>' },
+    // Tools
+    { id: 'doc-library',    group: 'tool',  label: 'Library',   title: 'Score Library',    icon: '<rect x="3" y="3" width="4" height="15" rx="1.5"/><rect x="10" y="6" width="4" height="12" rx="1.5"/><rect x="17" y="4.5" width="4" height="13.5" rx="1.5"/><rect x="2" y="19" width="20" height="2" rx="1"/>' },
+    { id: 'doc-jump-panel', group: 'tool',  label: 'GoTo',      title: 'Go To (G)',        icon: '<polygon points="3 11 22 2 13 21 11 13 3 11"/>' },
+    { id: 'doc-stamp',      group: 'tool',  label: 'Stamps',    title: 'Stamp Palette (T)', icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>' },
+    // Bottom (always visible)
+    { id: 'doc-settings',   group: 'bottom', label: 'Settings', title: 'Settings',         icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
+    { id: 'doc-account',    group: 'bottom', label: 'Account',  title: 'Account & Sync',   icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
 ]
 
 // ── Panel config storage (unified — stamps + edit bar + doc bar) ──────────────
@@ -1363,32 +1385,8 @@ async function _pushPanelConfigToCloud(cfg) {
 function clearMyPanel() {
     myPanel = []; editBarOrder = EDIT_TOOLS.map(t => t.id); docBarOrder = DOC_BAR_BTNS.map(b => b.id)
     saveMyPanel()
-    renderMyPanel(); renderSelector(); renderBarReorders()
+    renderRowEditor(); renderRefGrid(); renderBarReorders()
     maybeRefreshLayout()
-}
-
-function isSelected(id, category) {
-    return myPanel.some(s => s.id === id && s.category === category)
-}
-
-function toggleTool(id, category) {
-    const idx = myPanel.findIndex(s => s.id === id && s.category === category)
-    if (idx === -1) {
-        const toolDef = TOOLSETS.find(g => g.name === category)?.tools.find(t => t.id === id)
-        myPanel.push({ id, category, row: toolDef?.row ?? 1 })
-    } else {
-        myPanel.splice(idx, 1)
-    }
-    saveMyPanel()
-    renderMyPanel()
-    renderSelector()
-}
-
-function removeTool(id, category) {
-    myPanel = myPanel.filter(s => !(s.id === id && s.category === category))
-    saveMyPanel()
-    renderMyPanel()
-    renderSelector()
 }
 
 function maybeRefreshLayout() {
@@ -1397,86 +1395,103 @@ function maybeRefreshLayout() {
     }
 }
 
-// ── Bar reorder UI ────────────────────────────────────────────────────────────
+// ── Bar reorder UI (text-input based) ─────────────────────────────────────────
+const BAR_SECTIONS = [
+    { key: 'edit', label: 'Edit Bar 順序', color: '#f59e0b', allItems: EDIT_TOOLS,   getOrder: () => editBarOrder, setOrder: (o) => { editBarOrder = o } },
+    { key: 'doc',  label: 'Doc Bar 順序',  color: '#6366f1', allItems: DOC_BAR_BTNS, getOrder: () => docBarOrder,  setOrder: (o) => { docBarOrder  = o } },
+]
+
+function parseBarText(text, allItems) {
+    return text.split(',').map(s => s.trim()).filter(Boolean).map(id => {
+        const found = allItems.find(t => t.id === id)
+        return found ? { ...found, _valid: true } : { id, label: id, _valid: false }
+    })
+}
+
+function buildBarChips(items) {
+    return items.map(item =>
+        `<span class="row-chip${item._valid === false ? ' invalid' : ''}" title="${item.id}">${item.label || item.title || item.id}</span>`
+    ).join('')
+}
+
+function refreshBarPreview(container, items, color) {
+    if (!container) return
+    container.innerHTML = ''
+    if (items.length === 0) {
+        container.innerHTML = '<span style="font-size:11px;color:var(--sf-muted);padding:4px 2px">（空）</span>'
+        return
+    }
+    items.forEach(item => {
+        const cell = document.createElement('div')
+        cell.className = 'mock-cell'
+        cell.style.borderColor = color ? color + '55' : ''
+        cell.title = item.title || item.id
+        cell.innerHTML = (item.icon
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">${item.icon}</svg>`
+            : `<span class="cell-text" style="font-size:10px;font-weight:700">${item.label || item.id}</span>`)
+            + `<span class="cell-label">${item.label || item.title || item.id}</span>`
+        container.appendChild(cell)
+    })
+}
+
+function applyBarOrders() {
+    BAR_SECTIONS.forEach(sec => {
+        const ta = document.getElementById(`bar-ta-${sec.key}`)
+        if (!ta) return
+        const valid = parseBarText(ta.value, sec.allItems).filter(x => x._valid)
+        if (valid.length > 0) sec.setOrder(valid.map(x => x.id))
+    })
+    saveMyPanel()
+    renderBarReorders()
+    maybeRefreshLayout()
+}
+
 function renderBarReorders() {
     const wrap = document.getElementById('bar-reorder-sections')
     if (!wrap) return
     wrap.innerHTML = ''
 
-    const sections = [
-        { label: 'Edit Bar 順序', color: '#f59e0b', allItems: EDIT_TOOLS, getOrder: () => editBarOrder, setOrder: (o) => { editBarOrder = o } },
-        { label: 'Doc Bar 順序',  color: '#6366f1', allItems: DOC_BAR_BTNS, getOrder: () => docBarOrder,  setOrder: (o) => { docBarOrder = o  },
-          hint: '<span style="font-size:10px;color:var(--sf-muted)">● 綠=常駐 ● 黃=收起 ● 紫=展開</span>' },
-    ]
+    BAR_SECTIONS.forEach(sec => {
+        const order = sec.getOrder()
+        const items = order.map(id => sec.allItems.find(t => t.id === id)).filter(Boolean)
 
-    sections.forEach(sec => {
         const block = document.createElement('div')
-        block.className = 'reorder-section'
+        block.className = 'row-input-block'
         block.innerHTML = `
-            <div class="reorder-header">
-                <div class="cat-dot" style="background:${sec.color}"></div>
-                <div class="reorder-header-label">${sec.label}</div>
-                ${sec.hint || '<span style="font-size:10px;color:var(--sf-muted)">拖曳排序</span>'}
+            <div class="row-input-header">
+                <div style="width:8px;height:8px;border-radius:50%;background:${sec.color};flex-shrink:0"></div>
+                <div class="row-input-badge" style="color:${sec.color}">${sec.label}</div>
+                <div class="row-input-count" id="bar-count-${sec.key}">${items.length} / ${sec.allItems.length}</div>
             </div>
-            <div class="reorder-row" id="reorder-row-${sec.label.replace(/\s/g,'')}"></div>
+            <div class="mock-row-items" id="bar-preview-${sec.key}" style="flex-wrap:wrap;gap:4px;margin-bottom:10px;min-height:44px;align-items:center"></div>
+            <textarea id="bar-ta-${sec.key}" class="row-textarea" placeholder="${sec.allItems.map(t=>t.id).join(', ')}">${order.join(', ')}</textarea>
+            <div class="row-chips" id="bar-chips-${sec.key}">${buildBarChips(items)}</div>
+            <div style="margin-top:8px;font-size:10px;color:var(--sf-muted);line-height:1.8">可用 ID：${sec.allItems.map(t=>`<code style="background:rgba(0,0,0,0.06);border-radius:3px;padding:1px 4px;font-family:monospace">${t.id}</code>`).join(' ')}</div>
         `
         wrap.appendChild(block)
 
-        const row = block.querySelector('.reorder-row')
-        let dragSrc = null, insertTarget = null
+        refreshBarPreview(block.querySelector(`#bar-preview-${sec.key}`), items, sec.color)
 
-        function clearInsert() {
-            row.querySelectorAll('.mock-cell').forEach(c => c.classList.remove('insert-before','insert-after'))
-        }
-
-        const order = sec.getOrder()
-        const orderedItems = order.map(id => sec.allItems.find(t => t.id === id)).filter(Boolean)
-        const missing = sec.allItems.filter(t => !order.includes(t.id))
-        const items = [...orderedItems, ...missing]
-
-        const GROUP_COLORS = { always: '#10b981', collapsed: '#f59e0b', expanded: '#6366f1' }
-        items.forEach((item, idx) => {
-            const cell = document.createElement('div')
-            cell.className = 'mock-cell'
-            cell.draggable = true
-            cell.dataset.idx = idx
-            cell.title = item.title || item.label || item.id
-            const groupBadge = item.group
-                ? `<span style="position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:50%;background:${GROUP_COLORS[item.group] || '#94a3b8'}"></span>`
-                : ''
-            cell.innerHTML = item.icon
-                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">${item.icon}</svg>`
-                : item.textIcon
-                    ? `<span class="cell-text" style="font-size:11px;font-weight:700">${item.textIcon}</span>`
-                    : `<span class="cell-text" style="font-size:10px;font-weight:700">${item.label || item.id}</span>`
-            cell.innerHTML += `<span class="cell-label">${item.label || item.title}</span>` + groupBadge
-            cell.style.position = 'relative'
-
-            cell.addEventListener('dragstart', e => { dragSrc = idx; cell.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move' })
-            cell.addEventListener('dragend', () => { cell.classList.remove('dragging'); clearInsert() })
-            cell.addEventListener('dragover', e => {
-                e.preventDefault(); clearInsert()
-                const before = e.clientX < cell.getBoundingClientRect().left + cell.offsetWidth / 2
-                cell.classList.add(before ? 'insert-before' : 'insert-after')
-                insertTarget = { idx, before }
-            })
-            cell.addEventListener('dragleave', () => cell.classList.remove('insert-before','insert-after'))
-            cell.addEventListener('drop', e => {
-                e.preventDefault(); clearInsert()
-                if (dragSrc === null || !insertTarget) return
-                const { idx: destIdx, before } = insertTarget; insertTarget = null
-                if (dragSrc === destIdx) return
-                const arr = [...items]
-                const [moved] = arr.splice(dragSrc, 1)
-                let at = dragSrc < destIdx ? (before ? destIdx-1 : destIdx) : (before ? destIdx : destIdx+1)
-                arr.splice(Math.max(0, at), 0, moved)
-                sec.setOrder(arr.map(t => t.id))
-                saveMyPanel(); renderBarReorders(); maybeRefreshLayout()
-            })
-
-            row.appendChild(cell)
+        const ta = block.querySelector('textarea')
+        ta.addEventListener('focus', () => { _lastFocusedTA = ta })
+        ta.addEventListener('input', () => {
+            const parsed = parseBarText(ta.value, sec.allItems)
+            const valid = parsed.filter(x => x._valid)
+            block.querySelector(`#bar-chips-${sec.key}`).innerHTML = buildBarChips(parsed)
+            block.querySelector(`#bar-count-${sec.key}`).textContent = `${valid.length} / ${sec.allItems.length}`
+            refreshBarPreview(block.querySelector(`#bar-preview-${sec.key}`), valid, sec.color)
         })
     })
+
+    // Shared apply button
+    const applyRow = document.createElement('div')
+    applyRow.className = 'row-apply-row'
+    applyRow.innerHTML = `
+        <button class="row-apply-btn" id="btn-apply-bars">Apply & Save</button>
+        <span class="row-apply-hint">儲存後同步到雲端</span>
+    `
+    applyRow.querySelector('#btn-apply-bars').addEventListener('click', applyBarOrders)
+    wrap.appendChild(applyRow)
 }
 
 // ── Icon rendering helpers ────────────────────────────────────────────────────
@@ -1497,211 +1512,184 @@ function renderIcon(tool, size = 20) {
 }
 
 // ── Preview rendering ─────────────────────────────────────────────────────────
-// Move stamp left/right within its own row
-function moveStamp(id, category, dir) {
-    const stampItems = myPanel.filter(s => TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
-    const idx = stampItems.findIndex(s => s.id === id && s.category === category)
-    if (idx < 0) return
-    const thisRow = stampItems[idx].row ?? 1
-    // Find adjacent item in same row
-    const rowItems = stampItems.filter(s => (s.row ?? 1) === thisRow)
-    const posInRow = rowItems.findIndex(s => s.id === id && s.category === category)
-    const targetPosInRow = posInRow + dir
-    if (targetPosInRow < 0 || targetPosInRow >= rowItems.length) return
-    // Swap in myPanel (non-edit stamps only, rebuilding full myPanel)
-    const targetItem = rowItems[targetPosInRow]
-    const idxA = myPanel.findIndex(s => s.id === id && s.category === category)
-    const idxB = myPanel.findIndex(s => s.id === targetItem.id && s.category === targetItem.category)
-    ;[myPanel[idxA], myPanel[idxB]] = [myPanel[idxB], myPanel[idxA]]
-    saveMyPanel()
-    renderMyPanel()
-}
 
-// Toggle stamp between row 1 and row 2
-function setStampRow(id, category, newRow) {
-    const entry = myPanel.find(s => s.id === id && s.category === category)
-    if (!entry) return
-    entry.row = newRow
-    saveMyPanel()
-    renderMyPanel()
-}
+function renderMyPanel() { /* no-op: preview is now inline in renderRowEditor() */ }
 
-function renderMyPanel() {
-    const editGroup = TOOLSETS.find(g => g.type === 'edit')
-    const bar = document.getElementById('preview-bar')
-    const countBadge = document.getElementById('count-badge')
+// ── Row text editor ────────────────────────────────────────────────────────────
 
-    const stampItems = myPanel.filter(s => {
-        const group = TOOLSETS.find(g => g.name === s.category)
-        return group?.type !== 'edit'
-    })
-    const row1Items = stampItems.filter(s => (s.row ?? 1) !== 2)
-    const row2Items = stampItems.filter(s => s.row === 2)
-
-    countBadge.textContent = `第1排 ${row1Items.length} · 第2排 ${row2Items.length}`
-    bar.innerHTML = ''
-
-    // Edit tools (fixed, no remove)
-    editGroup.tools.forEach(t => {
-        const cell = document.createElement('div')
-        cell.className = 'mock-cell edit-cell'
-        cell.title = t.label
-        cell.innerHTML = renderIcon(t, 20) + `<span class="cell-label">${t.label}</span>`
-        bar.appendChild(cell)
-    })
-
-    if (stampItems.length === 0) {
-        const hint = document.createElement('div')
-        hint.className = 'empty-hint'
-        hint.style.cssText = 'white-space:nowrap;padding:12px 8px;align-self:center'
-        hint.textContent = '← 從下方勾選 stamp 加入'
-        bar.appendChild(hint)
+function refreshRowPreview(container, validItems) {
+    if (!container) return
+    container.innerHTML = ''
+    if (validItems.length === 0) {
+        container.innerHTML = '<span style="font-size:11px;color:var(--sf-muted);padding:4px 2px">（空）</span>'
         return
     }
-
-    // Render row 1 and row 2 as separate sections
-    const renderRowSection = (rowItems, rowNum) => {
-        const divider = document.createElement('div')
-        divider.className = 'mock-divider'
-        divider.style.height = '60px'
-        bar.appendChild(divider)
-
-        const section = document.createElement('div')
-        section.className = 'mock-row-section'
-        bar.appendChild(section)
-
-        const badge = document.createElement('div')
-        badge.className = 'mock-row-badge'
-        badge.textContent = `第 ${rowNum} 排`
-        section.appendChild(badge)
-
-        const rowEl = document.createElement('div')
-        rowEl.className = 'mock-row-items'
-        section.appendChild(rowEl)
-
-        if (rowItems.length === 0) {
-            const empty = document.createElement('div')
-            empty.style.cssText = 'font-size:11px;color:var(--sf-muted);padding:8px;align-self:center'
-            empty.textContent = '空'
-            rowEl.appendChild(empty)
-            return
-        }
-
-        rowItems.forEach((item, idx) => {
-            const tool = findTool(item.id, item.category)
-            const group = TOOLSETS.find(g => g.name === item.category)
-            const otherRow = rowNum === 1 ? 2 : 1
-            const cell = document.createElement('div')
-            cell.className = 'mock-cell'
-            cell.style.borderColor = group?.color ? group.color + '55' : ''
-            cell.innerHTML = renderIcon(tool, 20)
-                + `<span class="cell-label">${tool?.label || item.id}</span>`
-                + `<div class="cell-move-btns">
-                    <button class="cell-move-btn left" title="左移" ${idx === 0 ? 'disabled' : ''}>‹</button>
-                    <button class="cell-move-btn right" title="右移" ${idx === rowItems.length - 1 ? 'disabled' : ''}>›</button>
-                   </div>`
-                + `<button class="cell-row-btn" title="移到第${otherRow}排">R${otherRow}</button>`
-                + `<button class="remove-btn" title="移除">✕</button>`
-
-            cell.querySelector('.remove-btn').addEventListener('click', e => {
-                e.stopPropagation()
-                removeTool(item.id, item.category)
-            })
-            cell.querySelector('.cell-move-btn.left').addEventListener('click', e => {
-                e.stopPropagation()
-                moveStamp(item.id, item.category, -1)
-            })
-            cell.querySelector('.cell-move-btn.right').addEventListener('click', e => {
-                e.stopPropagation()
-                moveStamp(item.id, item.category, 1)
-            })
-            cell.querySelector('.cell-row-btn').addEventListener('click', e => {
-                e.stopPropagation()
-                setStampRow(item.id, item.category, otherRow)
-            })
-
-            rowEl.appendChild(cell)
-        })
-    }
-
-    renderRowSection(row1Items, 1)
-    renderRowSection(row2Items, 2)
+    validItems.forEach(item => {
+        const found = findToolById(item.id)
+        const group = TOOLSETS.find(g => g.name === item.category)
+        const cell = document.createElement('div')
+        cell.className = 'mock-cell'
+        cell.style.borderColor = group?.color ? group.color + '55' : ''
+        cell.title = `${item.id} (${item.category})`
+        cell.innerHTML = renderIcon(found?.tool, 20) + `<span class="cell-label">${found?.tool?.label || item.id}</span>`
+        container.appendChild(cell)
+    })
 }
 
-// ── Selector rendering ────────────────────────────────────────────────────────
-function renderSelector() {
-    const grid = document.getElementById('selector-grid')
+// All non-edit tool IDs globally unique → look up by ID only
+function findToolById(id) {
+    for (const g of TOOLSETS) {
+        if (g.type === 'edit') continue
+        const t = g.tools.find(t => t.id === id)
+        if (t) return { tool: t, group: g }
+    }
+    return null
+}
+
+function getRowText(rowNum) {
+    return myPanel
+        .filter(s => (s.row ?? 1) === rowNum && TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
+        .map(s => s.id)
+        .join(', ')
+}
+
+function parseRowText(text, rowNum) {
+    return text.split(',').map(s => s.trim()).filter(Boolean).map(id => {
+        const found = findToolById(id)
+        return found ? { id, category: found.group.name, row: rowNum, _valid: true } : { id, category: '', row: rowNum, _valid: false }
+    })
+}
+
+let _lastFocusedTA = null   // track last focused textarea for chip insertion
+
+function buildChips(items) {
+    return items.map(item => {
+        const found = findToolById(item.id)
+        const label = found?.tool.label || item.id
+        return `<span class="row-chip${item._valid ? '' : ' invalid'}" title="${item._valid ? item.id + ' (' + (found?.group.name||'') + ')' : 'Unknown ID: ' + item.id}">${label}</span>`
+    }).join('')
+}
+
+function applyRowInputs() {
+    const ta1 = document.getElementById('row-ta-1')
+    const ta2 = document.getElementById('row-ta-2')
+    const ta3 = document.getElementById('row-ta-3')
+    const r1 = parseRowText(ta1?.value || '', 1).filter(x => x._valid)
+    const r2 = parseRowText(ta2?.value || '', 2).filter(x => x._valid)
+    const r3 = parseRowText(ta3?.value || '', 3).filter(x => x._valid)
+    myPanel = [...r1, ...r2, ...r3]
+    saveMyPanel()
+    renderRowEditor()
+    maybeRefreshLayout()
+}
+
+function renderRowEditor() {
+    const el = document.getElementById('row-editor')
+    if (!el) return
+    el.innerHTML = ''
+
+    ;[1, 2, 3].forEach(rowNum => {
+        const items = parseRowText(getRowText(rowNum), rowNum)
+        const validItems = items.filter(x => x._valid)
+        const block = document.createElement('div')
+        block.className = 'row-input-block'
+        block.innerHTML = `
+            <div class="row-input-header">
+                <div class="row-input-badge">Row ${rowNum}</div>
+                <div class="row-input-count">${validItems.length} stamps</div>
+            </div>
+            <div class="mock-row-items row-preview" id="row-preview-${rowNum}" style="flex-wrap:wrap;gap:4px;margin-bottom:10px;min-height:48px;align-items:center"></div>
+            <textarea id="row-ta-${rowNum}" class="row-textarea" placeholder="stamp ID, stamp ID, …  (從下方對照表點擊插入)">${getRowText(rowNum)}</textarea>
+            <div class="row-chips" id="row-chips-${rowNum}">${buildChips(items)}</div>
+        `
+        el.appendChild(block)
+
+        refreshRowPreview(block.querySelector('.row-preview'), validItems)
+
+        const ta = block.querySelector('textarea')
+        ta.addEventListener('focus', () => { _lastFocusedTA = ta })
+        ta.addEventListener('input', () => {
+            const parsed = parseRowText(ta.value, rowNum)
+            const valid = parsed.filter(x => x._valid)
+            block.querySelector('.row-chips').innerHTML = buildChips(parsed)
+            block.querySelector('.row-input-count').textContent = `${valid.length} stamps`
+            refreshRowPreview(block.querySelector('.row-preview'), valid)
+        })
+    })
+
+    // Apply button row
+    const applyRow = document.createElement('div')
+    applyRow.className = 'row-apply-row'
+    applyRow.innerHTML = `
+        <button class="row-apply-btn" id="btn-apply-rows">Apply & Save</button>
+        <span class="row-apply-hint">儲存後同步到雲端</span>
+    `
+    applyRow.querySelector('#btn-apply-rows').addEventListener('click', applyRowInputs)
+    el.appendChild(applyRow)
+}
+
+// ── Reference grid ─────────────────────────────────────────────────────────────
+function renderRefGrid() {
+    const grid = document.getElementById('ref-grid')
+    if (!grid) return
     grid.innerHTML = ''
 
     TOOLSETS.forEach(group => {
-        if (group.type === 'edit') return // Edit is always fixed, skip in selector
+        if (group.type === 'edit') return
 
-        const block = document.createElement('div')
-        block.className = 'cat-block'
-
-        // Group tools by row
         const byRow = {}
         group.tools.forEach(t => {
-            const r = t.row ?? 0
+            const r = t.row ?? 1
             if (!byRow[r]) byRow[r] = []
             byRow[r].push(t)
         })
 
-        const selectedCount = group.tools.filter(t => isSelected(t.id, group.name)).length
-
-        block.innerHTML = `
-            <div class="cat-block-header">
-                <div class="cat-dot" style="background:${group.color}"></div>
-                <div class="cat-block-name">${group.name} <span style="color:var(--text-muted);font-weight:400;font-size:10px">${selectedCount}/${group.tools.length}</span></div>
-                <button class="select-all-btn" data-cat="${group.name}">全選</button>
+        const card = document.createElement('div')
+        card.className = 'ref-card'
+        card.innerHTML = `
+            <div class="ref-card-header">
+                <div class="ref-dot" style="background:${group.color}"></div>
+                <div class="ref-card-name">${group.name}</div>
+                <div class="ref-card-subtitle">${group.tools.length} tools</div>
             </div>
-            <div class="tool-rows" id="rows-${group.name.replace(/\./g,'')}"></div>
+            <div class="ref-rows" id="refrows-${group.name.replace(/[^a-z]/gi,'')}"></div>
         `
-        grid.appendChild(block)
+        grid.appendChild(card)
 
-        const rowsEl = block.querySelector(`#rows-${group.name.replace(/\./g,'')}`)
+        const rowsEl = card.querySelector('.ref-rows')
+        const rowNums = Object.keys(byRow).sort()
 
-        Object.keys(byRow).sort().forEach(r => {
-            if (Object.keys(byRow).length > 1) {
+        rowNums.forEach(r => {
+            if (rowNums.length > 1) {
                 const lbl = document.createElement('div')
-                lbl.className = 'tool-row-label'
-                lbl.textContent = r == 0 ? 'General' : `Row ${r}`
+                lbl.className = 'ref-row-label'
+                lbl.textContent = `Row ${r}`
                 rowsEl.appendChild(lbl)
             }
-            const rowDiv = document.createElement('div')
-            rowDiv.className = 'tool-row-items'
+            const toolsDiv = document.createElement('div')
+            toolsDiv.className = 'ref-tools'
             byRow[r].forEach(t => {
-                const sel = isSelected(t.id, group.name)
-                const item = document.createElement('div')
-                item.className = 'tool-item' + (sel ? ' selected' : '')
-                item.innerHTML = `
-                    <div class="ti-icon">${t.icon
-                        ? `<svg viewBox="0 0 24 24" fill="none" stroke="${sel ? '#fff' : 'currentColor'}" stroke-width="1.5" width="16" height="16">${t.icon}</svg>`
-                        : `<span style="font-size:11px;font-weight:700;color:${sel ? '#fff' : 'var(--text-muted)'}">${t.textIcon || t.label}</span>`
+                const chip = document.createElement('div')
+                chip.className = 'ref-chip'
+                chip.title = `Click to insert: ${t.id}`
+                chip.innerHTML = `
+                    <div class="rc-icon">${t.icon
+                        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14">${t.icon}</svg>`
+                        : `<span style="font-size:9px;font-weight:700">${t.textIcon || t.label}</span>`
                     }</div>
-                    <span class="ti-label">${t.label}</span>
+                    <span class="rc-label">${t.label}</span>
                 `
-                item.addEventListener('click', () => toggleTool(t.id, group.name))
-                rowDiv.appendChild(item)
+                chip.addEventListener('click', () => {
+                    const ta = _lastFocusedTA || document.getElementById('row-ta-1')
+                    if (!ta) return
+                    const val = ta.value.trim()
+                    ta.value = val ? val + ', ' + t.id : t.id
+                    ta.dispatchEvent(new Event('input'))
+                    ta.focus()
+                })
+                toolsDiv.appendChild(chip)
             })
-            rowsEl.appendChild(rowDiv)
-        })
-
-        // Select all button
-        block.querySelector('.select-all-btn').addEventListener('click', () => {
-            const allSelected = group.tools.every(t => isSelected(t.id, group.name))
-            if (allSelected) {
-                group.tools.forEach(t => {
-                    myPanel = myPanel.filter(s => !(s.id === t.id && s.category === group.name))
-                })
-            } else {
-                group.tools.forEach(t => {
-                    if (!isSelected(t.id, group.name)) myPanel.push({ id: t.id, category: group.name, row: t.row ?? 1 })
-                })
-            }
-            saveMyPanel()
-            renderMyPanel()
-            renderSelector()
+            rowsEl.appendChild(toolsDiv)
         })
     })
 }
@@ -2457,7 +2445,7 @@ function renderLpRight() {
     right.appendChild(_zlR)
 
     // ── Doc bar buttons in docBarOrder ──
-    const PRIMARY_IDS = ['page-head', 'page-up', 'page-down', 'fit-width', 'fit-height']
+    const PRIMARY_IDS = ['doc-head', 'doc-up', 'doc-down', 'doc-fit-width', 'doc-fit-height', 'doc-settings', 'doc-account']
     const orderedDocBtns = docBarOrder.map(id => DOC_BAR_BTNS.find(b => b.id === id)).filter(Boolean)
     const extraDocBtns   = DOC_BAR_BTNS.filter(b => !docBarOrder.includes(b.id))
     ;[...orderedDocBtns, ...extraDocBtns].forEach(b => {
@@ -2527,11 +2515,68 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     })
 })
 
+// ── Text Preset editor ────────────────────────────────────────────────────────
+
+function loadTextPresets() {
+    try {
+        const data = localStorage.getItem('scoreflow_user_text_library')
+        return data ? JSON.parse(data) : []
+    } catch { return [] }
+}
+
+function buildTextPresetChips(items) {
+    return items.map(t => {
+        const safe = t.replace(/</g, '&lt;')
+        return `<span class="row-chip" title="${safe}">${safe}</span>`
+    }).join('')
+}
+
+function renderTextPresetEditor() {
+    const ta = document.getElementById('text-preset-ta')
+    const chips = document.getElementById('text-preset-chips')
+    const count = document.getElementById('text-preset-count')
+    if (!ta) return
+
+    const items = loadTextPresets()
+    ta.value = items.join(', ')
+    chips.innerHTML = buildTextPresetChips(items)
+    count.textContent = `${items.length} items`
+
+    ta.oninput = () => {
+        const parsed = ta.value.split(',').map(s => s.trim()).filter(Boolean)
+        chips.innerHTML = buildTextPresetChips(parsed)
+        count.textContent = `${parsed.length} items`
+    }
+
+    document.getElementById('btn-apply-text-presets').onclick = applyTextPresets
+}
+
+async function applyTextPresets() {
+    const ta = document.getElementById('text-preset-ta')
+    const items = ta.value.split(',').map(s => s.trim()).filter(Boolean)
+
+    localStorage.setItem('scoreflow_user_text_library', JSON.stringify(items))
+
+    // Also update panel_config so it syncs to Supabase
+    const cfg = JSON.parse(localStorage.getItem(LS_PANEL_CONFIG) || '{}')
+    cfg.userTextLibrary = items
+    localStorage.setItem(LS_PANEL_CONFIG, JSON.stringify(cfg))
+
+    renderTextPresetEditor()
+
+    // Push to cloud
+    await _pushPanelConfigToCloud(cfg)
+
+    const el = document.getElementById('save-status')
+    if (el) { el.textContent = '✓ Text 已同步'; el.style.color = ''; setTimeout(() => el.textContent = '', 2000) }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 loadMyPanel()
-renderMyPanel()
-renderSelector()
+renderRowEditor()
+renderRefGrid()
 renderBarReorders()
+renderTextPresetEditor()
 </script>
 </body>
 </html>

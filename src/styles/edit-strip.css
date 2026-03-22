@@ -206,6 +206,51 @@
     transform: translateX(0) scale(1) translateY(-50%);
 }
 
+/* ── Text bar (horizontal flyout, scrollable) ── */
+.sf-text-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    max-width: calc(100vw - 120px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    transform: translateX(8px) scale(0.92) translateY(-50%);
+    transform-origin: right center;
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s;
+}
+.sf-text-bar::-webkit-scrollbar { display: none; }
+.sf-text-bar.open {
+    transform: translateX(0) scale(1) translateY(-50%);
+}
+
+/* Library text cell */
+.sf-text-cell {
+    height: 38px;
+    padding: 0 10px;
+    min-width: 38px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.75);
+    transition: background .15s, border-color .15s;
+    white-space: nowrap;
+}
+.sf-text-cell:hover { background: rgba(255,255,255,0.14); }
+.sf-text-cell.active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.6);
+    color: #a5b4fc;
+}
+
 /* ── Wide bars (shapes, stamp) ── */
 .sf-wide-bar {
     display: flex;

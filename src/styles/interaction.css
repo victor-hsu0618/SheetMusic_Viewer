@@ -324,9 +324,8 @@
   padding: 4px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  margin-bottom: 8px; /* Place buttons ABOVE the text box for visibility */
+  margin-top: 6px;
   border: 1px solid var(--border-light);
-  order: -1; /* Move toolbar above the editor */
 }
 
 .editor-btn {

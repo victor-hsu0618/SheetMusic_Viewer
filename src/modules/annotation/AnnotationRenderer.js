@@ -509,19 +509,21 @@ export class AnnotationRenderer {
                     if (d.variant === 'input-text') {
                         const content = stamp.data || ''
                         const hasCJK = /[\u4e00-\u9fa5]/.test(content)
-                        
+
                         let fontSize = 15 * textScale
                         let fontWeight = 'bold'
-                        
+
                         if (hasCJK) {
                             fontSize *= 0.85
                             fontWeight = '500' // Less aggressive than bold for CJK
                         }
-                        
+
                         ctx.font = `${fontWeight} ${fontSize}px Outfit`
                         ctx.fillStyle = color
+                        ctx.textAlign = 'left'
+                        ctx.textBaseline = 'top' // top-left of text aligns with stamp.x/y
                         const lines = content.split('\n')
-                        const lineHeight = fontSize
+                        const lineHeight = fontSize * 1.2
                         lines.forEach((line, i) => {
                             ctx.fillText(line, x, y + (i * lineHeight))
                         })

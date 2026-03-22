@@ -446,29 +446,12 @@
   right: 8px;
 }
 
-/* Premium Slim Scrollbar for Main Viewer */
+/* Hide native scrollbar — scroll via touch / trackpad / keyboard / edit strip track */
+.viewer-container {
+  scrollbar-width: none; /* Firefox */
+}
 .viewer-container::-webkit-scrollbar {
-  width: 6px;
-  /* Thin vertical scrollbar */
-  height: 6px;
-  /* Thin horizontal scrollbar */
-  display: block;
-}
-
-.viewer-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.viewer-container::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.2);
-  /* Primary color with low opacity */
-  border-radius: 10px;
-  transition: background 0.3s;
-}
-
-.viewer-container::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
-  /* Full primary color on hover */
+  display: none; /* Chrome, Safari, Edge */
 }
 
 .page-container {

@@ -144,6 +144,14 @@ export class PersistenceManager {
         if (userTextLibraryData) {
             this.app.userTextLibrary = JSON.parse(userTextLibraryData)
         }
+        // One-time migration: prepend built-in presets for users who had an older library
+        if (!localStorage.getItem('scoreflow_text_presets_v1')) {
+            const PRESETS = ['指揮', '小提', '大提', '管樂', '打擊', '獨奏', '換頁', '換譜', '呼吸']
+            PRESETS.forEach(t => {
+                if (!this.app.userTextLibrary.includes(t)) this.app.userTextLibrary.unshift(t)
+            })
+            localStorage.setItem('scoreflow_text_presets_v1', '1')
+        }
         if (activeColorData) this.app.activeColor = activeColorData
         if (defaultFontSizeData) {
             this.app.defaultFontSize = parseInt(defaultFontSizeData)

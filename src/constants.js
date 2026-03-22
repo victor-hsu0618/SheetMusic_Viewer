@@ -33,7 +33,7 @@ export const TOOLSETS = [
             { id: 'view', label: 'View', icon: '<path d="M5 12.55V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6.55" /><path d="M12 22a2.98 2.98 0 0 0 2.81-2H9.18a3 3 0 0 0 2.82 2z" /><path d="M20 13a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4v-2z" />' },
             { id: 'select', label: 'Select', icon: '<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="M13 13l6 6" />' },
             { id: 'quick-text', label: 'Text', icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'text', content: '', size: 20 } },
-            { id: 'pen', label: 'Pen', icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M 1 0 L -1 0' } },
+            { id: 'pen', label: 'Pen', icon: '<path d="M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 19l7-7l3 3l-7 7l-3-3z" fill="#1a1a1a" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>', draw: { type: 'path', color: '#1a1a1a' } },
             { id: 'cycle', label: 'Cycle', icon: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="21 3 21 8 16 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' },
             { id: 'eraser', label: 'Eraser', icon: '<path d="M16.5 4.5 L19.5 7.5 L9 18 L4.5 18 L4.5 13.5 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="15" y2="10.5" stroke="currentColor" stroke-width="1.6"/><line x1="4.5" y1="18" x2="19.5" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
             { id: 'undo', label: 'Undo', icon: '<path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20v-7a4 4 0 0 0-4-4H4" fill="none" stroke="currentColor" stroke-width="2"/>' },
@@ -44,7 +44,7 @@ export const TOOLSETS = [
         name: 'Pens',
         type: 'draw',
         tools: [
-            { id: 'pen', label: 'Pen', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2" />', draw: { type: 'path', data: 'M 1 0 L -1 0' } },
+            { id: 'pen', label: 'Black', row: 1, icon: '<path d="M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 19l7-7l3 3l-7 7l-3-3z" fill="#1a1a1a" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>', draw: { type: 'path', color: '#1a1a1a' } },
             { id: 'red-pen', label: 'Red', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#be123c" stroke-width="2.5" />', draw: { type: 'path', color: '#be123c' } },
             { id: 'green-pen', label: 'Green', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#15803d" stroke-width="2.5" />', draw: { type: 'path', color: '#15803d' } },
             { id: 'blue-pen', label: 'Blue', row: 1, icon: '<path d="M12 19l7-7 M19 12l3 3 M22 15l-7 7 M15 22l-3-3 M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="#1d4ed8" stroke-width="2.5" />', draw: { type: 'path', color: '#1d4ed8' } },
@@ -108,9 +108,7 @@ export const TOOLSETS = [
         name: 'Text',
         type: 'text',
         tools: [
-            // Row 1: Generic Text & Dynamics
-            { id: 'text', label: 'Text', row: 1, icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'text', content: '', size: 20 } },
-            { id: 'tempo-text', label: 'Tempo', row: 1, icon: '<path d="M4 7V4h16v3M12 4v16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />', draw: { type: 'text', content: '', font: 'bold', size: 20 } },
+            // Row 1: Dynamics
             { id: 'text-ppp', label: 'ppp', row: 1, icon: 'ppp', draw: { type: 'text', content: 'ppp', font: 'italic 800', size: 16, fontFace: 'serif' } },
             { id: 'text-pp', label: 'pp', row: 1, icon: 'pp', draw: { type: 'text', content: 'pp', font: 'italic 800', size: 16, fontFace: 'serif' } },
             { id: 'text-p', label: 'p', row: 1, icon: 'p', draw: { type: 'text', content: 'p', font: 'italic 800', size: 16, fontFace: 'serif' } },
@@ -122,16 +120,20 @@ export const TOOLSETS = [
             { id: 'text-fp', label: 'fp', row: 1, icon: 'fp', draw: { type: 'text', content: 'fp', font: 'italic 800', size: 16, fontFace: 'serif' } },
             { id: 'text-sfp', label: 'sfp', row: 1, icon: 'sfp', draw: { type: 'text', content: 'sfp', font: 'italic 800', size: 16, fontFace: 'serif' } },
 
-            // Row 2: Sections & Reminders (Italic Text Labels)
-            { id: 'text-cond', label: '指揮', row: 2, draw: { type: 'text', content: '指揮', font: 'italic 500', size: 16 } },
-            { id: 'text-v1', label: '小提', row: 2, draw: { type: 'text', content: '小提', font: 'italic 500', size: 16 } },
-            { id: 'text-vlc', label: '大提', row: 2, draw: { type: 'text', content: '大提', font: 'italic 500', size: 16 } },
-            { id: 'text-wind', label: '管樂', row: 2, draw: { type: 'text', content: '管樂', font: 'italic 500', size: 16 } },
-            { id: 'text-perc', label: '打擊', row: 2, draw: { type: 'text', content: '打擊', font: 'italic 500', size: 16 } },
-            { id: 'text-solo', label: '獨奏', row: 2, draw: { type: 'text', content: '獨奏', font: 'italic 500', size: 16 } },
-            { id: 'text-page', label: '換頁', row: 2, draw: { type: 'text', content: '換頁', font: 'italic 500', size: 16, color: '#ef4444' } },
-            { id: 'text-score', label: '換譜', row: 2, draw: { type: 'text', content: '換譜', font: 'italic 500', size: 16, color: '#ef4444' } },
-            { id: 'text-breath', label: '呼吸', row: 2, draw: { type: 'text', content: '呼吸', font: 'italic 500', size: 16, color: '#3b82f6' } }
+
+            // Row 3: Common Italian technique phrases
+            { id: 'text-pizz',      label: 'pizz.',       row: 3, draw: { type: 'text', content: 'pizz.',      font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-arco',      label: 'arco.',       row: 3, draw: { type: 'text', content: 'arco.',      font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-col-legno', label: 'Col legno',   row: 3, draw: { type: 'text', content: 'Col legno',  font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-sul-pont',  label: 'Sul pont.',   row: 3, draw: { type: 'text', content: 'Sul pont.',  font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-sul-tasto', label: 'Sul tasto',   row: 3, draw: { type: 'text', content: 'Sul tasto',  font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-flaut',     label: 'Flautando',   row: 3, draw: { type: 'text', content: 'Flautando',  font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-spicc',     label: 'Spiccato',    row: 3, draw: { type: 'text', content: 'Spiccato',   font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-trem',      label: 'Trem.',       row: 3, draw: { type: 'text', content: 'Trem.',      font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-div',       label: 'Div.',        row: 3, draw: { type: 'text', content: 'Div.',       font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-unis',      label: 'Unis.',       row: 3, draw: { type: 'text', content: 'Unis.',      font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-con-sord',  label: 'Con sord.',   row: 3, draw: { type: 'text', content: 'Con sord.',  font: 'italic 400', size: 16, fontFace: 'serif' } },
+            { id: 'text-senza-sord',label: 'Senza sord.', row: 3, draw: { type: 'text', content: 'Senza sord.',font: 'italic 400', size: 16, fontFace: 'serif' } }
         ]
     },
     {
