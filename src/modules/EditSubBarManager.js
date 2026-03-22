@@ -818,69 +818,6 @@ export class EditSubBarManager {
         morePane.className = 'sf-ss-pane' + (this._stampSettingsTab === 'more' ? ' active' : '')
         morePane.dataset.pane = 'more'
 
-        // 頁面重疊
-        const overlapBlock = document.createElement('div')
-        overlapBlock.className = 'sf-ss-block'
-        overlapBlock.innerHTML = `
-            <div class="sf-ss-row">
-                <div class="sf-ss-label-col">
-                    <span class="sf-ss-label">頁面重疊</span>
-                    <span class="sf-ss-sublabel">Jump 時，以倒數第 N 個 System 為起點</span>
-                </div>
-                <div class="sf-ss-stepper">
-                    <button class="sf-ss-adj" id="sf-ss-overlap-minus">−</button>
-                    <span id="sf-ss-overlap-val" class="sf-ss-badge">${app.systemJumpOverlap ?? 1}</span>
-                    <button class="sf-ss-adj" id="sf-ss-overlap-plus">+</button>
-                </div>
-            </div>
-        `
-        overlapBlock.querySelector('#sf-ss-overlap-minus').addEventListener('click', () => {
-            app.systemJumpOverlap = Math.max(0, (app.systemJumpOverlap ?? 1) - 1)
-            overlapBlock.querySelector('#sf-ss-overlap-val').textContent = app.systemJumpOverlap
-            app.saveToStorage?.()
-        })
-        overlapBlock.querySelector('#sf-ss-overlap-plus').addEventListener('click', () => {
-            app.systemJumpOverlap = (app.systemJumpOverlap ?? 1) + 1
-            overlapBlock.querySelector('#sf-ss-overlap-val').textContent = app.systemJumpOverlap
-            app.saveToStorage?.()
-        })
-        morePane.appendChild(overlapBlock)
-
-        // System Detection
-        const systemCount = app.stamps?.filter(s => s.type === 'system' && !s.deleted).length ?? 0
-        const sysBlock = document.createElement('div')
-        sysBlock.className = 'sf-ss-block'
-        sysBlock.innerHTML = `
-            <div class="sf-ss-row" style="margin-bottom:10px">
-                <div class="sf-ss-label-col">
-                    <span class="sf-ss-label">System Detection</span>
-                    <span class="sf-ss-sublabel" id="sf-ss-sys-status">${systemCount > 0 ? `已偵測 ${systemCount} 個 System` : '尚未偵測'}</span>
-                </div>
-                <label class="sf-ss-toggle"><input type="checkbox" id="sf-ss-show-systems" ${app.showSystemStamps ? 'checked' : ''}><span class="sf-ss-toggle-track"></span></label>
-            </div>
-            <div class="sf-ss-btn-pair">
-                <button id="sf-ss-detect" class="sf-ss-btn">Detect</button>
-                <button id="sf-ss-clear-sys" class="sf-ss-btn sf-ss-btn-danger">刪除全部</button>
-            </div>
-        `
-        sysBlock.querySelector('#sf-ss-show-systems').addEventListener('change', e => {
-            app.showSystemStamps = e.target.checked
-            app.saveToStorage?.()
-            app.redrawAllAnnotationLayers?.()
-        })
-        sysBlock.querySelector('#sf-ss-detect').addEventListener('click', () => {
-            app.detectSystems?.()
-            setTimeout(() => {
-                const count = app.stamps?.filter(s => s.type === 'system' && !s.deleted).length ?? 0
-                sysBlock.querySelector('#sf-ss-sys-status').textContent = count > 0 ? `已偵測 ${count} 個 System` : '尚未偵測'
-            }, 1000)
-        })
-        sysBlock.querySelector('#sf-ss-clear-sys').addEventListener('click', () => {
-            app.clearSystemStamps?.()
-            sysBlock.querySelector('#sf-ss-sys-status').textContent = '尚未偵測'
-        })
-        morePane.appendChild(sysBlock)
-
         // 斗篷標籤 (Cloak Labels)
         const cloakBlock = document.createElement('div')
         cloakBlock.className = 'sf-ss-block'
@@ -912,24 +849,6 @@ export class EditSubBarManager {
             cloakBlock.appendChild(item)
         })
         morePane.appendChild(cloakBlock)
-
-        // 兩指捲動
-        const twoFingerBlock = document.createElement('div')
-        twoFingerBlock.className = 'sf-ss-block'
-        twoFingerBlock.innerHTML = `
-            <div class="sf-ss-row">
-                <div class="sf-ss-label-col">
-                    <span class="sf-ss-label">兩指捲動</span>
-                    <span class="sf-ss-sublabel">實驗性功能，已知跨頁時可能失效</span>
-                </div>
-                <label class="sf-ss-toggle"><input type="checkbox" id="sf-ss-two-finger" ${app.twoFingerPanEnabled ? 'checked' : ''}><span class="sf-ss-toggle-track"></span></label>
-            </div>
-        `
-        twoFingerBlock.querySelector('#sf-ss-two-finger').addEventListener('change', e => {
-            app.twoFingerPanEnabled = e.target.checked
-            app.saveToStorage?.()
-        })
-        morePane.appendChild(twoFingerBlock)
 
         content.appendChild(morePane)
         panel.appendChild(content)

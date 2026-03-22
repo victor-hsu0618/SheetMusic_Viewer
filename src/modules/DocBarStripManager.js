@@ -36,16 +36,6 @@ const VIEW_BUTTONS = [
         icon: '<path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4"/>',
         action: (app) => app.fitToHeight?.(),
     },
-    {
-        id: 'doc-ruler',
-        label: 'Toggle Ruler (R)',
-        icon: '<rect x="2" y="8" width="20" height="8" rx="1"/>'
-            + '<line x1="6"  y1="8" x2="6"  y2="13"/>'
-            + '<line x1="10" y1="8" x2="10" y2="11"/>'
-            + '<line x1="14" y1="8" x2="14" y2="11"/>'
-            + '<line x1="18" y1="8" x2="18" y2="13"/>',
-        action: (app) => app.rulerManager?.toggleRuler(),
-    },
 ]
 
 const TOOL_BUTTONS = [
@@ -129,14 +119,8 @@ export class DocBarStripManager {
         el.classList.toggle('empty', !title)
     }
 
-    /** Refresh active states (ruler toggle) */
-    update() {
-        if (!this.el) return
-        const rulerBtn = this.el.querySelector('[data-activeId="doc-ruler"]')
-        if (rulerBtn) {
-            rulerBtn.classList.toggle('active', !!this.app.rulerManager?.rulerVisible)
-        }
-    }
+    /** Refresh active states */
+    update() {}
 
     // ─── Private ──────────────────────────────────────────────────────────────
 

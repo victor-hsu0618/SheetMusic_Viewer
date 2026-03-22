@@ -133,6 +133,71 @@ export class SettingsPanelManager {
             turnerSelect.addEventListener('change', () => this.app.saveToStorage())
         }
 
+        // Jump Ruler toggle
+        const rulerChk = document.getElementById('settings-ruler-visible')
+        if (rulerChk) {
+            rulerChk.checked = this.app.rulerManager?.rulerVisible ?? true
+            rulerChk.addEventListener('change', e => {
+                if (e.target.checked !== this.app.rulerManager?.rulerVisible)
+                    this.app.rulerManager?.toggleRuler()
+            })
+        }
+
+        // 頁面重疊 (System Jump Overlap)
+        const overlapVal = document.getElementById('settings-overlap-val')
+        const updateOverlap = (n) => {
+            n = Math.max(1, Math.min(8, n))
+            this.app.systemJumpOverlap = n
+            localStorage.setItem('scoreflow_system_jump_overlap', n)
+            if (overlapVal) overlapVal.textContent = n
+        }
+        if (overlapVal) overlapVal.textContent = this.app.systemJumpOverlap ?? 1
+        document.getElementById('settings-overlap-minus')
+            ?.addEventListener('click', () => updateOverlap((this.app.systemJumpOverlap ?? 1) - 1))
+        document.getElementById('settings-overlap-plus')
+            ?.addEventListener('click', () => updateOverlap((this.app.systemJumpOverlap ?? 1) + 1))
+
+        // System Detection
+        const sysChk = document.getElementById('settings-show-systems')
+        const sysStatus = document.getElementById('settings-system-status')
+        const refreshSysStatus = () => {
+            const count = this.app.stamps?.filter(s => s.type === 'system' && !s.deleted).length ?? 0
+            if (sysStatus) sysStatus.textContent = count > 0 ? `已偵測 ${count} 個 System` : '尚未偵測'
+        }
+        if (sysChk) {
+            sysChk.checked = this.app.showSystemStamps ?? false
+            sysChk.addEventListener('change', e => {
+                this.app.showSystemStamps = e.target.checked
+                localStorage.setItem('scoreflow_show_systems', e.target.checked)
+                this.app.updateRulerMarks?.()
+            })
+        }
+        refreshSysStatus()
+        document.getElementById('settings-detect-systems')?.addEventListener('click', async () => {
+            if (sysStatus) sysStatus.textContent = '偵測中...'
+            this.app.stamps = this.app.stamps?.filter(s => !(s.type === 'system' && s.auto)) ?? []
+            await this.app.staffDetector?.autoDetect(this.app.viewerManager?.pdf, (p, total) => {
+                if (sysStatus) sysStatus.textContent = `偵測中... ${p} / ${total}`
+            })
+            refreshSysStatus()
+        })
+        document.getElementById('settings-clear-systems')?.addEventListener('click', () => {
+            this.app.stamps = this.app.stamps?.filter(s => s.type !== 'system') ?? []
+            this.app.saveToStorage?.(true)
+            this.app.updateRulerMarks?.()
+            refreshSysStatus()
+        })
+
+        // 兩指捲動
+        const twoFingerChk = document.getElementById('settings-two-finger-pan')
+        if (twoFingerChk) {
+            twoFingerChk.checked = this.app.twoFingerPanEnabled ?? false
+            twoFingerChk.addEventListener('change', e => {
+                this.app.twoFingerPanEnabled = e.target.checked
+                localStorage.setItem('scoreflow_two_finger_pan', e.target.checked)
+            })
+        }
+
         // Reload App
         document.getElementById('btn-reload-app')
             ?.addEventListener('click', () => location.reload())

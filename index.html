@@ -576,6 +576,58 @@
         </div>
 
         <div class="tab-divider"></div>
+        <div class="tab-section-label">Navigation</div>
+
+        <div class="setting-item mb-15">
+          <div class="setting-row-compact">
+            <label class="setting-label">Jump Ruler</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settings-ruler-visible">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <span class="setting-hint">顯示左側跳躍尺規與錨點標記。</span>
+        </div>
+
+        <div class="setting-item mb-15">
+          <div class="setting-row-compact">
+            <label class="setting-label">頁面重疊</label>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button class="slider-adj-btn minus" id="settings-overlap-minus">−</button>
+              <span id="settings-overlap-val" class="badge" style="min-width:26px;text-align:center">1</span>
+              <button class="slider-adj-btn plus" id="settings-overlap-plus">+</button>
+            </div>
+          </div>
+          <span class="setting-hint">Jump 時，以倒數第 N 個 System 為起點。</span>
+        </div>
+
+        <div class="setting-item mb-15">
+          <div class="setting-row-compact">
+            <label class="setting-label">System Detection</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settings-show-systems">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="settings-detect-systems" class="btn btn-secondary btn-smaller" style="flex:1">Detect</button>
+            <button id="settings-clear-systems" class="btn btn-secondary btn-smaller" style="flex:1;color:#f66">刪除全部</button>
+          </div>
+          <span id="settings-system-status" class="setting-hint" style="display:block;margin-top:6px"></span>
+        </div>
+
+        <div class="setting-item mb-15">
+          <div class="setting-row-compact">
+            <label class="setting-label">兩指捲動 ⚠️</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settings-two-finger-pan">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <span class="setting-hint">在標記模式下，用兩根手指拖曳捲動。實驗性功能。</span>
+        </div>
+
+        <div class="tab-divider"></div>
         <div class="tab-section-label">Maintenance</div>
 
         <button id="btn-supabase-force-resync-all" class="btn btn-outline-danger btn-full btn-smaller mb-10" title="Wipe local library and restore everything from Supabase Cloud">
