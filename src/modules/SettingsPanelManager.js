@@ -198,6 +198,18 @@ export class SettingsPanelManager {
             })
         }
 
+        // Edit Strip Overlay Mode
+        const editOverlayChk = document.getElementById('settings-edit-strip-overlay')
+        if (editOverlayChk) {
+            const savedOverlay = localStorage.getItem('scoreflow_edit_strip_overlay') === 'true'
+            editOverlayChk.checked = savedOverlay
+            document.body.classList.toggle('sf-edit-strip-overlay', savedOverlay)
+            editOverlayChk.addEventListener('change', e => {
+                document.body.classList.toggle('sf-edit-strip-overlay', e.target.checked)
+                localStorage.setItem('scoreflow_edit_strip_overlay', e.target.checked)
+            })
+        }
+
         // Reload App
         document.getElementById('btn-reload-app')
             ?.addEventListener('click', () => location.reload())

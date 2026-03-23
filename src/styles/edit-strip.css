@@ -794,5 +794,10 @@ body.sf-strip-collapsed #viewer-container {
     padding-right: 0;
 }
 
+/* Overlay mode: edit strip floats over the score – no padding reduction */
+body.sf-edit-strip-overlay #viewer-container {
+    padding-right: 0 !important;
+}
+
 
 
