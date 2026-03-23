@@ -339,6 +339,7 @@ export class InteractionManager {
                 if (distPx < threshold && !isDrawingTool) {
                     activeObject = graceObject;
                     isMovingExisting = true;
+                    this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
                     isInteracting = true;
                     this.app.isInteracting = true;
 
@@ -375,6 +376,7 @@ export class InteractionManager {
                 if (target.type === 'text' || target.type === 'tempo-text') {
                     activeObject = target;
                     isMovingExisting = true;
+                    this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
                     this.app.lastFocusedStamp = activeObject;
                     this.app._dragLastPos = pPos;
                     InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
@@ -426,6 +428,7 @@ export class InteractionManager {
                     } else {
                         activeObject = target;
                         isMovingExisting = true;
+                        this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
 
                         if (activeObject.type === 'slur' && activeObject._renderedApex) {
                             const dx = (pPos.x - activeObject._renderedApex.x) * width;
@@ -830,6 +833,19 @@ export class InteractionManager {
                         if (!isMovingExisting && activeObject.type !== 'view') {
                             this.app.stamps.push(activeObject);
                             this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(activeObject)) });
+                        } else if (isMovingExisting && this.dragStartObject) {
+                            // Check if it actually moved
+                            const moved = activeObject.points 
+                                ? JSON.stringify(activeObject.points) !== JSON.stringify(this.dragStartObject.points)
+                                : (activeObject.x !== this.dragStartObject.x || activeObject.y !== this.dragStartObject.y || activeObject.page !== this.dragStartObject.page);
+                            
+                            if (moved) {
+                                this.app.pushHistory({ 
+                                    type: 'move', 
+                                    oldObj: this.dragStartObject, 
+                                    newObj: JSON.parse(JSON.stringify(activeObject)) 
+                                });
+                            }
                         }
                         if (activeObject.type === 'anchor') this.app.updateRulerMarks();
 

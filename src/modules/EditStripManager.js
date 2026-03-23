@@ -86,23 +86,23 @@ export class EditStripManager {
         // Restore saved position (stored as left/top), clamped to current viewport
         const savedPos = JSON.parse(localStorage.getItem('sf_edit_fab_pos') || 'null')
         const W = 40, H = 40
-        const rawLeft = savedPos?.left ?? (window.innerWidth  - 84)  // default: left of strip
-        const rawTop  = savedPos?.top  ?? (window.innerHeight - 60)
-        fab.style.left = Math.max(0, Math.min(window.innerWidth  - W, rawLeft)) + 'px'
-        fab.style.top  = Math.max(0, Math.min(window.innerHeight - H, rawTop))  + 'px'
+        const rawLeft = savedPos?.left ?? (window.innerWidth - 84)  // default: left of strip
+        const rawTop = savedPos?.top ?? (window.innerHeight - 60)
+        fab.style.left = Math.max(0, Math.min(window.innerWidth - W, rawLeft)) + 'px'
+        fab.style.top = Math.max(0, Math.min(window.innerHeight - H, rawTop)) + 'px'
 
         // Drag logic — use left/top for clean math
         let dragging = false, moved = false
         let startX = 0, startY = 0, startLeft = 0, startTop = 0
 
         fab.addEventListener('pointerdown', (e) => {
-            dragging  = true
-            moved     = false
+            dragging = true
+            moved = false
             e.currentTarget.setPointerCapture(e.pointerId)
-            startX    = e.clientX
-            startY    = e.clientY
+            startX = e.clientX
+            startY = e.clientY
             startLeft = fab.getBoundingClientRect().left
-            startTop  = fab.getBoundingClientRect().top
+            startTop = fab.getBoundingClientRect().top
             fab.classList.add('dragging')
         })
 
@@ -111,10 +111,10 @@ export class EditStripManager {
             const dx = e.clientX - startX
             const dy = e.clientY - startY
             if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true
-            const W = fab.offsetWidth  || 28
+            const W = fab.offsetWidth || 28
             const H = fab.offsetHeight || 28
-            fab.style.left = Math.max(0, Math.min(window.innerWidth  - W, startLeft + dx)) + 'px'
-            fab.style.top  = Math.max(0, Math.min(window.innerHeight - H, startTop  + dy)) + 'px'
+            fab.style.left = Math.max(0, Math.min(window.innerWidth - W, startLeft + dx)) + 'px'
+            fab.style.top = Math.max(0, Math.min(window.innerHeight - H, startTop + dy)) + 'px'
         })
 
         fab.addEventListener('pointerup', () => {
@@ -123,7 +123,7 @@ export class EditStripManager {
             fab.classList.remove('dragging')
             localStorage.setItem('sf_edit_fab_pos', JSON.stringify({
                 left: parseInt(fab.style.left),
-                top:  parseInt(fab.style.top)
+                top: parseInt(fab.style.top)
             }))
             if (!moved) {
                 // Master Toggle: If anything is open -> Close All. If both closed -> Open All.
@@ -147,7 +147,7 @@ export class EditStripManager {
         const guard = document.createElement('div')
         guard.id = 'sf-edit-strip-fab-guard'
         guard.addEventListener('pointerdown', (e) => e.stopPropagation())
-        guard.addEventListener('click',       (e) => e.stopPropagation())
+        guard.addEventListener('click', (e) => e.stopPropagation())
         document.body.appendChild(guard)
         this._fabGuard = guard
 
@@ -155,23 +155,23 @@ export class EditStripManager {
         const syncGuard = () => {
             const r = fab.getBoundingClientRect()
             const pad = 28
-            guard.style.left   = (r.left   - pad) + 'px'
-            guard.style.top    = (r.top    - pad) + 'px'
-            guard.style.width  = (r.width  + pad * 2) + 'px'
+            guard.style.left = (r.left - pad) + 'px'
+            guard.style.top = (r.top - pad) + 'px'
+            guard.style.width = (r.width + pad * 2) + 'px'
             guard.style.height = (r.height + pad * 2) + 'px'
         }
         fab.addEventListener('pointermove', syncGuard)
-        fab.addEventListener('pointerup',   syncGuard)
+        fab.addEventListener('pointerup', syncGuard)
         requestAnimationFrame(syncGuard)
 
         // Re-clamp FAB position when window is resized so it never goes off-screen
         window.addEventListener('resize', () => {
-            const fabW = fab.offsetWidth  || 40
+            const fabW = fab.offsetWidth || 40
             const fabH = fab.offsetHeight || 40
             const curLeft = parseInt(fab.style.left) || 0
-            const curTop  = parseInt(fab.style.top)  || 0
-            fab.style.left = Math.max(0, Math.min(window.innerWidth  - fabW, curLeft)) + 'px'
-            fab.style.top  = Math.max(0, Math.min(window.innerHeight - fabH, curTop))  + 'px'
+            const curTop = parseInt(fab.style.top) || 0
+            fab.style.left = Math.max(0, Math.min(window.innerWidth - fabW, curLeft)) + 'px'
+            fab.style.top = Math.max(0, Math.min(window.innerHeight - fabH, curTop)) + 'px'
             syncGuard()
         })
 
@@ -255,19 +255,19 @@ export class EditStripManager {
                 el.appendChild(this._divider())
                 return
             }
-            const isPen    = tool.id === 'pen'
+            const isPen = tool.id === 'pen'
             const isShapes = !!tool.isShapesTrigger || tool.id === 'shapes'
-            const isStamp  = !!tool.isStampTrigger  || tool.id === 'stamp-palette'
-            const isText   = tool.id === 'quick-text'
+            const isStamp = !!tool.isStampTrigger || tool.id === 'stamp-palette'
+            const isText = tool.id === 'quick-text'
             const isOthers = tool.id === 'scroll-bar'
-            const isTrash  = tool.id === 'trash-can'
-            const hasSub   = isPen || isShapes || isStamp || isText || isOthers
+            const isTrash = tool.id === 'trash-can'
+            const hasSub = isPen || isShapes || isStamp || isText || isOthers
 
-            const subActive = (isPen    && this._subBarMgr?.activeBar === 'pen')
-                           || (isShapes && this._subBarMgr?.activeBar === 'shapes')
-                           || (isStamp  && this._subBarMgr?.activeBar === 'stamp')
-                           || (isText   && this._subBarMgr?.activeBar === 'text')
-                           || (isOthers && this._subBarMgr?.activeBar === 'others')
+            const subActive = (isPen && this._subBarMgr?.activeBar === 'pen')
+                || (isShapes && this._subBarMgr?.activeBar === 'shapes')
+                || (isStamp && this._subBarMgr?.activeBar === 'stamp')
+                || (isText && this._subBarMgr?.activeBar === 'text')
+                || (isOthers && this._subBarMgr?.activeBar === 'others')
 
             const toolActive = !hasSub && tool.id !== 'view' && this.app.activeStampType === tool.id
 
@@ -415,23 +415,50 @@ export class EditStripManager {
         thumb.className = 'sf-strip-scrollbar-thumb'
         track.appendChild(thumb)
 
+        const upArrow = document.createElement('div')
+        upArrow.className = 'sf-scrollbar-arrow sf-scrollbar-arrow-up'
+        upArrow.innerHTML = `<svg viewBox="0 0 24 36" width="20" height="30" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 12 12 6 6 12" opacity="0.4"/>
+            <polyline points="18 20 12 14 6 20" opacity="0.7"/>
+            <polyline points="18 28 12 22 6 28"/>
+        </svg>`
+        track.appendChild(upArrow)
+
+        const downArrow = document.createElement('div')
+        downArrow.className = 'sf-scrollbar-arrow sf-scrollbar-arrow-down'
+        downArrow.innerHTML = `<svg viewBox="0 0 24 36" width="20" height="30" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 8 12 14 18 8"/>
+            <polyline points="6 16 12 22 18 16" opacity="0.7"/>
+            <polyline points="6 24 12 30 18 24" opacity="0.4"/>
+        </svg>`
+        track.appendChild(downArrow)
+
         requestAnimationFrame(() => {
             const viewer = this.app.viewer
             const trackH = track.clientHeight || 120
             const thumbH = Math.max(28, Math.round(trackH / 5))
             const centerTop = Math.round((trackH - thumbH) / 2)
             thumb.style.height = thumbH + 'px'
-            thumb.style.top    = centerTop + 'px'
+            thumb.style.top = centerTop + 'px'
 
             let dragging = false
             let lastClientY = 0
             let lastTime = 0
+            let movedDist = 0
 
             const onMove = (clientY) => {
-                if (!dragging || !viewer) return
                 const now = performance.now()
                 const dt = Math.max(1, now - lastTime)   // ms since last frame
                 const dy = clientY - lastClientY          // px since last frame
+
+                // Toggle arrows based on direction (threshold of 2px for stability)
+                if (dy < -2) {
+                    upArrow.classList.add('active')
+                    downArrow.classList.remove('active')
+                } else if (dy > 2) {
+                    downArrow.classList.add('active')
+                    upArrow.classList.remove('active')
+                }
 
                 // Velocity-based: fast flick → bigger jump. Clamp 1×–8×.
                 const speed = Math.abs(dy) / dt           // px/ms
@@ -439,6 +466,7 @@ export class EditStripManager {
 
                 const maxScroll = viewer.scrollHeight - viewer.clientHeight
                 viewer.scrollTop = Math.max(0, Math.min(maxScroll, viewer.scrollTop - dy * multiplier))
+                movedDist += Math.abs(dy)
 
                 // Thumb shows displacement from centre (visual feedback only, half speed)
                 const maxTop = trackH - thumbH
@@ -449,36 +477,84 @@ export class EditStripManager {
                 lastTime = now
             }
 
-            const onUp = () => {
+            const onUp = (e) => {
                 if (!dragging) return
+                if (e && e.touches && e.touches.length > 0) {
+                    // Finger removed but others remain: recalibrate
+                    lastClientY = _getAverageY(e)
+                    lastTime = performance.now()
+                    return
+                }
                 dragging = false
                 thumb.classList.remove('grabbing')
-                // Spring back to centre so next drag starts fresh
+
+                // Hide arrows
+                upArrow.classList.remove('active')
+                downArrow.classList.remove('active')
+
+                // Spring back to centre
                 thumb.style.top = centerTop + 'px'
                 window.removeEventListener('mousemove', _mouseMove)
-                window.removeEventListener('mouseup',   _mouseUp)
+                window.removeEventListener('mouseup', _mouseUp)
+                window.removeEventListener('touchstart', _touchStartExtra)
                 window.removeEventListener('touchmove', _touchMove)
-                window.removeEventListener('touchend',  _touchUp)
+                window.removeEventListener('touchend', _touchUp)
             }
 
             const _mouseMove = (e) => onMove(e.clientY)
-            const _touchMove = (e) => onMove(e.touches[0].clientY)
-            const _mouseUp   = () => onUp()
-            const _touchUp   = () => onUp()
+            const _getAverageY = (e) => {
+                if (!e.touches || e.touches.length === 0) return 0
+                let sum = 0
+                for (let i = 0; i < e.touches.length; i++) sum += e.touches[i].clientY
+                return sum / e.touches.length
+            }
+            const _touchMove = (e) => {
+                if (e.cancelable) e.preventDefault()
+                onMove(_getAverageY(e))
+            }
+            const _touchStartExtra = (e) => {
+                // Recalibrate when a new finger touches anywhere while dragging
+                lastClientY = _getAverageY(e)
+                lastTime = performance.now()
+            }
+            const _mouseUp = () => onUp()
+            const _touchUp = (e) => onUp(e)
 
             const startDrag = (clientY) => {
                 dragging = true
                 lastClientY = clientY
+                movedDist = 0
                 lastTime = performance.now()
                 thumb.classList.add('grabbing')
                 window.addEventListener('mousemove', _mouseMove)
-                window.addEventListener('mouseup',   _mouseUp)
-                window.addEventListener('touchmove', _touchMove, { passive: true })
-                window.addEventListener('touchend',  _touchUp)
+                window.addEventListener('mouseup', _mouseUp)
+                window.addEventListener('touchstart', _touchStartExtra, { passive: false })
+                window.addEventListener('touchmove', _touchMove, { passive: false })
+                window.addEventListener('touchend', _touchUp, { passive: false })
             }
 
             track.addEventListener('mousedown', (e) => { e.preventDefault(); startDrag(e.clientY) })
-            track.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientY), { passive: true })
+            track.addEventListener('touchstart', (e) => {
+                if (e.cancelable) e.preventDefault()
+                startDrag(_getAverageY(e))
+            }, { passive: false })
+
+            // MacOS Trackpad Support (Two-Finger Drag)
+            track.addEventListener('wheel', (e) => {
+                if (e.cancelable) e.preventDefault()
+                const maxScroll = viewer.scrollHeight - viewer.clientHeight
+                viewer.scrollTop = Math.max(0, Math.min(maxScroll, viewer.scrollTop + e.deltaY))
+            }, { passive: false })
+
+            // Jump-on-Click / Tap
+            track.addEventListener('click', (e) => {
+                if (movedDist > 5) return // Ignore if we just finished a drag
+                const rect = track.getBoundingClientRect()
+                const relY = e.clientY - rect.top
+                const pct = Math.max(0, Math.min(1, relY / rect.height))
+                const maxScroll = viewer.scrollHeight - viewer.clientHeight
+                viewer.scrollTop = maxScroll * pct
+            })
         })
     }
 }

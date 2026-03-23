@@ -487,6 +487,12 @@ this.playbackManager.init()
     } else if (action.type === 'delete') {
       this.stamps.push(action.obj)
       if (this.supabaseManager) this.supabaseManager.pushAnnotation(action.obj, this.pdfFingerprint)
+    } else if (action.type === 'move') {
+      const idx = this.stamps.findIndex(s => s.id === action.oldObj.id)
+      if (idx !== -1) {
+        this.stamps[idx] = JSON.parse(JSON.stringify(action.oldObj))
+        if (this.supabaseManager) this.supabaseManager.pushAnnotation(this.stamps[idx], this.pdfFingerprint)
+      }
     }
 
     await this.saveToStorage(true)
@@ -507,6 +513,12 @@ this.playbackManager.init()
       if (idx !== -1) {
         const removed = this.stamps.splice(idx, 1)[0]
         if (this.supabaseManager) this.supabaseManager.pushAnnotation({...removed, deleted: true, updatedAt: Date.now()}, this.pdfFingerprint)
+      }
+    } else if (action.type === 'move') {
+      const idx = this.stamps.findIndex(s => s.id === action.newObj.id)
+      if (idx !== -1) {
+        this.stamps[idx] = JSON.parse(JSON.stringify(action.newObj))
+        if (this.supabaseManager) this.supabaseManager.pushAnnotation(this.stamps[idx], this.pdfFingerprint)
       }
     }
 
