@@ -55,6 +55,16 @@ const TOOL_BUTTONS = [
         fill: true,
         icon: '<polygon points="3 11 22 2 13 21 11 13 3 11"/>',
         action: (app) => app.jumpManager?.togglePanel(),
+    },
+    {
+        id: 'score-name',
+        label: 'Score Name',
+        isTitle: true,
+    },
+    {
+        id: 'trash-can',
+        label: 'Trash Can',
+        isTrash: true,
     }
 ]
 
@@ -96,7 +106,7 @@ export class DocBarStripManager {
 
     init() {
         this._build()
-        // Initialize state from settings
+        // Initialize state from settings (default to shown if tabs are gone)
         const isHidden = localStorage.getItem('scoreflow_doc_bar_hide') === 'true'
         this.toggleCollapse(isHidden)
     }
@@ -143,10 +153,19 @@ export class DocBarStripManager {
 
     /** Sort a button group by saved order, appending unknown IDs at end */
     _sortGroup(buttons, order) {
-        if (!order.length) return buttons
-        const ordered = order.map(id => buttons.find(b => b.id === id)).filter(Boolean)
+        if (!order || !order.length) return buttons
+        const result = []
+        order.forEach(id => {
+            if (id === '|' || id === '.') {
+                // Add a virtual divider
+                result.push({ id, isDivider: true })
+            } else {
+                const b = buttons.find(x => x.id === id)
+                if (b) result.push(b)
+            }
+        })
         const missing = buttons.filter(b => !order.includes(b.id))
-        return [...ordered, ...missing]
+        return [...result, ...missing]
     }
 
     _build() {
@@ -155,37 +174,6 @@ export class DocBarStripManager {
         document.body.prepend(el)
         this.el = el
         this._populate(el)
-
-        // Add expand tab
-        const expandTab = document.createElement('div')
-        expandTab.className = 'sf-doc-expand-tab'
-        expandTab.addEventListener('click', () => {
-            const isHidden = false
-            this.toggleCollapse(isHidden)
-            // Update settings panel toggle if it exists
-            const chk = document.getElementById('settings-doc-bar-hide')
-            if (chk) {
-                chk.checked = false
-                localStorage.setItem('scoreflow_doc_bar_hide', 'false')
-            }
-        })
-        document.body.appendChild(expandTab)
-
-        // Add collapse tab (on the right edge of the expanded bar)
-        const collapseTab = document.createElement('div')
-        collapseTab.className = 'sf-doc-collapse-tab'
-        collapseTab.title = 'Collapse Doc Bar'
-        collapseTab.addEventListener('click', () => {
-            const isHidden = true
-            this.toggleCollapse(isHidden)
-            // Update settings panel toggle if it exists
-            const chk = document.getElementById('settings-doc-bar-hide')
-            if (chk) {
-                chk.checked = true
-                localStorage.setItem('scoreflow_doc_bar_hide', 'true')
-            }
-        })
-        el.appendChild(collapseTab)
     }
 
     /** Rebuild DOM in-place after panel_config changes (e.g. Supabase sync) */
@@ -200,29 +188,61 @@ export class DocBarStripManager {
 
     _populate(el) {
         const order = this._getPanelOrder()
+        const currentIds = []
+
+        const renderItem = (b) => {
+            if (b.isDivider) {
+                el.appendChild(this._divider())
+            } else if (b.isTitle) {
+                el.appendChild(this._buildTitle())
+                currentIds.push('score-name')
+            } else if (b.isTrash) {
+                el.appendChild(this._buildTrash())
+                currentIds.push('trash-can')
+            } else {
+                el.appendChild(this._btn(b))
+                currentIds.push(b.id)
+            }
+        }
 
         // ── Nav: head / page-up / page-down ──────────────────────────────────
-        this._sortGroup(NAV_BUTTONS, order).forEach(b => el.appendChild(this._btn(b)))
+        this._sortGroup(NAV_BUTTONS, order).forEach(renderItem)
 
         el.appendChild(this._divider())
 
         // ── View group: fullscreen | zoom(−|%|+) | fit-width | fit-height | ruler
         this._buildFullscreenBtn(el)
         this._buildZoomGroup(el)
-        this._sortGroup(VIEW_BUTTONS, order).forEach(b => el.appendChild(this._btn(b)))
+        this._sortGroup(VIEW_BUTTONS, order).forEach(renderItem)
 
         el.appendChild(this._divider())
 
         // ── Tool buttons: library | go-to | stamp ────────────────────────────
-        this._sortGroup(TOOL_BUTTONS, order).forEach(b => el.appendChild(this._btn(b)))
+        this._sortGroup(TOOL_BUTTONS, order).forEach(renderItem)
 
-        // ── Score title — fills remaining space ───────────────────────────────
+        // ── Score title fallback — fills remaining space ─────────────────────
+        if (!currentIds.includes('score-name')) {
+            el.appendChild(this._buildTitle())
+        }
+
+        // ── Trash fallback ───────────────────────────────────────────────────
+        if (!currentIds.includes('trash-can')) {
+            el.appendChild(this._buildTrash())
+        }
+
+        // ── Settings / Account (bottom) ───────────────────────────────────────
+        el.appendChild(this._divider())
+        this._sortGroup(BOTTOM_BUTTONS, order).forEach(renderItem)
+    }
+
+    _buildTitle() {
         const title = document.createElement('div')
         title.className = 'sf-doc-score-title empty'
         title.addEventListener('click', () => this.app.scoreDetailManager?.toggle())
-        el.appendChild(title)
+        return title
+    }
 
-        // ── Trash drop zone ───────────────────────────────────────────────────
+    _buildTrash() {
         const trash = document.createElement('div')
         trash.id = 'sf-doc-trash-btn'
         trash.className = 'sf-doc-trash'
@@ -234,11 +254,7 @@ export class DocBarStripManager {
             <path d="M10 11v6M14 11v6"/>
             <path d="M9 6V4h6v2"/>
         </svg>`
-        el.appendChild(trash)
-
-        // ── Settings / Account (bottom) ───────────────────────────────────────
-        el.appendChild(this._divider())
-        this._sortGroup(BOTTOM_BUTTONS, order).forEach(b => el.appendChild(this._btn(b)))
+        return trash
     }
 
     _btn({ id, label, icon, fill, primary, action }) {

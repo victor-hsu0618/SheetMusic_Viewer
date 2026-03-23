@@ -66,13 +66,56 @@
 }
 .sf-strip-btn svg { pointer-events: none; }
 .sf-strip-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
 }
+
 .sf-strip-btn.active {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: rgba(99, 102, 241, 0.5);
-    color: #a5b4fc;
+    background: var(--primary, #6366f1);
+    color: #fff;
+}
+
+/* Specific styling for the bottom Trash button (matches Doc Bar style) */
+.sf-strip-trash-btn {
+    width: 42px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1.5px dashed rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.35);
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+    cursor: pointer;
+    margin: 4px 0;
+}
+.sf-strip-trash-btn svg {
+    transform: scale(1.2);
+}
+
+.sf-strip-trash-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.sf-strip-trash-btn.drag-active {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.55);
+    animation: sf-pulse-red-border 1.5s infinite;
+}
+
+.sf-strip-trash-btn.drag-over {
+    background: rgba(239, 68, 68, 0.25) !important;
+    border-color: #ef4444 !important;
+    color: #ef4444 !important;
+    transform: scale(1.1);
+}
+
+@keyframes sf-pulse-red-border {
+    0% { border-color: rgba(239, 68, 68, 0.4); }
+    70% { border-color: rgba(239, 68, 68, 0); }
+    100% { border-color: rgba(239, 68, 68, 0.4); }
 }
 /* Sub-indicator dot for buttons that have a sub-bar */
 .sf-strip-btn.has-sub::after {
@@ -503,6 +546,8 @@
     margin: 0 4px;
 }
 
+/* Draggable FAB (always visible — toggles edit strip) */
+
 /* ── Draggable FAB (always visible — toggles edit strip) ── */
 #sf-edit-strip-fab {
     position: fixed;
@@ -537,10 +582,10 @@
 /* ── Stamp Settings gear button ─────────────────────────────────────────── */
 .sf-nav-settings-btn {
     margin-top: 6px;
-    opacity: 0.55;
-    transition: opacity 0.15s;
+    opacity: 0.4;
+    transition: width 0.15s, opacity 0.15s;
+    display: none;
 }
-.sf-nav-settings-btn:hover { opacity: 1; }
 .sf-nav-settings-btn.active { opacity: 1; color: var(--primary, #6366f1); }
 
 /* ── Stamp Settings Panel ────────────────────────────────────────────────── */

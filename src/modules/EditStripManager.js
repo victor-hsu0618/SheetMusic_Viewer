@@ -143,19 +143,6 @@ export class EditStripManager {
             }
         })
 
-        // Create Independent Tabs for Right Sidebar
-        const expandTab = document.createElement('div')
-        expandTab.className = 'sf-edit-expand-tab'
-        expandTab.title = 'Show Edit Strip'
-        expandTab.addEventListener('click', () => this.toggleCollapse(false))
-        document.body.appendChild(expandTab)
-
-        const collapseTab = document.createElement('div')
-        collapseTab.className = 'sf-edit-collapse-tab'
-        collapseTab.title = 'Hide Edit Strip'
-        collapseTab.addEventListener('click', () => this.toggleCollapse(true))
-        this.el.appendChild(collapseTab)
-
         // Dead-zone guard: transparent ring around FAB that absorbs stray taps
         const guard = document.createElement('div')
         guard.id = 'sf-edit-strip-fab-guard'
@@ -189,79 +176,103 @@ export class EditStripManager {
         })
 
         document.body.appendChild(fab)
-        this._expandTab = fab
     }
 
     _render() {
         const el = this.el
         el.innerHTML = ''
 
-        // ── Others trigger (top of strip) ──────────────────────────────────
-        const othersOpen = this._subBarMgr?.activeBar === 'others'
-        const othersBtn = document.createElement('div')
-        othersBtn.className = 'sf-strip-others-btn' + (othersOpen ? ' open' : '')
-        othersBtn.title = 'Line / Color / Opacity'
-        othersBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-            <circle cx="5"  cy="12" r="1.5" fill="currentColor"/>
-            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-            <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
-        </svg>`
-        othersBtn.addEventListener('click', () => {
-            this._subBarMgr?.toggle('others', othersBtn)
-            this._render()
-        })
-        el.appendChild(othersBtn)
-
-        // ── Divider ─────────────────────────────────────────────────────────
-        el.appendChild(this._divider())
-
         // ── Edit tool buttons ────────────────────────────────────────────────
         const editGroup = TOOLSETS.find(g => g.type === 'edit')
         const editTools = editGroup ? [...editGroup.tools] : []
 
-        // Append Shapes and Stamp triggers
-        editTools.push({
-            id: 'shapes',
-            label: 'Shapes',
-            isShapesTrigger: true,
-            icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5"/>'
-                + '<line x1="4" y1="16" x2="20" y2="4" stroke="currentColor" stroke-width="1.2"/>'
-                + '<path d="M14 18 L8 18 L8 12" fill="none" stroke="currentColor" stroke-width="1.5"/>'
-        })
-        editTools.push({
-            id: 'stamp-palette',
-            label: 'Stamps',
-            isStampTrigger: true,
-            icon: '<path d="M12 20h9"/>'
-                + '<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'
-        })
-
         // Apply saved order from panel_config
         const editOrder = this._getPanelOrder('editBar')
+        let finalEditTools = []
         if (editOrder.length) {
-            const ordered = editOrder.map(id => editTools.find(t => t.id === id)).filter(Boolean)
-            const missing = editTools.filter(t => !editOrder.includes(t.id))
-            editTools.splice(0, editTools.length, ...ordered, ...missing)
+            editOrder.forEach(id => {
+                if (id === '|' || id === '.') {
+                    finalEditTools.push({ id, isDivider: true })
+                } else if (id === 'scroll-bar') {
+                    finalEditTools.push({
+                        id: 'scroll-bar',
+                        label: 'Line / Color / Opacity',
+                        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                            <circle cx="5"  cy="12" r="1.5" fill="currentColor"/>
+                            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                            <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
+                        </svg>`
+                    })
+                } else if (id === 'trash-can') {
+                    finalEditTools.push({
+                        id: 'trash-can',
+                        label: 'Clear All / Drop to delete',
+                        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                            <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                        </svg>`
+                    })
+                } else {
+                    const tool = editTools.find(t => t.id === id)
+                    if (tool) finalEditTools.push(tool)
+                }
+            })
+            // Append missing core tools that weren't in the saved order
+            // (Exclude special tools that have symmetrical fallbacks at top/bottom)
+            const specialIds = ['undo', 'redo', 'trash-can', 'scroll-bar']
+            const missing = editTools.filter(t => !editOrder.includes(t.id) && !specialIds.includes(t.id))
+            finalEditTools = [...finalEditTools, ...missing]
+        } else {
+            finalEditTools = editTools
         }
 
-        editTools.forEach(tool => {
+        // ── Others (Scroll / Settings) ───────────────────────────────────────
+        // Only show at top if not explicitly placed in the middle section
+        if (!finalEditTools.find(t => t.id === 'scroll-bar')) {
+            const othersBtn = document.createElement('div')
+            othersBtn.id = 'sf-edit-others-btn'
+            othersBtn.className = 'sf-strip-btn'
+            othersBtn.title = 'Line / Color / Opacity'
+            othersBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                <circle cx="5"  cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
+            </svg>`
+            othersBtn.addEventListener('click', () => {
+                this._subBarMgr?.toggle('others', othersBtn)
+                this._render()
+            })
+            el.appendChild(othersBtn)
+
+            // Divider after hardcoded 'others'
+            el.appendChild(this._divider())
+        }
+
+        // ── Edit tool buttons ────────────────────────────────────────────────
+        finalEditTools.forEach(tool => {
+            if (tool.isDivider) {
+                el.appendChild(this._divider())
+                return
+            }
             const isPen    = tool.id === 'pen'
-            const isShapes = !!tool.isShapesTrigger
-            const isStamp  = !!tool.isStampTrigger
+            const isShapes = !!tool.isShapesTrigger || tool.id === 'shapes'
+            const isStamp  = !!tool.isStampTrigger  || tool.id === 'stamp-palette'
             const isText   = tool.id === 'quick-text'
-            const hasSub   = isPen || isShapes || isStamp || isText
+            const isOthers = tool.id === 'scroll-bar'
+            const isTrash  = tool.id === 'trash-can'
+            const hasSub   = isPen || isShapes || isStamp || isText || isOthers
 
             const subActive = (isPen    && this._subBarMgr?.activeBar === 'pen')
                            || (isShapes && this._subBarMgr?.activeBar === 'shapes')
                            || (isStamp  && this._subBarMgr?.activeBar === 'stamp')
                            || (isText   && this._subBarMgr?.activeBar === 'text')
-            // 'view' is the neutral/default mode — don't highlight it as active
+                           || (isOthers && this._subBarMgr?.activeBar === 'others')
+
             const toolActive = !hasSub && tool.id !== 'view' && this.app.activeStampType === tool.id
-            const isActive   = toolActive || subActive
 
             const btn = document.createElement('div')
             btn.className = 'sf-strip-btn'
-                + (isActive ? ' active' : '')
                 + (hasSub ? ' has-sub' : '')
                 + (subActive ? ' open' : '')
             btn.dataset.tool = tool.id
@@ -270,7 +281,7 @@ export class EditStripManager {
                 ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22">${tool.icon}</svg>`
                 : `<span style="font-size:10px;font-weight:700;color:inherit">${tool.textIcon || tool.label}</span>`
 
-            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isPen, isShapes, isStamp, isText))
+            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isPen, isShapes, isStamp, isText, isOthers, isTrash))
             el.appendChild(btn)
         })
 
@@ -280,27 +291,72 @@ export class EditStripManager {
         // ── Scrollbar drag zone ──────────────────────────────────────────────
         this._buildScrollbar(el)
 
-        // ── Collapse button (bottom) ─────────────────────────────────────────
-        const collapseBtn = document.createElement('div')
-        collapseBtn.className = 'sf-strip-collapse-btn'
-        collapseBtn.title = 'Collapse edit strip'
-        collapseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
-            <polyline points="15 18 9 12 15 6"/>
-        </svg>`
-        collapseBtn.addEventListener('click', () => {
-            this.collapsed = true
-            this.el.classList.add('collapsed')
-            document.body.classList.add('sf-strip-collapsed')
-            document.getElementById('sf-doc-bar-strip')?.classList.add('collapsed')
-            this._subBarSnapshot = this._subBarMgr?.snapshotState()
-            this._subBarMgr?.closeAll()
-            setTimeout(() => this.app.viewerManager?.reapplyFit(), 320)
-        })
-        el.appendChild(collapseBtn)
+        // ── Trash / Undo / Redo (Bottom) ───────────────────────────────────
+        el.appendChild(this._divider())
+
+        // Only add symmetrical bottom tools if they aren't already in the middle section
+        const currentIds = finalEditTools.map(t => t.id)
+        const hasTrash = currentIds.includes('trash-can')
+        const hasUndo = currentIds.includes('undo')
+        const hasRedo = currentIds.includes('redo')
+
+        // Clear All (Trash)
+        if (!hasTrash) {
+            const trashBtn = document.createElement('div')
+            trashBtn.id = 'sf-edit-trash-btn'
+            trashBtn.className = 'sf-strip-trash-btn'
+            trashBtn.title = 'Clear All / Drop to delete'
+            trashBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>`
+            trashBtn.addEventListener('click', async () => {
+                const ok = await this.app.showDialog({
+                    title: 'Clear All Annotations',
+                    message: 'Are you sure you want to clear all hand-drawn annotations on this page?',
+                    type: 'confirm',
+                    icon: '🗑️'
+                })
+                if (ok) this.app.annotationManager?.clearAllLayers()
+            })
+            el.appendChild(trashBtn)
+        }
+
+        // Undo
+        if (!hasUndo) {
+            const undoBtn = document.createElement('div')
+            undoBtn.className = 'sf-strip-btn'
+            undoBtn.dataset.activeId = 'undo'
+            undoBtn.title = 'Undo (Cmd+Z)'
+            undoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+            </svg>`
+            undoBtn.addEventListener('click', () => this.app.undo())
+            el.appendChild(undoBtn)
+        }
+
+        // Redo
+        if (!hasRedo) {
+            const redoBtn = document.createElement('div')
+            redoBtn.className = 'sf-strip-btn'
+            redoBtn.title = 'Redo (Cmd+Shift+Z)'
+            redoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+                stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+            </svg>`
+            redoBtn.addEventListener('click', () => this.app.redo())
+            el.appendChild(redoBtn)
+        }
     }
 
-    _handleToolClick(tool, btn, isPen, isShapes, isStamp, isText) {
-        if (isPen) {
+    _handleToolClick(tool, btn, isPen, isShapes, isStamp, isText, isOthers, isTrash) {
+        if (isOthers) {
+            this._subBarMgr?.toggle('others', btn)
+        } else if (isTrash) {
+            this._handleTrashClick()
+        } else if (isPen) {
             this._subBarMgr?.toggle('pen', btn)
         } else if (isShapes) {
             this._subBarMgr?.toggle('shapes', btn)
@@ -319,7 +375,16 @@ export class EditStripManager {
             this.app.activeStampType = isAlreadyActive ? 'view' : tool.id
             this.app.toolManager?.updateActiveTools()
         }
-        this._render()
+    }
+
+    async _handleTrashClick() {
+        const ok = await this.app.showDialog({
+            title: 'Clear All Annotations',
+            message: 'Are you sure you want to clear all hand-drawn annotations on this page?',
+            type: 'confirm',
+            icon: '🗑️'
+        })
+        if (ok) this.app.annotationManager?.clearAllLayers()
     }
 
     /** Read a saved order array from panel_config in localStorage */

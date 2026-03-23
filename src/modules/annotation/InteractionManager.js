@@ -42,9 +42,9 @@ export class InteractionManager {
             this.isAdjustingCurvature = false;
             this.app._dragLastPos = null;
             InteractionUI.showTrash(false, wrapper);
-            // Always clean up doc bar trash state
-            const _dt = document.getElementById('sf-doc-trash-btn')
-            _dt?.classList.remove('drag-over', 'drag-active')
+            // Clean up both trash bins
+            document.getElementById('sf-doc-trash-btn')?.classList.remove('drag-over', 'drag-active')
+            document.getElementById('sf-edit-trash-btn')?.classList.remove('drag-over', 'drag-active')
             this._hideDragGhost()
             detachGlobalListeners();
         };
@@ -684,14 +684,17 @@ export class InteractionManager {
             if (isMovingExisting) {
                 const trashBin = wrapper.querySelector('.grace-trash-bin');
                 if (trashBin) trashBin.classList.add('show');
-                // Highlight doc bar trash when pointer is over it
-                const docTrash = document.getElementById('sf-doc-trash-btn')
-                if (docTrash) {
-                    const r = docTrash.getBoundingClientRect()
-                    const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
-                    docTrash.classList.toggle('drag-over', over)
-                    docTrash.classList.add('drag-active')
-                }
+                // Highlight trash bins when pointer is over them
+                const bins = ['sf-doc-trash-btn', 'sf-edit-trash-btn']
+                bins.forEach(id => {
+                    const el = document.getElementById(id)
+                    if (el) {
+                        const r = el.getBoundingClientRect()
+                        const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+                        el.classList.toggle('drag-over', over)
+                        el.classList.add('drag-active')
+                    }
+                })
             }
 
             // Sync current virtual pointer and hide others
@@ -711,14 +714,20 @@ export class InteractionManager {
                     const targetPageNum = activeObject.page;
                     const targetWrapper = document.querySelector(`.page-container[data-page="${targetPageNum}"]`);
                     // Check doc bar trash (pointer position)
-                    const docTrash = document.getElementById('sf-doc-trash-btn')
-                    docTrash?.classList.remove('drag-over', 'drag-active')
-                    const docTrashRect = docTrash?.getBoundingClientRect()
-                    const isOverDocTrash = docTrashRect &&
-                        e.clientX >= docTrashRect.left && e.clientX <= docTrashRect.right &&
-                        e.clientY >= docTrashRect.top  && e.clientY <= docTrashRect.bottom
+                    const docTrash2 = document.getElementById('sf-doc-trash-btn')
+                    const editTrash2 = document.getElementById('sf-edit-trash-btn')
+                    const isOverDocTrashOrEditTrash = (docTrash2 && this._isPointerOver(e, docTrash2)) ||
+                                                      (editTrash2 && this._isPointerOver(e, editTrash2))
 
-                    const isOverTrash = InteractionUI.isObjectOverTrash(activeObject, targetWrapper, CoordMapper) || isOverDocTrash;
+                    if (isOverDocTrashOrEditTrash) {
+                        if (docTrash2) docTrash2.classList.add('drag-over', 'drag-active')
+                        if (editTrash2) editTrash2.classList.add('drag-over', 'drag-active')
+                    } else {
+                        if (docTrash2) docTrash2.classList.remove('drag-over', 'drag-active')
+                        if (editTrash2) editTrash2.classList.remove('drag-over', 'drag-active')
+                    }
+
+                    const isOverTrash = InteractionUI.isObjectOverTrash(activeObject, targetWrapper, CoordMapper) || isOverDocTrashOrEditTrash;
                     if (isOverTrash) {
                         if (isMovingExisting) await this.app.annotationManager.eraseStampTarget(activeObject);
                         this.app.showMessage('Object Deleted', 'success');
