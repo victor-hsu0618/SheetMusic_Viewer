@@ -198,6 +198,16 @@ export class SettingsPanelManager {
             })
         }
 
+        // Doc Bar Hide
+        const docBarHideChk = document.getElementById('settings-doc-bar-hide')
+        if (docBarHideChk) {
+            docBarHideChk.checked = localStorage.getItem('scoreflow_doc_bar_hide') === 'true'
+            docBarHideChk.addEventListener('change', e => {
+                localStorage.setItem('scoreflow_doc_bar_hide', e.target.checked)
+                this.app.docBarStripManager?.toggleCollapse(e.target.checked)
+            })
+        }
+
         // Edit Strip Overlay Mode
         const editOverlayChk = document.getElementById('settings-edit-strip-overlay')
         if (editOverlayChk) {

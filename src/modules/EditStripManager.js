@@ -102,7 +102,6 @@ export class EditStripManager {
                 this.collapsed = !this.collapsed
                 this.el.classList.toggle('collapsed', this.collapsed)
                 document.body.classList.toggle('sf-strip-collapsed', this.collapsed)
-                document.getElementById('sf-doc-bar-strip')?.classList.toggle('collapsed', this.collapsed)
 
                 if (this.collapsed) {
                     // Save sub-bar state then close all

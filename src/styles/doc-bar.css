@@ -217,3 +217,42 @@ body.sf-strip-collapsed #viewer-container {
 #floating-doc-bar {
     display: none !important;
 }
+
+/* ── Doc Bar Expand Tab (appears when hidden) ── */
+.sf-doc-expand-tab {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 60px;
+    background: var(--primary, #6366f1);
+    border-radius: 0 8px 8px 0;
+    z-index: 201; /* above doc bar guard */
+    cursor: pointer;
+    opacity: 0.3;
+    transition: width 0.15s, opacity 0.15s;
+    display: none;
+}
+.sf-doc-expand-tab:hover {
+    width: 24px;
+    opacity: 0.9;
+}
+.sf-doc-expand-tab::after {
+    content: '❯';
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fff;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.1s;
+}
+.sf-doc-expand-tab:hover::after {
+    opacity: 1;
+}
+
+body.sf-doc-bar-collapsed .sf-doc-expand-tab {
+    display: block;
+}

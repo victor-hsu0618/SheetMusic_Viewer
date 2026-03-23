@@ -96,6 +96,21 @@ export class DocBarStripManager {
 
     init() {
         this._build()
+        // Initialize state from settings
+        const isHidden = localStorage.getItem('scoreflow_doc_bar_hide') === 'true'
+        this.toggleCollapse(isHidden)
+    }
+
+    /** Toggle the visibility of the whole doc bar strip */
+    toggleCollapse(isHidden) {
+        if (!this.el) return
+        this.el.classList.toggle('collapsed', isHidden)
+        document.body.classList.toggle('sf-doc-bar-collapsed', isHidden)
+        
+        // Re-fit score if skip calculation is not active (like in overlay mode)
+        if (!document.body.classList.contains('sf-edit-strip-overlay')) {
+            setTimeout(() => this.app.viewerManager?.reapplyFit(), 300)
+        }
     }
 
     /** Call on every zoom change to keep the readout in sync */
@@ -140,6 +155,21 @@ export class DocBarStripManager {
         document.body.prepend(el)
         this.el = el
         this._populate(el)
+
+        // Add expand tab
+        const expandTab = document.createElement('div')
+        expandTab.className = 'sf-doc-expand-tab'
+        expandTab.addEventListener('click', () => {
+            const isHidden = false
+            this.toggleCollapse(isHidden)
+            // Update settings panel toggle if it exists
+            const chk = document.getElementById('settings-doc-bar-hide')
+            if (chk) {
+                chk.checked = false
+                localStorage.setItem('scoreflow_doc_bar_hide', 'false')
+            }
+        })
+        document.body.appendChild(expandTab)
     }
 
     /** Rebuild DOM in-place after panel_config changes (e.g. Supabase sync) */
