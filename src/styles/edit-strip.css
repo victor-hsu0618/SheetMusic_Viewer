@@ -794,9 +794,11 @@ body.sf-strip-collapsed #viewer-container {
     padding-right: 0;
 }
 
-/* Overlay mode: edit strip floats over the score – no padding reduction */
+/* Overlay mode: edit strip floats over the score – no padding reduction.
+   Keep padding-right equal to padding-left (50px) so pages stay centered.
+   The 54px edit strip will overlap the rightmost ~4px but the score won't shift. */
 body.sf-edit-strip-overlay #viewer-container {
-    padding-right: 0 !important;
+    padding-right: 50px !important;
 }
 
 

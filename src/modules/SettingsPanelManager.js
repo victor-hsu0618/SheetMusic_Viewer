@@ -207,6 +207,8 @@ export class SettingsPanelManager {
             editOverlayChk.addEventListener('change', e => {
                 document.body.classList.toggle('sf-edit-strip-overlay', e.target.checked)
                 localStorage.setItem('scoreflow_edit_strip_overlay', e.target.checked)
+                // Recompute scale so fitToWidth picks up the new padding value
+                requestAnimationFrame(() => this.app.viewerManager?.fitToWidth?.())
             })
         }
 
