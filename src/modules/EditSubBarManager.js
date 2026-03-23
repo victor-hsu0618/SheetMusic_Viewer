@@ -591,6 +591,24 @@ export class EditSubBarManager {
             bar.appendChild(d)
         }
 
+        // Helper to apply style to active selected object
+        const applyToActiveStamp = (key, val) => {
+            const stamp = this.app._lastGraceObject;
+            if (stamp && !stamp.deleted) {
+                if (key === 'size') {
+                    stamp.userScale = val;
+                } else {
+                    stamp[key] = val;
+                }
+                stamp.updatedAt = Date.now();
+                this.app.saveToStorage?.(true);
+                this.app.redrawStamps?.(stamp.page);
+                if (this.app.supabaseManager) {
+                    this.app.supabaseManager.pushAnnotation(stamp, this.app.pdfFingerprint);
+                }
+            }
+        };
+
         // Color swatches
         addLabel('Color')
         EXTRA_COLORS.forEach(hex => {
@@ -601,6 +619,7 @@ export class EditSubBarManager {
             c.addEventListener('click', () => {
                 this.app.activeColor = hex
                 this.app.toolManager?.updateActiveTools()
+                applyToActiveStamp('color', hex)
                 this._populateBar(bar, 'others')
             })
             bar.appendChild(c)
@@ -617,6 +636,7 @@ export class EditSubBarManager {
             b.textContent = sym
             b.addEventListener('click', () => {
                 this.app.activeLineStyle = key
+                applyToActiveStamp('lineStyle', key)
                 this._populateBar(bar, 'others')
             })
             bar.appendChild(b)
@@ -634,6 +654,7 @@ export class EditSubBarManager {
             b.addEventListener('click', () => {
                 this.app.activeToolPreset = val
                 this.app.toolManager?.updateActiveTools()
+                applyToActiveStamp('size', val)
                 this._populateBar(bar, 'others')
             })
             bar.appendChild(b)
