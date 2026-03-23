@@ -103,6 +103,11 @@ export class EditStripManager {
                 this.el.classList.toggle('collapsed', this.collapsed)
                 document.body.classList.toggle('sf-strip-collapsed', this.collapsed)
 
+                // Sync Doc Bar: it should collapse when Edit Strip expands
+                const isDocBarForcedHidden = localStorage.getItem('scoreflow_doc_bar_hide') === 'true'
+                const shouldHideDocBar = !this.collapsed || isDocBarForcedHidden
+                this.app.docBarStripManager?.toggleCollapse(shouldHideDocBar)
+
                 if (this.collapsed) {
                     // Save sub-bar state then close all
                     this._subBarSnapshot = this._subBarMgr?.snapshotState()
