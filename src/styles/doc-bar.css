@@ -260,10 +260,10 @@ body.sf-doc-bar-collapsed .sf-doc-expand-tab {
 /* ── Doc Bar Collapse Tab (appears when expanded) ── */
 .sf-doc-collapse-tab {
     position: fixed;
-    left: 44px; /* sitting on the right edge of the 50px bar */
+    left: 49px; /* sitting exactly on the right edge of the 50px bar with 1px overlap for 'stickiness' */
     top: 50%;
     transform: translateY(-50%);
-    width: 12px;
+    width: 6px;
     height: 60px;
     background: var(--primary, #6366f1);
     border-radius: 0 8px 8px 0;
@@ -276,7 +276,7 @@ body.sf-doc-bar-collapsed .sf-doc-expand-tab {
     z-index: 205; /* higher than doc bar */
 }
 .sf-doc-collapse-tab:hover {
-    width: 24px;
+    width: 20px;
     opacity: 0.9;
 }
 .sf-doc-collapse-tab::after {
