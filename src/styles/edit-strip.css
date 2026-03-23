@@ -794,10 +794,10 @@ body.sf-strip-collapsed #viewer-container {
     padding-right: 0;
 }
 
-/* Overlay mode: edit strip floats over the score – no padding reduction.
-   padding-right: 0 lets the score use the full width (viewport - left doc-bar).
-   In Fit-to-Width mode the page fills the content area exactly, so no centering issue. */
+/* Overlay mode: BOTH strips float over the score – score width = full viewport.
+   Zero both paddings (same as sf-strip-collapsed state) so the score never moves. */
 body.sf-edit-strip-overlay #viewer-container {
+    padding-left:  0 !important;
     padding-right: 0 !important;
 }
 
