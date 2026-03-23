@@ -55,13 +55,7 @@ const TOOL_BUTTONS = [
         fill: true,
         icon: '<polygon points="3 11 22 2 13 21 11 13 3 11"/>',
         action: (app) => app.jumpManager?.togglePanel(),
-    },
-    {
-        id: 'doc-stamp',
-        label: 'Stamp Palette (T)',
-        icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
-        action: (app) => app.toolManager?.toggleStampPalette(),
-    },
+    }
 ]
 
 const BOTTOM_BUTTONS = [

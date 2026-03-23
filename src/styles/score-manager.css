@@ -1,33 +1,40 @@
-/* Score Library Overlay - Floating Card Pattern */
+/* Score Library Overlay - Wide Split View Sidebar Style */
 .library-overlay {
     position: fixed;
-    bottom: 110px; /* Doc bar top ~64px + 46px gap */
-    left: 50%;
-    transform: translate(-50%, 30px) scale(0.98); /* Start slightly below and smaller */
-    width: 650px; /* Consistent with other panels */
-    height: 600px;
-    max-width: 95vw;
-    max-height: calc(100vh - 180px);
+    top: 0;
+    left: 0;
+    margin-left: 50px;
+    bottom: 0;
+    right: auto;
+    transform: translateX(calc(-100% - 50px));
+    width: 80vw;
+    max-width: 850px;
+    height: 100vh;
+    max-height: 100vh;
     background: var(--bg-card);
     -webkit-backdrop-filter: blur(25px) saturate(180%);
     backdrop-filter: blur(25px) saturate(180%);
-    border: 1px solid var(--border);
-    border-radius: 20px;
+    border-right: 1px solid var(--border);
+    border-radius: 0;
     z-index: 10500;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     color: var(--text-main);
-    opacity: 0;
     pointer-events: none;
-    transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.2s ease;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.25);
+}
+
+body.sf-doc-bar-collapsed .library-overlay,
+body.sf-strip-collapsed .library-overlay {
+    margin-left: 0;
+    transform: translateX(-100%);
 }
 
 .library-overlay.active {
-    opacity: 1;
     pointer-events: auto;
-    transform: translate(-50%, 0) scale(1);
+    transform: translateX(0);
 }
 
 .library-header {
