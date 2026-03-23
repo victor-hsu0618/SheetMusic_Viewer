@@ -540,10 +540,27 @@ export class EditStripManager {
             }, { passive: false })
 
             // MacOS Trackpad Support (Two-Finger Drag)
+            let wheelTimer = null
             track.addEventListener('wheel', (e) => {
                 if (e.cancelable) e.preventDefault()
                 const maxScroll = viewer.scrollHeight - viewer.clientHeight
                 viewer.scrollTop = Math.max(0, Math.min(maxScroll, viewer.scrollTop + e.deltaY))
+                
+                // Show arrows based on scroll direction
+                if (e.deltaY < -2) {
+                    upArrow.classList.add('active')
+                    downArrow.classList.remove('active')
+                } else if (e.deltaY > 2) {
+                    downArrow.classList.add('active')
+                    upArrow.classList.remove('active')
+                }
+                
+                // Reset arrows shortly after scroll stops
+                if (wheelTimer) clearTimeout(wheelTimer)
+                wheelTimer = setTimeout(() => {
+                    upArrow.classList.remove('active')
+                    downArrow.classList.remove('active')
+                }, 300)
             }, { passive: false })
 
             // Jump-on-Click / Tap
