@@ -38,6 +38,34 @@ export class EditStripManager {
 
     // ─── Private ──────────────────────────────────────────────────────────────
 
+    /** Toggle the visibility of the whole edit strip */
+    toggleCollapse(isHidden) {
+        if (!this.el) return
+        this.collapsed = isHidden
+        this.el.classList.toggle('collapsed', isHidden)
+        document.body.classList.toggle('sf-strip-collapsed', isHidden)
+
+        if (this.collapsed) {
+            // Save sub-bar state then close all
+            this._subBarSnapshot = this._subBarMgr?.snapshotState()
+            this._subBarMgr?.closeAll()
+        } else {
+            // Restore previously open sub-bars
+            this._subBarMgr?.restoreState(this._subBarSnapshot)
+            this._subBarSnapshot = null
+        }
+
+        this._handleLayoutTransition()
+    }
+
+    _handleLayoutTransition() {
+        // Re-apply fit mode after layout shift (wait for CSS transition).
+        // Skip in overlay mode: score area doesn't change size, so no re-render needed.
+        if (!document.body.classList.contains('sf-edit-strip-overlay')) {
+            setTimeout(() => this.app.viewerManager?.reapplyFit(), 320)
+        }
+    }
+
     _createStrip() {
         const el = document.createElement('div')
         el.id = 'sf-edit-strip'
@@ -98,61 +126,35 @@ export class EditStripManager {
                 top:  parseInt(fab.style.top)
             }))
             if (!moved) {
-                // 3-State Cycle: NAV (Left only) -> EDIT (Right only) -> CLEAN (Both hidden) -> NAV
-                const isDocBarForcedHidden = localStorage.getItem('scoreflow_doc_bar_hide') === 'true'
-                const isRightOpen = !this.collapsed
+                // Master Toggle: If anything is open -> Close All. If both closed -> Open All.
                 const isLeftOpen = !document.body.classList.contains('sf-doc-bar-collapsed')
+                const isRightOpen = !this.collapsed
+                const isAnyOpen = isLeftOpen || isRightOpen
 
-                if (isRightOpen) {
-                    // Currently EDIT -> Move to CLEAN
-                    this.collapsed = true
-                } else if (isLeftOpen) {
-                    // Currently NAV -> Move to EDIT
-                    this.collapsed = false
-                } else {
-                    // Currently CLEAN (or forced hide) -> Move to NAV (unless forced hidden, then go to EDIT)
-                    if (isDocBarForcedHidden) {
-                        this.collapsed = false // Skip NAV if doc bar is permanently hidden? 
-                        // Actually, let's just go to EDIT if they can't see the NAV state.
-                    } else {
-                        this.collapsed = true
-                        // Special: we stay collapsed on right, but we want to EXPAND left.
-                        // So we need to trigger the left bar expansion here.
-                        this.app.docBarStripManager?.toggleCollapse(false)
-                        // Then return early so we don't accidentally toggle it again below.
-                        this._handleLayoutTransition()
-                        return
-                    }
-                }
-
-                // Apply Right Side state
-                this.el.classList.toggle('collapsed', this.collapsed)
-                document.body.classList.toggle('sf-strip-collapsed', this.collapsed)
-
-                // Sync Left Side (Doc Bar)
-                // If we are expanding Right, we MUST hide Left.
-                // If we are collapsing Right, we stay hidden (CLEAN state).
-                // Expansion of Left is handled in the "CLEAN -> NAV" branch above.
-                if (!this.collapsed) {
+                if (isAnyOpen) {
+                    // Close BOTH
+                    this.toggleCollapse(true)
                     this.app.docBarStripManager?.toggleCollapse(true)
                 } else {
-                    // We just collapsed Right. This is CLEAN state.
-                    this.app.docBarStripManager?.toggleCollapse(true)
+                    // Open BOTH
+                    this.toggleCollapse(false)
+                    this.app.docBarStripManager?.toggleCollapse(false)
                 }
-
-                if (this.collapsed) {
-                    // Save sub-bar state then close all
-                    this._subBarSnapshot = this._subBarMgr?.snapshotState()
-                    this._subBarMgr?.closeAll()
-                } else {
-                    // Restore previously open sub-bars
-                    this._subBarMgr?.restoreState(this._subBarSnapshot)
-                    this._subBarSnapshot = null
-                }
-                
-                this._handleLayoutTransition()
             }
         })
+
+        // Create Independent Tabs for Right Sidebar
+        const expandTab = document.createElement('div')
+        expandTab.className = 'sf-edit-expand-tab'
+        expandTab.title = 'Show Edit Strip'
+        expandTab.addEventListener('click', () => this.toggleCollapse(false))
+        document.body.appendChild(expandTab)
+
+        const collapseTab = document.createElement('div')
+        collapseTab.className = 'sf-edit-collapse-tab'
+        collapseTab.title = 'Hide Edit Strip'
+        collapseTab.addEventListener('click', () => this.toggleCollapse(true))
+        this.el.appendChild(collapseTab)
 
         // Dead-zone guard: transparent ring around FAB that absorbs stray taps
         const guard = document.createElement('div')
