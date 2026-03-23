@@ -772,7 +772,7 @@ export class InteractionManager {
                         const noteSymbol = targetObj.draw?.noteSymbol || '♩'
                         this.app.annotationManager.promptBPM(noteSymbol).then(async bpm => {
                             if (bpm !== null && bpm !== '') {
-                                targetObj.draw = { type: 'text', content: `${noteSymbol} = ${bpm}`, font: '400', size: 16, fontFace: 'serif' }
+                                targetObj.data = bpm
                                 targetObj.updatedAt = Date.now()
                                 this.app.stamps.push(targetObj)
                                 this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(targetObj)) })

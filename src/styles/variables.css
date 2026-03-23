@@ -15,18 +15,20 @@
   /* Responsive Breakpoints */
   --breakpoint-mobile: 600px;
   --breakpoint-tablet: 1024px;
-  
+
   /* Bottom Sheet Heights */
   --sheet-max-height: 85vh;
   --sheet-radius: 24px;
 }
 
 [data-theme="dark"] {
-  --bg-app: #111827; /* Slightly brighter, more slate-blue */
+  --bg-app: #111827;
+  /* Slightly brighter, more slate-blue */
   --bg-sidebar: #1f2937;
   --bg-card: #1f2937;
   --bg-card-rgb: 31, 41, 55;
-  --text-main: #f9fafb; /* Cleaner white */
+  --text-main: #f9fafb;
+  /* Cleaner white */
   --text-muted: #9ca3af;
   --border: rgba(255, 255, 255, 0.12);
 }
@@ -56,11 +58,13 @@
 
 /* Environment-Specific Visual Themes (Shared Branding) */
 .env-dev {
-  --primary-rgb: 16, 185, 129; /* Emerald cue */
+  --primary-rgb: 16, 185, 129;
+  /* Emerald cue */
 }
 
 .env-stable {
-  --primary-rgb: 139, 92, 246; /* Royal Purple cue */
+  --primary-rgb: 139, 92, 246;
+  /* Royal Purple cue */
 }
 
 /* Visual cues for different versions */

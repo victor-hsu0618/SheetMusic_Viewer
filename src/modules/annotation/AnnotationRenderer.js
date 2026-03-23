@@ -470,6 +470,45 @@ export class AnnotationRenderer {
                     ctx.fillText(textContent, x, y)
                     break
 
+                case 'tempo':
+                    const noteChar = d.noteSymbol || '\uE1D5';
+                    const bpmValue = stamp.data || '120';
+                    const isDotted = d.dotted || false;
+                    
+                    const baseSize = 16 * textScale;
+                    const noteSize = baseSize * 1.8;
+                    const tSize = baseSize;
+
+                    ctx.fillStyle = finalColor;
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+
+                    // 1. Note (Bravura)
+                    ctx.font = `400 ${noteSize}px Bravura`;
+                    ctx.fillText(noteChar, x, y);
+                    
+                    // Fixed advance based on visual notehead width in Bravura
+                    let curX = x + (noteSize * 0.55); 
+
+                    // 2. Dot
+                    if (isDotted) {
+                        ctx.beginPath();
+                        // Placement: Tightly to the right of notehead, shifted slightly down from center
+                        ctx.arc(curX + (noteSize * 0.08), y + (noteSize * 0.08), noteSize * 0.05, 0, Math.PI * 2);
+                        ctx.fill();
+                        curX += (noteSize * 0.22);
+                    }
+
+                    // 3. Equals (Serif, slightly elevated for visual baseline)
+                    ctx.font = `600 ${tSize}px serif`;
+                    ctx.fillText('=', curX, y - (tSize * 0.05));
+                    curX += (tSize * 0.95);
+
+                    // 4. BPM (Outfit / Sans-serif) - Enlarged by 25%
+                    ctx.font = `600 ${tSize * 1.25}px Outfit`;
+                    ctx.fillText(bpmValue, curX, y);
+                    break;
+
                 case 'shape':
                     if (d.shape === 'circle') {
                         ctx.arc(x, y, size * (d.radius || 1), 0, Math.PI * 2)

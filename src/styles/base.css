@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'Bravura';
+  src: url('https://cdn.jsdelivr.net/gh/steinbergmedia/bravura@master/redist/woff/Bravura.woff') format('woff');
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

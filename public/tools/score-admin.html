@@ -24,490 +24,544 @@
             --cloud: #a78bfa;
             --text: #1e293b;
             --text-muted: #64748b;
+            --sidebar-width: 240px;
         }
-        body { background: var(--bg); color: var(--text); }
-        .wrap { max-width: 1340px; margin: 0 auto; padding: 12px 20px; }
-
-        /* ── Auth ── */
-        .login-card { max-width: 420px; margin: 80px auto; background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 40px; }
-        .login-card h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; }
-        .login-card p  { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; }
-        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-        .field label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
-        .field input, .field select { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: inherit; font-size: 13px; width: 100%; box-sizing: border-box; }
-        .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
-
-        /* ── Buttons ── */
-        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; transition: all .15s; white-space: nowrap; }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover { opacity: .85; }
-        .btn-success { background: rgba(16,185,129,.1); color: #10b981; border: 1px solid rgba(16,185,129,.2); }
-        .btn-success:hover { background: rgba(16,185,129,.15); }
-        .btn-danger  { background: rgba(239,68,68,.08);  color: #ef4444; border: 1px solid rgba(239,68,68,.15); }
-        .btn-danger:hover  { background: rgba(239,68,68,.15); }
-        .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text-muted); }
-        .btn-outline:hover { background: #f8fafc; color: var(--text); }
-        .btn-sm  { padding: 4px 10px; font-size: 11px; }
-        .btn-icon { padding: 5px 8px; font-size: 13px; border-radius: 6px; }
-        .btn:disabled { opacity: .4; cursor: not-allowed; }
-        .btn-full { width: 100%; justify-content: center; padding: 11px 16px; font-size: 13px; box-sizing: border-box; }
-
-        /* ── Tabs ── */
-        .tab-nav { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 12px; flex-wrap: wrap; }
-        .tab-btn { padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
-        .tab-btn:hover { color: var(--text); }
-        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        body { background: var(--bg); color: var(--text); margin: 0; height: 100vh; overflow: hidden; display: flex; font-family: 'Inter', sans-serif; }
+        
+        /* ── App Layout ── */
+        .app-container { display: flex; width: 100%; height: 100vh; overflow: hidden; }
+        
+        /* ── Sidebar ── */
+        .app-sidebar { 
+            width: var(--sidebar-width); 
+            background: #fff; 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0;
+            z-index: 100;
+        }
+        .sidebar-header { padding: 24px 20px; border-bottom: 1px solid var(--border); }
+        .sidebar-header h1 { font-size: 1.15rem; font-weight: 800; margin: 0; letter-spacing: -0.03em; color: var(--text); }
+        .sidebar-header p { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin: 4px 0 0 0; letter-spacing: 0.08em; }
+        
+        .sidebar-nav { padding: 12px; flex: 1; overflow-y: auto; }
+        .nav-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 10px 14px; 
+            border-radius: 10px; 
+            color: var(--text-muted); 
+            text-decoration: none; 
+            font-size: 13.5px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 2px;
+            font-family: inherit;
+        }
+        .nav-item:hover { background: var(--bg-soft); color: var(--text); }
+        .nav-item.active { background: var(--primary); color: #fff; }
+        .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+        
+        .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); background: #fcfcfc; }
+        .user-info { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; padding: 0 8px; }
+        .user-email { font-size: 11px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+        .user-role { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        /* ── Main Content Area ── */
+        .app-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .main-header { 
+            height: 64px; 
+            padding: 0 32px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            background: #fff; 
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .main-content { flex: 1; overflow-y: auto; padding: 32px; box-sizing: border-box; }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
 
+        /* ── Auth ── */
+        .login-card { max-width: 420px; margin: 120px auto; background: var(--card-bg); border: 1px solid var(--border); border-radius: 24px; padding: 48px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); }
+        .login-card h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.03em; }
+        .login-card p  { color: var(--text-muted); font-size: 14px; margin-bottom: 32px; }
+        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .field label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+        .field input, .field select { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: inherit; font-size: 14px; width: 100%; box-sizing: border-box; }
+        .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99,102,241,0.12); }
+
+        /* ── Buttons ── */
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 700; transition: all .15s; white-space: nowrap; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+        .btn-success { background: rgba(16,185,129,.1); color: #10b981; border: 1px solid rgba(16,185,129,.2); }
+        .btn-success:hover { background: var(--success); color: #fff; }
+        .btn-danger  { background: rgba(239,68,68,.08);  color: #ef4444; border: 1px solid rgba(239,68,68,.15); }
+        .btn-danger:hover  { background: var(--danger); color: #fff; }
+        .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text-muted); }
+        .btn-outline:hover { background: var(--bg-soft); color: var(--text); border-color: #cbd5e1; }
+        .btn-sm  { padding: 6px 12px; font-size: 11.5px; }
+        .btn-icon { padding: 6px 10px; font-size: 14px; border-radius: 8px; }
+        .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+        .btn-full { width: 100%; justify-content: center; padding: 12px 16px; font-size: 14px; box-sizing: border-box; }
+
         /* ── Toolbar ── */
-        .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-        .search-input { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; color: var(--text); font-family: inherit; font-size: 12px; width: 200px; }
-        .search-input:focus { outline: none; border-color: var(--primary); }
-        .filter-pill { padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); background: #fff; transition: all .15s; }
+        .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .search-input { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; color: var(--text); font-family: inherit; font-size: 13px; width: 220px; transition: all 0.2s; }
+        .search-input:focus { outline: none; border-color: var(--primary); width: 280px; box-shadow: 0 0 0 4px rgba(99,102,241,0.1); }
+        .filter-pill { padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); color: var(--text-muted); background: #fff; transition: all .15s; }
         .filter-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .tool-select { background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; color: var(--text); font-family: inherit; font-size: 12px; cursor: pointer; }
-        .tool-select:focus { outline: none; }
+        .tool-select { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: inherit; font-size: 12.5px; cursor: pointer; }
+        .tool-select:focus { outline: none; border-color: var(--primary); }
 
         /* ── Alphabet Index ── */
-        .alpha-bar { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 10px; }
-        .alpha-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: #fff; color: var(--text-muted); transition: all .12s; }
-        .alpha-btn:hover { background: #f1f5f9; color: var(--text); }
+        .alpha-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
+        .alpha-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: #fff; color: var(--text-muted); transition: all .12s; }
+        .alpha-btn:hover { background: var(--bg-soft); color: var(--text); border-color: #cbd5e1; }
         .alpha-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .alpha-btn.has-scores { color: var(--text); border-color: var(--secondary); }
+        .alpha-btn.has-scores { color: var(--text); font-weight: 800; border-color: #94a3b8; }
 
         /* ── Table ── */
-        #lib-view { overflow-y: auto; max-height: calc(100vh - 220px); background: #fff; border: 1px solid var(--border); border-radius: 12px; position: relative; -webkit-overflow-scrolling: touch; }
+        #lib-view { overflow-y: auto; max-height: calc(100vh - 300px); background: #fff; border: 1px solid var(--border); border-radius: 16px; position: relative; -webkit-overflow-scrolling: touch; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
         .table-wrap { background: #fff; overflow: visible; }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; table-layout: fixed; }
-        th { text-align: left; padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; position: sticky; top: 0; z-index: 10; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; }
+        th { text-align: left; padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; position: sticky; top: 0; z-index: 10; }
         th.sortable { cursor: pointer; user-select: none; }
-        th.sortable:hover { color: var(--text); }
+        th.sortable:hover { color: var(--text); background: #f1f5f9; }
         th.sort-asc::after  { content: ' ↑'; color: var(--primary); }
         th.sort-desc::after { content: ' ↓'; color: var(--primary); }
-        td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
+        td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
         tr:last-child td { border-bottom: none; }
         tr:hover td { background: #fcfcfc; }
         tr:focus { outline: none; }
-        tr:focus td { background: rgba(99,102,241,.03) !important; outline: 2px solid var(--primary); outline-offset: -2px; }
-        .row-selected td { background: rgba(99,102,241,.06) !important; }
-        .row-detail td { background: #f8fafc !important; padding: 12px 14px; border-top: 1px solid var(--border); }
+        tr:focus td { background: rgba(99,102,241,.03) !important; box-shadow: inset 2px 0 0 var(--primary); }
+        .row-selected td { background: rgba(99,102,241,.05) !important; }
+        .row-detail td { background: #f8fafc !important; padding: 20px 24px; border-top: 1px solid var(--border); }
         .row-detail { display: none; }
         .row-detail.open { display: table-row; }
 
         /* ── Inline Edit ── */
-        .editable { cursor: text; border-radius: 6px; padding: 4px 6px; outline: none; display: block; width: 100%; background: transparent; border: 1px solid transparent; font-family: inherit; font-size: 12px; color: var(--text); transition: all .15s; box-sizing: border-box; }
-        .editable:hover { background: #f8fafc; border-color: var(--border); }
-        .editable:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,.1); }
+        .editable { cursor: text; border-radius: 8px; padding: 6px 10px; outline: none; display: block; width: 100%; background: transparent; border: 1px solid transparent; font-family: inherit; font-size: 13px; color: var(--text); transition: all .15s; box-sizing: border-box; }
+        .editable:hover { background: #f1f5f9; border-color: var(--border); }
+        .editable:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
         
-        /* Remove number spinners */
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
         
-        /* ── Split View ── */
-        .split-layout { display: flex; height: calc(100vh - 280px); min-height: 500px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #fff; margin-top: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-        .split-sidebar { width: 300px; border-right: 1px solid var(--border); overflow-y: auto; background: #fcfcfc; }
+        /* ── Internal Split View (Collections/Setlists) ── */
+        .split-layout { display: flex; height: calc(100vh - 200px); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .split-sidebar { width: 320px; border-right: 1px solid var(--border); overflow-y: auto; background: #fcfcfc; flex-shrink: 0; }
         .split-main { flex: 1; overflow-y: auto; background: #fff; padding: 0; }
-        .sl-item { padding: 16px 20px; cursor: pointer; border-bottom: 1px solid var(--border); transition: all .2s; position: relative; display: flex; align-items: center; gap: 12px; }
+        .sl-item { padding: 18px 24px; cursor: pointer; border-bottom: 1px solid var(--border); transition: all .2s; position: relative; display: flex; align-items: center; gap: 16px; }
         .sl-item:hover { background: #f8fafc; }
-        .sl-item.active { background: #fff; border-left: 4px solid var(--primary); box-shadow: inset 0 0 10px rgba(0,0,0,0.01); }
-        .sl-item h3 { font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--text); flex: 1; }
-        .sl-item .meta { font-size: 11px; color: var(--text-muted); }
-        .sl-item .index-pill { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; border-radius: 6px; font-size: 11px; font-weight: 700; color: var(--text-muted); }
+        .sl-item.active { background: #fff; border-left: 4px solid var(--primary); }
+        .sl-item h3 { font-size: 14.5px; font-weight: 700; margin: 0 0 4px 0; color: var(--text); flex: 1; }
+        .sl-item .meta { font-size: 11.5px; color: var(--text-muted); font-weight: 500; }
+        .sl-item .index-pill { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; border-radius: 8px; font-size: 11.5px; font-weight: 700; color: var(--text-muted); }
         .sl-item.active .index-pill { background: var(--primary); color: #fff; }
         
-        .panel-hd { padding: 16px 24px; border-bottom: 1px solid var(--border); background: #fcfcfc; display: flex; align-items: center; justify-content: space-between; }
-        .panel-hd h2 { font-size: 16px; font-weight: 800; color: var(--text); }
+        .panel-hd { padding: 20px 32px; border-bottom: 1px solid var(--border); background: #fcfcfc; display: flex; align-items: center; justify-content: space-between; }
+        .panel-hd h2 { font-size: 1.15rem; font-weight: 800; color: var(--text); margin: 0; letter-spacing: -0.02em; }
         
         /* ── Dashboard Stats ── */
-        .stat-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .stat-card .val { font-size: 28px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
-        .stat-card .lbl { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+        .stat-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.02); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-4px); }
+        .stat-card .val { font-size: 32px; font-weight: 800; color: var(--primary); margin-bottom: 6px; letter-spacing: -0.02em; }
+        .stat-card .lbl { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
 
         /* ── Tag Chips ── */
-        .tag-chip { display: inline-flex; align-items: center; gap: 4px; background: #e0e7ff; border: 1px solid #c7d2fe; color: #4338ca; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 600; }
-        .tag-chip .remove-tag { cursor: pointer; opacity: .6; font-size: 11px; line-height: 1; }
+        .tag-chip { display: inline-flex; align-items: center; gap: 4px; background: #e0e7ff; border: 1px solid #c7d2fe; color: #4338ca; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+        .tag-chip .remove-tag { cursor: pointer; opacity: .6; font-size: 12px; line-height: 1; transition: opacity 0.2s; }
         .tag-chip .remove-tag:hover { opacity: 1; }
-        .tag-editor { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
-        .tag-input { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; color: var(--text); font-family: inherit; font-size: 11px; width: 120px; }
-        .tag-input:focus { outline: none; border-color: var(--primary); }
+        .tag-editor { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .tag-input { background: rgba(0,0,0,.03); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; color: var(--text); font-family: inherit; font-size: 12px; width: 140px; }
+        .tag-input:focus { outline: none; border-color: var(--primary); background: #fff; }
 
         /* ── Status Pills ── */
-        .pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .pill { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
         .pill-green  { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
         .pill-amber  { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
         .pill-gray   { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
         .pill-blue   { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
         .pill-purple { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
-        .pill-red    { background: rgba(239,68,68,.12);   color: #f87171; border: 1px solid rgba(239,68,68,.25); }
-        .pill-teal   { background: rgba(20,184,166,.12);  color: #2dd4bf; border: 1px solid rgba(20,184,166,.25); }
+        .pill-red    { background: rgba(239,68,68,.1);   color: #ef4444; border: 1px solid rgba(239,68,68,.15); }
+        .pill-teal   { background: rgba(20,184,166,.1);  color: #14b8a6; border: 1px solid rgba(20,184,166,.15); }
+        .pill-cyan   { background: rgba(6,182,212,.1);   color: #0891b2; border: 1px solid rgba(6,182,212,.15); }
+        .pill-sky    { background: rgba(14,165,233,.1);  color: #0284c7; border: 1px solid rgba(14,165,233,.15); }
+        .pill-rose   { background: rgba(244,63,94,.1);   color: #e11d48; border: 1px solid rgba(244,63,94,.15); }
+        .pill-orange { background: rgba(249,115,22,.1);  color: #ea580c; border: 1px solid rgba(249,115,22,.15); }
+        .pill-lime   { background: rgba(132,204,22,.1);  color: #65a30d; border: 1px solid rgba(132,204,22,.15); }
+        
         .help-hint { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #e2e8f0; color: #64748b; font-size: 10px; font-weight: 700; cursor: default; position: relative; vertical-align: middle; }
         .help-hint:hover .help-hint-box { display: block; }
-        .help-hint-box { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1e293b; color: #f8fafc; font-size: 11px; font-weight: 400; white-space: nowrap; padding: 8px 10px; border-radius: 6px; line-height: 1.6; z-index: 999; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
-        .help-hint-box::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #1e293b; }
-        .pill-orange { background: rgba(249,115,22,.12);  color: #fb923c; border: 1px solid rgba(249,115,22,.25); }
-        #annot-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
-        #annot-modal-overlay.open { display:flex; }
-        #annot-modal { background:#fff; border-radius:12px; width:min(720px,95vw); max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3); }
-        #annot-modal-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
-        #annot-modal-header h3 { margin:0; font-size:14px; flex:1; }
-        #annot-modal-body { overflow-y:auto; flex:1; padding:12px 20px; }
-        #annot-modal-body table { width:100%; border-collapse:collapse; font-size:12px; }
-        #annot-modal-body th { position:sticky; top:0; background:#f8fafc; padding:6px 8px; text-align:left; border-bottom:1px solid var(--border); font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); }
-        #annot-modal-body td { padding:5px 8px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
-        #annot-modal-body tr.deleted td { opacity:.45; text-decoration:line-through; }
-        #annot-modal-body tr.system-type td { color:#94a3b8; }
-        .pill-cyan   { background: rgba(6,182,212,.12);   color: #22d3ee; border: 1px solid rgba(6,182,212,.25); }
-        .pill-rose   { background: rgba(244,63,94,.12);   color: #fb7185; border: 1px solid rgba(244,63,94,.25); }
-        .pill-lime   { background: rgba(132,204,22,.12);  color: #a3e635; border: 1px solid rgba(132,204,22,.25); }
-        .pill-sky    { background: rgba(14,165,233,.12);  color: #38bdf8; border: 1px solid rgba(14,165,233,.25); }
+        .help-hint-box { display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #1e293b; color: #f8fafc; font-size: 11px; font-weight: 400; white-space: nowrap; padding: 10px 12px; border-radius: 8px; line-height: 1.6; z-index: 999; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+        .help-hint-box::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #1e293b; }
 
-        /* ── Dashboard ── */
-        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
-        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; }
-        .stat-card .val { font-size: 2rem; font-weight: 800; line-height: 1; }
-        .stat-card .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-top: 6px; }
+        /* ── Modals ── */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal { background: #fff; border-radius: 20px; padding: 32px; width: 520px; max-width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2); }
+        .modal h3 { font-size: 1.25rem; font-weight: 800; margin-top: 0; margin-bottom: 24px; letter-spacing: -0.02em; }
+        .modal-option { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 12px; cursor: pointer; border: 1px solid var(--border); background: transparent; margin-bottom: 8px; font-family: inherit; color: var(--text); font-size: 14px; font-weight: 600; width: 100%; text-align: left; transition: all .12s; }
+        .modal-option:hover { background: var(--bg-soft); border-color: #cbd5e1; }
+        .modal-row { display: flex; gap: 10px; margin-top: 16px; }
+        .modal-row input, .modal-row select { flex: 1; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text); font-family: inherit; font-size: 13.5px; }
 
         /* ── Quota Bar ── */
-        .quota-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
-        .quota-label { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; gap: 8px; }
-        .plan-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; background: rgba(99,102,241,.15); color: #818cf8; border: 1px solid rgba(99,102,241,.3); }
-        .quota-bar-bg { height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
-        .quota-bar-fill { height: 100%; border-radius: 99px; background: var(--primary); transition: width .5s; }
-        .quota-bar-fill.warn { background: #f59e0b; }
-        .quota-bar-fill.crit { background: #ef4444; }
+        .quota-wrap { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+        .quota-label { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 12px; gap: 10px; }
+        .plan-tag { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 3px 10px; border-radius: 6px; background: #eef2ff; color: var(--primary); border: 1px solid #e0e7ff; letter-spacing: 0.05em; }
+        .quota-bar-bg { height: 10px; border-radius: 99px; background: #f1f5f9; overflow: hidden; }
+        .quota-bar-fill { height: 100%; border-radius: 99px; background: var(--primary); transition: width .6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .quota-bar-fill.warn { background: var(--warn); }
+        .quota-bar-fill.crit { background: var(--danger); }
 
-        /* ── Collection / Setlist Cards ── */
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-        .coll-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; cursor: default; }
-        .coll-card-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-        .coll-card-hd h3 { font-size: 14px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .coll-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-        .coll-scores-list { list-style: none; margin: 0; padding: 0; }
-        .coll-scores-list li { font-size: 11px; color: var(--text-muted); padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
-        .coll-scores-list li:last-child { border-bottom: none; }
-
-        /* ── Modal ── */
-        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 480px; max-width: 100%; max-height: 85vh; overflow-y: auto; }
-        .modal h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 20px; }
-        .modal-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: transparent; margin-bottom: 6px; font-family: inherit; color: var(--text); font-size: 13px; font-weight: 600; width: 100%; text-align: left; transition: all .12s; }
-        .modal-option:hover { background: rgba(99,102,241,.1); border-color: var(--primary); }
-        .modal-row { display: flex; gap: 8px; margin-top: 12px; }
-        .modal-row input, .modal-row select { flex: 1; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: inherit; font-size: 12px; }
-        .modal-row input:focus, .modal-row select:focus { outline: none; border-color: var(--primary); }
-
-        /* ── Import Modal ── */
-        .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: all .2s; margin-bottom: 16px; color: var(--text-muted); }
-        .drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: rgba(99,102,241,.06); color: var(--text); }
-        .progress-card { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-top: 12px; font-size: 12px; }
-        .progress-bar-bg { height: 4px; background: rgba(255,255,255,.08); border-radius: 99px; margin-top: 8px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width .3s; }
-
-        /* ── Section Header ── */
-        .section-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-        .section-hd h2 { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
-
-        /* ── Backup ── */
-        .backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .backup-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; }
-        .backup-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 14px; }
-        .btn-row { display: flex; flex-direction: column; gap: 8px; }
-
-        /* ── Misc ── */
-        .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); }
-        .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
-        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); font-size: 13px; }
-        .empty-state .icon { font-size: 2rem; margin-bottom: 12px; }
-        .count-tag { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+        /* ── Drop Zone ── */
+        .drop-zone { border: 2px dashed #cbd5e1; border-radius: 16px; padding: 48px 32px; text-align: center; cursor: pointer; transition: all .2s; margin-bottom: 20px; color: var(--text-muted); background: #f8fafc; }
+        .drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: #f5f3ff; color: var(--primary); }
+        
+        .empty-state { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 14px; }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
+        .count-tag { font-size: 12px; color: var(--text-muted); margin-top: 16px; font-weight: 500; }
         .hidden { display: none !important; }
-        input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: var(--primary); }
+        .mono { font-family: 'JetBrains Mono', monospace; }
 
-        @media (max-width: 700px) { .backup-grid { grid-template-columns: 1fr; } .search-input { width: 100%; } }
+        @media (max-width: 1000px) {
+            .app-sidebar { width: 72px; }
+            .sidebar-header h1, .sidebar-header p, .nav-item span:not(.icon), .sidebar-footer .user-info, .sidebar-footer .btn span:not(.icon) { display: none; }
+            .nav-item { justify-content: center; padding: 14px; }
+            .nav-item .icon { font-size: 20px; width: auto; margin: 0; }
+            .sidebar-header { padding: 16px; text-align: center; }
+            .sidebar-footer { padding: 12px; }
+            .sidebar-footer .btn { justify-content: center; padding: 10px; }
+            :root { --sidebar-width: 72px; }
+            .main-header { padding: 0 20px; }
+            .main-content { padding: 24px; }
+        }
     </style>
 </head>
 <body>
-<div class="wrap">
-    <nav style="display:flex;gap:16px;margin-bottom:20px;align-items:center;">
-        <a href="index.html" style="text-decoration:none;color:var(--primary);font-weight:700;font-size:13px;opacity:.8;">← Dev Hub</a>
-        <a href="../index.html" style="text-decoration:none;color:var(--text-muted);font-weight:600;font-size:13px;opacity:.6;">🏠 ScoreFlow</a>
-        <span id="user-badge" style="margin-left:auto;font-size:12px;color:var(--text-muted);"></span>
-        <button class="btn btn-outline btn-sm hidden" id="btn-signout">Sign Out</button>
-    </nav>
 
-    <!-- LOGIN -->
-    <div id="screen-login">
+    <!-- LOGIN SCREEN -->
+    <div id="screen-login" style="width:100vw; height:100vh; background:var(--bg); overflow:auto; position:fixed; inset:0; z-index:9999;">
         <div class="login-card">
-            <h2>My Score Library</h2>
-            <p>Sign in to manage your scores, collections, and backups.</p>
+            <div style="font-size:2.5rem; margin-bottom:20px;">🎼</div>
+            <h2>ScoreFlow Admin</h2>
+            <p>Manage your professional sheet music library and cloud sync engine.</p>
             <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"></div>
             <div class="field"><label>Password</label><input type="password" id="login-password" autocomplete="current-password"></div>
-            <div id="login-error" style="font-size:12px;color:#ef4444;margin-bottom:12px;display:none;"></div>
-            <button class="btn btn-primary btn-full" id="btn-login">Sign In</button>
+            <div id="login-error" style="font-size:12px;color:#ef4444;margin-bottom:16px;display:none;padding:12px;background:rgba(239,68,68,0.06);border-radius:10px;line-height:1.5;"></div>
+            <button class="btn btn-primary btn-full" id="btn-login" style="height:52px; font-size:15px;">Sign In to Library</button>
+            <div style="margin-top:32px; text-align:center; padding-top:24px; border-top:1px solid var(--border);">
+                <a href="../index.html" style="font-size:13.5px; color:var(--text-muted); text-decoration:none; font-weight:700;">← Return to ScoreFlow Viewer</a>
+            </div>
         </div>
     </div>
 
-    <!-- APP -->
-    <div id="screen-app" class="hidden">
-        <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:10px;">
-            <h1 style="font-size:1.15rem;font-weight:800;margin:0;">My Library</h1>
-            <p style="color:var(--text-muted);font-size:11px;margin:0;" id="welcome-line"></p>
-        </div>
-
-        <div class="tab-nav">
-            <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
-            <button class="tab-btn" data-tab="library">🎼 My Scores</button>
-            <button class="tab-btn" data-tab="collections">📚 Collections</button>
-            <button class="tab-btn" data-tab="setlists">📋 Setlists</button>
-            <button class="tab-btn" data-tab="storage">💾 Storage</button>
-            <button class="tab-btn" data-tab="backup">🗄️ Backup</button>
-        </div>
-
-        <!-- DASHBOARD -->
-        <div id="panel-dashboard" class="tab-panel active">
-            <div class="dash-grid">
-                <div class="stat-card"><div class="val" id="d-total">—</div><div class="lbl">Total Scores</div></div>
-                <div class="stat-card"><div class="val" id="d-synced">—</div><div class="lbl">Cloud Synced</div></div>
-                <div class="stat-card"><div class="val" id="d-pdf">—</div><div class="lbl">With PDF</div></div>
-                <div class="stat-card"><div class="val" id="d-colls">—</div><div class="lbl">Collections</div></div>
-                <div class="stat-card"><div class="val" id="d-setlists">—</div><div class="lbl">Setlists</div></div>
-                <div class="stat-card"><div class="val" id="d-storage">—</div><div class="lbl">Storage Used</div></div>
-            </div>
-            <div id="dash-quota"></div>
-            <div id="dash-genre-breakdown" style="margin-bottom:20px;"></div>
-            <div id="dash-recent"></div>
-        </div>
-
-        <!-- LIBRARY -->
-        <div id="panel-library" class="tab-panel">
-            <div class="toolbar">
-                <input type="text" class="search-input" id="score-search" placeholder="Search title, composer, tags…">
-                <button class="filter-pill active" data-filter="all">All</button>
-                <button class="filter-pill" data-filter="cloud">Synced</button>
-                <button class="filter-pill" data-filter="pdf">Has PDF</button><span class="help-hint">?<span class="help-hint-box">☁ PDF — 雲端 Storage 已有檔案<br>⏳ PDF — 本地有檔案，尚未上傳雲端<br>無標示 — 無 PDF 可用</span></span>
-                <span style="margin-left:auto;display:flex;gap:6px;">
-                    <button class="btn btn-primary btn-sm" id="btn-import-score">＋ Import Score</button>
-                    <button class="btn btn-outline btn-sm" id="btn-group-composer">By Composer</button>
-                    <button class="btn btn-outline btn-sm" id="btn-refresh-lib">↻ Refresh</button>
-                </span>
-            </div>
-            <div class="toolbar">
-                <select class="tool-select" id="sort-select">
-                    <option value="index-asc">Manual Order (No.)</option>
-                    <option value="title-asc">Title A → Z</option>
-                    <option value="title-desc">Title Z → A</option>
-                    <option value="composer-asc">Composer A → Z</option>
-                    <option value="composer-desc">Composer Z → A</option>
-                    <option value="accessed-desc">Recently Accessed</option>
-                    <option value="accessed-asc">Oldest Access</option>
-                </select>
-                <select class="tool-select" id="genre-filter"><option value="">All Genres</option></select>
-                <select class="tool-select" id="collection-filter"><option value="">All Collections</option></select>
-                <span style="margin-left:auto;display:flex;gap:6px;">
-                    <button class="btn btn-outline btn-sm" id="btn-select-all">Select All</button>
-                    <button class="btn btn-success btn-sm hidden" id="btn-add-to">Add to…</button>
-                    <button class="btn btn-danger btn-sm" id="btn-bulk-delete" disabled>Delete Selected</button>
-                    <button class="btn btn-outline btn-sm" id="btn-export-csv">↓ CSV</button>
-                </span>
-            </div>
-            <div class="alpha-bar" id="alpha-bar"></div>
-            <div id="lib-view"></div>
-            <div class="count-tag" id="lib-count"></div>
-        </div>
-
-        <!-- COLLECTIONS -->
-        <div id="panel-collections" class="tab-panel">
-            <div class="toolbar" style="margin-bottom:0;">
-                <button class="btn btn-primary btn-sm" id="btn-new-collection">＋ New Collection</button>
-                <button class="btn btn-outline btn-sm" id="btn-refresh-colls">↻ Refresh</button>
-                <input type="text" class="search-input" id="coll-search" placeholder="Search collections…" style="margin-left:auto;">
+    <!-- MAIN APP SCREEN -->
+    <div id="screen-app" class="app-container hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-header">
+                <h1>ScoreFlow</h1>
+                <p>Maintenance Hub</p>
             </div>
             
-            <div class="split-layout">
-                <div class="split-sidebar" id="coll-sidebar">
-                    <div style="padding:40px; text-align:center; color:var(--text-muted); font-size:13px;">Loading collections…</div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="dashboard">
+                    <span class="icon">📊</span><span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-tab="library">
+                    <span class="icon">🎼</span><span>My Scores</span>
+                </button>
+                <button class="nav-item" data-tab="collections">
+                    <span class="icon">📚</span><span>Collections</span>
+                </button>
+                <button class="nav-item" data-tab="setlists">
+                    <span class="icon">📋</span><span>Setlists</span>
+                </button>
+                <button class="nav-item" data-tab="storage">
+                    <span class="icon">💾</span><span>Cloud Storage</span>
+                </button>
+                <button class="nav-item" data-tab="backup">
+                    <span class="icon">🗄️</span><span>Backup & Sync</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <span class="user-email" id="user-badge">...</span>
+                    <span class="user-role">Score Administrator</span>
                 </div>
-                <div class="split-main" id="coll-main-content">
-                    <div class="empty-state" style="padding:100px 0;">
-                        <div class="icon">📚</div>
-                        Select a collection from the left sidebar to view scores.
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <a href="index.html" class="btn btn-outline btn-sm btn-full" style="justify-content:flex-start;">
+                        <span class="icon" style="margin-right:8px;">🛠️</span><span>Dev Hub</span>
+                    </a>
+                    <button class="btn btn-danger btn-sm btn-full" id="btn-signout" style="justify-content:flex-start;">
+                        <span class="icon" style="margin-right:8px;">🚪</span><span>Sign Out</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <header class="main-header">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <h2 id="current-tab-title" style="font-size:1.15rem; font-weight:800; margin:0; letter-spacing:-0.03em;">Dashboard</h2>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <a href="../index.html" class="btn btn-outline btn-sm">
+                        <span style="font-size:14px; margin-right:6px;">🏠</span> Viewer
+                    </a>
+                </div>
+            </header>
+            
+            <div class="main-content">
+                <!-- DASHBOARD -->
+                <div id="panel-dashboard" class="tab-panel active">
+                    <div class="dash-grid">
+                        <div class="stat-card"><div class="val" id="d-total">—</div><div class="lbl">Total Scores</div></div>
+                        <div class="stat-card"><div class="val" id="d-synced">—</div><div class="lbl">Cloud Synced</div></div>
+                        <div class="stat-card"><div class="val" id="d-pdf">—</div><div class="lbl">With PDF</div></div>
+                        <div class="stat-card"><div class="val" id="d-colls">—</div><div class="lbl">Collections</div></div>
+                        <div class="stat-card"><div class="val" id="d-setlists">—</div><div class="lbl">Setlists</div></div>
+                        <div class="stat-card"><div class="val" id="d-storage">—</div><div class="lbl">Storage Used</div></div>
                     </div>
+                    <div id="dash-quota"></div>
+                    <div id="dash-genre-breakdown" style="margin-bottom:24px;"></div>
+                    <div id="dash-recent"></div>
                 </div>
-            </div>
-        </div>
 
-        <!-- SETLISTS -->
-        <div id="panel-setlists" class="tab-panel">
-            <div class="section-hd">
-                <h2>Setlists (演出曲目單)</h2>
-                <div style="display:flex;gap:8px;">
-                    <button class="btn btn-primary btn-sm" id="btn-new-setlist">＋ New Setlist</button>
-                    <button class="btn btn-outline btn-sm" id="btn-refresh-setlists">↻ Refresh</button>
-                </div>
-            </div>
-
-            <div class="toolbar" style="margin-bottom:12px;">
-                <input type="text" class="search-input" id="setlist-search" placeholder="Search setlist name…">
-                <select class="tool-select" id="setlist-sort-select">
-                    <option value="index-asc">Manual Order (No.)</option>
-                    <option value="updated-desc">Recently Updated</option>
-                    <option value="updated-asc">Oldest Updated</option>
-                    <option value="name-asc">Name A → Z</option>
-                    <option value="name-desc">Name Z → A</option>
-                    <option value="count-desc">Score Count (Most)</option>
-                    <option value="count-asc">Score Count (Least)</option>
-                </select>
-                <span id="setlist-status-info" style="margin-left:auto;font-size:11px;color:var(--text-muted);">Select a setlist to view scores</span>
-            </div>
-
-            <div class="split-layout">
-                <div class="split-sidebar" id="setlist-sidebar">
-                    <!-- Setlist items listed here -->
-                </div>
-                <div class="split-main" id="setlist-main-content">
-                    <div class="empty-state" style="padding:100px 0;"><div class="icon">📋</div>Select a setlist to manage scores.</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- STORAGE -->
-        <div id="panel-storage" class="tab-panel">
-            <div id="quota-section" style="margin-bottom:24px;"></div>
-            <div class="section-hd">
-                <h2>PDF Files in Cloud</h2>
-                <button class="btn btn-outline btn-sm" id="btn-refresh-storage">↻ Refresh</button>
-            </div>
-            <div class="table-wrap">
-                <table>
-                    <colgroup><col style="width:32%;"><col><col style="width:90px;"><col style="width:130px;"><col style="width:110px;"></colgroup>
-                    <thead>
-                        <tr id="storage-header">
-                            <th class="sortable" onclick="sortStorage('title')">Score Title</th>
-                            <th class="sortable" onclick="sortStorage('name')">Stored Filename</th>
-                            <th class="sortable" onclick="sortStorage('size')">Size</th>
-                            <th class="sortable" onclick="sortStorage('modified')">Last Modified</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="storage-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- BACKUP -->
-        <div id="panel-backup" class="tab-panel">
-            <div class="backup-grid">
-                <div class="backup-card">
-                    <h3>📤 Export / Download</h3>
-                    <div class="btn-row">
-                        <button class="btn btn-outline" id="btn-export-idb">Export Full Local Backup (IndexedDB)</button>
-                        <button class="btn btn-outline" id="btn-export-cloud">Export Cloud Metadata</button>
-                        <button class="btn btn-outline" id="btn-export-setlists-json">Export Setlists JSON</button>
-                        <button class="btn btn-outline" id="btn-export-collections-json">Export Collections JSON</button>
-                        <button class="btn btn-outline" id="btn-download-pdf-list">Download PDF URL List (CSV)</button>
+                <!-- LIBRARY -->
+                <div id="panel-library" class="tab-panel">
+                    <div class="toolbar">
+                        <input type="text" class="search-input" id="score-search" placeholder="Search title, composer, tags…">
+                        <button class="filter-pill active" data-filter="all">All</button>
+                        <button class="filter-pill" data-filter="cloud">Synced</button>
+                        <button class="filter-pill" data-filter="pdf">Has PDF</button><span class="help-hint">?<span class="help-hint-box">☁ PDF — 雲端已有檔案<br>⏳ PDF — 本地有檔案，尚未上傳<br>無標示 — 無 PDF 可用</span></span>
+                        <span style="margin-left:auto;display:flex;gap:8px;">
+                            <button class="btn btn-primary btn-sm" id="btn-import-score">＋ Import Score</button>
+                            <button class="btn btn-outline btn-sm" id="btn-group-composer">By Composer</button>
+                            <button class="btn btn-outline btn-sm" id="btn-refresh-lib">↻ Refresh</button>
+                        </span>
                     </div>
+                    <div class="toolbar">
+                        <select class="tool-select" id="sort-select">
+                            <option value="index-asc">Manual Order (No.)</option>
+                            <option value="title-asc">Title A → Z</option>
+                            <option value="title-desc">Title Z → A</option>
+                            <option value="composer-asc">Composer A → Z</option>
+                            <option value="composer-desc">Composer Z → A</option>
+                            <option value="accessed-desc">Recently Accessed</option>
+                            <option value="accessed-asc">Oldest Access</option>
+                        </select>
+                        <select class="tool-select" id="genre-filter"><option value="">All Genres</option></select>
+                        <select class="tool-select" id="collection-filter"><option value="">All Collections</option></select>
+                        <span style="margin-left:auto;display:flex;gap:8px;">
+                            <button class="btn btn-outline btn-sm" id="btn-select-all">Select All</button>
+                            <button class="btn btn-success btn-sm hidden" id="btn-add-to">Add to…</button>
+                            <button class="btn btn-danger btn-sm" id="btn-bulk-delete" disabled>Delete Selected</button>
+                            <button class="btn btn-outline btn-sm" id="btn-export-csv">↓ CSV</button>
+                        </span>
+                    </div>
+                    <div class="alpha-bar" id="alpha-bar"></div>
+                    <div id="lib-view"></div>
+                    <div class="count-tag" id="lib-count"></div>
                 </div>
-                <div class="backup-card">
-                    <h3>📥 Import / Restore</h3>
-                    <div class="btn-row">
-                        <div>
-                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Restore local data from backup JSON:</div>
-                            <input type="file" id="file-restore-idb" accept=".json" style="font-size:11px;color:var(--text-muted);width:100%;">
-                            <button class="btn btn-danger btn-sm" id="btn-restore-idb" style="margin-top:8px;">⚠ Restore (overwrites local data)</button>
+
+                <!-- COLLECTIONS -->
+                <div id="panel-collections" class="tab-panel">
+                    <div class="toolbar" style="margin-bottom:12px;">
+                        <button class="btn btn-primary btn-sm" id="btn-new-collection">＋ New Collection</button>
+                        <button class="btn btn-outline btn-sm" id="btn-refresh-colls">↻ Refresh</button>
+                        <input type="text" class="search-input" id="coll-search" placeholder="Search collections…" style="margin-left:auto;">
+                    </div>
+                    <div class="split-layout">
+                        <div class="split-sidebar" id="coll-sidebar">
+                            <div style="padding:40px; text-align:center; color:var(--text-muted); font-size:13px;">Loading collections…</div>
                         </div>
-                        <hr class="divider" style="margin:4px 0;">
-                        <div>
-                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Restore setlists from JSON:</div>
-                            <input type="file" id="file-restore-setlists" accept=".json" style="font-size:11px;color:var(--text-muted);width:100%;">
-                            <button class="btn btn-outline btn-sm" id="btn-restore-setlists" style="margin-top:8px;">Import Setlists</button>
+                        <div class="split-main" id="coll-main-content">
+                            <div class="empty-state" style="padding:100px 0;">
+                                <div class="icon">📚</div>
+                                Select a collection from the left sidebar to view scores.
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <hr class="divider">
-            <div class="backup-card">
-                <h3>☁️ Cloud Sync</h3>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button class="btn btn-outline" id="btn-push-registry">Push Library → Cloud</button>
-                    <button class="btn btn-outline" id="btn-pull-registry">Pull Library ← Cloud</button>
-                    <button class="btn btn-outline" id="btn-push-setlists-sb">Push Setlists → Cloud</button>
+
+                <!-- SETLISTS -->
+                <div id="panel-setlists" class="tab-panel">
+                    <div class="section-hd">
+                        <h2 style="font-size:13px;">Setlists (演出曲目單)</h2>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-primary btn-sm" id="btn-new-setlist">＋ New Setlist</button>
+                            <button class="btn btn-outline btn-sm" id="btn-refresh-setlists">↻ Refresh</button>
+                        </div>
+                    </div>
+                    <div class="toolbar" style="margin-bottom:12px;">
+                        <input type="text" class="search-input" id="setlist-search" placeholder="Search setlist name…">
+                        <select class="tool-select" id="setlist-sort-select">
+                            <option value="index-asc">Manual Order (No.)</option>
+                            <option value="updated-desc">Recently Updated</option>
+                            <option value="updated-asc">Oldest Updated</option>
+                            <option value="name-asc">Name A → Z</option>
+                            <option value="name-desc">Name Z → A</option>
+                            <option value="count-desc">Score Count (Most)</option>
+                            <option value="count-asc">Score Count (Least)</option>
+                        </select>
+                        <span id="setlist-status-info" style="margin-left:auto;font-size:11px;color:var(--text-muted);">Select a setlist to view scores</span>
+                    </div>
+                    <div class="split-layout">
+                        <div class="split-sidebar" id="setlist-sidebar"></div>
+                        <div class="split-main" id="setlist-main-content">
+                            <div class="empty-state" style="padding:100px 0;"><div class="icon">📋</div>Select a setlist to manage scores.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STORAGE -->
+                <div id="panel-storage" class="tab-panel">
+                    <div id="quota-section" style="margin-bottom:24px;"></div>
+                    <div class="section-hd">
+                        <h2 style="font-size:13px;">PDF Files in Cloud</h2>
+                        <button class="btn btn-outline btn-sm" id="btn-refresh-storage">↻ Refresh Storage</button>
+                    </div>
+                    <div class="table-wrap" id="storage-view">
+                        <table>
+                            <colgroup><col style="width:32%;"><col><col style="width:100px;"><col style="width:140px;"><col style="width:120px;"></colgroup>
+                            <thead>
+                                <tr id="storage-header">
+                                    <th class="sortable" onclick="sortStorage('title')">Score Title</th>
+                                    <th class="sortable" onclick="sortStorage('name')">Stored Filename</th>
+                                    <th class="sortable" onclick="sortStorage('size')">Size</th>
+                                    <th class="sortable" onclick="sortStorage('modified')">Last Modified</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="storage-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- BACKUP -->
+                <div id="panel-backup" class="tab-panel">
+                    <div class="backup-grid">
+                        <div class="backup-card">
+                            <h3 style="font-size:14px;">📤 Export / Download</h3>
+                            <div class="btn-row">
+                                <button class="btn btn-outline" id="btn-export-idb">Export Full Local Backup (IndexedDB)</button>
+                                <button class="btn btn-outline" id="btn-export-cloud">Export Cloud Metadata</button>
+                                <button class="btn btn-outline" id="btn-export-setlists-json">Export Setlists JSON</button>
+                                <button class="btn btn-outline" id="btn-export-collections-json">Export Collections JSON</button>
+                                <button class="btn btn-outline" id="btn-download-pdf-list">Download PDF URL List (CSV)</button>
+                            </div>
+                        </div>
+                        <div class="backup-card">
+                            <h3 style="font-size:14px;">📥 Import / Restore</h3>
+                            <div class="btn-row">
+                                <div style="margin-bottom:12px;">
+                                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-weight:700;text-transform:uppercase;">Restore local data from backup:</div>
+                                    <input type="file" id="file-restore-idb" accept=".json" style="font-size:11px;color:var(--text-muted);width:100%;margin-bottom:8px;">
+                                    <button class="btn btn-danger btn-sm" id="btn-restore-idb">⚠ Restore (overwrites local data)</button>
+                                </div>
+                                <hr class="divider" style="margin:8px 0;">
+                                <div style="margin-top:4px;">
+                                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-weight:700;text-transform:uppercase;">Restore setlists from JSON:</div>
+                                    <input type="file" id="file-restore-setlists" accept=".json" style="font-size:11px;color:var(--text-muted);width:100%;margin-bottom:8px;">
+                                    <button class="btn btn-outline btn-sm" id="btn-restore-setlists">Import Setlists</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="backup-card" style="margin-top:24px;">
+                        <h3 style="font-size:14px;">☁️ Cloud Sync</h3>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                            <button class="btn btn-outline" id="btn-push-registry">Push Library → Cloud</button>
+                            <button class="btn btn-outline" id="btn-pull-registry">Pull Library ← Cloud</button>
+                            <button class="btn btn-outline" id="btn-push-setlists-sb">Push Setlists → Cloud</button>
+                        </div>
+                    </div>
+                    <div class="backup-card" style="margin-top:24px;">
+                        <h3 style="font-size:14px;">🛠️ Maintenance & Repair</h3>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                            <button class="btn btn-outline" id="btn-rebuild-library-hub">Rebuild Library Index</button>
+                            <button class="btn btn-outline" id="btn-heal-library-hub">Heal Metadata & Purge Thumbnails</button>
+                        </div>
+                        <p style="font-size:12px;color:var(--text-muted);margin-top:12px;line-height:1.5;">Advanced tools to repair local registry and sync with cloud storage.</p>
+                    </div>
+                    <div id="backup-log" style="background:#0f172a;color:#94a3b8;padding:16px;border-radius:12px;font-family:'JetBrains Mono',monospace;font-size:11px;height:120px;overflow-y:auto;margin-top:24px;border:1px solid #1e293b;line-height:1.6;"></div>
                 </div>
             </div>
-            <hr class="divider">
-            <div class="backup-card">
-                <h3>🛠️ Maintenance & Repair</h3>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button class="btn btn-outline" id="btn-rebuild-library-hub">Rebuild Library (Local Scan)</button>
-                    <button class="btn btn-outline" id="btn-heal-library-hub">Heal Metadata & Titles</button>
-                </div>
-                <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">Advanced tools to repair local registry and sync with cloud.</p>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    <div id="modal-addto" class="modal-backdrop hidden">
+        <div class="modal">
+            <h3 id="addto-title">Add Selected to…</h3>
+            <div style="display:flex;gap:10px;margin-bottom:20px;">
+                <button class="btn btn-outline btn-sm addto-tab active" data-type="collection">📚 Collection</button>
+                <button class="btn btn-outline btn-sm addto-tab" data-type="setlist">📋 Setlist</button>
             </div>
-            <hr class="divider">
-            <div id="backup-log" style="background:var(--bg);color:var(--text-muted);padding:10px 14px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;height:110px;overflow-y:auto;border:1px solid var(--border);"></div>
+            <div id="addto-list" style="max-height:240px; overflow-y:auto;"></div>
+            <hr class="divider" style="margin:20px 0;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;font-weight:700;text-transform:uppercase;">Or create new:</div>
+            <div class="modal-row">
+                <input type="text" id="addto-new-name" placeholder="Name…">
+                <button class="btn btn-primary btn-sm" id="btn-addto-create">Create & Add</button>
+            </div>
+            <div style="margin-top:24px;text-align:right;">
+                <button class="btn btn-outline btn-sm" id="btn-addto-cancel">Cancel</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- ADD TO MODAL (Setlist or Collection) -->
-<div id="modal-addto" class="modal-backdrop hidden">
-    <div class="modal">
-        <h3 id="addto-title">Add to…</h3>
-        <div style="display:flex;gap:8px;margin-bottom:16px;">
-            <button class="btn btn-outline btn-sm addto-tab active" data-type="collection">📚 Collection</button>
-            <button class="btn btn-outline btn-sm addto-tab" data-type="setlist">📋 Setlist</button>
-        </div>
-        <div id="addto-list"></div>
-        <hr class="divider" style="margin:12px 0;">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Or create new:</div>
-        <div class="modal-row">
-            <input type="text" id="addto-new-name" placeholder="Name…">
-            <button class="btn btn-primary btn-sm" id="btn-addto-create">Create & Add</button>
-        </div>
-        <div style="margin-top:16px;text-align:right;">
-            <button class="btn btn-outline btn-sm" id="btn-addto-cancel">Cancel</button>
-        </div>
-    </div>
-</div>
-
-<!-- IMPORT SCORE MODAL -->
-<div id="modal-import" class="modal-backdrop hidden">
-    <div class="modal" style="width:520px;">
-        <h3>Import Score</h3>
-        <div id="import-step1">
-            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('pdf-input').click()">
-                <div style="font-size:2rem;margin-bottom:8px;">📄</div>
-                <div style="font-weight:700;margin-bottom:4px;">Drop PDF here or click to browse</div>
-                <div style="font-size:11px;">PDF files only</div>
-                <input type="file" id="pdf-input" accept=".pdf" style="display:none;">
-            </div>
-        </div>
-        <div id="import-step2" class="hidden">
-            <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;display:flex;align-items:center;gap:8px;">
-                <span>📄</span><span id="imp-filename" style="font-weight:700;flex:1;"></span><span id="imp-size" style="color:var(--text-muted);"></span>
-            </div>
-            <div class="field"><label>Score Name *</label><input type="text" id="imp-title" placeholder="e.g. Symphony No. 5"></div>
-            <div class="field"><label>Composer</label><input type="text" id="imp-composer" placeholder="e.g. Beethoven"></div>
-            <div class="field"><label>Genre</label><select id="imp-genre"><option value="">— Select Genre —</option></select></div>
-            <div class="field">
-                <label>Tags (press Enter to add)</label>
-                <div id="imp-tags-editor" class="tag-editor" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px;">
-                    <input type="text" class="tag-input" id="imp-tag-input" placeholder="Add tag…">
+    <div id="modal-import" class="modal-backdrop hidden">
+        <div class="modal" style="width:540px;">
+            <h3>Import Score</h3>
+            <div id="import-step1">
+                <div class="drop-zone" id="drop-zone" onclick="document.getElementById('pdf-input').click()">
+                    <div style="font-size:2.5rem;margin-bottom:12px;">📄</div>
+                    <div style="font-weight:800;margin-bottom:6px;font-size:16px;">Drop PDF here or click to browse</div>
+                    <div style="font-size:12px;opacity:0.7;">Upload score to cloud and local cache</div>
+                    <input type="file" id="pdf-input" accept=".pdf" style="display:none;">
                 </div>
             </div>
-            <div id="imp-progress" class="progress-card hidden">
-                <div id="imp-progress-text">Preparing…</div>
-                <div class="progress-bar-bg"><div class="progress-bar-fill" id="imp-progress-bar" style="width:0%"></div></div>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
-                <button class="btn btn-outline btn-sm" id="btn-imp-cancel">Cancel</button>
-                <button class="btn btn-outline btn-sm" id="btn-imp-change">Change File</button>
-                <button class="btn btn-primary" id="btn-imp-upload">Upload & Save</button>
+            <div id="import-step2" class="hidden">
+                <div style="background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.15);border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:13px;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:18px;">📄</span><span id="imp-filename" style="font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><span id="imp-size" style="color:var(--text-muted);font-weight:600;"></span>
+                </div>
+                <div class="field"><label>Score Name *</label><input type="text" id="imp-title" placeholder="e.g. Symphony No. 5"></div>
+                <div class="field"><label>Composer</label><input type="text" id="imp-composer" placeholder="e.g. Beethoven"></div>
+                <div class="field"><label>Genre</label><select id="imp-genre"><option value="">— Select Genre —</option></select></div>
+                <div class="field">
+                    <label>Tags (press Enter to add)</label>
+                    <div id="imp-tags-editor" class="tag-editor" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px;">
+                        <input type="text" class="tag-input" id="imp-tag-input" placeholder="Add tag…">
+                    </div>
+                </div>
+                <div id="imp-progress" class="progress-card hidden">
+                    <div id="imp-progress-text" style="font-weight:600;margin-bottom:8px;">Preparing…</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="imp-progress-bar" style="width:0%"></div></div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:24px;justify-content:flex-end;">
+                    <button class="btn btn-outline btn-sm" id="btn-imp-cancel">Cancel</button>
+                    <button class="btn btn-outline btn-sm" id="btn-imp-change">Change File</button>
+                    <button class="btn btn-primary" id="btn-imp-upload">Upload & Save</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
-<!-- MODAL REMOVED -->
 
 <script type="module">
 const SUPABASE_URL  = localStorage.getItem('scoreflow_supabase_url') || 'https://tanoqdnqtxqxerwcbdlf.supabase.co';
@@ -524,6 +578,9 @@ const GENRES = [
     { id: 'Choral',       label: 'Choral',                 label_zh: '合唱',      pill: 'pill-teal',   icon: '🎵' },
     { id: 'Vocal',        label: 'Vocal / Solo',           label_zh: '聲樂獨唱',  pill: 'pill-amber',  icon: '🎙' },
     { id: 'Piano',        label: 'Piano Solo',             label_zh: '鋼琴獨奏',  pill: 'pill-purple', icon: '🎹' },
+    { id: 'Violin',       label: 'Violin Solo',            label_zh: '小提琴',    pill: 'pill-rose',   icon: '🎻' },
+    { id: 'Cello',        label: 'Cello Solo',             label_zh: '大提琴',    pill: 'pill-blue',   icon: '🎻' },
+    { id: 'Flute',        label: 'Flute / Woodwind',       label_zh: '長笛',      pill: 'pill-cyan',   icon: '🌬' },
     { id: 'Chinese',      label: 'Chinese Traditional',    label_zh: '國樂',      pill: 'pill-orange', icon: '🎍' },
     { id: 'Pop',          label: 'Pop / Songs',            label_zh: '流行音樂',  pill: 'pill-amber',  icon: '🎧' },
     { id: 'Folk',         label: 'Folk / Traditional',     label_zh: '民謠',      pill: 'pill-lime',   icon: '🪕' },
@@ -611,19 +668,18 @@ function showLoginError(m){const e=document.getElementById('login-error');e.text
 function showApp() {
     document.getElementById('screen-login').classList.add('hidden');
     document.getElementById('screen-app').classList.remove('hidden');
-    document.getElementById('btn-signout').classList.remove('hidden');
     document.getElementById('user-badge').textContent=currentUser.email;
-    document.getElementById('welcome-line').textContent=`Welcome back, ${currentUser.email}`;
     loadTab('dashboard');
 }
 
 // ═══ Tabs ═══
-document.querySelectorAll('.tab-btn').forEach(btn => {
+document.querySelectorAll('.nav-item').forEach(btn => {
     btn.onclick = () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+        document.getElementById('current-tab-title').textContent = btn.querySelector('span:not(.icon)').textContent;
         loadTab(btn.dataset.tab);
     };
 });
@@ -632,34 +688,57 @@ function reloadTab(tab) { loadedTabs.delete(tab); loadTab(tab); }
 
 // ══════════ DASHBOARD ══════════
 async function loadDashboard() {
-    cachedLocalReg=(await db.get('score_registry'))||[];
-    const {data:cs}=await sbClient.from('scores').select('fingerprint,filename,genre').eq('user_id',currentUser.id);
-    const cloudSet=new Set((cs||[]).map(c=>c.fingerprint));
-    const pdfSet=new Set((cs||[]).filter(c=>c.filename).map(c=>c.fingerprint));
-    const setlists=(await db.get('score_setlists'))||[];
-    const colls=(await db.get('score_collections'))||[];
-    document.getElementById('d-total').textContent=cachedLocalReg.length;
-    document.getElementById('d-synced').textContent=cachedLocalReg.filter(s=>cloudSet.has(s.fingerprint)).length;
-    document.getElementById('d-pdf').textContent=cachedLocalReg.filter(s=>pdfSet.has(s.fingerprint)).length;
-    document.getElementById('d-colls').textContent=colls.length;
-    document.getElementById('d-setlists').textContent=setlists.length;
+    // Fetch all data needed for a full library state
+    cachedLocalReg = (await db.get('score_registry')) || [];
+    const [{data:cs}, {data:storageFiles}] = await Promise.all([
+        sbClient.from('scores').select('fingerprint,title,composer,filename,genre,tags,updated_at').eq('user_id', currentUser.id),
+        sbClient.storage.from('pdfs').list(currentUser.id, {limit: 2000})
+    ]);
+    
+    const cloudPdfSet = new Set((storageFiles || []).map(f => f.name.replace(/\.pdf$/i, '')));
+    const merged = buildMergedList(cachedLocalReg, cs || [], cloudPdfSet);
+    
+    // Aggregates
+    const setlists = (await db.get('score_setlists')) || [];
+    const colls = (await db.get('score_collections')) || [];
+    
+    document.getElementById('d-total').textContent = merged.length;
+    document.getElementById('d-synced').textContent = merged.filter(s => s.cloudSynced).length;
+    document.getElementById('d-pdf').textContent = merged.filter(s => s.hasPdf).length;
+    document.getElementById('d-colls').textContent = colls.length;
+    document.getElementById('d-setlists').textContent = setlists.length;
+
     // Quota
-    const {data:prof}=await sbClient.from('user_profiles').select('storage_used_bytes,storage_quota_bytes,plan').eq('user_id',currentUser.id).single();
-    if(prof){const used=prof.storage_used_bytes||0,quota=prof.storage_quota_bytes||536870912,pct=Math.min(100,(used/quota)*100);document.getElementById('d-storage').textContent=fmtBytes(used);document.getElementById('dash-quota').innerHTML=`<div class="quota-wrap"><div class="quota-label"><span>Storage</span><span>${fmtBytes(used)} / ${fmtBytes(quota)}</span><span class="plan-tag">${prof.plan||'Free'} — ${Math.round(pct)}% used</span></div><div class="quota-bar-bg"><div class="quota-bar-fill ${pct>90?'crit':pct>70?'warn':''}" style="width:${pct.toFixed(1)}%"></div></div></div>`;}
-    else document.getElementById('d-storage').textContent='—';
+    const {data:prof} = await sbClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+    if (prof) {
+        const used = (prof.storage_used_bytes !== undefined) ? prof.storage_used_bytes : (prof.data?.storage_used_bytes || 0);
+        const quota = (prof.storage_quota_bytes !== undefined) ? prof.storage_quota_bytes : (prof.data?.storage_quota_bytes || 1073741824);
+        const plan = prof.plan || prof.data?.plan || 'Free';
+        const pct = Math.min(100, (used / quota) * 100);
+        document.getElementById('d-storage').textContent = fmtBytes(used);
+        document.getElementById('dash-quota').innerHTML = `<div class="quota-wrap"><div class="quota-label"><span>Storage Usage</span><span>${fmtBytes(used)} / ${fmtBytes(quota)}</span><span class="plan-tag">${plan} Plan — ${Math.round(pct)}%</span></div><div class="quota-bar-bg"><div class="quota-bar-fill ${pct > 90 ? 'crit' : pct > 70 ? 'warn' : ''}" style="width:${pct.toFixed(1)}%"></div></div><button class="btn-outline-sm" style="margin-top:10px; width:fit-content;" onclick="recalculateStorage()">🔄 Recalculate Storage</button></div>`;
+    } else {
+        document.getElementById('d-storage').textContent = '—';
+    }
+
     // Genre breakdown
-    const gc={};
-    cachedLocalReg.forEach(s=>{const k=s.genre||'Uncategorized';gc[k]=(gc[k]||0)+1;});
-    const sorted=Object.entries(gc).sort((a,b)=>b[1]-a[1]);
-    if(sorted.length>1)document.getElementById('dash-genre-breakdown').innerHTML=`<div class="quota-wrap"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">By Genre</div><div style="display:flex;flex-wrap:wrap;gap:8px;">${sorted.map(([g,n])=>`<div style="display:flex;align-items:center;gap:5px;">${genrePill(g)||`<span class="pill pill-gray">${escHtml(g)}</span>`}<span style="font-size:12px;font-weight:700;">${n}</span></div>`).join('')}</div></div>`;
+    const gc = {};
+    merged.forEach(s => { const k = s.genre || 'Uncategorized'; gc[k] = (gc[k] || 0) + 1; });
+    const sorted = Object.entries(gc).sort((a,b) => b[1] - a[1]);
+    if (sorted.length > 0) {
+        document.getElementById('dash-genre-breakdown').innerHTML = `<div class="quota-wrap"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:16px;">Library Breakdown by Genre</div><div style="display:flex;flex-wrap:wrap;gap:10px;">${sorted.map(([g,n]) => `<div style="display:flex;align-items:center;gap:6px;">${genrePill(g) || `<span class="pill pill-gray">${escHtml(g)}</span>` }<span style="font-size:13px;font-weight:700;">${n}</span></div>`).join('')}</div></div>`;
+    }
+
     // Recent
-    const recent=[...cachedLocalReg].filter(s=>s.lastAccessed).sort((a,b)=>(b.lastAccessed||0)-(a.lastAccessed||0)).slice(0,6);
-    if(recent.length)document.getElementById('dash-recent').innerHTML=`<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Recently Accessed</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">${recent.map(s=>`<div class="stat-card" style="padding:14px 16px;"><div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(s.title)}</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${escHtml(s.composer||'—')}</div><div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;">${s.genre?genrePill(s.genre):''}<span style="font-size:10px;color:var(--text-muted);">${new Date(s.lastAccessed).toLocaleDateString()}</span></div></div>`).join('')}</div></div>`;
+    const recent = [...merged].filter(s => s.lastAccessed).sort((a,b) => (b.lastAccessed || 0) - (a.lastAccessed || 0)).slice(0,6);
+    if (recent.length) {
+        document.getElementById('dash-recent').innerHTML = `<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:16px;">Recently Viewed</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">${recent.map(s => `<div class="stat-card" style="text-align:left; padding:20px;"><div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px;">${escHtml(s.title)}</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">${escHtml(s.composer || '—')}</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${s.genre ? genrePill(s.genre) : ''}<span style="font-size:11px;color:var(--text-muted);font-weight:500;">${new Date(s.lastAccessed).toLocaleDateString()}</span></div></div>`).join('')}</div></div>`;
+    }
 }
 
 // ══════════ LIBRARY ══════════
 async function loadLibrary() {
-    document.getElementById('lib-view').innerHTML='<div class="empty-state"><div class="icon">⏳</div>Loading…</div>';
+    document.getElementById('lib-view').innerHTML='<div class="empty-state"><div class="icon">⏳</div>Loading library data…</div>';
     cachedLocalReg=(await db.get('score_registry'))||[];
     const [{data:cr},{data:storageFiles}]=await Promise.all([
         sbClient.from('scores').select('fingerprint,title,composer,filename,genre,tags,updated_at').eq('user_id',currentUser.id).order('updated_at',{ascending:false}),
@@ -671,15 +750,20 @@ async function loadLibrary() {
     mergedList=buildMergedList(cachedLocalReg,cachedScores,cloudPdfSet);
 
     // Load annotation counts: local (parallel IndexedDB) + cloud (one query)
-    const [localAnnotEntries, {data:cloudAnnotRows}] = await Promise.all([
+    const [localAnnotEntries, cloudAnnotRes] = await Promise.all([
         Promise.all(mergedList.map(async s => {
             const stamps = (await db.get(`stamps_${s.fingerprint}`)) || [];
             return [s.fingerprint, stamps.filter(st => !st.deleted).length];
         })),
         sbClient.rpc('get_annotation_counts', { p_user_id: currentUser.id })
     ]);
+    if (cloudAnnotRes.error) {
+        console.warn('[Library] get_annotation_counts RPC failed (SQL function might be missing):', cloudAnnotRes.error.message);
+    }
+    const cloudAnnotRows = cloudAnnotRes.data || [];
     const localAnnotMap = Object.fromEntries(localAnnotEntries);
-    const cloudAnnotMap = Object.fromEntries((cloudAnnotRows || []).map(r => [r.fingerprint, Number(r.count)]));
+    const cloudAnnotMap = Object.fromEntries(cloudAnnotRows.map(r => [r.fingerprint, Number(r.count)]));
+
     mergedList.forEach(s => {
         s.annotLocal = localAnnotMap[s.fingerprint] || 0;
         s.annotCloud = cloudAnnotMap[s.fingerprint] || 0;
@@ -763,17 +847,17 @@ function scoreRow(s) {
         <td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm btn-icon" data-action="delete" data-fp="${s.fingerprint}" title="Delete">🗑</button></td>
     </tr>
     <tr class="row-detail" id="detail-${s.fingerprint}">
-        <td colspan="8">
-            <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;">
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);padding-top:6px;">Tags / Keywords</div>
+        <td colspan="10">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding-top:6px;">Tags / Metadata</div>
                 <div class="tag-editor" id="tags-${s.fingerprint}">
                     ${(s.tags||[]).map(t=>`<span class="tag-chip">${escHtml(t)}<span class="remove-tag" data-fp="${s.fingerprint}" data-tag="${escHtml(t)}">×</span></span>`).join('')}
                     <input type="text" class="tag-input" placeholder="Add tag, press Enter" data-fp="${s.fingerprint}">
                 </div>
             </div>
-            <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;margin-top:10px;">
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);">Filename</div>
-                <div class="mono" style="color:var(--text-muted);">${escHtml(s.fileName)||'—'}</div>
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;margin-top:16px;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);">PDF SHA-256</div>
+                <div class="mono" style="color:var(--text-muted); font-size:11px;">${s.fingerprint}</div>
             </div>
         </td>
     </tr>`;
@@ -781,12 +865,12 @@ function scoreRow(s) {
 
 function renderFlat(list) {
     const view=document.getElementById('lib-view');
-    if(!list.length){view.innerHTML=`<div class="empty-state"><div class="icon">🎼</div>No scores match.</div>`;return;}
+    if(!list.length){view.innerHTML=`<div class="empty-state"><div class="icon">🎼</div>No scores match current filters.</div>`;return;}
     const [sf,sd]=scoreSort.split('-');
     const thc=(f)=>`sortable${sf===f?' sort-'+sd:''}`;
     view.innerHTML=`<div class="table-wrap" style="border:none; border-radius:0;"><table>
-        <colgroup><col style="width:28px;"><col style="width:55px;"><col style="width:23%;"><col style="width:15%;"><col style="width:14%;"><col style="width:17%;"><col style="width:10%;"><col style="width:10%;"><col style="width:50px;"></colgroup>
-        <thead><tr><th><input type="checkbox" id="chk-all-tbl"></th><th class="${thc('index')}" data-sort-field="index">No.</th><th class="${thc('title')}" data-sort-field="title">Score Name</th><th class="${thc('composer')}" data-sort-field="composer">Composer</th><th>Genre</th><th>Tags</th><th>Status</th><th style="text-align:center;" title="Annotation count. Orange = pending cloud upload.">Annot.<span class="help-hint" style="margin-left:3px;">?<span class="help-hint-box">綠色 — 已同步雲端<br>橙色 — 本地多於雲端，待上傳<br>灰色 — 無 annotation</span></span></th><th class="${thc('accessed')}" data-sort-field="accessed">Accessed</th><th></th></tr></thead>
+        <colgroup><col style="width:28px;"><col style="width:65px;"><col style="width:23%;"><col style="width:15%;"><col style="width:14%;"><col style="width:17%;"><col style="width:10%;"><col style="width:10%;"><col style="width:10%;"><col style="width:50px;"></colgroup>
+        <thead><tr><th><input type="checkbox" id="chk-all-tbl"></th><th class="${thc('index')}" data-sort-field="index">No.</th><th class="${thc('title')}" data-sort-field="title">Score Name</th><th class="${thc('composer')}" data-sort-field="composer">Composer</th><th>Genre</th><th>Tags</th><th>Status</th><th style="text-align:center;">Annot.</th><th class="${thc('accessed')}" data-sort-field="accessed">Accessed</th><th></th></tr></thead>
         <tbody>${list.map(scoreRow).join('')}</tbody>
     </table></div>`;
     view.querySelectorAll('th[data-sort-field]').forEach(th=>{th.onclick=()=>{const f=th.dataset.sortField,cf=scoreSort.split('-')[0],cd=scoreSort.split('-')[1];scoreSort=f===cf?`${f}-${cd==='asc'?'desc':'asc'}`:`${f}-asc`;document.getElementById('sort-select').value=scoreSort;renderLibrary();};});
@@ -798,7 +882,7 @@ function renderGrouped(list) {
     if(!list.length){view.innerHTML=`<div class="empty-state"><div class="icon">🎼</div>No scores match.</div>`;return;}
     const groups={};list.forEach(s=>{const k=s.composer||'(Unknown Composer)';if(!groups[k])groups[k]=[];groups[k].push(s);});
     const keys=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
-    view.innerHTML=keys.map(c=>`<div style="margin-bottom:20px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:0 4px;margin-bottom:8px;">${escHtml(c)} <span style="color:var(--primary);">${groups[c].length}</span></div><div class="table-wrap"><table><colgroup><col style="width:28px;"><col style="width:30%;"><col style="width:16%;"><col style="width:18%;"><col style="width:10%;"><col style="width:11%;"><col style="width:50px;"></colgroup><thead><tr><th></th><th>Score Name</th><th>Genre</th><th>Tags</th><th>Status</th><th>Accessed</th><th></th></tr></thead><tbody>${groups[c].map(scoreRow).join('')}</tbody></table></div></div>`).join('');
+    view.innerHTML=keys.map(c=>`<div style="margin-bottom:24px;"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding:0 8px;margin-bottom:12px;border-left:3px solid var(--primary);"> &nbsp; ${escHtml(c)} <span style="color:var(--primary); margin-left:8px; opacity:0.6;">${groups[c].length}</span></div><div class="table-wrap"><table><colgroup><col style="width:28px;"><col style="width:30%;"><col style="width:16%;"><col style="width:18%;"><col style="width:10%;"><col style="width:11%;"><col style="width:50px;"></colgroup><thead><tr><th></th><th>Score Name</th><th>Genre</th><th>Tags</th><th>Status</th><th>Accessed</th><th></th></tr></thead><tbody>${groups[c].map(scoreRow).join('')}</tbody></table></div></div>`).join('');
     wireTable(view);
 }
 
@@ -807,8 +891,8 @@ function wireTable(container) {
     if(ca)ca.onchange=()=>{container.querySelectorAll('.row-chk').forEach(c=>{c.checked=ca.checked;const fp=c.dataset.fp;if(ca.checked)selectedFps.add(fp);else selectedFps.delete(fp);c.closest('tr').classList.toggle('row-selected',ca.checked);});updateBulkBar();};
     container.querySelectorAll('.row-chk,[data-action="delete"],.editable,.cat-select,.tag-input,.remove-tag').forEach(el=>wireEl(el));
     
-    // Keyboard Navigation - Listen on the container
-    container.tabIndex = -1; // Make container focusable so keys work
+    // Keyboard Navigation
+    container.tabIndex = -1;
     container.addEventListener('keydown', e => {
         const rows = Array.from(container.querySelectorAll('tbody tr[data-fp]'));
         if (!rows.length) return;
@@ -817,34 +901,14 @@ function wireTable(container) {
         const idx = rows.indexOf(current);
 
         let target = null;
-        if (e.key === 'ArrowDown') {
-            target = rows[idx + 1] || rows[0];
-        } else if (e.key === 'ArrowUp') {
-            target = rows[idx - 1] || rows[rows.length - 1];
-        } else if (e.key === 'Home') {
-            target = rows[0];
-        } else if (e.key === 'End') {
-            target = rows[rows.length - 1];
-        } else if (e.key === 'PageDown') {
-            target = rows[Math.min(idx + 10, rows.length - 1)];
-        } else if (e.key === 'PageUp') {
-            target = rows[Math.max(idx - 10, 0)];
-        } else if (e.key === ' ') {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-            e.preventDefault();
-            const chk = current.querySelector('.row-chk');
-            if (chk) { chk.checked = !chk.checked; chk.onchange(); }
-        } else if (e.key === 'Enter') {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-            e.preventDefault();
-            toggleDetail(current.dataset.fp);
-        }
+        if (e.key === 'ArrowDown') target = rows[idx + 1] || rows[0];
+        else if (e.key === 'ArrowUp') target = rows[idx - 1] || rows[rows.length - 1];
+        else if (e.key === 'Home') target = rows[0];
+        else if (e.key === 'End') target = rows[rows.length - 1];
+        else if (e.key === ' ') { if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') { e.preventDefault(); const chk = current.querySelector('.row-chk'); if (chk) { chk.checked = !chk.checked; chk.onchange(); } } }
+        else if (e.key === 'Enter') { if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') { e.preventDefault(); toggleDetail(current.dataset.fp); } }
 
-        if (target) {
-            e.preventDefault();
-            target.focus();
-            target.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-        }
+        if (target) { e.preventDefault(); target.focus(); target.scrollIntoView({ block: 'nearest', behavior: 'auto' }); }
     });
 }
 
@@ -860,14 +924,13 @@ function wireEl(el) {
         el.onclick=()=>deleteScore(el.dataset.fp);
     } else if (el.classList.contains('editable')) {
         let orig=el.value;
-        const save=async()=>{const nv=el.value.trim();if(nv===orig)return;orig=nv;const fp=el.dataset.fp,field=el.dataset.field;el.classList.add('saving');try{const reg=(await db.get('score_registry'))||[];const ent=reg.find(e=>e.fingerprint===fp);if(ent){ent[field]=nv;ent.updatedAt=Date.now();await db.set('score_registry',reg);}const mi=mergedList.findIndex(e=>e.fingerprint===fp);if(mi!==-1)mergedList[mi][field]=nv;const detail=await db.get(`detail_${fp}`);if(detail){const now=Date.now();detail.lastEdit=now;if(field==='title'){detail.name=nv;detail.title=nv;detail.nameEditedAt=now;}if(field==='composer'){detail.composer=nv;detail.composerEditedAt=now;}await db.set(`detail_${fp}`,detail);}const{error}=await sbClient.from('scores').update({[field]:nv,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);if(error)throw error;el.classList.remove('saving');el.classList.add('saved');setTimeout(()=>el.classList.remove('saved'),1500);}catch(e){el.classList.remove('saving');el.classList.add('error');el.value=orig;setTimeout(()=>el.classList.remove('error'),2000);}};
+        const save=async()=>{const nv=el.value.trim();if(nv===orig)return;orig=nv;const fp=el.dataset.fp,field=el.dataset.field;el.classList.add('saving');try{const reg=(await db.get('score_registry'))||[];const ent=reg.find(e=>e.fingerprint===fp);if(ent){ent[field]=nv;ent.updatedAt=Date.now();await db.set('score_registry',reg);}const mi=mergedList.findIndex(e=>e.fingerprint===fp);if(mi!==-1)mergedList[mi][field]=nv;await sbClient.from('scores').update({[field]:nv,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);el.classList.remove('saving');el.classList.add('saved');setTimeout(()=>el.classList.remove('saved'),1500);}catch(e){el.classList.remove('saving');el.classList.add('error');el.value=orig;setTimeout(()=>el.classList.remove('error'),2000);}};
         el.addEventListener('blur',save);
         el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();el.blur();}if(e.key==='Escape'){el.value=orig;el.blur();}});
     } else if (el.classList.contains('cat-select')) {
         el.addEventListener('change',async()=>{const fp=el.dataset.fp,genre=el.value;const reg=(await db.get('score_registry'))||[];const ent=reg.find(e=>e.fingerprint===fp);if(ent){ent.genre=genre;ent.updatedAt=Date.now();await db.set('score_registry',reg);}const mi=mergedList.findIndex(e=>e.fingerprint===fp);if(mi!==-1)mergedList[mi].genre=genre;await sbClient.from('scores').update({genre,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);});
     } else if (el.classList.contains('tag-input')) {
-        el.addEventListener('keydown',async e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();const tag=el.value.trim().replace(/,$/,'');if(!tag)return;el.value='';const fp=el.dataset.fp;const reg=(await db.get('score_registry'))||[];const ent=reg.find(s=>s.fingerprint===fp);if(!ent)return;if(!ent.tags)ent.tags=[];if(ent.tags.includes(tag))return;ent.tags.push(tag);ent.updatedAt=Date.now();await db.set('score_registry',reg);const mi=mergedList.findIndex(s=>s.fingerprint===fp);if(mi!==-1)mergedList[mi].tags=[...ent.tags];await sbClient.from('scores').update({tags:ent.tags,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);// Refresh tag editor UI
-const editor=document.getElementById(`tags-${fp}`);if(editor){editor.innerHTML=ent.tags.map(t=>`<span class="tag-chip">${escHtml(t)}<span class="remove-tag" data-fp="${fp}" data-tag="${escHtml(t)}">×</span></span>`).join('')+`<input type="text" class="tag-input" placeholder="Add tag, press Enter" data-fp="${fp}">`;editor.querySelectorAll('.tag-input,.remove-tag').forEach(x=>wireEl(x));}}});
+        el.addEventListener('keydown',async e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();const tag=el.value.trim().replace(/,$/,'');if(!tag)return;el.value='';const fp=el.dataset.fp;const reg=(await db.get('score_registry'))||[];const ent=reg.find(s=>s.fingerprint===fp);if(!ent)return;if(!ent.tags)ent.tags=[];if(ent.tags.includes(tag))return;ent.tags.push(tag);ent.updatedAt=Date.now();await db.set('score_registry',reg);const mi=mergedList.findIndex(s=>s.fingerprint===fp);if(mi!==-1)mergedList[mi].tags=[...ent.tags];await sbClient.from('scores').update({tags:ent.tags,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);const editor=document.getElementById(`tags-${fp}`);if(editor){editor.innerHTML=ent.tags.map(t=>`<span class="tag-chip">${escHtml(t)}<span class="remove-tag" data-fp="${fp}" data-tag="${escHtml(t)}">×</span></span>`).join('')+`<input type="text" class="tag-input" placeholder="Add tag, press Enter" data-fp="${fp}">`;editor.querySelectorAll('.tag-input,.remove-tag').forEach(x=>wireEl(x));}}});
     } else if (el.classList.contains('remove-tag')) {
         el.onclick=async()=>{const fp=el.dataset.fp,tag=el.dataset.tag;const reg=(await db.get('score_registry'))||[];const ent=reg.find(s=>s.fingerprint===fp);if(!ent||!ent.tags)return;ent.tags=ent.tags.filter(t=>t!==tag);ent.updatedAt=Date.now();await db.set('score_registry',reg);const mi=mergedList.findIndex(s=>s.fingerprint===fp);if(mi!==-1)mergedList[mi].tags=[...ent.tags];await sbClient.from('scores').update({tags:ent.tags,updated_at:new Date().toISOString()}).eq('fingerprint',fp).eq('user_id',currentUser.id);const editor=document.getElementById(`tags-${fp}`);if(editor){editor.innerHTML=ent.tags.map(t=>`<span class="tag-chip">${escHtml(t)}<span class="remove-tag" data-fp="${fp}" data-tag="${escHtml(t)}">×</span></span>`).join('')+`<input type="text" class="tag-input" placeholder="Add tag, press Enter" data-fp="${fp}">`;editor.querySelectorAll('.tag-input,.remove-tag').forEach(x=>wireEl(x));}};
     }
@@ -905,7 +968,7 @@ wire('btn-select-all', async () => {
 });
 wire('btn-bulk-delete', async () => {
     if (!selectedFps.size) return;
-    if (!confirm(`Remove ${selectedFps.size} score(s) from cloud?`)) return;
+    if (!confirm(`Remove ${selectedFps.size} score(s) from cloud library?`)) return;
     for (const fp of [...selectedFps]) await deleteScore(fp, true);
     selectedFps.clear();
     reloadTab('library');
@@ -920,15 +983,12 @@ wire('btn-export-csv', async () => {
 
 async function deleteScore(fp, silent=false) {
     if (!silent && !confirm('Remove from cloud library?')) return;
-    // 1. Remove from IndexedDB registry entirely
     const reg = (await db.get('score_registry')) || [];
     const newReg = reg.filter(e => e.fingerprint !== fp);
     await db.set('score_registry', newReg);
-    // 2. Remove detail + stamps from IndexedDB
     await db.remove(`detail_${fp}`);
     await db.remove(`stamps_${fp}`);
     await db.remove(`score_buf_${fp}`);
-    // 3. Delete from Supabase
     await sbClient.from('scores').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
     await sbClient.from('annotations').delete().eq('fingerprint', fp).eq('user_id', currentUser.id);
     if (!silent) reloadTab('library');
@@ -942,7 +1002,7 @@ document.querySelectorAll('.addto-tab').forEach(btn=>{btn.onclick=()=>{document.
 
 async function openAddToModal(){if(!selectedFps.size)return;addToMode='collection';document.querySelectorAll('.addto-tab').forEach(b=>{b.classList.remove('active','btn-primary');b.classList.add('btn-outline');});document.querySelector('.addto-tab[data-type="collection"]').classList.add('active','btn-primary');document.querySelector('.addto-tab[data-type="collection"]').classList.remove('btn-outline');document.getElementById('addto-new-name').value='';await renderAddToList();document.getElementById('modal-addto').classList.remove('hidden');}
 
-async function renderAddToList(){const listEl=document.getElementById('addto-list');if(addToMode==='collection'){const colls=(await db.get('score_collections'))||[];listEl.innerHTML=!colls.length?`<div style="font-size:12px;color:var(--text-muted);">No collections yet. Create one below.</div>`:colls.map((c,i)=>`<button class="modal-option" data-idx="${i}" data-type="collection"><span>${c.color||'📚'}</span><span style="flex:1;">${escHtml(c.name)}</span><span class="pill pill-gray">${c.fingerprints?.length||0}</span></button>`).join('');listEl.querySelectorAll('.modal-option').forEach(btn=>{btn.onclick=async()=>{const colls2=(await db.get('score_collections'))||[];await addFpsToCollection(colls2[parseInt(btn.dataset.idx)],[...selectedFps]);closeAddToModal();};});}else{const sl=(await db.get('score_setlists'))||[];listEl.innerHTML=!sl.length?`<div style="font-size:12px;color:var(--text-muted);">No setlists yet.</div>`:sl.map((s,i)=>`<button class="modal-option" data-idx="${i}" data-type="setlist"><span>📋</span><span style="flex:1;">${escHtml(s.title||s.name||'Untitled')}</span><span class="pill pill-gray">${s.scores?.length||0}</span></button>`).join('');listEl.querySelectorAll('.modal-option').forEach(btn=>{btn.onclick=async()=>{const sl2=(await db.get('score_setlists'))||[];await addFpsToSetlist(sl2[parseInt(btn.dataset.idx)],[...selectedFps]);closeAddToModal();};});}}
+async function renderAddToList(){const listEl=document.getElementById('addto-list');if(addToMode==='collection'){const colls=(await db.get('score_collections'))||[];listEl.innerHTML=!colls.length?`<div style="font-size:12px;color:var(--text-muted);padding:10px;">No collections found.</div>`:colls.map((c,i)=>`<button class="modal-option" data-idx="${i}" data-type="collection"><span>${c.color||'📚'}</span><span style="flex:1;">${escHtml(c.name)}</span><span class="pill pill-gray">${c.fingerprints?.length||0}</span></button>`).join('');listEl.querySelectorAll('.modal-option').forEach(btn=>{btn.onclick=async()=>{const colls2=(await db.get('score_collections'))||[];await addFpsToCollection(colls2[parseInt(btn.dataset.idx)],[...selectedFps]);closeAddToModal();};});}else{const sl=(await db.get('score_setlists'))||[];listEl.innerHTML=!sl.length?`<div style="font-size:12px;color:var(--text-muted);padding:10px;">No setlists found.</div>`:sl.map((s,i)=>`<button class="modal-option" data-idx="${i}" data-type="setlist"><span>📋</span><span style="flex:1;">${escHtml(s.title||s.name||'Untitled')}</span><span class="pill pill-gray">${s.scores?.length||0}</span></button>`).join('');listEl.querySelectorAll('.modal-option').forEach(btn=>{btn.onclick=async()=>{const sl2=(await db.get('score_setlists'))||[];await addFpsToSetlist(sl2[parseInt(btn.dataset.idx)],[...selectedFps]);closeAddToModal();};});}}
 
 function closeAddToModal(){document.getElementById('modal-addto').classList.add('hidden');selectedFps.clear();updateBulkBar();renderLibrary();}
 
@@ -969,16 +1029,8 @@ async function syncCollectionsToCloud() {
     try {
         const { data: prof } = await sbClient.from('profiles').select('data').eq('id', currentUser.id).maybeSingle();
         const updatedData = { ...(prof?.data || {}), collections: l };
-        const { error } = await sbClient.from('profiles').upsert({
-            id: currentUser.id,
-            email: currentUser.email,
-            data: updatedData,
-            updated_at: new Date().toISOString()
-        });
-        if (!error) console.log(`[ScoreAdmin] Collections sync successful: ${l.length} collections.`);
-    } catch (e) {
-        console.error('[ScoreAdmin] Collections sync error:', e);
-    }
+        await sbClient.from('profiles').upsert({ id: currentUser.id, email: currentUser.email, data: updatedData, updated_at: new Date().toISOString() });
+    } catch (e) { console.error('[ScoreAdmin] Collections sync error:', e); }
 }
 
 async function syncSetlistsToCloud() {
@@ -987,26 +1039,15 @@ async function syncSetlistsToCloud() {
     try {
         const { data: prof } = await sbClient.from('profiles').select('data').eq('id', currentUser.id).maybeSingle();
         const updatedData = { ...(prof?.data || {}), setlists: l };
-        const { error } = await sbClient.from('profiles').upsert({
-            id: currentUser.id,
-            email: currentUser.email,
-            data: updatedData,
-            updated_at: new Date().toISOString()
-        });
-        if (!error) console.log(`[ScoreAdmin] Setlists sync successful: ${l.length} setlists.`);
-    } catch (e) {
-        console.error('[ScoreAdmin] Setlists sync error:', e);
-    }
+        await sbClient.from('profiles').upsert({ id: currentUser.id, email: currentUser.email, data: updatedData, updated_at: new Date().toISOString() });
+    } catch (e) { console.error('[ScoreAdmin] Setlists sync error:', e); }
 }
 
 async function loadCollections() {
-    // 1. Pull from Cloud first
     if (sbClient && currentUser) {
         try {
             const { data: prof } = await sbClient.from('profiles').select('data').eq('id', currentUser.id).maybeSingle();
-            if (prof?.data?.collections) {
-                await db.set('score_collections', prof.data.collections);
-            }
+            if (prof?.data?.collections) await db.set('score_collections', prof.data.collections);
         } catch (e) { console.warn('[ScoreAdmin] Cloud pull failed:', e); }
     }
     renderSortedCollections();
@@ -1016,11 +1057,7 @@ async function renderSortedCollections() {
     const sidebar = document.getElementById('coll-sidebar');
     if (!sidebar) return;
     const all = (await db.get('score_collections')) || [];
-    
-    // 1. Filter
     const filtered = all.filter(c => (c.name || '').toLowerCase().includes(collSidebarSearch.toLowerCase()));
-    
-    // 2. Sort
     filtered.sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0));
 
     sidebar.innerHTML = !filtered.length ? `<div style="padding:40px; text-align:center; color:var(--text-muted); font-size:12px;">No collections found.</div>` : filtered.map(c => `
@@ -1038,10 +1075,7 @@ async function renderSortedCollections() {
 
 async function selectCollection(id) {
     selectedCollectionId = id;
-    
-    // Highlight sidebar
     document.querySelectorAll('#coll-sidebar .sl-item').forEach(el => el.classList.toggle('active', el.dataset.id === id));
-    
     const main = document.getElementById('coll-main-content');
     const cols = (await db.get('score_collections')) || [];
     const c = cols.find(x => x.id === id);
@@ -1054,25 +1088,33 @@ async function selectCollection(id) {
                 <div>
                     <h2 style="margin:0;">${escHtml(c.name)}</h2>
                     <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
-                        Collection ID: <span class="mono">${c.id}</span> • 
+                        ID: <span class="mono">${c.id}</span> • 
                         <span style="font-weight:700; color:var(--primary);">${c.fingerprints?.length || 0}</span> scores
                     </div>
                 </div>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
-                <span style="font-size:11px; color:var(--text-muted);">Sort No.</span>
-                <input type="number" class="tool-input" style="width:50px; padding:4px 6px;" value="${c.sortIndex || 0}" onchange="updateCollectionIndex('${c.id}', this.value)">
+                <span style="font-size:11px; color:var(--text-muted);">Sort Index</span>
+                <input type="number" class="tool-input" style="width:50px; padding:4px 8px; border:1px solid var(--border); border-radius:6px;" value="${c.sortIndex || 0}" onchange="updateCollectionIndex('${c.id}', this.value)">
                 <button class="btn btn-danger btn-sm" onclick="deleteCollection('${c.id}')">Delete Collection</button>
             </div>
         </div>
         
-        <div class="toolbar" style="border-top:none; border-bottom:1px solid var(--border); padding:10px 20px;">
-            <input type="text" class="search-input" id="coll-score-search" placeholder="Search within this collection…" value="${escHtml(collScoreSearch)}">
-            <select class="tool-select" id="coll-genre-filter">
-                <option value="">All Genres</option>
-                ${GENRES.map(g => `<option value="${g.id}" ${collGenreFilter === g.id ? 'selected' : ''}>${g.icon} ${g.label}</option>`).join('')}
-            </select>
-            <select class="tool-select" id="coll-score-sort">
+        <div class="toolbar" style="border-top:none; border-bottom:1px solid var(--border); padding:12px 32px; background:#fff; gap:12px;">
+            <input type="text" class="search-input" id="coll-score-search" placeholder="Search within collection…" value="${escHtml(collScoreSearch)}" style="width:200px;">
+            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <button class="filter-pill ${!collGenreFilter ? 'active' : ''}" onclick="setCollGenre('')">All</button>
+                ${['Classical', 'Symphony', 'Piano', 'Cello', 'Violin', 'Flute'].map(gid => {
+                    const g = GENRE_MAP[gid];
+                    return `<button class="filter-pill ${collGenreFilter === gid ? 'active' : ''}" onclick="setCollGenre('${gid}')">${g.icon} ${g.label_zh || g.label}</button>`;
+                }).join('')}
+                <select class="tool-select" id="coll-genre-filter" style="padding:4px 8px; font-size:11px;">
+                    <option value="">More Genres…</option>
+                    ${GENRES.filter(g => !['Classical', 'Symphony', 'Piano', 'Cello', 'Violin', 'Flute'].includes(g.id)).map(g => `<option value="${g.id}" ${collGenreFilter === g.id ? 'selected' : ''}>${g.icon} ${g.label}</option>`).join('')}
+                </select>
+            </div>
+            <select class="tool-select" id="coll-score-sort" style="margin-left:auto;">
+                <option value="index-asc" ${collScoreSort === 'index-asc' ? 'selected' : ''}>Manual Order (No.)</option>
                 <option value="title-asc" ${collScoreSort === 'title-asc' ? 'selected' : ''}>Title A → Z</option>
                 <option value="title-desc" ${collScoreSort === 'title-desc' ? 'selected' : ''}>Title Z → A</option>
                 <option value="composer-asc" ${collScoreSort === 'composer-asc' ? 'selected' : ''}>Composer A → Z</option>
@@ -1080,61 +1122,50 @@ async function selectCollection(id) {
             </select>
         </div>
         
-        <div id="coll-scores-view" style="padding:0;">
-            <div style="padding:40px; text-align:center; color:var(--text-muted);">Loading scores…</div>
-        </div>
+        <div id="coll-scores-view"></div>
     `;
 
-    // Wire up listeners
     document.getElementById('coll-score-search').oninput = e => { collScoreSearch = e.target.value; renderCollectionScores(); };
     document.getElementById('coll-genre-filter').onchange = e => { collGenreFilter = e.target.value; renderCollectionScores(); };
     document.getElementById('coll-score-sort').onchange = e => { collScoreSort = e.target.value; renderCollectionScores(); };
-    
     renderCollectionScores();
 }
 
 async function renderCollectionScores() {
     const view = document.getElementById('coll-scores-view');
     if (!view || !selectedCollectionId) return;
-    
     const cols = (await db.get('score_collections')) || [];
     const c = cols.find(x => x.id === selectedCollectionId);
     if (!c) return;
-
     const reg = (await db.get('score_registry')) || [];
-    const cloud = (await db.get('score_sync_cache')) || [];
-    const fullList = buildMergedList(reg, cloud);
-    
-    // 1. Filter to collection
+    const fullList = buildMergedList(reg, cachedScores);
     let list = fullList.filter(s => c.fingerprints?.includes(s.fingerprint));
-    
-    // 2. Apply UI filters
     if (collGenreFilter) list = list.filter(s => s.genre === collGenreFilter);
     if (collScoreSearch) {
         const q = collScoreSearch.toLowerCase();
         list = list.filter(s => (s.title || '').toLowerCase().includes(q) || (s.composer || '').toLowerCase().includes(q) || (s.tags || []).join(' ').toLowerCase().includes(q));
     }
-    
-    // 3. Sort
     const [field, dir] = collScoreSort.split('-');
-    list.sort((a, b) => {
-        let va = (a[field] || '').toLowerCase(), vb = (b[field] || '').toLowerCase();
-        if (va < vb) return dir === 'asc' ? -1 : 1;
-        if (va > vb) return dir === 'asc' ? 1 : -1;
-        return 0;
-    });
-
-    if (!list.length) {
-        view.innerHTML = `<div class="empty-state" style="padding:80px 0;"><div class="icon">🎼</div>No matching scores in this collection.</div>`;
-        return;
+    if (field === 'index') {
+        list.sort((a, b) => { const va = a.sortIndex || 0, vb = b.sortIndex || 0; return dir === 'asc' ? va - vb : vb - va; });
+    } else {
+        list.sort((a, b) => { let va = (a[field] || '').toLowerCase(), vb = (b[field] || '').toLowerCase(); if (va < vb) return dir === 'asc' ? -1 : 1; if (va > vb) return dir === 'asc' ? 1 : -1; return 0; });
     }
-
-    view.innerHTML = `<div class="table-wrap" style="border:none; border-radius:0;"><table>
-        <colgroup><col style="width:28px;"><col style="width:55px;"><col style="width:23%;"><col style="width:15%;"><col style="width:14%;"><col style="width:17%;"><col style="width:10%;"><col style="width:10%;"><col style="width:50px;"></colgroup>
-        <thead><tr><th></th><th>No.</th><th>Score Name</th><th>Composer</th><th>Genre</th><th>Tags</th><th>Status</th><th>Accessed</th><th></th></tr></thead>
+    if (!list.length) { view.innerHTML = `<div class="empty-state" style="padding:100px 0;"><div class="icon">🎼</div>No matching scores in this collection.</div>`; return; }
+    const thc = (f) => `sortable${field === f ? ' sort-' + dir : ''}`;
+    view.innerHTML = `<div class="table-wrap" style="border:none;"><table>
+        <colgroup><col style="width:28px;"><col style="width:65px;"><col style="width:25%;"><col style="width:15%;"><col style="width:14%;"><col style="width:17%;"><col style="width:10%;"><col style="width:10%;"><col style="width:50px;"></colgroup>
+        <thead><tr><th></th><th class="${thc('index')}" data-sort-field="index">No.</th><th class="${thc('title')}" data-sort-field="title">Score Name</th><th class="${thc('composer')}" data-sort-field="composer">Composer</th><th>Genre</th><th>Tags</th><th>Status</th><th>Accessed</th><th></th></tr></thead>
         <tbody>${list.map(scoreRow).join('')}</tbody>
     </table></div>`;
-    
+    view.querySelectorAll('th[data-sort-field]').forEach(th => {
+        th.onclick = () => {
+            const f = th.dataset.sortField, cf = collScoreSort.split('-')[0], cd = collScoreSort.split('-')[1];
+            collScoreSort = f === cf ? `${f}-${cd === 'asc' ? 'desc' : 'asc'}` : `${f}-asc`;
+            document.getElementById('coll-score-sort').value = collScoreSort;
+            renderCollectionScores();
+        };
+    });
     wireTable(view);
 }
 
@@ -1146,7 +1177,7 @@ async function updateCollectionIndex(id, val) {
     c.updatedAt = Date.now();
     await db.set('score_collections', colls);
     await syncCollectionsToCloud();
-    await loadCollections();
+    renderSortedCollections();
 }
 
 async function editCollection(id) {
@@ -1159,18 +1190,20 @@ async function editCollection(id) {
     c.updatedAt = Date.now();
     await db.set('score_collections', colls);
     await syncCollectionsToCloud();
-    reloadTab('collections');
+    renderSortedCollections();
+    if(selectedCollectionId===id)selectCollection(id);
 }
 
 async function deleteCollection(id) {
-    if (!confirm('Delete this collection? Scores are not deleted.')) return;
+    if (!confirm('Delete this collection? Scores will not be removed.')) return;
     const colls = (await db.get('score_collections')) || [];
     await db.set('score_collections', colls.filter(c => c.id !== id));
     await syncCollectionsToCloud();
-    reloadTab('collections');
+    renderSortedCollections();
+    if(selectedCollectionId===id){ selectedCollectionId=null; document.getElementById('coll-main-content').innerHTML=`<div class="empty-state" style="padding:100px 0;"><div class="icon">📚</div>Select a collection from the left sidebar.</div>`; }
 }
-wire('btn-new-collection', async() => {const n=prompt('New collection name:');if(!n?.trim())return;const colls=(await db.get('score_collections'))||[];colls.push({id:`col_${Date.now()}`,name:n.trim(),color:'📚',fingerprints:[],updatedAt:Date.now()});await db.set('score_collections',colls);await syncCollectionsToCloud();reloadTab('collections');});
-wire('btn-refresh-colls', () => reloadTab('collections'));
+wire('btn-new-collection', async() => {const n=prompt('New collection name:');if(!n?.trim())return;const colls=(await db.get('score_collections'))||[];colls.push({id:`col_${Date.now()}`,name:n.trim(),color:'📚',fingerprints:[],updatedAt:Date.now()});await db.set('score_collections',colls);await syncCollectionsToCloud();renderSortedCollections();});
+wire('btn-refresh-colls', () => loadCollections());
 
 // ══════════ IMPORT SCORE ══════════
 wire('btn-import-score', () => {showImpStep(1);importTags=[];document.getElementById('modal-import').classList.remove('hidden');});
@@ -1184,11 +1217,10 @@ dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over')
 dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)handleImportFile(f);});
 document.getElementById('pdf-input').addEventListener('change',e=>{if(e.target.files[0])handleImportFile(e.target.files[0]);});
 
-// Import tags editor
 const impTagInput=document.getElementById('imp-tag-input');
 function renderImpTags(){const editor=document.getElementById('imp-tags-editor');editor.innerHTML=importTags.map(t=>`<span class="tag-chip">${escHtml(t)}<span class="remove-tag" data-tag="${escHtml(t)}">×</span></span>`).join('')+`<input type="text" class="tag-input" id="imp-tag-input" placeholder="Add tag…">`;document.getElementById('imp-tag-input').addEventListener('keydown',impTagKeydown);document.querySelectorAll('#imp-tags-editor .remove-tag').forEach(el=>{el.onclick=()=>{importTags=importTags.filter(t=>t!==el.dataset.tag);renderImpTags();};});}
 function impTagKeydown(e){if(e.key==='Enter'||e.key===','){e.preventDefault();const v=e.target.value.trim().replace(/,$/,'');if(v&&!importTags.includes(v)){importTags.push(v);renderImpTags();}else e.target.value='';}}
-impTagInput.addEventListener('keydown',impTagKeydown);
+if(impTagInput) impTagInput.addEventListener('keydown',impTagKeydown);
 
 function handleImportFile(file){if(!file.name.toLowerCase().endsWith('.pdf')){alert('Please select a PDF file.');return;}importFile=file;const base=file.name.replace(/\.pdf$/i,'');document.getElementById('imp-filename').textContent=file.name;document.getElementById('imp-size').textContent=fmtBytes(file.size);document.getElementById('imp-title').value=base;document.getElementById('imp-composer').value='';document.getElementById('imp-genre').value='';importTags=[];renderImpTags();showImpStep(2);}
 
@@ -1211,150 +1243,98 @@ wire('btn-imp-upload', async() => {
         const reg=(await db.get('score_registry'))||[];
         const existing=reg.find(s=>s.fingerprint===fp);
         if(existing){if(!confirm(`This PDF already exists as "${existing.title}". Update metadata?`)){document.getElementById('modal-import').classList.add('hidden');return;}}
-        setP(40,'Uploading PDF…');
+        setP(40,'Uploading PDF to storage…');
         const {error:ue}=await sbClient.storage.from('pdfs').upload(`${currentUser.id}/${fp}.pdf`,importFile,{contentType:'application/pdf',upsert:true});
         if(ue)throw ue;
-        setP(70,'Saving metadata…');
-        const {error:de}=await sbClient.from('scores').upsert({user_id:currentUser.id,fingerprint:fp,title,composer,genre:genre||null,filename:`${fp}.pdf`,tags:importTags,updated_at:new Date().toISOString()},{onConflict:'user_id,fingerprint'});
+        setP(70,'Saving score metadata…');
+        const {error:de}=await sbClient.from('scores').upsert({user_id:currentUser.id,fingerprint:fp,title,composer,genre:genre||null,sort_index:0,filename:`${fp}.pdf`,tags:importTags,updated_at:new Date().toISOString()},{onConflict:'user_id,fingerprint'});
         if(de)throw de;
-        setP(85,'Updating local library…');
-        if(existing){existing.title=title;existing.composer=composer;existing.genre=genre||'';existing.tags=importTags;existing.isSynced=true;existing.isPdfAvailable=true;existing.updatedAt=Date.now();}
-        else{reg.push({fingerprint:fp,title,composer,genre:genre||'',tags:importTags,fileName:importFile.name,storageMode:'cached',isSynced:true,isPdfAvailable:true,dateImported:Date.now(),lastAccessed:0});}
+        setP(85,'Updating local registry…');
+        if(existing){existing.title=title;existing.composer=composer;existing.genre=genre||'';existing.tags=importTags;existing.updatedAt=Date.now();}
+        else{reg.push({fingerprint:fp,title,composer,genre:genre||'',tags:importTags,fileName:importFile.name,storageMode:'cached',dateImported:Date.now(),lastAccessed:0});}
         await db.set('score_registry',reg);
-        setP(100,'Done!');
-        setTimeout(()=>{document.getElementById('modal-import').classList.add('hidden');reloadTab('library');if(loadedTabs.has('dashboard'))reloadTab('dashboard');},600);
+        setP(100,'Import Complete!');
+        setTimeout(()=>{document.getElementById('modal-import').classList.add('hidden');reloadTab('library');if(loadedTabs.has('dashboard'))reloadTab('dashboard');},800);
     }catch(err){btn.disabled=false;btn.textContent='Upload & Save';document.getElementById('imp-progress-text').textContent='Error: '+err.message;document.getElementById('imp-progress-bar').style.background='#ef4444';console.error(err);}
 });
 document.getElementById('modal-import').addEventListener('click',e=>{if(e.target===document.getElementById('modal-import'))document.getElementById('modal-import').classList.add('hidden');});
 
 // ══════════ SETLISTS ══════════
-let currentEditingSlId = null;
+let selectedSetlistId = null;
 
 async function loadSetlists() {
-    console.log('[ScoreAdmin] Loading setlists tab...');
-    // 1. Pull from Cloud first (Source of Truth)
     if (sbClient && currentUser) {
         try {
             const { data: prof } = await sbClient.from('profiles').select('data').eq('id', currentUser.id).maybeSingle();
-            if (prof?.data?.setlists) {
-                console.log(`[ScoreAdmin] Syncing ${prof.data.setlists.length} setlists from cloud...`);
-                await db.set('score_setlists', prof.data.setlists);
-            }
-        } catch (e) {
-            console.warn('[ScoreAdmin] Failed to pull setlists from cloud:', e);
-        }
+            if (prof?.data?.setlists) await db.set('score_setlists', prof.data.setlists);
+        } catch (e) { console.warn('[ScoreAdmin] Failed to pull setlists:', e); }
     }
-    // 2. Render from (now updated) local DB
-    await renderSortedSetlists();
+    renderSortedSetlists();
 }
-
-let selectedSetlistId = null;
 
 async function renderSortedSetlists() {
     const sl = (await db.get('score_setlists')) || [];
     const sidebar = document.getElementById('setlist-sidebar');
-    const main = document.getElementById('setlist-main-content');
-    
-    // 1. Filter
     let filtered = [...sl];
-    if (setlistSearch) {
-        const q = setlistSearch.toLowerCase();
-        filtered = filtered.filter(s => (s.title || s.name || '').toLowerCase().includes(q));
-    }
-    
-    // 2. Sort
+    if (setlistSearch) { const q = setlistSearch.toLowerCase(); filtered = filtered.filter(s => (s.title || s.name || '').toLowerCase().includes(q)); }
     filtered.sort((a, b) => {
-        const nameA = (a.title || a.name || '').toLowerCase();
-        const nameB = (b.title || b.name || '').toLowerCase();
-        const countA = a.scores?.length || 0;
-        const countB = b.scores?.length || 0;
-        const dateA = a.updatedAt || 0;
-        const dateB = b.updatedAt || 0;
-        const idxA = a.sortIndex || 0;
-        const idxB = b.sortIndex || 0;
-        
         switch (setlistSort) {
-            case 'name-asc': return nameA.localeCompare(nameB);
-            case 'name-desc': return nameB.localeCompare(nameA);
-            case 'count-asc': return countA - countB;
-            case 'count-desc': return countB - countA;
-            case 'updated-asc': return dateA - dateB;
-            case 'updated-desc': return dateB - dateA;
-            case 'index-asc': default: return idxA - idxB;
+            case 'name-asc': return (a.title||a.name||'').localeCompare(b.title||b.name||'');
+            case 'name-desc': return (b.title||b.name||'').localeCompare(a.title||a.name||'');
+            case 'count-asc': return (a.scores?.length||0) - (b.scores?.length||0);
+            case 'count-desc': return (b.scores?.length||0) - (a.scores?.length||0);
+            case 'updated-desc': return (b.updatedAt||0) - (a.updatedAt||0);
+            case 'index-asc': default: return (a.sortIndex||0) - (b.sortIndex||0);
         }
     });
-    
-    // 3. Render Sidebar
     sidebar.innerHTML = filtered.map(s => `
         <div class="sl-item ${selectedSetlistId === s.id ? 'active' : ''}" data-id="${s.id}" onclick="selectSetlist('${s.id}')">
             <div class="index-pill">${s.sortIndex || 0}</div>
-            <h3>${escHtml(s.title || s.name || 'Untitled')}</h3>
-            <div class="meta">${s.scores?.length || 0} scores</div>
+            <div style="flex:1;">
+                <h3>${escHtml(s.title || s.name || 'Untitled')}</h3>
+                <div class="meta">${s.scores?.length || 0} scores</div>
+            </div>
         </div>
     `).join('');
-
-    // 4. Auto-select first if none selected
-    if (!selectedSetlistId && filtered.length > 0) {
-        console.log(`[ScoreAdmin] Auto-selecting first setlist: ${filtered[0].id}`);
-        selectSetlist(filtered[0].id);
-    }
+    if (!selectedSetlistId && filtered.length > 0) selectSetlist(filtered[0].id);
 }
 
 async function selectSetlist(id) {
-    window.selectSetlist = selectSetlist; // Double Ensure
-    console.log(`[ScoreAdmin] selectSetlist called for: ${id}`);
     selectedSetlistId = id;
-    document.querySelectorAll('.sl-item').forEach(el => {
-        el.classList.toggle('active', el.dataset.id === id);
-    });
-    
-    try {
-        const sls = (await db.get('score_setlists')) || [];
-        const sl = sls.find(x => x.id === id);
-        const reg = (await db.get('score_registry')) || [];
-        // Defensive map: Filter out null/undefined and skip entries without fingerprints
-        const tm = Object.fromEntries(reg.filter(s => s && s.fingerprint).map(s => [s.fingerprint, s]));
-        
-        console.log(`[ScoreAdmin] Setlist found: ${sl?.title || sl?.name}, scores: ${sl?.scores?.length || 0}`);
-        const main = document.getElementById('setlist-main-content');
-    if (!sl) {
-        main.innerHTML = `<div class="empty-state" style="padding:100px 0;"><div class="icon">📋</div>Setlist not found.</div>`;
-        return;
-    }
+    document.querySelectorAll('#setlist-sidebar .sl-item').forEach(el => el.classList.toggle('active', el.dataset.id === id));
+    const sls = (await db.get('score_setlists')) || [];
+    const sl = sls.find(x => x.id === id);
+    const main = document.getElementById('setlist-main-content');
+    if (!sl) { main.innerHTML = `<div class="empty-state" style="padding:100px 0;"><div class="icon">📋</div>Setlist not found.</div>`; return; }
+    const reg = (await db.get('score_registry')) || [];
+    const tm = Object.fromEntries(reg.map(s => [s.fingerprint, s]));
 
     main.innerHTML = `
         <div class="panel-hd">
-            <div style="display:flex; flex-direction:column; gap:2px;">
-                <div style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Current Setlist</div>
-                <h2>${escHtml(sl.title || sl.name || 'Untitled')}</h2>
-            </div>
+            <h2 style="font-size:1.1rem;">${escHtml(sl.title || sl.name || 'Untitled')}</h2>
             <div style="display:flex; gap:8px; align-items:center;">
-                <span style="font-size:11px; color:var(--text-muted);">Sort No.</span>
-                <input type="number" class="tool-input" style="width:50px; padding:4px 8px;" value="${sl.sortIndex || 0}" onchange="updateSetlistIndex('${sl.id}', this.value)">
+                <span style="font-size:11px; color:var(--text-muted);">Sort Index</span>
+                <input type="number" class="tool-input" style="width:50px; padding:4px 8px; border:1px solid var(--border); border-radius:6px;" value="${sl.sortIndex || 0}" onchange="updateSetlistIndex('${sl.id}', this.value)">
                 <button class="btn btn-outline btn-sm" onclick="editSetlistName('${sl.id}')">✎ Rename</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteSetlist('${sl.id}')">🗑 Delete</button>
             </div>
         </div>
-        
-        <div style="padding:20px;">
-            <div class="toolbar">
-                <h3 style="font-size:13px; font-weight:700;">Scores inside this Setlist (${sl.scores?.length || 0})</h3>
+        <div style="padding:24px;">
+            <div class="toolbar" style="margin-bottom:20px;">
+                <h3 style="font-size:13px; font-weight:700;">Curated Scores (${sl.scores?.length || 0})</h3>
                 <button class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="openAddScoreToSetlist('${sl.id}')">＋ Add Score</button>
             </div>
-            
-            <div class="table-wrap">
+            <div class="table-wrap" style="border-radius:12px; border:1px solid var(--border);">
                 <table>
-                    <colgroup><col style="width:60px;"><col><col style="width:120px;"></colgroup>
+                    <colgroup><col style="width:70px;"><col><col style="width:140px;"></colgroup>
                     <thead><tr><th>No.</th><th>Score Title</th><th style="text-align:right;">Actions</th></tr></thead>
                     <tbody>
                         ${(sl.scores || []).map((fp, i) => `
                             <tr>
-                                <td class="mono">
-                                    <input type="number" class="tool-input" style="width:50px; padding:4px 6px; font-size:13px; font-weight:700; text-align:center;" value="${i + 1}" onchange="updateScoreInSetlistIndex('${sl.id}', ${i}, this.value)" onkeydown="if(event.key==='Enter')this.blur()">
-                                </td>
+                                <td class="mono" style="text-align:center;">${i + 1}</td>
                                 <td>
-                                    <div style="font-weight:600;">${escHtml(tm[fp]?.title || 'Unknown Score')}</div>
-                                    <div style="font-size:10px; color:var(--text-muted);">${escHtml(tm[fp]?.composer || '—')}</div>
+                                    <div style="font-weight:700; font-size:13.5px;">${escHtml(tm[fp]?.title || 'Unknown Score')}</div>
+                                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${escHtml(tm[fp]?.composer || '—')}</div>
                                 </td>
                                 <td style="text-align:right;">
                                     <div style="display:flex; gap:4px; justify-content:flex-end;">
@@ -1367,20 +1347,10 @@ async function selectSetlist(id) {
                         `).join('')}
                     </tbody>
                 </table>
-                ${!sl.scores?.length ? '<div style="padding:40px; text-align:center; color:var(--text-muted); font-size:13px;">No scores in this setlist. Click "Add Score" to begin.</div>' : ''}
+                ${!sl.scores?.length ? '<div style="padding:48px; text-align:center; color:var(--text-muted); font-size:13px;">No scores in this setlist.</div>' : ''}
             </div>
         </div>
     `;
-
-    // Highlight active sidebar item
-    document.querySelectorAll('.sl-item').forEach(el => {
-        el.classList.toggle('active', el.dataset.id === id);
-    });
-    } catch (err) {
-        console.error('[ScoreAdmin] selectSetlist failed:', err);
-        const main = document.getElementById('setlist-main-content');
-        if (main) main.innerHTML = `<div class="empty-state" style="padding:100px 0; color:var(--danger);"><div class="icon">❌</div>Error loading setlist.<br><small>${escHtml(err.message)}</small></div>`;
-    }
 }
 
 async function editSetlistName(id) {
@@ -1388,14 +1358,7 @@ async function editSetlistName(id) {
     const sl = sls.find(x => x.id === id);
     if (!sl) return;
     const n = prompt('New Setlist Name:', sl.title || sl.name);
-    if (n && n.trim()) {
-        sl.title = n.trim();
-        sl.updatedAt = Date.now();
-        await db.set('score_setlists', sls);
-        await syncSetlistsToCloud();
-        await renderSortedSetlists();
-        await selectSetlist(id);
-    }
+    if (n && n.trim()) { sl.title = n.trim(); sl.updatedAt = Date.now(); await db.set('score_setlists', sls); await syncSetlistsToCloud(); renderSortedSetlists(); selectSetlist(id); }
 }
 
 async function updateSetlistIndex(id, val) {
@@ -1406,33 +1369,31 @@ async function updateSetlistIndex(id, val) {
     s.updatedAt = Date.now();
     await db.set('score_setlists', sls);
     await syncSetlistsToCloud();
-    await renderSortedSetlists();
-    if (selectedSetlistId === id) selectSetlist(id);
+    renderSortedSetlists();
 }
 
-async function updateScoreInSetlistIndex(slId, oldIdx, newVal) {
-    const sls = (await db.get('score_setlists')) || [];
-    const sl = sls.find(x => x.id === slId);
-    if (!sl || !sl.scores) return;
-    let newIdx = parseInt(newVal) - 1;
-    if (isNaN(newIdx)) { await selectSetlist(slId); return; }
-    newIdx = Math.max(0, Math.min(newIdx, sl.scores.length - 1));
-    if (newIdx === oldIdx) { await selectSetlist(slId); return; }
-    
-    // Perform move
-    const item = sl.scores.splice(oldIdx, 1)[0];
-    sl.scores.splice(newIdx, 0, item);
-    sl.updatedAt = Date.now();
-    
-    // Save locally
-    await db.set('score_setlists', sls);
-    
-    // UI Update FIRST (Instant feedback)
-    console.log(`[ScoreAdmin] Re-sorting setlist ${slId}: moved ${oldIdx} to ${newIdx}`);
-    await selectSetlist(slId);
-    
-    // Sync Cloud SECOND (Background)
-    syncSetlistsToCloud(); 
+async function updateScoreSortIndex(fp, val) {
+    const newVal = parseInt(val) || 0;
+    try {
+        const reg = (await db.get('score_registry')) || [];
+        const ent = reg.find(e => e.fingerprint === fp);
+        if (ent) {
+            ent.sortIndex = newVal;
+            ent.updatedAt = Date.now();
+            await db.set('score_registry', reg);
+        }
+        const mi = mergedList.findIndex(e => e.fingerprint === fp);
+        if (mi !== -1) mergedList[mi].sortIndex = newVal;
+        
+        if (sbClient && currentUser) {
+            await sbClient.from('scores').update({
+                sort_index: newVal,
+                updated_at: new Date().toISOString()
+            }).eq('fingerprint', fp).eq('user_id', currentUser.id);
+        }
+    } catch (e) {
+        console.error('[ScoreAdmin] Error updating score sort index:', e);
+    }
 }
 
 async function moveInSetlist(slId, index, dir) {
@@ -1446,7 +1407,7 @@ async function moveInSetlist(slId, index, dir) {
     sl.updatedAt = Date.now();
     await db.set('score_setlists', sls);
     await syncSetlistsToCloud();
-    await selectSetlist(slId);
+    selectSetlist(slId);
 }
 
 async function removeFromSetlist(slId, index) {
@@ -1458,7 +1419,7 @@ async function removeFromSetlist(slId, index) {
     sl.updatedAt = Date.now();
     await db.set('score_setlists', sls);
     await syncSetlistsToCloud();
-    await selectSetlist(slId);
+    selectSetlist(slId);
 }
 
 async function openAddScoreToSetlist(slId) {
@@ -1466,75 +1427,35 @@ async function openAddScoreToSetlist(slId) {
     const sls = (await db.get('score_setlists')) || [];
     const sl = sls.find(x => x.id === slId);
     if (!sl) return;
-    
-    // Simple searchable list modal logic (or just a quick prompt for now, but modal is better)
-    // For now, let's use a searchable prompt-like approach or just list top scores
-    // Actually, I'll use a hidden modal I'll add later, but for now, let's just do a prompt by Title
-    const title = prompt('Enter exact score title to add (or part of it):');
+    const title = prompt('Enter score title keywords:');
     if (!title) return;
     const matches = reg.filter(s => s.title.toLowerCase().includes(title.toLowerCase()));
     if (!matches.length) { alert('No matches found.'); return; }
-    
     if (matches.length === 1) {
         if (!sl.scores) sl.scores = [];
         if (sl.scores.includes(matches[0].fingerprint)) { alert('Already in setlist.'); return; }
         sl.scores.push(matches[0].fingerprint);
     } else {
-        const list = matches.map((m, i) => `${i+1}. ${m.title} (${m.composer})`).join('\n');
-        const choice = prompt(`Multiple matches. Type number to add:\n${list}`);
+        const choice = prompt(`Multiple matches. Type index (1-${matches.length}) to add:\n` + matches.map((m,i)=>`${i+1}. ${m.title} (${m.composer})`).join('\n'));
         const idx = parseInt(choice) - 1;
-        if (matches[idx]) {
-            if (!sl.scores) sl.scores = [];
-            if (sl.scores.includes(matches[idx].fingerprint)) { alert('Already in setlist.'); return; }
-            sl.scores.push(matches[idx].fingerprint);
-        } else return;
+        if (matches[idx]) { if (!sl.scores) sl.scores = []; if (sl.scores.includes(matches[idx].fingerprint)) { alert('Already in setlist.'); return; } sl.scores.push(matches[idx].fingerprint); } else return;
     }
-    
     sl.updatedAt = Date.now();
     await db.set('score_setlists', sls);
     await syncSetlistsToCloud();
-    await selectSetlist(slId);
+    selectSetlist(slId);
 }
-async function updateScoreSortIndex(fp, val) {
-    const reg = (await db.get('score_registry')) || [];
-    const s = reg.find(x => x.fingerprint === fp);
-    if (!s) return;
-    s.sortIndex = parseInt(val) || 0;
-    s.updatedAt = Date.now();
-    await db.set('score_registry', reg);
-    if (sbClient && currentUser) {
-        await sbClient.from('scores').update({ sort_index: s.sortIndex, updated_at: new Date().toISOString() }).eq('fingerprint', fp).eq('user_id', currentUser.id);
-    }
-    // Update mergedList and re-render
-    mergedList = buildMergedList(reg, cachedScores);
-    renderLibrary();
-}
-// Obsolete functions removed. Replaced by split-view logic in setlists tab.
 
 async function deleteSetlist(id) {
     if (!confirm('Delete this setlist?')) return;
     const filtered = ((await db.get('score_setlists')) || []).filter(s => s.id !== id);
     await db.set('score_setlists', filtered);
     await syncSetlistsToCloud();
-    reloadTab('setlists');
+    selectedSetlistId = null;
+    loadSetlists();
 }
-window.importCloudSetlist=async(id)=>{
-    const {data:prof}=await sbClient.from('profiles').select('data').eq('id',currentUser.id).maybeSingle();
-    const cs = prof?.data?.setlists || [];
-    const data = cs.find(s=>s.id===id);
-    if(!data)return;
-    const local=(await db.get('score_setlists'))||[];
-    const idx=local.findIndex(s=>s.id===id);
-    const entry={id:data.id,name:data.name||data.title,scores:data.scores||[],updatedAt:Date.now()};
-    if(idx!==-1)local[idx]=entry;else local.push(entry);
-    await db.set('score_setlists',local);
-    // Auto-sync import too if we want, but it's redundant. Keeping it as is.
-    alert(`Setlist "${entry.name}" imported.`);
-    reloadTab('setlists');
-};
 document.getElementById('setlist-search').oninput = e => { setlistSearch = e.target.value; renderSortedSetlists(); };
 document.getElementById('setlist-sort-select').onchange = e => { setlistSort = e.target.value; renderSortedSetlists(); };
-wire('btn-setlist-view-toggle', () => { setlistViewMode = setlistViewMode === 'cards' ? 'table' : 'cards'; renderSortedSetlists(); });
 
 wire('btn-new-setlist', async () => {
     const n = prompt('New setlist name:');
@@ -1543,80 +1464,82 @@ wire('btn-new-setlist', async () => {
     all.push({ id: `sl_${Date.now()}`, name: n.trim(), scores: [], updatedAt: Date.now() });
     await db.set('score_setlists', all);
     await syncSetlistsToCloud();
-    reloadTab('setlists');
+    loadSetlists();
 });
-wire('btn-refresh-setlists', () => reloadTab('setlists'));
-wire('btn-push-setlists', async() => await syncSetlistsToCloud(false));
+wire('btn-refresh-setlists', () => loadSetlists());
 
 // ══════════ STORAGE ══════════
-async function sortStorage(field) {
-    if (storageSortField === field) {
-        storageSortDir = storageSortDir === 'asc' ? 'desc' : 'asc';
-    } else {
-        storageSortField = field;
-        storageSortDir = 'asc';
+async function recalculateStorage() {
+    try {
+        console.log('[Storage] Recalculating usage...');
+        const { data: files, error } = await sbClient.storage.from('pdfs').list(currentUser.id, { limit: 1000 });
+        if (error) throw error;
+        
+        const totalSize = (files || []).reduce((sum, f) => sum + (f.metadata?.size || f.size || 0), 0);
+        console.log(`[Storage] Total Size: ${totalSize} bytes (${files.length} files)`);
+        
+        // Fetch existing profile to preserve other data
+        const { data: prof } = await sbClient.from('profiles').select('data').eq('id', currentUser.id).maybeSingle();
+        const updatedData = { ...(prof?.data || {}), storage_used_bytes: totalSize };
+        
+        const { error: updateError } = await sbClient.from('profiles').upsert({ 
+            id: currentUser.id, 
+            data: updatedData,
+            updated_at: new Date().toISOString()
+        });
+        
+        if (updateError) throw updateError;
+        
+        alert(`Successfully recalculated! Total usage: ${fmtBytes(totalSize)} across ${files.length} files.`);
+        loadDashboard();
+        loadStorage();
+    } catch (err) {
+        console.error('[Storage] Recalculation failed:', err);
+        alert('Failed to recalculate storage: ' + err.message);
     }
-    await loadStorage();
+}
+window.recalculateStorage = recalculateStorage;
+
+async function sortStorage(field) {
+    if (storageSortField === field) storageSortDir = storageSortDir === 'asc' ? 'desc' : 'asc';
+    else { storageSortField = field; storageSortDir = 'asc'; }
+    loadStorage();
 }
 
 async function loadStorage() {
-    const { data: prof } = await sbClient.from('user_profiles').select('storage_used_bytes,storage_quota_bytes,plan').eq('user_id', currentUser.id).single();
+    const { data: prof } = await sbClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
     const qEl = document.getElementById('quota-section');
     if (prof) {
-        const used = prof.storage_used_bytes || 0, quota = prof.storage_quota_bytes || 536870912, pct = Math.min(100, (used / quota) * 100);
-        qEl.innerHTML = `<div class="quota-wrap"><div class="quota-label"><span>Storage — <strong>${prof.plan || 'Free'}</strong></span><span>${fmtBytes(used)} / ${fmtBytes(quota)}</span><span class="plan-tag">${Math.round(pct)}% used</span></div><div class="quota-bar-bg"><div class="quota-bar-fill ${pct > 90 ? 'crit' : pct > 70 ? 'warn' : ''}" style="width:${pct.toFixed(1)}%"></div></div></div>`;
+        const used = (prof.storage_used_bytes !== undefined) ? prof.storage_used_bytes : (prof.data?.storage_used_bytes || 0);
+        const quota = (prof.storage_quota_bytes !== undefined) ? prof.storage_quota_bytes : (prof.data?.storage_quota_bytes || 1073741824);
+        const plan = prof.plan || prof.data?.plan || 'Free';
+        const pct = Math.min(100, (used / quota) * 100);
+        qEl.innerHTML = `<div class="quota-wrap"><div class="quota-label"><span>Storage Plan — <strong>${prof.plan || 'Free'}</strong></span><span>${fmtBytes(used)} / ${fmtBytes(quota)}</span><span class="plan-tag">${Math.round(pct)}% used</span></div><div class="quota-bar-bg"><div class="quota-bar-fill ${pct > 90 ? 'crit' : pct > 70 ? 'warn' : ''}" style="width:${pct.toFixed(1)}%"></div></div><button class="btn-outline-sm" style="margin-top:10px; width:fit-content;" onclick="recalculateStorage()">🔄 Recalculate Storage Usage</button></div>`;
     }
     
-    // Update header UI for sorting indicators
     const headers = document.querySelectorAll('#storage-header th');
     const fields = ['title', 'name', 'size', 'modified'];
-    headers.forEach((th, i) => {
-        if (!th.classList.contains('sortable')) return;
-        th.classList.remove('sort-asc', 'sort-desc');
-        if (fields[i] === storageSortField) {
-            th.classList.add(storageSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
-        }
-    });
+    headers.forEach((th, i) => { if (th.classList.contains('sortable')) { th.classList.remove('sort-asc', 'sort-desc'); if (fields[i] === storageSortField) th.classList.add(storageSortDir === 'asc' ? 'sort-asc' : 'sort-desc'); } });
 
     const tbody = document.getElementById('storage-tbody');
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);"><div class="icon">⏳</div>Loading storage info…</td></tr>';
     
     const { data: files } = await sbClient.storage.from('pdfs').list(currentUser.id, { limit: 1000 });
-    if (!files?.length) { 
-        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📄</div>No PDFs in cloud.</div></td></tr>`; 
-        return; 
-    }
+    if (!files?.length) { tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📄</div>No PDFs found in cloud storage.</div></td></tr>`; return; }
     
     const reg = (await db.get('score_registry')) || []; 
     const m = Object.fromEntries(reg.map(s => [s.fingerprint, s.title]));
 
-    // Sorting logic
     files.sort((a, b) => {
         let va, vb;
-        const fpA = a.name.replace('.pdf', '');
-        const fpB = b.name.replace('.pdf', '');
-        
+        const fpA = a.name.replace('.pdf', ''), fpB = b.name.replace('.pdf', '');
         switch (storageSortField) {
-            case 'title':
-                va = (m[fpA] || '—').toLowerCase();
-                vb = (m[fpB] || '—').toLowerCase();
-                break;
-            case 'name':
-                va = a.name.toLowerCase();
-                vb = b.name.toLowerCase();
-                break;
-            case 'size':
-                va = a.metadata?.size || 0;
-                vb = b.metadata?.size || 0;
-                break;
-            case 'modified':
-                va = new Date(a.updated_at || 0).getTime();
-                vb = new Date(b.updated_at || 0).getTime();
-                break;
-            default:
-                return 0;
+            case 'title': va = (m[fpA] || '—').toLowerCase(); vb = (m[fpB] || '—').toLowerCase(); break;
+            case 'name': va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+            case 'size': va = a.metadata?.size || 0; vb = b.metadata?.size || 0; break;
+            case 'modified': va = new Date(a.updated_at || 0).getTime(); vb = new Date(b.updated_at || 0).getTime(); break;
+            default: return 0;
         }
-        
         if (va < vb) return storageSortDir === 'asc' ? -1 : 1;
         if (va > vb) return storageSortDir === 'asc' ? 1 : -1;
         return 0;
@@ -1625,10 +1548,10 @@ async function loadStorage() {
     tbody.innerHTML = files.map(f => { 
         const fp = f.name.replace('.pdf', ''); 
         return `<tr>
-            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(m[fp] || '—')}">${escHtml(m[fp] || '—')}</td>
-            <td class="mono">${escHtml(f.name)}</td>
-            <td style="color:var(--text-muted);">${fmtBytes(f.metadata?.size || 0)}</td>
-            <td style="color:var(--text-muted);font-size:11px;">${f.updated_at ? new Date(f.updated_at).toLocaleDateString() : '—'}</td>
+            <td style="font-weight:700;" title="${escHtml(m[fp] || '—')}">${escHtml(m[fp] || '—')}</td>
+            <td class="mono" style="font-size:11px;">${escHtml(f.name)}</td>
+            <td style="color:var(--text-muted); font-weight:600;">${fmtBytes(f.metadata?.size || 0)}</td>
+            <td style="color:var(--text-muted); font-size:11.5px;">${f.updated_at ? new Date(f.updated_at).toLocaleDateString() : '—'}</td>
             <td>
                 <div style="display:flex;gap:4px;">
                     <button class="btn btn-outline btn-sm" onclick="openPdf('${f.name}')">Open</button>
@@ -1638,34 +1561,26 @@ async function loadStorage() {
         </tr>`; 
     }).join('');
 }
-async function openPdf(name) {
-    const { data } = await sbClient.storage.from('pdfs').createSignedUrl(`${currentUser.id}/${name}`, 300);
-    if (data?.signedUrl) window.open(data.signedUrl, '_blank');
-}
-
-async function deletePdf(name) {
-    if (!confirm(`Delete "${name}"?`)) return;
-    await sbClient.storage.from('pdfs').remove([`${currentUser.id}/${name}`]);
-    reloadTab('storage');
-}
-wire('btn-refresh-storage', () => reloadTab('storage'));
+async function openPdf(name) { const { data } = await sbClient.storage.from('pdfs').createSignedUrl(`${currentUser.id}/${name}`, 300); if (data?.signedUrl) window.open(data.signedUrl, '_blank'); }
+async function deletePdf(name) { if (!confirm(`Delete "${name}" from cloud storage?`)) return; await sbClient.storage.from('pdfs').remove([`${currentUser.id}/${name}`]); loadStorage(); }
+wire('btn-refresh-storage', () => loadStorage());
 
 // ══════════ BACKUP ══════════
 const bLog = document.getElementById('backup-log');
-const blog = (msg, type = 'info') => { const col = type === 'error' ? '#f87171' : type === 'success' ? '#10b981' : '#6b7280'; bLog.innerHTML += `<div style="color:${col}">[${new Date().toLocaleTimeString()}] ${msg}</div></div>`; bLog.scrollTop = bLog.scrollHeight; };
+const blog = (msg, type = 'info') => { const col = type === 'error' ? '#f87171' : type === 'success' ? '#10b981' : '#94a3b8'; bLog.innerHTML += `<div style="color:${col}; margin-bottom:4px;">[${new Date().toLocaleTimeString()}] ${msg}</div>`; bLog.scrollTop = bLog.scrollHeight; };
 
 wire('btn-export-idb', async () => {
-    blog('Reading IndexedDB…');
+    blog('Packaging IndexedDB data…');
     const keys = await db.getAllKeys();
     const out = {};
     for (const k of keys) out[k] = await db.get(k);
-    downloadFile(JSON.stringify(out, null, 2), `scoreflow-backup-${dateStr()}.json`, 'application/json');
-    blog(`Exported ${keys.length} keys.`, 'success');
+    downloadFile(JSON.stringify(out, null, 2), `scoreflow-local-${dateStr()}.json`, 'application/json');
+    blog(`Exported ${keys.length} data keys.`, 'success');
 });
 wire('btn-export-cloud', async () => {
     const { data } = await sbClient.from('scores').select('*').eq('user_id', currentUser.id);
     downloadFile(JSON.stringify(data || [], null, 2), `scoreflow-cloud-${dateStr()}.json`, 'application/json');
-    blog(`Exported ${data?.length || 0} records.`, 'success');
+    blog(`Exported ${data?.length || 0} cloud metadata records.`, 'success');
 });
 wire('btn-export-setlists-json', async () => {
     const l = (await db.get('score_setlists')) || [];
@@ -1678,9 +1593,9 @@ wire('btn-export-collections-json', async () => {
     blog(`Exported ${l.length} collections.`, 'success');
 });
 wire('btn-download-pdf-list', async () => {
-    blog('Generating…');
-    const { data: files } = await sbClient.storage.from('pdfs').list(currentUser.id, { limit: 200 });
-    if (!files?.length) { blog('No files.', 'warn'); return; }
+    blog('Fetching cloud PDF URLs…');
+    const { data: files } = await sbClient.storage.from('pdfs').list(currentUser.id, { limit: 1000 });
+    if (!files?.length) { blog('No PDF files in storage.', 'warn'); return; }
     const reg = (await db.get('score_registry')) || [];
     const m = Object.fromEntries(reg.map(s => [s.fingerprint, s.title]));
     const rows = [['Title', 'Filename', 'Fingerprint', 'Signed URL']];
@@ -1690,43 +1605,45 @@ wire('btn-download-pdf-list', async () => {
         rows.push([m[fp] || '—', f.name, fp, data?.signedUrl || '']);
     }
     downloadFile(rows.map(r => r.map(c => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n'), `pdf-urls-${dateStr()}.csv`, 'text/csv');
-    blog(`Done: ${files.length} PDFs.`, 'success');
+    blog(`Generated URL list for ${files.length} PDFs.`, 'success');
 });
 wire('btn-restore-idb', async () => {
     const file = document.getElementById('file-restore-idb').files[0];
-    if (!file) { blog('Select a file.', 'warn'); return; }
-    if (!confirm('Overwrite ALL local data?')) return;
+    if (!file) { blog('Please select a backup JSON file.', 'warn'); return; }
+    if (!confirm('This will OVERWRITE all local data. Continue?')) return;
     try {
         const j = JSON.parse(await file.text());
         await db.clear();
         for (const [k, v] of Object.entries(j)) await db.set(k, v);
-        blog(`Restored ${Object.keys(j).length} keys.`, 'success');
-    } catch (e) { blog('Failed: ' + e.message, 'error'); }
+        blog(`Restoration complete. ${Object.keys(j).length} keys restored.`, 'success');
+        location.reload();
+    } catch (e) { blog('Restoration failed: ' + e.message, 'error'); }
 });
 wire('btn-restore-setlists', async () => {
     const file = document.getElementById('file-restore-setlists').files[0];
-    if (!file) { blog('Select a file.', 'warn'); return; }
+    if (!file) { blog('Select a setlists JSON file.', 'warn'); return; }
     try {
         const j = JSON.parse(await file.text());
         await db.set('score_setlists', j);
-        blog(`Restored ${j.length} setlists.`, 'success');
-    } catch (e) { blog('Failed: ' + e.message, 'error'); }
+        blog(`Imported ${j.length} setlists.`, 'success');
+        loadSetlists();
+    } catch (e) { blog('Import failed: ' + e.message, 'error'); }
 });
 wire('btn-push-registry', async () => {
-    blog('Pushing…');
+    blog('Pushing local library to cloud…');
     const reg = (await db.get('score_registry')) || [];
     let ok = 0, fail = 0;
     for (const s of reg) {
         if (!s.fingerprint) continue;
-        const { error } = await sbClient.from('scores').upsert({ user_id: currentUser.id, fingerprint: s.fingerprint, title: s.title || 'Untitled', composer: s.composer || '', filename: s.fileName || null, genre: s.genre || null, tags: s.tags || [], updated_at: new Date().toISOString() }, { onConflict: 'user_id,fingerprint' });
+        const { error } = await sbClient.from('scores').upsert({ user_id: currentUser.id, fingerprint: s.fingerprint, title: s.title || 'Untitled', composer: s.composer || '', filename: s.fileName || null, genre: s.genre || null, sort_index: s.sortIndex || 0, tags: s.tags || [], updated_at: new Date().toISOString() }, { onConflict: 'user_id,fingerprint' });
         if (error) fail++; else ok++;
     }
-    blog(`Pushed ${ok}.${fail ? ' ' + fail + ' failed.' : ''}`, fail ? 'warn' : 'success');
+    blog(`Pushed ${ok} scores.${fail ? ' ' + fail + ' failures.' : ''}`, fail ? 'warn' : 'success');
 });
 wire('btn-pull-registry', async () => {
-    blog('Pulling…');
+    blog('Pulling library from cloud…');
     const { data, error } = await sbClient.from('scores').select('*').eq('user_id', currentUser.id);
-    if (error) { blog('Failed: ' + error.message, 'error'); return; }
+    if (error) { blog('Pull failed: ' + error.message, 'error'); return; }
     const reg = (await db.get('score_registry')) || [];
     let upd = 0, add = 0;
     for (const c of data) {
@@ -1736,82 +1653,33 @@ wire('btn-pull-registry', async () => {
             if (c.filename) l.fileName = c.filename; if (c.genre) l.genre = c.genre; if (c.tags) l.tags = c.tags;
             upd++;
         } else {
-            reg.push({ fingerprint: c.fingerprint, title: c.title || 'Untitled', composer: c.composer || '', fileName: c.filename || '', genre: c.genre || '', tags: c.tags || [], isSynced: true, isCloudOnly: true, storageMode: 'cloud' });
+            reg.push({ fingerprint: c.fingerprint, title: c.title || 'Untitled', composer: c.composer || '', fileName: c.filename || '', genre: c.genre || '', tags: c.tags || [], dateImported: Date.now(), lastAccessed: 0 });
             add++;
         }
     }
     await db.set('score_registry', reg);
-    blog(`Updated ${upd}, added ${add}.`, 'success');
+    blog(`Pulled data: ${upd} updated, ${add} added.`, 'success');
+    loadLibrary();
 });
 wire('btn-push-setlists-sb', async () => {
-    blog('Pushing setlists…');
-    const local = (await db.get('score_setlists')) || [];
-    let ok = 0;
-    for (const sl of local) {
-        const { error } = await sbClient.from('setlists').upsert({ id: sl.id, user_id: currentUser.id, name: sl.name, scores: sl.scores, updated_at: new Date().toISOString() });
-        if (!error) ok++;
-    }
-    blog(`Pushed ${ok}.`, 'success');
+    blog('Syncing setlists to cloud…');
+    await syncSetlistsToCloud();
+    blog('Setlists synced successfully.', 'success');
 });
 
-// ══════════ UTILS ══════════
-function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function fmtBytes(b){if(b>=1073741824)return(b/1073741824).toFixed(1)+' GB';if(b>=1048576)return(b/1048576).toFixed(1)+' MB';if(b>=1024)return(b/1024).toFixed(0)+' KB';return b+' B';}
-function dateStr(){return new Date().toISOString().slice(0,10);}
-function downloadFile(content,name,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download=name;a.click();}
-
-// Wire up sidebar search for collections
-const collSearchInput = document.getElementById('coll-search');
-if (collSearchInput) {
-    collSearchInput.addEventListener('input', e => { 
-        collSidebarSearch = e.target.value; 
-        renderSortedCollections(); 
-    });
-}
-
-// ═══ Global Function Exposure (for HTML onclick) ═══
-window.selectCollection = selectCollection;
-window.editCollection = editCollection;
-window.deleteCollection = deleteCollection;
-window.updateCollectionIndex = updateCollectionIndex;
-window.renderSortedCollections = renderSortedCollections;
-window.renderCollectionScores = renderCollectionScores;
-
-window.selectSetlist = selectSetlist;
-window.editSetlistName = editSetlistName;
-window.updateSetlistIndex = updateSetlistIndex;
-window.updateScoreInSetlistIndex = updateScoreInSetlistIndex;
-window.moveInSetlist = moveInSetlist;
-window.removeFromSetlist = removeFromSetlist;
-window.openAddScoreToSetlist = openAddScoreToSetlist;
-window.deleteSetlist = deleteSetlist;
-
-window.updateScoreSortIndex = updateScoreSortIndex;
-window.toggleDetail = toggleDetail;
-window.openPdf = openPdf;
-window.deletePdf = deletePdf;
-window.sortStorage = sortStorage;
-
-init();
-// ══════════ MAINTENANCE ══════════
+// ═══ MAINTENANCE ═══
 wire('btn-rebuild-library-hub', async () => {
-    if (!confirm('Rebuild library will scan all local PDF buffers and recreate your registry index. Proceed?')) return;
+    if (!confirm('This will scan all local PDF buffers and recreate your library index. Proceed?')) return;
     try {
-        console.log('[ScoreAdmin] Rebuilding library from IndexedDB buffers...');
+        blog('Scanning IndexedDB for PDF buffers…');
         const allKeys = await db.getAllKeys(); 
         const bufferKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith('score_buf_'));
-        
         const currentReg = (await db.get('score_registry')) || [];
         const newRegistry = [];
-        
         for (const key of bufferKeys) {
             const fp = key.replace('score_buf_', '');
-            const buffer = await db.get(key);
-            if (!buffer) continue;
-
             const detail = await db.get(`detail_${fp}`);
             const score = currentReg.find(s => s.fingerprint === fp);
-
             newRegistry.push({
                 fingerprint: fp,
                 title: detail?.name || (score?.title && score.title !== 'Unknown' ? score.title : `Recovered (${fp.slice(0, 6)})`),
@@ -1820,117 +1688,92 @@ wire('btn-rebuild-library-hub', async () => {
                 dateImported: score?.dateImported || Date.now(),
                 lastAccessed: score?.lastAccessed || Date.now(),
                 tags: score?.tags || [],
-                storageMode: score?.storageMode || 'cached'
+                storageMode: 'cached'
             });
         }
-
         await db.set('score_registry', newRegistry);
-        alert(`Library rebuilt! ${newRegistry.length} scores recovered.`);
+        blog(`Rebuilt registry with ${newRegistry.length} local scores.`, 'success');
         location.reload();
-    } catch (err) {
-        console.error('[ScoreAdmin] Rebuild failed:', err);
-        alert('Rebuild failed: ' + err.message);
-    }
+    } catch (err) { blog('Rebuild failed: ' + err.message, 'error'); }
 });
 
 wire('btn-heal-library-hub', async () => {
     try {
         const reg = (await db.get('score_registry')) || [];
         let changed = false;
-        for (const entry of reg) {
-            if (entry.thumbnail) { entry.thumbnail = null; changed = true; }
-        }
-        if (changed) {
-            await db.set('score_registry', reg);
-            // Sync to cloud
-            if (sbClient && currentUser) {
-                await sbClient.from('scores').upsert(
-                    reg.map(s => ({
-                        fingerprint: s.fingerprint,
-                        user_id: currentUser.id,
-                        title: s.title,
-                        composer: s.composer,
-                        genre: s.genre,
-                        tags: s.tags,
-                        updated_at: new Date().toISOString()
-                    }))
-                );
-            }
-            alert('Metadata fixed and thumbnails purged!');
-            location.reload();
-        } else {
-            alert('Your library is already healthy.');
-        }
-    } catch (err) {
-        console.error('[ScoreAdmin] Heal failed:', err);
-        alert('Heal failed: ' + err.message);
-    }
+        for (const entry of reg) { if (entry.thumbnail) { entry.thumbnail = null; changed = true; } }
+        if (changed) { await db.set('score_registry', reg); blog('Metadata healed and thumbnails purged.', 'success'); location.reload(); }
+        else blog('Registry metadata is healthy.', 'info');
+    } catch (err) { blog('Heal failed: ' + err.message, 'error'); }
 });
+
+// ═══ UTILS ═══
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtBytes(b){if(b>=1073741824)return(b/1073741824).toFixed(1)+' GB';if(b>=1048576)return(b/1048576).toFixed(1)+' MB';if(b>=1024)return(b/1024).toFixed(0)+' KB';return b+' B';}
+function dateStr(){return new Date().toISOString().slice(0,10);}
+function downloadFile(content,name,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download=name;a.click();}
+
+window.setCollGenre = (g) => { collGenreFilter = g; selectCollection(selectedCollectionId); };
+window.selectCollection = selectCollection;
+window.editCollection = editCollection;
+window.deleteCollection = deleteCollection;
+window.updateCollectionIndex = updateCollectionIndex;
+window.selectSetlist = selectSetlist;
+window.editSetlistName = editSetlistName;
+window.updateSetlistIndex = updateSetlistIndex;
+window.moveInSetlist = moveInSetlist;
+window.removeFromSetlist = removeFromSetlist;
+window.openAddScoreToSetlist = openAddScoreToSetlist;
+window.deleteSetlist = deleteSetlist;
+window.updateScoreSortIndex = updateScoreSortIndex;
+window.toggleDetail = toggleDetail;
+window.openPdf = openPdf;
+window.deletePdf = deletePdf;
+window.sortStorage = sortStorage;
 
 window.annotTdClick = function(event, td) {
     event.stopPropagation();
     const local = parseInt(td.dataset.local) || 0;
     if (!local) return;
-    showAnnotDebug(td.dataset.fp, td.dataset.title, parseInt(td.dataset.cloud) || 0)
-        .catch(err => alert('Annotation debug error: ' + err.message));
+    showAnnotDebug(td.dataset.fp, td.dataset.title, parseInt(td.dataset.cloud) || 0).catch(err => alert(err.message));
 };
 
 async function showAnnotDebug(fp, title, cloudCount) {
     const stamps = (await db.get(`stamps_${fp}`)) || [];
     const { data: cloudRows } = await sbClient.from('annotations').select('id').eq('fingerprint', fp).eq('user_id', currentUser.id).limit(5000);
     const cloudIds = new Set((cloudRows || []).map(r => r.id));
-
     document.getElementById('annot-modal-title').textContent = title;
-    const total = stamps.length;
-    const deleted = stamps.filter(s => s.deleted).length;
-    const active = total - deleted;
-    const inCloud = stamps.filter(s => cloudIds.has(s.id)).length;
-    document.getElementById('annot-modal-summary').textContent =
-        `共 ${total} 筆 | 已刪除 ${deleted} | 活躍 ${active} | 雲端有 ${cloudCount} 筆 (${inCloud} 匹配)`;
-
-    const tbody = document.getElementById('annot-modal-tbody');
-    tbody.innerHTML = stamps.map(s => {
-        const inCld = cloudIds.has(s.id);
-        const isSystem = s.type === 'system';
-        const rowClass = s.deleted ? 'deleted' : isSystem ? 'system-type' : '';
-        const cloudCell = inCld
-            ? `<span style="color:#10b981;">✓</span>`
-            : `<span style="color:#f59e0b;">✗</span>`;
-        return `<tr class="${rowClass}">
-            <td><span class="pill ${isSystem?'pill-gray':'pill-blue'}">${s.type||'?'}</span></td>
-            <td>${s.page||'—'}</td>
-            <td>${s.layerId||'—'}</td>
-            <td>${s.deleted?'<span style="color:#ef4444;">✓</span>':'—'}</td>
-            <td>${cloudCell}</td>
-            <td style="font-family:monospace;font-size:10px;color:var(--text-muted);">${(s.id||'').slice(0,8)}</td>
-        </tr>`;
+    const total = stamps.length, deleted = stamps.filter(s => s.deleted).length, active = total - deleted, inCloud = stamps.filter(s => cloudIds.has(s.id)).length;
+    document.getElementById('annot-modal-summary').textContent = `Total: ${total} | Active: ${active} | Cloud: ${cloudCount} (${inCloud} match)`;
+    document.getElementById('annot-modal-tbody').innerHTML = stamps.map(s => {
+        const inCld = cloudIds.has(s.id), isSystem = s.type === 'system', rowClass = s.deleted ? 'deleted' : isSystem ? 'system-type' : '';
+        return `<tr class="${rowClass}"><td><span class="pill ${isSystem?'pill-gray':'pill-blue'}">${s.type||'?'}</span></td><td>${s.page||'—'}</td><td>${s.layerId||'—'}</td><td>${s.deleted?'✓':'—'}</td><td>${inCld?'✓':'✗'}</td><td class="mono" style="font-size:10px;">${(s.id||'').slice(0,8)}</td></tr>`;
     }).join('');
-
     document.getElementById('annot-modal-overlay').classList.add('open');
 }
 
-document.getElementById('annot-modal-overlay').addEventListener('click', e => {
-    if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
-});
+document.getElementById('annot-modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
 
+init();
 </script>
-<!-- Annotation Debug Modal -->
-<div id="annot-modal-overlay">
-  <div id="annot-modal">
-    <div id="annot-modal-header">
-      <h3 id="annot-modal-title">Annotations</h3>
-      <div id="annot-modal-summary" style="font-size:11px;color:var(--text-muted);"></div>
-      <button onclick="document.getElementById('annot-modal-overlay').classList.remove('open')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);padding:0 4px;">✕</button>
+
+<div id="annot-modal-overlay" class="modal-backdrop hidden">
+  <div id="annot-modal" class="modal" style="width:720px;">
+    <div id="annot-modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <div>
+          <h3 id="annot-modal-title" style="margin-bottom:4px;">Annotations</h3>
+          <div id="annot-modal-summary" style="font-size:12px;color:var(--text-muted);font-weight:600;"></div>
+      </div>
+      <button onclick="document.getElementById('annot-modal-overlay').classList.remove('open')" class="btn btn-outline btn-sm">Close</button>
     </div>
-    <div id="annot-modal-body">
+    <div id="annot-modal-body" style="max-height:400px; overflow-y:auto; border:1px solid var(--border); border-radius:12px;">
       <table>
-        <thead><tr><th>Type</th><th>Page</th><th>Layer</th><th>Deleted</th><th>In Cloud</th><th>ID (short)</th></tr></thead>
+        <thead><tr><th>Type</th><th>Page</th><th>Layer</th><th>Del</th><th>Cld</th><th>ID</th></tr></thead>
         <tbody id="annot-modal-tbody"></tbody>
       </table>
     </div>
   </div>
 </div>
-
 
 </body>
 </html>

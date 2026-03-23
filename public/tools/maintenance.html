@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ScoreFlow Developer Hub</title>
+    <title>ScoreFlow Maintenance Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,13 +11,14 @@
     <script src="theme-manager.js"></script>
     <style>
         :root {
-            --secondary: #a855f7;
-            --accent: #22d3ee;
+            --primary: #0ea5e9; /* Sky Blue for Maintenance */
+            --secondary: #10b981;
+            --accent: #f59e0b;
         }
 
         .hub-tag {
             display: inline-block;
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(14, 165, 233, 0.1);
             color: var(--primary);
             padding: 4px 12px;
             border-radius: 99px;
@@ -26,7 +26,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(14, 165, 233, 0.2);
             margin-bottom: 20px;
         }
 
@@ -50,7 +50,7 @@
         .tool-card {
             background: var(--card-bg);
             -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px); 
             border: 1px solid var(--border);
             border-radius: 24px;
             padding: 32px;
@@ -145,15 +145,15 @@
         }
 
         .nav-link {
-            text-decoration: none;
-            color: var(--text-muted);
-            font-weight: 700;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            opacity: 0.8;
-            transition: all 0.2s;
+            text-decoration:none; 
+            color:var(--text-muted); 
+            font-weight:700; 
+            font-size:14px; 
+            display:inline-flex; 
+            align-items:center; 
+            gap:6px; 
+            opacity:0.8; 
+            transition:all 0.2s;
         }
 
         .nav-link:hover {
@@ -162,113 +162,87 @@
         }
 
         @media (max-width: 640px) {
-            h1.main-title {
-                font-size: 2.5rem;
-            }
-
-            .grid {
-                grid-template-columns: 1fr;
-            }
+            h1.main-title { font-size: 2.5rem; }
+            .grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <nav class="nav-header">
             <a href="../index.html" class="nav-link">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                    <path d="m15 18-6-6 6-6" />
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg>
                 Return to ScoreFlow
             </a>
-            <a href="maintenance.html" class="nav-link">
-                Switch to Maintenance Hub
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                    <path d="m9 18 6-6-6-6" />
-                </svg>
+            <a href="index.html" class="nav-link">
+                Switch to Developer Hub
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 18 6-6-6-6"/></svg>
             </a>
         </nav>
 
         <header style="text-align:center; margin-bottom: 64px;">
-            <div class="hub-tag">ScoreFlow Internals</div>
-            <h1 class="main-title">Developer Hub</h1>
-            <p class="hub-subtitle" style="margin-top: 0;">Premium diagnostics and performance analysis suite for
-                ScoreFlow v3.0 ecosystem.</p>
+            <div class="hub-tag">ScoreFlow Maintenance</div>
+            <h1 class="main-title">User Maintenance Hub</h1>
+            <p class="hub-subtitle" style="margin-top: 0;">Comprehensive administration and content management suite for ScoreFlow.</p>
         </header>
 
         <div class="grid">
-            <!-- Data & Sync -->
-            <a href="supabase-explorer.html" class="tool-card">
-                <div class="icon-box">☁️</div>
-                <div class="title">Supabase Explorer</div>
-                <div class="desc">直接查看雲端資料庫中的 Scores, Annotations 與 PDF 存儲空間，支援下載原始檔案與數據結構稽核。</div>
+            <!-- Admin & Management -->
+            <a href="score-admin.html" class="tool-card">
+                <div class="icon-box">🛠️</div>
+                <div class="title">Score Admin</div>
+                <div class="desc">後台管理工具：批量編輯樂譜資料、管理歌單、存儲空間監控、使用者管理 (service_role)、備份與還原、及資料庫修復。</div>
                 <div class="badge-row">
+                    <div class="badge">Admin</div>
                     <div class="badge">Supabase</div>
-                    <div class="badge">Cloud</div>
+                    <div class="badge">Backup</div>
+                    <div class="badge">Repair</div>
                 </div>
             </a>
 
-            <a href="supabase-sync-analyzer.html" class="tool-card">
-                <div class="icon-box">⚖️</div>
-                <div class="title">Supabase Integrity</div>
-                <div class="desc">比對 IndexedDB (本地) 與 Supabase (雲端) 的資料庫完整性，檢測 Metadata 錯位與同步版本差異。</div>
+            <!-- Toolset Inspector -->
+            <a href="toolset-inspector.html" class="tool-card">
+                <div class="icon-box">🗂️</div>
+                <div class="title">Toolset Inspector</div>
+                <div class="desc">檢視所有 TOOLSET 分類的定義、Layer 綁定狀態、以及目前 App 中啟用的分類與工具。</div>
                 <div class="badge-row">
-                    <div class="badge">Supabase</div>
-                    <div class="badge">Sync</div>
-                    <div class="badge">Integrity</div>
+                    <div class="badge">Tools</div>
+                    <div class="badge">Layers</div>
+                    <div class="badge">State</div>
                 </div>
             </a>
 
-
-            <a href="network-auth.html" class="tool-card">
-                <div class="icon-box">🔑</div>
-                <div class="title">Network & Auth</div>
-                <div class="desc">針對 LAN 區域網路偵錯進行 Token 手動注入與權限狀態監測，解決跨裝置授權限制。</div>
+            <!-- Score Tools -->
+            <a href="pdf-cleaner.html" class="tool-card">
+                <div class="icon-box">🧹</div>
+                <div class="title">PDF Score Cleaner</div>
+                <div class="desc">清除影印樂譜的髒污、灰色背景與雜訊。支援自適應二值化，輸出乾淨黑白 PDF。</div>
                 <div class="badge-row">
-                    <div class="badge">Auth</div>
-                    <div class="badge">LAN</div>
+                    <div class="badge">Image</div>
+                    <div class="badge">PDF</div>
+                    <div class="badge">Offline</div>
                 </div>
             </a>
-
-            <a href="annotation-analyzer.html" class="tool-card">
-                <div class="icon-box">✍️</div>
-                <div class="title">Annotation Analyzer</div>
-                <div class="desc">深入檢視 IndexedDB 中的劃記數據結構、圖章路徑與坐標系統。</div>
-                <div class="badge-row">
-                    <div class="badge">Data</div>
-                    <div class="badge">DB</div>
-                </div>
-            </a>
-
-            <!-- Hardware & UX -->
-            <a href="../debug_touch.html" class="tool-card">
-                <div class="icon-box">🖐️</div>
-                <div class="title">Touch Debugger</div>
-                <div class="desc">即時監測觸控事件 (Pointer Events)，解決 iPad 或平板上的手勢衝突問題。</div>
-                <div class="badge-row">
-                    <div class="badge">UX</div>
-                    <div class="badge">Touch</div>
-                </div>
-            </a>
-
 
             <!-- Experimental -->
-            <a href="stamp-calibrator.html" class="tool-card">
-                <div class="icon-box">📏</div>
-                <div class="title">Stamp Calibrator</div>
-                <div class="desc">微調各類圖章標記的原始尺寸與全局縮放倍率，針對不同螢幕解析度進行校正。</div>
+            <a href="bookmark-importer.html" class="tool-card">
+                <div class="icon-box">📑</div>
+                <div class="title">YouTube Bookmark Importer</div>
+                <div class="desc">匯入外部 YouTube 書籤。自動匹配樂譜 ID 並將時間標籤整合至播放面板。</div>
                 <div class="badge-row">
-                    <div class="badge">Calibration</div>
+                    <div class="badge">Import</div>
+                    <div class="badge">YouTube</div>
                 </div>
             </a>
 
-            <a href="../debug_staff_detect.html" class="tool-card">
-                <div class="icon-box">🎼</div>
-                <div class="title">Staff Detector</div>
-                <div class="desc">實驗性的五線譜自動偵測工具，用於計算樂譜間距與自動對齊功能。</div>
+            <!-- Documentation -->
+            <a href="../docs/USER_MANUAL.html" class="tool-card" target="_blank">
+                <div class="icon-box">📖</div>
+                <div class="title">User Manual</div>
+                <div class="desc">檢視產生的使用者指南 HTML 版本，包含功能說明、快速鍵清單與操作教學。</div>
                 <div class="badge-row">
-                    <div class="badge">AI Lab</div>
+                    <div class="badge">Manual</div>
+                    <div class="badge">Docs</div>
                 </div>
             </a>
         </div>
@@ -278,8 +252,4 @@
         </div>
     </div>
 </body>
-
-</html>
-</body>
-
 </html>

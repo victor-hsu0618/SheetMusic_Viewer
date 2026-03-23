@@ -692,7 +692,9 @@ export class SupabaseManager {
             user_id: this.user.id,
             title: metadata?.title || 'Untitled',
             composer: metadata?.composer || 'Unknown',
-            filename: metadata?.fileName || '',
+            genre: metadata?.genre || null,
+            sort_index: metadata?.sortIndex !== undefined ? metadata.sortIndex : (metadata?.sort_index || 0),
+            filename: metadata?.fileName || metadata?.filename || '',
             tags: metadata?.tags || [],
             media_list: scoreMediaList || [], // SYNC NEW COLUMN
             last_accessed: metadata?.lastAccessed || Date.now(),
