@@ -113,8 +113,11 @@ export class EditStripManager {
                     this._subBarMgr?.restoreState(this._subBarSnapshot)
                     this._subBarSnapshot = null
                 }
-                // Re-apply fit mode after layout shift (wait for CSS transition)
-                setTimeout(() => this.app.viewerManager?.reapplyFit(), 320)
+                // Re-apply fit mode after layout shift (wait for CSS transition).
+                // Skip in overlay mode: score area doesn't change size, so no re-render needed.
+                if (!document.body.classList.contains('sf-edit-strip-overlay')) {
+                    setTimeout(() => this.app.viewerManager?.reapplyFit(), 320)
+                }
             }
         })
 
