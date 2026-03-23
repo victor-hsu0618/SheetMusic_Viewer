@@ -170,6 +170,22 @@ export class DocBarStripManager {
             }
         })
         document.body.appendChild(expandTab)
+
+        // Add collapse tab (on the right edge of the expanded bar)
+        const collapseTab = document.createElement('div')
+        collapseTab.className = 'sf-doc-collapse-tab'
+        collapseTab.title = 'Collapse Doc Bar'
+        collapseTab.addEventListener('click', () => {
+            const isHidden = true
+            this.toggleCollapse(isHidden)
+            // Update settings panel toggle if it exists
+            const chk = document.getElementById('settings-doc-bar-hide')
+            if (chk) {
+                chk.checked = true
+                localStorage.setItem('scoreflow_doc_bar_hide', 'true')
+            }
+        })
+        el.appendChild(collapseTab)
     }
 
     /** Rebuild DOM in-place after panel_config changes (e.g. Supabase sync) */

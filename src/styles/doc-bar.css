@@ -256,3 +256,48 @@ body.sf-strip-collapsed #viewer-container {
 body.sf-doc-bar-collapsed .sf-doc-expand-tab {
     display: block;
 }
+
+/* ── Doc Bar Collapse Tab (appears when expanded) ── */
+.sf-doc-collapse-tab {
+    position: absolute;
+    right: -6px; /* sitting on the right edge */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.22s, right 0.22s, background 0.15s, width 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+#sf-doc-bar-strip:hover .sf-doc-collapse-tab {
+    opacity: 1;
+}
+.sf-doc-collapse-tab:hover {
+    width: 14px;
+    right: -14px;
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 1 !important;
+}
+.sf-doc-collapse-tab::after {
+    content: '❮';
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 9px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.sf-doc-collapse-tab:hover::after {
+    opacity: 1;
+}
+
+/* Hide collapse tab when bar is transitioning/collapsed */
+#sf-doc-bar-strip.collapsed .sf-doc-collapse-tab {
+    display: none;
+}
