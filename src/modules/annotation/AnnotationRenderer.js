@@ -641,15 +641,7 @@ export class AnnotationRenderer {
                         ctx.lineTo(x - s * 0.38, y + s * 0.65)  // bottom-left
                         ctx.closePath()
                         ctx.fill()
-                        // Label text to the right of the flag
-                        if (stamp.data) {
-                            ctx.fillStyle = color
-                            ctx.globalAlpha = Math.min(ctx.globalAlpha * 1.0, 1)
-                            ctx.font = `600 ${10 * textScale}px Outfit`
-                            ctx.textAlign = 'left'
-                            ctx.textBaseline = 'middle'
-                            ctx.fillText(stamp.data.substring(0, 12), x + s * 0.5, y - s * 0.1)
-                        }
+                        // The user requested: "不需要把圖章的內容打在score上" -> Text label removed.
                     }
                     break
 
