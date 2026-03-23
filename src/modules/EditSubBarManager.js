@@ -86,14 +86,22 @@ export class EditSubBarManager {
         }
     }
 
-    closeAll() {
-        Object.entries(this._bars).forEach(([, bar]) => {
-            if (!bar) return
-            bar.classList.remove('open')
+    closeToolBars() {
+        ['pen', 'shapes', 'stamp', 'text'].forEach(name => {
+            if (this._bars[name]) {
+                this._bars[name].classList.remove('open')
+            }
         })
-        this.activeBar  = null
-        this.othersOpen = false
+        this.activeBar = null
         this._closeStampSettings()
+    }
+
+    closeAll() {
+        this.closeToolBars()
+        if (this._bars['others']) {
+            this._bars['others'].classList.remove('open')
+        }
+        this.othersOpen = false
     }
 
     /** Snapshot current open state — call before hiding */
