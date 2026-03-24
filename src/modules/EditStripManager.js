@@ -27,7 +27,13 @@ export class EditStripManager {
 
     init() {
         this._createStrip()
+        this._initCollapse()
         this.update()
+    }
+
+    _initCollapse() {
+        const isHidden = localStorage.getItem('scoreflow_edit_strip_hide') === 'true'
+        this.toggleCollapse(isHidden)
     }
 
     /** Re-render all buttons (call after activeStampType changes) */
@@ -44,6 +50,7 @@ export class EditStripManager {
         this.collapsed = isHidden
         this.el.classList.toggle('collapsed', isHidden)
         document.body.classList.toggle('sf-strip-collapsed', isHidden)
+        localStorage.setItem('scoreflow_edit_strip_hide', isHidden)
 
         if (this.collapsed) {
             // Save sub-bar state then close all
@@ -55,6 +62,7 @@ export class EditStripManager {
             this._subBarSnapshot = null
         }
 
+        this._updateCollapseIcon()
         this._handleLayoutTransition()
     }
 
