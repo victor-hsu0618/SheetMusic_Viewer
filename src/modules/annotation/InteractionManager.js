@@ -108,6 +108,12 @@ export class InteractionManager {
             return { x: wCentX, y: wCentY - 210 };
         };
 
+        const isDrawingType = (type) => {
+            return ['pen', 'red-pen', 'green-pen', 'blue-pen', 
+                    'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 
+                    'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(type);
+        };
+
         const updateTouchAction = () => {
             const toolType = this.app.activeStampType;
             // Ensure body-level attribute is synced (redundant but safe)
@@ -352,7 +358,9 @@ export class InteractionManager {
                     const graceCenter = CoordMapper.getGraceCenter(graceObject);
                     const wCenter = getPixelsForWrapper(wrapper, graceCenter.x, graceCenter.y);
                     const _tp0 = getTrashPos(graceCenter.x, wCenter.x, wCenter.y);
-                    InteractionUI.showTrash(true, wrapper, _tp0.x, _tp0.y);
+                    if (!isDrawingType(activeObject.type)) {
+                        InteractionUI.showTrash(true, wrapper, _tp0.x, _tp0.y);
+                    }
 
                     if (graceTimer) clearTimeout(graceTimer);
                     graceObject = null;
@@ -463,7 +471,9 @@ export class InteractionManager {
                         const cent = CoordMapper.getGraceCenter(activeObject);
                         const wCent = getPixelsForWrapper(wrapper, cent.x, cent.y);
                         const _tp1 = getTrashPos(cent.x, wCent.x, wCent.y);
-                        InteractionUI.showTrash(true, wrapper, _tp1.x, _tp1.y);
+                        if (!isDrawingType(activeObject.type)) {
+                            InteractionUI.showTrash(true, wrapper, _tp1.x, _tp1.y);
+                        }
                         this.app.redrawStamps(pageNum);
                         const startSyncType = ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
                         InteractionUI.syncVirtualPointer(e, startSyncType, overlay, virtualPointer, CoordMapper, this.app);
@@ -573,7 +583,9 @@ export class InteractionManager {
                     const graceCenter = CoordMapper.getGraceCenter(activeObject);
                     const wCenter = getPixelsForWrapper(wrapper, graceCenter.x, graceCenter.y);
                     const _tp0 = getTrashPos(graceCenter.x, wCenter.x, wCenter.y);
-                    InteractionUI.showTrash(true, wrapper, _tp0.x, _tp0.y);
+                    if (!isDrawingType(activeObject.type)) {
+                        InteractionUI.showTrash(true, wrapper, _tp0.x, _tp0.y);
+                    }
                 }
 
                 if (isNudging) {
@@ -646,7 +658,9 @@ export class InteractionManager {
                         const cent = CoordMapper.getGraceCenter(activeObject);
                         const wCent = getPixelsForWrapper(currentWrapper, cent.x, cent.y);
                         const _tp2 = getTrashPos(cent.x, wCent.x, wCent.y);
-                        InteractionUI.showTrash(true, currentWrapper, _tp2.x, _tp2.y);
+                        if (!isDrawingType(activeObject.type)) {
+                            InteractionUI.showTrash(true, currentWrapper, _tp2.x, _tp2.y);
+                        }
                         this.app.redrawStamps(currentPageNum);
                     }
                 }
@@ -738,9 +752,11 @@ export class InteractionManager {
                     this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, activeObject, layer?.color || '#000', true, false, false, pos);
                 }
             }
-            InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, currentWrapper, CoordMapper), currentWrapper);
+            if (!isDrawingType(activeObject.type)) {
+                InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, currentWrapper, CoordMapper), currentWrapper);
+            }
             // Keep trash bin visible during drag without repositioning
-            if (isMovingExisting) {
+            if (isMovingExisting && !isDrawingType(activeObject.type)) {
                 const trashBin = wrapper.querySelector('.grace-trash-bin');
                 if (trashBin) trashBin.classList.add('show');
                 // Highlight trash bins when pointer is over them
