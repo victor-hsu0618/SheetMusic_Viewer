@@ -117,9 +117,18 @@
 
 .sf-strip-trash-btn:hover {
     background: rgba(255, 255, 255, 0.08);
-    color: #1e293b;
+    color: rgba(255, 255, 255, 0.5);
 }
 
+/* Active state: recycle bin mode on */
+.sf-strip-trash-btn.active {
+    background: rgba(239, 68, 68, 0.22) !important;
+    border-color: #ef4444 !important;
+    color: #ef4444 !important;
+    border-style: solid !important;
+}
+
+/* Pulse when any drag is active (to hint the zone exists) */
 .sf-strip-trash-btn.drag-active {
     border-color: rgba(255, 255, 255, 0.4);
     color: rgba(255, 255, 255, 0.55);
@@ -297,9 +306,13 @@
     bottom: 5px;
     width: 38px;
     height: 38px;
+    background: rgba(15, 23, 42, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 10px;
     opacity: 1 !important;
     pointer-events: auto !important;
     transform: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* ════════════════════════════════════════════════════════════════

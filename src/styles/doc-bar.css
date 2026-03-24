@@ -156,6 +156,13 @@
     background: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.5);
 }
+/* Active state when recycle bin mode is ON */
+.sf-doc-trash.active {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: #ef4444;
+    color: #ef4444;
+    border-style: solid; /* Solid border when active */
+}
 /* Highlighted when pointer drags over it */
 .sf-doc-trash.drag-over {
     background: rgba(239, 68, 68, 0.18);

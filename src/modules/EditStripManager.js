@@ -283,6 +283,8 @@ export class EditStripManager {
             btn.className = 'sf-strip-btn'
                 + (hasSub ? ' has-sub' : '')
                 + (subActive ? ' open' : '')
+                + (isTrash ? ' sf-strip-trash-btn' : '')
+                + ((isTrash && this.app.activeStampType === 'recycle-bin') ? ' active' : '')
             btn.dataset.tool = tool.id
             btn.title = tool.label
             btn.innerHTML = tool.icon

@@ -261,6 +261,7 @@ export class DocBarStripManager {
             <path d="M10 11v6M14 11v6"/>
             <path d="M9 6V4h6v2"/>
         </svg>`
+        trash.classList.toggle('active', this.app.activeStampType === 'recycle-bin')
         trash.addEventListener('click', () => {
             const isAlreadyActive = this.app.activeStampType === 'recycle-bin'
             this.app.activeStampType = isAlreadyActive ? 'view' : 'recycle-bin'
