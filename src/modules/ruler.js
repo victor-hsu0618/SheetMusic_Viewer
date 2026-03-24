@@ -1,7 +1,7 @@
 export class RulerManager {
     constructor(app) {
         this.app = app
-        this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') !== 'false'
+        this.rulerVisible = localStorage.getItem('scoreflow_ruler_visible') === 'true'
         this.jumpOffsetPx = 40
         const storedSpeed = localStorage.getItem('scoreflow_jump_speed_ms')
         this.jumpDurationMs = storedSpeed ? parseInt(storedSpeed) : 300 // Customizable speed (lower = faster)
