@@ -329,6 +329,7 @@ export class InputManager {
 
                 const stamp = this.app.findClosestStamp(pageNum, relX, relY, true)
                 if (stamp && stamp.draw?.variant === 'playback') {
+                    console.log('[Click] Triggering YouTube Playback for stamp:', stamp.id)
                     this._triggerPlaybackStamp(stamp)
                     return
                 }
@@ -390,22 +391,31 @@ export class InputManager {
 
     async _handlePaste(e) {
         // Don't intercept if user is typing in an input
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+            console.log('[Paste] Ignored: Focus on input element');
+            return;
+        }
 
         const text = (e.clipboardData || window.clipboardData).getData('text')
         if (!text) return
+        
+        console.log('[Paste] Received text:', text.substring(0, 100))
 
-        // YouTube Regex (supports standard, shorts, and timestamps)
-        const ytRegex = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/)([^#\&\?]*).*/
+        // YouTube Regex (supports standard, shorts, live, and timestamps)
+        const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
         const match = text.match(ytRegex)
 
-        if (match && match[2].length === 11) {
-            const videoId = match[2]
+        if (match && match[1]) {
+            const videoId = match[1]
+            console.log('[Paste] YouTube ID matched:', videoId)
             
             // Extract timestamp if exists (?t=123 or &t=123 or #t=123)
             let time = 0
             const tMatch = text.match(/[?&t=](\d+)(s)?/)
-            if (tMatch) time = parseInt(tMatch[1])
+            if (tMatch) {
+                time = parseInt(tMatch[1])
+                console.log('[Paste] Timestamp extracted:', time)
+            }
 
             const vh = window.innerHeight
             const centerLine = vh / 2
@@ -430,19 +440,19 @@ export class InputManager {
             if (centralPage) {
                 const pageNum = parseInt(centralPage.dataset.page)
                 const rect = centralPage.getBoundingClientRect()
+                console.log('[Paste] Target Page:', pageNum)
                 
-                // Position in center of viewport horizontally, and center of page vertically OR viewport center?
-                // User said "paste as a youtube mark", let's put it at viewport center Y relative to page
                 const relX = 0.5
                 const relY = Math.max(0.05, Math.min(0.95, (centerLine - rect.top) / rect.height))
 
                 const stamp = {
                     id: `yt-${Date.now()}`,
                     page: pageNum,
-                    type: 'music-anchor', // The ID from constants.js
+                    type: 'music-anchor',
+                    sourceId: this.app.activeSourceId || 'default',
                     x: relX,
                     y: relY,
-                    color: '#f00', // YouTube Red
+                    color: '#ff0000', // Crimson Red
                     data: `youtube|${videoId}|${time}|YouTube Bookmark`,
                     draw: { type: 'special', variant: 'playback' },
                     createdAt: Date.now(),
@@ -452,6 +462,7 @@ export class InputManager {
 
                 if (this.app.annotationManager) {
                     this.app.stamps.push(stamp)
+                    this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(stamp)) })
                     this.app.redrawStamps(pageNum)
                     await this.app.saveToStorage(true)
                     
@@ -460,8 +471,13 @@ export class InputManager {
                     }
 
                     this.app.showMessage('YouTube Bookmark Pasted', 'success')
+                    console.log('[Paste] Stamp created successfully')
                 }
+            } else {
+                console.warn('[Paste] No visible page found at center of screen')
             }
+        } else {
+            console.log('[Paste] No YouTube URL match found in text')
         }
     }
 
