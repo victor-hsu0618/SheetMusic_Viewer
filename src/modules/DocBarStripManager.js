@@ -116,11 +116,15 @@ export class DocBarStripManager {
         if (!this.el) return
         this.el.classList.toggle('collapsed', isHidden)
         document.body.classList.toggle('sf-doc-bar-collapsed', isHidden)
+        localStorage.setItem('scoreflow_doc_bar_hide', isHidden)
         
         // Re-fit score if skip calculation is not active (like in overlay mode)
         if (!document.body.classList.contains('sf-edit-strip-overlay')) {
             setTimeout(() => this.app.viewerManager?.reapplyFit(), 300)
         }
+        
+        // Update the toggle button icon if needed
+        this._updateCollapseIcon()
     }
 
     /** Call on every zoom change to keep the readout in sync */
@@ -233,6 +237,9 @@ export class DocBarStripManager {
         // ── Settings / Account (bottom) ───────────────────────────────────────
         el.appendChild(this._divider())
         this._sortGroup(BOTTOM_BUTTONS, order).forEach(renderItem)
+
+        // ── PERSISTENT COLLAPSE TOGGLE (Always at the very end) ───────────────
+        this._buildCollapseToggle(el)
     }
 
     _buildTitle() {
@@ -322,5 +329,40 @@ export class DocBarStripManager {
         const d = document.createElement('div')
         d.className = 'sf-doc-divider'
         return d
+    }
+
+    _buildCollapseToggle(el) {
+        const btn = document.createElement('div')
+        btn.id = 'sf-doc-collapse-btn'
+        btn.className = 'sf-doc-btn sf-doc-collapse-btn'
+        btn.title = '收合工具列'
+        
+        // Use a container inside that can be rotated or swapped
+        const iconWrap = document.createElement('div')
+        iconWrap.style.display = 'flex'
+        iconWrap.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        iconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>'
+        
+        btn.appendChild(iconWrap)
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            const isCollapsing = !this.el.classList.contains('collapsed')
+            this.toggleCollapse(isCollapsing)
+        })
+
+        el.appendChild(btn)
+        this._collapseBtn = btn
+        this._updateCollapseIcon()
+    }
+
+    _updateCollapseIcon() {
+        const btn = this._collapseBtn
+        if (!btn) return
+        const isCollapsed = this.el?.classList.contains('collapsed')
+        const iconWrap = btn.querySelector('div')
+        if (iconWrap) {
+            iconWrap.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)'
+        }
+        btn.title = isCollapsed ? '展開工具列' : '收合工具列'
     }
 }

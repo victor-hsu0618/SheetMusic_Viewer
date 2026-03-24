@@ -26,9 +26,14 @@
 
 #sf-doc-bar-strip.collapsed {
     width: 0;
+    border-color: transparent;
+}
+
+/* Hide most items when collapsed, but allow the toggle handle to persist */
+#sf-doc-bar-strip.collapsed > *:not(.sf-doc-collapse-btn) {
     opacity: 0;
     pointer-events: none;
-    border-color: transparent;
+    transition: opacity 0.15s;
 }
 
 /* ── Score title (vertical, rotated) ── */
@@ -222,4 +227,27 @@ body.sf-doc-bar-collapsed #viewer-container {
 /* Hide old floating doc bar — replaced by left strip */
 #floating-doc-bar {
     display: none !important;
+}
+
+/* ── Permanent Collapse Toggle Handle ── */
+.sf-doc-collapse-btn {
+    margin-top: auto;
+    margin-bottom: 5px;
+    background: rgba(30, 41, 59, 1) !important; /* Brighter to stand out on edge */
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    z-index: 1001;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* When collapsed, pin it to the left wall */
+#sf-doc-bar-strip.collapsed .sf-doc-collapse-btn {
+    position: absolute;
+    left: 4px;
+    bottom: 5px;
+    width: 38px;
+    height: 38px;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: none !important; /* Disable any hover transforms when pinned to edge */
 }
