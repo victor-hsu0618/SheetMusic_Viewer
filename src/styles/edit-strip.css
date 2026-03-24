@@ -27,8 +27,15 @@
 }
 
 #sf-edit-strip.collapsed {
-    width: 0;
-    border-color: transparent;
+    background: transparent !important;
+    border-color: transparent !important;
+    pointer-events: none;
+    /* Allow clicks to pass through to the score */
+}
+
+#sf-edit-strip.collapsed .sf-edit-collapse-btn {
+    pointer-events: auto;
+    /* Except for the toggle button itself */
 }
 
 #sf-edit-strip.collapsed>*:not(.sf-edit-collapse-btn) {
@@ -90,9 +97,29 @@
     color: #fff;
 }
 
+.sf-bar-cell.active {
+    background: var(--primary);
+    color: #fff;
+}
+
+/* Neutral background for Pan and Select tools in the sub-bar */
+.sf-bar-cell[data-id="view"].active,
+.sf-bar-cell[data-id="select"].active {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
 .sf-strip-btn.active {
     background: var(--primary, #6366f1);
     color: #fff;
+}
+
+/* Neutral background for Pan and Select tools in the main strip */
+.sf-strip-btn[data-tool="view"].active,
+.sf-strip-btn[data-tool="select"].active {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #fff !important;
 }
 
 /* Specific styling for the bottom Trash button (matches Doc Bar style) */
@@ -301,21 +328,11 @@
     transition: transform 0.3s;
 }
 
-/* When collapsed, pin it to the right wall */
+/* When collapsed, stay in place but show a subtle background */
 #sf-edit-strip.collapsed .sf-edit-collapse-btn {
-    position: absolute;
-    right: 4px;
-    /* Offset from right edge */
-    bottom: 5px;
-    width: 38px;
-    height: 38px;
-    background: rgba(15, 23, 42, 0.25) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 10px;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    transform: none !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background: rgba(15, 23, 42, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* ════════════════════════════════════════════════════════════════

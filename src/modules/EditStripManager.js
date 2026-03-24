@@ -53,13 +53,27 @@ export class EditStripManager {
         localStorage.setItem('scoreflow_edit_strip_hide', isHidden)
 
         if (this.collapsed) {
-            // Save sub-bar state then close all
+            // 1. Save tool state then force View mode
+            this._prevActiveTool = this.app.activeStampType
+            this.app.activeStampType = 'view'
+            this.app.toolManager?.updateActiveTools()
+            this.update()
+
+            // 2. Save sub-bar state then close all
             this._subBarSnapshot = this._subBarMgr?.snapshotState()
             this._subBarMgr?.closeAll()
         } else {
+            // Restore tool if we saved one
+            if (this._prevActiveTool) {
+                this.app.activeStampType = this._prevActiveTool
+                this.app.toolManager?.updateActiveTools()
+            }
+            this.update()
+            
             // Restore previously open sub-bars
             this._subBarMgr?.restoreState(this._subBarSnapshot)
             this._subBarSnapshot = null
+            this._prevActiveTool = null
         }
 
         this._updateCollapseIcon()
@@ -493,11 +507,15 @@ export class EditStripManager {
         btn.appendChild(iconWrap)
 
         // --- LONG PRESS DETECTION ---
+        let lastTouchTime = 0
         let longPressTimer = null
         let isLongPressAction = false
         const LONG_PRESS_MS = 600
 
         const startPress = (e) => {
+            if (e.type === 'touchstart') lastTouchTime = Date.now()
+            else if (Date.now() - lastTouchTime < 500) return
+
             isLongPressAction = false
             if (longPressTimer) clearTimeout(longPressTimer)
             longPressTimer = setTimeout(() => {
@@ -508,13 +526,18 @@ export class EditStripManager {
         }
 
         const endPress = (e) => {
+            if (e.type === 'touchend') lastTouchTime = Date.now()
+            else if (Date.now() - lastTouchTime < 500) return
+
+            if (e.cancelable) e.preventDefault()
+            e.stopPropagation()
+
             if (longPressTimer) {
                 clearTimeout(longPressTimer)
                 longPressTimer = null
             }
             if (!isLongPressAction) {
                 // Short press logic
-                e.stopPropagation()
                 this.toggleCollapse(!this.collapsed)
             }
         }
@@ -522,7 +545,7 @@ export class EditStripManager {
         btn.addEventListener('mousedown', startPress)
         btn.addEventListener('touchstart', startPress, { passive: true })
         btn.addEventListener('mouseup', endPress)
-        btn.addEventListener('touchend', endPress)
+        btn.addEventListener('touchend', endPress, { passive: false })
         btn.addEventListener('mouseleave', () => {
             if (longPressTimer) {
                 clearTimeout(longPressTimer)

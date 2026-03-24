@@ -44,7 +44,7 @@ export class AnnotationRenderer {
             sourceStamps.forEach(stamp => {
                 const effectiveLayerId = this.app.annotationManager.getEffectiveLayerId(stamp)
                 const layer = this.app.layers.find(l => l.id === effectiveLayerId)
-                
+
                 if (!layer) {
                     skipReasons['no_layer'] = (skipReasons['no_layer'] || 0) + 1;
                     skippedCount++;
@@ -84,10 +84,10 @@ export class AnnotationRenderer {
      */
     redrawAllAnnotationLayers(forceAll = false) {
         if (!this.app.pdf) return;
-        
+
         const numPages = this.app.pdf.numPages;
         const targetPages = new Set();
-        
+
         // 1. Always prioritize visible pages
         document.querySelectorAll('.page-container[data-page]').forEach(el => {
             const rect = el.getBoundingClientRect();
@@ -173,7 +173,7 @@ export class AnnotationRenderer {
         const pageFactor = this.app.pageScales[path.page] || 1.0
         const globalMultiplier = this.app.stampSizeMultiplier || 1.0;
         const individualScale = path.userScale || 1.0;
-        
+
         if (path.type && path.type.includes('highlighter')) {
             const baseColor = path.color || '#fde047'
             ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : baseColor + '2D')
@@ -201,31 +201,31 @@ export class AnnotationRenderer {
             const p2 = path.points[path.points.length - 1];
             const x1 = p1.x * canvas.width, y1 = p1.y * canvas.height;
             const x2 = p2.x * canvas.width, y2 = p2.y * canvas.height;
-            
+
             // Midpoint
             mx = (x1 + x2) / 2;
             my = (y1 + y2) / 2;
-            
+
             // Vector and Perpendicular
             const dx = x2 - x1;
             const dy = y2 - y1;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            
+
             // Curvature offset (default -28% of length to curve downwards)
             const curvatureValue = path.curvature !== undefined ? path.curvature : -0.28;
             const curvature = dist * curvatureValue;
             const px = -(dy / dist) * curvature;
             const py = (dx / dist) * curvature;
-            
+
             // Control point
             const cx = mx + px;
             const cy = my + py;
-            
+
             // Actual Apex for handle and hit detection
             const apexX = mx + px * 0.5;
             const apexY = my + py * 0.5;
             path._renderedApex = { x: apexX / canvas.width, y: apexY / canvas.height };
-            
+
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.quadraticCurveTo(cx, cy, x2, y2);
@@ -238,7 +238,7 @@ export class AnnotationRenderer {
             const dx = x2 - x1;
             const dy = y2 - y1;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            
+
             // Perpendicular vector for caps
             const capLen = 12 * (this.app.scale / 1.5) * pageFactor * individualScale;
             // For bracket-left, cap points "inward" (right if drawing top-down)
@@ -274,11 +274,11 @@ export class AnnotationRenderer {
             const p1 = path.points[path.points.length - 2]
             const x2 = p2.x * canvas.width, y2 = p2.y * canvas.height
             const x1 = p1.x * canvas.width, y1 = p1.y * canvas.height
-            
+
             const dx = x2 - x1, dy = y2 - y1
             const angle = Math.atan2(dy, dx)
             const headlen = 15 * (this.app.scale / 1.5) * pageFactor
-            
+
             ctx.beginPath()
             ctx.setLineDash([]) // Arrowhead should be solid
             ctx.moveTo(x2, y2)
@@ -304,9 +304,9 @@ export class AnnotationRenderer {
         ctx.stroke()
 
         // SLUR CURVATURE HANDLE & GUIDE: Show if slur is active or being edited
-        const showSlurControls = path.type === 'slur' && path._renderedApex && 
-                                (path === this.app._lastGraceObject || isSelectHovered || 
-                                 (this.app.activeStampType === 'slur' && isHovered));
+        const showSlurControls = path.type === 'slur' && path._renderedApex &&
+            (path === this.app._lastGraceObject || isSelectHovered ||
+                (this.app.activeStampType === 'slur' && isHovered));
 
         if (showSlurControls) {
             // Background Guide Line
@@ -356,7 +356,7 @@ export class AnnotationRenderer {
                 }
             }
         }
-        
+
         // PRIORITY 3: Global state fallback (ONLY for unplaced/preview stamps)
         if (!toolDef && stamp.type && stamp.type.startsWith('custom-text-') && this.app._activeCustomText) {
             toolDef = {
@@ -377,10 +377,10 @@ export class AnnotationRenderer {
         const userMultiplier = this.app.stampSizeMultiplier || 1.0
         const scoreMultiplier = this.app.scoreStampScale || 1.0
         const individualScale = stamp.userScale || 1.0
-        
+
         // Unified Scale Factor (Standardizing on zoom=1.5 as base)
         let globalScale = (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale;
-        
+
         // HOVER POP: Scale up the object when hovered to make it obvious
         if (isHovered) {
             globalScale *= 1.18;
@@ -393,7 +393,7 @@ export class AnnotationRenderer {
             // console.warn(`[AnnotationRenderer] Sanity Cap triggered for ${stamp.type}: ${globalScale.toFixed(2)} -> ${MAX_SANITY_SCALE}`);
             globalScale = MAX_SANITY_SCALE;
         }
-        
+
         // Final pixel size for paths/shapes
         const size = toolSize * globalScale;
 
@@ -418,22 +418,22 @@ export class AnnotationRenderer {
 
         // Glow effects
         if (isHovered) {
-            ctx.shadowBlur = 12 
+            ctx.shadowBlur = 12
             ctx.shadowColor = '#ef4444'
         } else if (isSelectHovered) {
             ctx.shadowBlur = 15
             ctx.shadowColor = '#6366f1'
         } else if (stamp === this.app._lastGraceObject) {
-            ctx.shadowBlur = 8 
+            ctx.shadowBlur = 8
             ctx.shadowColor = '#6366f1'
-            
+
             // Draw a SHRUNKEN VISUAL RING
             ctx.save()
             ctx.beginPath()
             ctx.setLineDash([2, 2])
             ctx.strokeStyle = 'rgba(99, 102, 241, 0.6)'
             ctx.lineWidth = 1.0 * (this.app.scale / 1.5)
-            ctx.arc(x, y, size * 0.4, 0, Math.PI * 2) 
+            ctx.arc(x, y, size * 0.4, 0, Math.PI * 2)
             ctx.stroke()
             ctx.restore()
         }
@@ -458,10 +458,10 @@ export class AnnotationRenderer {
                 case 'text':
                     let textContent = d.content || stamp.data || '#'
                     const hasCJK = /[\u4e00-\u9fa5]/.test(textContent)
-                    
+
                     let fontStr = d.font || ''
                     let fontSize = (d.size || 24) * textScale
-                    
+
                     if (hasCJK) {
                         // CJK characters fill the em-box more than Latin, so we balance them
                         fontSize *= 0.85 // Scale down by 15%
@@ -479,7 +479,7 @@ export class AnnotationRenderer {
                     const noteChar = d.noteSymbol || '\uE1D5';
                     const bpmValue = stamp.data || '120';
                     const isDotted = d.dotted || false;
-                    
+
                     const baseSize = 16 * textScale;
                     const noteSize = baseSize * 1.8;
                     const tSize = baseSize;
@@ -491,9 +491,9 @@ export class AnnotationRenderer {
                     // 1. Note (Bravura)
                     ctx.font = `400 ${noteSize}px Bravura`;
                     ctx.fillText(noteChar, x, y);
-                    
+
                     // Fixed advance based on visual notehead width in Bravura
-                    let curX = x + (noteSize * 0.55); 
+                    let curX = x + (noteSize * 0.55);
 
                     // 2. Dot
                     if (isDotted) {
@@ -527,7 +527,7 @@ export class AnnotationRenderer {
                     ctx.save()
                     ctx.translate(x, y)
                     ctx.scale(size, size)
-                    
+
                     // Maintain standard line width despite internal coordinate space scaling
                     const baseStrokeWeight = d.strokeWidth || 2.5
                     const effectiveLineWidth = baseStrokeWeight * globalScale / size
@@ -573,12 +573,12 @@ export class AnnotationRenderer {
                         })
                     } else if (d.variant === 'measure') {
                         const isFree = stamp.type === 'measure-free'
-                        
+
                         // Skip if user has hidden measure stamps, but NOT for Free Measures
                         if (this.app.hideMeasureNumbers && !isFree) {
                             break
                         }
-                        
+
                         // Text Tightness (Compactness)
                         // Use a slightly smaller font than before (14 -> 13) and tighter weight if needed
                         // Also for Free Measure, add a circle frame
@@ -594,22 +594,22 @@ export class AnnotationRenderer {
                             const padding = fontSize * 0.4
                             const w = textWidth + padding * 2
                             const h = fontSize + padding
-                            
+
                             ctx.strokeStyle = ctx.fillStyle
                             ctx.lineWidth = 1.2 * globalScale
-                            
+
                             // Rounded rectangle for "softer" look
                             const radius = 4 * globalScale
                             ctx.beginPath()
                             const rectX = x - padding
-                            const rectY = y - h/2
+                            const rectY = y - h / 2
                             if (ctx.roundRect) {
                                 ctx.roundRect(rectX, rectY, w, h, radius)
                             } else {
                                 ctx.strokeRect(rectX, rectY, w, h)
                             }
                             ctx.stroke()
-                            
+
                             // Slightly darker text inside frame
                             ctx.fillStyle = isHovered ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.8)'
                         }
@@ -642,7 +642,7 @@ export class AnnotationRenderer {
                         ctx.moveTo(x - s * 0.38, y - s * 0.65)  // top-left
                         ctx.lineTo(x + s * 0.38, y - s * 0.65)  // top-right
                         ctx.lineTo(x + s * 0.38, y + s * 0.65)  // bottom-right
-                        ctx.lineTo(x,            y + s * 0.2)   // V-notch point
+                        ctx.lineTo(x, y + s * 0.2)   // V-notch point
                         ctx.lineTo(x - s * 0.38, y + s * 0.65)  // bottom-left
                         ctx.closePath()
                         ctx.fill()
@@ -674,9 +674,9 @@ export class AnnotationRenderer {
                         if (!isNextTarget) ctx.globalAlpha *= 0.35
                         ctx.fillStyle = aColor
                         ctx.strokeStyle = aColor
-                        
+
                         // Internal scaling for anchor to make it match text size (approx 0.6x original)
-                        const s = size * 0.65; 
+                        const s = size * 0.65;
 
                         // 圓點
                         ctx.beginPath()
@@ -745,20 +745,20 @@ export class AnnotationRenderer {
         if (type === 'highlighter') {
             // Rectangular tip for highlighter
             const w = size * 2.5, h = size * 0.8
-            ctx.roundRect(x - w/2, y - h/2, w, h, 2)
+            ctx.roundRect(x - w / 2, y - h / 2, w, h, 2)
         } else {
             // Circular tip for pen
             ctx.arc(x, y, size, 0, Math.PI * 2)
         }
-        
+
         ctx.fill()
-        
+
         // Slight border for visibility
         ctx.globalAlpha = 0.3
         ctx.strokeStyle = '#FFFFFF'
         ctx.lineWidth = 1
         ctx.stroke()
-        
+
         ctx.restore()
     }
 }

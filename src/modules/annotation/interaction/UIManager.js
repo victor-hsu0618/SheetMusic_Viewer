@@ -34,26 +34,26 @@ export const InteractionUI = {
         const bin = InteractionUI.ensureTrashBin(wrapper)
         if (show) {
             // Restore display: flex first to allow position calculations (via class or style)
-            bin.classList.add('show') 
-            
+            bin.classList.add('show')
+
             if (x !== null && y !== null) {
-                const binWidth = 72 
+                const binWidth = 72
                 const binHeight = 72
-                
+
                 const rect = wrapper.getBoundingClientRect()
                 const padding = 20
-                
+
                 // DYNAMIC OFFSET: Move bin 80px away from the pointer centrally 
                 // to avoid overlapping with the object being dragged (especially at boundaries)
                 const offsetX = (x < rect.width / 2) ? 80 : -80
                 const offsetY = (y < rect.height / 2) ? 80 : -80
-                
+
                 let left = x + offsetX - binWidth / 2
-                let top = y + offsetY - binHeight / 2 
-                
+                let top = y + offsetY - binHeight / 2
+
                 left = Math.max(padding, Math.min(rect.width - binWidth - padding, left))
                 top = Math.max(padding, Math.min(rect.height - binHeight - padding, top))
-                
+
                 bin.style.position = 'absolute'
                 bin.style.left = `${left}px`
                 bin.style.top = `${top}px`
@@ -80,17 +80,17 @@ export const InteractionUI = {
         if (!obj) return false
         const bin = InteractionUI.ensureTrashBin(wrapper)
         const binRect = bin.getBoundingClientRect()
-        
+
         // Target center in pixel coordinates relative to viewport
         const center = coordMapper.getGraceCenter(obj)
         // Find the main rendering canvas to get its viewport rect
         const canvas = wrapper.querySelector('.pdf-canvas') || wrapper.querySelector('.annotation-layer:not(.virtual-canvas)')
         if (!canvas) return false
-        
+
         const canvasRect = canvas.getBoundingClientRect()
         const objX = canvasRect.left + (center.x * canvasRect.width)
         const objY = canvasRect.top + (center.y * canvasRect.height)
-        
+
         // Trash bin bounds in viewport coordinates
         // Using a 15px bleed for easier hitting
         const tolerance = 15
@@ -129,11 +129,11 @@ export const InteractionUI = {
             if (overlay) overlay.style.cursor = '';
             return;
         }
-        
+
         // Treat 'view' as the idle-pan state
         const isIdle = toolType === 'idle-pan' || toolType === 'view';
         const effectiveTool = toolType === 'idle-pan' ? app.activeStampType : toolType;
-        
+
         let pos, previewPos;
         if (targetObject) {
             // If targetObject is provided (Nudge mode), center the pointer on the object
@@ -143,11 +143,11 @@ export const InteractionUI = {
             pos = coordMapper.getPos(e, overlay)
             previewPos = coordMapper.getStampPreviewPos(pos, pointerType, effectiveTool, app, overlay)
         }
-        
+
         const hasOffset = Math.abs(previewPos.x - pos.x) > 0.0001 || Math.abs(previewPos.y - pos.y) > 0.0001
-        
+
         const isTargetingTool = ['select', 'copy', 'recycle-bin', 'text', 'tempo-text', 'eraser', 'measure'].includes(effectiveTool);
-        
+
         const isDrawingEffectiveTool = ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter',
             'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur',
             'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(effectiveTool);
@@ -158,22 +158,22 @@ export const InteractionUI = {
         // 3. It's mouse and it's a stamp tool (to show crosshair placement)
         // 4. It's idle pan mode
         const shouldShow = (pointerType === 'touch' && hasOffset) ||
-                           (pointerType === 'touch' && !!app.isInteracting && !isDrawingEffectiveTool) ||
-                           (pointerType === 'mouse' && (app.isStampTool() || isIdle)) ||
-                           isIdle;
-        
+            (pointerType === 'touch' && !!app.isInteracting && !isDrawingEffectiveTool) ||
+            (pointerType === 'mouse' && (app.isStampTool() || isIdle)) ||
+            isIdle;
+
         if (shouldShow) {
             const rect = overlay.getBoundingClientRect()
             virtualPointer.style.left = `${previewPos.x * rect.width}px`
             virtualPointer.style.top = `${previewPos.y * rect.height}px`
             virtualPointer.classList.add('active')
-            
+
             // Handle idle state styling (hand icon)
             virtualPointer.classList.toggle('idle-pan', isIdle);
-            
+
             // Toggle dragging class based on app state
             virtualPointer.classList.toggle('dragging', !!app.isInteracting);
-            
+
             // Ensure system cursor is hidden if we are showing the custom one on desktop
             if (pointerType === 'mouse' || isIdle) {
                 // Use 'grabbing' if interacting, else 'grab'

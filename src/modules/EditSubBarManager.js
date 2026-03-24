@@ -391,7 +391,7 @@ export class EditSubBarManager {
     /** Render the icon HTML for a stamp bar cell */
     _cellIconHTML(item) {
         const icon = item.icon
-        const activeColor = this.app.activeColor || '#e2e8f0'
+        const activeColor = (item.id === 'view' || item.id === 'select') ? 'currentColor' : (this.app.activeColor || '#e2e8f0')
         if (!icon) {
             // No icon at all — fall back to textIcon or label
             return `<span class="sf-bar-cell-text" style="color:${activeColor}">${item.textIcon || item.label}</span>`
@@ -499,6 +499,7 @@ export class EditSubBarManager {
                     const isActive = this.app.activeStampType === item.id
                     const cell = document.createElement('div')
                     cell.className = 'sf-bar-cell' + (isActive ? ' active' : '')
+                    cell.dataset.id = item.id
                     if (item._group?.color) cell.style.borderColor = item._group.color + '55'
                     cell.innerHTML = this._cellIconHTML(item)
                     cell.title = item.label
@@ -535,6 +536,7 @@ export class EditSubBarManager {
                     const cell = document.createElement('div')
                     cell.className = 'sf-bar-cell' + (isActive ? ' active' : '')
                     if (item._group?.color) cell.style.borderColor = item._group.color + '55'
+                    cell.dataset.id = item.id
                     cell.innerHTML = this._cellIconHTML(item)
                     cell.title = item.label
                     cell.addEventListener('click', () => this._selectTool(item.id, bar, type))
