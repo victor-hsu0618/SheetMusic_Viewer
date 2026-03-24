@@ -192,6 +192,8 @@ export class JumpManager {
                 top: Math.max(0, absoluteY - 100),
                 behavior: 'smooth'
             })
+            // iPad Fix: Force reset interaction state after jump to ensure responsiveness
+            this.app.inputManager?.forceResetInteractionState();
             this.updateDisplay()
         }
     }
@@ -252,6 +254,9 @@ export class JumpManager {
             })
             this.currentPage = pageNumber
             this.updateDisplay()
+
+            // iPad Fix: Force reset interaction state after jump to ensure responsiveness
+            this.app.inputManager?.forceResetInteractionState();
         }
     }
 
@@ -266,6 +271,9 @@ export class JumpManager {
     goToHead() {
         this.app.jumpHistory = []
         this.app.viewer.scrollTo({ top: 0, behavior: 'smooth' })
+        
+        // iPad Fix: Force reset interaction state after jump to ensure responsiveness
+        this.app.inputManager?.forceResetInteractionState();
     }
 
     goToEnd() {

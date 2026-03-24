@@ -32,7 +32,8 @@ body.sf-strip-collapsed .library-overlay {
     transform: translateX(-100%);
 }
 
-.library-overlay.active {
+/* Ensure active state always wins regardless of body classes (Specificity Fix) */
+body .library-overlay.active {
     pointer-events: auto;
     transform: translateX(0);
 }

@@ -1196,11 +1196,11 @@ export class InteractionManager {
 
         // SAFETY: Ensure the viewer's own touch-action is correct.
         if (this.app.viewer) {
-            // In view mode, allow native panning (important for zoomed scores).
-            // In annotation mode, set 'none' on the viewer so iOS Safari doesn't intercept
-            // finger touch for scrolling — iOS ignores overlay touch-action:none if an
-            // ancestor scroll container has pan-y. Apple Pencil / mouse are unaffected.
-            this.app.viewer.style.touchAction = isViewMode ? 'pan-x pan-y' : 'none';
+            // Allow native panning (important for multi-touch gestures like two-finger scroll).
+            // The .capture-overlay's touch-action: none will still prevent single-finger 
+            // score scrolling while drawing, but allowing it here enables iPad panning.
+            this.app.viewer.style.touchAction = 'pan-x pan-y';
+            
             // Ensure overflow-y is never stuck at 'hidden'
             if (this.app.viewer.style.overflowY === 'hidden') {
                 this.app.viewer.style.overflowY = '';

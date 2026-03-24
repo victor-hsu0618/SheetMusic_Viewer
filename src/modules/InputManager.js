@@ -43,7 +43,13 @@ export class InputManager {
      */
     isEventInUI(e) {
         if (!e || !e.target) return false
-        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, .jump-sub-panel, .library-overlay, .sidebar-recent-item, .recent-score-card, .bookmark-item'
+        
+        // Fast-path: if touching the viewer background or a page, it's NOT UI
+        if (e.target.id === 'viewer-container' || e.target.id === 'pdf-viewer' || e.target.classList.contains('page-container') || e.target.classList.contains('capture-overlay')) {
+            return false
+        }
+
+        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, .jump-sub-panel, .library-overlay, .sidebar-recent-item, .recent-score-card, .bookmark-item, .sf-sub-bar, .sf-wide-bar, .sf-stamp-settings-panel'
         if (e.target.closest(uiSelector)) return true
 
         // On iOS, touch events can bleed through position:fixed overlays to the
@@ -51,9 +57,41 @@ export class InputManager {
         const touch = (e.changedTouches ?? e.touches)?.[0]
         if (touch) {
             const elAtPoint = document.elementFromPoint(touch.clientX, touch.clientY)
-            if (elAtPoint?.closest(uiSelector)) return true
+            // Safety: if elementFromPoint returns null or the root, it's workspace
+            if (!elAtPoint || elAtPoint === document.documentElement || elAtPoint === document.body) return false
+            if (elAtPoint.closest(uiSelector)) return true
         }
         return false
+    }
+
+    /**
+     * Force-clears all interaction blockers, stagnant flags, and scroll locks.
+     * Used after jumps or major UI transitions to ensure the workspace is responsive.
+     */
+    forceResetInteractionState() {
+        console.log('[InputManager] 🛠️ Force resetting interaction state...');
+        
+        // 1. Reset Gesture Timers
+        if (this.longPressTimer) { clearTimeout(this.longPressTimer); this.longPressTimer = null; }
+        if (this.mouseLongPressTimer) { clearTimeout(this.mouseLongPressTimer); this.mouseLongPressTimer = null; }
+        this.isLongPressActive = false;
+        this.isMouseLongPressActive = false;
+        this.mouseDownPos = null;
+
+        // 2. Global App Flags
+        this.app.isInteracting = false;
+        this.app._wasPanning = false;
+        this._suppressNextClick = false;
+
+        // 3. Delegate to InteractionManager to reset overlays (very important for iPad)
+        if (this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction) {
+            this.app.annotationManager.interaction.updateAllOverlaysTouchAction();
+        }
+
+        // 4. Safety: Force Restore Viewer Overflow
+        if (this.app.viewer) {
+            this.app.viewer.style.overflowY = '';
+        }
     }
 
     initKeyboardListeners() {

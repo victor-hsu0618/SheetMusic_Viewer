@@ -136,9 +136,12 @@ export class EditSubBarManager {
             this._bars[name] = bar
             document.body.appendChild(bar)
         }
-        this._positionBar(bar, name, triggerBtn)
+        
+        // Populate first so offsetHeight is closer to real once we position
         this._populateBar(bar, name)
-        // Animate open on next frame
+        this._positionBar(bar, name, triggerBtn)
+        
+        // Animate open on next frame to ensure the position set above is applied
         requestAnimationFrame(() => bar.classList.add('open'))
     }
 
@@ -160,18 +163,27 @@ export class EditSubBarManager {
             bar.style.top = (rect.top + rect.height / 2) + 'px'
 
         } else if (name === 'shapes' || name === 'stamp') {
-            // Use stored Y or default to near bottom; clamp after layout so half-height is known
+            // Use stored Y or default to near bottom
             const stored = name === 'stamp' ? this._stampBarY : this._shapesBarY
             const raw = stored ?? Math.round(window.innerHeight * 0.82)
-            // Apply immediately so the bar is visible, then re-clamp once it has a measured height
+            
+            // Set initial top immediately
             bar.style.top = raw + 'px'
-            requestAnimationFrame(() => {
-                const halfH = (bar.offsetHeight || 120) / 2
+
+            // Refine top based on actual height to ensure it fits on screen
+            // Since we just populated the bar, we try to measure now.
+            // If offsetHeight is 0, we'll try one frame later but avoid double jumps.
+            const refine = () => {
+                const h = bar.offsetHeight || 120
+                const halfH = h / 2
                 const clamped = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, raw))
                 bar.style.top = clamped + 'px'
                 if (name === 'stamp')  this._stampBarY  = clamped
                 else                   this._shapesBarY = clamped
-            })
+            }
+
+            if (bar.offsetHeight > 0) refine()
+            else requestAnimationFrame(refine)
 
         } else if (name === 'others') {
             // Slides down from top — no top override needed (CSS handles it)
