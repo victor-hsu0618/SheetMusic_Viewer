@@ -391,3 +391,23 @@
 .jump-line-beam {
   display: none;
 }
+
+.ruler-system-mark {
+  position: absolute;
+  left: 0;
+  width: 25%;          /* short tick on the left — less intrusive */
+  right: auto;
+  height: 2px;
+  background: rgba(74, 158, 255, 0.7);
+  border-top: none;
+  pointer-events: none;
+  transition: top 0.1s linear;
+}
+
+.ruler-system-mark.ruler-system-next-target {
+  left: 0; right: 0; width: auto;   /* full width for next target */
+  background: rgba(245, 158, 11, 0.7);
+  border-top: 2px solid #f59e0b;
+  height: 3px;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}

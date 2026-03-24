@@ -38,12 +38,8 @@ export class ScoreDetailManager {
 
         this.ui.panel.classList.toggle('active', active)
         
-        // Sync button visual state
         if (this.app.btnScoreDetailToggle) {
             this.app.btnScoreDetailToggle.classList.toggle('active', active)
-        }
-        if (this.app.floatingScoreTitle) {
-            this.app.floatingScoreTitle.classList.toggle('active-panel', active)
         }
 
         if (active) {

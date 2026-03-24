@@ -454,17 +454,19 @@ export class ViewerManager {
         }
     }
     async updateFloatingTitle() {
-        if (!this.app.floatingScoreTitle) return;
-        
         const fp = this.pdfFingerprint;
         if (!fp) {
             if (this.activeScoreName) {
                 const loadingName = "Loading " + this.activeScoreName.replace(/\.pdf$/i, '') + "..."
-                this.app.floatingScoreTitle.textContent = loadingName;
-                this.app.floatingScoreTitle.classList.add('active');
+                if (this.app.floatingScoreTitle) {
+                    this.app.floatingScoreTitle.textContent = loadingName;
+                    this.app.floatingScoreTitle.classList.add('active');
+                }
                 this.app.docBarStripManager?.updateTitle(loadingName);
             } else {
-                this.app.floatingScoreTitle.classList.remove('active');
+                if (this.app.floatingScoreTitle) {
+                    this.app.floatingScoreTitle.classList.remove('active');
+                }
                 this.app.docBarStripManager?.updateTitle('');
             }
             return;
@@ -484,8 +486,10 @@ export class ViewerManager {
         // If we are still hashing/parsing, add a visual cue
         if (!this.pdf) displayName = "⏳ " + displayName;
 
-        this.app.floatingScoreTitle.textContent = displayName;
-        this.app.floatingScoreTitle.classList.add('active');
+        if (this.app.floatingScoreTitle) {
+            this.app.floatingScoreTitle.textContent = displayName;
+            this.app.floatingScoreTitle.classList.add('active');
+        }
         this.app.docBarStripManager?.updateTitle(displayName);
     }
 

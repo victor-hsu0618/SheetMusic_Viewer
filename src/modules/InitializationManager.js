@@ -24,15 +24,8 @@ export class InitializationManager {
         app.sidebar = document.getElementById('sidebar')
         app.layerList = document.getElementById('layer-shelf-list')
         app.jumpLine = document.getElementById('jump-line')
-        app.activeToolsContainer = document.getElementById('active-tools-container')
         app.sourceList = document.getElementById('source-list')
-
         app.openPdfBtn = document.getElementById('open-pdf-btn')
-        app.btnSettingsToggle = document.getElementById('btn-settings-toggle')
-        app.btnLibraryToggle = document.getElementById('btn-library-toggle')
-        app.btnScoreDetailToggle = document.getElementById('btn-score-detail-toggle')
-        app.btnFitWidth = document.getElementById('view-fit-width')
-        app.btnFitHeight = document.getElementById('view-fit-height')
         app.shortcutsModal = document.getElementById('shortcuts-modal')
         app.closeShortcutsBtn = document.getElementById('close-shortcuts')
         app.closeSidebarBtn = document.getElementById('close-sidebar')
@@ -57,8 +50,6 @@ export class InitializationManager {
         app.closeFileBtn = document.getElementById('close-file-btn')
         app.resetLayersBtn = document.getElementById('reset-layers-btn')
         app.resetSystemBtn = document.getElementById('reset-system-btn')
-        app.btnRulerToggle = document.getElementById('view-ruler-toggle')
-        app.btnFullscreen = document.getElementById('view-fullscreen')
         app.systemDialog = document.getElementById('system-dialog')
         app.eraseAllModal = document.getElementById('erase-all-modal')
         app.dialogTitle = document.getElementById('dialog-title')
@@ -67,10 +58,6 @@ export class InitializationManager {
         app.dialogActions = document.getElementById('dialog-actions')
         app.dialogInput = document.getElementById('dialog-input')
         app.closeDialogBtn = document.getElementById('close-dialog')
-        app.floatingScoreTitle = document.getElementById('floating-score-title')
-        app.btnModeHand = document.getElementById('btn-mode-hand')
-        app.btnModeEraser = document.getElementById('btn-mode-eraser')
-        app.btnStampPalette = document.getElementById('btn-stamp-palette')
 
         document.querySelectorAll('.zoom-btn-mini[title]').forEach(btn => {
             btn.dataset.tooltip = btn.title
@@ -83,9 +70,6 @@ export class InitializationManager {
         app.btnWelcomeSkip?.addEventListener('click', () => {
             app.viewerManager.hideWelcome()
             app.toggleLibrary(true)
-            ;['floating-doc-bar'].forEach(id => {
-                document.getElementById(id)?.classList.remove('hidden')
-            })
             app.rulerManager?.updateRulerPosition()
         })
 
@@ -107,23 +91,9 @@ export class InitializationManager {
             app.renderSidebarRecentScores()
         })
 
-        app.btnSettingsToggle?.addEventListener('click', () => app.toggleSettings())
-        app.btnLibraryToggle?.addEventListener('click', () => app.toggleLibrary())
-        app.btnScoreDetailToggle?.addEventListener('click', (e) => {
-            e.stopPropagation()
-            if (!app.pdfFingerprint) return app.showMessage('Please open a score first.', 'info')
-            app.toggleScoreDetail()
-        })
 
-        document.getElementById('btn-jump-panel-toggle')?.addEventListener('click', (e) => { e.stopPropagation(); app.jumpManager?.togglePanel() })
-        document.getElementById('btn-view-panel-toggle')?.addEventListener('click', (e) => { e.stopPropagation(); app.viewPanelManager?.togglePanel() })
 
-        // Quick tool suite (collapsed doc bar)
-        document.getElementById('quick-page-up')?.addEventListener('click', () => app.jump(-1))
-        document.getElementById('quick-page-down')?.addEventListener('click', () => app.jump(1))
-        document.getElementById('quick-fit-width')?.addEventListener('click', () => app.fitToWidth())
-        document.getElementById('quick-fit-height')?.addEventListener('click', () => app.fitToHeight())
-        document.getElementById('quick-open-library')?.addEventListener('click', () => app.toggleLibrary())
+
 
         document.getElementById('btn-library-close-main')?.addEventListener('click', () => app.toggleLibrary(false))
 
@@ -164,19 +134,11 @@ export class InitializationManager {
         app.resetSystemBtn?.addEventListener('click', () => app.resetToSystemDefault())
         app.settingsStampSizeInput?.addEventListener('input', (e) => app.updateStampSize(e.target.value))
         app.closeFileBtn?.addEventListener('click', () => app.viewerManager.closeFile())
-        app.btnFitWidth?.addEventListener('click', () => app.viewerManager.fitToWidth())
-        app.btnFitHeight?.addEventListener('click', () => app.viewerManager.fitToHeight())
         app.closeShortcutsBtn?.addEventListener('click', () => app.toggleShortcuts(false))
         app.closeSidebarBtn?.addEventListener('click', () => document.getElementById('sidebar')?.classList.remove('open'))
         app.settingsJumpOffsetInput?.addEventListener('input', (e) => app.updateJumpOffset(parseInt(e.target.value)))
         app.resetLayersBtn?.addEventListener('click', () => app.resetLayers())
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-            app.btnFullscreen?.setAttribute('disabled', '')
-            app.btnFullscreen?.setAttribute('title', 'PWA 模式已是全螢幕')
-        } else {
-            app.btnFullscreen?.addEventListener('click', () => app.toggleFullscreen())
-        }
-        app.btnRulerToggle?.addEventListener('click', () => app.rulerManager?.toggleRuler())
+
 
         // Measure number visibility toggle
         const measureVisToggle = document.getElementById('toggle-measure-visibility')
@@ -202,17 +164,7 @@ export class InitializationManager {
             })
         }
 
-        // Doc Bar Toggles & Actions
-        document.getElementById('btn-stamp-palette')?.addEventListener('click', () => app.toolManager?.toggleStampPalette())
-        document.getElementById('btn-quick-open')?.addEventListener('click', () => app.openPdfFilePicker())
-        document.getElementById('btn-mode-eraser')?.addEventListener('click', () => {
-            app.activeStampType = app.activeStampType === 'eraser' ? 'view' : 'eraser'
-            app.updateActiveTools()
-        })
 
-        // View Control Panel Shortcuts
-        document.getElementById('view-zoom-in')?.addEventListener('click', () => app.changeZoom(0.1))
-        document.getElementById('view-zoom-out')?.addEventListener('click', () => app.changeZoom(-0.1))
 
         document.getElementById('btn-gist-share')?.addEventListener('click', () => app.gistShareManager?.share())
     }

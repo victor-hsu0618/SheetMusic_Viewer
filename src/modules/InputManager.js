@@ -130,7 +130,7 @@ export class InputManager {
                     return
                 }
                 // Prevent trigger UI toggles when Cmd/Ctrl is held (e.g., Cmd+S)
-                if (['s', 'b', 't', 'v', 'o', 'f', 'r'].includes(key)) return
+                if (['s', 'v', 'o', 'f', 'r'].includes(key)) return
             }
 
             // 2. Navigation
@@ -156,8 +156,6 @@ export class InputManager {
             const toggleMap = {
                 'g': () => this.app.jumpManager?.togglePanel(),
                 's': () => this.app.toggleSettings(),
-                'b': () => this.app.toggleDocBar(),
-                't': () => this.app.toolManager.toggleStampPalette(),
                 'v': () => this.app.viewPanelManager?.togglePanel(),
                 'r': () => this.app.toggleRuler(),
                 'o': () => this.app.toggleLibrary(),
@@ -223,11 +221,7 @@ export class InputManager {
             this.longPressTimer = setTimeout(() => {
                 this.isLongPressActive = true
                 this.lastLongPressAt = Date.now()
-                // Bottom 15% of screen → toggle doc bar hidden/visible
-                if (startY > window.innerHeight * 0.85) {
-                    if (navigator.vibrate) navigator.vibrate(12)
-                    this.app.docBarManager?.toggleDocBarHidden()
-                }
+
             }, 500)
         }, { passive: true })
 
@@ -271,10 +265,7 @@ export class InputManager {
             if (this.mouseLongPressTimer) clearTimeout(this.mouseLongPressTimer)
             this.mouseLongPressTimer = setTimeout(() => {
                 this.isMouseLongPressActive = true
-                // Bottom 15% of screen → toggle doc bar hidden/visible
-                if (e.clientY > window.innerHeight * 0.85) {
-                    this.app.docBarManager?.toggleDocBarHidden()
-                }
+
             }, 500)
         })
 

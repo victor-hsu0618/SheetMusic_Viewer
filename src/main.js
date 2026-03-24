@@ -24,7 +24,7 @@ import { registerSW } from 'virtual:pwa-register'
 import * as pdfjsLib from 'pdfjs-dist'
 import * as db from './db.js'
 import { INITIAL_LAYERS, TOOLSETS } from './constants.js'
-import { DocBarManager } from './modules/docbar.js'
+
 import { ViewerManager } from './modules/ViewerManager.js'
 import { ProfileManager } from './modules/ProfileManager.js'
 import { ScoreDetailManager } from './modules/ScoreDetailManager.js'
@@ -121,7 +121,7 @@ class ScoreFlow {
     // Managers Initialization
     this.toolManager = new ToolManager(this)
     this.rulerManager = new RulerManager(this)
-    this.docBarManager = new DocBarManager(this)
+
     this.viewerManager = new ViewerManager(this)
     this.profileManager = new ProfileManager(this)
     this.scoreDetailManager = new ScoreDetailManager(this)
@@ -166,7 +166,7 @@ this.setlistManager = new SetlistManager(this)
     this.editStripManager.init()
     this.docBarStripManager.init()
     this.rulerManager.init()
-    this.docBarManager.init()
+
     this.inputManager.init()
     this.profileManager.init()
     this.scoreDetailManager.init()
@@ -176,8 +176,7 @@ this.playbackManager.init()
     this.settingsPanelManager.init()
     this.accountPanelManager.init()
     this.setlistManager.init()
-    this.toolManager.initDraggable()
-    this.toolManager.initToolbarResizable()
+
 
     const boot = async () => {
         try {
