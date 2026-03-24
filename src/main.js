@@ -369,22 +369,27 @@ this.playbackManager.init()
       this._fsBound = true
     }
 
-    if (isIOS || (isSafari && !document.fullscreenEnabled)) {
-      root?.classList.toggle('css-fullscreen', !isFs)
-      document.body.classList.toggle('sf-css-fullscreen', !isFs)
-      updateBtn(!isFs)
-    } else {
+    const docEl = document.documentElement
+    const requestFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen
+    const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen
+    const fsEnabled = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled
+
+    // Use Native API if available and not explicitly disabled (Safari can be picky)
+    if (requestFs && (fsEnabled || !isSafari)) {
       if (!isFs) {
-        const target = document.documentElement
-        const req = target.requestFullscreen ? target.requestFullscreen() : target.webkitRequestFullscreen?.()
-        req?.then(() => updateBtn(true)).catch(err => {
-          console.warn('[Fullscreen] Request rejected:', err)
-          // Fallback to CSS if API fails (e.g. not called from user gesture)
+        requestFs.call(docEl).then(() => updateBtn(true)).catch(err => {
+          console.warn('[Fullscreen] Native request failed, falling back to CSS:', err)
           root?.classList.add('css-fullscreen'); updateBtn(true)
         })
       } else {
-        (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.())?.then(() => updateBtn(false))
+        if (exitFs) exitFs.call(document).then(() => updateBtn(false))
+        else { root?.classList.remove('css-fullscreen'); updateBtn(false) }
       }
+    } else {
+      // Fallback for older iOS / browsers without Fullscreen API
+      root?.classList.toggle('css-fullscreen', !isFs)
+      document.body.classList.toggle('sf-css-fullscreen', !isFs)
+      updateBtn(!isFs)
     }
   }
 
