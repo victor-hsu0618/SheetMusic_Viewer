@@ -568,6 +568,7 @@ export class InteractionManager {
                     isMovingExisting = true;
                     this.app.isInteracting = true;
                     this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
+                    activeObject.updatedAt = Date.now(); // Bump timestamp when nudge starts
 
                     const graceCenter = CoordMapper.getGraceCenter(activeObject);
                     const wCenter = getPixelsForWrapper(wrapper, graceCenter.x, graceCenter.y);
@@ -816,8 +817,9 @@ export class InteractionManager {
 
             let cleaned = false; // becomes true when cleanupInteraction runs before the async save
             try {
-                if (activeObject) {
-                    const targetPageNum = activeObject.page;
+                const syncObj = activeObject; // Capture current state for async sync
+                if (syncObj) {
+                    const targetPageNum = syncObj.page;
                     const targetWrapper = document.querySelector(`.page-container[data-page="${targetPageNum}"]`);
                     // Check doc bar trash (pointer position)
                     const docTrash2 = document.getElementById('sf-doc-trash-btn')
@@ -968,9 +970,9 @@ export class InteractionManager {
                         await this.app.saveToStorage(true);
 
                         // --- Supabase Sync ---
-                        if (this.app.supabaseManager && activeObject.type !== 'view') {
-                            activeObject.updatedAt = Date.now();
-                            this.app.supabaseManager.pushAnnotation(activeObject, this.app.pdfFingerprint);
+                        if (this.app.supabaseManager && syncObj && syncObj.type !== 'view') {
+                            syncObj.updatedAt = Date.now(); // Final sync timestamp
+                            this.app.supabaseManager.pushAnnotation(syncObj, this.app.pdfFingerprint);
                         }
                     }
                 }

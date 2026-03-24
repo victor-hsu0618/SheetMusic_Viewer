@@ -146,8 +146,13 @@ export class SupabaseManager {
 
             const idx = this.app.stamps.findIndex(s => s.id === stamp.id)
             if (idx !== -1) {
-                // FORCE UPDATE: Always accept cloud version if we're in a sync session
-                console.log(`   -> Syncing existing stamp [${stamp.type}]`)
+                // OPTIMISTIC LOCK: Only accept cloud version if it's strictly NEWER than local
+                const localStamp = this.app.stamps[idx]
+                if ((stamp.updatedAt || 0) <= (localStamp.updatedAt || 0)) {
+                    console.log(`[Supabase] 🛡️ Ignored stale cloud update for [${stamp.type}] (Local: ${localStamp.updatedAt}, Cloud: ${stamp.updatedAt})`)
+                    return
+                }
+                console.log(`   -> Syncing existing stamp [${stamp.type}] (Newer cloud version)`)
                 this.app.stamps[idx] = stamp
             } else {
                 console.log(`   -> New stamp from cloud [${stamp.type}]`)
@@ -251,7 +256,7 @@ export class SupabaseManager {
             type: stamp.type,
             page: stamp.page || 0,
             data: stamp, // The whole object goes into JSONB
-            updated_at: new Date().toISOString()
+            updated_at: stamp.updatedAt ? new Date(stamp.updatedAt).toISOString() : new Date().toISOString()
         }
 
         console.log(`[Supabase] ⬆️ Pushing annotation [${stamp.type}] ID: ${stamp.id}`)

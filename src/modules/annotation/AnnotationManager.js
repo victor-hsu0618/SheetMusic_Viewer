@@ -615,6 +615,9 @@ export class AnnotationManager {
                     this.app.stamps.push(stamp)
                 }
                 this.app.saveToStorage(true)
+                if (this.app.supabaseManager) {
+                    this.app.supabaseManager.pushAnnotation(stamp, this.app.pdfFingerprint)
+                }
                 this.redrawStamps(pageNum)
                 if (this.app.toolManager) this.app.toolManager.updateActiveTools()
             }
