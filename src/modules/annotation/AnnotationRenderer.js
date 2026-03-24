@@ -381,6 +381,11 @@ export class AnnotationRenderer {
         // Unified Scale Factor (Standardizing on zoom=1.5 as base)
         let globalScale = (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale;
         
+        // HOVER POP: Scale up the object when hovered to make it obvious
+        if (isHovered) {
+            globalScale *= 1.3;
+        }
+
         // SANITY CAP: Prevent anchors/stamps from becoming ridiculously large (e.g. if multipliers are stacked)
         // Hard cap at 5x the base size at zoom 1.5
         const MAX_SANITY_SCALE = 5.0;
@@ -413,19 +418,8 @@ export class AnnotationRenderer {
 
         // Glow effects
         if (isHovered) {
-            ctx.shadowBlur = 45 // Increased from 25 for massive pop
+            ctx.shadowBlur = 45 
             ctx.shadowColor = '#ef4444'
-            
-            // Draw a LARGE TARGETING RING to highlight the object
-            ctx.save()
-            ctx.beginPath()
-            ctx.setLineDash([5, 5])
-            ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)'
-            ctx.lineWidth = 2.5 * (this.app.scale / 1.5)
-            // Ring is 50% larger than the object
-            ctx.arc(x, y, size * 1.5, 0, Math.PI * 2) 
-            ctx.stroke()
-            ctx.restore()
         } else if (isSelectHovered) {
             ctx.shadowBlur = 15
             ctx.shadowColor = '#6366f1'
