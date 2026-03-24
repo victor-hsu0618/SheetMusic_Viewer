@@ -96,7 +96,7 @@
 }
 
 /* Specific styling for the bottom Trash button (matches Doc Bar style) */
-.sf-strip-trash-btn {
+.sf-edit-trash {
     width: 42px;
     height: 64px;
     display: flex;
@@ -111,17 +111,20 @@
     margin: 4px 0;
 }
 
-.sf-strip-trash-btn svg {
+.sf-edit-trash svg {
     transform: scale(1.2);
+    filter: none !important;
+    color: #4b5563 !important;
+    stroke: #4b5563 !important;
 }
 
-.sf-strip-trash-btn:hover {
+.sf-edit-trash:hover {
     background: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.5);
 }
 
 /* Active state: recycle bin mode on */
-.sf-strip-trash-btn.active {
+.sf-edit-trash.active {
     background: rgba(239, 68, 68, 0.22) !important;
     border-color: #ef4444 !important;
     color: #ef4444 !important;
@@ -129,13 +132,13 @@
 }
 
 /* Pulse when any drag is active (to hint the zone exists) */
-.sf-strip-trash-btn.drag-active {
+.sf-edit-trash.drag-active {
     border-color: rgba(255, 255, 255, 0.4);
     color: rgba(255, 255, 255, 0.55);
     animation: sf-pulse-red-border 1.5s infinite;
 }
 
-.sf-strip-trash-btn.drag-over {
+.sf-edit-trash.drag-over {
     background: rgba(239, 68, 68, 0.25) !important;
     border-color: #ef4444 !important;
     color: #ef4444 !important;
@@ -202,7 +205,7 @@
     /* High visibility thumb for navigation */
     background: transparent;
     border: none;
-    
+
     border-radius: 10px;
     cursor: grab;
     transition: background .15s;

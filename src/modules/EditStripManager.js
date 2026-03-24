@@ -153,10 +153,10 @@ export class EditStripManager {
             // Skip trash-can as it's always at the bottom
             if (tool.id === 'trash-can') return
 
-            const isPen    = tool.isPenTrigger
+            const isPen = tool.isPenTrigger
             const isShapes = tool.isShapesTrigger
-            const isStamp  = tool.isStampTrigger
-            const isText   = tool.isTextTrigger
+            const isStamp = tool.isStampTrigger
+            const isText = tool.isTextTrigger
             const isOthers = tool.id === 'scroll-bar'
             const hasSub = isPen || isShapes || isStamp || isText || isOthers
 
@@ -449,7 +449,7 @@ export class EditStripManager {
                 if (e.cancelable) e.preventDefault()
                 const maxScroll = viewer.scrollHeight - viewer.clientHeight
                 viewer.scrollTop = Math.max(0, Math.min(maxScroll, viewer.scrollTop + e.deltaY))
-                
+
                 // Show arrows based on scroll direction
                 if (e.deltaY < -2) {
                     upArrow.classList.add('active')
@@ -458,7 +458,7 @@ export class EditStripManager {
                     downArrow.classList.add('active')
                     upArrow.classList.remove('active')
                 }
-                
+
                 // Reset arrows shortly after scroll stops
                 if (wheelTimer) clearTimeout(wheelTimer)
                 wheelTimer = setTimeout(() => {
@@ -484,7 +484,7 @@ export class EditStripManager {
         btn.id = 'sf-edit-collapse-btn'
         btn.className = 'sf-strip-btn sf-edit-collapse-btn'
         btn.title = '收合編輯列 (長按全收合)'
-        
+
         const iconWrap = document.createElement('div')
         iconWrap.style.display = 'flex'
         iconWrap.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
@@ -541,10 +541,10 @@ export class EditStripManager {
     _handleLongPressToggle() {
         // Decide target state based on current Edit Strip state
         const targetCollapsed = !this.collapsed
-        
+
         // 1. Toggle this strip
         this.toggleCollapse(targetCollapsed)
-        
+
         // 2. Toggle Doc Bar (left strip) if available
         const docBar = this.app.docBarStripManager
         if (docBar) {

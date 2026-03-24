@@ -553,7 +553,7 @@ export class InteractionManager {
                 if (previewCanvas) {
                     this.app.redrawStamps(pageNum);
                     const previewLayer = this.app.layers.find(l => l.id === activeObject.layerId);
-                    this.app.drawStampOnCanvas(previewCanvas.getContext('2d'), previewCanvas, activeObject, previewLayer?.color || '#000', true, false, false, pos);
+                    this.app.drawStampOnCanvas(previewCanvas.getContext('2d'), previewCanvas, activeObject, activeObject.color || previewLayer?.color || '#000', true, false, false, pos);
                 }
                 attachGlobalListeners();
                 InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
@@ -749,7 +749,7 @@ export class InteractionManager {
                 if (canvas) {
                     this.app.redrawStamps(currentPageNum);
                     const layer = this.app.layers.find(l => l.id === activeObject.layerId);
-                    this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, activeObject, layer?.color || '#000', true, false, false, pos);
+                    this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, activeObject, activeObject.color || layer?.color || '#000', true, false, false, pos);
                 }
             }
             if (!isDrawingType(activeObject.type)) {
@@ -1119,7 +1119,7 @@ export class InteractionManager {
                     if (canvas) {
                         this.app.redrawStamps(pageNum);
                         const layer = this.app.layers.find(l => l.id === 'draw');
-                        this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, { type: toolType, x: pPos.x, y: pPos.y, page: pageNum, userScale: this.app.activeToolPreset || 1.0 }, layer?.color || '#000', true, false, false, pos);
+                        this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, { type: toolType, x: pPos.x, y: pPos.y, page: pageNum, userScale: this.app.activeToolPreset || 1.0 }, this.app.activeColor || layer?.color || '#000', true, false, false, pos);
                     }
                 }
                 
@@ -1239,6 +1239,7 @@ export class InteractionManager {
         // Use label, type name, or fallback icon
         const label = obj?.data || obj?.type || '◆'
         ghost.textContent = label
+        ghost.style.color = obj?.color || this.app.activeColor || '#ef4444'
         ghost.style.display = 'block'
         ghost.style.left = (clientX + 18) + 'px'
         ghost.style.top  = (clientY - 16) + 'px'

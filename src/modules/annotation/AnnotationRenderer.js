@@ -147,7 +147,7 @@ export class AnnotationRenderer {
 
         // Highlight if hovered
         if (isHovered) {
-            ctx.shadowBlur = 20
+            ctx.shadowBlur = 8
             ctx.shadowColor = '#ef4444'
             ctx.strokeStyle = '#ef4444' // Force red
         } else if (isSelectHovered) {
@@ -183,7 +183,7 @@ export class AnnotationRenderer {
             let baseWidth = (path.type === 'line' ? 1.2 : 1.8);
             if (path.type === 'bracket-left' || path.type === 'bracket-right') baseWidth = 3.0;
             ctx.lineWidth = baseWidth * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
-            if (isHovered) ctx.lineWidth *= 2.5 // Increased from 1.5 for better visibility
+            if (isHovered) ctx.lineWidth *= 1.6 // Reduced from 2.5 to prevent blurring
         }
 
         // Transparency for brackets
@@ -383,7 +383,7 @@ export class AnnotationRenderer {
         
         // HOVER POP: Scale up the object when hovered to make it obvious
         if (isHovered) {
-            globalScale *= 1.3;
+            globalScale *= 1.18;
         }
 
         // SANITY CAP: Prevent anchors/stamps from becoming ridiculously large (e.g. if multipliers are stacked)
@@ -418,7 +418,7 @@ export class AnnotationRenderer {
 
         // Glow effects
         if (isHovered) {
-            ctx.shadowBlur = 45 
+            ctx.shadowBlur = 12 
             ctx.shadowColor = '#ef4444'
         } else if (isSelectHovered) {
             ctx.shadowBlur = 15
@@ -445,8 +445,8 @@ export class AnnotationRenderer {
 
         const finalColor = isHovered ? '#ef4444' : (isSelectHovered ? '#6366f1' : color)
         ctx.strokeStyle = finalColor
-        ctx.fillStyle = isHovered ? '#ef444444' : (isSelectHovered ? '#6366f133' : `${color}33`)
-        ctx.lineWidth = (isHovered ? 5.5 : 2.2) * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale
+        ctx.fillStyle = isHovered ? '#ef444433' : (isSelectHovered ? '#6366f133' : `${color}33`)
+        ctx.lineWidth = (isHovered ? 3.5 : 2.2) * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
