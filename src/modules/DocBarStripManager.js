@@ -253,7 +253,7 @@ export class DocBarStripManager {
         const trash = document.createElement('div')
         trash.id = 'sf-doc-trash-btn'
         trash.className = 'sf-doc-trash'
-        trash.title = 'Drop here to delete'
+        trash.title = '回收桶 (垃圾點擊切換)'
         trash.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
             stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
             <polyline points="3 6 5 6 21 6"/>
@@ -261,6 +261,11 @@ export class DocBarStripManager {
             <path d="M10 11v6M14 11v6"/>
             <path d="M9 6V4h6v2"/>
         </svg>`
+        trash.addEventListener('click', () => {
+            const isAlreadyActive = this.app.activeStampType === 'recycle-bin'
+            this.app.activeStampType = isAlreadyActive ? 'view' : 'recycle-bin'
+            this.app.toolManager?.updateActiveTools()
+        })
         return trash
     }
 

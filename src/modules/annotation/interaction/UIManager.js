@@ -40,11 +40,17 @@ export const InteractionUI = {
                 const binWidth = 72 
                 const binHeight = 72
                 
-                let left = x - binWidth / 2
-                let top = y - binHeight / 2 
-                
                 const rect = wrapper.getBoundingClientRect()
                 const padding = 20
+                
+                // DYNAMIC OFFSET: Move bin 80px away from the pointer centrally 
+                // to avoid overlapping with the object being dragged (especially at boundaries)
+                const offsetX = (x < rect.width / 2) ? 80 : -80
+                const offsetY = (y < rect.height / 2) ? 80 : -80
+                
+                let left = x + offsetX - binWidth / 2
+                let top = y + offsetY - binHeight / 2 
+                
                 left = Math.max(padding, Math.min(rect.width - binWidth - padding, left))
                 top = Math.max(padding, Math.min(rect.height - binHeight - padding, top))
                 

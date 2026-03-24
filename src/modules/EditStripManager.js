@@ -389,13 +389,15 @@ export class EditStripManager {
     }
 
     async _handleTrashClick() {
-        const ok = await this.app.showDialog({
-            title: 'Clear All Annotations',
-            message: 'Are you sure you want to clear all hand-drawn annotations on this page?',
-            type: 'confirm',
-            icon: '🗑️'
-        })
-        if (ok) this.app.annotationManager?.clearAllLayers()
+        if (this._subBarMgr?.closeToolBars) {
+            this._subBarMgr.closeToolBars()
+        } else {
+            this._subBarMgr?.closeAll()
+        }
+        // Toggle recycle-bin tool to show/hide deleted items
+        const isAlreadyActive = this.app.activeStampType === 'recycle-bin'
+        this.app.activeStampType = isAlreadyActive ? 'view' : 'recycle-bin'
+        this.app.toolManager?.updateActiveTools()
     }
 
     /** Read a saved order array from panel_config in localStorage */
