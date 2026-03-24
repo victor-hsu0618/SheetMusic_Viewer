@@ -751,42 +751,6 @@
     margin: 0 4px;
 }
 
-/* Draggable FAB (always visible — toggles edit strip) */
-
-/* ── Draggable FAB (always visible — toggles edit strip) ── */
-#sf-edit-strip-fab {
-    position: fixed;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: rgba(30, 41, 59, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: grab;
-    z-index: 202;
-    opacity: 1;
-    pointer-events: all;
-    transition: background 0.15s, border-color 0.15s;
-    touch-action: none;
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-}
-
-#sf-edit-strip-fab.dragging {
-    cursor: grabbing;
-}
-
-#sf-edit-strip-fab-guard {
-    position: fixed;
-    z-index: 201;
-    /* above doc bar (200), below FAB (202) — absorbs stray taps */
-    pointer-events: auto;
-    background: transparent;
-}
-
 /* ── Stamp Settings gear button ─────────────────────────────────────────── */
 .sf-nav-settings-btn {
     margin-top: 6px;

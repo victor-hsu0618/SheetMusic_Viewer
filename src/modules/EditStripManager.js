@@ -80,110 +80,8 @@ export class EditStripManager {
         document.body.appendChild(el)
         this.el = el
 
-        // Draggable FAB — shows when strip is collapsed, drag to reposition
-        const fab = document.createElement('div')
-        fab.id = 'sf-edit-strip-fab'
-        fab.title = 'Edit tools'
-        fab.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" width="22" height="22">
-            <rect x="3"  y="3"  width="7" height="7" rx="1"/>
-            <rect x="14" y="3"  width="7" height="7" rx="1"/>
-            <rect x="3"  y="14" width="7" height="7" rx="1"/>
-            <rect x="14" y="14" width="7" height="7" rx="1"/>
-        </svg>`
-
-        // Restore saved position (stored as left/top), clamped to current viewport
-        const savedPos = JSON.parse(localStorage.getItem('sf_edit_fab_pos') || 'null')
-        const W = 40, H = 40
-        const rawLeft = savedPos?.left ?? (window.innerWidth - 84)  // default: left of strip
-        const rawTop = savedPos?.top ?? (window.innerHeight - 60)
-        fab.style.left = Math.max(0, Math.min(window.innerWidth - W, rawLeft)) + 'px'
-        fab.style.top = Math.max(0, Math.min(window.innerHeight - H, rawTop)) + 'px'
-
-        // Drag logic — use left/top for clean math
-        let dragging = false, moved = false
-        let startX = 0, startY = 0, startLeft = 0, startTop = 0
-
-        fab.addEventListener('pointerdown', (e) => {
-            dragging = true
-            moved = false
-            e.currentTarget.setPointerCapture(e.pointerId)
-            startX = e.clientX
-            startY = e.clientY
-            startLeft = fab.getBoundingClientRect().left
-            startTop = fab.getBoundingClientRect().top
-            fab.classList.add('dragging')
-        })
-
-        fab.addEventListener('pointermove', (e) => {
-            if (!dragging) return
-            const dx = e.clientX - startX
-            const dy = e.clientY - startY
-            if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true
-            const W = fab.offsetWidth || 28
-            const H = fab.offsetHeight || 28
-            fab.style.left = Math.max(0, Math.min(window.innerWidth - W, startLeft + dx)) + 'px'
-            fab.style.top = Math.max(0, Math.min(window.innerHeight - H, startTop + dy)) + 'px'
-        })
-
-        fab.addEventListener('pointerup', () => {
-            if (!dragging) return
-            dragging = false
-            fab.classList.remove('dragging')
-            localStorage.setItem('sf_edit_fab_pos', JSON.stringify({
-                left: parseInt(fab.style.left),
-                top: parseInt(fab.style.top)
-            }))
-            if (!moved) {
-                // Master Toggle: If anything is open -> Close All. If both closed -> Open All.
-                const isLeftOpen = !document.body.classList.contains('sf-doc-bar-collapsed')
-                const isRightOpen = !this.collapsed
-                const isAnyOpen = isLeftOpen || isRightOpen
-
-                if (isAnyOpen) {
-                    // Close BOTH
-                    this.toggleCollapse(true)
-                    this.app.docBarStripManager?.toggleCollapse(true)
-                } else {
-                    // Open BOTH
-                    this.toggleCollapse(false)
-                    this.app.docBarStripManager?.toggleCollapse(false)
-                }
-            }
-        })
-
-        // Dead-zone guard: transparent ring around FAB that absorbs stray taps
-        const guard = document.createElement('div')
-        guard.id = 'sf-edit-strip-fab-guard'
-        guard.addEventListener('pointerdown', (e) => e.stopPropagation())
-        guard.addEventListener('click', (e) => e.stopPropagation())
-        document.body.appendChild(guard)
-        this._fabGuard = guard
-
-        // Keep guard centred on FAB whenever FAB moves
-        const syncGuard = () => {
-            const r = fab.getBoundingClientRect()
-            const pad = 28
-            guard.style.left = (r.left - pad) + 'px'
-            guard.style.top = (r.top - pad) + 'px'
-            guard.style.width = (r.width + pad * 2) + 'px'
-            guard.style.height = (r.height + pad * 2) + 'px'
-        }
-        fab.addEventListener('pointermove', syncGuard)
-        fab.addEventListener('pointerup', syncGuard)
-        requestAnimationFrame(syncGuard)
-
-        // Re-clamp FAB position when window is resized so it never goes off-screen
-        window.addEventListener('resize', () => {
-            const fabW = fab.offsetWidth || 40
-            const fabH = fab.offsetHeight || 40
-            const curLeft = parseInt(fab.style.left) || 0
-            const curTop = parseInt(fab.style.top) || 0
-            fab.style.left = Math.max(0, Math.min(window.innerWidth - fabW, curLeft)) + 'px'
-            fab.style.top = Math.max(0, Math.min(window.innerHeight - fabH, curTop)) + 'px'
-            syncGuard()
-        })
-
-        document.body.appendChild(fab)
+        // ─── FAB Removal ───
+        // The floating action button is now replaced by the persistent edge collapse button.
     }
 
     _render() {
@@ -594,23 +492,73 @@ export class EditStripManager {
         const btn = document.createElement('div')
         btn.id = 'sf-edit-collapse-btn'
         btn.className = 'sf-strip-btn sf-edit-collapse-btn'
-        btn.title = '收合編輯列'
+        btn.title = '收合編輯列 (長按全收合)'
         
         const iconWrap = document.createElement('div')
         iconWrap.style.display = 'flex'
         iconWrap.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         // Default point RIGHT (to collapse toward right edge)
         iconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>'
-        
         btn.appendChild(iconWrap)
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation()
-            this.toggleCollapse(!this.collapsed)
+
+        // --- LONG PRESS DETECTION ---
+        let longPressTimer = null
+        let isLongPressAction = false
+        const LONG_PRESS_MS = 600
+
+        const startPress = (e) => {
+            isLongPressAction = false
+            if (longPressTimer) clearTimeout(longPressTimer)
+            longPressTimer = setTimeout(() => {
+                isLongPressAction = true
+                if (navigator.vibrate) navigator.vibrate(10)
+                this._handleLongPressToggle()
+            }, LONG_PRESS_MS)
+        }
+
+        const endPress = (e) => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer)
+                longPressTimer = null
+            }
+            if (!isLongPressAction) {
+                // Short press logic
+                e.stopPropagation()
+                this.toggleCollapse(!this.collapsed)
+            }
+        }
+
+        btn.addEventListener('mousedown', startPress)
+        btn.addEventListener('touchstart', startPress, { passive: true })
+        btn.addEventListener('mouseup', endPress)
+        btn.addEventListener('touchend', endPress)
+        btn.addEventListener('mouseleave', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer)
+                longPressTimer = null
+            }
         })
+
+        // Standard click-stop to prevent unwanted bubbling
+        btn.addEventListener('click', (e) => e.stopPropagation())
 
         el.appendChild(btn)
         this._collapseBtn = btn
         this._updateCollapseIcon()
+    }
+
+    _handleLongPressToggle() {
+        // Decide target state based on current Edit Strip state
+        const targetCollapsed = !this.collapsed
+        
+        // 1. Toggle this strip
+        this.toggleCollapse(targetCollapsed)
+        
+        // 2. Toggle Doc Bar (left strip) if available
+        const docBar = this.app.docBarStripManager
+        if (docBar) {
+            docBar.toggleCollapse(targetCollapsed)
+        }
     }
 
     _updateCollapseIcon() {

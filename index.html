@@ -60,7 +60,22 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
+  <script>
+    eruda.init();
+    // Move eruda entry button to top-right, 3cm (~113px) from right
+    const erudaStyle = document.createElement('style');
+    erudaStyle.innerHTML = `
+      .eruda-container .eruda-entry-btn {
+        top: calc(15px + env(safe-area-inset-top)) !important;
+        right: calc(113px + env(safe-area-inset-right)) !important;
+        opacity: 0.35 !important; /* Make it subtle */
+      }
+      .eruda-container .eruda-entry-btn:active {
+        opacity: 1 !important;
+      }
+    `;
+    document.head.appendChild(erudaStyle);
+  </script>
   <script>
     // --- CACHE BUSTER & HARD RESET V3.1.2 ---
     (function() {
@@ -379,7 +394,12 @@
             Full Backup
           </button>
           <button id="btn-library-select" class="btn btn-outline-sm">Edit</button>
-          <button id="btn-close-library" class="btn-close-overlay">✕</button>
+          <button id="btn-library-close-main" class="btn btn-outline-sm btn-icon-only library-close-btn" title="Close Library">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -473,20 +493,7 @@
         </div>
       </div>
 
-      <!-- Library Footer (New) -->
-      <div class="library-footer">
-        <button id="btn-settings-toggle" class="btn-settings-footer" title="Global Settings (S)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="4" y1="6" x2="20" y2="6"/>
-            <circle cx="10" cy="6" r="2" fill="currentColor" stroke="none"/>
-            <line x1="4" y1="12" x2="20" y2="12"/>
-            <circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>
-            <line x1="4" y1="18" x2="20" y2="18"/>
-            <circle cx="8" cy="18" r="2" fill="currentColor" stroke="none"/>
-          </svg>
-          <span>Global Settings</span>
-        </button>
-      </div>
+      <!-- Library Footer Removed (Redundant Settings) -->
     </div>
 
     <!-- Settings Panel (⚙ Doc Bar button) -->

@@ -982,9 +982,8 @@ export class ViewerManager {
 
     showMainUI() {
         // Reveal toolbars once a score is loaded
-        ;['floating-doc-bar', 'layer-toggle-fab'].forEach(id => {
-            const el = document.getElementById(id)
-            if (el) el.classList.remove('hidden')
+        ;['floating-doc-bar'].forEach(id => {
+            document.getElementById(id)?.classList.remove('hidden')
         })
         // Ruler respects the saved toggle state — delegate to rulerManager to avoid duplication
         this.app.updateRulerPosition()
@@ -1029,9 +1028,8 @@ export class ViewerManager {
         if (this.app.sidebar) this.app.sidebar.classList.remove('open')
         if (this.app.activeToolsContainer) this.app.activeToolsContainer.classList.remove('expanded')
 
-            ;['floating-doc-bar', 'jump-ruler', 'layer-toggle-fab'].forEach(id => {
-                const el = document.getElementById(id)
-                if (el) el.classList.add('hidden')
+            ;['floating-doc-bar', 'jump-ruler'].forEach(id => {
+                document.getElementById(id)?.classList.add('hidden')
             })
 
         this.checkInitialView()

@@ -83,7 +83,7 @@ export class InitializationManager {
         app.btnWelcomeSkip?.addEventListener('click', () => {
             app.viewerManager.hideWelcome()
             app.toggleLibrary(true)
-            ;['floating-doc-bar', 'layer-toggle-fab'].forEach(id => {
+            ;['floating-doc-bar'].forEach(id => {
                 document.getElementById(id)?.classList.remove('hidden')
             })
             app.rulerManager?.updateRulerPosition()
@@ -125,7 +125,7 @@ export class InitializationManager {
         document.getElementById('quick-fit-height')?.addEventListener('click', () => app.fitToHeight())
         document.getElementById('quick-open-library')?.addEventListener('click', () => app.toggleLibrary())
 
-        document.getElementById('btn-close-library')?.addEventListener('click', () => app.toggleLibrary(false))
+        document.getElementById('btn-library-close-main')?.addEventListener('click', () => app.toggleLibrary(false))
 
         const scoreActionsInput = document.querySelector('#score-actions-area input[type="file"]')
         if (scoreActionsInput) {

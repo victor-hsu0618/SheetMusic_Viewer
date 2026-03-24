@@ -680,16 +680,31 @@ body .library-overlay.active {
     display: none !important;
 }
 
-/* Library Footer */
-.library-footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--border);
-    background: rgba(var(--bg-card-rgb), 0.3);
+/* Library Close Button */
+.library-close-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50% !important;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-    z-index: 10;
+    justify-content: center;
+    padding: 0 !important;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.library-close-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.2);
+    transform: rotate(90deg);
+}
+
+/* Library Footer Removed Style */
+.library-footer-removed {
+    display: none;
 }
 
 .btn-settings-footer {
