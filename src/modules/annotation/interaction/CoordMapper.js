@@ -55,8 +55,8 @@ export const CoordMapper = {
             return pos;
         }
 
-        let dxPx = offsetX
-        let dyPx = -offsetY
+        let dxPx = 0; // OFFSET DISABLED PER USER REQUEST (Previously: offsetX)
+        let dyPx = 0; // OFFSET DISABLED PER USER REQUEST (Previously: -offsetY)
 
         // Disable horizontal offset for specific tools that need 1:1 finger placement
         const noXOffsetTools = ['measure-free', 'view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle', 'cloak-black', 'cloak-red', 'cloak-blue'];

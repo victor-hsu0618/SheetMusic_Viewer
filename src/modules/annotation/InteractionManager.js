@@ -25,6 +25,10 @@ export class InteractionManager {
         let graceObject = null;
         let graceTimer = null;
         let pointerIdleTimer = null;
+        let potentialNudge = null;
+        let nudgeStartClient = { x: 0, y: 0 };
+        let nudgeStartObjectPos = { x: 0, y: 0 };
+        let isNudging = false;
 
         // Force reset closure state when switching tools to prevent stuck interactions
         overlay._resetState = () => {
@@ -36,6 +40,8 @@ export class InteractionManager {
             if (graceTimer) clearTimeout(graceTimer);
             graceObject = null;
             this.app._lastGraceObject = null;
+            potentialNudge = null;
+            isNudging = false;
             virtualPointer?.classList.remove('active');
             activePointers.clear();
             isTwoFingerPanning = false;
@@ -356,12 +362,19 @@ export class InteractionManager {
                     InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
                     return;
                 } else {
-                    if (graceTimer) clearTimeout(graceTimer);
-                    graceObject = null;
-                    this.app._lastGraceObject = null;
-                    InteractionUI.showTrash(false, wrapper);
-                    this.app.redrawStamps(pageNum);
-                    // Fall through to place new stamp at tap position
+                    // Start Nudge Standby: Finger down in blank area while object is glowing.
+                    potentialNudge = graceObject;
+                    const cx = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+                    const cy = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+                    nudgeStartClient = { x: cx, y: cy };
+                    nudgeStartObjectPos = { x: graceObject.x || (graceObject.points?.[0]?.x || 0), y: graceObject.y || (graceObject.points?.[0]?.y || 0) };
+                    isNudging = false;
+                    isInteracting = true;
+                    this.app.isInteracting = true;
+                    // Pause the grace timer so glow doesn't expire during drag
+                    if (graceTimer) { clearTimeout(graceTimer); graceTimer = null; }
+                    attachGlobalListeners();
+                    return;
                 }
             }
 
@@ -543,6 +556,47 @@ export class InteractionManager {
             const pointerType = getPointerType(e);
             const toolType = this.app.activeStampType;
 
+            if (potentialNudge) {
+                const cx = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+                const cy = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+                const dx = cx - nudgeStartClient.x;
+                const dy = cy - nudgeStartClient.y;
+
+                if (!isNudging && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+                    isNudging = true;
+                    activeObject = potentialNudge;
+                    isMovingExisting = true;
+                    this.app.isInteracting = true;
+                    this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
+
+                    const graceCenter = CoordMapper.getGraceCenter(activeObject);
+                    const wCenter = getPixelsForWrapper(wrapper, graceCenter.x, graceCenter.y);
+                    const _tp0 = getTrashPos(graceCenter.x, wCenter.x, wCenter.y);
+                    InteractionUI.showTrash(true, wrapper, _tp0.x, _tp0.y);
+                }
+
+                if (isNudging) {
+                    const rect = overlay.getBoundingClientRect();
+                    const normDx = dx / (rect.width || 1);
+                    const normDy = dy / (rect.height || 1);
+
+                    if (activeObject.points && activeObject.points.length > 0) {
+                        const startPoints = this.dragStartObject.points;
+                        activeObject.points = startPoints.map(p => ({ x: p.x + normDx, y: p.y + normDy }));
+                        if (activeObject.x !== undefined) activeObject.x = nudgeStartObjectPos.x + normDx;
+                        if (activeObject.y !== undefined) activeObject.y = nudgeStartObjectPos.y + normDy;
+                    } else {
+                        activeObject.x = nudgeStartObjectPos.x + normDx;
+                        activeObject.y = nudgeStartObjectPos.y + normDy;
+                    }
+                    this.app.redrawStamps(activeObject.page);
+                    InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper), wrapper);
+                    return; // Bypass normal move logic
+                } else {
+                    return; // Wait for threshold
+                }
+            }
+
             // Stop native behaviors (scrolling/swiping) during interaction
             if (pointerType === 'touch' && e.cancelable) {
                 e.preventDefault();
@@ -711,6 +765,55 @@ export class InteractionManager {
 
         const endAction = async (e) => {
             if (!isInteracting) return;
+
+            if (potentialNudge) {
+                const isDragDone = isNudging;
+                potentialNudge = null;
+                isNudging = false;
+
+                if (!isDragDone) {
+                    // This was a TAP! Clear the glow and place a NEW stamp.
+                    if (graceTimer) clearTimeout(graceTimer);
+                    graceObject = null;
+                    this.app._lastGraceObject = null;
+                    InteractionUI.showTrash(false, wrapper);
+                    this.app.redrawStamps(pageNum);
+
+                    const pointerType = getPointerType(e);
+                    const toolType = this.app.activeStampType;
+
+                    if (!['view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle'].includes(toolType) && !toolType.startsWith('cloak-')) {
+                        const tapPos = CoordMapper.getPos(e, overlay);
+                        const fPos = CoordMapper.getStampPreviewPos(tapPos, pointerType, toolType, this.app, overlay);
+                        activeObject = {
+                            page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
+                            x: fPos.x, y: fPos.y, color: this.app.activeColor, data: null,
+                            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
+                            createdAt: Date.now(), updatedAt: Date.now(),
+                            userScale: this.app.activeToolPreset || 1.0
+                        };
+                        const group = this.app.toolsets.find(g => g.tools.some(t => t.id === toolType));
+                        if (group) {
+                            const layer = this.app.layers.find(l => l.type === group.type || l.id === group.type);
+                            if (layer) activeObject.layerId = layer.id;
+                        }
+                        if (!activeObject.layerId) activeObject.layerId = 'draw';
+                        if (toolType.startsWith('custom-text-') && this.app._activeCustomText) {
+                            activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 500', size: 16, fontFace: 'serif' };
+                        } else {
+                            const tool = group?.tools.find(t => t.id === toolType);
+                            if (tool && tool.draw) activeObject.draw = { ...tool.draw };
+                        }
+                        isMovingExisting = false;
+                    } else {
+                        isInteracting = false;
+                        this.app.isInteracting = false;
+                        cleanupInteraction(e);
+                        return;
+                    }
+                }
+            }
+
             let cleaned = false; // becomes true when cleanupInteraction runs before the async save
             try {
                 if (activeObject) {
@@ -719,8 +822,12 @@ export class InteractionManager {
                     // Check doc bar trash (pointer position)
                     const docTrash2 = document.getElementById('sf-doc-trash-btn')
                     const editTrash2 = document.getElementById('sf-edit-trash-btn')
-                    const isOverDocTrashOrEditTrash = (docTrash2 && this._isPointerOver(e, docTrash2)) ||
-                                                      (editTrash2 && this._isPointerOver(e, editTrash2))
+                    const checkPointerOver = (ev, el) => {
+                        if (!el) return false;
+                        const r = el.getBoundingClientRect();
+                        return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
+                    };
+                    const isOverDocTrashOrEditTrash = checkPointerOver(e, docTrash2) || checkPointerOver(e, editTrash2);
 
                     if (isOverDocTrashOrEditTrash) {
                         if (docTrash2) docTrash2.classList.add('drag-over', 'drag-active')
