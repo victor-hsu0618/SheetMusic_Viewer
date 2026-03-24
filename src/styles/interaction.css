@@ -780,11 +780,11 @@
 
 /* Corner bracket effect for dragging - Simplified for performance */
 .virtual-pointer.dragging {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 2px solid var(--primary);
   background: transparent;
-  border-radius: 8px;
+  border-radius: 50%; /* Changed from 8px to 50% to remove the "square frame" */
   box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
   filter: none;
 }
