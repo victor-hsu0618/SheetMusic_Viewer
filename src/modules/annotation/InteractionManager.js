@@ -1066,15 +1066,6 @@ export class InteractionManager {
                 if (found !== this.app.hoveredStamp) {
                     this.app.hoveredStamp = found;
                     this.app.redrawStamps(pageNum);
-                    wrapper.querySelector('.erase-hover-chip')?.remove();
-                    if (found) {
-                        const chip = document.createElement('div');
-                        chip.className = 'erase-hover-chip';
-                        chip.textContent = '🗑 Delete';
-                        const wPx = getPixelsForWrapper(wrapper, found.x || found.points?.[0]?.x || 0, found.y || found.points?.[0]?.y || 0);
-                        chip.style.left = `${wPx.x}px`; chip.style.top = `${wPx.y}px`;
-                        wrapper.appendChild(chip);
-                    }
                 }
             }
 
@@ -1158,7 +1149,6 @@ export class InteractionManager {
             virtualPointer?.classList.remove('active');
             this.app.hoveredStamp = this.app.selectHoveredStamp = null;
             this.app.redrawStamps(pageNum);
-            wrapper.querySelector('.erase-hover-chip')?.remove();
         });
 
         InteractionUI.ensureTrashBin(wrapper);

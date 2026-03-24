@@ -206,7 +206,7 @@ export class EditStripManager {
                 } else if (id === 'trash-can') {
                     finalEditTools.push({
                         id: 'trash-can',
-                        label: 'Clear All / Drop to Remove',
+                        label: 'Clear All / Drop to delete',
                         icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                             stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
                             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -305,7 +305,7 @@ export class EditStripManager {
             const trashBtn = document.createElement('div')
             trashBtn.id = 'sf-edit-trash-btn'
             trashBtn.className = 'sf-strip-trash-btn'
-            trashBtn.title = 'Clear All / Drop to Remove'
+            trashBtn.title = 'Clear All / Drop to delete'
             trashBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                 stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>

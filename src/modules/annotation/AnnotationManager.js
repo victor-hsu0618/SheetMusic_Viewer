@@ -153,11 +153,6 @@ export class AnnotationManager {
         if (stamp.type === 'anchor' || stamp.type === 'measure' || stamp.type === 'measure-free') this.app.updateRulerMarks()
         this.app.hoveredStamp = null
         this.closeEraseMenu()
-        const wrapper = document.querySelector(`.page-container[data-page="${page}"]`)
-        if (wrapper) {
-            const chip = wrapper.querySelector('.erase-hover-chip')
-            if (chip) chip.remove()
-        }
         stamp.deleted = true
         stamp.updatedAt = Date.now()
         await this.app.saveToStorage(true)
@@ -181,7 +176,7 @@ export class AnnotationManager {
         menu.id = 'erase-context-menu'
         const header = document.createElement('div')
         header.className = 'erase-menu-header'
-        header.textContent = `Nearby Objects (${stamps.length})`
+        header.textContent = `${stamps.length} Nearby Objects — Pick one to delete`
         menu.appendChild(header)
         stamps.forEach((stamp, idx) => {
             const item = document.createElement('button')
@@ -406,11 +401,11 @@ export class AnnotationManager {
         const label = displayName.includes('all') ? displayName : `all "${displayName}" annotations`
         
         const confirmed = await this.app.showDialog({
-            title: 'Clear All',
-            message: `Remove ${label} (${count} item${count !== 1 ? 's' : ''})? This cannot be undone.`,
+            title: 'Erase All',
+            message: `Delete ${label} (${count} item${count !== 1 ? 's' : ''})? This cannot be undone.`,
             icon: '🗑️',
             type: 'confirm',
-            confirmText: 'Clear',
+            confirmText: 'Delete',
             cancelText: 'Cancel',
         })
         
@@ -488,7 +483,7 @@ export class AnnotationManager {
         menu.id = 'select-context-menu'
         const header = document.createElement('div')
         header.className = 'erase-menu-header'
-        header.textContent = `Nearby Objects (${stamps.length})`
+        header.textContent = `${stamps.length} Nearby Objects — Pick one to move`
         menu.appendChild(header)
         stamps.forEach(stamp => {
             const item = document.createElement('button')
