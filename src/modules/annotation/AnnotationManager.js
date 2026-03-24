@@ -181,7 +181,7 @@ export class AnnotationManager {
         menu.id = 'erase-context-menu'
         const header = document.createElement('div')
         header.className = 'erase-menu-header'
-        header.textContent = `${stamps.length} Nearby Objects — Pick one to delete`
+        header.textContent = `Nearby Objects (${stamps.length})`
         menu.appendChild(header)
         stamps.forEach((stamp, idx) => {
             const item = document.createElement('button')
