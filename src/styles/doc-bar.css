@@ -17,7 +17,8 @@
     flex-direction: column;
     align-items: center;
     gap: 3px;
-    padding: 8px 0;
+    padding-top: calc(8px + env(safe-area-inset-top));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
     z-index: 1000;
     user-select: none;
     transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
