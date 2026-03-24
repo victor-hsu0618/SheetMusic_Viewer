@@ -406,11 +406,11 @@ export class AnnotationManager {
         const label = displayName.includes('all') ? displayName : `all "${displayName}" annotations`
         
         const confirmed = await this.app.showDialog({
-            title: 'Erase All',
-            message: `Delete ${label} (${count} item${count !== 1 ? 's' : ''})? This cannot be undone.`,
+            title: 'Clear All',
+            message: `Remove ${label} (${count} item${count !== 1 ? 's' : ''})? This cannot be undone.`,
             icon: '🗑️',
             type: 'confirm',
-            confirmText: 'Delete',
+            confirmText: 'Clear',
             cancelText: 'Cancel',
         })
         
@@ -488,7 +488,7 @@ export class AnnotationManager {
         menu.id = 'select-context-menu'
         const header = document.createElement('div')
         header.className = 'erase-menu-header'
-        header.textContent = `${stamps.length} Nearby Objects — Pick one to move`
+        header.textContent = `Nearby Objects (${stamps.length})`
         menu.appendChild(header)
         stamps.forEach(stamp => {
             const item = document.createElement('button')
