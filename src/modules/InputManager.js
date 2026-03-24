@@ -25,6 +25,7 @@ export class InputManager {
         this.initScrollListener()
         this.initResizeListener()
         this.updateDividerPositions()
+        this.initPasteListener()
 
         // Delegated to GestureManager
         this.gestureManager.initBottomSheetGestures()
@@ -309,8 +310,61 @@ export class InputManager {
             // Only trigger in view mode and if not clicking on UI
             if (this.app.activeStampType !== 'view' || this.isEventInUI(e)) return
 
+            // NEW: Check if clicking on a YouTube/Playback stamp first
+            const vh = window.innerHeight
+            const viewer = document.getElementById('viewer-container')
+            const pages = Array.from(viewer.querySelectorAll('.page-container'))
+            
+            // Find page under click
+            const pageUnderClick = pages.find(p => {
+                const r = p.getBoundingClientRect()
+                return e.clientY >= r.top && e.clientY <= r.bottom
+            })
+
+            if (pageUnderClick) {
+                const pageNum = parseInt(pageUnderClick.dataset.page)
+                const rect = pageUnderClick.getBoundingClientRect()
+                const relX = (e.clientX - rect.left) / rect.width
+                const relY = (e.clientY - rect.top) / rect.height
+
+                const stamp = this.app.findClosestStamp(pageNum, relX, relY, true)
+                if (stamp && stamp.draw?.variant === 'playback') {
+                    this._triggerPlaybackStamp(stamp)
+                    return
+                }
+            }
+
             this.gestureManager.handleZoneTap(e.clientX, e.clientY)
         })
+    }
+
+    _triggerPlaybackStamp(stamp) {
+        if (!this.app.playbackManager) return
+        
+        let url = ''
+        let time = 0
+        
+        if (typeof stamp.data === 'string' && stamp.data.startsWith('youtube|')) {
+            const parts = stamp.data.split('|')
+            const videoId = parts[1]
+            time = parseFloat(parts[2]) || 0
+            url = `https://www.youtube.com/watch?v=${videoId}`
+        } else {
+            // Fallback for legacy or unknown format
+            url = stamp.data
+        }
+
+        if (url) {
+            this.app.playbackManager.show()
+            this.app.playbackManager.loadYoutube(url)
+            // Seek after small delay to let player initialize if needed
+            setTimeout(() => {
+                this.app.playbackManager.seekTo(time)
+                this.app.playbackManager.play()
+            }, 1000)
+            
+            this.app.showMessage(`Playing YouTube: ${stamp.data?.split('|')[3] || 'Bookmark'}`, 'success')
+        }
     }
 
     initScrollListener() {
@@ -328,6 +382,87 @@ export class InputManager {
                 this.scrollTicking = true
             }
         }, { passive: true })
+    }
+
+    initPasteListener() {
+        window.addEventListener('paste', (e) => this._handlePaste(e))
+    }
+
+    async _handlePaste(e) {
+        // Don't intercept if user is typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return
+
+        const text = (e.clipboardData || window.clipboardData).getData('text')
+        if (!text) return
+
+        // YouTube Regex (supports standard, shorts, and timestamps)
+        const ytRegex = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\/shorts\/)([^#\&\?]*).*/
+        const match = text.match(ytRegex)
+
+        if (match && match[2].length === 11) {
+            const videoId = match[2]
+            
+            // Extract timestamp if exists (?t=123 or &t=123 or #t=123)
+            let time = 0
+            const tMatch = text.match(/[?&t=](\d+)(s)?/)
+            if (tMatch) time = parseInt(tMatch[1])
+
+            const vh = window.innerHeight
+            const centerLine = vh / 2
+            
+            const viewer = document.getElementById('viewer-container')
+            const pages = Array.from(viewer.querySelectorAll('.page-container'))
+            
+            // Find most central page
+            let centralPage = null
+            let minCenterDist = Infinity
+
+            pages.forEach(p => {
+                const r = p.getBoundingClientRect()
+                const pCenter = (r.top + r.bottom) / 2
+                const dist = Math.abs(pCenter - centerLine)
+                if (dist < minCenterDist) {
+                    minCenterDist = dist
+                    centralPage = p
+                }
+            })
+
+            if (centralPage) {
+                const pageNum = parseInt(centralPage.dataset.page)
+                const rect = centralPage.getBoundingClientRect()
+                
+                // Position in center of viewport horizontally, and center of page vertically OR viewport center?
+                // User said "paste as a youtube mark", let's put it at viewport center Y relative to page
+                const relX = 0.5
+                const relY = Math.max(0.05, Math.min(0.95, (centerLine - rect.top) / rect.height))
+
+                const stamp = {
+                    id: `yt-${Date.now()}`,
+                    page: pageNum,
+                    type: 'music-anchor', // The ID from constants.js
+                    x: relX,
+                    y: relY,
+                    color: '#f00', // YouTube Red
+                    data: `youtube|${videoId}|${time}|YouTube Bookmark`,
+                    draw: { type: 'special', variant: 'playback' },
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    layerId: 'others'
+                }
+
+                if (this.app.annotationManager) {
+                    this.app.stamps.push(stamp)
+                    this.app.redrawStamps(pageNum)
+                    await this.app.saveToStorage(true)
+                    
+                    if (this.app.supabaseManager) {
+                        this.app.supabaseManager.pushAnnotation(stamp, this.app.pdfFingerprint)
+                    }
+
+                    this.app.showMessage('YouTube Bookmark Pasted', 'success')
+                }
+            }
+        }
     }
 
     updateDividerPositions() {

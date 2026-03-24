@@ -628,11 +628,17 @@ export class AnnotationRenderer {
 
                         // Label text to the right (NEW: Fix missing description)
                         if (stamp.data) {
+                            let label = stamp.data;
+                            if (typeof label === 'string' && label.includes('|')) {
+                                const parts = label.split('|');
+                                label = parts[3] || parts[0]; // Use label or type
+                            }
+                            
                             ctx.fillStyle = color
                             ctx.font = `600 ${10 * textScale}px Outfit`
                             ctx.textAlign = 'left'
                             ctx.textBaseline = 'middle'
-                            ctx.fillText(stamp.data.substring(0, 16), x + 8 * globalScale, y)
+                            ctx.fillText(label.substring(0, 16), x + 8 * globalScale, y)
                         }
                     } else if (d.variant === 'page-bookmark') {
                         // Bookmark ribbon flag shape with V-notch at bottom
