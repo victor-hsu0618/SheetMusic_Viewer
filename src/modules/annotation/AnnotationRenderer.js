@@ -177,13 +177,13 @@ export class AnnotationRenderer {
         if (path.type && path.type.includes('highlighter')) {
             const baseColor = path.color || '#fde047'
             ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : baseColor + '2D')
-            ctx.lineWidth = (isHovered ? 18 : 14) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            ctx.lineWidth = (isHovered ? 24 : 14) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
         } else {
             ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
             let baseWidth = (path.type === 'line' ? 1.2 : 1.8);
             if (path.type === 'bracket-left' || path.type === 'bracket-right') baseWidth = 3.0;
             ctx.lineWidth = baseWidth * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
-            if (isHovered) ctx.lineWidth *= 1.5 
+            if (isHovered) ctx.lineWidth *= 2.5 // Increased from 1.5 for better visibility
         }
 
         // Transparency for brackets
@@ -413,8 +413,19 @@ export class AnnotationRenderer {
 
         // Glow effects
         if (isHovered) {
-            ctx.shadowBlur = 25
+            ctx.shadowBlur = 45 // Increased from 25 for massive pop
             ctx.shadowColor = '#ef4444'
+            
+            // Draw a LARGE TARGETING RING to highlight the object
+            ctx.save()
+            ctx.beginPath()
+            ctx.setLineDash([5, 5])
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)'
+            ctx.lineWidth = 2.5 * (this.app.scale / 1.5)
+            // Ring is 50% larger than the object
+            ctx.arc(x, y, size * 1.5, 0, Math.PI * 2) 
+            ctx.stroke()
+            ctx.restore()
         } else if (isSelectHovered) {
             ctx.shadowBlur = 15
             ctx.shadowColor = '#6366f1'
@@ -441,7 +452,7 @@ export class AnnotationRenderer {
         const finalColor = isHovered ? '#ef4444' : (isSelectHovered ? '#6366f1' : color)
         ctx.strokeStyle = finalColor
         ctx.fillStyle = isHovered ? '#ef444444' : (isSelectHovered ? '#6366f133' : `${color}33`)
-        ctx.lineWidth = (isHovered ? 3.5 : 2.2) * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale
+        ctx.lineWidth = (isHovered ? 5.5 : 2.2) * (this.app.scale / 1.5) * pageFactor * userMultiplier * scoreMultiplier * individualScale
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
