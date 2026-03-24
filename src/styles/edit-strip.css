@@ -248,11 +248,19 @@
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    width: 44px;
+    /* Larger hit area for iPad */
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: rgba(255, 255, 255, 0.8);
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0.15;
+    /* Show a hint that they are interactive */
+    pointer-events: auto;
+    cursor: pointer;
     transition: opacity 0.2s, transform 0.2s;
-    z-index: 5;
+    z-index: 10;
 }
 
 .sf-scrollbar-arrow-up {

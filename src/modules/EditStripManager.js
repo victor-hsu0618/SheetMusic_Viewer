@@ -335,7 +335,7 @@ export class EditStripManager {
 
         const upArrow = document.createElement('div')
         upArrow.className = 'sf-scrollbar-arrow sf-scrollbar-arrow-up'
-        upArrow.innerHTML = `<svg viewBox="0 0 24 36" width="20" height="30" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        upArrow.innerHTML = `<svg viewBox="0 0 24 36" width="20" height="30" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
             <polyline points="18 12 12 6 6 12" opacity="0.4"/>
             <polyline points="18 20 12 14 6 20" opacity="0.7"/>
             <polyline points="18 28 12 22 6 28"/>
@@ -344,12 +344,16 @@ export class EditStripManager {
 
         const downArrow = document.createElement('div')
         downArrow.className = 'sf-scrollbar-arrow sf-scrollbar-arrow-down'
-        downArrow.innerHTML = `<svg viewBox="0 0 24 36" width="20" height="30" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        downArrow.innerHTML = `<svg viewBox="0 0 24 36" width="20" height="30" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
             <polyline points="6 8 12 14 18 8"/>
             <polyline points="6 16 12 22 18 16" opacity="0.7"/>
             <polyline points="6 24 12 30 18 24" opacity="0.4"/>
         </svg>`
         track.appendChild(downArrow)
+
+        // Attach interactive shortcuts (Short: Page Up/Down, Long: Home/End)
+        this._attachArrowListeners(upArrow, -1)
+        this._attachArrowListeners(downArrow, 1)
 
         requestAnimationFrame(() => {
             const viewer = this.app.viewer
@@ -490,6 +494,76 @@ export class EditStripManager {
                 const maxScroll = viewer.scrollHeight - viewer.clientHeight
                 viewer.scrollTop = maxScroll * pct
             })
+        })
+    }
+
+    _attachArrowListeners(arrow, direction) {
+        let longPressTimer = null
+        let isLongPressAction = false
+        let lastTouchTime = 0
+        const LONG_PRESS_MS = 600
+
+        const startPress = (e) => {
+            if (e.type === 'touchstart') lastTouchTime = Date.now()
+            else if (Date.now() - lastTouchTime < 500) return
+            
+            isLongPressAction = false
+            arrow.classList.add('active')
+            
+            if (longPressTimer) clearTimeout(longPressTimer)
+            longPressTimer = setTimeout(() => {
+                isLongPressAction = true
+                if (navigator.vibrate) navigator.vibrate(10)
+                
+                const viewer = this.app.viewer
+                if (direction === -1) {
+                    viewer.scrollTop = 0
+                } else {
+                    viewer.scrollTop = viewer.scrollHeight
+                }
+                
+                setTimeout(() => arrow.classList.remove('active'), 200)
+            }, LONG_PRESS_MS)
+        }
+
+        const endPress = (e) => {
+            if (e.type === 'touchend') lastTouchTime = Date.now()
+            else if (Date.now() - lastTouchTime < 500) return
+
+            if (e.cancelable) e.preventDefault()
+            e.stopPropagation()
+
+            if (longPressTimer) {
+                clearTimeout(longPressTimer)
+                longPressTimer = null
+            }
+
+            if (!isLongPressAction) {
+                // Short press: Page Up / Page Down
+                // Using app.jump for consistent musical page navigation
+                this.app.jump(direction)
+                
+                arrow.classList.add('active')
+                setTimeout(() => arrow.classList.remove('active'), 150)
+            } else {
+                 arrow.classList.remove('active')
+            }
+        }
+
+        arrow.addEventListener('mousedown', (e) => { e.stopPropagation(); startPress(e); })
+        arrow.addEventListener('touchstart', (e) => { e.stopPropagation(); startPress(e); }, { passive: true })
+        arrow.addEventListener('mouseup', (e) => { e.stopPropagation(); endPress(e); })
+        arrow.addEventListener('touchend', (e) => { e.stopPropagation(); endPress(e); }, { passive: false })
+        arrow.addEventListener('mouseleave', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer)
+                longPressTimer = null
+            }
+            arrow.classList.remove('active')
+        })
+        arrow.addEventListener('click', (e) => {
+            e.stopPropagation()
+            e.preventDefault()
         })
     }
 
