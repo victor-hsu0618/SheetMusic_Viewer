@@ -349,6 +349,9 @@ export class EditStripManager {
             redoBtn.addEventListener('click', () => this.app.redo())
             el.appendChild(redoBtn)
         }
+
+        // ── PERSISTENT COLLAPSE TOGGLE (Always at the very end) ───────────────
+        this._buildCollapseToggle(el)
     }
 
     _handleToolClick(tool, btn, isPen, isShapes, isStamp, isText, isOthers, isTrash) {
@@ -573,5 +576,39 @@ export class EditStripManager {
                 viewer.scrollTop = maxScroll * pct
             })
         })
+    }
+
+    _buildCollapseToggle(el) {
+        const btn = document.createElement('div')
+        btn.id = 'sf-edit-collapse-btn'
+        btn.className = 'sf-strip-btn sf-edit-collapse-btn'
+        btn.title = '收合編輯列'
+        
+        const iconWrap = document.createElement('div')
+        iconWrap.style.display = 'flex'
+        iconWrap.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        // Default point RIGHT (to collapse toward right edge)
+        iconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>'
+        
+        btn.appendChild(iconWrap)
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.toggleCollapse(!this.collapsed)
+        })
+
+        el.appendChild(btn)
+        this._collapseBtn = btn
+        this._updateCollapseIcon()
+    }
+
+    _updateCollapseIcon() {
+        if (!this._collapseBtn) return
+        const isCollapsed = this.collapsed
+        const iconWrap = this._collapseBtn.querySelector('div')
+        if (iconWrap) {
+            // If collapsed, point LEFT to indicate Expand. Else point RIGHT to indicate Collapse.
+            iconWrap.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)'
+        }
+        this._collapseBtn.title = isCollapsed ? '展開編輯列' : '收合編輯列'
     }
 }

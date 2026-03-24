@@ -27,9 +27,13 @@
 
 #sf-edit-strip.collapsed {
     width: 0;
+    border-color: transparent;
+}
+
+#sf-edit-strip.collapsed > *:not(.sf-edit-collapse-btn) {
     opacity: 0;
     pointer-events: none;
-    border-color: transparent;
+    transition: opacity 0.15s;
 }
 
 /* ── Others trigger button (top of strip) ── */
@@ -260,6 +264,29 @@
 .sf-strip-collapse-btn:hover {
     color: rgba(255, 255, 255, 0.7);
     background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Permanent Collapse Toggle (Bottom) ── */
+.sf-edit-collapse-btn {
+    margin-top: auto;
+    margin-bottom: 5px;
+    background: rgba(30, 41, 59, 1) !important;
+    color: var(--primary, #6366f1) !important;
+    border-color: var(--primary, #6366f1) !important;
+    z-index: 201;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* When collapsed, pin it to the right wall */
+#sf-edit-strip.collapsed .sf-edit-collapse-btn {
+    position: absolute;
+    right: 4px; /* Offset from right edge */
+    bottom: 5px;
+    width: 38px;
+    height: 38px;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: none !important;
 }
 
 /* ════════════════════════════════════════════════════════════════
