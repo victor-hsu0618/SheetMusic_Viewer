@@ -80,9 +80,9 @@
 
 .sf-strip-btn svg {
     pointer-events: none;
-    stroke-width: 2.5px !important;
+    stroke-width: 2.2px !important;
     /* Strong 360-degree dark outline for extreme visibility on white paper */
-    filter: drop-shadow(1px 0 0 rgba(255, 255, 255, 1)) drop-shadow(-1px 0 0 rgba(255, 255, 255, 1)) drop-shadow(0 1px 0 rgba(255, 255, 255, 1)) drop-shadow(0 -1px 0 rgba(255, 255, 255, 1));
+    filter: drop-shadow(1px 0 0 rgba(255, 255, 255, 0.6)) drop-shadow(-1px 0 0 rgba(255, 255, 255, 0.6)) drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.6));
 }
 
 .sf-strip-btn:hover {

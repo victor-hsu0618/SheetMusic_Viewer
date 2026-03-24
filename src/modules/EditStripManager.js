@@ -109,16 +109,6 @@ export class EditStripManager {
                             <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
                         </svg>`
                     })
-                } else if (id === 'trash-can') {
-                    finalEditTools.push({
-                        id: 'trash-can',
-                        label: 'Clear All / Drop to delete',
-                        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                            stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                            <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-                        </svg>`
-                    })
                 } else {
                     const tool = editTools.find(t => t.id === id)
                     if (tool) finalEditTools.push(tool)
@@ -139,34 +129,35 @@ export class EditStripManager {
             const othersBtn = document.createElement('div')
             othersBtn.id = 'sf-edit-others-btn'
             othersBtn.className = 'sf-strip-btn'
-            othersBtn.title = 'Line / Color / Opacity'
+            othersBtn.title = 'Other Settings (S)'
             othersBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
                 <circle cx="5"  cy="12" r="1.5" fill="currentColor"/>
                 <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
                 <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
             </svg>`
-            othersBtn.addEventListener('click', () => {
-                this._subBarMgr?.toggle('others', othersBtn)
-                this._render()
+            othersBtn.addEventListener('click', (e) => {
+                const btn = e.currentTarget
+                this._subBarMgr?.toggle('others', btn)
             })
             el.appendChild(othersBtn)
-
-            // Divider after hardcoded 'others'
             el.appendChild(this._divider())
         }
 
-        // ── Edit tool buttons ────────────────────────────────────────────────
+        // ── Main Loop ────────────────────────────────────────────────────────
         finalEditTools.forEach(tool => {
             if (tool.isDivider) {
                 el.appendChild(this._divider())
                 return
             }
-            const isPen = tool.id === 'pen'
-            const isShapes = !!tool.isShapesTrigger || tool.id === 'shapes'
-            const isStamp = !!tool.isStampTrigger || tool.id === 'stamp-palette'
-            const isText = tool.id === 'quick-text'
+
+            // Skip trash-can as it's always at the bottom
+            if (tool.id === 'trash-can') return
+
+            const isPen    = tool.isPenTrigger
+            const isShapes = tool.isShapesTrigger
+            const isStamp  = tool.isStampTrigger
+            const isText   = tool.isTextTrigger
             const isOthers = tool.id === 'scroll-bar'
-            const isTrash = tool.id === 'trash-can'
             const hasSub = isPen || isShapes || isStamp || isText || isOthers
 
             const subActive = (isPen && this._subBarMgr?.activeBar === 'pen')
@@ -175,21 +166,23 @@ export class EditStripManager {
                 || (isText && this._subBarMgr?.activeBar === 'text')
                 || (isOthers && this._subBarMgr?.activeBar === 'others')
 
-            const toolActive = !hasSub && tool.id !== 'view' && this.app.activeStampType === tool.id
+            const toolActive = !hasSub && this.app.activeStampType === tool.id
 
             const btn = document.createElement('div')
             btn.className = 'sf-strip-btn'
                 + (hasSub ? ' has-sub' : '')
                 + (subActive ? ' open' : '')
-                + (isTrash ? ' sf-strip-trash-btn' : '')
-                + ((isTrash && this.app.activeStampType === 'recycle-bin') ? ' active' : '')
             btn.dataset.tool = tool.id
+            if (this.app.activeStampType === tool.id) {
+                btn.classList.add('active')
+            }
             btn.title = tool.label
+
             btn.innerHTML = tool.icon
-                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22">${tool.icon}</svg>`
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">${tool.icon}</svg>`
                 : `<span style="font-size:10px;font-weight:700;color:inherit">${tool.textIcon || tool.label}</span>`
 
-            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isPen, isShapes, isStamp, isText, isOthers, isTrash))
+            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isPen, isShapes, isStamp, isText, isOthers, false)) // isTrash is false here
             el.appendChild(btn)
         })
 
@@ -202,61 +195,59 @@ export class EditStripManager {
         // ── Trash / Undo / Redo (Bottom) ───────────────────────────────────
         el.appendChild(this._divider())
 
-        // Only add symmetrical bottom tools if they aren't already in the middle section
-        const currentIds = finalEditTools.map(t => t.id)
-        const hasTrash = currentIds.includes('trash-can')
-        const hasUndo = currentIds.includes('undo')
-        const hasRedo = currentIds.includes('redo')
-
         // Clear All (Trash)
-        if (!hasTrash) {
-            const trashBtn = document.createElement('div')
-            trashBtn.id = 'sf-edit-trash-btn'
-            trashBtn.className = 'sf-strip-trash-btn'
-            trashBtn.title = 'Clear All / Drop to delete'
-            trashBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-            </svg>`
-            trashBtn.addEventListener('click', async () => {
-                const ok = await this.app.showDialog({
-                    title: 'Clear All Annotations',
-                    message: 'Are you sure you want to clear all hand-drawn annotations on this page?',
-                    type: 'confirm',
-                    icon: '🗑️'
-                })
-                if (ok) this.app.annotationManager?.clearAllLayers()
-            })
-            el.appendChild(trashBtn)
-        }
+        const trashBtn = document.createElement('div')
+        trashBtn.id = 'sf-edit-trash-btn'
+        trashBtn.className = 'sf-strip-btn sf-edit-trash'
+        trashBtn.title = '回收桶 (長按清除目前所有劃記)'
+        trashBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+        </svg>`
+        trashBtn.classList.toggle('active', this.app.activeStampType === 'recycle-bin')
+        trashBtn.addEventListener('click', () => {
+            const isAlreadyActive = this.app.activeStampType === 'recycle-bin'
+            this.app.activeStampType = isAlreadyActive ? 'view' : 'recycle-bin'
+            this.app.toolManager?.updateActiveTools()
+        })
+        // Long press for "Erase All"
+        let trashPressTimer
+        trashBtn.addEventListener('touchstart', (e) => {
+            trashPressTimer = setTimeout(async () => {
+                await this.app.annotationManager?.eraseAllAnnotationsWithConfirmation()
+            }, 800)
+        }, { passive: true })
+        trashBtn.addEventListener('touchend', () => clearTimeout(trashPressTimer))
+        trashBtn.addEventListener('touchmove', () => clearTimeout(trashPressTimer))
+        // Desktop support: Right-click to clear all
+        trashBtn.addEventListener('contextmenu', async (e) => {
+            e.preventDefault()
+            await this.app.annotationManager?.eraseAllAnnotationsWithConfirmation()
+        })
+        el.appendChild(trashBtn)
 
         // Undo
-        if (!hasUndo) {
-            const undoBtn = document.createElement('div')
-            undoBtn.className = 'sf-strip-btn'
-            undoBtn.dataset.activeId = 'undo'
-            undoBtn.title = 'Undo (Cmd+Z)'
-            undoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-                <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
-            </svg>`
-            undoBtn.addEventListener('click', () => this.app.undo())
-            el.appendChild(undoBtn)
-        }
+        const undoBtn = document.createElement('div')
+        undoBtn.className = 'sf-strip-btn'
+        undoBtn.dataset.activeId = 'undo'
+        undoBtn.title = 'Undo (Cmd+Z)'
+        undoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+            <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+        </svg>`
+        undoBtn.addEventListener('click', () => this.app.undo())
+        el.appendChild(undoBtn)
 
         // Redo
-        if (!hasRedo) {
-            const redoBtn = document.createElement('div')
-            redoBtn.className = 'sf-strip-btn'
-            redoBtn.title = 'Redo (Cmd+Shift+Z)'
-            redoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
-                stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-                <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
-            </svg>`
-            redoBtn.addEventListener('click', () => this.app.redo())
-            el.appendChild(redoBtn)
-        }
+        const redoBtn = document.createElement('div')
+        redoBtn.className = 'sf-strip-btn'
+        redoBtn.title = 'Redo (Cmd+Shift+Z)'
+        redoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+            <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+        </svg>`
+        redoBtn.addEventListener('click', () => this.app.redo())
+        el.appendChild(redoBtn)
 
         // ── PERSISTENT COLLAPSE TOGGLE (Always at the very end) ───────────────
         this._buildCollapseToggle(el)

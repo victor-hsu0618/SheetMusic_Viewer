@@ -38,10 +38,7 @@ export const TOOLSETS = [
             { id: 'eraser', label: 'Eraser', icon: '<path d="M16.5 4.5 L19.5 7.5 L9 18 L4.5 18 L4.5 13.5 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="15" y2="10.5" stroke="currentColor" stroke-width="1.6"/><line x1="4.5" y1="18" x2="19.5" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
             { id: 'shapes', label: 'Shapes', isShapesTrigger: true, icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="16" x2="20" y2="4" stroke="currentColor" stroke-width="1.2"/><path d="M14 18 L8 18 L8 12" fill="none" stroke="currentColor" stroke-width="1.5"/>' },
             { id: 'stamp-palette', label: 'Stamps', isStampTrigger: true, icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>' },
-            { id: 'undo', label: 'Undo', icon: '<path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20v-7a4 4 0 0 0-4-4H4" fill="none" stroke="currentColor" stroke-width="2"/>' },
-            { id: 'redo', label: 'Redo', icon: '<path d="M15 14l5-5-5-5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20v-7a4 4 0 0 1 4-4h12" fill="none" stroke="currentColor" stroke-width="2"/>' },
-            { id: 'scroll-bar', label: 'Others', icon: '<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>' },
-            { id: 'trash-can', label: 'Trash', icon: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>' }
+            { id: 'scroll-bar', label: 'Others', icon: '<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>' }
         ]
     },
     {
