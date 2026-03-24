@@ -99,7 +99,7 @@ export const InteractionUI = {
     /**
      * Sync the virtual pointer's position and visibility.
      */
-    syncVirtualPointer: (e, toolType, overlay, virtualPointer, coordMapper, app) => {
+    syncVirtualPointer: (e, toolType, overlay, virtualPointer, coordMapper, app, targetObject = null) => {
         if (!virtualPointer) return;
 
         // Determine pointer type early
@@ -128,8 +128,16 @@ export const InteractionUI = {
         const isIdle = toolType === 'idle-pan' || toolType === 'view';
         const effectiveTool = toolType === 'idle-pan' ? app.activeStampType : toolType;
         
-        const pos = coordMapper.getPos(e, overlay)
-        const previewPos = coordMapper.getStampPreviewPos(pos, pointerType, effectiveTool, app, overlay)
+        let pos, previewPos;
+        if (targetObject) {
+            // If targetObject is provided (Nudge mode), center the pointer on the object
+            previewPos = coordMapper.getGraceCenter(targetObject);
+            pos = previewPos;
+        } else {
+            pos = coordMapper.getPos(e, overlay)
+            previewPos = coordMapper.getStampPreviewPos(pos, pointerType, effectiveTool, app, overlay)
+        }
+        
         const hasOffset = Math.abs(previewPos.x - pos.x) > 0.0001 || Math.abs(previewPos.y - pos.y) > 0.0001
         
         const isTargetingTool = ['select', 'copy', 'recycle-bin', 'text', 'tempo-text', 'eraser', 'measure'].includes(effectiveTool);

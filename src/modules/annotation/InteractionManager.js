@@ -592,6 +592,7 @@ export class InteractionManager {
                     }
                     this.app.redrawStamps(activeObject.page);
                     InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper), wrapper);
+                    InteractionUI.syncVirtualPointer(e, toolType || this.app.activeStampType, overlay, virtualPointer, CoordMapper, this.app, activeObject);
                     return; // Bypass normal move logic
                 } else {
                     return; // Wait for threshold
@@ -816,8 +817,8 @@ export class InteractionManager {
             }
 
             let cleaned = false; // becomes true when cleanupInteraction runs before the async save
+            let syncObj = activeObject; // Capture current state for async sync
             try {
-                const syncObj = activeObject; // Capture current state for async sync
                 if (syncObj) {
                     const targetPageNum = syncObj.page;
                     const targetWrapper = document.querySelector(`.page-container[data-page="${targetPageNum}"]`);
@@ -977,10 +978,10 @@ export class InteractionManager {
                     }
                 }
             } finally {
-                // syncVirtualPointer always runs (hides the pointer).
-                // cleanupInteraction only runs if it hasn't already been called before the await.
+                // Keep the virtual pointer synced to the final object position during cleanup
+                // to prevent it from snapping back to the mouse immediately.
                 if (!cleaned) {
-                    InteractionUI.syncVirtualPointer(e, null, overlay, virtualPointer, CoordMapper, this.app);
+                    InteractionUI.syncVirtualPointer(e, this.app.activeStampType, overlay, virtualPointer, CoordMapper, this.app, syncObj);
                     cleanupInteraction(e);
                 }
             }
@@ -1114,8 +1115,13 @@ export class InteractionManager {
                         this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, { type: toolType, x: pPos.x, y: pPos.y, page: pageNum, userScale: this.app.activeToolPreset || 1.0 }, layer?.color || '#000', true, false, false, pos);
                     }
                 }
+                
+                // If we're snapping to the Grace Object (shouldPreview = false), 
+                // tell syncVirtualPointer to stay on the object center.
+                InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app, shouldPreview ? null : graceObject);
+            } else {
+                InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
             }
-            InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
             resetPointerIdleTimer();
         };
 
