@@ -209,15 +209,38 @@ export class InteractionManager {
 
             const pos = CoordMapper.getPos(e, overlay);
 
-            // --- APPLE PENCIL GESTURE: Long press with pen tip to toggle EditStrip ---
-            if (pointerType === 'pen' && !isInteracting) {
+            // --- APPLE PENCIL GESTURE: Long press with pen tip to toggle EditStrip (VIEW MODE ONLY) ---
+            if (pointerType === 'pen' && !isInteracting && toolTypeRaw === 'view') {
                 if (this._penLongPressTimer) clearTimeout(this._penLongPressTimer);
+                
+                // Track start position for movement-based cancellation
+                const startX = e.clientX, startY = e.clientY;
+                
                 this._penLongPressTimer = setTimeout(() => {
                     overlay.style.background = 'rgba(255, 255, 255, 0.05)';
                     setTimeout(() => overlay.style.background = '', 150);
                     if (navigator.vibrate) navigator.vibrate(10);
                     this.app.editStripManager?.toggleCollapse(!this.app.editStripManager.collapsed);
+                    this._penLongPressTimer = null;
                 }, 600);
+
+                const cleanup = () => {
+                    if (this._penLongPressTimer) {
+                        clearTimeout(this._penLongPressTimer);
+                        this._penLongPressTimer = null;
+                    }
+                    window.removeEventListener('pointermove', cancelOnMove);
+                    window.removeEventListener('pointerup', cleanup);
+                };
+
+                const cancelOnMove = (moveEv) => {
+                    const dx = Math.abs(moveEv.clientX - startX);
+                    const dy = Math.abs(moveEv.clientY - startY);
+                    if (dx > 5 || dy > 5) cleanup();
+                };
+
+                window.addEventListener('pointermove', cancelOnMove);
+                window.addEventListener('pointerup', cleanup);
             }
 
             // --- (B) HAND-PEN SEPARATION ---
@@ -236,13 +259,11 @@ export class InteractionManager {
 
             // 1. View Mode Panning
             if (activeTool === 'view') {
-                const isTouch = pointerType === 'touch' || pointerType === 'pen';
+                const isTouch = (pointerType === 'touch' || pointerType === 'pen') && !this.app.isMac;
                 
-                // --- BLOCK 1-FINGER PAN FOR iPad & touchPad ---
-                // If it's a touch-like device, we ONLY allow 2-finger panning (handled above).
-                // We keep 1-finger panning FOR MOUSE ONLY (to remain usable on desktop).
+                // --- BLOCK 1-FINGER PAN FOR iPad ---
+                // We keep 1-finger panning FOR Mac (to remain usable on desktop trackpads).
                 if (isTouch) {
-                    // console.log('[InteractionManager] Blocking 1-finger pan in View Mode.');
                     return; 
                 }
 
@@ -750,7 +771,7 @@ export class InteractionManager {
                                 await this.app.saveToStorage(true);
                                 if (targetObj.type === 'page-bookmark') this.app.jumpManager?.renderBookmarks();
                                 if (this.app.supabaseManager) this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
-                                startGracePeriod(targetObj);
+                                startGracePeriod(targetObj, pointerType);
                             }
                             this.app.redrawStamps(tPN);
                         };
@@ -795,7 +816,7 @@ export class InteractionManager {
                                 this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(targetObj)) });
                                 await this.app.saveToStorage(true);
                                 if (this.app.supabaseManager) this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
-                                startGracePeriod(targetObj);
+                                startGracePeriod(targetObj, pointerType);
                             }
                             this.app.redrawStamps(tPN);
                         });
@@ -809,7 +830,7 @@ export class InteractionManager {
                                 await this.app.saveToStorage(true);
                                 this.app.updateRulerMarks();
                                 if (this.app.supabaseManager) this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
-                                startGracePeriod(targetObj);
+                                startGracePeriod(targetObj, pointerType);
                             }
                             this.app.redrawStamps(tPN);
                         });
@@ -825,7 +846,7 @@ export class InteractionManager {
                         }
                         if (syncObj.type === 'anchor') this.app.updateRulerMarks();
                         this.app.redrawStamps(tPN);
-                        startGracePeriod(syncObj);
+                        startGracePeriod(syncObj, pointerType);
                         await this.app.saveToStorage(true);
                         if (this.app.supabaseManager && syncObj.type !== 'view') this.app.supabaseManager.pushAnnotation(syncObj, this.app.pdfFingerprint);
                     }
@@ -835,11 +856,16 @@ export class InteractionManager {
             }
         };
 
-        const startGracePeriod = (obj) => {
+        const startGracePeriod = (obj, pType) => {
             if (!obj || obj.deleted) return;
+            
+            // --- NO GRACE PERIOD FOR PEN OR DRAWING TYPES ---
+            // This prevents "nudging" written characters during handwriting.
+            const isDrawing = isDrawingType(obj.type);
+            if (pType === 'pen' || isDrawing) return;
+
             graceObject = obj; this.app._lastGraceObject = graceObject;
             this.app.redrawStamps(obj.page);
-            const isDrawing = isDrawingType(obj.type);
             const tW = document.querySelector(`.page-container[data-page="${obj.page}"]`);
             if (tW && !isDrawing) {
                 const cent = CoordMapper.getGraceCenter(obj);
@@ -927,7 +953,10 @@ export class InteractionManager {
             if (isView && el._resetState) el._resetState();
             el.style.touchAction = 'none'; el.style.pointerEvents = 'auto'; el.style.zIndex = isView ? '10' : '50';
         });
-        if (this.app.viewer) { this.app.viewer.style.touchAction = 'pan-x pan-y'; if (this.app.viewer.style.overflowY === 'hidden') this.app.viewer.style.overflowY = ''; }
+        if (this.app.viewer) { 
+            const isIOS = this.app.isIOS;
+            this.app.viewer.style.touchAction = (isIOS && isView) ? 'none' : 'pan-x pan-y';
+        }
         if (isView) this.app.isInteracting = false;
     }
 

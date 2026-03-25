@@ -35,15 +35,15 @@
   align-items: center;
   padding: 0;
   overscroll-behavior-y: none;
-  /* Always block native gestures — JS handles all panning (view mode) and drawing (stamp mode). */
-  touch-action: none; 
+  /* Allow native gestures on desktop, block for iPad to enable our JS gestures */
+  touch-action: manipulation; 
   -webkit-overflow-scrolling: touch;
 }
 
-/* HARD BLOCK for View Mode */
-body[data-active-tool="view"] .viewer-container {
+/* HARD BLOCK for View Mode - ONLY on iPad to prevent Safari bounce/interference */
+body.platform-ios[data-active-tool="view"] .viewer-container {
   touch-action: none !important;
-  overflow: hidden !important; /* Block all native scroll */
+  overflow: hidden !important; /* Block all native scroll only on touch devices */
 }
 
 #viewer {

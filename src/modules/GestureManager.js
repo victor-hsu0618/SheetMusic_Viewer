@@ -114,7 +114,7 @@ export class GestureManager {
             } else if (e.touches.length === 2) {
                 // START PINCH/PAN (Available in all modes)
                 this._isPinching = true
-                this.app.isPinching = true; // Global flag to suppress background work
+                if (this.app.isIOS) this.app.isPinching = true; // Only suppress updates on mobile
                 
                 this._initialDistance = this.getDistance(e.touches[0], e.touches[1])
                 this._initialScale = this.app.viewerManager?.scale || 1
@@ -133,6 +133,16 @@ export class GestureManager {
             }
         }, { passive: true })
 
+        // SUPPORT MAC TRACKPAD PINCH-TO-ZOOM (Wheel with Ctrl key)
+        viewerContainer.addEventListener('wheel', (e) => {
+            if (e.ctrlKey && this._viewerEl) {
+                e.preventDefault()
+                // Capture the zoom magnitude from wheel delta
+                const delta = -e.deltaY * 0.01
+                this.app.viewerManager?.changeZoom(delta * 0.2) // Dampened for Mac
+            }
+        }, { passive: false })
+
         viewerContainer.addEventListener('touchmove', (e) => {
             if (this._isPinching && e.touches.length === 2) {
                 if (e.cancelable) e.preventDefault()
@@ -141,16 +151,15 @@ export class GestureManager {
                 const currentY = (e.touches[0].clientY + e.touches[1].clientY) / 2
                 
                 // 1. GESTURE LOCKING LOGIC
-                // We decide if this is a PAN or a ZOOM in the first 20-30 pixels of movement.
                 const currentDist = this.getDistance(e.touches[0], e.touches[1])
                 const distDelta = Math.abs(currentDist - this._initialDistance)
                 const panDelta = Math.sqrt(Math.pow(currentX - this._pinchStartCentroid.x, 2) + Math.pow(currentY - this._pinchStartCentroid.y, 2))
 
                 if (!this._gestureLocked) {
                     if (panDelta > 20 && distDelta < 15) {
-                        this._gestureLocked = 'pan' // Lock into pan mode (no zooming allowed)
+                        this._gestureLocked = 'pan' 
                     } else if (distDelta > 40) {
-                        this._gestureLocked = 'zoom' // Allow zooming and panning
+                        this._gestureLocked = 'zoom' 
                         this._isZoomActive = true
                     }
                 }
@@ -161,7 +170,6 @@ export class GestureManager {
                     // Increased damping (0.5) for even smoother zoom
                     const ratio = 1 + (rawRatio - 1) * 0.5
 
-                    // If we haven't locked to zoom yet, check a secondary threshold
                     if (!this._isZoomActive && Math.abs(ratio - 1) > 0.15) {
                         this._isZoomActive = true
                         this._gestureLocked = 'zoom'
@@ -185,7 +193,7 @@ export class GestureManager {
             }
 
             // SINGLE-FINGER DRAG PREVENTION
-            if (e.touches.length === 1) {
+            if (e.touches.length === 1 && !this.app.isMac) {
                 const dx = Math.abs(e.touches[0].clientX - this._startX)
                 const dy = Math.abs(e.touches[0].clientY - this._startY)
                 if (dx > 5 || dy > 5) { 

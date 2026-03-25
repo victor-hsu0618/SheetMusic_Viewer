@@ -118,6 +118,8 @@ class ScoreFlow {
         blue:  localStorage.getItem('scoreflow_cloak_visible_blue')  !== 'false',
     }
     this.isPinching = false
+    this.isMac = /Macintosh/.test(navigator.userAgent)
+    this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 
     // Managers Initialization
     this.toolManager = new ToolManager(this)
@@ -139,6 +141,10 @@ class ScoreFlow {
 this.setlistManager = new SetlistManager(this)
     this.uiManager = new UIManager(this)
     this.pdfExportManager = new PdfExportManager(this)
+
+    // Add OS-specific tag to body for CSS targeting
+    if (this.isMac) document.body.classList.add('platform-mac')
+    if (this.isIOS) document.body.classList.add('platform-ios')
     this.initManager = new InitializationManager(this)
     this.staffDetector = new StaffDetector(this)
     this.gistShareManager = new GistShareManager(this)
