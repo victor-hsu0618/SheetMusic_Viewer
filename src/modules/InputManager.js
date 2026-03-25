@@ -373,7 +373,7 @@ export class InputManager {
         if (!viewer) return
 
         viewer.addEventListener('scroll', () => {
-            if (!this.scrollTicking) {
+            if (!this.scrollTicking && !this.app.isPinching) {
                 window.requestAnimationFrame(() => {
                     this.app.updateRulerMarks()  // already calls computeNextTarget internally
                     this.app.updateRulerClip()

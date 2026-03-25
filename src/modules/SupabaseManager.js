@@ -204,29 +204,7 @@ export class SupabaseManager {
     /**
      * Ensures the score exists in Supabase 'scores' table.
      */
-    async syncScore(fingerprint, metadata) {
-        if (!this.client || !this.user) return
-        
-        const scoreData = {
-            fingerprint: fingerprint,
-            user_id: this.user.id,
-            title: metadata?.title || 'Untitled',
-            composer: metadata?.composer || 'Unknown'
-        }
-
-        // Only subscribe if not already pulling/subscribed
-        this.subscribeToAnnotations(fingerprint)
-
-        const { error } = await this.client
-            .from('scores')
-            .upsert(scoreData, { onConflict: 'fingerprint' })
-
-        if (error) {
-            console.error('[Supabase] ❌ Sync score error:', error.message)
-        } else {
-            console.log('[Supabase] ✅ Score metadata synced:', metadata?.title)
-        }
-    }
+    // --- (Removed Redundant syncScore) ---
 
     /**
      * Pushes a single annotation to Supabase.

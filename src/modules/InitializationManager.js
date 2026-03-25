@@ -21,34 +21,14 @@ export class InitializationManager {
             })
         })
 
-        app.sidebar = document.getElementById('sidebar')
-        app.layerList = document.getElementById('layer-shelf-list')
-        app.jumpLine = document.getElementById('jump-line')
-        app.sourceList = document.getElementById('source-list')
-        app.openPdfBtn = document.getElementById('open-pdf-btn')
         app.shortcutsModal = document.getElementById('shortcuts-modal')
         app.closeShortcutsBtn = document.getElementById('close-shortcuts')
-        app.closeSidebarBtn = document.getElementById('close-sidebar')
         app.viewer = document.getElementById('viewer-container')
-        app.jumpOffsetInput = document.getElementById('view-jump-offset')
-        app.jumpOffsetValue = document.getElementById('view-jump-offset-value')
         app.settingsJumpOffsetInput = document.getElementById('settings-jump-offset')
         app.settingsJumpOffsetValue = document.getElementById('settings-jump-offset-value')
-        app.settingsStampSizeInput = document.getElementById('settings-stamp-size')
-        app.settingsStampSizeValue = document.getElementById('settings-stamp-size-value')
-        app.exportBtn = document.getElementById('export-score-btn')
-        app.importBtn = document.getElementById('import-score-btn')
-        app.exportPdfBtn = document.getElementById('btn-export-pdf')
-        app.importFileInput = document.getElementById('import-score-file')
-        app.globalExportBtn = document.getElementById('export-btn')
-        app.globalImportBtn = document.getElementById('import-btn')
-        app.globalImportFile = document.getElementById('import-file')
-        app.addSourceBtn = document.getElementById('add-source-btn')
-        app.clearRecentBtn = document.getElementById('clear-recent-btn')
         app.welcomeView = document.getElementById('welcome-view')
         app.btnWelcomeSkip = document.getElementById('btn-welcome-skip')
-        app.closeFileBtn = document.getElementById('close-file-btn')
-        app.resetLayersBtn = document.getElementById('reset-layers-btn')
+        app.resetSystemBtn = document.getElementById('reset-system-btn')
         app.resetSystemBtn = document.getElementById('reset-system-btn')
         app.systemDialog = document.getElementById('system-dialog')
         app.eraseAllModal = document.getElementById('erase-all-modal')
@@ -72,28 +52,6 @@ export class InitializationManager {
             app.toggleLibrary(true)
             app.rulerManager?.updateRulerPosition()
         })
-
-        app.openPdfBtn?.addEventListener('click', (e) => {
-            if (window.showOpenFilePicker) {
-                e.preventDefault()
-                app.openPdfFilePicker()
-            }
-        })
-
-        app.clearRecentBtn?.addEventListener('click', async () => {
-            if (!app.recentSoloScores?.length) return
-            for (const s of app.recentSoloScores) {
-                await db.set(`recent_buf_${s.name}`, undefined)
-                await db.set(`recent_handle_${s.name}`, undefined)
-            }
-            app.recentSoloScores = []
-            app.persistenceManager.saveToStorage()
-            app.renderSidebarRecentScores()
-        })
-
-
-
-
 
         document.getElementById('btn-library-close-main')?.addEventListener('click', () => app.toggleLibrary(false))
 
@@ -122,22 +80,9 @@ export class InitializationManager {
             })
         }
 
-        app.exportBtn?.addEventListener('click', () => app.exportProject())
-        app.exportPdfBtn?.addEventListener('click', () => app.pdfExportManager?.exportFlattenedPDF())
-        app.importBtn?.addEventListener('click', () => app.importFileInput.click())
-        app.importFileInput?.addEventListener('change', (e) => app.handleImport(e))
-        app.globalExportBtn?.addEventListener('click', () => app.exportProject(true))
-        app.globalImportBtn?.addEventListener('click', () => app.globalImportFile.click())
-        app.globalImportFile?.addEventListener('change', (e) => app.handleImport(e))
-        app.closeDialogBtn?.addEventListener('click', () => app.systemDialog.classList.remove('active'))
-        app.addSourceBtn?.addEventListener('click', () => app.addSource())
         app.resetSystemBtn?.addEventListener('click', () => app.resetToSystemDefault())
-        app.settingsStampSizeInput?.addEventListener('input', (e) => app.updateStampSize(e.target.value))
-        app.closeFileBtn?.addEventListener('click', () => app.viewerManager.closeFile())
         app.closeShortcutsBtn?.addEventListener('click', () => app.toggleShortcuts(false))
-        app.closeSidebarBtn?.addEventListener('click', () => document.getElementById('sidebar')?.classList.remove('open'))
         app.settingsJumpOffsetInput?.addEventListener('input', (e) => app.updateJumpOffset(parseInt(e.target.value)))
-        app.resetLayersBtn?.addEventListener('click', () => app.resetLayers())
 
 
         // Measure number visibility toggle

@@ -18,7 +18,8 @@ export class SetlistManager {
         this.detailList = document.getElementById('setlist-detail-list')
         this.detailTitle = document.getElementById('setlist-detail-title')
         this.btnBack = document.getElementById('btn-setlist-back')
-        this.btnAddScore = document.getElementById('btn-setlist-add-score')
+        this.btnAddNew = document.getElementById('btn-setlist-add-score') // This is the old Add Score button
+        this.btnCloseDetail = document.getElementById('btn-setlist-close')
 
         try {
             const stored = await db.get('score_setlists')
@@ -41,6 +42,13 @@ export class SetlistManager {
             this.btnAddScore.onclick = () => {
                 if (this.activeDetailSetId) this.showScorePicker(this.activeDetailSetId)
             }
+        }
+
+        if (this.btnCloseDetail) {
+            this.btnCloseDetail.addEventListener('click', () => {
+                this.closeDetailView()
+                this.app.toggleLibrary(false)
+            })
         }
 
         const stored = await db.get('score_setlists')
@@ -321,11 +329,26 @@ export class SetlistManager {
         document.getElementById('setlist-grid').classList.add('hidden')
         document.getElementById('library-grid').classList.add('hidden')
 
-        // Reset Add Score button in case picker was left open
-        if (this.btnAddScore) {
-            this.btnAddScore.textContent = '⊕ Add Score'
-            this.btnAddScore.onclick = () => {
-                if (this.activeDetailSetId) this.showScorePicker(this.activeDetailSetId)
+        // OPTIMIZATION: Check if current score is already in this setlist
+        const currentFp = this.app.pdfFingerprint;
+        const alreadyIn = currentFp ? list.scores.includes(currentFp) : true;
+
+        // Reset Add Score button state
+        if (this.btnAddNew) {
+            if (currentFp && !alreadyIn) {
+                this.btnAddNew.innerHTML = '<span style="font-size:1.1em; margin-right:4px;">+</span> Current';
+                this.btnAddNew.title = `Add "${this.app.viewerManager?.activeScoreName || 'Current Score'}" to this list`;
+                this.btnAddNew.onclick = async () => {
+                    const success = await this.addScore(setId, currentFp);
+                    if (success) {
+                        this.app.showMessage('Score added to setlist', 'success');
+                        this.openDetailView(setId); // Refresh view
+                    }
+                }
+            } else {
+                this.btnAddNew.innerHTML = '<span style="font-size:1.1em; margin-right:4px;">+</span> Library';
+                this.btnAddNew.title = "Add other scores from library";
+                this.btnAddNew.onclick = () => this.showScorePicker(setId);
             }
         }
 
@@ -340,16 +363,13 @@ export class SetlistManager {
         console.log('[SetlistManager] Closing detail view...');
         this.activeDetailSetId = null
 
-        // Reset picker state
-        if (this.btnAddScore) {
-            this.btnAddScore.textContent = '⊕ Add Score'
-            this.btnAddScore.onclick = () => {
-                if (this.activeDetailSetId) this.showScorePicker(this.activeDetailSetId)
-            }
-        }
-
         // Hide Detail View
         this.detailView.classList.add('hidden')
+
+        // Reset button for next time
+        if (this.btnAddNew) {
+            this.btnAddNew.innerHTML = '<span style="font-size:1.1em; margin-right:4px;">+</span> Score';
+        }
 
         // Restore header and toolbar
         document.querySelector('.library-header')?.classList.remove('hidden-important')
@@ -511,14 +531,10 @@ export class SetlistManager {
         `
 
         // Swap Add Score button to "✓ Done" while picker is open
-        if (this.btnAddScore) {
-            this.btnAddScore.textContent = '✓ Done'
-            this.btnAddScore.onclick = () => {
-                this.btnAddScore.textContent = '⊕ Add Score'
-                this.btnAddScore.onclick = () => {
-                    if (this.activeDetailSetId) this.showScorePicker(this.activeDetailSetId)
-                }
-                this.renderDetailList()
+        if (this.btnAddNew) {
+            this.btnAddNew.textContent = '✓ Done'
+            this.btnAddNew.onclick = () => {
+                this.openDetailView(setId) // This will properly reset the button to + Current or + Library
             }
         }
 

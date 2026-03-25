@@ -262,10 +262,44 @@ export class DocActionManager {
                         }
                     })
                 }
+            } else if (type === 'picker') {
+                const listContainer = document.createElement('div')
+                listContainer.className = 'picker-list-container'
+                listContainer.style.cssText = 'margin-top:15px; max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px;'
+                
+                if (!actions || actions.length === 0) {
+                    listContainer.innerHTML = '<div class="text-mini opacity-50 p-10 text-center">No options available</div>'
+                } else {
+                    actions.forEach(opt => {
+                        const btn = document.createElement('button')
+                        btn.className = 'btn btn-outline btn-full text-left'
+                        btn.style.cssText = 'justify-content: flex-start; padding: 10px 14px; font-size: 13px; font-weight: 500;'
+                        btn.innerHTML = `
+                            <div class="flex-row-center flex-space-between w-full">
+                                <span>${opt.label}</span>
+                                <span class="badge" style="background: rgba(0,0,0,0.05); color: var(--primary);">${opt.subLabel || ''}</span>
+                            </div>
+                        `
+                        btn.onclick = () => {
+                            this.app.systemDialog.classList.remove('active')
+                            resolve(opt.value || opt.label)
+                        }
+                        listContainer.appendChild(btn)
+                    })
+                }
+                this.app.dialogMessage.appendChild(listContainer)
+
+                const cancelBtn = document.createElement('button')
+                cancelBtn.className = 'btn btn-ghost mt-10'
+                cancelBtn.textContent = 'Cancel'
+                cancelBtn.onclick = () => {
+                    this.app.systemDialog.classList.remove('active')
+                    resolve(null)
+                }
+                this.app.dialogActions.appendChild(cancelBtn)
             }
 
             if (type === 'cloak-export') {
-                // Build checkboxes inline in dialogMessage area
                 const include = { ...defaultInclude }
                 const checkboxContainer = document.createElement('div')
                 checkboxContainer.style.cssText = 'margin-top:12px;display:flex;flex-direction:column;gap:8px'

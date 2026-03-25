@@ -15,6 +15,18 @@ export class GestureManager {
         this._lastMobilePanelId = null
         this._potentialSwipeUp = false
         this._flashTimeout = null
+        
+        // Pinch & Pan State
+        this._initialDistance = 0
+        this._initialScale = 1
+        this._isPinching = false
+        this._pinchCenterX = 0
+        this._pinchCenterY = 0
+        
+        this._lastPinchX = 0
+        this._lastPinchY = 0
+        
+        this._viewerEl = null
     }
 
     /**
@@ -83,36 +95,137 @@ export class GestureManager {
         }
     }
 
-    /**
-     * Workspace Navigation Gestures (Tap-to-turn, Swipe-to-turn)
-     */
-    initNavigationGestures(viewer) {
-        viewer.addEventListener('touchstart', (e) => {
+    initNavigationGestures(viewerContainer) {
+        this._viewerEl = document.getElementById('pdf-viewer')
+        
+        viewerContainer.addEventListener('touchstart', (e) => {
+            // Update Body Class for CSS touch-action lock
+            const isViewMode = this.app.activeStampType === 'view'
+            document.body.classList.toggle('view-mode-active', isViewMode)
+
             if (this.inputManager.isEventInUI(e)) return
             if (this.app.viewerManager?.isApplyingZoom) return
-
-            // Reset long press flag for safety, but check timing for blocking ghost clicks
             this.inputManager.isLongPressActive = false
-
-            const msSinceLongPress = this.inputManager.lastLongPressAt
-                ? Date.now() - this.inputManager.lastLongPressAt
-                : Infinity
-            if (msSinceLongPress < 500) return
 
             if (e.touches.length === 1) {
                 this._startX = e.touches[0].clientX
                 this._startY = e.touches[0].clientY
                 this._startTime = Date.now()
+            } else if (e.touches.length === 2) {
+                // START PINCH/PAN (Available in all modes)
+                this._isPinching = true
+                this.app.isPinching = true; // Global flag to suppress background work
+                
+                this._initialDistance = this.getDistance(e.touches[0], e.touches[1])
+                this._initialScale = this.app.viewerManager?.scale || 1
+                this._isZoomActive = false 
+                this._gestureLocked = null // 'pan' or 'zoom'
+                
+                this._lastPinchX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+                this._lastPinchY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+                this._pinchStartCentroid = { x: this._lastPinchX, y: this._lastPinchY }
+                
+                // Prioritize GPU resources & disable transitions
+                if (this._viewerEl) {
+                    this._viewerEl.style.willChange = 'transform' 
+                    this._viewerEl.style.transition = 'none'
+                }
             }
         }, { passive: true })
 
-        viewer.addEventListener('touchend', (e) => {
-            if (this.inputManager.isEventInUI(e)) return
+        viewerContainer.addEventListener('touchmove', (e) => {
+            if (this._isPinching && e.touches.length === 2) {
+                if (e.cancelable) e.preventDefault()
+                
+                const currentX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+                const currentY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+                
+                // 1. GESTURE LOCKING LOGIC
+                // We decide if this is a PAN or a ZOOM in the first 20-30 pixels of movement.
+                const currentDist = this.getDistance(e.touches[0], e.touches[1])
+                const distDelta = Math.abs(currentDist - this._initialDistance)
+                const panDelta = Math.sqrt(Math.pow(currentX - this._pinchStartCentroid.x, 2) + Math.pow(currentY - this._pinchStartCentroid.y, 2))
 
-            // Block gestures while a zoom/re-render is in progress (prevents iOS ghost-tap jumps)
+                if (!this._gestureLocked) {
+                    if (panDelta > 20 && distDelta < 15) {
+                        this._gestureLocked = 'pan' // Lock into pan mode (no zooming allowed)
+                    } else if (distDelta > 40) {
+                        this._gestureLocked = 'zoom' // Allow zooming and panning
+                        this._isZoomActive = true
+                    }
+                }
+
+                // 2. PINCH LOGIC (Visual Scale) - Only runs if NOT locked to pan
+                if (this._gestureLocked !== 'pan') {
+                    const rawRatio = currentDist / Math.max(10, this._initialDistance)
+                    // Increased damping (0.5) for even smoother zoom
+                    const ratio = 1 + (rawRatio - 1) * 0.5
+
+                    // If we haven't locked to zoom yet, check a secondary threshold
+                    if (!this._isZoomActive && Math.abs(ratio - 1) > 0.15) {
+                        this._isZoomActive = true
+                        this._gestureLocked = 'zoom'
+                    }
+
+                    if (this._isZoomActive && this._viewerEl) {
+                        this._viewerEl.style.transform = `scale(${ratio})`
+                    }
+                }
+
+                // 3. PAN LOGIC (Manual Scroll)
+                const dx = this._lastPinchX - currentX
+                const dy = this._lastPinchY - currentY
+                
+                viewerContainer.scrollTop += dy
+                viewerContainer.scrollLeft += dx
+                
+                this._lastPinchX = currentX
+                this._lastPinchY = currentY
+                return
+            }
+
+            // SINGLE-FINGER DRAG PREVENTION
+            if (e.touches.length === 1) {
+                const dx = Math.abs(e.touches[0].clientX - this._startX)
+                const dy = Math.abs(e.touches[0].clientY - this._startY)
+                if (dx > 5 || dy > 5) { 
+                    if (e.cancelable) e.preventDefault()
+                }
+            }
+        }, { passive: false })
+
+        viewerContainer.addEventListener('touchend', (e) => {
+            if (this._isPinching) {
+                this._isPinching = false
+                this.app.isPinching = false;
+                
+                const ratioStr = this._viewerEl?.style.transform || "";
+                const match = ratioStr.match(/scale\(([^)]+)\)/);
+                const ratio = match ? parseFloat(match[1]) : 1;
+
+                // Reset visual transform immediately
+                if (this._viewerEl) {
+                    this._viewerEl.style.transform = ''
+                    this._viewerEl.style.willChange = ''
+                    this._viewerEl.style.transition = 'transform 0.15s ease-out' 
+                }
+
+                // Apply final scale to PDF.js
+                if (e.touches.length < 2) {
+                    const newScale = this._initialScale * ratio
+                    const delta = newScale - this._initialScale
+                    
+                    // Final threshold: 0.1 (10% change) to trigger expensive re-render
+                    if (Math.abs(delta) > 0.1) {
+                        this.app.viewerManager?.changeZoom(delta)
+                    }
+                }
+                return
+            }
+
+            if (this.inputManager.isEventInUI(e)) return
             if (this.app.viewerManager?.isApplyingZoom) return
 
-            // Block navigation if a long press fired (boolean) or fired very recently (timestamp guard)
             const msSinceLongPress = this.inputManager.lastLongPressAt
                 ? Date.now() - this.inputManager.lastLongPressAt
                 : Infinity
@@ -134,7 +247,6 @@ export class GestureManager {
 
                 // Zone Tapping
                 if (this.app.activeStampType === 'view' && dt < 300 && Math.abs(dx) < 30 && Math.abs(dy) < 30) {
-                    // Set flag so the synthetic click event fired by iOS doesn't double-trigger
                     this.inputManager._suppressNextClick = true
                     this.handleZoneTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
                 }
@@ -174,5 +286,10 @@ export class GestureManager {
         document.body.appendChild(indicator)
         setTimeout(() => indicator.classList.add('fade-out'), 50)
         setTimeout(() => indicator.remove(), 600)
+    }
+
+    getDistance(t1, t2) {
+        if (!t1 || !t2) return 0
+        return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2))
     }
 }

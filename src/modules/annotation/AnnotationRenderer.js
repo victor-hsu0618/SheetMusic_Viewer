@@ -18,53 +18,28 @@ export class AnnotationRenderer {
         const ctx = canvas.getContext('2d')
         ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-        if (this.app.stamps.length > 0) {
-            console.log(`[AnnotationRenderer] Page ${page}: Redrawing ${this.app.stamps.filter(s => s.page === page && !s.deleted).length} stamps on canvas ${canvas.width}x${canvas.height}`);
-        }
-
-        let drawnCount = 0;
-        let skippedCount = 0;
-        const skipReasons = {};
+        // OPTIMIZATION: Filter page stamps once before the sources loop
+        const pageStamps = this.app.stamps.filter(s => s.page === page && !s.deleted);
+        if (pageStamps.length === 0) return;
 
         this.app.sources.forEach(source => {
-            if (!source.visible) {
-                const count = this.app.stamps.filter(s => s.page === page && s.sourceId === source.id && !s.deleted).length;
-                if (count > 0) {
-                    skipReasons[`hidden_source_${source.id}`] = (skipReasons[`hidden_source_${source.id}`] || 0) + count;
-                    skippedCount += count;
-                }
-                return;
-            }
+            if (!source.visible) return;
 
             ctx.save()
             ctx.globalAlpha = source.opacity || 1
             const isForeign = source.id !== 'self'
 
-            const sourceStamps = this.app.stamps.filter(s => s.page === page && s.sourceId === source.id && !s.deleted)
+            const sourceStamps = pageStamps.filter(s => s.sourceId === source.id)
             sourceStamps.forEach(stamp => {
                 const effectiveLayerId = this.app.annotationManager.getEffectiveLayerId(stamp)
                 const layer = this.app.layers.find(l => l.id === effectiveLayerId)
 
-                if (!layer) {
-                    skipReasons['no_layer'] = (skipReasons['no_layer'] || 0) + 1;
-                    skippedCount++;
-                    return;
-                }
-                if (!layer.visible) {
-                    skipReasons[`hidden_layer_${layer.id}`] = (skipReasons[`hidden_layer_${layer.id}`] || 0) + 1;
-                    skippedCount++;
-                    return;
-                }
-                if (stamp.hiddenGroup && !this.app.cloakVisible?.[stamp.hiddenGroup]) {
-                    skipReasons['hidden_cloak'] = (skipReasons['hidden_cloak'] || 0) + 1;
-                    skippedCount++;
-                    return;
-                }
+                if (!layer || !layer.visible) return;
+                if (stamp.hiddenGroup && !this.app.cloakVisible?.[stamp.hiddenGroup]) return;
 
                 const isHovered = stamp === this.app.hoveredStamp
                 const isSelectHovered = stamp === this.app.selectHoveredStamp
 
-                drawnCount++;
                 if (stamp.points) {
                     this.drawPathOnCanvas(ctx, canvas, stamp, isForeign, isHovered, isSelectHovered)
                 } else {
@@ -73,8 +48,6 @@ export class AnnotationRenderer {
             })
             ctx.restore()
         });
-
-        // console.log(`[AnnotationRenderer] Page ${page}: Drew ${drawnCount}, Skipped ${skippedCount}. Reasons:`, skipReasons);
     }
 
     /**
@@ -616,7 +589,7 @@ export class AnnotationRenderer {
 
                         ctx.fillText(stamp.data || '#', x, y)
                     } else if (d.variant === 'playback') {
-                        // Restore missing Music Anchor / Playback Head
+                        // Restore missing Music Player / Playback Head
                         const s = size * 0.45
                         ctx.strokeStyle = color
                         ctx.lineWidth = 1.2 * globalScale

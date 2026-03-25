@@ -234,97 +234,8 @@ export class ViewerManager {
         
         if (loadingId !== this.latestLoadingId) return;
 
-        // --- FINGERPRINT: Use expectedFp when available to skip slow SHA-256 computation ---
-        // When loading from the library (expectedFp is known), trust it immediately and verify
-        // in the background. This is the main performance bottleneck on LAN/HTTP where
-        // WebCrypto is unavailable and the JS fallback is slow (blocks main thread).
-        let newFingerprint;
-        if (expectedFp) {
-            newFingerprint = expectedFp;
-            // Background drift check — non-blocking
-            this.getFingerprint(uint8Data).then(computed => {
-                if (computed !== expectedFp) {
-                    console.warn(`[ViewerManager] 🛠️ FP drift (bg): ${expectedFp.slice(0,8)} → ${computed.slice(0,8)}`);
-                    const entry = this.app.scoreManager?.registry?.find(s => s.fingerprint === expectedFp);
-                    if (entry && this.app.scoreManager?.helper?.migrateFingerprint) {
-                        this.app.scoreManager.helper.migrateFingerprint(expectedFp, computed, filename);
-                    }
-                }
-            }).catch(() => {});
-        } else {
-            newFingerprint = await this.getFingerprint(uint8Data);
-        }
-
-        // --- SAFE CACHE: Persist buffer to IndexedDB ---
-        // Skip writing score_buf if we loaded FROM that exact key (no-op write).
-        try {
-            if (filename) {
-                await db.set(`recent_buf_${filename}`, uint8Data);
-            }
-            if (newFingerprint && !expectedFp) {
-                // Only write score_buf for new uploads (expectedFp = null).
-                // Library restores already have the buffer stored under this key.
-                await db.set(`score_buf_${newFingerprint}`, uint8Data);
-            }
-        } catch (err) {
-            console.warn('[ViewerManager] Storage cache failed (likely QuotaExceeded):', err);
-        }
-        if (loadingId !== this.latestLoadingId) return;
-
-        console.log(`[ViewerManager] Fingerprint: ${newFingerprint.slice(0, 8)}...`);
-        this.pdfFingerprint = newFingerprint
-        this.app.pdfFingerprint = newFingerprint // Global Sync
-
-        // --- SWITCH CONTEXT: Load score-specific sources and layers ---
-        await this.app.persistenceManager.loadFromStorage(newFingerprint);
-        this.app.renderSourceUI?.();
-        this.app.renderLayerUI?.();
-
-        this.app.btnScoreDetailToggle?.removeAttribute('disabled')
-        this.app.jumpManager?.loadBookmarks()
-
-        await this.loadStamps(newFingerprint);
-        this.app.jumpHistory = []
-
-        // --- Supabase Realtime Sync Update ---
-        // Ensure we are subscribed to the NEW fingerprint's channel
-        if (this.app.supabaseManager) {
-            console.log(`[ViewerManager] 📡 Updating Supabase sync for: ${newFingerprint.slice(0, 8)}`);
-            this.app.supabaseManager.subscribeToAnnotations(newFingerprint);
-            // Pull existing cloud annotations immediately if user is authenticated.
-            // If auth is not ready yet, the SIGNED_IN handler will call pullAnnotations
-            // once the session is restored, covering the delayed-auth race condition.
-            this.app.supabaseManager.pullAnnotations(newFingerprint);
-        }
-
-        // Notify GistShareManager in case a share link is pending PDF upload
-        this.app.gistShareManager?.onPdfLoaded(newFingerprint)
-
-        if (this.app.updateScoreDetailUI) {
-            this.app.updateScoreDetailUI(newFingerprint)
-        }
-
-        // --- NEW: Supabase PDF Storage Sync (Background) ---
-        if (this.app.supabaseManager?.user) {
-            // CRITICAL: Create a copy immediately. PDF.js may detach the buffer during getDocument()
-            const uploadCopy = uint8Data.slice(0); 
-            
-            (async () => {
-                try {
-                    const exists = await this.app.supabaseManager.checkPDFExists(newFingerprint);
-                    if (!exists) {
-                        console.log(`[ViewerManager] ⬆️ PDF not found in cloud. Starting background upload (${uploadCopy.byteLength} bytes)...`);
-                        await this.app.supabaseManager.uploadPDFBuffer(newFingerprint, uploadCopy);
-                        console.log(`[ViewerManager] ✅ Background upload complete.`);
-                    } else {
-                        console.log(`[ViewerManager] ☁️ PDF already exists in Supabase storage.`);
-                    }
-                } catch (err) {
-                    console.error('[ViewerManager] Background upload process failed:', err);
-                }
-            })();
-        }
-
+        // --- START PARALLEL TASKS ---
+        // 1. Start PDF parsing immediately (doesn't need fingerprint)
         const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
         const loadingTask = pdfjsLib.getDocument({
             data: uint8Data,
@@ -337,8 +248,67 @@ export class ViewerManager {
             stopAtErrors: false,
         })
 
+        // 2. Resolve Fingerprint (Parallel to PDF parsing)
+        let newFingerprint;
+        if (expectedFp) {
+            newFingerprint = expectedFp;
+            // No background check needed for known library scores to save CPU
+            console.log(`[ViewerManager] Fast-loading from library via expected fingerprint: ${expectedFp.slice(0, 8)}`);
+        } else {
+            newFingerprint = await this.getFingerprint(uint8Data);
+        }
+
+        if (loadingId !== this.latestLoadingId) return;
+        this.pdfFingerprint = newFingerprint
+        this.app.pdfFingerprint = newFingerprint
+
+        // 3. Load DB Metadata & Stamps (Parallel to PDF parsing, needs FP)
+        const dataPromise = (async () => {
+            await Promise.all([
+                this.app.persistenceManager.loadFromStorage(newFingerprint),
+                this.loadStamps(newFingerprint)
+            ]);
+            
+            this.app.renderSourceUI?.();
+            this.app.renderLayerUI?.();
+            this.app.btnScoreDetailToggle?.removeAttribute('disabled')
+            this.app.jumpManager?.loadBookmarks()
+            this.app.jumpHistory = []
+
+            if (this.app.updateScoreDetailUI) {
+                this.app.updateScoreDetailUI(newFingerprint);
+            }
+        })();
+
+        // 4. Background Storage Sync
+        if (this.app.supabaseManager?.user) {
+            const uploadCopy = uint8Data.slice(0); 
+            (async () => {
+                try {
+                    const exists = await this.app.supabaseManager.checkPDFExists(newFingerprint);
+                    if (!exists) {
+                        await this.app.supabaseManager.uploadPDFBuffer(newFingerprint, uploadCopy);
+                    }
+                } catch (err) { console.error('[ViewerManager] BG Sync Error:', err); }
+            })();
+            
+            // Supabase Realtime
+            this.app.supabaseManager.subscribeToAnnotations(newFingerprint);
+            this.app.supabaseManager.pullAnnotations(newFingerprint);
+        }
+
+        // --- SAFE CACHE: Persist buffer to IndexedDB ---
         try {
-            const pdf = await loadingTask.promise;
+            if (filename) await db.set(`recent_buf_${filename}`, uint8Data);
+            if (newFingerprint && !expectedFp) await db.set(`score_buf_${newFingerprint}`, uint8Data);
+        } catch (err) { console.warn('[ViewerManager] Storage cache failed:', err); }
+
+        // Final Wait: Ensure BOTH PDF parsing and Data loads are done
+        try {
+            const [pdf] = await Promise.all([loadingTask.promise, dataPromise]);
+            if (loadingId !== this.latestLoadingId) return;
+            this.pdf = pdf;
+            console.log(`[ViewerManager] Parallel Load Success. Pages: ${this.pdf.numPages}`);
             if (loadingId !== this.latestLoadingId) {
                 console.log(`[ViewerManager] loadPDF id ${loadingId} superseded by ${this.latestLoadingId}. Skipping render.`);
                 return;
@@ -572,18 +542,19 @@ export class ViewerManager {
         this._pageViewports[1] = firstViewport
 
         // 2. Create Page Containers immediately with estimated sizes
+        const fragment = document.createDocumentFragment()
         const containers = pageIndices.map(i => {
             const pageWrapper = this.createPageElement(i)
             pageWrapper.dataset.rendered = 'false'
             
-            // Initial estimation based on first page (most scores have uniform page sizes)
             pageWrapper.style.minHeight = `${firstViewport.height}px`
             pageWrapper.style.width = `${firstViewport.width}px`
             
-            this.app.container.appendChild(pageWrapper)
+            fragment.appendChild(pageWrapper)
             this.observer.observe(pageWrapper)
             return pageWrapper
         })
+        this.app.container.appendChild(fragment)
 
         // Initial UI updates for first page
         this.showMainUI()
@@ -761,7 +732,6 @@ export class ViewerManager {
             this.app.redrawStamps(pageNum)
 
             wrapper.dataset.rendered = 'true'
-            console.log(`[ViewerManager] Page ${pageNum} rendered lazily (Resolution: ${canvas.width}x${canvas.height})`)
 
             // If this page scrolled off-screen while rendering, unrender it now.
             // (IntersectionObserver won't re-fire since the intersection didn't change after render.)
@@ -839,7 +809,7 @@ export class ViewerManager {
                 }
             }
         })
-        console.log(`[ViewerManager] Cached metrics for ${Object.keys(this._pageMetrics).length} pages.`)
+        // No-log metrics update to save CPU
     }
 
     createPageElement(pageNum) {

@@ -106,17 +106,55 @@ export class DocBarStripManager {
 
     init() {
         this._build()
-        // Initialize state from settings (default to shown if tabs are gone)
+        // Initialize state from settings
         const isHidden = localStorage.getItem('scoreflow_doc_bar_hide') === 'true'
         this.toggleCollapse(isHidden)
+
+        // Auto-hide logic (30s)
+        this._idleTimer = null
+        this._setupActivityListeners()
+        this._resetIdleTimer()
+    }
+
+    /** 
+     * Setup global activity listeners to wake up/auto-hide the doc bar.
+     */
+    _setupActivityListeners() {
+        const reset = () => this._resetIdleTimer()
+        window.addEventListener('mousemove', reset, { passive: true })
+        window.addEventListener('mousedown', reset, { passive: true })
+        window.addEventListener('touchstart', reset, { passive: true })
+        window.addEventListener('scroll', reset, { passive: true })
+        // Also listen for keydown to be thorough
+        window.addEventListener('keydown', reset, { passive: true })
+    }
+
+    _resetIdleTimer() {
+        // Clear existing timer
+        if (this._idleTimer) {
+            clearTimeout(this._idleTimer)
+        }
+
+        // Set new timer to collapse after 30s
+        this._idleTimer = setTimeout(() => {
+            // Only auto-collapse if NOT manually hidden and NOT already collapsed
+            const isManuallyHidden = localStorage.getItem('scoreflow_doc_bar_hide') === 'true'
+            if (!this.el.classList.contains('collapsed') && !isManuallyHidden) {
+                this.toggleCollapse(true, true) 
+            }
+        }, 30000)
     }
 
     /** Toggle the visibility of the whole doc bar strip */
-    toggleCollapse(isHidden) {
+    toggleCollapse(isHidden, isAuto = false) {
         if (!this.el) return
         this.el.classList.toggle('collapsed', isHidden)
         document.body.classList.toggle('sf-doc-bar-collapsed', isHidden)
-        localStorage.setItem('scoreflow_doc_bar_hide', isHidden)
+        
+        // Only save preference if it was a manual user click
+        if (!isAuto) {
+            localStorage.setItem('scoreflow_doc_bar_hide', isHidden)
+        }
         
         // Re-fit score if skip calculation is not active (like in overlay mode)
         if (!document.body.classList.contains('sf-edit-strip-overlay')) {

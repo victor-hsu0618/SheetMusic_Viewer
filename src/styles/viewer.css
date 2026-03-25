@@ -35,10 +35,20 @@
   align-items: center;
   padding: 0;
   overscroll-behavior-y: none;
-  /* CRITICAL: Snaps top/bottom tightly */
-  touch-action: pan-y;
-  /* CRITICAL: Prevents body drag */
+  /* Always block native gestures — JS handles all panning (view mode) and drawing (stamp mode). */
+  touch-action: none; 
   -webkit-overflow-scrolling: touch;
+}
+
+/* HARD BLOCK for View Mode */
+body[data-active-tool="view"] .viewer-container {
+  touch-action: none !important;
+  overflow: hidden !important; /* Block all native scroll */
+}
+
+#viewer {
+    transition: transform 0.1s ease-out;
+    transform-origin: center top;
 }
 
 /* Floating Document Control Bar */

@@ -5,6 +5,50 @@ import { CYCLE_GROUPS, CLOAK_GROUPS } from '../../constants.js';
 export class InteractionManager {
     constructor(app) {
         this.app = app;
+        this._penLongPressTimer = null;
+    }
+
+    _updateCursor(overlay, pointerType) {
+        if (!overlay) return;
+        const tool = this.app.activeStampType;
+        
+        // No custom cursor for touch (handled by virtual-pointer)
+        if (pointerType === 'touch') {
+            overlay.style.cursor = 'crosshair';
+            return;
+        }
+
+        switch (tool) {
+            case 'view':
+                overlay.style.cursor = 'grab';
+                break;
+            case 'eraser':
+                overlay.style.cursor = 'cell'; // Selection with intent to erase
+                break;
+            case 'select':
+            case 'cycle':
+                overlay.style.cursor = 'pointer';
+                break;
+            case 'copy':
+                overlay.style.cursor = 'copy';
+                break;
+            case 'recycle-bin':
+                overlay.style.cursor = 'wait'; // Or not-allowed
+                break;
+            case 'pen':
+            case 'red-pen':
+            case 'green-pen':
+            case 'blue-pen':
+            case 'highlighter':
+            case 'highlighter-red':
+            case 'highlighter-blue':
+            case 'highlighter-green':
+                overlay.style.cursor = 'none'; // Custom virtual pointer
+                break;
+            default:
+                // Standard stamp tools: hide browser cursor if we have a preview
+                overlay.style.cursor = this.app.isStampTool() ? 'none' : 'default';
+        }
     }
 
     createCaptureOverlay(wrapper, pageNum, width, height) {
@@ -47,6 +91,7 @@ export class InteractionManager {
             isTwoFingerPanning = false;
             this.isAdjustingCurvature = false;
             this.app._dragLastPos = null;
+            if (this._penLongPressTimer) clearTimeout(this._penLongPressTimer);
             InteractionUI.showTrash(false, wrapper);
             // Clean up both trash bins
             document.getElementById('sf-doc-trash-btn')?.classList.remove('drag-over', 'drag-active')
@@ -65,26 +110,12 @@ export class InteractionManager {
 
         const resetPointerIdleTimer = () => {
             if (pointerIdleTimer) clearTimeout(pointerIdleTimer);
-
-            // AUTO-REVERT DISABLED: User requested to keep the current tool active indefinitely.
-            /*
-            // If we are currently in "view" mode, "settings", or "recycle-bin", we don't need to auto-switch
-            if (['view', 'settings', 'recycle-bin'].includes(this.app.activeStampType)) return;
-
-            pointerIdleTimer = setTimeout(() => {
-                // HARD SAFE MODE: Automatically switch to "view" (pan) tool
-                this.app.activeStampType = 'view';
-                if (this.app.toolManager) this.app.toolManager.updateActiveTools();
-                InteractionUI.syncVirtualPointer({ type: 'mousemove' }, 'view', overlay, virtualPointer, CoordMapper, this.app);
-            }, this.app.pointerIdleTimeoutMs || 8000); 
-            */
         };
 
         // --- HELPERS ---
 
         const getPointerType = (e) => {
             if (e.pointerType) return e.pointerType;
-            // Fallback for older environments or specific touch events
             if (e.type.startsWith('touch') || (e.touches && e.touches.length > 0)) return 'touch';
             return 'mouse';
         };
@@ -99,11 +130,6 @@ export class InteractionManager {
             };
         };
 
-        // Returns trash bin {x, y} for showTrash positioning.
-        // Always place trash 70px ABOVE the stamp — with upward touch offset, the stamp
-        // arrives at the trash slightly before the finger reaches it (forgiving).
-        // Previously left-side stamps (x<0.15) had trash BELOW, but the upward offset
-        // meant the finger had to travel past the trash bin — unreachable in practice.
         const getTrashPos = (normX, wCentX, wCentY) => {
             return { x: wCentX, y: wCentY - 210 };
         };
@@ -116,59 +142,7 @@ export class InteractionManager {
 
         const updateTouchAction = () => {
             const toolType = this.app.activeStampType;
-            // Ensure body-level attribute is synced (redundant but safe)
             document.body.dataset.activeTool = toolType;
-        };
-
-        // Two-finger pan handlers (stamp mode)
-        const doTwoFingerPan = (e) => {
-            if (!isTwoFingerPanning || e.pointerType !== 'touch') return;
-            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-            if (activePointers.size < 2) return;
-            const pts = [...activePointers.values()];
-            const cx = (pts[0].x + pts[1].x) / 2;
-            const cy = (pts[0].y + pts[1].y) / 2;
-            
-            const dx = cx - twoFingerCentroidStart.x;
-            const dy = cy - twoFingerCentroidStart.y;
-            
-            const targetTop = twoFingerScrollStart.top - dy;
-            const maxScroll = this.app.viewer.scrollHeight - this.app.viewer.clientHeight;
-            
-            if (targetTop < 0) {
-                this.app.viewer.scrollTop = 0;
-                const overscroll = targetTop * 0.3; // Resistance
-                this.app.container.style.transform = `translateY(${-overscroll}px)`;
-            } else if (targetTop > maxScroll) {
-                this.app.viewer.scrollTop = maxScroll;
-                const overscroll = (targetTop - maxScroll) * 0.3; // Resistance
-                this.app.container.style.transform = `translateY(${-overscroll}px)`;
-            } else {
-                this.app.viewer.scrollTop = targetTop;
-                this.app.container.style.transform = '';
-            }
-            this.app.viewer.scrollLeft = twoFingerScrollStart.left - dx;
-        };
-
-        const stopTwoFingerPan = (e) => {
-            activePointers.delete(e.pointerId);
-            if (isTwoFingerPanning && activePointers.size < 2) {
-                isTwoFingerPanning = false;
-                window.removeEventListener('pointermove', doTwoFingerPan);
-                window.removeEventListener('pointerup', stopTwoFingerPan);
-                window.removeEventListener('pointercancel', stopTwoFingerPan);
-                
-                // Snap back overscroll
-                this.app.container.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                this.app.container.style.transform = 'translateY(0)';
-                setTimeout(() => { this.app.container.style.transition = ''; }, 400);
-
-                // Cooldown: suppress stamp preview + placement for 400ms after pan ends
-                panCooldown = true;
-                virtualPointer?.classList.remove('active');
-                if (panCooldownTimer) clearTimeout(panCooldownTimer);
-                panCooldownTimer = setTimeout(() => { panCooldown = false; }, 400);
-            }
         };
 
         // --- HANDLERS ---
@@ -178,53 +152,38 @@ export class InteractionManager {
 
             const toolType = this.app.activeStampType;
             const pointerType = getPointerType(e);
+            const isPen = pointerType === 'pen';
 
-            // Two-finger pan in any stamp mode
-            if (this.app.twoFingerPanEnabled && pointerType === 'touch' && toolType !== 'view') {
-                activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-                if (activePointers.size >= 2) {
-                    if (touchBufferTimer) clearTimeout(touchBufferTimer);
-                    // Cancel any in-progress single-finger stamp interaction
-                    if (isInteracting) {
-                        isInteracting = false;
-                        this.app.isInteracting = false;
-                        activeObject = null;
-                        isMovingExisting = false;
-                        InteractionUI.showTrash(false, wrapper);
-                        detachGlobalListeners();
-                    }
-                    if (!isTwoFingerPanning) {
-                        isTwoFingerPanning = true;
-                        twoFingerScrollStart = { top: this.app.viewer.scrollTop, left: this.app.viewer.scrollLeft };
-                        const pts = [...activePointers.values()];
-                        twoFingerCentroidStart = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
-                        window.addEventListener('pointermove', doTwoFingerPan);
-                        window.addEventListener('pointerup', stopTwoFingerPan);
-                        window.addEventListener('pointercancel', stopTwoFingerPan);
-                        isInteracting = false;
-                        this.app.isInteracting = false;
-                        virtualPointer?.classList.remove('active');
-                        this.app.redrawStamps(pageNum);
-                    }
-                    return;
+            // Always track pointers for multi-touch handling
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (activePointers.size >= 2) {
+                if (touchBufferTimer) clearTimeout(touchBufferTimer);
+                
+                // --- CONSOLIDATED GESTURE HANDLING ---
+                // GestureManager handles 2-finger Pan/Zoom globally (bubbles from overlays).
+                // We simply stop our current INTERACTION (e.g., drawing) to let the zoom take over.
+                if (isInteracting) {
+                    isInteracting = false;
+                    this.app.isInteracting = false;
+                    activeObject = null;
+                    isMovingExisting = false;
+                    InteractionUI.showTrash(false, wrapper);
+                    detachGlobalListeners();
                 }
                 
-                // Grace period fast-path: skip the 35ms buffer so the grab fires
-                // immediately while the pointer is still guaranteed to be down.
-                // This avoids the race where the finger lifts before the timer fires.
-                if (graceObject && !isTwoFingerPanning) {
-                    if (touchBufferTimer) { clearTimeout(touchBufferTimer); touchBufferTimer = null; }
-                    proceedWithAction(e);
-                    return;
-                }
-
-                // First finger: buffer it (waits 35ms to distinguish single-finger from two-finger)
+                isTwoFingerPanning = true; 
+                isInteracting = false;
+                this.app.isInteracting = false;
+                virtualPointer?.classList.remove('active');
+                return;
+            }
+            
+            // Touch buffer to allow second finger to land
+            if (pointerType === 'touch' && !isPen) {
                 if (touchBufferTimer) clearTimeout(touchBufferTimer);
                 touchBufferTimer = setTimeout(() => {
                     touchBufferTimer = null;
-                    // Use <= 1 (not === 1) so a quick tap that lifts in < 35ms still fires.
-                    // Two-finger gestures are guarded by isTwoFingerPanning + the size >= 2
-                    // branch above that clears touchBufferTimer before it can fire.
                     if (activePointers.size <= 1 && !isTwoFingerPanning) {
                         proceedWithAction(e);
                     }
@@ -236,12 +195,9 @@ export class InteractionManager {
         };
 
         const proceedWithAction = async (e) => {
-            const toolType = this.app.activeStampType;
+            const toolTypeRaw = this.app.activeStampType;
             const pointerType = getPointerType(e);
 
-            // Stuck-state guard: if isInteracting is true but a new pointerdown arrives,
-            // a previous endAction was likely missed (e.g. iOS pointercancel dropped).
-            // Force-reset so the user isn't stuck unable to place stamps.
             if (isInteracting) {
                 isInteracting = false;
                 this.app.isInteracting = false;
@@ -249,15 +205,48 @@ export class InteractionManager {
                 isMovingExisting = false;
                 detachGlobalListeners();
             }
-            if (panCooldown) return; // Post-pan cooldown: ignore taps until fingers settle
+            if (panCooldown) return;
 
             const pos = CoordMapper.getPos(e, overlay);
 
-            // 1. View Mode Panning (JS-Powered for both Mouse and Touch)
-            if (toolType === 'view') {
-                // Ignore if already panning or interacting
-                if (isPanning) return;
+            // --- APPLE PENCIL GESTURE: Long press with pen tip to toggle EditStrip ---
+            if (pointerType === 'pen' && !isInteracting) {
+                if (this._penLongPressTimer) clearTimeout(this._penLongPressTimer);
+                this._penLongPressTimer = setTimeout(() => {
+                    overlay.style.background = 'rgba(255, 255, 255, 0.05)';
+                    setTimeout(() => overlay.style.background = '', 150);
+                    if (navigator.vibrate) navigator.vibrate(10);
+                    this.app.editStripManager?.toggleCollapse(!this.app.editStripManager.collapsed);
+                }, 600);
+            }
 
+            // --- (B) HAND-PEN SEPARATION ---
+            const isPen = pointerType === 'pen';
+            let activeTool = toolTypeRaw;
+            
+            // Check if we are potentially picking up an existing object first
+            const previewPosForGrab = CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay);
+            const pickupTarget = graceObject || this.app.findClosestStamp(pageNum, previewPosForGrab.x, previewPosForGrab.y, true);
+            
+            // If it's a finger and we're NOT in Pan mode, AND not targeting an existing object to move:
+            // force it to 'view' (Neutral Pan) to prevent palms from drawing.
+            if (!isPen && activeTool !== 'view' && !pickupTarget) {
+                activeTool = 'view';
+            }
+
+            // 1. View Mode Panning
+            if (activeTool === 'view') {
+                const isTouch = pointerType === 'touch' || pointerType === 'pen';
+                
+                // --- BLOCK 1-FINGER PAN FOR iPad & touchPad ---
+                // If it's a touch-like device, we ONLY allow 2-finger panning (handled above).
+                // We keep 1-finger panning FOR MOUSE ONLY (to remain usable on desktop).
+                if (isTouch) {
+                    // console.log('[InteractionManager] Blocking 1-finger pan in View Mode.');
+                    return; 
+                }
+
+                if (isPanning) return;
                 isPanning = true;
                 const startX = e.clientX, startY = e.clientY;
                 const startScrollTop = this.app.viewer.scrollTop;
@@ -270,22 +259,19 @@ export class InteractionManager {
                     if (!isPanning) return;
                     const dx = ev.clientX - startX;
                     const dy = ev.clientY - startY;
-
-                    // Threshold to distinguish between tap and pan
                     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
                         this.app._wasPanning = true;
                     }
-
                     const targetTop = startScrollTop - dy;
                     const maxScroll = this.app.viewer.scrollHeight - this.app.viewer.clientHeight;
 
                     if (targetTop < 0) {
                         this.app.viewer.scrollTop = 0;
-                        const overscroll = targetTop * 0.3; // Resistance
+                        const overscroll = targetTop * 0.3;
                         this.app.container.style.transform = `translateY(${-overscroll}px)`;
                     } else if (targetTop > maxScroll) {
                         this.app.viewer.scrollTop = maxScroll;
-                        const overscroll = (targetTop - maxScroll) * 0.3; // Resistance
+                        const overscroll = (targetTop - maxScroll) * 0.3;
                         this.app.container.style.transform = `translateY(${-overscroll}px)`;
                     } else {
                         this.app.viewer.scrollTop = targetTop;
@@ -298,13 +284,9 @@ export class InteractionManager {
                     isPanning = false;
                     overlay.style.cursor = '';
                     this.app.viewer.style.scrollBehavior = '';
-                    
-                    // Snap back overscroll
                     this.app.container.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
                     this.app.container.style.transform = 'translateY(0)';
                     setTimeout(() => { this.app.container.style.transition = ''; }, 400);
-
-                    // Keep _wasPanning true for a brief moment to prevent accidental taps
                     setTimeout(() => { this.app._wasPanning = false; }, 100);
                     window.removeEventListener('pointermove', doPan);
                     window.removeEventListener('pointerup', stopPan);
@@ -317,18 +299,14 @@ export class InteractionManager {
                 return;
             }
 
-
-            // 1. Grace Period Interaction
+            // 2. Grace Period / Existing Object Interaction
             if (graceObject) {
-                const offsetPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
-                const isDrawingTool = ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(toolType);
-
-                // Distance check for grab detection.
-                // Touch uses a generous threshold (4× stamp size, min 50px) — finger hit area is larger.
-                // Mouse / pen uses 2× stamp size.
+                const offsetPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay);
+                const isDrawingTool = isDrawingType(activeTool);
                 const baseThreshold = CoordMapper.getGraceObjectPixelSize(graceObject, this.app)
                     * (pointerType === 'touch' ? 4.0 : 2.0);
                 const threshold = pointerType === 'touch' ? Math.max(50, baseThreshold) : baseThreshold;
+                
                 let distPx;
                 if (graceObject.points && graceObject.points.length > 0) {
                     const distFromPos = CoordMapper.getMinPathDist(pos.x, pos.y, graceObject.points) * width;
@@ -342,10 +320,7 @@ export class InteractionManager {
                     const dyPos = (pos.y - center.y) * ch;
                     const dxOff = (offsetPos.x - center.x) * cw;
                     const dyOff = (offsetPos.y - center.y) * ch;
-                    distPx = Math.min(
-                        Math.sqrt(dxPos * dxPos + dyPos * dyPos),
-                        Math.sqrt(dxOff * dxOff + dyOff * dyOff)
-                    );
+                    distPx = Math.min(Math.sqrt(dxPos * dxPos + dyPos * dyPos), Math.sqrt(dxOff * dxOff + dyOff * dyOff));
                 }
 
                 if (distPx < threshold && !isDrawingTool) {
@@ -370,16 +345,14 @@ export class InteractionManager {
                     InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
                     return;
                 } else {
-                    // Start Nudge Standby: Finger down in blank area while object is glowing.
                     potentialNudge = graceObject;
-                    const cx = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-                    const cy = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+                    const cx = e.clientX !== undefined ? e.clientX : (e.touches?.[0]?.clientX || 0);
+                    const cy = e.clientY !== undefined ? e.clientY : (e.touches?.[0]?.clientY || 0);
                     nudgeStartClient = { x: cx, y: cy };
                     nudgeStartObjectPos = { x: graceObject.x || (graceObject.points?.[0]?.x || 0), y: graceObject.y || (graceObject.points?.[0]?.y || 0) };
                     isNudging = false;
                     isInteracting = true;
                     this.app.isInteracting = true;
-                    // Pause the grace timer so glow doesn't expire during drag
                     if (graceTimer) { clearTimeout(graceTimer); graceTimer = null; }
                     attachGlobalListeners();
                     return;
@@ -390,35 +363,31 @@ export class InteractionManager {
             isInteracting = true;
             this.app.isInteracting = true;
 
-            const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
+            const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay);
             const target = this.app.selectHoveredStamp || this.app.findClosestStamp(pageNum, pPos.x, pPos.y, true);
 
-            if (target && (toolType === 'text' || toolType === 'tempo-text')) {
-                if (target.type === 'text' || target.type === 'tempo-text') {
-                    activeObject = target;
-                    isMovingExisting = true;
-                    this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
-                    this.app.lastFocusedStamp = activeObject;
-                    this.app._dragLastPos = pPos;
-                    InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
-                    attachGlobalListeners();
-                    return;
-                }
+            if (target && (activeTool === 'text' || activeTool === 'tempo-text')) {
+                activeObject = target;
+                isMovingExisting = true;
+                this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
+                this.app.lastFocusedStamp = activeObject;
+                this.app._dragLastPos = pPos;
+                InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
+                attachGlobalListeners();
+                return;
             }
 
-            const isCloakTool = toolType.startsWith('cloak-');
-            const isSelectionTool = ['copy', 'select', 'recycle-bin', 'cycle'].includes(toolType) || isCloakTool;
-            const isSlurBending = (toolType === 'slur' && target && target.type === 'slur');
+            const isCloakTool = activeTool.startsWith('cloak-');
+            const isSelectionTool = ['copy', 'select', 'recycle-bin', 'cycle'].includes(activeTool) || isCloakTool;
 
-            if (isSelectionTool || isSlurBending) {
+            if (isSelectionTool) {
                 if (target) {
-                    overlay.style.cursor = pointerType === 'mouse' ? 'none' : (toolType === 'recycle-bin' ? 'none' : 'none');
-                    if (toolType === 'cycle') {
+                    if (activeTool === 'cycle') {
                         const group = CYCLE_GROUPS.find(g => g.includes(target.type));
                         if (group) {
                             target.type = group[(group.indexOf(target.type) + 1) % group.length];
-                            const newTool = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === target.type);
-                            if (newTool?.draw) target.draw = { ...newTool.draw };
+                            const nt = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === target.type);
+                            if (nt?.draw) target.draw = { ...nt.draw };
                             target.updatedAt = Date.now();
                             await this.app.saveToStorage(true);
                             this.app.redrawAllAnnotationLayers();
@@ -426,94 +395,74 @@ export class InteractionManager {
                         isInteracting = false;
                         this.app.isInteracting = false;
                     } else if (isCloakTool) {
-                        const cloakId = toolType.replace('cloak-', '');
-                        target.hiddenGroup = (target.hiddenGroup === cloakId) ? undefined : cloakId;
+                        const cid = activeTool.replace('cloak-', '');
+                        target.hiddenGroup = (target.hiddenGroup === cid) ? undefined : cid;
                         target.updatedAt = Date.now();
                         await this.app.saveToStorage(true);
                         this.app.redrawAllAnnotationLayers();
                         isInteracting = false;
                         this.app.isInteracting = false;
-                    } else if (toolType === 'recycle-bin') {
+                    } else if (activeTool === 'recycle-bin') {
                         await this.app.annotationManager.eraseStampTarget(target);
                         isInteracting = false;
                         this.app.isInteracting = false;
-                    } else if (toolType === 'copy') {
+                    } else if (activeTool === 'copy') {
                         const clone = JSON.parse(JSON.stringify(target));
-                        clone.id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`;
+                        clone.id = crypto.randomUUID?.() || `stamp-${Date.now()}`;
                         clone.createdAt = Date.now();
                         clone.updatedAt = Date.now();
                         this.app.stamps.push(clone);
-                        this.app.activeStampType = 'select';
+                        this.app.activeStampType = 'select'; // Switch to select to move the copy
                         activeObject = clone;
                         isMovingExisting = true;
                     } else {
                         activeObject = target;
                         isMovingExisting = true;
                         this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
-
-                        if (activeObject.type === 'slur' && activeObject._renderedApex) {
-                            const dx = (pPos.x - activeObject._renderedApex.x) * width;
-                            const dy = (pPos.y - activeObject._renderedApex.y) * height;
-                            if (Math.sqrt(dx * dx + dy * dy) < 45) {
-                                this.isAdjustingCurvature = true;
-                            } else {
-                                this.isAdjustingCurvature = false;
-                            }
-                        } else {
-                            this.isAdjustingCurvature = false;
-                        }
                     }
-
                     if (activeObject) {
                         this.app.lastFocusedStamp = activeObject;
                         this.app._dragLastPos = pPos;
                         this.app.selectHoveredStamp = null;
                         const cent = CoordMapper.getGraceCenter(activeObject);
                         const wCent = getPixelsForWrapper(wrapper, cent.x, cent.y);
-                        const _tp1 = getTrashPos(cent.x, wCent.x, wCent.y);
-                        if (!isDrawingType(activeObject.type)) {
-                            InteractionUI.showTrash(true, wrapper, _tp1.x, _tp1.y);
-                        }
+                        const _tp = getTrashPos(cent.x, wCent.x, wCent.y);
+                        if (!isDrawingType(activeObject.type)) InteractionUI.showTrash(true, wrapper, _tp.x, _tp.y);
                         this.app.redrawStamps(pageNum);
-                        const startSyncType = ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
-                        InteractionUI.syncVirtualPointer(e, startSyncType, overlay, virtualPointer, CoordMapper, this.app);
                         attachGlobalListeners();
+                        InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
                     }
-                } else if (isSelectionTool) {
+                } else {
                     isInteracting = true;
                     this.app.isInteracting = true;
                     activeObject = null;
                     isMovingExisting = true;
                     this.app._dragLastPos = pPos;
                     attachGlobalListeners();
-                    InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
-                } else {
-                    isInteracting = false;
-                    this.app.isInteracting = false;
+                    InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
                 }
-            } else if (['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(toolType)) {
-                const toolDef = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === toolType);
+            } else if (isDrawingType(activeTool)) {
+                const toolDef = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === activeTool);
                 activeObject = {
-                    type: toolType, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
-                    points: [CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay)],
+                    type: activeTool, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
+                    points: [CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay)],
                     color: this.app.activeColor,
-                    // dashed-pen has a fixed dashed style; otherwise use the user's active line style
                     lineStyle: toolDef?.draw?.dashed ? 'dashed' : (this.app.activeLineStyle || 'solid'),
-                    dashed: toolDef?.draw?.dashed || false, // kept for backward compat with saved data
+                    dashed: toolDef?.draw?.dashed || false,
                     arrow: toolDef?.draw?.arrow || false,
-                    id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
+                    id: crypto.randomUUID?.() || `stamp-${Date.now()}`,
                     createdAt: Date.now(), updatedAt: Date.now(),
                     userScale: this.app.activeToolPreset || 1.0
                 };
-                if (toolType === 'slur') activeObject.curvature = -0.28;
+                if (activeTool === 'slur') activeObject.curvature = -0.28;
                 isInteracting = true;
                 this.app.isInteracting = true;
                 attachGlobalListeners();
-                InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
-            } else if (toolType === 'eraser') {
-                const eraserTarget = this.app.hoveredStamp || this.app.findClosestStamp(pageNum, pPos.x, pPos.y, false);
-                if (eraserTarget) {
-                    await this.app.annotationManager.eraseStampTarget(eraserTarget);
+                InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
+            } else if (activeTool === 'eraser') {
+                const et = this.app.hoveredStamp || this.app.findClosestStamp(pageNum, pPos.x, pPos.y, false);
+                if (et) {
+                    await this.app.annotationManager.eraseStampTarget(et);
                     isInteracting = false;
                     this.app.isInteracting = false;
                 } else {
@@ -521,54 +470,54 @@ export class InteractionManager {
                     this.app.isInteracting = true;
                     activeObject = null;
                     attachGlobalListeners();
-                    InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
+                    InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
                 }
             } else {
-                const fPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
+                // Regular stamping
+                const fPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay);
                 activeObject = {
-                    page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
+                    page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: activeTool,
                     x: fPos.x, y: fPos.y, color: this.app.activeColor, data: null,
-                    id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
+                    id: crypto.randomUUID?.() || `stamp-${Date.now()}`,
                     createdAt: Date.now(), updatedAt: Date.now(),
                     userScale: this.app.activeToolPreset || 1.0
                 };
-                const group = this.app.toolsets.find(g => g.tools.some(t => t.id === toolType));
-                if (group) {
-                    const layer = this.app.layers.find(l => l.type === group.type || l.id === group.type);
-                    if (layer) activeObject.layerId = layer.id;
+                const grp = this.app.toolsets.find(g => g.tools.some(t => t.id === activeTool));
+                if (grp) {
+                    const l = this.app.layers.find(ly => ly.type === grp.type || ly.id === grp.type);
+                    if (l) activeObject.layerId = l.id;
                 }
                 if (!activeObject.layerId) activeObject.layerId = 'draw';
-                if (toolType.startsWith('custom-text-') && this.app._activeCustomText) {
+                if (activeTool.startsWith('custom-text-') && this.app._activeCustomText) {
                     activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 500', size: 16, fontFace: 'serif' };
                 } else {
-                    const tool = group?.tools.find(t => t.id === toolType);
-                    if (tool && tool.draw) {
-                        activeObject.draw = { ...tool.draw };
-                    }
+                    const t = grp?.tools.find(tl => tl.id === activeTool);
+                    if (t?.draw) activeObject.draw = { ...t.draw };
                 }
+                
+                // For regular stamps, we just place it and end. No need to clear timer yet as we haven't reached endAction.
+                // But we need to make sure endAction is called.
                 isInteracting = true;
                 this.app.isInteracting = true;
-                this.app.lastFocusedStamp = activeObject;
-                const previewCanvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
-                if (previewCanvas) {
+                const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
+                if (canvas) {
                     this.app.redrawStamps(pageNum);
-                    const previewLayer = this.app.layers.find(l => l.id === activeObject.layerId);
-                    this.app.drawStampOnCanvas(previewCanvas.getContext('2d'), previewCanvas, activeObject, activeObject.color || previewLayer?.color || '#000', true, false, false, pos);
+                    const l = this.app.layers.find(ly => ly.id === activeObject.layerId);
+                    this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, activeObject, activeObject.color || l?.color || '#000', true, false, false, pos);
                 }
                 attachGlobalListeners();
-                InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
+                InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
             }
         };
 
         const moveAction = async (e) => {
             if (!isInteracting) return;
-
             const pointerType = getPointerType(e);
             const toolType = this.app.activeStampType;
 
             if (potentialNudge) {
-                const cx = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-                const cy = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+                const cx = e.clientX ?? (e.touches?.[0]?.clientX || 0);
+                const cy = e.clientY ?? (e.touches?.[0]?.clientY || 0);
                 const dx = cx - nudgeStartClient.x;
                 const dy = cy - nudgeStartClient.y;
 
@@ -578,75 +527,58 @@ export class InteractionManager {
                     isMovingExisting = true;
                     this.app.isInteracting = true;
                     this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
-                    activeObject.updatedAt = Date.now(); // Bump timestamp when nudge starts
-
-                    const graceCenter = CoordMapper.getGraceCenter(activeObject);
-                    const wCenter = getPixelsForWrapper(wrapper, graceCenter.x, graceCenter.y);
-                    const _tp0 = getTrashPos(graceCenter.x, wCenter.x, wCenter.y);
-                    if (!isDrawingType(activeObject.type)) {
-                        InteractionUI.showTrash(true, wrapper, _tp0.x, _tp0.y);
-                    }
+                    activeObject.updatedAt = Date.now();
+                    const cent = CoordMapper.getGraceCenter(activeObject);
+                    const wCent = getPixelsForWrapper(wrapper, cent.x, cent.y);
+                    const _tp = getTrashPos(cent.x, wCent.x, wCent.y);
+                    if (!isDrawingType(activeObject.type)) InteractionUI.showTrash(true, wrapper, _tp.x, _tp.y);
                 }
 
                 if (isNudging) {
                     const rect = overlay.getBoundingClientRect();
-                    const normDx = dx / (rect.width || 1);
-                    const normDy = dy / (rect.height || 1);
-
-                    if (activeObject.points && activeObject.points.length > 0) {
-                        const startPoints = this.dragStartObject.points;
-                        activeObject.points = startPoints.map(p => ({ x: p.x + normDx, y: p.y + normDy }));
-                        if (activeObject.x !== undefined) activeObject.x = nudgeStartObjectPos.x + normDx;
-                        if (activeObject.y !== undefined) activeObject.y = nudgeStartObjectPos.y + normDy;
+                    const nDx = dx / (rect.width || 1);
+                    const nDy = dy / (rect.height || 1);
+                    if (activeObject.points) {
+                        activeObject.points = this.dragStartObject.points.map(p => ({ x: p.x + nDx, y: p.y + nDy }));
+                        if (activeObject.x !== undefined) activeObject.x = nudgeStartObjectPos.x + nDx;
+                        if (activeObject.y !== undefined) activeObject.y = nudgeStartObjectPos.y + nDy;
                     } else {
-                        activeObject.x = nudgeStartObjectPos.x + normDx;
-                        activeObject.y = nudgeStartObjectPos.y + normDy;
+                        activeObject.x = nudgeStartObjectPos.x + nDx;
+                        activeObject.y = nudgeStartObjectPos.y + nDy;
                     }
                     this.app.redrawStamps(activeObject.page);
                     InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper), wrapper);
-                    InteractionUI.syncVirtualPointer(e, toolType || this.app.activeStampType, overlay, virtualPointer, CoordMapper, this.app, activeObject);
-                    return; // Bypass normal move logic
-                } else {
-                    return; // Wait for threshold
+                    InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app, activeObject);
+                    return;
                 }
+                return;
             }
 
-            // Stop native behaviors (scrolling/swiping) during interaction
-            if (pointerType === 'touch' && e.cancelable) {
-                e.preventDefault();
-            }
+            if (pointerType === 'touch' && e.cancelable) e.preventDefault();
 
-            // --- CROSS-PAGE HANDOFF LOGIC ---
-            let currentOverlay = overlay;
-            let currentWrapper = wrapper;
-            let currentPageNum = pageNum;
-
-            // Check if we are outside current overlay or if we have an activeObject on a different page
+            let currentOverlay = overlay, currentWrapper = wrapper, currentPageNum = pageNum;
             const rawPos = CoordMapper.getPos(e, overlay);
-            const outsideCurrentOverlay = rawPos.x < -0.01 || rawPos.x > 1.01 || rawPos.y < -0.01 || rawPos.y > 1.01;
-            let outsideAllPages = false;
-            if (outsideCurrentOverlay || (activeObject && activeObject.page !== pageNum)) {
+            const outsideCurrent = rawPos.x < -0.01 || rawPos.x > 1.01 || rawPos.y < -0.01 || rawPos.y > 1.01;
+            let outsideAll = false;
+            
+            if (outsideCurrent || (activeObject && activeObject.page !== pageNum)) {
                 const el = document.elementFromPoint(e.clientX, e.clientY);
                 const targetOverlay = el?.closest('.capture-overlay');
                 if (targetOverlay) {
-                    const newPageNum = parseInt(targetOverlay.dataset.page);
-                    if (!isNaN(newPageNum)) {
-                        currentPageNum = newPageNum;
-                        currentOverlay = targetOverlay;
-                        currentWrapper = targetOverlay.parentElement;
-                    }
-                } else if (outsideCurrentOverlay) {
-                    outsideAllPages = true;
+                    currentPageNum = parseInt(targetOverlay.dataset.page);
+                    currentOverlay = targetOverlay;
+                    currentWrapper = targetOverlay.parentElement;
+                } else if (outsideCurrent) {
+                    outsideAll = true;
                 }
             }
 
             const pos = CoordMapper.getPos(e, currentOverlay);
-            const currentVirtualPointer = currentOverlay.querySelector('.virtual-pointer');
+            const currentVP = currentOverlay.querySelector('.virtual-pointer');
 
-            // MAGNETIC PICKUP: If we started an interaction but hadn't hit anything yet
-            if (!activeObject && (['select', 'eraser', 'copy', 'recycle-bin'].includes(toolType))) {
-                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, currentOverlay);
-                const target = this.app.findClosestStamp(currentPageNum, pPos.x, pPos.y, toolType !== 'eraser');
+            if (!activeObject && ['select', 'eraser', 'copy', 'recycle-bin'].includes(toolType)) {
+                const pp = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, currentOverlay);
+                const target = this.app.findClosestStamp(currentPageNum, pp.x, pp.y, toolType !== 'eraser');
                 if (target) {
                     if (toolType === 'eraser' || toolType === 'recycle-bin') {
                         await this.app.annotationManager.eraseStampTarget(target);
@@ -654,599 +586,358 @@ export class InteractionManager {
                         activeObject = target;
                         isMovingExisting = true;
                         this.app.lastFocusedStamp = activeObject;
-                        this.app._dragLastPos = pPos;
+                        this.app._dragLastPos = pp;
                         const cent = CoordMapper.getGraceCenter(activeObject);
-                        const wCent = getPixelsForWrapper(currentWrapper, cent.x, cent.y);
-                        const _tp2 = getTrashPos(cent.x, wCent.x, wCent.y);
-                        if (!isDrawingType(activeObject.type)) {
-                            InteractionUI.showTrash(true, currentWrapper, _tp2.x, _tp2.y);
-                        }
+                        const wc = getPixelsForWrapper(currentWrapper, cent.x, cent.y);
+                        const _tp = getTrashPos(cent.x, wc.x, wc.y);
+                        if (!isDrawingType(activeObject.type)) InteractionUI.showTrash(true, currentWrapper, _tp.x, _tp.y);
                         this.app.redrawStamps(currentPageNum);
                     }
                 }
             }
 
             if (!activeObject) {
-                // If no object, hide all virtual pointers except the current one
-                document.querySelectorAll('.virtual-pointer.active').forEach(vp => {
-                    if (vp !== currentVirtualPointer) vp.classList.remove('active');
-                });
-                InteractionUI.syncVirtualPointer(e, toolType, currentOverlay, currentVirtualPointer, CoordMapper, this.app);
+                document.querySelectorAll('.virtual-pointer.active').forEach(vp => { if (vp !== currentVP) vp.classList.remove('active'); });
+                InteractionUI.syncVirtualPointer(e, toolType, currentOverlay, currentVP, CoordMapper, this.app);
                 return;
             }
 
-            if (isMovingExisting && outsideAllPages) {
-                // Pointer is outside all PDF pages — show ghost preview
-                this._showDragGhost(e.clientX, e.clientY, activeObject)
-                // Still highlight doc bar trash if pointer is over it
-                const docTrash2 = document.getElementById('sf-doc-trash-btn')
-                if (docTrash2) {
-                    const r2 = docTrash2.getBoundingClientRect()
-                    const over2 = e.clientX >= r2.left && e.clientX <= r2.right && e.clientY >= r2.top && e.clientY <= r2.bottom
-                    docTrash2.classList.toggle('drag-over', over2)
-                    docTrash2.classList.add('drag-active')
+            if (isMovingExisting && outsideAll) {
+                this._showDragGhost(e.clientX, e.clientY, activeObject);
+                const dt = document.getElementById('sf-doc-trash-btn');
+                if (dt) {
+                    const r = dt.getBoundingClientRect();
+                    const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+                    dt.classList.toggle('drag-over', over);
+                    dt.classList.add('drag-active');
                 }
                 return;
             }
-            if (isMovingExisting) this._hideDragGhost()
+            this._hideDragGhost();
 
             if (isMovingExisting) {
                 if (this.isAdjustingCurvature && activeObject.type === 'slur') {
-                    const p0 = activeObject.points[0];
-                    const p1 = activeObject.points[activeObject.points.length - 1];
-                    const dxBaseline = p1.x - p0.x;
-                    const dyBaseline = p1.y - p0.y;
-                    const distBaseline = Math.sqrt(dxBaseline * dxBaseline + dyBaseline * dyBaseline);
-
-                    if (distBaseline > 0.0001) {
-                        const perpDist = (-dyBaseline * pos.x + dxBaseline * pos.y + (dyBaseline * p0.x - dxBaseline * p0.y)) / distBaseline;
-                        activeObject.curvature = (perpDist / distBaseline) * 2;
+                    const p0 = activeObject.points[0], p1 = activeObject.points[activeObject.points.length - 1];
+                    const dxB = p1.x - p0.x, dyB = p1.y - p0.y, distB = Math.sqrt(dxB * dxB + dyB * dyB);
+                    if (distB > 0.0001) {
+                        const perpDist = (-dyB * pos.x + dxB * pos.y + (dyB * p0.x - dxB * p0.y)) / distB;
+                        activeObject.curvature = (perpDist / distB) * 2;
                     }
                 } else {
-                    // When moving an existing object via select/copy/recycle-bin, use toolType (no offset)
-                    // so the delta matches the no-offset _dragLastPos set in startAction.
-                    const moveEffectiveType = ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
-                    const targetPos = CoordMapper.getStampPreviewPos(pos, pointerType, moveEffectiveType, this.app, currentOverlay);
+                    const eType = ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
+                    const tPos = CoordMapper.getStampPreviewPos(pos, pointerType, eType, this.app, currentOverlay);
                     if (activeObject.page !== currentPageNum) {
-                        const oldPage = activeObject.page;
-                        activeObject.page = currentPageNum;
-                        this.app.redrawStamps(oldPage);
+                        const oldP = activeObject.page; activeObject.page = currentPageNum; this.app.redrawStamps(oldP);
                     }
-                    const dx = targetPos.x - (this.app._dragLastPos?.x ?? targetPos.x);
-                    const dy = targetPos.y - (this.app._dragLastPos?.y ?? targetPos.y);
-                    if (activeObject.points) {
-                        activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
-                    } else {
-                        activeObject.x = Number(activeObject.x) + dx;
-                        activeObject.y = Number(activeObject.y) + dy;
-                    }
-                    this.app._dragLastPos = targetPos;
+                    const dx = tPos.x - (this.app._dragLastPos?.x ?? tPos.x);
+                    const dy = tPos.y - (this.app._dragLastPos?.y ?? tPos.y);
+                    if (activeObject.points) activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+                    else { activeObject.x = Number(activeObject.x) + dx; activeObject.y = Number(activeObject.y) + dy; }
+                    this.app._dragLastPos = tPos;
                 }
                 this.app.redrawStamps(currentPageNum);
             } else if (activeObject.points) {
-                const currentPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
+                const cPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
                 if (activeObject.page !== currentPageNum) {
-                    const oldPage = activeObject.page;
-                    activeObject.page = currentPageNum;
-                    this.app.redrawStamps(oldPage);
+                    const oldP = activeObject.page; activeObject.page = currentPageNum; this.app.redrawStamps(oldP);
                 }
-                if (activeObject.type === 'line' || activeObject.type === 'slur') {
-                    activeObject.points = [activeObject.points[0], currentPos];
-                } else {
-                    activeObject.points.push(currentPos);
-                }
-                const canvas = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
-                if (canvas) this.app.drawPathOnCanvas(canvas.getContext('2d'), canvas, activeObject);
+                if (activeObject.type === 'line' || activeObject.type === 'slur') activeObject.points = [activeObject.points[0], cPos];
+                else activeObject.points.push(cPos);
+                const cvs = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
+                if (cvs) this.app.drawPathOnCanvas(cvs.getContext('2d'), cvs, activeObject);
             } else {
                 const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
                 if (activeObject.page !== currentPageNum) {
-                    const oldPage = activeObject.page;
-                    activeObject.page = currentPageNum;
-                    this.app.redrawStamps(oldPage);
+                    const oldP = activeObject.page; activeObject.page = currentPageNum; this.app.redrawStamps(oldP);
                 }
                 activeObject.x = Number(pPos.x); activeObject.y = Number(pPos.y);
-                const canvas = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
-                if (canvas) {
+                const cvs = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
+                if (cvs) {
                     this.app.redrawStamps(currentPageNum);
-                    const layer = this.app.layers.find(l => l.id === activeObject.layerId);
-                    this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, activeObject, activeObject.color || layer?.color || '#000', true, false, false, pos);
+                    const lyr = this.app.layers.find(l => l.id === activeObject.layerId);
+                    this.app.drawStampOnCanvas(cvs.getContext('2d'), cvs, activeObject, activeObject.color || lyr?.color || '#000', true, false, false, pos);
                 }
             }
             if (!isDrawingType(activeObject.type)) {
                 InteractionUI.setTrashActive(InteractionUI.isObjectOverTrash(activeObject, currentWrapper, CoordMapper), currentWrapper);
             }
-            // Keep trash bin visible during drag without repositioning
-            if (isMovingExisting && !isDrawingType(activeObject.type)) {
-                const trashBin = wrapper.querySelector('.grace-trash-bin');
-                if (trashBin) trashBin.classList.add('show');
-                // Highlight trash bins when pointer is over them
-                const bins = ['sf-doc-trash-btn', 'sf-edit-trash-btn']
-                bins.forEach(id => {
-                    const el = document.getElementById(id)
-                    if (el) {
-                        const r = el.getBoundingClientRect()
-                        const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
-                        el.classList.toggle('drag-over', over)
-                        el.classList.add('drag-active')
-                    }
-                })
-            }
-
-            // Sync current virtual pointer and hide others
-            document.querySelectorAll('.virtual-pointer.active').forEach(vp => {
-                if (vp !== currentVirtualPointer) vp.classList.remove('active');
-            });
-            const moveSyncType = isMovingExisting && ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
-            InteractionUI.syncVirtualPointer(e, moveSyncType, currentOverlay, currentVirtualPointer, CoordMapper, this.app);
+            const mSyncType = isMovingExisting && ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
+            InteractionUI.syncVirtualPointer(e, mSyncType, currentOverlay, currentVP, CoordMapper, this.app);
             resetPointerIdleTimer();
         };
 
         const endAction = async (e) => {
+            if (e?.pointerId !== undefined) activePointers.delete(e.pointerId);
+            if (activePointers.size < 2) isTwoFingerPanning = false;
+
+            if (this._penLongPressTimer) { clearTimeout(this._penLongPressTimer); this._penLongPressTimer = null; }
             if (!isInteracting) return;
 
             if (potentialNudge) {
-                const isDragDone = isNudging;
-                potentialNudge = null;
-                isNudging = false;
-
+                const isDragDone = isNudging; potentialNudge = null; isNudging = false;
                 if (!isDragDone) {
-                    // This was a TAP! Clear the glow and place a NEW stamp.
-                    if (graceTimer) clearTimeout(graceTimer);
-                    graceObject = null;
-                    this.app._lastGraceObject = null;
-                    InteractionUI.showTrash(false, wrapper);
-                    this.app.redrawStamps(pageNum);
-
-                    const pointerType = getPointerType(e);
-                    const toolType = this.app.activeStampType;
-
-                    if (!['view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle'].includes(toolType) && !toolType.startsWith('cloak-')) {
+                    if (graceTimer) clearTimeout(graceTimer); graceObject = null; this.app._lastGraceObject = null;
+                    InteractionUI.showTrash(false, wrapper); this.app.redrawStamps(pageNum);
+                    const pt = getPointerType(e); const tt = this.app.activeStampType;
+                    if (!['view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle'].includes(tt) && !tt.startsWith('cloak-')) {
                         const tapPos = CoordMapper.getPos(e, overlay);
-                        const fPos = CoordMapper.getStampPreviewPos(tapPos, pointerType, toolType, this.app, overlay);
+                        const fPos = CoordMapper.getStampPreviewPos(tapPos, pt, tt, this.app, overlay);
                         activeObject = {
-                            page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: toolType,
+                            page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: tt,
                             x: fPos.x, y: fPos.y, color: this.app.activeColor, data: null,
-                            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stamp-${Date.now()}`,
+                            id: crypto.randomUUID?.() || `stamp-${Date.now()}`,
                             createdAt: Date.now(), updatedAt: Date.now(),
                             userScale: this.app.activeToolPreset || 1.0
                         };
-                        const group = this.app.toolsets.find(g => g.tools.some(t => t.id === toolType));
-                        if (group) {
-                            const layer = this.app.layers.find(l => l.type === group.type || l.id === group.type);
-                            if (layer) activeObject.layerId = layer.id;
+                        const g = this.app.toolsets.find(grp => grp.tools.some(tl => tl.id === tt));
+                        if (g) {
+                            const l = this.app.layers.find(ly => ly.type === g.type || ly.id === g.type);
+                            if (l) activeObject.layerId = l.id;
                         }
                         if (!activeObject.layerId) activeObject.layerId = 'draw';
-                        if (toolType.startsWith('custom-text-') && this.app._activeCustomText) {
+                        if (tt.startsWith('custom-text-') && this.app._activeCustomText) {
                             activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 500', size: 16, fontFace: 'serif' };
                         } else {
-                            const tool = group?.tools.find(t => t.id === toolType);
-                            if (tool && tool.draw) activeObject.draw = { ...tool.draw };
+                            const t = g?.tools.find(tl => tl.id === tt);
+                            if (t?.draw) activeObject.draw = { ...t.draw };
                         }
                         isMovingExisting = false;
                     } else {
-                        isInteracting = false;
-                        this.app.isInteracting = false;
-                        cleanupInteraction(e);
-                        return;
+                        isInteracting = false; this.app.isInteracting = false; cleanupInteraction(e); return;
                     }
                 }
             }
 
-            let cleaned = false; // becomes true when cleanupInteraction runs before the async save
-            let syncObj = activeObject; // Capture current state for async sync
+            let syncObj = activeObject;
             try {
                 if (syncObj) {
-                    const targetPageNum = syncObj.page;
-                    const targetWrapper = document.querySelector(`.page-container[data-page="${targetPageNum}"]`);
-                    // Check doc bar trash (pointer position)
-                    const docTrash2 = document.getElementById('sf-doc-trash-btn')
-                    const editTrash2 = document.getElementById('sf-edit-trash-btn')
-                    const checkPointerOver = (ev, el) => {
+                    const tPN = syncObj.page;
+                    const tW = document.querySelector(`.page-container[data-page="${tPN}"]`);
+                    const dt = document.getElementById('sf-doc-trash-btn'), et = document.getElementById('sf-edit-trash-btn');
+                    const isPointerOverTrash = (ev, el) => {
                         if (!el) return false;
                         const r = el.getBoundingClientRect();
                         return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
                     };
-                    const isOverDocTrashOrEditTrash = checkPointerOver(e, docTrash2) || checkPointerOver(e, editTrash2);
+                    const overExternalTrash = isPointerOverTrash(e, dt) || isPointerOverTrash(e, et);
+                    const isOverTrash = InteractionUI.isObjectOverTrash(syncObj, tW, CoordMapper) || overExternalTrash;
 
-                    if (isOverDocTrashOrEditTrash) {
-                        if (docTrash2) docTrash2.classList.add('drag-over', 'drag-active')
-                        if (editTrash2) editTrash2.classList.add('drag-over', 'drag-active')
-                    } else {
-                        if (docTrash2) docTrash2.classList.remove('drag-over', 'drag-active')
-                        if (editTrash2) editTrash2.classList.remove('drag-over', 'drag-active')
-                    }
-
-                    const isOverTrash = InteractionUI.isObjectOverTrash(activeObject, targetWrapper, CoordMapper) || isOverDocTrashOrEditTrash;
                     if (isOverTrash) {
-                        if (isMovingExisting) await this.app.annotationManager.eraseStampTarget(activeObject);
-                        this.app.showMessage('Object Deleted', 'success');
+                        if (isMovingExisting) await this.app.annotationManager.eraseStampTarget(syncObj);
+                        this.app.showMessage('Deleted', 'success');
                         activeObject = null;
-                        InteractionUI.showTrash(false, targetWrapper);
-                        this.app.redrawStamps(targetPageNum);
-                    } else if (['text', 'tempo-text', 'quick-text'].includes(activeObject.type)) {
-                        this.app.annotationManager.spawnTextEditor(targetWrapper, targetPageNum, activeObject);
-                    } else if (['page-bookmark', 'music-anchor'].includes(activeObject.type) && !isMovingExisting) {
-                        if (this.app.activeStampType === 'view') {
-                            this.app.redrawStamps(targetPageNum);
-                            return;
-                        }
-                        const targetObj = activeObject;
-                        const defaultLabel = targetObj.type === 'page-bookmark' ? `Page ${targetObj.page}` : `Music at Pg ${targetObj.page}`;
-                        const dialogTitle = targetObj.type === 'page-bookmark' ? 'Add Page Bookmark' : 'Add Music Anchor';
+                        InteractionUI.showTrash(false, tW);
+                        this.app.redrawStamps(tPN);
+                    } else if (['text', 'tempo-text', 'quick-text'].includes(syncObj.type)) {
+                        this.app.annotationManager.spawnTextEditor(tW, tPN, syncObj);
+                    } else if (['page-bookmark', 'music-anchor'].includes(syncObj.type) && !isMovingExisting) {
+                        const targetObj = syncObj;
+                        const bookmarks = this.app.playbackManager?.currentMediaObj?.bookmarks || [];
+                        const hasBookmarks = targetObj.type === 'music-anchor' && bookmarks.length > 0;
 
-                        this.app.docActionManager?.showDialog({
-                            title: dialogTitle,
-                            message: '',
-                            icon: targetObj.type === 'page-bookmark' ? '🔖' : '🎵',
-                            type: 'input',
-                            defaultValue: defaultLabel,
-                            placeholder: 'e.g. Solo, Intro, Chorus...'
-                        })?.then(async label => {
+                        const showFinalDialog = (options = {}) => {
+                             return this.app.docActionManager?.showDialog({
+                                title: targetObj.type === 'page-bookmark' ? 'Add Page Bookmark' : 'Add Music Player',
+                                ...options
+                            });
+                        };
+
+                        const processLabel = async (label) => {
                             if (label !== null) {
-                                targetObj.data = label || defaultLabel;
+                                targetObj.data = label || (targetObj.type === 'page-bookmark' ? `Page ${targetObj.page}` : 'Marker');
                                 targetObj.updatedAt = Date.now();
                                 this.app.stamps.push(targetObj);
                                 await this.app.saveToStorage(true);
-
-                                // Refresh Jump Panel if it's a page bookmark
-                                if (targetObj.type === 'page-bookmark') {
-                                    this.app.jumpManager?.renderBookmarks();
-                                }
-
-                                if (this.app.supabaseManager) {
-                                    targetObj.updatedAt = Date.now();
-                                    this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
-                                }
+                                if (targetObj.type === 'page-bookmark') this.app.jumpManager?.renderBookmarks();
+                                if (this.app.supabaseManager) this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
                                 startGracePeriod(targetObj);
                             }
-                            this.app.redrawStamps(targetPageNum);
+                            this.app.redrawStamps(tPN);
+                        };
+
+                        if (hasBookmarks) {
+                            const pickerActions = bookmarks.map(bm => ({
+                                label: bm.label,
+                                subLabel: this.app.playbackManager.formatTime(bm.time),
+                                value: bm.label
+                            }));
+                            pickerActions.push({ label: 'Manual Input...', value: '__manual__' });
+
+                            showFinalDialog({
+                                type: 'picker',
+                                message: 'Select a bookmark to link:',
+                                actions: pickerActions
+                            })?.then(async result => {
+                                if (result === '__manual__') {
+                                    showFinalDialog({
+                                        type: 'input',
+                                        placeholder: 'e.g. Solo, Intro...'
+                                    }).then(processLabel);
+                                } else {
+                                    processLabel(result);
+                                }
+                            });
+                        } else {
+                            showFinalDialog({
+                                type: 'input',
+                                defaultValue: targetObj.type === 'page-bookmark' ? `Page ${targetObj.page}` : '',
+                                placeholder: 'e.g. Solo, Intro...'
+                            }).then(processLabel);
+                        }
+                        return;
+                    } else if (syncObj.type.startsWith('tempo-') && !isMovingExisting) {
+                        const targetObj = syncObj;
+                        const symbol = targetObj.draw?.noteSymbol || '♩';
+                        this.app.annotationManager.promptBPM(symbol).then(async bpm => {
+                            if (bpm) {
+                                targetObj.data = bpm; targetObj.updatedAt = Date.now();
+                                this.app.stamps.push(targetObj);
+                                this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(targetObj)) });
+                                await this.app.saveToStorage(true);
+                                if (this.app.supabaseManager) this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
+                                startGracePeriod(targetObj);
+                            }
+                            this.app.redrawStamps(tPN);
                         });
                         return;
-                    } else if (activeObject.type.startsWith('tempo-') && !isMovingExisting) {
-                        if (this.app.activeStampType === 'view') {
-                            this.app.redrawStamps(targetPageNum); return;
-                        }
-                        const targetObj = activeObject
-                        const noteSymbol = targetObj.draw?.noteSymbol || '♩'
-                        this.app.annotationManager.promptBPM(noteSymbol).then(async bpm => {
-                            if (bpm !== null && bpm !== '') {
-                                targetObj.data = bpm
-                                targetObj.updatedAt = Date.now()
-                                this.app.stamps.push(targetObj)
-                                this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(targetObj)) })
-                                await this.app.saveToStorage(true)
-                                if (this.app.supabaseManager) {
-                                    this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint)
-                                }
-                                startGracePeriod(targetObj)
-                            } else {
-                                activeObject = null
-                            }
-                            this.app.redrawStamps(targetPageNum)
-                        })
-                        return
-                    } else if (['measure', 'measure-free'].includes(activeObject.type) && !isMovingExisting) {
-                        // Guard: if user switched back to view mode, don't trigger the keypad
-                        if (this.app.activeStampType === 'view') {
-                            this.app.redrawStamps(targetPageNum);
-                            return;
-                        }
-                        const targetObj = activeObject;
-                        this.app.annotationManager.promptMeasureNumber().then(async numStr => {
-                            if (numStr !== null && numStr !== undefined && numStr !== '') {
-                                targetObj.data = numStr;
-                                targetObj.updatedAt = Date.now();
+                    } else if (['measure', 'measure-free'].includes(syncObj.type) && !isMovingExisting) {
+                        const targetObj = syncObj;
+                        this.app.annotationManager.promptMeasureNumber().then(async num => {
+                            if (num) {
+                                targetObj.data = num; targetObj.updatedAt = Date.now();
                                 this.app.stamps.push(targetObj);
                                 await this.app.saveToStorage(true);
                                 this.app.updateRulerMarks();
-
-                                // --- Supabase Sync ---
-                                if (this.app.supabaseManager) {
-                                    targetObj.updatedAt = Date.now();
-                                    this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
-                                }
-
+                                if (this.app.supabaseManager) this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
                                 startGracePeriod(targetObj);
-                            } else {
-                                // If cancelled or empty, don't keep the temporary stamp
-                                activeObject = null;
                             }
-                            this.app.redrawStamps(targetPageNum);
+                            this.app.redrawStamps(tPN);
                         });
                         return;
                     } else {
-                        activeObject.updatedAt = Date.now();
-                        if (!isMovingExisting && activeObject.type !== 'view') {
-                            this.app.stamps.push(activeObject);
-                            this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(activeObject)) });
+                        syncObj.updatedAt = Date.now();
+                        if (!isMovingExisting && syncObj.type !== 'view') {
+                            this.app.stamps.push(syncObj);
+                            this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(syncObj)) });
                         } else if (isMovingExisting && this.dragStartObject) {
-                            // Check if it actually moved
-                            const moved = activeObject.points 
-                                ? JSON.stringify(activeObject.points) !== JSON.stringify(this.dragStartObject.points)
-                                : (activeObject.x !== this.dragStartObject.x || activeObject.y !== this.dragStartObject.y || activeObject.page !== this.dragStartObject.page);
-                            
-                            if (moved) {
-                                this.app.pushHistory({ 
-                                    type: 'move', 
-                                    oldObj: this.dragStartObject, 
-                                    newObj: JSON.parse(JSON.stringify(activeObject)) 
-                                });
-                            }
+                            const moved = syncObj.points ? JSON.stringify(syncObj.points) !== JSON.stringify(this.dragStartObject.points) : (syncObj.x !== this.dragStartObject.x || syncObj.y !== this.dragStartObject.y || syncObj.page !== this.dragStartObject.page);
+                            if (moved) this.app.pushHistory({ type: 'move', oldObj: this.dragStartObject, newObj: JSON.parse(JSON.stringify(syncObj)) });
                         }
-                        if (activeObject.type === 'anchor') this.app.updateRulerMarks();
-
-                        // Start grace period and clean up BEFORE the async save.
-                        // This lets the user immediately grab/drag the just-placed stamp
-                        // (grace grab) without waiting for IndexedDB to finish.
-                        this.app.redrawStamps(targetPageNum);
-                        startGracePeriod(activeObject);
-                        InteractionUI.syncVirtualPointer(e, null, overlay, virtualPointer, CoordMapper, this.app);
-                        cleanupInteraction(e);
-                        cleaned = true;
-
+                        if (syncObj.type === 'anchor') this.app.updateRulerMarks();
+                        this.app.redrawStamps(tPN);
+                        startGracePeriod(syncObj);
                         await this.app.saveToStorage(true);
-
-                        // --- Supabase Sync ---
-                        if (this.app.supabaseManager && syncObj && syncObj.type !== 'view') {
-                            syncObj.updatedAt = Date.now(); // Final sync timestamp
-                            this.app.supabaseManager.pushAnnotation(syncObj, this.app.pdfFingerprint);
-                        }
+                        if (this.app.supabaseManager && syncObj.type !== 'view') this.app.supabaseManager.pushAnnotation(syncObj, this.app.pdfFingerprint);
                     }
                 }
             } finally {
-                // Keep the virtual pointer synced to the final object position during cleanup
-                // to prevent it from snapping back to the mouse immediately.
-                if (!cleaned) {
-                    InteractionUI.syncVirtualPointer(e, this.app.activeStampType, overlay, virtualPointer, CoordMapper, this.app, syncObj);
-                    cleanupInteraction(e);
-                }
+                cleanupInteraction(e);
             }
         };
 
         const startGracePeriod = (obj) => {
             if (!obj || obj.deleted) return;
-            graceObject = obj;
-            this.app._lastGraceObject = graceObject;
-
-            // REDRAW to show the highlight/glow of the grace object
+            graceObject = obj; this.app._lastGraceObject = graceObject;
             this.app.redrawStamps(obj.page);
-
-            // RESTORE IMMEDIATE TRASH SHOW: Show trash immediately so user knows they can delete it
-            // Skip this for drawing tools to allow continuous writing without distraction
-            const isDrawing = ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(obj.type);
-            const targetWrapper = document.querySelector(`.page-container[data-page="${obj.page}"]`);
-            if (targetWrapper && !isDrawing) {
+            const isDrawing = isDrawingType(obj.type);
+            const tW = document.querySelector(`.page-container[data-page="${obj.page}"]`);
+            if (tW && !isDrawing) {
                 const cent = CoordMapper.getGraceCenter(obj);
-                const wCent = getPixelsForWrapper(targetWrapper, cent.x, cent.y);
-                const _tp3 = getTrashPos(cent.x, wCent.x, wCent.y);
-                InteractionUI.showTrash(true, targetWrapper, _tp3.x, _tp3.y);
-                this.updateAllOverlaysTouchAction(); // Sync pointer-events
+                const wc = getPixelsForWrapper(tW, cent.x, cent.y);
+                const _tp = getTrashPos(cent.x, wc.x, wc.y);
+                InteractionUI.showTrash(true, tW, _tp.x, _tp.y);
+                this.updateAllOverlaysTouchAction();
             }
-
             if (graceTimer) clearTimeout(graceTimer);
             graceTimer = setTimeout(() => {
                 if (graceObject === obj) {
                     graceObject = null;
-                    const tWrapper = document.querySelector(`.page-container[data-page="${obj.page}"]`);
-                    if (tWrapper) InteractionUI.showTrash(false, tWrapper);
-                    const tOverlay = tWrapper?.querySelector('.capture-overlay');
-                    const tVP = tOverlay?.querySelector('.virtual-pointer');
-                    InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, tOverlay, tVP, CoordMapper, this.app);
+                    const w = document.querySelector(`.page-container[data-page="${obj.page}"]`);
+                    if (w) InteractionUI.showTrash(false, w);
+                    const ov = w?.querySelector('.capture-overlay'), vp = ov?.querySelector('.virtual-pointer');
+                    InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, ov, vp, CoordMapper, this.app);
                 }
-                if (this.app._lastGraceObject === obj) {
-                    this.app._lastGraceObject = null;
-                    this.app.redrawStamps(obj.page);
-                    this.updateAllOverlaysTouchAction();
-                }
-            }, 1800); // Slightly longer to give user time to react
+                if (this.app._lastGraceObject === obj) { this.app._lastGraceObject = null; this.app.redrawStamps(obj.page); this.updateAllOverlaysTouchAction(); }
+            }, 1800);
         };
 
         const cleanupInteraction = (e) => {
-            isInteracting = false;
-            this.app.isInteracting = false;
-            isMovingExisting = false;
-            activeObject = null;
-            this.isAdjustingCurvature = false;
-            this.app._dragLastPos = null;
+            isInteracting = false; this.app.isInteracting = false; isMovingExisting = false; activeObject = null;
+            this.isAdjustingCurvature = false; this.app._dragLastPos = null;
             if (e?.pointerId !== undefined) activePointers.delete(e.pointerId);
-            if (activePointers.size === 0 && touchBufferTimer) {
-                clearTimeout(touchBufferTimer);
-                touchBufferTimer = null;
-            }
-
-            const pointerType = getPointerType(e || { type: 'mousemove' });
-            overlay.style.cursor = this.app.isStampTool() ? (pointerType === 'mouse' ? 'none' : 'crosshair') : '';
-
+            if (activePointers.size === 0 && touchBufferTimer) { clearTimeout(touchBufferTimer); touchBufferTimer = null; }
+            this._updateCursor(overlay, getPointerType(e || { type: 'mousemove' }));
             if (!graceObject) InteractionUI.showTrash(false, wrapper);
             else InteractionUI.setTrashActive(false, wrapper);
-            this._hideDragGhost()
-            detachGlobalListeners();
-
-            // Explicitly hide pointer if no activity
+            this._hideDragGhost(); detachGlobalListeners();
             InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, overlay, virtualPointer, CoordMapper, this.app);
         };
 
         const hoverAction = (e) => {
             if (isInteracting) return;
-            // Suppress stamp preview when 2+ fingers are on screen (only when two-finger pan is enabled)
-            if (this.app.twoFingerPanEnabled && getPointerType(e) === 'touch' && (e.touches?.length >= 2 || panCooldown)) {
-                virtualPointer?.classList.remove('active');
-                return;
-            }
-            const pos = CoordMapper.getPos(e, overlay);
-            const pointerType = getPointerType(e);
-            const toolType = this.app.activeStampType;
-
-            if (toolType === 'eraser') {
-                const found = this.app.findClosestStamp(pageNum, pos.x, pos.y, false);
-                if (found !== this.app.hoveredStamp) {
-                    this.app.hoveredStamp = found;
+            const pt = getPointerType(e); const tt = this.app.activeStampType;
+            this._updateCursor(overlay, pt);
+            const pPos = CoordMapper.getStampPreviewPos(CoordMapper.getPos(e, overlay), pt, tt, this.app, overlay);
+            
+            if (['select', 'eraser', 'copy', 'recycle-bin', 'cycle'].includes(tt) || tt.startsWith('cloak-')) {
+                const f = this.app.findClosestStamp(pageNum, pPos.x, pPos.y, tt !== 'eraser');
+                if (f !== (tt === 'eraser' ? this.app.hoveredStamp : this.app.selectHoveredStamp)) {
+                    if (tt === 'eraser') this.app.hoveredStamp = f; else this.app.selectHoveredStamp = f;
                     this.app.redrawStamps(pageNum);
                 }
-            }
-
-            if (['select', 'copy', 'recycle-bin', 'cycle', 'text', 'tempo-text', 'quick-text'].includes(toolType) || toolType.startsWith('cloak-')) {
-                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
-                const found = this.app.findClosestStamp(pageNum, pPos.x, pPos.y, true);
-                if (found !== this.app.selectHoveredStamp) {
-                    this.app.selectHoveredStamp = found;
+            } else if (this.app.isStampTool() && tt !== 'view') {
+                const cvs = wrapper.querySelector('.annotation-layer.virtual-canvas');
+                if (cvs) {
                     this.app.redrawStamps(pageNum);
+                    const l = this.app.layers.find(ly => ly.id === 'draw');
+                    this.app.drawStampOnCanvas(cvs.getContext('2d'), cvs, { type: tt, x: pPos.x, y: pPos.y, page: pageNum, userScale: this.app.activeToolPreset || 1.0 }, this.app.activeColor || l?.color || '#000', true, false, false, CoordMapper.getPos(e, overlay));
                 }
-            } else if (this.app.isStampTool()) {
-                const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, overlay);
-                let shouldPreview = true;
-                if (graceObject) {
-                    const canvas = wrapper.querySelector('.pdf-canvas') || wrapper.querySelector('.annotation-layer:not(.virtual-canvas)');
-                    const cw = canvas?.offsetWidth || width;
-                    let hoverDist;
-                    if (graceObject.points && graceObject.points.length > 0) {
-                        hoverDist = CoordMapper.getMinPathDist(pPos.x, pPos.y, graceObject.points) * cw;
-                    } else {
-                        const center = CoordMapper.getGraceCenter(graceObject);
-                        const dx = (pPos.x - center.x) * cw;
-                        const dy = (pPos.y - center.y) * (canvas?.offsetHeight || height);
-                        hoverDist = Math.sqrt(dx * dx + dy * dy);
-                    }
-                    if (hoverDist < CoordMapper.getGraceObjectPixelSize(graceObject, this.app) * 0.7) {
-                        this.app.redrawStamps(pageNum);
-                        overlay.style.cursor = 'grab';
-                        shouldPreview = false;
-                    }
-                }
-                if (shouldPreview) {
-                    overlay.style.cursor = pointerType === 'mouse' ? 'none' : 'crosshair';
-                    const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas');
-                    if (canvas) {
-                        this.app.redrawStamps(pageNum);
-                        const layer = this.app.layers.find(l => l.id === 'draw');
-                        this.app.drawStampOnCanvas(canvas.getContext('2d'), canvas, { type: toolType, x: pPos.x, y: pPos.y, page: pageNum, userScale: this.app.activeToolPreset || 1.0 }, this.app.activeColor || layer?.color || '#000', true, false, false, pos);
-                    }
-                }
-                
-                // If we're snapping to the Grace Object (shouldPreview = false), 
-                // tell syncVirtualPointer to stay on the object center.
-                InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app, shouldPreview ? null : graceObject);
-            } else {
-                InteractionUI.syncVirtualPointer(e, toolType, overlay, virtualPointer, CoordMapper, this.app);
             }
-            resetPointerIdleTimer();
+            InteractionUI.syncVirtualPointer(e, tt, overlay, virtualPointer, CoordMapper, this.app);
         };
 
-        const attachGlobalListeners = () => {
-            detachGlobalListeners();
-            window.addEventListener('pointermove', moveAction);
-            window.addEventListener('pointerup', endAction);
-            window.addEventListener('pointercancel', endAction);
-        };
+        const attachGlobalListeners = () => { detachGlobalListeners(); window.addEventListener('pointermove', moveAction); window.addEventListener('pointerup', endAction); window.addEventListener('pointercancel', endAction); };
+        const detachGlobalListeners = () => { window.removeEventListener('pointermove', moveAction); window.removeEventListener('pointerup', endAction); window.removeEventListener('pointercancel', endAction); };
 
-        const detachGlobalListeners = () => {
-            window.removeEventListener('pointermove', moveAction);
-            window.removeEventListener('pointerup', endAction);
-            window.removeEventListener('pointercancel', endAction);
-        };
-
-        // iOS Safari: even with touch-action:none on overlay + viewer, the scroll
-        // container (overflow-y:auto) can still intercept finger touch. Calling
-        // preventDefault() on touchstart directly overrides this. passive:false is
-        // required. View mode is excluded so native scroll / pinch-zoom still work.
-        overlay.addEventListener('touchstart', (e) => {
-            if (this.app.activeStampType !== 'view' && e.cancelable) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
+        overlay.addEventListener('touchstart', (e) => { if (this.app.activeStampType !== 'view' && e.cancelable) e.preventDefault(); }, { passive: false });
         overlay.addEventListener('pointerdown', startAction);
         overlay.addEventListener('pointermove', hoverAction);
-        // Clean up activePointers tracking when a touch pointer lifts on the overlay
-        // (covers single-tap lifts that don't go through endAction's global listener)
-        overlay.addEventListener('pointerup', (e) => { activePointers.delete(e.pointerId); }, { passive: true });
-        overlay.addEventListener('pointercancel', (e) => { activePointers.delete(e.pointerId); }, { passive: true });
-        overlay.addEventListener('mouseleave', () => {
-            virtualPointer?.classList.remove('active');
-            this.app.hoveredStamp = this.app.selectHoveredStamp = null;
-            this.app.redrawStamps(pageNum);
-        });
+        overlay.addEventListener('pointerup', (e) => { 
+            activePointers.delete(e.pointerId); 
+            if (activePointers.size < 2) isTwoFingerPanning = false;
+        }, { passive: true });
+        overlay.addEventListener('pointercancel', (e) => { 
+            activePointers.delete(e.pointerId); 
+            if (activePointers.size < 2) isTwoFingerPanning = false;
+        }, { passive: true });
+        overlay.addEventListener('mouseleave', () => { virtualPointer?.classList.remove('active'); this.app.hoveredStamp = this.app.selectHoveredStamp = null; this.app.redrawStamps(pageNum); });
 
         InteractionUI.ensureTrashBin(wrapper);
         wrapper.appendChild(overlay);
-
-        // Save reference for manual updates if needed
         overlay._updateTouchAction = () => this.updateAllOverlaysTouchAction();
         this.updateAllOverlaysTouchAction();
     }
 
-    /**
-     * Globally update the touch-action and pointer-events of all active overlays based on current tool.
-     */
     updateAllOverlaysTouchAction() {
-        const toolType = this.app.activeStampType;
-        const isViewMode = toolType === 'view';
-
-        // Sync data-active-tool for CSS selectors (cursor, etc.)
-        document.documentElement.dataset.activeTool = toolType;
-        document.body.dataset.activeTool = toolType;
-        if (this.app.viewer) this.app.viewer.dataset.activeTool = toolType;
-
-        // Fix for iPad/Desktop hybrid:
-        // In "View" mode, we want native touch gestures (scroll/pinch) on mobile/iPad.
-        // Setting pointer-events: none on the overlay allows gestures to fall through
-        // to the scrollable viewer container.
-        const isTouchScreen = window.matchMedia('(pointer: coarse)').matches;
-
+        const tt = this.app.activeStampType; const isView = tt === 'view';
+        document.documentElement.dataset.activeTool = tt;
+        document.body.dataset.activeTool = tt;
+        if (this.app.viewer) this.app.viewer.dataset.activeTool = tt;
         document.querySelectorAll('.capture-overlay').forEach(el => {
-            // CRITICAL FIX (Ref: FA-CA-2026-03-01): 
-            // DO NOT set pointer-events: none or display: none here. 
-            // Changing overlay visibility/transparency on mode-switch causes 
-            // the first gesture on iOS Safari to be dropped due to hit-test caching.
-            // All modes (View/Stamp) now use pointer-events: auto + touch-action: none.
-            
-            // If switching to view mode, force-clear any stuck interaction state
-            if (isViewMode && typeof el._resetState === 'function') {
-                el._resetState();
-            }
-
-            el.style.touchAction = 'none';
-            el.style.pointerEvents = 'auto';
-            el.style.zIndex = isViewMode ? '10' : '50';
+            if (isView && el._resetState) el._resetState();
+            el.style.touchAction = 'none'; el.style.pointerEvents = 'auto'; el.style.zIndex = isView ? '10' : '50';
         });
-
-        // SAFETY: Ensure the viewer's own touch-action is correct.
-        if (this.app.viewer) {
-            // Allow native panning (important for multi-touch gestures like two-finger scroll).
-            // The .capture-overlay's touch-action: none will still prevent single-finger 
-            // score scrolling while drawing, but allowing it here enables iPad panning.
-            this.app.viewer.style.touchAction = 'pan-x pan-y';
-            
-            // Ensure overflow-y is never stuck at 'hidden'
-            if (this.app.viewer.style.overflowY === 'hidden') {
-                this.app.viewer.style.overflowY = '';
-            }
-        }
-
-
-        if (isViewMode) {
-            this.app.isInteracting = false;
-        }
+        if (this.app.viewer) { this.app.viewer.style.touchAction = 'pan-x pan-y'; if (this.app.viewer.style.overflowY === 'hidden') this.app.viewer.style.overflowY = ''; }
+        if (isView) this.app.isInteracting = false;
     }
 
-    _showDragGhost(clientX, clientY, obj) {
-        let ghost = document.getElementById('sf-drag-ghost')
-        if (!ghost) {
-            ghost = document.createElement('div')
-            ghost.id = 'sf-drag-ghost'
-            document.body.appendChild(ghost)
-        }
-        // Use label, type name, or fallback icon
-        const label = obj?.data || obj?.type || '◆'
-        ghost.textContent = label
-        ghost.style.color = obj?.color || this.app.activeColor || '#ef4444'
-        ghost.style.display = 'block'
-        ghost.style.left = (clientX + 18) + 'px'
-        ghost.style.top  = (clientY - 16) + 'px'
+    _showDragGhost(cx, cy, obj) {
+        let ghost = document.getElementById('sf-drag-ghost') || document.createElement('div');
+        if (!ghost.id) { ghost.id = 'sf-drag-ghost'; document.body.appendChild(ghost); }
+        ghost.textContent = obj?.data || obj?.type || '◆';
+        ghost.style.color = obj?.color || this.app.activeColor || '#ef4444';
+        ghost.style.display = 'block'; ghost.style.left = (cx + 18) + 'px'; ghost.style.top = (cy - 16) + 'px';
     }
 
-    _hideDragGhost() {
-        const ghost = document.getElementById('sf-drag-ghost')
-        if (ghost) ghost.style.display = 'none'
-    }
+    _hideDragGhost() { const g = document.getElementById('sf-drag-ghost'); if (g) g.style.display = 'none'; }
 }

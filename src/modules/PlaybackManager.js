@@ -40,6 +40,7 @@ export class PlaybackManager {
     initElements() {
         this.mediaContainer = this.panel.querySelector('.media-viewport');
         this.closeBtn = this.panel.querySelector('.close-playback');
+        this.minimizeBtn = this.panel.querySelector('.minimize-playback');
         
         // Note: load-youtube and youtube-url-input removed as they live in Sidebar Panel
         this.localFileInput = this.panel.querySelector('.local-file-input');
@@ -63,6 +64,21 @@ export class PlaybackManager {
 
     initEventListeners() {
         if (this.closeBtn) this.closeBtn.addEventListener('click', () => this.hide());
+        if (this.minimizeBtn) {
+            this.minimizeBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Avoid triggering the panel click
+                this.panel.classList.toggle('collapsed');
+            });
+        }
+
+        // Click whole panel to expand when collapsed
+        this.panel.addEventListener('click', (e) => {
+            if (this._wasDragged) return;
+            if (this.panel.classList.contains('collapsed')) {
+                this.panel.classList.remove('collapsed');
+                e.stopPropagation();
+            }
+        });
 
         if (this.selectFileBtn) {
             this.selectFileBtn.addEventListener('click', () => this.localFileInput.click());
@@ -144,15 +160,21 @@ export class PlaybackManager {
     }
 
     initDraggable() {
-        const header = this.panel.querySelector('.playback-header');
-        if (!header) return;
-
         let isDragging = false;
         let startX, startY, initialX, initialY;
+        let totalDelta = 0;
 
-        header.addEventListener('pointerdown', (e) => {
-            if (e.target.closest('button')) return;
+        const handleDown = (e) => {
+            // Don't drag if clicking buttons
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return;
+
+            // Expanded: only header is handle. Collapsed: whole panel is handle.
+            const isHeader = e.target.closest('.playback-header');
+            const isCollapsed = this.panel.classList.contains('collapsed');
+            if (!isHeader && !isCollapsed) return;
+
             isDragging = true;
+            totalDelta = 0;
             this.panel.classList.add('dragging');
 
             const rect = this.panel.getBoundingClientRect();
@@ -161,15 +183,16 @@ export class PlaybackManager {
             initialX = rect.left;
             initialY = rect.top;
 
-            header.setPointerCapture(e.pointerId);
+            this.panel.setPointerCapture(e.pointerId);
             e.preventDefault();
-        });
+        };
 
-        header.addEventListener('pointermove', (e) => {
+        const handleMove = (e) => {
             if (!isDragging) return;
 
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
+            totalDelta += Math.abs(dx) + Math.abs(dy);
 
             let newX = initialX + dx;
             let newY = initialY + dy;
@@ -179,7 +202,7 @@ export class PlaybackManager {
             newX = Math.max(10, Math.min(window.innerWidth - panelRect.width - 10, newX));
             newY = Math.max(10, Math.min(window.innerHeight - panelRect.height - 10, newY));
 
-            // ANCHOR SNAPPING
+            // ANCHOR SNAPPING (Only if expanded or if user prefers it)
             const snapResult = this.checkAnchorSnapping(newX, newY, panelRect.width, panelRect.height);
             if (snapResult) {
                 newX = snapResult.x;
@@ -190,17 +213,27 @@ export class PlaybackManager {
             this.panel.style.top = `${newY}px`;
             this.panel.style.bottom = 'auto';
             this.panel.style.right = 'auto';
-        });
+        };
 
-        header.addEventListener('pointerup', (e) => {
+        const handleUp = (e) => {
             if (!isDragging) return;
             isDragging = false;
             this.panel.classList.remove('dragging');
-            header.releasePointerCapture(e.pointerId);
+            this.panel.releasePointerCapture(e.pointerId);
 
-            // Optional: Final edge snap if not snapped to anchor
+            // If we moved significantly, mark this as "dragged" so the expand-click-listener knows to ignore it
+            if (totalDelta > 5) {
+                this._wasDragged = true;
+                setTimeout(() => this._wasDragged = false, 50);
+            }
+
             this.snapToEdges();
-        });
+        };
+
+        // Bind all events to the panel for unified capture
+        this.panel.addEventListener('pointerdown', handleDown);
+        this.panel.addEventListener('pointermove', handleMove);
+        this.panel.addEventListener('pointerup', handleUp);
     }
 
     initResizable() {
