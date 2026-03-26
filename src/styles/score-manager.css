@@ -2,40 +2,40 @@
 .library-overlay {
     position: fixed;
     top: 0;
-    left: 0;
-    margin-left: 50px;
+    left: 54px;
+    right: 58px;
     bottom: 0;
-    right: auto;
-    transform: translateX(calc(-100% - 50px));
-    width: 80vw;
-    max-width: 850px;
+    width: auto;
+    max-width: none;
     height: 100dvh;
     max-height: 100dvh;
     background: var(--bg-card);
     -webkit-backdrop-filter: blur(25px) saturate(180%);
     backdrop-filter: blur(25px) saturate(180%);
-    border-right: 1px solid var(--border);
-    border-radius: 0;
-    z-index: 10500;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     color: var(--text-main);
     pointer-events: none;
-    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.25);
+    z-index: 10500;
+    border-radius: 0;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    transform: translateY(-100%);
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: 0 0 40px rgba(0,0,0,0.3);
 }
 
-body.sf-doc-bar-collapsed .library-overlay,
-body.sf-strip-collapsed .library-overlay {
-    margin-left: 0;
-    transform: translateX(-100%);
-}
-
-/* Ensure active state always wins regardless of body classes (Specificity Fix) */
 body .library-overlay.active {
     pointer-events: auto;
-    transform: translateX(0);
+    transform: translateY(0);
+}
+
+/* Active state always wins (Specificity Fix) */
+body .library-overlay.active {
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    opacity: 1;
 }
 
 .library-header {

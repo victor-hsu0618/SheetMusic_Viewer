@@ -3,38 +3,32 @@
 #account-panel {
     position: fixed !important;
     top: 0 !important;
-    left: 0 !important;
-    margin-left: 50px;
+    left: 54px !important;
+    right: 58px !important;
     bottom: 0 !important;
-    right: auto !important;
-    transform: translateX(calc(-100% - 50px)) !important;
-    width: 80vw;
-    max-width: 850px;
-    height: 100vh;
-    max-height: 100vh;
+    width: auto !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     display: flex;
     flex-direction: column;
-    z-index: 10000;
+    z-index: 10500;
     pointer-events: none;
     background: var(--bg-card);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    backdrop-filter: blur(25px) saturate(180%);
     border-radius: 0;
+    border-left: 1px solid var(--border);
     border-right: 1px solid var(--border);
-    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.1);
-    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body.sf-strip-collapsed #settings-panel,
-body.sf-doc-bar-collapsed #settings-panel,
-body.sf-strip-collapsed #account-panel,
-body.sf-doc-bar-collapsed #account-panel {
-    margin-left: 0;
-    transform: translateX(-100%) !important;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+    transform: translateY(-100%) !important;
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 #settings-panel.active,
 #account-panel.active {
     pointer-events: auto !important;
-    transform: translateX(0) !important;
+    transform: translateY(0) !important;
 }
 
 #settings-panel .jump-drag-handle,
