@@ -107,6 +107,10 @@ export class ToolManager {
 
             this.app.annotationManager?.interaction?.updateAllOverlaysTouchAction();
             this.app?.rulerManager?.updateRulerMarks();
+            
+            // Sync UI button states
+            this.app.editStripManager?.update();
+            this.app.docBarStripManager?.update();
         }
     }
 

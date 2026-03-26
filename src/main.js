@@ -118,8 +118,9 @@ class ScoreFlow {
         blue:  localStorage.getItem('scoreflow_cloak_visible_blue')  !== 'false',
     }
     this.isPinching = false
-    this.isMac = /Macintosh/.test(navigator.userAgent)
-    this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    // Fix: If it has multi-touch points, prioritize it as iOS/Handheld (even if Mac UA)
+    this.isIOS = (navigator.maxTouchPoints > 1) || /iPad|iPhone|iPod/.test(navigator.userAgent);
+    this.isMac = /Macintosh/.test(navigator.userAgent) && !this.isIOS;
 
     // Managers Initialization
     this.toolManager = new ToolManager(this)

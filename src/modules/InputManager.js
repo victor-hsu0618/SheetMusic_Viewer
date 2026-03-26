@@ -161,6 +161,8 @@ export class InputManager {
                 'r': () => this.app.toggleRuler(),
                 'o': () => this.app.toggleLibrary(),
                 'f': () => this.app.toggleFullscreen(),
+                'e': () => this.app.toggleEditStrip(),
+                'd': () => this.app.toggleDocBar(),
                 'h': () => this.app.toggleShortcuts(),
                 '?': () => this.app.toggleShortcuts()
             }
@@ -371,6 +373,12 @@ export class InputManager {
     initScrollListener() {
         const viewer = document.getElementById('viewer-container')
         if (!viewer) return
+
+        viewer.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1 && !this.app.isMac) {
+                if (e.cancelable) e.preventDefault();
+            }
+        }, { passive: false });
 
         viewer.addEventListener('scroll', () => {
             if (!this.scrollTicking && !this.app.isPinching) {

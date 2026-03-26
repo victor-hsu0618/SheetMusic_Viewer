@@ -88,7 +88,8 @@ export function applyAppProxies(app) {
     app.toggleSettings = (f) => app.settingsPanelManager.toggle(f);
     app.toggleLibrary = (f) => app.scoreManager.toggleOverlay(f);
     app.toggleScoreDetail = (f) => app.scoreDetailManager?.showPanel(f);
-    app.toggleDocBar = () => app.docBarManager?.toggleDocBar();
+    app.toggleDocBar = () => app.docBarStripManager?.toggle();
+    app.toggleEditStrip = () => app.editStripManager?.toggle();
     app.toggleShortcuts = (f) => {
         if (!app.shortcutsModal) return;
         app.shortcutsModal.classList.toggle('active', f !== undefined ? f : !app.shortcutsModal.classList.contains('active'));

@@ -165,6 +165,11 @@ export class DocBarStripManager {
         this._updateCollapseIcon()
     }
 
+    toggle() {
+        if (!this.el) return
+        this.toggleCollapse(!this.el.classList.contains('collapsed'))
+    }
+
     /** Call on every zoom change to keep the readout in sync */
     updateZoom() {
         if (this._zoomReadout && this.app.scale != null) {

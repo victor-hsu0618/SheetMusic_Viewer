@@ -80,6 +80,10 @@ export class EditStripManager {
         this._handleLayoutTransition()
     }
 
+    toggle() {
+        this.toggleCollapse(!this.collapsed)
+    }
+
     _handleLayoutTransition() {
         // Re-apply fit mode after layout shift (wait for CSS transition).
         // Skip in overlay mode: score area doesn't change size, so no re-render needed.
@@ -89,7 +93,12 @@ export class EditStripManager {
     }
 
     _createStrip() {
-        const el = document.createElement('div')
+        let el = document.getElementById('sf-edit-strip')
+        if (el) {
+            this.el = el
+            return
+        }
+        el = document.createElement('div')
         el.id = 'sf-edit-strip'
         document.body.appendChild(el)
         this.el = el
@@ -180,16 +189,38 @@ export class EditStripManager {
                 || (isText && this._subBarMgr?.activeBar === 'text')
                 || (isOthers && this._subBarMgr?.activeBar === 'others')
 
-            const toolActive = !hasSub && this.app.activeStampType === tool.id
-
             const btn = document.createElement('div')
             btn.className = 'sf-strip-btn'
                 + (hasSub ? ' has-sub' : '')
                 + (subActive ? ' open' : '')
             btn.dataset.tool = tool.id
-            if (this.app.activeStampType === tool.id) {
-                btn.classList.add('active')
+
+            // --- NUCLEAR EXCLUSIVITY LOGIC (RE-ENGINEERED) ---
+            const curTool = this.app.activeStampType
+            let isActive = (curTool === tool.id)
+
+            // Category Indicators: Only check if NO core tool is active
+            const isCoreAction = ['view','select','eraser','cycle','recycle-bin'].includes(curTool)
+            
+            if (!isActive && !isCoreAction) {
+                if (isPen) {
+                    isActive = (curTool === 'pen' || curTool.includes('-pen') || 
+                                curTool.includes('highlighter') || 
+                                curTool === 'dashed-pen' || curTool === 'arrow-pen')
+                } else if (isShapes) {
+                    isActive = ['line', 'slur', 'bracket-left', 'bracket-right'].includes(curTool)
+                } else if (isText) {
+                    isActive = (curTool.startsWith('text-') || curTool === 'quick-text' || ['text','tempo-text'].includes(curTool))
+                } else if (isStamp) {
+                    // It's a stamp IF it's not a core tool and not identified as pen/shape/text above
+                    const isDrawOrText = (curTool === 'pen' || curTool.includes('-pen') || curTool.includes('highlighter') || 
+                                         ['line','slur', 'bracket-left', 'bracket-right','text','tempo-text'].includes(curTool) ||
+                                         curTool.startsWith('text-') || curTool === 'quick-text')
+                    isActive = !isDrawOrText
+                }
             }
+
+            if (isActive) btn.classList.add('active')
             btn.title = tool.label
 
             btn.innerHTML = tool.icon
