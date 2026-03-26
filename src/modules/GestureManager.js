@@ -84,7 +84,6 @@ export class GestureManager {
             'view-control-panel': 'viewPanelManager',
             'jump-panel': 'jumpManager',
             'settings-panel': 'settingsPanelManager',
-            'account-panel': 'accountPanelManager',
             'score-detail-panel': 'scoreDetailManager'
         }
         const managerName = managerMap[panelId]

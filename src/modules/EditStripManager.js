@@ -146,26 +146,6 @@ export class EditStripManager {
             finalEditTools = editTools
         }
 
-        // ── Others (Scroll / Settings) ───────────────────────────────────────
-        // Only show at top if not explicitly placed in the middle section
-        if (!finalEditTools.find(t => t.id === 'scroll-bar')) {
-            const othersBtn = document.createElement('div')
-            othersBtn.id = 'sf-edit-others-btn'
-            othersBtn.className = 'sf-strip-btn'
-            othersBtn.title = 'Other Settings (S)'
-            othersBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-                <circle cx="5"  cy="12" r="1.5" fill="currentColor"/>
-                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-                <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
-            </svg>`
-            othersBtn.addEventListener('click', (e) => {
-                const btn = e.currentTarget
-                this._subBarMgr?.toggle('others', btn)
-            })
-            el.appendChild(othersBtn)
-            el.appendChild(this._divider())
-        }
-
         // ── Main Loop ────────────────────────────────────────────────────────
         finalEditTools.forEach(tool => {
             if (tool.isDivider) {
@@ -174,7 +154,8 @@ export class EditStripManager {
             }
 
             // Skip trash-can as it's always at the bottom
-            if (tool.id === 'trash-can') return
+            // Skip scroll-bar (dots) as it's now at the very bottom
+            if (tool.id === 'trash-can' || tool.id === 'scroll-bar') return
 
             const isPen = tool.isPenTrigger
             const isShapes = tool.isShapesTrigger
@@ -271,28 +252,44 @@ export class EditStripManager {
         })
         el.appendChild(trashBtn)
 
-        // Undo
-        const undoBtn = document.createElement('div')
-        undoBtn.className = 'sf-strip-btn'
-        undoBtn.dataset.activeId = 'undo'
-        undoBtn.title = 'Undo (Cmd+Z)'
-        undoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        // Fit to Width
+        const fitWidthBtn = document.createElement('div')
+        fitWidthBtn.className = 'sf-strip-btn'
+        fitWidthBtn.title = 'Fit to Width (W)'
+        fitWidthBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-            <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+            <path d="M21 12H3M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/>
         </svg>`
-        undoBtn.addEventListener('click', () => this.app.undo())
-        el.appendChild(undoBtn)
+        fitWidthBtn.addEventListener('click', () => this.app.fitToWidth?.())
+        el.appendChild(fitWidthBtn)
 
-        // Redo
-        const redoBtn = document.createElement('div')
-        redoBtn.className = 'sf-strip-btn'
-        redoBtn.title = 'Redo (Cmd+Shift+Z)'
-        redoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        // Fit to Height
+        const fitHeightBtn = document.createElement('div')
+        fitHeightBtn.className = 'sf-strip-btn'
+        fitHeightBtn.title = 'Fit to Height (F)'
+        fitHeightBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-            <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+            <path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4"/>
         </svg>`
-        redoBtn.addEventListener('click', () => this.app.redo())
-        el.appendChild(redoBtn)
+        fitHeightBtn.addEventListener('click', () => this.app.fitToHeight?.())
+        el.appendChild(fitHeightBtn)
+
+        // Others (Dots) Bar at the Bottom
+        el.appendChild(this._divider())
+        const othersBtn = document.createElement('div')
+        othersBtn.id = 'sf-edit-others-btn'
+        othersBtn.className = 'sf-strip-btn'
+        othersBtn.title = 'Other Settings (S)'
+        othersBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+            <circle cx="5"  cy="12" r="1.5" fill="currentColor"/>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
+        </svg>`
+        othersBtn.addEventListener('click', (e) => {
+            const btn = e.currentTarget
+            this._subBarMgr?.toggle('others', btn)
+        })
+        el.appendChild(othersBtn)
 
         // ── PERSISTENT COLLAPSE TOGGLE (Always at the very end) ───────────────
         this._buildCollapseToggle(el)

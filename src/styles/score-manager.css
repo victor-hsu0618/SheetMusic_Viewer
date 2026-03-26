@@ -2,13 +2,14 @@
 .library-overlay {
     position: fixed;
     top: 0;
-    left: 54px;
-    right: 58px;
+    left: 50px;
+    right: 54px;
     bottom: 0;
     width: auto;
     max-width: none;
     height: 100dvh;
     max-height: 100dvh;
+    overflow-y: auto;
     background: var(--bg-card);
     -webkit-backdrop-filter: blur(25px) saturate(180%);
     backdrop-filter: blur(25px) saturate(180%);

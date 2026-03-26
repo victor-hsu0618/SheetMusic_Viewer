@@ -53,7 +53,6 @@ import { SupabaseManager } from './modules/SupabaseManager.js'
 import { EditStripManager } from './modules/EditStripManager.js'
 import { EditSubBarManager } from './modules/EditSubBarManager.js'
 import { DocBarStripManager } from './modules/DocBarStripManager.js'
-import { AccountPanelManager } from './modules/AccountPanelManager.js'
 
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs/pdf.worker.min.mjs', baseUrl).href
@@ -134,7 +133,6 @@ class ScoreFlow {
     this.layerManager = new LayerManager(this)
     this.docActionManager = new DocActionManager(this)
     this.settingsPanelManager = new SettingsPanelManager(this)
-    this.accountPanelManager = new AccountPanelManager(this)
     this.scoreManager = new ScoreManager(this)
     this.collaborationManager = new CollaborationManager(this)
     this.playbackManager = new PlaybackManager(this)
@@ -182,7 +180,6 @@ this.playbackManager.init()
     this.scoreManager.init()
     this.gistShareManager.init()
     this.settingsPanelManager.init()
-    this.accountPanelManager.init()
     this.setlistManager.init()
 
 

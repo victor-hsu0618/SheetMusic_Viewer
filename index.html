@@ -479,7 +479,54 @@
         </div>
 
         <div class="tab-divider"></div>
-        <div class="tab-section-label">Maintenance</div>
+        <div class="tab-section-label">Account & Sync</div>
+
+        <div id="user-profile-summary-container" class="profile-card-minimal cursor-pointer mb-15">
+          <div class="prof-avatar" id="user-profile-avatar">?</div>
+          <div class="prof-text">
+            <div id="user-profile-name">Loading Profile...</div>
+            <small id="user-profile-email">No Email</small>
+          </div>
+        </div>
+
+        <div id="supabase-auth-logged-out">
+          <p class="setting-hint mb-10">Sign in to sync annotations across devices in real-time.</p>
+          <div class="setting-item mb-10">
+            <input type="email" id="supabase-email" class="search-input-mini w-full" placeholder="Email Address" />
+          </div>
+          <div class="setting-item mb-15">
+            <input type="password" id="supabase-password" class="search-input-mini w-full" placeholder="Password" />
+          </div>
+          <button id="btn-supabase-login" class="btn btn-primary btn-full mb-10">Sign In to Cloud</button>
+        </div>
+
+        <div id="supabase-auth-logged-in" class="hidden">
+          <div class="glass-card-mini mb-15" style="background: rgba(var(--primary-rgb), 0.1); border-color: rgba(var(--primary-rgb), 0.2);">
+            <div class="flex-row-center gap-10">
+              <div class="user-avatar-small" id="supabase-user-initials" style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">U</div>
+              <div class="flex-column">
+                <div id="supabase-user-email" class="text-bold text-sm" style="font-size: 13px;">user@example.com</div>
+                <div class="status-tag success" style="color: var(--success); font-size: 10px; font-weight: bold;">Connected</div>
+              </div>
+            </div>
+          </div>
+          <button id="btn-supabase-logout" class="btn btn-outline-sm btn-full text-danger mb-10">Sign Out from Cloud</button>
+        </div>
+
+        <div class="tab-divider"></div>
+        <div class="tab-section-label">Maintenance & Backup</div>
+
+        <div style="display: flex; gap: 8px;" class="mb-10">
+          <button id="btn-export-backup" class="btn btn-outline btn-smaller" style="flex: 1;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export ZIP
+          </button>
+          <label id="btn-import-backup-label" class="btn btn-outline btn-smaller" style="cursor:pointer; display:flex; align-items:center; gap:6px; flex: 1; justify-content: center;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import ZIP
+            <input id="input-import-backup" type="file" accept=".zip" style="display:none">
+          </label>
+        </div>
 
         <button id="btn-supabase-force-resync-all" class="btn btn-outline-danger btn-full btn-smaller mb-10" title="Wipe local library and restore everything from Supabase Cloud">
           Force Global Cloud Resync
@@ -508,69 +555,6 @@
       </div>
     </div>
 
-    <!-- Account Panel -->
-    <div id="account-panel" class="jump-sub-panel calculator-style">
-      <div class="jump-drag-handle">
-        <div class="drag-bar"></div>
-      </div>
-      <div class="jump-header">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span class="jump-title">Account</span>
-          <div id="cloud-sync-status" class="sync-status-badge offline">Offline</div>
-        </div>
-        <button id="btn-close-account" class="btn-close-mini">✕</button>
-      </div>
-      <div class="settings-scroll-area">
-
-        <div class="tab-section-label">Musician Profile</div>
-        <div id="user-profile-summary-container" class="profile-card-minimal cursor-pointer mb-15">
-          <div class="prof-avatar" id="user-profile-avatar">?</div>
-          <div class="prof-text">
-            <div id="user-profile-name">Loading...</div>
-            <small id="user-profile-email">No Email</small>
-          </div>
-        </div>
-
-        <div class="tab-divider"></div>
-        <div class="tab-section-label">Real-time Cloud Sync</div>
-        <div id="supabase-auth-logged-out">
-          <p class="setting-hint mb-10">Sign in to sync annotations across devices in real-time.</p>
-          <div class="setting-item mb-10">
-            <input type="email" id="supabase-email" class="search-input-mini w-full" placeholder="Email Address" />
-          </div>
-          <div class="setting-item mb-15">
-            <input type="password" id="supabase-password" class="search-input-mini w-full" placeholder="Password" />
-          </div>
-          <button id="btn-supabase-login" class="btn btn-primary btn-full mb-10">Sign In to Cloud</button>
-        </div>
-
-        <div id="supabase-auth-logged-in" class="hidden">
-          <div class="glass-card-mini mb-15" style="background: rgba(var(--primary-rgb), 0.1); border-color: rgba(var(--primary-rgb), 0.2);">
-            <div class="flex-row-center gap-10">
-              <div class="user-avatar-small" id="supabase-user-initials" style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">U</div>
-              <div class="flex-column">
-                <div id="supabase-user-email" class="text-bold text-sm" style="font-size: 13px;">user@example.com</div>
-                <div class="status-tag success" style="color: var(--success); font-size: 10px; font-weight: bold;">Connected</div>
-              </div>
-            </div>
-          </div>
-          <button id="btn-supabase-logout" class="btn btn-outline-sm btn-full text-danger mb-10">Sign Out from Cloud</button>
-        </div>
-
-        <div class="tab-divider"></div>
-        <div class="tab-section-label">本地備份</div>
-        <button id="btn-export-backup" class="btn btn-outline btn-full btn-smaller mb-10">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          匯出備份 (ZIP)
-        </button>
-        <label id="btn-import-backup-label" class="btn btn-outline btn-full btn-smaller" style="cursor:pointer;display:flex;align-items:center;gap:6px;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          匯入備份 (ZIP)
-          <input id="input-import-backup" type="file" accept=".zip" style="display:none">
-        </label>
-
-      </div>
-    </div>
 
 
 

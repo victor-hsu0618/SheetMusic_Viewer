@@ -96,6 +96,12 @@ export class EditSubBarManager {
         this._closeStampSettings()
     }
 
+    updateZoom() {
+        if (this._othersZoomReadout && this.app.scale != null) {
+            this._othersZoomReadout.textContent = `${Math.round(this.app.scale * 100)}%`
+        }
+    }
+
     closeAll() {
         this.closeToolBars()
         if (this._bars['others']) {
@@ -186,7 +192,7 @@ export class EditSubBarManager {
             else requestAnimationFrame(refine)
 
         } else if (name === 'others') {
-            // Slides down from top — no top override needed (CSS handles it)
+            // Slides up from bottom — no top override needed (CSS handles it)
         }
     }
 
@@ -699,6 +705,123 @@ export class EditSubBarManager {
             })
             bar.appendChild(b)
         })
+
+        addVDivider()
+
+        // Undo
+        const undoBtn = document.createElement('div')
+        undoBtn.className = 'sf-others-style-btn'
+        undoBtn.title = 'Undo (Cmd+Z)'
+        undoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+            <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+        </svg>`
+        undoBtn.addEventListener('click', () => {
+            this.app.undo()
+            this._populateBar(bar, 'others')
+        })
+        bar.appendChild(undoBtn)
+
+        // Redo
+        const redoBtn = document.createElement('div')
+        redoBtn.className = 'sf-others-style-btn'
+        redoBtn.title = 'Redo (Cmd+Shift+Z)'
+        redoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+            <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+        </svg>`
+        redoBtn.addEventListener('click', () => {
+            this.app.redo()
+            this._populateBar(bar, 'others')
+        })
+        bar.appendChild(redoBtn)
+
+        addVDivider()
+
+        // Go To
+        const gotoBtn = document.createElement('div')
+        gotoBtn.className = 'sf-others-style-btn'
+        gotoBtn.title = 'Go To (G)'
+        gotoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+        </svg>`
+        gotoBtn.addEventListener('click', () => {
+            this.app.jumpManager?.togglePanel()
+        })
+        bar.appendChild(gotoBtn)
+
+        addVDivider()
+
+        // Full Screen
+        const fsBtn = document.createElement('div')
+        fsBtn.className = 'sf-others-style-btn'
+        fsBtn.title = 'Full Screen'
+        const ICON_EXPAND = '<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>'
+        const ICON_EXIT   = '<path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 0 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/>'
+        const updateFsIcon = () => {
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement
+                         || document.getElementById('app-root')?.classList.contains('css-fullscreen'))
+            fsBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">${isFs ? ICON_EXIT : ICON_EXPAND}</svg>`
+            fsBtn.classList.toggle('active', isFs)
+        }
+        updateFsIcon()
+        fsBtn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.app.toggleFullscreen?.()
+            setTimeout(updateFsIcon, 150)
+        })
+        document.addEventListener('fullscreenchange', updateFsIcon)
+        bar.appendChild(fsBtn)
+
+        // Zoom Out
+        const zoomOutBtn = document.createElement('div')
+        zoomOutBtn.className = 'sf-others-style-btn'
+        zoomOutBtn.title = 'Zoom Out (-)'
+        zoomOutBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+        zoomOutBtn.addEventListener('click', () => this.app.changeZoom?.(-0.1))
+        bar.appendChild(zoomOutBtn)
+
+        // Zoom Readout
+        const readout = document.createElement('div')
+        readout.className = 'sf-others-zoom-readout'
+        readout.textContent = `${Math.round((this.app.scale || 1.5) * 100)}%`
+        bar.appendChild(readout)
+        this._othersZoomReadout = readout
+
+        // Zoom In
+        const zoomInBtn = document.createElement('div')
+        zoomInBtn.className = 'sf-others-style-btn'
+        zoomInBtn.title = 'Zoom In (+)'
+        zoomInBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+        zoomInBtn.addEventListener('click', () => this.app.changeZoom?.(0.1))
+        bar.appendChild(zoomInBtn)
+
+        // Settings
+        const settingsBtn = document.createElement('div')
+        settingsBtn.className = 'sf-others-style-btn'
+        settingsBtn.title = 'Settings'
+        settingsBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>`
+        settingsBtn.addEventListener('click', () => {
+            this.app.settingsPanelManager?.toggle()
+        })
+        bar.appendChild(settingsBtn)
+
+        // Library
+        const libBtn = document.createElement('div')
+        libBtn.className = 'sf-others-style-btn'
+        libBtn.title = 'Library (O)'
+        libBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <rect x="3" y="3" width="4" height="15" rx="1.5"/>
+            <rect x="10" y="6" width="4" height="12" rx="1.5"/>
+            <rect x="17" y="4.5" width="4" height="13.5" rx="1.5"/>
+            <rect x="2" y="19" width="20" height="2" rx="1"/>
+        </svg>`
+        libBtn.addEventListener('click', () => {
+            this.app.toggleLibrary?.()
+        })
+        bar.appendChild(libBtn)
     }
 
     // ─── Stamp Settings Panel ─────────────────────────────────────────────────

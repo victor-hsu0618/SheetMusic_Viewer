@@ -966,6 +966,7 @@ export class ViewerManager {
             this.app.zoomLevelDisplay.textContent = `${Math.round(this.scale * 100)}%`
         }
         this.app.docBarStripManager?.updateZoom()
+        this.app.editSubBarManager?.updateZoom()
         this.app.viewPanelManager?.updateZoomDisplay()
     }
 

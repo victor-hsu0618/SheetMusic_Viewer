@@ -90,7 +90,6 @@ export class UIManager {
         // List of managers that handle sub-panels
         const managers = [
             { name: 'SettingsPanelManager', method: 'toggle', ref: 'settingsPanelManager' },
-            { name: 'AccountPanelManager', method: 'toggle', ref: 'accountPanelManager' },
             { name: 'JumpManager', method: 'togglePanel', ref: 'jumpManager' },
             { name: 'ViewPanelManager', method: 'togglePanel', ref: 'viewPanelManager' },
             { name: 'ScoreDetailManager', method: 'toggle', ref: 'scoreDetailManager' }
