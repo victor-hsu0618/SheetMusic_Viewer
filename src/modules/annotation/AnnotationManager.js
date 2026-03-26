@@ -953,6 +953,23 @@ export class AnnotationManager {
                     x = 0.05 // Standard left margin lock
                 }
             }
+        } else if (type === 'music-anchor') {
+            const url = prompt('Enter YouTube URL (optional):')
+            if (url) {
+                const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+                const match = url.match(ytRegex)
+                if (match && match[1]) {
+                    const videoId = match[1]
+                    let time = 0
+                    const tMatch = url.match(/[?&t=](\d+)(s)?/)
+                    if (tMatch) time = parseInt(tMatch[1])
+                    data = `youtube|${videoId}|${time}|YouTube Bookmark`
+                } else {
+                    data = url // Fallback to raw URL
+                }
+            } else {
+                data = 'Video'
+            }
         }
 
         const now = Date.now();

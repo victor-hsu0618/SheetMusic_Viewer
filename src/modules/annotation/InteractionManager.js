@@ -253,7 +253,7 @@ export class InteractionManager {
             
             // If it's a finger and we're NOT in Pan mode, AND not targeting an existing object to move:
             // force it to 'view' (Neutral Pan) to prevent palms from drawing.
-            if (!isPen && activeTool !== 'view' && !pickupTarget) {
+            if (!isPen && activeTool !== 'view' && !pickupTarget && !this.app.isStampTool()) {
                 activeTool = 'view';
             }
 
@@ -688,6 +688,7 @@ export class InteractionManager {
         };
 
         const endAction = async (e) => {
+            const pointerType = getPointerType(e);
             if (e?.pointerId !== undefined) activePointers.delete(e.pointerId);
             if (activePointers.size < 2) isTwoFingerPanning = false;
 
@@ -768,6 +769,7 @@ export class InteractionManager {
                                 targetObj.data = label || (targetObj.type === 'page-bookmark' ? `Page ${targetObj.page}` : 'Marker');
                                 targetObj.updatedAt = Date.now();
                                 this.app.stamps.push(targetObj);
+                                this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(targetObj)) });
                                 await this.app.saveToStorage(true);
                                 if (targetObj.type === 'page-bookmark') this.app.jumpManager?.renderBookmarks();
                                 if (this.app.supabaseManager) this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
@@ -776,35 +778,55 @@ export class InteractionManager {
                             this.app.redrawStamps(tPN);
                         };
 
-                        if (hasBookmarks) {
-                            const pickerActions = bookmarks.map(bm => ({
-                                label: bm.label,
-                                subLabel: this.app.playbackManager.formatTime(bm.time),
-                                value: bm.label
-                            }));
-                            pickerActions.push({ label: 'Manual Input...', value: '__manual__' });
+                        const processYoutube = async (url) => {
+                            if (!url) return;
+                            const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+                            const match = url.match(ytRegex);
+                            if (match && match[1]) {
+                                const videoId = match[1];
+                                let time = 0;
+                                const tMatch = url.match(/[?&t=](\d+)(s)?/);
+                                if (tMatch) time = parseInt(tMatch[1]);
+                                
+                                targetObj.data = `youtube|${videoId}|${time}|YouTube Bookmark`;
+                                targetObj.updatedAt = Date.now();
+                                this.app.stamps.push(targetObj);
+                                this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(targetObj)) });
+                                await this.app.saveToStorage(true);
+                                if (this.app.supabaseManager) this.app.supabaseManager.pushAnnotation(targetObj, this.app.pdfFingerprint);
+                                startGracePeriod(targetObj, pointerType);
+                                this.app.showMessage('YouTube Link Added', 'success');
+                            } else {
+                                this.app.showMessage('Invalid YouTube URL', 'error');
+                            }
+                            this.app.redrawStamps(tPN);
+                        };
 
-                            showFinalDialog({
-                                type: 'picker',
-                                message: 'Select a bookmark to link:',
-                                actions: pickerActions
-                            })?.then(async result => {
-                                if (result === '__manual__') {
-                                    showFinalDialog({
-                                        type: 'input',
-                                        placeholder: 'e.g. Solo, Intro...'
-                                    }).then(processLabel);
-                                } else {
-                                    processLabel(result);
-                                }
+                        const pickerActions = [];
+                        if (hasBookmarks) {
+                            bookmarks.forEach(bm => {
+                                pickerActions.push({ label: bm.label, subLabel: this.app.playbackManager.formatTime(bm.time), value: bm.label });
                             });
-                        } else {
-                            showFinalDialog({
-                                type: 'input',
-                                defaultValue: targetObj.type === 'page-bookmark' ? `Page ${targetObj.page}` : '',
-                                placeholder: 'e.g. Solo, Intro...'
-                            }).then(processLabel);
                         }
+                        
+                        if (targetObj.type === 'music-anchor') {
+                            pickerActions.push({ label: '🔗 Link YouTube URL...', value: '__youtube__', subLabel: 'Paste URL' });
+                        }
+                        pickerActions.push({ label: '📝 Manual Label...', value: '__manual__', subLabel: 'Enter Text' });
+
+                        showFinalDialog({
+                            type: 'picker',
+                            message: hasBookmarks ? 'Select a bookmark or link source:' : 'Choose anchor type:',
+                            actions: pickerActions
+                        })?.then(async result => {
+                            if (result === '__manual__') {
+                                showFinalDialog({ type: 'input', placeholder: 'e.g. Solo, Intro...' }).then(processLabel);
+                            } else if (result === '__youtube__') {
+                                showFinalDialog({ type: 'input', placeholder: 'Paste YouTube URL here...' }).then(processYoutube);
+                            } else if (result !== null) {
+                                processLabel(result);
+                            }
+                        });
                         return;
                     } else if (syncObj.type.startsWith('tempo-') && !isMovingExisting) {
                         const targetObj = syncObj;

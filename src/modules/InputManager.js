@@ -185,9 +185,9 @@ export class InputManager {
         // Order: Shortcuts -> View Panel -> Jump Panel -> Layer Shelf -> Sidebar
         if (this.app.shortcutsModal?.classList.contains('active')) {
             this.app.toggleShortcuts(false)
-        } else if (this.app.viewPanelManager?.panel.classList.contains('active')) {
+        } else if (this.app.viewPanelManager?.panel?.classList.contains('active')) {
             this.app.viewPanelManager.togglePanel(false)
-        } else if (this.app.jumpManager?.panel.classList.contains('active')) {
+        } else if (this.app.jumpManager?.panel?.classList.contains('active')) {
             this.app.jumpManager.togglePanel(false)
         } else if (this.app.scoreManager?.overlay?.classList.contains('active')) {
             this.app.toggleLibrary(false)
