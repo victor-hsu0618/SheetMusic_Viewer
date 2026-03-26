@@ -160,6 +160,7 @@ export class InputManager {
                 'v': () => this.app.viewPanelManager?.togglePanel(),
                 'r': () => this.app.toggleRuler(),
                 'o': () => this.app.toggleLibrary(),
+                'i': () => this.app.toggleScoreDetail(),
                 'f': () => this.app.toggleFullscreen(),
                 'e': () => this.app.toggleEditStrip(),
                 'd': () => this.app.toggleDocBar(),

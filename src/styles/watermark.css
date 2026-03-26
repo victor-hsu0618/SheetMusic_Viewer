@@ -1,0 +1,25 @@
+.sf-score-title-watermark {
+    position: fixed;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%) rotate(180deg);
+    writing-mode: vertical-rl;
+    opacity: 0.15;
+    pointer-events: none;
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-main);
+    z-index: 10;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Hide when Library or Settings are open to avoid clutter */
+body.library-open .sf-score-title-watermark,
+body.settings-open .sf-score-title-watermark {
+    display: none;
+}

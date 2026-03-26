@@ -87,12 +87,12 @@ export class UIManager {
      */
     closeAllActivePanels(exceptManagerName = null) {
         if (this.app.isInteracting) return;
-        // List of managers that handle sub-panels
+        // List of managers that handle sidebar panels
         const managers = [
             { name: 'SettingsPanelManager', method: 'toggle', ref: 'settingsPanelManager' },
             { name: 'JumpManager', method: 'togglePanel', ref: 'jumpManager' },
             { name: 'ViewPanelManager', method: 'togglePanel', ref: 'viewPanelManager' },
-            { name: 'ScoreDetailManager', method: 'toggle', ref: 'scoreDetailManager' }
+            { name: 'ScoreManager', method: 'toggleOverlay', ref: 'scoreManager' }
         ];
 
         managers.forEach(m => {

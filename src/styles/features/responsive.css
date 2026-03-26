@@ -26,17 +26,15 @@
         position: fixed !important;
         left: 50% !important;
         right: auto !important;
-        bottom: 88px !important; /* Doc bar top ~60px + 28px gap */
+        bottom: 20px !important; /* Reclaimed space - no doc bar gap needed */
         width: 100% !important;
         max-width: 100vw !important;
         height: auto !important; 
         max-height: 75vh !important;
         background: var(--bg-card) !important; 
-        color: var(--text-main) !important;
-        border-radius: 20px !important;
         border: 1px solid var(--border) !important;
         border-bottom: none !important;
-        touch-action: pan-y; 
+        touch-action: pan-y;
         -webkit-user-select: none;
         user-select: none;
         transform: translate(-50%, 100%) !important; /* Default state: hidden below Doc Bar */
@@ -138,7 +136,7 @@
         width: 95% !important;
         min-width: 0 !important;
         max-width: 500px !important;
-        bottom: 88px !important;
+        bottom: 20px !important;
         transform: translate(-50%, 20px) !important;
     }
 
@@ -154,31 +152,7 @@
         margin-bottom: 8px !important;
     }
 
-    /* 2b. Doc Bar Position Refinement */
-    #floating-doc-bar {
-        bottom: 12px !important;
-        padding: 4px 8px !important;
-        gap: 6px !important;
-        min-width: 0 !important;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
-    }
-
-    #floating-doc-bar.collapsed {
-        transform: translateX(-50%) scale(1.1) !important;
-    }
-
-    /* Buttons inside Doc Bar need to be big enough but space efficient */
-    #floating-doc-bar button {
-        width: 32px !important;
-        height: 32px !important;
-        margin: 0 1px !important;
-        pointer-events: auto !important;
-    }
-
-    #floating-doc-bar button svg {
-        width: 18px !important;
-        height: 18px !important;
-    }
+    /* Legacy Doc Bar Styles Removed */
 
     .core-trigger-suite, .score-trigger-suite {
         gap: 4px !important;

@@ -72,15 +72,6 @@
   /* Royal Purple cue */
 }
 
-/* Visual cues for different versions */
-.env-stable .floating-doc-bar {
-  border-top: 2px solid var(--primary);
-}
-
-.env-main .floating-doc-bar {
-  border-top: 2px solid var(--primary);
-}
-
 .env-stable .welcome-header .welcome-icon {
   filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.4));
 }

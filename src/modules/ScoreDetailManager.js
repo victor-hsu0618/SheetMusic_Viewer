@@ -29,23 +29,12 @@ export class ScoreDetailManager {
     get btnSave() { return this.ui.btnSave }
 
     toggle(force) {
-        if (!this.ui.panel) return
-        const active = force !== null ? force : !this.ui.panel.classList.contains('active')
-        
-        if (active) {
-            this.app.uiManager.closeAllActivePanels('ScoreDetailManager')
-        }
-
-        this.ui.panel.classList.toggle('active', active)
-        
-        if (this.app.btnScoreDetailToggle) {
-            this.app.btnScoreDetailToggle.classList.toggle('active', active)
-        }
-
-        if (active) {
-            document.querySelectorAll('.jump-sub-panel').forEach(p => p.style.zIndex = '11500')
-            this.ui.panel.style.zIndex = '11501'
-            this.refreshStats()
+        // Now integrated into Library. Delegation to Library toggle.
+        if (this.app.scoreManager) {
+            this.app.scoreManager.toggleOverlay(force);
+            if (this.app.scoreManager.overlay?.classList.contains('active')) {
+                this.app.scoreManager.switchToTab('current-score');
+            }
         }
     }
 
@@ -53,8 +42,11 @@ export class ScoreDetailManager {
         const targetFp = fingerprint || this.app.pdfFingerprint
         if (!targetFp) return
 
-        // If clicking same button and panel is open, toggle it off
-        if (!fingerprint && this.ui.panel?.classList.contains('active')) {
+        // If clicking same button and library is open on current tab, toggle it off
+        const isLibraryOpen = this.app.scoreManager?.overlay?.classList.contains('active');
+        const isCurrentTab = document.querySelector('.library-tabs .segment-btn[data-tab="current-score"]')?.classList.contains('active');
+
+        if (!fingerprint && isLibraryOpen && isCurrentTab) {
             this.toggle(false)
             return
         }

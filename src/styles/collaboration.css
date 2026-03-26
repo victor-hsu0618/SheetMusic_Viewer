@@ -382,13 +382,7 @@
   font-size: 0.8rem;
 }
 
-/* Unified Command Center (Left Toolbar) */
-.doc-bar-divider {
-  width: 20px;
-  height: 1px;
-  background: var(--border);
-  margin: 4px 0;
-}
+/* Unified Command Center */
 
 .layer-control-suite {
   position: relative;

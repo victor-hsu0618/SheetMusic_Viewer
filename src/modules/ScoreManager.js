@@ -110,8 +110,6 @@ export class ScoreManager {
     initLibraryHeader() {
         document.getElementById('btn-library-select')?.addEventListener('click', () => this.toggleSelectionMode());
         document.getElementById('btn-open-user-guide')?.addEventListener('click', () => this.loadUserGuide());
-        document.getElementById('btn-full-backup')?.addEventListener('click', () => this.fullBackup());
-        document.getElementById('btn-full-restore')?.addEventListener('click', () => this.fullRestore());
         document.getElementById('btn-library-sync-cloud')?.addEventListener('click', () => this.syncWithCloud());
         const sortSelect = document.getElementById('library-sort-select');
         if (sortSelect) {
@@ -126,23 +124,34 @@ export class ScoreManager {
         document.querySelectorAll('.library-tabs .segment-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tabId = e.target.dataset.tab;
-                document.querySelectorAll('.library-tabs .segment-btn').forEach(t => t.classList.toggle('active', t === e.target));
-                
-                const libraryGrid = document.getElementById('library-grid');
-                const setlistGrid = document.getElementById('setlist-grid');
-                if (libraryGrid) libraryGrid.classList.toggle('hidden', tabId !== 'scores');
-                if (setlistGrid) setlistGrid.classList.toggle('hidden', tabId !== 'setlists');
-                
-                const scoreActions = document.getElementById('score-actions-area');
-                const setlistActions = document.getElementById('setlist-actions-area');
-                
-                // Explicitly set one to show and the other to hide
-                if (scoreActions) scoreActions.classList.toggle('hidden', tabId !== 'scores');
-                if (setlistActions) setlistActions.classList.toggle('hidden', tabId !== 'setlists');
-
-                if (tabId === 'setlists') this.app.setlistManager?.render();
+                this.switchToTab(tabId);
             });
         });
+    }
+
+    switchToTab(tabId) {
+        document.querySelectorAll('.library-tabs .segment-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
+        
+        const libraryGrid = document.getElementById('library-grid');
+        const setlistGrid = document.getElementById('setlist-grid');
+        const currentPane = document.getElementById('pane-current-score');
+        
+        if (libraryGrid) libraryGrid.classList.toggle('hidden', tabId !== 'scores');
+        if (setlistGrid) setlistGrid.classList.toggle('hidden', tabId !== 'setlists');
+        if (currentPane) currentPane.classList.toggle('hidden', tabId !== 'current-score');
+        
+        const scoreActions = document.getElementById('score-actions-area');
+        const setlistActions = document.getElementById('setlist-actions-area');
+        const currentActions = document.getElementById('current-score-actions-area');
+        
+        if (scoreActions) scoreActions.classList.toggle('hidden', tabId !== 'scores');
+        if (setlistActions) setlistActions.classList.toggle('hidden', tabId !== 'setlists');
+        if (currentActions) currentActions.classList.toggle('hidden', tabId !== 'current-score');
+
+        if (tabId === 'setlists') this.app.setlistManager?.render();
+        if (tabId === 'current-score' && this.app.scoreDetailManager) {
+            this.app.scoreDetailManager.load(this.app.pdfFingerprint);
+        }
     }
 
     initSearch() {
@@ -272,97 +281,6 @@ export class ScoreManager {
         }
     }
 
-    async fullBackup() {
-        this.app.showMessage('Preparing Full System Backup...', 'system');
-        try {
-            const allKeys = await db.getAllKeys();
-            const backupData = {
-                type: 'ScoreFlow_FullBackup',
-                timestamp: Date.now(),
-                version: '3.0',
-                storage: {}
-            };
-
-            for (const key of allKeys) {
-                backupData.storage[key] = await db.get(key);
-            }
-
-            // Also include critical localStorage if any 
-            backupData.settings = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.startsWith('scoreflow_')) {
-                    backupData.settings[key] = localStorage.getItem(key);
-                }
-            }
-
-            const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const now = new Date();
-            const dateStr = now.toISOString().split('T')[0];
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `ScoreFlow_FullBackup_${dateStr}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            this.app.showMessage('Full Backup completed.', 'success');
-        } catch (err) {
-            console.error('[ScoreManager] Full backup failed:', err);
-            this.app.showMessage('Backup failed: ' + err.message, 'error');
-        }
-    }
-
-    async fullRestore() {
-        const confirmed = await this.app.showDialog({
-            title: '⚠️ FULL SYSTEM RESTORE',
-            message: 'This will DELETE ALL current scores and data on this device and replace them with the backup file. This cannot be undone. Proceed?',
-            type: 'confirm',
-            icon: '⛔'
-        });
-
-        if (!confirmed) return;
-
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            try {
-                this.app.showMessage('Restoring data... Please wait.', 'system');
-                const text = await file.text();
-                const data = JSON.parse(text);
-
-                if (data.type !== 'ScoreFlow_FullBackup') {
-                    throw new Error('Not a valid ScoreFlow Full Backup file.');
-                }
-
-                // Clear current DB
-                await db.clear();
-
-                // Restore items
-                for (const [key, value] of Object.entries(data.storage || {})) {
-                    await db.set(key, value);
-                }
-
-                // Restore localStorage settings
-                if (data.settings) {
-                    for (const [key, value] of Object.entries(data.settings)) {
-                        localStorage.setItem(key, value);
-                    }
-                }
-
-                this.app.showMessage('Restore completed. Reloading...', 'success');
-                setTimeout(() => location.reload(), 1500);
-
-            } catch (err) {
-                console.error('[ScoreManager] Restore failed:', err);
-                this.app.showMessage('Restore failed: ' + err.message, 'error');
-            }
-        };
-        input.click();
-    }
 
     async handleBatchAddSetlist() {
         const count = this.selectedFingerprints.size;

@@ -11,8 +11,7 @@ export class ScoreDetailUIManager {
     }
 
     init() {
-        this.panel = document.getElementById('score-detail-panel')
-        this.btnClose = document.getElementById('btn-close-score-detail')
+        this.panel = document.getElementById('pane-current-score')
         this.scoreNameInput = document.getElementById('score-name-input')
         this.scoreComposerInput = document.getElementById('score-composer-input')
 
@@ -33,14 +32,9 @@ export class ScoreDetailUIManager {
         this.statsAuthor = document.getElementById('stats-author')
         
         this.initEventListeners()
-        // Disable draggable for PC to maintain "Stacked Shelf" design
-        // this.initDraggable()
-        this.initResizable()
     }
 
     initEventListeners() {
-        this.btnClose?.addEventListener('click', () => this.manager.toggle(false))
-        
         const autoSaveFields = [this.scoreNameInput, this.scoreComposerInput]
         autoSaveFields.forEach(field => {
             if (field) {
@@ -80,84 +74,10 @@ export class ScoreDetailUIManager {
         })
     }
 
-    initDraggable() {
-        let isDragging = false
-        let startX, startY, initialX = 0, initialY = 0
-        const el = this.panel
-        const handle = el?.querySelector('.jump-drag-handle')
-        if (!handle) return
-
-        const start = (e) => {
-            if (e.target.closest('button') || e.target.closest('input')) return
-            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
-            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
-            const matrix = new WebKitCSSMatrix(window.getComputedStyle(el).transform)
-            initialX = matrix.m41
-            initialY = matrix.m42
-            startX = clientX
-            startY = clientY
-            isDragging = true
-            el.style.transition = 'none'
-        }
-
-        const move = (e) => {
-            if (!isDragging) return
-            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
-            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
-            el.style.transform = `translate(${initialX + (clientX - startX)}px, ${initialY + (clientY - startY)}px)`
-        }
-
-        const end = () => { isDragging = false; el.style.transition = '' }
-
-        handle.addEventListener('mousedown', start)
-        document.addEventListener('mousemove', move)
-        document.addEventListener('mouseup', end)
-        handle.addEventListener('touchstart', start, { passive: false })
-        document.addEventListener('touchmove', move, { passive: false })
-        document.addEventListener('touchend', end)
-    }
-
-    initResizable() {
-        const handle = this.panel?.querySelector('.panel-resize-handle')
-        if (!handle) return
-        let isResizing = false
-        let startX, startY, startWidth, startHeight
-        const el = this.panel
-
-        const start = (e) => {
-            e.preventDefault(); e.stopPropagation()
-            isResizing = true
-            startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
-            startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
-            startWidth = el.offsetWidth
-            startHeight = el.offsetHeight
-            el.style.transition = 'none'
-        }
-
-        const move = (e) => {
-            if (!isResizing) return
-            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX
-            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY
-            const width = startWidth + (clientX - startX)
-            const height = startHeight + (clientY - startY)
-            if (width > 300) el.style.width = width + 'px'
-            if (height > 200) el.style.height = height + 'px'
-        }
-
-        const end = () => { isResizing = false; el.style.transition = '' }
-
-        handle.addEventListener('mousedown', start)
-        document.addEventListener('mousemove', move)
-        document.addEventListener('mouseup', end)
-        handle.addEventListener('touchstart', start, { passive: false })
-        document.addEventListener('touchmove', move, { passive: false })
-        document.addEventListener('touchend', end)
-    }
-
     switchTab(tabId) {
         this.panel.querySelectorAll('.detail-tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId))
         this.panel.querySelectorAll('.detail-tab-pane').forEach(pane => pane.classList.toggle('active', pane.id === `pane-${tabId}`))
-        if (tabId === 'styles') this.app.renderSourceUI()
+        if (tabId === 'styles') this.app.renderSourceUI?.()
     }
 
     refreshStats(fingerprint, info) {

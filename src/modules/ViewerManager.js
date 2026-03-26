@@ -440,6 +440,8 @@ export class ViewerManager {
     }
     async updateFloatingTitle() {
         const fp = this.pdfFingerprint;
+        const watermark = document.getElementById('sf-score-title-watermark');
+        
         if (!fp) {
             if (this.activeScoreName) {
                 const loadingName = "Loading " + this.activeScoreName.replace(/\.pdf$/i, '') + "..."
@@ -447,12 +449,12 @@ export class ViewerManager {
                     this.app.floatingScoreTitle.textContent = loadingName;
                     this.app.floatingScoreTitle.classList.add('active');
                 }
-                this.app.docBarStripManager?.updateTitle(loadingName);
+                if (watermark) watermark.textContent = loadingName;
             } else {
                 if (this.app.floatingScoreTitle) {
                     this.app.floatingScoreTitle.classList.remove('active');
                 }
-                this.app.docBarStripManager?.updateTitle('');
+                if (watermark) watermark.textContent = '';
             }
             return;
         }
@@ -475,7 +477,7 @@ export class ViewerManager {
             this.app.floatingScoreTitle.textContent = displayName;
             this.app.floatingScoreTitle.classList.add('active');
         }
-        this.app.docBarStripManager?.updateTitle(displayName);
+        if (watermark) watermark.textContent = displayName;
     }
 
 
@@ -965,7 +967,6 @@ export class ViewerManager {
         if (this.app.zoomLevelDisplay) {
             this.app.zoomLevelDisplay.textContent = `${Math.round(this.scale * 100)}%`
         }
-        this.app.docBarStripManager?.updateZoom()
         this.app.editSubBarManager?.updateZoom()
         this.app.viewPanelManager?.updateZoomDisplay()
     }
