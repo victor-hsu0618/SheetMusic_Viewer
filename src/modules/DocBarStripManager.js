@@ -231,6 +231,26 @@ export class DocBarStripManager {
         this._expandTab   = null
         this.el.innerHTML = ''
         this._populate(this.el)
+        
+        // --- FIXED: Refresh dynamic state after rebuilding DOM ---
+        this.refreshState()
+    }
+
+    /** Bring title, zoom, and other dynamic indicators up to date */
+    refreshState() {
+        // 1. Refresh Title
+        if (this.app.viewerManager) {
+            this.app.viewerManager.updateFloatingTitle()
+        }
+        
+        // 2. Refresh Zoom
+        this.updateZoom()
+        
+        // 3. Refresh Trash/Tool state if needed
+        const trash = this.el?.querySelector('#sf-doc-trash-btn')
+        if (trash) {
+            trash.classList.toggle('active', this.app.activeStampType === 'recycle-bin')
+        }
     }
 
     _populate(el) {
@@ -337,7 +357,9 @@ export class DocBarStripManager {
         const readout = document.createElement('div')
         readout.className = 'sf-doc-zoom-readout'
         readout.title = 'Current zoom'
-        readout.textContent = `${Math.round((this.app.scale || 1.5) * 100)}%`
+        // Use current app scale if available, else default to 1.5
+        const currentScale = this.app.scale || this.app.viewerManager?.scale || 1.5
+        readout.textContent = `${Math.round(currentScale * 100)}%`
         el.appendChild(readout)
         this._zoomReadout = readout
 
