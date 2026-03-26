@@ -21,6 +21,7 @@ body {
   background-color: #0f0f13;
   /* Ensure no white flashes */
   -webkit-user-select: none;
+  user-select: none;
   touch-action: none;
   /* Only allow scrolling on specific elements */
 }
@@ -53,6 +54,12 @@ body {
   height: 100%;
   overflow: hidden;
   position: relative;
+  
+  /* Safe Area Support */
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
 /* UTILS from index.html extraction */

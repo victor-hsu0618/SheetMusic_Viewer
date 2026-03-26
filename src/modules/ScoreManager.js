@@ -69,12 +69,34 @@ export class ScoreManager {
     }
 
     async loadUserGuide() {
+        console.log('[ScoreManager] Requesting User Guide...');
+        const paths = [
+            '/assets/ScoreFlow_UserGuide.pdf',
+            'assets/ScoreFlow_UserGuide.pdf',
+            './assets/ScoreFlow_UserGuide.pdf',
+            (import.meta.env.BASE_URL || '/') + 'assets/ScoreFlow_UserGuide.pdf'
+        ];
+        
         try {
-            const base = import.meta.env.BASE_URL || '/';
-            const url = `${base}assets/ScoreFlow_UserGuide.pdf`;
-            const res = await fetch(url);
-            if (!res.ok) return;
+            let res = null;
+            let lastPath = '';
+            for (const path of paths) {
+                lastPath = path;
+                try {
+                    res = await fetch(path);
+                    if (res.ok) break;
+                } catch (e) { console.warn(`[ScoreManager] Fetch failed for ${path}:`, e); }
+            }
+
+            if (!res || !res.ok) {
+                console.warn('[ScoreManager] User Guide File Not Found (404). \ntried: ' + paths.join('\n'));
+                return;
+            }
             const buf = new Uint8Array(await res.arrayBuffer());
+            if (buf.length === 0) {
+                console.warn('[ScoreManager] User Guide File is Empty.');
+                return;
+            }
             this.toggleOverlay(false);
             this.app._skipStaffDetect = true;
             await this.app.loadPDF(buf, 'ScoreFlow User Guide');

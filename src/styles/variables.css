@@ -16,9 +16,14 @@
   --breakpoint-mobile: 600px;
   --breakpoint-tablet: 1024px;
 
-  /* Bottom Sheet Heights */
   --sheet-max-height: 85vh;
   --sheet-radius: 24px;
+
+  /* Safe Area Insets (for Notch/Home Indicator) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
 [data-theme="dark"] {

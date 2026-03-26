@@ -217,7 +217,7 @@ export class SupabaseManager {
             return
         }
         if (!this.user) {
-            console.warn('[Supabase] ⚠️ Push skipped: User not logged in.')
+            // Silence warning for ordinary unauthenticated usage
             return
         }
         if (!fingerprint) {

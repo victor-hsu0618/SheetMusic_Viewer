@@ -1,5 +1,5 @@
 /* eslint-disable */
-if (process.env.NODE_ENV === 'development') {
+if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
     (function() {
         const HOST = '192.168.0.200'; // 偵測到的您的 Mac IP
         const PORT = '3001';

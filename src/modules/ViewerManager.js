@@ -22,7 +22,10 @@ export class ViewerManager {
     }
 
     init() {
-        // Redundant listener removed. Listeners are now attached in main.js initElements.
+        // Initialize PDF.js Worker with absolute root path (Most reliable for Capacitor)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
+        console.log('[ViewerManager] PDF.js Worker initialized at:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+
         // Initialize rendering queue
         this._renderQueue = []
         this._activeRenderCount = 0
@@ -234,35 +237,44 @@ export class ViewerManager {
         
         if (loadingId !== this.latestLoadingId) return;
 
-        // --- START PARALLEL TASKS ---
-        // 1. Start PDF parsing immediately (doesn't need fingerprint)
-        const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
-        const loadingTask = pdfjsLib.getDocument({
-            data: uint8Data,
-            cMapUrl: new URL('pdfjs/cmaps/', baseUrl).href,
-            cMapPacked: true,
-            standardFontDataUrl: new URL('pdfjs/standard_fonts/', baseUrl).href,
-            jbig2WasmUrl: new URL('pdfjs/wasm/jbig2.wasm', baseUrl).href,
-            wasmUrl: new URL('pdfjs/wasm/', baseUrl).href,
-            isEvalSupported: false,
-            stopAtErrors: false,
-        })
-
-        // 2. Resolve Fingerprint (Parallel to PDF parsing)
+        // 2. Resolve Fingerprint
         let newFingerprint;
         if (expectedFp) {
             newFingerprint = expectedFp;
-            // No background check needed for known library scores to save CPU
             console.log(`[ViewerManager] Fast-loading from library via expected fingerprint: ${expectedFp.slice(0, 8)}`);
         } else {
+            console.log(`[ViewerManager] Calculating fingerprint...`);
             newFingerprint = await this.getFingerprint(uint8Data);
         }
 
         if (loadingId !== this.latestLoadingId) return;
-        this.pdfFingerprint = newFingerprint
-        this.app.pdfFingerprint = newFingerprint
+        this.pdfFingerprint = newFingerprint;
+        this.app.pdfFingerprint = newFingerprint;
 
-        // 3. Load DB Metadata & Stamps (Parallel to PDF parsing, needs FP)
+        // --- START PDF PARSING ---
+        // Use absolute root paths for PDF.js assets (Compatible with both PWA and Capacitor root)
+        console.log(`[ViewerManager] getDocument started with data size: ${uint8Data.length}`);
+        
+        const loadingTask = pdfjsLib.getDocument({
+            data: uint8Data,
+            cMapUrl: '/pdfjs/cmaps/',
+            cMapPacked: true,
+            standardFontDataUrl: '/pdfjs/standard_fonts/',
+            jbig2WasmUrl: '/pdfjs/wasm/jbig2.wasm',
+            wasmUrl: '/pdfjs/wasm/',
+            isEvalSupported: false,
+            stopAtErrors: false,
+        });
+        
+        // Add a timeout logger
+        const timeout = setTimeout(() => {
+            if (this._loadingPdf && loadingId === this.latestLoadingId) {
+                console.warn('[ViewerManager] PDF Parsing is taking too long (>10s). Potential hang in PDF.js worker.');
+            }
+        }, 10000);
+
+        if (loadingId !== this.latestLoadingId) return;
+        // Proceed to Load DB Metadata & Stamps
         const dataPromise = (async () => {
             await Promise.all([
                 this.app.persistenceManager.loadFromStorage(newFingerprint),
@@ -306,6 +318,7 @@ export class ViewerManager {
         // Final Wait: Ensure BOTH PDF parsing and Data loads are done
         try {
             const [pdf] = await Promise.all([loadingTask.promise, dataPromise]);
+            clearTimeout(timeout);
             if (loadingId !== this.latestLoadingId) return;
             this.pdf = pdf;
             console.log(`[ViewerManager] Parallel Load Success. Pages: ${this.pdf.numPages}`);
@@ -324,9 +337,11 @@ export class ViewerManager {
                 })
             }
         } catch (err) {
+            clearTimeout(timeout);
             if (loadingId !== this.latestLoadingId) return;
             this._loadingPdf = false;
             console.error('[ViewerManager] PDF.js failed to load document:', err);
+            // Non-blocking error indication (PWA standard)
             if (err.name === 'InvalidPDFException') {
                 throw new Error('InvalidPDFException: 樂譜檔案格式損毀或無效 (Invalid PDF structure)');
             }
