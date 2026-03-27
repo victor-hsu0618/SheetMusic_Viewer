@@ -203,8 +203,23 @@
 
         .empty-hint { color:var(--sf-muted); font-size:12px; padding:12px 0; }
 
-        /* ── Row editor (text input) ── */
-        .row-editor { display:flex; flex-direction:column; gap:12px; }
+        /* ── Stamp page editor ── */
+        .row-editor { display:flex; flex-direction:column; gap:10px; }
+        .stamp-page-nav { display:flex; gap:6px; flex-wrap:wrap; }
+        .stamp-page-tab { padding:5px 12px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid var(--sf-border); background:var(--sf-card); color:var(--sf-muted); transition:all .15s; }
+        .stamp-page-tab.active { background:var(--sf-primary); color:#fff; border-color:var(--sf-primary); }
+        .stamp-cat-block { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:12px 14px; }
+        .stamp-cat-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+        .stamp-cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+        .stamp-cat-name { font-size:12px; font-weight:700; color:var(--sf-text); }
+        .stamp-cat-count { font-size:10px; color:var(--sf-muted); margin-left:auto; }
+        .stamp-cat-row-label { font-size:10px; color:var(--sf-muted); font-weight:600; margin:8px 0 4px; letter-spacing:.05em; text-transform:uppercase; }
+        .stamp-row-cells { display:flex; flex-wrap:wrap; gap:4px; }
+        .stamp-cell-item { width:40px; height:42px; border-radius:8px; border:1.5px solid var(--sf-border); background:transparent; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; opacity:0.3; transition:all .15s; gap:2px; }
+        .stamp-cell-item.active { opacity:1; background:rgba(99,102,241,0.08); }
+        .stamp-cell-item:hover { opacity:0.6; }
+        .stamp-cell-item.active:hover { opacity:0.85; }
+        .stamp-cell-label { font-size:8px; color:var(--sf-muted); max-width:38px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; line-height:1.2; }
         .row-input-block { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:14px 16px; }
         .row-input-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
         .row-input-badge {
@@ -247,9 +262,9 @@
         .row-apply-hint { font-size:11px; color:var(--sf-muted); }
 
         /* ── Reference grid ── */
-        .ref-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:12px; }
-        .ref-card { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:12px 14px; }
-        .ref-card-header { display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+        .ref-grid { display:flex; flex-wrap:wrap; gap:4px; }
+        .ref-card { display:contents; }
+        .ref-card-header { display:none; }
         .ref-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
         .ref-card-name { font-size:12px; font-weight:700; }
         .ref-card-subtitle { font-size:10px; color:var(--sf-muted); margin-left:auto; }
@@ -257,16 +272,15 @@
         .ref-row-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--sf-muted); opacity:.5; margin-top:4px; }
         .ref-tools { display:flex; flex-wrap:wrap; gap:4px; }
         .ref-chip {
-            display:inline-flex; align-items:center; gap:5px;
-            padding:3px 8px 3px 5px; border-radius:6px; cursor:pointer;
+            display:inline-flex; flex-direction:column; align-items:center;
+            padding:6px 4px 5px; border-radius:8px; cursor:default;
             border:1px solid var(--sf-border); background:transparent;
-            transition: background .12s, border-color .12s;
-            user-select:none;
+            transition: background .12s; width:64px; gap:0;
         }
-        .ref-chip:hover { background:#f1f5f9; border-color:var(--sf-primary); }
-        .ref-chip .rc-icon { width:18px; height:18px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .ref-chip .rc-id { font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--sf-muted); }
-        .ref-chip .rc-label { font-size:10px; font-weight:600; color:var(--sf-text); }
+        .ref-chip:hover { background:rgba(99,102,241,0.06); }
+        .ref-chip .rc-icon { width:64px; height:22px; display:flex; align-items:center; justify-content:center; border-bottom:1px solid var(--sf-border); margin-bottom:4px; }
+        .ref-chip .rc-id { font-size:9px; font-family:'JetBrains Mono',monospace; color:var(--sf-primary); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:60px; user-select:all; cursor:text; }
+        .ref-chip .rc-label { display:none; }
 
         /* ── Bar reorder sections ── */
         .reorder-section { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:14px; margin-bottom:16px; }
@@ -1058,14 +1072,17 @@
         <!-- Edit bar & Doc bar reorder -->
         <div id="bar-reorder-sections"></div>
 
-        <!-- Row editor -->
-        <div class="section-label">設定 Stamp 排列</div>
+        <!-- Stamp page editor -->
+        <div class="section-label" style="display:flex;align-items:center;gap:10px">
+            設定 Stamp 排列
+            <span id="save-status" style="font-size:11px;color:var(--sf-primary);font-weight:400;text-transform:none;letter-spacing:0"></span>
+        </div>
         <div class="row-editor" id="row-editor"></div>
 
         <!-- Reference table -->
         <div class="section-label" style="margin-top:28px">
             Symbol 對照表
-            <span style="font-size:10px;color:var(--sf-muted);font-weight:400;margin-left:6px">點擊 chip 插入游標位置</span>
+            <span style="font-size:10px;color:var(--sf-muted);font-weight:400;margin-left:6px">複製 ID 填入上方 textarea</span>
         </div>
         <div class="ref-grid" id="ref-grid"></div>
 
@@ -1370,15 +1387,14 @@ function loadMyPanel() {
 }
 
 function saveMyPanel() {
-    if (!navigator.onLine) {
-        const el = document.getElementById('save-status')
-        if (el) { el.textContent = '⚠️ 請連線後再儲存'; el.style.color = '#f59e0b'; setTimeout(() => { el.textContent = ''; el.style.color = '' }, 3000) }
-        return
-    }
     const cfg = { stamps: myPanel, editBar: editBarOrder, docBar: docBarOrder }
     localStorage.setItem(LS_PANEL_CONFIG, JSON.stringify(cfg))
-    _pushPanelConfigToCloud(cfg)
     const el = document.getElementById('save-status')
+    if (!navigator.onLine) {
+        if (el) { el.textContent = '✓ 本地已儲存（離線，未同步雲端）'; el.style.color = '#f59e0b'; setTimeout(() => { el.textContent = ''; el.style.color = '' }, 3000) }
+        return
+    }
+    _pushPanelConfigToCloud(cfg)
     if (el) { el.textContent = '✓ 已儲存'; el.style.color = ''; setTimeout(() => el.textContent = '', 2000) }
 }
 
@@ -1561,28 +1577,7 @@ function renderIcon(tool, size = 20) {
 
 // ── Preview rendering ─────────────────────────────────────────────────────────
 
-function renderMyPanel() { /* no-op: preview is now inline in renderRowEditor() */ }
-
-// ── Row text editor ────────────────────────────────────────────────────────────
-
-function refreshRowPreview(container, validItems) {
-    if (!container) return
-    container.innerHTML = ''
-    if (validItems.length === 0) {
-        container.innerHTML = '<span style="font-size:11px;color:var(--sf-muted);padding:4px 2px">（空）</span>'
-        return
-    }
-    validItems.forEach(item => {
-        const found = findToolById(item.id)
-        const group = TOOLSETS.find(g => g.name === item.category)
-        const cell = document.createElement('div')
-        cell.className = 'mock-cell'
-        cell.style.borderColor = group?.color ? group.color + '55' : ''
-        cell.title = `${item.id} (${item.category})`
-        cell.innerHTML = renderIcon(found?.tool, 20) + `<span class="cell-label">${found?.tool?.label || item.id}</span>`
-        container.appendChild(cell)
-    })
-}
+function renderMyPanel() { /* no-op */ }
 
 // All non-edit tool IDs globally unique → look up by ID only
 function findToolById(id) {
@@ -1591,41 +1586,76 @@ function findToolById(id) {
         const t = g.tools.find(t => t.id === id)
         if (t) return { tool: t, group: g }
     }
+    // Dynamic user text items: custom-text-N
+    const m = id.match(/^custom-text-(\d+)$/)
+    if (m) {
+        const lib = getUserTextLibrary()
+        const text = lib[parseInt(m[1])]
+        if (text !== undefined) {
+            const fakeGroup = { name: 'Text', color: '#b45309' }
+            return { tool: { id, label: text, textIcon: text }, group: fakeGroup }
+        }
+    }
+    // Special text tools
+    const specials = {
+        'quick-text':       { id: 'quick-text',       label: 'Free Text', icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8"/>' },
+        'text-library-add': { id: 'text-library-add', label: 'Add Text',  icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' },
+        'text-library-edit':{ id: 'text-library-edit',label: 'Edit Lib',  icon: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>' },
+    }
+    if (specials[id]) {
+        return { tool: specials[id], group: { name: 'Text', color: '#b45309' } }
+    }
     return null
 }
 
-function getRowText(rowNum) {
+function getUserTextLibrary() {
+    try { return JSON.parse(localStorage.getItem('scoreflow_user_text_library') || '[]') } catch { return [] }
+}
+
+// ── Stamp page+row text editor ────────────────────────────────────────────────
+
+let _lastFocusedTA = null  // used by bar reorder textareas
+
+const STAMP_NUM_PAGES = 3
+
+function getPageRowText(page, row) {
     return myPanel
-        .filter(s => (s.row ?? 1) === rowNum && TOOLSETS.find(g => g.name === s.category)?.type !== 'edit')
+        .filter(s => (s.page ?? 1) === page && (s.row ?? 1) === row)
         .map(s => s.id)
         .join(', ')
 }
 
-function parseRowText(text, rowNum) {
+function parseStampText(text, page, row) {
     return text.split(',').map(s => s.trim()).filter(Boolean).map(id => {
         const found = findToolById(id)
-        return found ? { id, category: found.group.name, row: rowNum, _valid: true } : { id, category: '', row: rowNum, _valid: false }
+        return found
+            ? { id, category: found.group.name, row, page, _valid: true }
+            : { id, category: '', row, page, _valid: false }
     })
 }
 
-let _lastFocusedTA = null   // track last focused textarea for chip insertion
-
-function buildChips(items) {
+function buildStampChips(items) {
     return items.map(item => {
         const found = findToolById(item.id)
-        const label = found?.tool.label || item.id
-        return `<span class="row-chip${item._valid ? '' : ' invalid'}" title="${item._valid ? item.id + ' (' + (found?.group.name||'') + ')' : 'Unknown ID: ' + item.id}">${label}</span>`
+        const t = found?.tool
+        if (!item._valid || !t) {
+            return `<div class="mock-cell edit-cell" title="未知 ID: ${item.id}" style="width:44px;font-size:9px;color:#ef4444">${item.id}</div>`
+        }
+        return `<div class="mock-cell" title="${t.label} (${item.id})">${renderIcon(t, 20)}<span class="cell-label">${t.label}</span></div>`
     }).join('')
 }
 
-function applyRowInputs() {
-    const ta1 = document.getElementById('row-ta-1')
-    const ta2 = document.getElementById('row-ta-2')
-    const ta3 = document.getElementById('row-ta-3')
-    const r1 = parseRowText(ta1?.value || '', 1).filter(x => x._valid)
-    const r2 = parseRowText(ta2?.value || '', 2).filter(x => x._valid)
-    const r3 = parseRowText(ta3?.value || '', 3).filter(x => x._valid)
-    myPanel = [...r1, ...r2, ...r3]
+function applyStampInputs() {
+    const result = []
+    for (let p = 1; p <= STAMP_NUM_PAGES; p++) {
+        for (let r = 1; r <= 2; r++) {
+            const ta = document.getElementById(`stamp-ta-p${p}r${r}`)
+            if (!ta) continue
+            const parsed = parseStampText(ta.value, p, r).filter(x => x._valid)
+            result.push(...parsed)
+        }
+    }
+    myPanel = result
     saveMyPanel()
     renderRowEditor()
     maybeRefreshLayout()
@@ -1636,43 +1666,48 @@ function renderRowEditor() {
     if (!el) return
     el.innerHTML = ''
 
-    ;[1, 2, 3].forEach(rowNum => {
-        const items = parseRowText(getRowText(rowNum), rowNum)
-        const validItems = items.filter(x => x._valid)
-        const block = document.createElement('div')
-        block.className = 'row-input-block'
-        block.innerHTML = `
-            <div class="row-input-header">
-                <div class="row-input-badge">Row ${rowNum}</div>
-                <div class="row-input-count">${validItems.length} stamps</div>
-            </div>
-            <div class="mock-row-items row-preview" id="row-preview-${rowNum}" style="flex-wrap:wrap;gap:4px;margin-bottom:10px;min-height:48px;align-items:center"></div>
-            <textarea id="row-ta-${rowNum}" class="row-textarea" placeholder="stamp ID, stamp ID, …  (從下方對照表點擊插入)">${getRowText(rowNum)}</textarea>
-            <div class="row-chips" id="row-chips-${rowNum}">${buildChips(items)}</div>
-        `
-        el.appendChild(block)
+    for (let p = 1; p <= STAMP_NUM_PAGES; p++) {
+        const pageBlock = document.createElement('div')
+        pageBlock.className = 'row-input-block'
 
-        refreshRowPreview(block.querySelector('.row-preview'), validItems)
+        pageBlock.innerHTML = `<div class="row-input-header">
+            <div class="row-input-badge">頁 ${p}</div>
+        </div>`
 
-        const ta = block.querySelector('textarea')
-        ta.addEventListener('focus', () => { _lastFocusedTA = ta })
-        ta.addEventListener('input', () => {
-            const parsed = parseRowText(ta.value, rowNum)
-            const valid = parsed.filter(x => x._valid)
-            block.querySelector('.row-chips').innerHTML = buildChips(parsed)
-            block.querySelector('.row-input-count').textContent = `${valid.length} stamps`
-            refreshRowPreview(block.querySelector('.row-preview'), valid)
-        })
-    })
+        for (let r = 1; r <= 2; r++) {
+            const lbl = document.createElement('div')
+            lbl.style.cssText = 'font-size:10px;color:var(--sf-muted);font-weight:600;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.05em'
+            lbl.textContent = `Row ${r}`
+            pageBlock.appendChild(lbl)
 
-    // Apply button row
+            const ta = document.createElement('textarea')
+            ta.id = `stamp-ta-p${p}r${r}`
+            ta.className = 'row-textarea'
+            ta.placeholder = 'stamp ID, stamp ID, …  (從下方對照表複製 ID)'
+            ta.value = getPageRowText(p, r)
+            pageBlock.appendChild(ta)
+
+            const chips = document.createElement('div')
+            chips.className = 'row-chips'
+            chips.id = `stamp-chips-p${p}r${r}`
+            chips.innerHTML = buildStampChips(parseStampText(ta.value, p, r))
+            pageBlock.appendChild(chips)
+
+            ta.addEventListener('input', () => {
+                chips.innerHTML = buildStampChips(parseStampText(ta.value, p, r))
+            })
+        }
+
+        el.appendChild(pageBlock)
+    }
+
     const applyRow = document.createElement('div')
     applyRow.className = 'row-apply-row'
     applyRow.innerHTML = `
-        <button class="row-apply-btn" id="btn-apply-rows">Apply & Save</button>
+        <button class="row-apply-btn" id="btn-apply-stamps">Apply & Save</button>
         <span class="row-apply-hint">儲存後同步到雲端</span>
     `
-    applyRow.querySelector('#btn-apply-rows').addEventListener('click', applyRowInputs)
+    applyRow.querySelector('#btn-apply-stamps').addEventListener('click', applyStampInputs)
     el.appendChild(applyRow)
 }
 
@@ -1685,13 +1720,6 @@ function renderRefGrid() {
     TOOLSETS.forEach(group => {
         if (group.type === 'edit') return
 
-        const byRow = {}
-        group.tools.forEach(t => {
-            const r = t.row ?? 1
-            if (!byRow[r]) byRow[r] = []
-            byRow[r].push(t)
-        })
-
         const card = document.createElement('div')
         card.className = 'ref-card'
         card.innerHTML = `
@@ -1700,46 +1728,50 @@ function renderRefGrid() {
                 <div class="ref-card-name">${group.name}</div>
                 <div class="ref-card-subtitle">${group.tools.length} tools</div>
             </div>
-            <div class="ref-rows" id="refrows-${group.name.replace(/[^a-z]/gi,'')}"></div>
+            <div class="ref-tools" id="refrows-${group.name.replace(/[^a-z]/gi,'')}"></div>
         `
         grid.appendChild(card)
 
-        const rowsEl = card.querySelector('.ref-rows')
-        const rowNums = Object.keys(byRow).sort()
-
-        rowNums.forEach(r => {
-            if (rowNums.length > 1) {
-                const lbl = document.createElement('div')
-                lbl.className = 'ref-row-label'
-                lbl.textContent = `Row ${r}`
-                rowsEl.appendChild(lbl)
-            }
-            const toolsDiv = document.createElement('div')
-            toolsDiv.className = 'ref-tools'
-            byRow[r].forEach(t => {
-                const chip = document.createElement('div')
-                chip.className = 'ref-chip'
-                chip.title = `Click to insert: ${t.id}`
-                chip.innerHTML = `
-                    <div class="rc-icon">${t.icon
-                        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14">${t.icon}</svg>`
-                        : `<span style="font-size:9px;font-weight:700">${t.textIcon || t.label}</span>`
-                    }</div>
-                    <span class="rc-label">${t.label}</span>
-                `
-                chip.addEventListener('click', () => {
-                    const ta = _lastFocusedTA || document.getElementById('row-ta-1')
-                    if (!ta) return
-                    const val = ta.value.trim()
-                    ta.value = val ? val + ', ' + t.id : t.id
-                    ta.dispatchEvent(new Event('input'))
-                    ta.focus()
-                })
-                toolsDiv.appendChild(chip)
-            })
-            rowsEl.appendChild(toolsDiv)
+        const toolsEl = card.querySelector('.ref-tools')
+        group.tools.forEach(t => {
+            const chip = document.createElement('div')
+            chip.className = 'ref-chip'
+            chip.title = t.id
+            chip.innerHTML = `
+                <div class="rc-icon">${t.icon
+                    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14">${t.icon}</svg>`
+                    : `<span style="font-size:9px;font-weight:700">${t.textIcon || t.label}</span>`
+                }</div>
+                <span class="rc-label">${t.label}</span>
+                <span class="rc-id">${t.id}</span>
+            `
+            toolsEl.appendChild(chip)
         })
     })
+
+    // User text library items
+    const lib = getUserTextLibrary()
+    if (lib.length > 0) {
+        const specials = [
+            { id: 'quick-text',        label: 'Free Text' },
+            { id: 'text-library-add',  label: 'Add Text'  },
+            { id: 'text-library-edit', label: 'Edit Lib'  },
+        ]
+        const allItems = [
+            ...specials,
+            ...lib.map((text, i) => ({ id: `custom-text-${i}`, label: text }))
+        ]
+        allItems.forEach(item => {
+            const chip = document.createElement('div')
+            chip.className = 'ref-chip'
+            chip.title = item.id
+            chip.innerHTML = `
+                <div class="rc-icon"><span style="font-size:9px;font-weight:700;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.label}</span></div>
+                <span class="rc-id">${item.id}</span>
+            `
+            grid.appendChild(chip)
+        })
+    }
 }
 
 // ── State tab ─────────────────────────────────────────────────────────────────

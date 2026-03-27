@@ -65,7 +65,14 @@ export class EditSubBarManager {
     }
 
     init() {
-        // Bars are created lazily on first toggle
+        // Auto-refresh stamp bar when inspector saves config in another tab
+        window.addEventListener('storage', (e) => {
+            if (e.key !== 'scoreflow_panel_config') return
+            const bar = this._bars['stamp']
+            if (bar && this.activeBar === 'stamp') {
+                this._populateBar(bar, 'stamp')
+            }
+        })
     }
 
     /**
@@ -321,31 +328,36 @@ export class EditSubBarManager {
         bar.appendChild(content)
 
         if (isStamp) {
-            // 1. Group items by their parent group name
-            const groups = []
-            flatItems.forEach(item => {
-                const gName = item._group?.name || 'Stamp'
-                let g = groups.find(x => x.name === gName)
-                if (!g) {
-                    g = { name: gName, items: [] }
-                    groups.push(g)
-                }
-                g.items.push(item)
-            })
+            // Determine page layout: explicit page field (new) or category-pair grouping (legacy)
+            const hasExplicitPages = flatItems.some(item => item._page != null)
+            let row1Items, row2Items, title1, title2, pageCount
 
-            // 2. Paginate by PAIRS of categories
-            const pageSize = 2
-            const pageCount = Math.ceil(groups.length / pageSize)
-            if (this._stampPage >= pageCount) this._stampPage = 0
-            
-            const startIdx = this._stampPage * pageSize
-            const pageGroups = groups.slice(startIdx, startIdx + pageSize)
-            
-            const row1Items = pageGroups[0]?.items || []
-            const row2Items = pageGroups[1]?.items || []
-            
-            const title1 = pageGroups[0]?.name || ''
-            const title2 = pageGroups[1]?.name || ''
+            if (hasExplicitPages) {
+                pageCount = Math.max(...flatItems.map(item => item._page ?? 1))
+                if (this._stampPage >= pageCount) this._stampPage = 0
+                const curPage = this._stampPage + 1
+                row1Items = flatItems.filter(item => (item._page ?? 1) === curPage && (item.row ?? 1) === 1)
+                row2Items = flatItems.filter(item => (item._page ?? 1) === curPage && (item.row ?? 1) === 2)
+                title1 = ''
+                title2 = ''
+            } else {
+                // Legacy: group by category, paginate 2 categories per page
+                const groups = []
+                flatItems.forEach(item => {
+                    const gName = item._group?.name || 'Stamp'
+                    let g = groups.find(x => x.name === gName)
+                    if (!g) { g = { name: gName, items: [] }; groups.push(g) }
+                    g.items.push(item)
+                })
+                const pageSize = 2
+                pageCount = Math.ceil(groups.length / pageSize)
+                if (this._stampPage >= pageCount) this._stampPage = 0
+                const pageGroups = groups.slice(this._stampPage * pageSize, this._stampPage * pageSize + pageSize)
+                row1Items = pageGroups[0]?.items || []
+                row2Items = pageGroups[1]?.items || []
+                title1 = pageGroups[0]?.name || ''
+                title2 = pageGroups[1]?.name || ''
+            }
 
             const buildRow = (items, categoryTitle) => {
                 const rowEl = document.createElement('div')
@@ -941,6 +953,15 @@ export class EditSubBarManager {
             const stamps = cfg.stamps
                 || JSON.parse(localStorage.getItem('scoreflow_my_panel') || '[]')
 
+            const textGroup = TOOLSETS.find(g => g.name === 'Text') || { name: 'Text' }
+            const lib = this.app.userTextLibrary || []
+
+            // Build a special text item with page/row taken from the config entry
+            const makeTextItem = (entry, base) => ({
+                ...base, _group: textGroup,
+                row: entry.row ?? 1, _page: entry.page ?? null
+            })
+
             let items = []
             if (!stamps.length) {
                 // Fallback: show all non-edit stamps
@@ -948,15 +969,40 @@ export class EditSubBarManager {
                     .filter(g => g.type !== 'edit')
                     .flatMap(g => g.tools.map(t => ({ ...t, _group: g, row: t.row ?? 1 })))
             } else {
-                // Map each {id, category, row} to its tool object
+                // Map each {id, category, row, page?} to its tool object
                 for (const entry of stamps) {
-                    const group = TOOLSETS.find(g => g.name === entry.category)
-                    if (!group) continue
-                    const tool = group.tools.find(t => t.id === entry.id)
-                    if (tool) items.push({ ...tool, _group: group, row: entry.row ?? tool.row ?? 1 })
+                    let group = TOOLSETS.find(g => g.name === entry.category)
+                    let tool  = group?.tools.find(t => t.id === entry.id)
+                    // Fallback: find by ID across all groups (handles category name mismatches,
+                    // e.g. inspector's 'Shapes' group vs app's 'Pens' group for line/slur/bracket)
+                    if (!tool) {
+                        for (const g of TOOLSETS) {
+                            if (g.type === 'edit') continue
+                            const t = g.tools.find(t => t.id === entry.id)
+                            if (t) { group = g; tool = t; break }
+                        }
+                    }
+                    if (tool) {
+                        items.push({ ...tool, _group: group, row: entry.row ?? tool.row ?? 1, _page: entry.page ?? null })
+                        continue
+                    }
+                    // Special text items not in TOOLSETS — honour page/row from config
+                    if (entry.id === 'quick-text') {
+                        items.push(makeTextItem(entry, { id: 'quick-text', label: 'Free Text', icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8"/>', _isSpecial: true }))
+                    } else if (entry.id === 'text-library-add') {
+                        items.push(makeTextItem(entry, { id: 'text-library-add', label: 'Add Text', icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>', _isSpecial: true }))
+                    } else if (entry.id === 'text-library-edit') {
+                        items.push(makeTextItem(entry, { id: 'text-library-edit', label: 'Edit Library', icon: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>', _isSpecial: true }))
+                    } else if (/^custom-text-\d+$/.test(entry.id)) {
+                        const idx = parseInt(entry.id.split('-').pop())
+                        const text = lib[idx]
+                        if (text !== undefined) {
+                            items.push(makeTextItem(entry, { id: entry.id, label: text, textIcon: text, draw: { type: 'text', content: text, font: 'italic 400', size: 16, fontFace: 'serif' }, _isUserText: true, _textIdx: idx }))
+                        }
+                    }
                 }
-                
-                // Ensure Pens are present if the user just moved from a legacy 
+
+                // Ensure Pens are present if the user just moved from a legacy
                 // setup where pens were on the main strip.
                 if (!items.some(it => it._group?.name === 'Pens')) {
                     const penGroup = TOOLSETS.find(g => g.name === 'Pens')
@@ -967,46 +1013,25 @@ export class EditSubBarManager {
                 }
             }
 
-            const textGroup = TOOLSETS.find(g => g.name === 'Text') || { name: 'Text' }
+            // Append any text items not already in the configured layout
+            // (these default to page 1 via _page: undefined)
+            const alreadyIn = (id) => items.some(item => item.id === id)
 
-            // 1. Free Text
-            items.push({
-                id: 'quick-text',
-                label: 'Free Text',
-                icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8"/>',
-                _group: textGroup,
-                _isSpecial: true
-            })
-
-            // 2. User Text Library items
-            const lib = this.app.userTextLibrary || []
+            if (!alreadyIn('quick-text')) {
+                items.push({ id: 'quick-text', label: 'Free Text', icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8"/>', _group: textGroup, _isSpecial: true })
+            }
             lib.forEach((text, idx) => {
-                items.push({
-                    id: 'custom-text-' + idx,
-                    label: text,
-                    textIcon: text,
-                    draw: { type: 'text', content: text, font: 'italic 400', size: 16, fontFace: 'serif' },
-                    _group: textGroup,
-                    _isUserText: true,
-                    _textIdx: idx
-                })
+                const id = 'custom-text-' + idx
+                if (!alreadyIn(id)) {
+                    items.push({ id, label: text, textIcon: text, draw: { type: 'text', content: text, font: 'italic 400', size: 16, fontFace: 'serif' }, _group: textGroup, _isUserText: true, _textIdx: idx })
+                }
             })
-
-            // 3. Add/Edit Tools
-            items.push({
-                id: 'text-library-add',
-                label: 'Add Text',
-                icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
-                _group: textGroup,
-                _isSpecial: true
-            })
-            items.push({
-                id: 'text-library-edit',
-                label: 'Edit Library',
-                icon: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
-                _group: textGroup,
-                _isSpecial: true
-            })
+            if (!alreadyIn('text-library-add')) {
+                items.push({ id: 'text-library-add', label: 'Add Text', icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>', _group: textGroup, _isSpecial: true })
+            }
+            if (!alreadyIn('text-library-edit')) {
+                items.push({ id: 'text-library-edit', label: 'Edit Library', icon: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>', _group: textGroup, _isSpecial: true })
+            }
 
             return items
         } catch {
