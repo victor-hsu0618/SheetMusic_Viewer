@@ -139,7 +139,8 @@ export class EditStripManager {
             })
             // Append missing core tools that weren't in the saved order
             // (Exclude special tools that have symmetrical fallbacks at top/bottom)
-            const specialIds = ['undo', 'redo', 'trash-can', 'scroll-bar']
+            // (EXCLUDE 'pen' as it's now internal to the Stamp Palette)
+            const specialIds = ['undo', 'redo', 'trash-can', 'scroll-bar', 'pen']
             const missing = editTools.filter(t => !editOrder.includes(t.id) && !specialIds.includes(t.id))
             finalEditTools = [...finalEditTools, ...missing]
         } else {
@@ -155,17 +156,15 @@ export class EditStripManager {
 
             // Skip trash-can as it's always at the bottom
             // Skip scroll-bar (dots) as it's now at the very bottom
-            if (tool.id === 'trash-can' || tool.id === 'scroll-bar') return
+            // Skip pen as it's now in the stamp bar
+            // Skip stamp-palette as it's now at the bottom (above Others bar)
+            if (tool.id === 'trash-can' || tool.id === 'scroll-bar' || tool.id === 'pen' || tool.id === 'stamp-palette') return
 
-            const isPen = tool.isPenTrigger
             const isStamp = tool.isStampTrigger
-            const isText = tool.isTextTrigger
             const isOthers = tool.id === 'scroll-bar'
-            const hasSub = isPen || isStamp || isText || isOthers
+            const hasSub = isStamp || isOthers
 
-            const subActive = (isPen && this._subBarMgr?.activeBar === 'pen')
-                || (isStamp && this._subBarMgr?.activeBar === 'stamp')
-                || (isText && this._subBarMgr?.activeBar === 'text')
+            const subActive = (isStamp && this._subBarMgr?.activeBar === 'stamp')
                 || (isOthers && this._subBarMgr?.activeBar === 'others')
 
             const btn = document.createElement('div')
@@ -182,19 +181,9 @@ export class EditStripManager {
             const isCoreAction = ['view','select','eraser','cycle','recycle-bin'].includes(curTool)
             
             if (!isActive && !isCoreAction) {
-                if (isPen) {
-                    isActive = (curTool === 'pen' || curTool.includes('-pen') || 
-                                curTool.includes('highlighter') || 
-                                curTool === 'dashed-pen' || curTool === 'arrow-pen' ||
-                                ['line', 'slur', 'bracket-left', 'bracket-right'].includes(curTool))
-                } else if (isText) {
-                    isActive = (curTool.startsWith('text-') || curTool === 'quick-text' || ['text','tempo-text'].includes(curTool))
-                } else if (isStamp) {
-                    // It's a stamp IF it's not a core tool and not identified as pen/shape/text above
-                    const isDrawOrText = (curTool === 'pen' || curTool.includes('-pen') || curTool.includes('highlighter') || 
-                                         ['line','slur', 'bracket-left', 'bracket-right','text','tempo-text'].includes(curTool) ||
-                                         curTool.startsWith('text-') || curTool === 'quick-text')
-                    isActive = !isDrawOrText
+                if (isStamp) {
+                    // STAMP PALETTE acts as the master trigger for all annotation/stamp/text tools
+                    isActive = true
                 }
             }
 
@@ -205,7 +194,7 @@ export class EditStripManager {
                 ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">${tool.icon}</svg>`
                 : `<span style="font-size:10px;font-weight:700;color:inherit">${tool.textIcon || tool.label}</span>`
 
-            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isPen, false, isStamp, isText, isOthers, false)) // isTrash is false here
+            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isStamp, isOthers, false))
             el.appendChild(btn)
         })
 
@@ -271,6 +260,24 @@ export class EditStripManager {
         fitHeightBtn.addEventListener('click', () => this.app.fitToHeight?.())
         el.appendChild(fitHeightBtn)
 
+        // ── Stamp Library / Palette (Consolidated Entrance) ──────────────────
+        const stampTool = editTools.find(t => t.id === 'stamp-palette')
+        if (stampTool) {
+            const btn = document.createElement('div')
+            btn.className = 'sf-strip-btn has-sub'
+            if (this._subBarMgr?.activeBar === 'stamp') btn.classList.add('open')
+
+            // Master Activation Logic for ALL annotation tools
+            const curTool = this.app.activeStampType
+            const isCoreAction = ['view','select','eraser','cycle','recycle-bin'].includes(curTool)
+            if (!isCoreAction) btn.classList.add('active')
+
+            btn.title = stampTool.label
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">${stampTool.icon}</svg>`
+            btn.addEventListener('click', () => this._handleToolClick(stampTool, btn, true, false, false))
+            el.appendChild(btn)
+        }
+
         // Others (Dots) Bar at the Bottom
         el.appendChild(this._divider())
         const othersBtn = document.createElement('div')
@@ -292,17 +299,13 @@ export class EditStripManager {
         this._buildCollapseToggle(el)
     }
 
-    _handleToolClick(tool, btn, isPen, isShapes, isStamp, isText, isOthers, isTrash) {
+    _handleToolClick(tool, btn, isStamp, isOthers, isTrash) {
         if (isOthers) {
             this._subBarMgr?.toggle('others', btn)
         } else if (isTrash) {
             this._handleTrashClick()
-        } else if (isPen) {
-            this._subBarMgr?.toggle('pen', btn)
         } else if (isStamp) {
             this._subBarMgr?.toggle('stamp', btn)
-        } else if (isText) {
-            this._subBarMgr?.toggle('text', btn)
         } else {
             if (this._subBarMgr?.closeToolBars) {
                 this._subBarMgr.closeToolBars()

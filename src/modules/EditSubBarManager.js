@@ -94,7 +94,7 @@ export class EditSubBarManager {
     }
 
     closeToolBars() {
-        ['pen', 'shapes', 'stamp', 'text'].forEach(name => {
+        ['pen', 'stamp'].forEach(name => {
             if (this._bars[name]) {
                 this._bars[name].classList.remove('open')
             }
@@ -162,20 +162,13 @@ export class EditSubBarManager {
         const bar = document.createElement('div')
         bar.id = 'sf-sub-bar-' + name
         bar.className = 'sf-sub-bar'
-            + (name === 'pen'    ? ' sf-pen-bar'    : '')
-            + (name === 'text'   ? ' sf-text-bar'   : '')
             + (name === 'others' ? ' sf-others-bar' : '')
             + (name === 'stamp' ? ' sf-wide-bar' : '')
         return bar
     }
 
     _positionBar(bar, name, triggerBtn) {
-        if (name === 'pen' || name === 'text') {
-            // Vertically center on trigger button
-            const rect = triggerBtn.getBoundingClientRect()
-            bar.style.top = (rect.top + rect.height / 2) + 'px'
-
-        } else if (name === 'stamp') {
+        if (name === 'stamp') {
             // Use stored Y or default to near bottom
             const stored = this._stampBarY
             const raw = stored ?? Math.round(window.innerHeight * 0.82)
@@ -204,216 +197,13 @@ export class EditSubBarManager {
 
     _populateBar(bar, name) {
         bar.innerHTML = ''
-        if (name === 'pen')    this._buildPenBar(bar)
         if (name === 'stamp')  this._buildWideBar(bar, 'stamp')
-        if (name === 'text')   this._buildTextBar(bar)
         if (name === 'others') this._buildOthersBar(bar)
     }
 
-    // ─── Pen Bar ──────────────────────────────────────────────────────────────
+    // ─── Drawing & Text Bar (Merged) ──────────────────────────────────────────
 
-    _buildPenBar(bar) {
-        const label = (txt) => {
-            const l = document.createElement('div')
-            l.className = 'sf-pen-label'
-            l.textContent = txt
-            return l
-        }
 
-        bar.appendChild(label('Pen'))
-
-        PEN_VARIANTS.forEach(p => {
-            const isActive = this.app.activeStampType === p.id
-            const btn = document.createElement('div')
-            btn.className = 'sf-pen-cell' + (isActive ? ' active' : '')
-            btn.title = p.label
-            if (p.arrow) {
-                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="${p.stroke}" stroke-width="2" width="20" height="20">
-                    <path d="M3 12h15"/><path d="M14 8l4 4-4 4"/>
-                </svg>`
-            } else {
-                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="${p.stroke}"
-                    stroke-width="${p.dashed ? '2' : '1.8'}" ${p.dashed ? 'stroke-dasharray="4,2"' : ''}
-                    width="20" height="20">
-                    <path d="M12 19l7-7M19 12l3 3M22 15l-7 7M15 22l-3-3M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5"/>
-                </svg>`
-            }
-            btn.addEventListener('click', () => this._selectTool(p.id, bar, 'pen'))
-            bar.appendChild(btn)
-        })
-
-        const div = document.createElement('div')
-        div.className = 'sf-pen-divider'
-        bar.appendChild(div)
-
-        bar.appendChild(label('HL'))
-
-        HL_VARIANTS.forEach(h => {
-            const isActive = this.app.activeStampType === h.id
-            const btn = document.createElement('div')
-            btn.className = 'sf-pen-cell' + (isActive ? ' active' : '')
-            btn.title = h.label
-            btn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20">
-                <rect x="2" y="8" width="20" height="8" rx="2" fill="${h.color}" opacity="0.7"/>
-            </svg>`
-            btn.addEventListener('click', () => this._selectTool(h.id, bar, 'pen'))
-            bar.appendChild(btn)
-        })
-
-        const div2 = document.createElement('div')
-        div2.className = 'sf-pen-divider'
-        bar.appendChild(div2)
-
-        bar.appendChild(label('Shape'))
-
-        SHAPE_VARIANTS.forEach(s => {
-            const isActive = this.app.activeStampType === s.id
-            const btn = document.createElement('div')
-            btn.className = 'sf-pen-cell' + (isActive ? ' active' : '')
-            btn.title = s.label
-            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                ${s.icon}
-            </svg>`
-            btn.addEventListener('click', () => this._selectTool(s.id, bar, 'pen'))
-            bar.appendChild(btn)
-        })
-    }
-
-    // ─── Text Bar ─────────────────────────────────────────────────────────────
-
-    _buildTextBar(bar) {
-        const lib = this.app.userTextLibrary || []
-
-        // [Aa] Free text button
-        const freeBtn = document.createElement('div')
-        freeBtn.className = 'sf-pen-cell sf-text-free-btn' + (this.app.activeStampType === 'quick-text' ? ' active' : '')
-        freeBtn.title = 'Free Text'
-        freeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <path d="M4 7V4h16v3M12 4v16m-4 0h8"/>
-        </svg>`
-        freeBtn.addEventListener('click', () => {
-            this.app.activeStampType = 'quick-text'
-            this.app.toolManager?.updateActiveTools()
-            this._populateBar(bar, 'text')
-            this.app.editStripManager?.update()
-        })
-        bar.appendChild(freeBtn)
-
-        if (lib.length > 0) {
-            const div = document.createElement('div')
-            div.className = 'sf-pen-divider'
-            bar.appendChild(div)
-
-            lib.forEach((text, idx) => {
-                const isActive = this.app.activeStampType === 'custom-text-' + idx
-                    && this.app._activeCustomText === text
-                const cell = document.createElement('div')
-                cell.className = 'sf-text-cell' + (isActive ? ' active' : '')
-                cell.title = text
-                const displayText = text.length > 12 ? text.slice(0, 11) + '…' : text
-                cell.textContent = displayText
-                cell.addEventListener('click', () => {
-                    this.app._activeCustomText = text
-                    this.app.activeStampType = 'custom-text-' + idx
-                    this.app.toolManager?.updateActiveTools()
-                    this._populateBar(bar, 'text')
-                    this.app.editStripManager?.update()
-                })
-
-                // Long-press to delete
-                let pressTimer = null
-                const startPress = () => { pressTimer = setTimeout(() => this._deleteUserText(idx, bar), 600) }
-                const cancelPress = () => { clearTimeout(pressTimer) }
-                cell.addEventListener('pointerdown', startPress)
-                cell.addEventListener('pointerup', cancelPress)
-                cell.addEventListener('pointercancel', cancelPress)
-
-                bar.appendChild(cell)
-            })
-        }
-
-        // Divider before [+]
-        const div2 = document.createElement('div')
-        div2.className = 'sf-pen-divider'
-        bar.appendChild(div2)
-
-        // [+] Add new text
-        const addBtn = document.createElement('div')
-        addBtn.className = 'sf-pen-cell sf-text-add-btn'
-        addBtn.title = 'Add text to library'
-        addBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>`
-        addBtn.addEventListener('click', async () => {
-            const text = await this.app.showDialog({
-                title: 'Add to Text Library',
-                message: 'Enter the text to add:',
-                type: 'input',
-                placeholder: 'e.g. Pizz., dolce, a tempo…',
-            })
-            if (!text?.trim()) return
-            if (!this.app.userTextLibrary) this.app.userTextLibrary = []
-            if (!this.app.userTextLibrary.includes(text.trim())) {
-                this.app.userTextLibrary.push(text.trim())
-                this._saveTextLibrary(bar)
-            }
-            this._populateBar(bar, 'text')
-        })
-        bar.appendChild(addBtn)
-
-        // [Edit all] — bulk edit as comma-separated
-        const editAllBtn = document.createElement('div')
-        editAllBtn.className = 'sf-pen-cell sf-text-edit-all-btn'
-        editAllBtn.title = 'Edit all (comma-separated)'
-        editAllBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>`
-        editAllBtn.addEventListener('click', async () => {
-            const current = (this.app.userTextLibrary || []).join(', ')
-            const result = await this.app.showDialog({
-                title: 'Edit Text Library',
-                message: 'Items separated by comma:',
-                type: 'input',
-                defaultValue: current,
-                placeholder: '指揮, 小提, Pizz., dolce…',
-            })
-            if (result === null || result === undefined) return
-            this.app.userTextLibrary = result.split(',').map(s => s.trim()).filter(Boolean)
-            this._saveTextLibrary(bar)
-            this._populateBar(bar, 'text')
-        })
-        bar.appendChild(editAllBtn)
-    }
-
-    /** Persist userTextLibrary to localStorage + user_content column, then push to Supabase */
-    _saveTextLibrary(bar) {
-        this.app.saveToStorage?.()
-        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary || []))
-        this.app.supabaseManager?.pushUserContent({ userTextLibrary: this.app.userTextLibrary || [] })
-        if (bar) this.app.editStripManager?.update()
-    }
-
-    async _deleteUserText(idx, bar) {
-        if (!this.app.userTextLibrary) return
-        const text = this.app.userTextLibrary[idx]
-        const confirmed = await this.app.showDialog({
-            title: 'Remove from Library',
-            message: `Remove "${text}" from your text library?`,
-            type: 'confirm',
-        })
-        if (!confirmed) return
-        this.app.userTextLibrary.splice(idx, 1)
-        this._saveTextLibrary(null)
-        // Reset tool if it was active
-        if (this.app._activeCustomText === text) {
-            this.app._activeCustomText = null
-            this.app.activeStampType = 'view'
-            this.app.toolManager?.updateActiveTools()
-            this.app.editStripManager?.update()
-        }
-        this._populateBar(bar, 'text')
-    }
 
     // ─── Wide Bars (shapes + stamp) ───────────────────────────────────────────
 
@@ -510,72 +300,114 @@ export class EditSubBarManager {
         content.className = 'sf-bar-content'
         bar.appendChild(content)
 
-        bar.appendChild(this._barDivider())
-
-        // RIGHT: grip (vertical drag)
-        const grip = document.createElement('div')
-        grip.className = 'sf-bar-grip'
-        grip.innerHTML = '<span></span><span></span><span></span><span></span>'
-        grip.title = 'Drag to reposition'
-        this._attachGripDrag(grip, bar, type)
-        bar.appendChild(grip)
-
         if (isStamp) {
-            // 2-row horizontally scrollable layout — row 1 on top, row 2 on bottom
-            const row1Items = flatItems.filter(i => (i.row ?? 1) !== 2)
-            const row2Items = flatItems.filter(i => i.row === 2)
+            // 1. Group items by their parent group name
+            const groups = []
+            flatItems.forEach(item => {
+                const gName = item._group?.name || 'Stamp'
+                let g = groups.find(x => x.name === gName)
+                if (!g) {
+                    g = { name: gName, items: [] }
+                    groups.push(g)
+                }
+                g.items.push(item)
+            })
 
-            const buildRow = (items) => {
+            // 2. Paginate by PAIRS of categories
+            const pageSize = 2
+            const pageCount = Math.ceil(groups.length / pageSize)
+            if (this._stampPage >= pageCount) this._stampPage = 0
+            
+            const startIdx = this._stampPage * pageSize
+            const pageGroups = groups.slice(startIdx, startIdx + pageSize)
+            
+            const row1Items = pageGroups[0]?.items || []
+            const row2Items = pageGroups[1]?.items || []
+            
+            const title1 = pageGroups[0]?.name || ''
+            const title2 = pageGroups[1]?.name || ''
+
+            const buildRow = (items, categoryTitle) => {
                 const rowEl = document.createElement('div')
                 rowEl.className = 'sf-stamp-row'
+                if (categoryTitle) rowEl.dataset.category = categoryTitle
+
                 items.forEach(item => {
                     const isActive = this.app.activeStampType === item.id
-                    const cell = document.createElement('div')
-                    cell.className = 'sf-bar-cell' + (isActive ? ' active' : '')
-                    cell.dataset.id = item.id
-                    if (item._group?.color) cell.style.borderColor = item._group.color + '55'
-                    cell.innerHTML = this._cellIconHTML(item)
-                    cell.title = item.label
-                    cell.addEventListener('click', () => this._selectTool(item.id, bar, type))
-                    rowEl.appendChild(cell)
+                    const btn = document.createElement('div')
+                    btn.className = 'sf-bar-cell' + (isActive ? ' active' : '')
+                    if (item._group?.color) btn.style.borderColor = item._group.color + '55'
+                    btn.innerHTML = this._cellIconHTML(item)
+                    btn.title = item.label
+                    btn.addEventListener('click', () => this._selectTool(item.id, bar, type))
+                    rowEl.appendChild(btn)
                 })
                 return rowEl
             }
 
-            content.appendChild(buildRow(row1Items))
-            if (row2Items.length > 0) content.appendChild(buildRow(row2Items))
+            if (row1Items.length) content.appendChild(buildRow(row1Items, title1))
+            if (row2Items.length) content.appendChild(buildRow(row2Items, title2))
+
+            bar.appendChild(this._barDivider())
+
+            const rightCol = document.createElement('div')
+            rightCol.className = 'sf-bar-right-nav'
+
+            const grip = document.createElement('div')
+            grip.className = 'sf-bar-grip'
+            grip.innerHTML = '<span></span><span></span><span></span><span></span>'
+            grip.title = 'Drag to reposition'
+            this._attachGripDrag(grip, bar, type)
+            rightCol.appendChild(grip)
+
+            if (pageCount > 1) {
+                const pageBtn = document.createElement('div')
+                pageBtn.className = 'sf-stamp-page-btn sf-dual-page-btn'
+                
+                const label  = `${this._stampPage + 1}/${pageCount}`
+                
+                pageBtn.title = `Switch Page`
+                pageBtn.innerHTML = `<span>${label}</span>`
+                pageBtn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    this._stampPage = (this._stampPage + 1) % pageCount
+                    this._populateBar(bar, 'stamp')
+                })
+                rightCol.appendChild(pageBtn)
+            }
+            
+            bar.appendChild(rightCol)
+
         } else {
             // Shapes: paginated grid
             const grid = document.createElement('div')
             grid.className = 'sf-bar-grid'
             content.appendChild(grid)
 
-            const prevBtn = bar._prevBtn
-            const nextBtn = bar._nextBtn
-
             requestAnimationFrame(() => {
                 const CELL = 48, GAP = 4
                 const cols    = Math.max(1, Math.floor((content.clientWidth + GAP) / (CELL + GAP)))
                 const perPage = cols * 2
-
-                const pageCount = Math.max(1, Math.ceil(flatItems.length / perPage))
                 const pageItems = flatItems.slice(0, perPage)
-
-                if (prevBtn) prevBtn.classList.add('disabled')
-                if (nextBtn) nextBtn.classList.toggle('disabled', pageCount <= 1)
 
                 pageItems.forEach(item => {
                     const isActive = this.app.activeStampType === item.id
                     const cell = document.createElement('div')
                     cell.className = 'sf-bar-cell' + (isActive ? ' active' : '')
                     if (item._group?.color) cell.style.borderColor = item._group.color + '55'
-                    cell.dataset.id = item.id
                     cell.innerHTML = this._cellIconHTML(item)
                     cell.title = item.label
                     cell.addEventListener('click', () => this._selectTool(item.id, bar, type))
                     grid.appendChild(cell)
                 })
             })
+
+            bar.appendChild(this._barDivider())
+            const grip = document.createElement('div')
+            grip.className = 'sf-bar-grip'
+            grip.innerHTML = '<span></span><span></span><span></span><span></span>'
+            this._attachGripDrag(grip, bar, type)
+            bar.appendChild(grip)
         }
     }
 
@@ -1086,22 +918,74 @@ export class EditSubBarManager {
             const stamps = cfg.stamps
                 || JSON.parse(localStorage.getItem('scoreflow_my_panel') || '[]')
 
+            let items = []
             if (!stamps.length) {
                 // Fallback: show all non-edit stamps
-                return TOOLSETS
+                items = TOOLSETS
                     .filter(g => g.type !== 'edit')
                     .flatMap(g => g.tools.map(t => ({ ...t, _group: g, row: t.row ?? 1 })))
+            } else {
+                // Map each {id, category, row} to its tool object
+                for (const entry of stamps) {
+                    const group = TOOLSETS.find(g => g.name === entry.category)
+                    if (!group) continue
+                    const tool = group.tools.find(t => t.id === entry.id)
+                    if (tool) items.push({ ...tool, _group: group, row: entry.row ?? tool.row ?? 1 })
+                }
+                
+                // Ensure Pens are present if the user just moved from a legacy 
+                // setup where pens were on the main strip.
+                if (!items.some(it => it._group?.name === 'Pens')) {
+                    const penGroup = TOOLSETS.find(g => g.name === 'Pens')
+                    if (penGroup) {
+                        const penTools = penGroup.tools.map(t => ({ ...t, _group: penGroup, row: t.row ?? 1 }))
+                        items = [...penTools, ...items]
+                    }
+                }
             }
 
-            // Map each {id, category, row} to its tool object
-            const result = []
-            for (const entry of stamps) {
-                const group = TOOLSETS.find(g => g.name === entry.category)
-                if (!group) continue
-                const tool = group.tools.find(t => t.id === entry.id)
-                if (tool) result.push({ ...tool, _group: group, row: entry.row ?? tool.row ?? 1 })
-            }
-            return result
+            const textGroup = TOOLSETS.find(g => g.name === 'Text') || { name: 'Text' }
+
+            // 1. Free Text
+            items.push({
+                id: 'quick-text',
+                label: 'Free Text',
+                icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8"/>',
+                _group: textGroup,
+                _isSpecial: true
+            })
+
+            // 2. User Text Library items
+            const lib = this.app.userTextLibrary || []
+            lib.forEach((text, idx) => {
+                items.push({
+                    id: 'custom-text-' + idx,
+                    label: text,
+                    textIcon: text,
+                    draw: { type: 'text', content: text, font: 'italic 400', size: 16, fontFace: 'serif' },
+                    _group: textGroup,
+                    _isUserText: true,
+                    _textIdx: idx
+                })
+            })
+
+            // 3. Add/Edit Tools
+            items.push({
+                id: 'text-library-add',
+                label: 'Add Text',
+                icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+                _group: textGroup,
+                _isSpecial: true
+            })
+            items.push({
+                id: 'text-library-edit',
+                label: 'Edit Library',
+                icon: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+                _group: textGroup,
+                _isSpecial: true
+            })
+
+            return items
         } catch {
             return TOOLSETS
                 .filter(g => g.type !== 'edit')
@@ -1120,6 +1004,27 @@ export class EditSubBarManager {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     _selectTool(toolId, bar, barType) {
+        if (toolId === 'text-library-add') {
+            this._handleAddText(bar)
+            return
+        }
+        if (toolId === 'text-library-edit') {
+            this._handleEditLibrary(bar)
+            return
+        }
+        if (toolId.startsWith('custom-text-')) {
+            const idx = parseInt(toolId.split('-').pop())
+            const text = (this.app.userTextLibrary || [])[idx]
+            if (text) {
+                this.app._activeCustomText = text
+                this.app.activeStampType = toolId
+                this.app.toolManager?.updateActiveTools()
+                this._populateBar(bar, barType)
+                this.app.editStripManager?.update()
+                return
+            }
+        }
+
         this.app.activeStampType = toolId
         // Sync activeColor when tool has a natural color (red-pen, highlighter, etc.)
         if (TOOL_NATURAL_COLORS[toolId] !== undefined) {
@@ -1130,6 +1035,63 @@ export class EditSubBarManager {
         this._populateBar(bar, barType)
         // Re-render strip to update active button
         this.app.editStripManager?.update()
+    }
+
+    async _handleAddText(bar) {
+        const text = await this.app.showDialog({
+            title: 'Add to Text Library',
+            message: 'Enter the text to add:',
+            type: 'input',
+            placeholder: 'e.g. Pizz., dolce, a tempo…',
+        })
+        if (!text?.trim()) return
+        if (!this.app.userTextLibrary) this.app.userTextLibrary = []
+        if (!this.app.userTextLibrary.includes(text.trim())) {
+            this.app.userTextLibrary.push(text.trim())
+            this._saveTextLibrary()
+        }
+        this._populateBar(bar, 'stamp')
+    }
+
+    async _handleEditLibrary(bar) {
+        const current = (this.app.userTextLibrary || []).join(', ')
+        const result = await this.app.showDialog({
+            title: 'Edit Text Library',
+            message: 'Items separated by comma:',
+            type: 'input',
+            defaultValue: current,
+            placeholder: '指揮, 小提, Pizz., dolce…',
+        })
+        if (result === null || result === undefined) return
+        this.app.userTextLibrary = result.split(',').map(s => s.trim()).filter(Boolean)
+        this._saveTextLibrary()
+        this._populateBar(bar, 'stamp')
+    }
+
+    _saveTextLibrary() {
+        this.app.saveToStorage?.()
+        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary || []))
+        this.app.supabaseManager?.pushUserContent({ userTextLibrary: this.app.userTextLibrary || [] })
+        this.app.editStripManager?.update()
+    }
+
+    async _deleteUserText(idx, bar) {
+        if (!this.app.userTextLibrary) return
+        const text = this.app.userTextLibrary[idx]
+        const confirmed = await this.app.showDialog({
+            title: 'Remove from Library',
+            message: `Remove "${text}" from your text library?`,
+            type: 'confirm',
+        })
+        if (!confirmed) return
+        this.app.userTextLibrary.splice(idx, 1)
+        this._saveTextLibrary()
+        if (this.app._activeCustomText === text) {
+            this.app._activeCustomText = null
+            this.app.activeStampType = 'view'
+            this.app.toolManager?.updateActiveTools()
+        }
+        this._populateBar(bar, 'stamp')
     }
 
     _navBtn(dir) {
