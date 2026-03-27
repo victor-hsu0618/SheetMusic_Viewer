@@ -432,7 +432,8 @@
     align-items: center;
     gap: 5px;
     padding: 6px 10px;
-    max-width: calc(100vw - 120px);
+    max-width: calc(100vw - 66px);
+    /* 8px left gap + 58px right offset */
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -486,8 +487,8 @@
     cursor: grab;
     touch-action: none;
     /* prevent browser from hijacking touch gestures */
-    left: 54px;
-    /* clear 50px doc bar + 4px gap */
+    left: 8px;
+    /* Gutter from left edge since Doc bar is removed */
     transform: translateX(8px) scale(0.95) translateY(-50%);
     transform-origin: right center;
     transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s;
@@ -500,8 +501,8 @@
 /* ── Others bar (slides up from bottom) ── */
 .sf-others-bar {
     position: fixed;
-    left: 54px;
-    /* clear 50px doc bar + 4px gap */
+    left: 8px;
+    /* Gutter from left edge since Doc bar is removed */
     right: 58px;
     /* clear 54px edit strip + 4px gap */
     bottom: 0;
