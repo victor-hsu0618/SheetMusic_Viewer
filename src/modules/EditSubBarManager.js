@@ -30,6 +30,13 @@ const HL_VARIANTS = [
     { id: 'highlighter-green', label: 'H.Green',color: '#15803d', naturalColor: '#15803d' },
 ]
 
+const SHAPE_VARIANTS = [
+    { id: 'line',          label: 'Line',    icon: '<line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2" />' },
+    { id: 'slur',          label: 'Slur',    icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />' },
+    { id: 'bracket-left',  label: '[',       icon: '<path d="M15 5 L9 5 L9 19 L15 19" fill="none" stroke="currentColor" stroke-width="2" />' },
+    { id: 'bracket-right', label: ']',       icon: '<path d="M9 5 L15 5 L15 19 L9 19" fill="none" stroke="currentColor" stroke-width="2" />' },
+]
+
 // Tools that carry a "natural" default color — clicking them syncs activeColor
 const TOOL_NATURAL_COLORS = Object.fromEntries(
     [...PEN_VARIANTS, ...HL_VARIANTS]
@@ -158,7 +165,7 @@ export class EditSubBarManager {
             + (name === 'pen'    ? ' sf-pen-bar'    : '')
             + (name === 'text'   ? ' sf-text-bar'   : '')
             + (name === 'others' ? ' sf-others-bar' : '')
-            + ((name === 'shapes' || name === 'stamp') ? ' sf-wide-bar' : '')
+            + (name === 'stamp' ? ' sf-wide-bar' : '')
         return bar
     }
 
@@ -168,9 +175,9 @@ export class EditSubBarManager {
             const rect = triggerBtn.getBoundingClientRect()
             bar.style.top = (rect.top + rect.height / 2) + 'px'
 
-        } else if (name === 'shapes' || name === 'stamp') {
+        } else if (name === 'stamp') {
             // Use stored Y or default to near bottom
-            const stored = name === 'stamp' ? this._stampBarY : this._shapesBarY
+            const stored = this._stampBarY
             const raw = stored ?? Math.round(window.innerHeight * 0.82)
             
             // Set initial top immediately
@@ -184,8 +191,7 @@ export class EditSubBarManager {
                 const halfH = h / 2
                 const clamped = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, raw))
                 bar.style.top = clamped + 'px'
-                if (name === 'stamp')  this._stampBarY  = clamped
-                else                   this._shapesBarY = clamped
+                this._stampBarY  = clamped
             }
 
             if (bar.offsetHeight > 0) refine()
@@ -199,7 +205,6 @@ export class EditSubBarManager {
     _populateBar(bar, name) {
         bar.innerHTML = ''
         if (name === 'pen')    this._buildPenBar(bar)
-        if (name === 'shapes') this._buildWideBar(bar, 'shapes')
         if (name === 'stamp')  this._buildWideBar(bar, 'stamp')
         if (name === 'text')   this._buildTextBar(bar)
         if (name === 'others') this._buildOthersBar(bar)
@@ -252,6 +257,24 @@ export class EditSubBarManager {
                 <rect x="2" y="8" width="20" height="8" rx="2" fill="${h.color}" opacity="0.7"/>
             </svg>`
             btn.addEventListener('click', () => this._selectTool(h.id, bar, 'pen'))
+            bar.appendChild(btn)
+        })
+
+        const div2 = document.createElement('div')
+        div2.className = 'sf-pen-divider'
+        bar.appendChild(div2)
+
+        bar.appendChild(label('Shape'))
+
+        SHAPE_VARIANTS.forEach(s => {
+            const isActive = this.app.activeStampType === s.id
+            const btn = document.createElement('div')
+            btn.className = 'sf-pen-cell' + (isActive ? ' active' : '')
+            btn.title = s.label
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+                ${s.icon}
+            </svg>`
+            btn.addEventListener('click', () => this._selectTool(s.id, bar, 'pen'))
             bar.appendChild(btn)
         })
     }
@@ -448,6 +471,10 @@ export class EditSubBarManager {
             const rBtn = colorBtn('#be123c', 'Red')
             rBtn.style.marginBottom = '2px'
             navCol.appendChild(rBtn)
+
+            const gBtn = colorBtn('#15803d', 'Green')
+            gBtn.style.marginBottom = '2px'
+            navCol.appendChild(gBtn)
             
             const bBtn = colorBtn('#1d4ed8', 'Blue')
             bBtn.style.marginBottom = '6px' // Extra gap before the settings gear

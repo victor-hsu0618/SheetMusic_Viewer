@@ -36,7 +36,6 @@ export const TOOLSETS = [
             { id: 'pen', label: 'Pen', isPenTrigger: true, icon: '<path d="M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 19l7-7l3 3l-7 7l-3-3z" fill="#1a1a1a" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>', draw: { type: 'path', color: '#1a1a1a' } },
             { id: 'cycle', label: 'Cycle', icon: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="21 3 21 8 16 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' },
             { id: 'eraser', label: 'Eraser', icon: '<path d="M16.5 4.5 L19.5 7.5 L9 18 L4.5 18 L4.5 13.5 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="15" y2="10.5" stroke="currentColor" stroke-width="1.6"/><line x1="4.5" y1="18" x2="19.5" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
-            { id: 'shapes', label: 'Shapes', isShapesTrigger: true, icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="16" x2="20" y2="4" stroke="currentColor" stroke-width="1.2"/><path d="M14 18 L8 18 L8 12" fill="none" stroke="currentColor" stroke-width="1.5"/>' },
             { id: 'stamp-palette', label: 'Stamps', isStampTrigger: true, icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>' },
             { id: 'scroll-bar', label: 'Others', icon: '<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>' }
         ]
@@ -55,16 +54,10 @@ export const TOOLSETS = [
             { id: 'highlighter-red', label: 'H.Red', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#be123c" opacity="0.3" stroke="#be123c" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#be123c" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#be123c' } },
             { id: 'highlighter-blue', label: 'H.Blue', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#1d4ed8" opacity="0.3" stroke="#1d4ed8" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#1d4ed8" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#1d4ed8' } },
             { id: 'highlighter-green', label: 'H.Green', row: 2, icon: '<rect x="4" y="8" width="16" height="8" rx="2" fill="#15803d" opacity="0.3" stroke="#15803d" stroke-width="1" /><line x1="4" y1="12" x2="20" y2="12" stroke="#15803d" stroke-width="4" opacity="0.5" />', draw: { type: 'highlighter', color: '#15803d' } },
-        ]
-    },
-    {
-        name: 'Shapes',
-        type: 'draw',
-        tools: [
-            { id: 'line',          label: 'Line',    icon: '<line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2" />' },
-            { id: 'slur',          label: 'Slur',    icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />', draw: { type: 'path' } },
-            { id: 'bracket-left',  label: '[',       icon: '<path d="M15 5 L9 5 L9 19 L15 19" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'path' } },
-            { id: 'bracket-right', label: ']',       icon: '<path d="M9 5 L15 5 L15 19 L9 19" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'path' } },
+            { id: 'line',          label: 'Line',    row: 3, icon: '<line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2" />' },
+            { id: 'slur',          label: 'Slur',    row: 3, icon: '<path d="M4 8c4 8 12 8 16 0" fill="none" stroke="currentColor" stroke-width="1.5" />', draw: { type: 'path' } },
+            { id: 'bracket-left',  label: '[',       row: 3, icon: '<path d="M15 5 L9 5 L9 19 L15 19" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'path' } },
+            { id: 'bracket-right', label: ']',       row: 3, icon: '<path d="M9 5 L15 5 L15 19 L9 19" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'path' } },
         ]
     },
     {

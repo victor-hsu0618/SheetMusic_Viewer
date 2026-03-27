@@ -158,14 +158,12 @@ export class EditStripManager {
             if (tool.id === 'trash-can' || tool.id === 'scroll-bar') return
 
             const isPen = tool.isPenTrigger
-            const isShapes = tool.isShapesTrigger
             const isStamp = tool.isStampTrigger
             const isText = tool.isTextTrigger
             const isOthers = tool.id === 'scroll-bar'
-            const hasSub = isPen || isShapes || isStamp || isText || isOthers
+            const hasSub = isPen || isStamp || isText || isOthers
 
             const subActive = (isPen && this._subBarMgr?.activeBar === 'pen')
-                || (isShapes && this._subBarMgr?.activeBar === 'shapes')
                 || (isStamp && this._subBarMgr?.activeBar === 'stamp')
                 || (isText && this._subBarMgr?.activeBar === 'text')
                 || (isOthers && this._subBarMgr?.activeBar === 'others')
@@ -187,9 +185,8 @@ export class EditStripManager {
                 if (isPen) {
                     isActive = (curTool === 'pen' || curTool.includes('-pen') || 
                                 curTool.includes('highlighter') || 
-                                curTool === 'dashed-pen' || curTool === 'arrow-pen')
-                } else if (isShapes) {
-                    isActive = ['line', 'slur', 'bracket-left', 'bracket-right'].includes(curTool)
+                                curTool === 'dashed-pen' || curTool === 'arrow-pen' ||
+                                ['line', 'slur', 'bracket-left', 'bracket-right'].includes(curTool))
                 } else if (isText) {
                     isActive = (curTool.startsWith('text-') || curTool === 'quick-text' || ['text','tempo-text'].includes(curTool))
                 } else if (isStamp) {
@@ -208,7 +205,7 @@ export class EditStripManager {
                 ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">${tool.icon}</svg>`
                 : `<span style="font-size:10px;font-weight:700;color:inherit">${tool.textIcon || tool.label}</span>`
 
-            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isPen, isShapes, isStamp, isText, isOthers, false)) // isTrash is false here
+            btn.addEventListener('click', () => this._handleToolClick(tool, btn, isPen, false, isStamp, isText, isOthers, false)) // isTrash is false here
             el.appendChild(btn)
         })
 
@@ -302,8 +299,6 @@ export class EditStripManager {
             this._handleTrashClick()
         } else if (isPen) {
             this._subBarMgr?.toggle('pen', btn)
-        } else if (isShapes) {
-            this._subBarMgr?.toggle('shapes', btn)
         } else if (isStamp) {
             this._subBarMgr?.toggle('stamp', btn)
         } else if (isText) {
