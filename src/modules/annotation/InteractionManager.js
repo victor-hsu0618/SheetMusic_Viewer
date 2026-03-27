@@ -220,7 +220,6 @@ export class InteractionManager {
                     overlay.style.background = 'rgba(255, 255, 255, 0.05)';
                     setTimeout(() => overlay.style.background = '', 150);
                     if (navigator.vibrate) navigator.vibrate(10);
-                    this.app.editStripManager?.toggleCollapse(!this.app.editStripManager.collapsed);
                     this._penLongPressTimer = null;
                 }, 600);
 

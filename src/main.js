@@ -50,7 +50,6 @@ import { StaffDetector } from './modules/StaffDetector.js'
 import { GistShareManager } from './modules/GistShareManager.js'
 import { LocalBackupManager } from './modules/LocalBackupManager.js'
 import { SupabaseManager } from './modules/SupabaseManager.js'
-import { EditStripManager } from './modules/EditStripManager.js'
 import { EditSubBarManager } from './modules/EditSubBarManager.js'
 import { DockingBarManager } from './modules/DockingBarManager.js'
 import { StandaloneScrollbarManager } from './modules/StandaloneScrollbarManager.js'
@@ -151,11 +150,9 @@ this.setlistManager = new SetlistManager(this)
     this.localBackupManager = new LocalBackupManager(this)
     this.supabaseManager = new SupabaseManager(this)
     this.editSubBarManager = new EditSubBarManager(this)
-    this.editStripManager  = new EditStripManager(this)
     this.dockingBarManager = new DockingBarManager(this)
     this.standaloneScrollbarManager = new StandaloneScrollbarManager(this)
-    // Link strip + docking bar ↔ sub-bar
-    this.editStripManager.setSubBarManager(this.editSubBarManager)
+    // Link docking bar ↔ sub-bar
     this.dockingBarManager.setSubBarManager(this.editSubBarManager)
 
     // Apply Proxies
@@ -172,7 +169,6 @@ this.setlistManager = new SetlistManager(this)
     this.initManager.initEventListeners()
     this.viewerManager.init()
     this.editSubBarManager.init()
-    this.editStripManager.init()
     this.dockingBarManager.init()
     this.standaloneScrollbarManager.init()
     this.rulerManager.init()

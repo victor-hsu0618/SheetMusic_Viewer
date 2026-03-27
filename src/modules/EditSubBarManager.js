@@ -1,4 +1,5 @@
 import { TOOLSETS } from '../constants.js'
+import '../styles/edit-strip.css'
 
 /**
  * EditSubBarManager
@@ -280,7 +281,6 @@ export class EditSubBarManager {
                     this.app.activeColor = hex
                     this.app.toolManager?.updateActiveTools()
                     this._populateBar(bar, 'stamp')
-                    this.app.editStripManager?.update()
                 })
                 return btn
             }
@@ -1068,7 +1068,6 @@ export class EditSubBarManager {
                 this.app.activeStampType = toolId
                 this.app.toolManager?.updateActiveTools()
                 this._populateBar(bar, barType)
-                this.app.editStripManager?.update()
                 return
             }
         }
@@ -1081,8 +1080,6 @@ export class EditSubBarManager {
         this.app.toolManager?.updateActiveTools()
         // Update active state in-place for all bar types
         this._populateBar(bar, barType)
-        // Re-render strip to update active button
-        this.app.editStripManager?.update()
     }
 
     async _handleAddText(bar) {
@@ -1120,7 +1117,6 @@ export class EditSubBarManager {
         this.app.saveToStorage?.()
         localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary || []))
         this.app.supabaseManager?.pushUserContent({ userTextLibrary: this.app.userTextLibrary || [] })
-        this.app.editStripManager?.update()
     }
 
     async _deleteUserText(idx, bar) {

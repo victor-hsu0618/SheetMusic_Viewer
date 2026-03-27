@@ -3,47 +3,6 @@
    Right-side vertical edit bar + floating sub-bars
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Edit Strip (right-side fixed vertical bar) ── */
-#sf-edit-strip {
-    position: fixed;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 54px;
-    background: rgba(15, 23, 42, 0.15);
-    border-left: 1px solid rgba(0, 0, 0, 0.05);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    padding-top: calc(8px + env(safe-area-inset-top));
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
-    z-index: 200;
-    -webkit-user-select: none;
-    user-select: none;
-    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.22s, border-color 0.22s;
-}
-
-#sf-edit-strip.collapsed {
-    background: transparent !important;
-    border-color: transparent !important;
-    pointer-events: none;
-    /* Allow clicks to pass through to the score */
-}
-
-#sf-edit-strip.collapsed .sf-edit-collapse-btn {
-    pointer-events: auto;
-    /* Except for the toggle button itself */
-}
-
-#sf-edit-strip.collapsed>*:not(.sf-edit-collapse-btn) {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s;
-}
 
 /* ── Others trigger button (top of strip) ── */
 .sf-strip-others-btn {
@@ -324,29 +283,6 @@
     background: rgba(255, 255, 255, 0.06);
 }
 
-/* ── Permanent Collapse Toggle (Bottom) ── */
-.sf-edit-collapse-btn {
-    margin-top: auto;
-    margin-bottom: 5px;
-    background: transparent !important;
-    color: #ffffff !important;
-    border-color: #ffffff !important;
-    z-index: 201;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.sf-edit-collapse-btn svg {
-    stroke-width: 1.8px !important;
-    filter: none !important;
-    transition: transform 0.3s;
-}
-
-/* When collapsed, stay in place but show a subtle background */
-#sf-edit-strip.collapsed .sf-edit-collapse-btn {
-    background: rgba(15, 23, 42, 0.4) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
 
 /* ════════════════════════════════════════════════════════════════
    Sub-bars (pen picker, shapes, stamp, others)
@@ -1224,19 +1160,3 @@
     margin-top: 8px;
 }
 
-/* Adjust viewer to not be covered by edit strip */
-#viewer-container {
-    padding-right: 54px;
-    transition: padding-right 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body.sf-strip-collapsed #viewer-container {
-    padding-right: 0;
-}
-
-/* Overlay mode: BOTH strips float over the score – score width = full viewport.
-   Zero both paddings (same as sf-strip-collapsed state) so the score never moves. */
-body.sf-edit-strip-overlay #viewer-container {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-}

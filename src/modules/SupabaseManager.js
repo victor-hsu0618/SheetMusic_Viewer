@@ -484,7 +484,6 @@ export class SupabaseManager {
         localStorage.setItem('scoreflow_panel_config', JSON.stringify(cfg))
 
         // Re-render strips with updated order
-        this.app.editStripManager?.applyPanelConfig()
         this.app.docBarStripManager?.applyPanelConfig()
 
         console.log('[Supabase] ✅ panel_config applied from cloud')
