@@ -277,7 +277,8 @@ export class EditStripManager {
             const btn = document.createElement('div')
             btn.className = 'sf-strip-btn'
             btn.dataset.tool = tool.id
-            if (this.app.activeStampType === tool.id) btn.classList.add('active')
+            const stampBarOpen = this._subBarMgr?.activeBar === 'stamp'
+            if (this.app.activeStampType === tool.id && !stampBarOpen) btn.classList.add('active')
             btn.title = tool.label
             btn.innerHTML = tool.icon
                 ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">${tool.icon}</svg>`
@@ -332,6 +333,7 @@ export class EditStripManager {
             this._handleTrashClick()
         } else if (isStamp) {
             this._subBarMgr?.toggle('stamp', btn)
+            this.update()
         } else {
             if (this._subBarMgr?.closeToolBars) {
                 this._subBarMgr.closeToolBars()
