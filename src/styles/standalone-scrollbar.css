@@ -7,8 +7,8 @@
     right: 0;
     top: 50%;
     transform: translateY(-50%);
-    height: 60vh;                 /* 3/5 of viewport height */
-    width: 36px;
+    height: 40vh;                 /* 2/5 of viewport height */
+    width: 52px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -18,6 +18,20 @@
     user-select: none;
     background: transparent;
     border: none;
+}
+
+#sf-standalone-scrollbar .sf-strip-scrollbar-track {
+    width: 44px;
+    background: rgba(0, 0, 0, 0.07);
+}
+
+#sf-standalone-scrollbar .sf-strip-scrollbar-thumb {
+    width: 44px;
+}
+
+#sf-standalone-scrollbar .sf-scrollbar-arrow {
+    opacity: 1;
+    color: rgba(150, 150, 150, 0.9);
 }
 
 /* Reached boundary — red flash on arrow */
