@@ -1,0 +1,95 @@
+/* ═══════════════════════════════════════════════════════════════
+   DockingBarManager — bottom horizontal bar
+   ═══════════════════════════════════════════════════════════════ */
+
+#sf-dock-bar {
+    position: fixed;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100vw - 72px);   /* breathing room from edges + EditStrip */
+    height: 52px;
+    background: rgba(15, 23, 42, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255,255,255,0.06) inset;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 10px;
+    z-index: 200;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* ── Scrollable tool area ── */
+.sf-dock-tools {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+.sf-dock-tools::-webkit-scrollbar { display: none; }
+
+/* ── Prev/Next nav buttons ── */
+.sf-dock-nav-btn {
+    width: 28px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    flex-shrink: 0;
+    border-radius: 6px;
+    transition: color .15s, background .15s;
+}
+.sf-dock-nav-btn:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.08);
+}
+
+/* ── Divider ── */
+.sf-dock-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+    margin: 0 4px;
+}
+
+/* ── Page indicator dots ── */
+.sf-dock-dots {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    flex-shrink: 0;
+}
+
+.sf-dock-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    transition: background .15s, transform .15s;
+}
+
+.sf-dock-dot.active {
+    background: rgba(255, 255, 255, 0.8);
+    transform: scale(1.3);
+}
+
+/* ── Viewer padding so score isn't hidden behind bar ── */
+body.sf-dock-bar-visible .viewer-container {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}

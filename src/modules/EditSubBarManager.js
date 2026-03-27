@@ -192,15 +192,13 @@ export class EditSubBarManager {
             else requestAnimationFrame(refine)
 
         } else if (name === 'others') {
-            // Use stored Y or default to bottom
+            // Use stored Y or default to near top
             const stored = this._othersBarY
-            const raw = stored ?? window.innerHeight
-            
-            bar.style.top = raw + 'px'
 
             const refine = () => {
                 const h = bar.offsetHeight || 60
                 const halfH = h / 2
+                const raw = stored ?? (halfH + 16)
                 const clamped = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, raw))
                 bar.style.top = clamped + 'px'
                 this._othersBarY = clamped

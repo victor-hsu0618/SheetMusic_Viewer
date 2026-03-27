@@ -725,6 +725,21 @@ export class AnnotationRenderer {
                         const lineY = y + pad + i * lineH
                         if (lineY + sfs < y + H - pad) ctx.fillText(line, x + pad, lineY)
                     })
+
+                    // ── Corner minimize button (bottom-right) ──
+                    const btnR = 12 * globalScale
+                    const btnCX = x + W - 20 * globalScale
+                    const btnCY = y + H - 20 * globalScale
+                    ctx.fillStyle = 'rgba(180, 120, 20, 0.75)'
+                    ctx.beginPath()
+                    ctx.arc(btnCX, btnCY, btnR, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.strokeStyle = 'rgba(255,255,255,0.8)'
+                    ctx.lineWidth = 1.8 * globalScale
+                    ctx.beginPath()
+                    ctx.moveTo(btnCX - 6 * globalScale, btnCY)
+                    ctx.lineTo(btnCX + 6 * globalScale, btnCY)
+                    ctx.stroke()
                     break
                 }
 

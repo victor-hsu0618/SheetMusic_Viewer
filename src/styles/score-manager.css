@@ -4,11 +4,11 @@
     top: 0;
     left: 0;
     right: 54px;
-    bottom: 0;
+    bottom: calc(72px + env(safe-area-inset-bottom));
     width: auto;
     max-width: none;
-    height: 100dvh;
-    max-height: 100dvh;
+    height: auto;
+    max-height: none;
     overflow-y: auto;
     background: var(--bg-card);
     -webkit-backdrop-filter: blur(25px) saturate(180%);

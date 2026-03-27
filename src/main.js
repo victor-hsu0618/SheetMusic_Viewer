@@ -52,6 +52,7 @@ import { LocalBackupManager } from './modules/LocalBackupManager.js'
 import { SupabaseManager } from './modules/SupabaseManager.js'
 import { EditStripManager } from './modules/EditStripManager.js'
 import { EditSubBarManager } from './modules/EditSubBarManager.js'
+import { DockingBarManager } from './modules/DockingBarManager.js'
 
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs/pdf.worker.min.mjs', baseUrl).href
@@ -150,8 +151,10 @@ this.setlistManager = new SetlistManager(this)
     this.supabaseManager = new SupabaseManager(this)
     this.editSubBarManager = new EditSubBarManager(this)
     this.editStripManager  = new EditStripManager(this)
-    // Link strip ↔ sub-bar
+    this.dockingBarManager = new DockingBarManager(this)
+    // Link strip + docking bar ↔ sub-bar
     this.editStripManager.setSubBarManager(this.editSubBarManager)
+    this.dockingBarManager.setSubBarManager(this.editSubBarManager)
 
     // Apply Proxies
     applyAppProxies(this)
@@ -168,6 +171,8 @@ this.setlistManager = new SetlistManager(this)
     this.viewerManager.init()
     this.editSubBarManager.init()
     this.editStripManager.init()
+    this.dockingBarManager.init()
+    document.body.classList.add('sf-dock-bar-visible')
     this.rulerManager.init()
 
     this.inputManager.init()

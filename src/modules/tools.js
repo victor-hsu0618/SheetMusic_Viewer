@@ -111,6 +111,7 @@ export class ToolManager {
             // Sync UI button states
             this.app.editStripManager?.update();
             this.app.docBarStripManager?.update();
+            this.app.dockingBarManager?.update();
         }
     }
 

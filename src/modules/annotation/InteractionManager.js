@@ -387,7 +387,7 @@ export class InteractionManager {
             const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay);
             const target = this.app.selectHoveredStamp || this.app.findClosestStamp(pageNum, pPos.x, pPos.y, true);
 
-            if (target && (activeTool === 'text' || activeTool === 'tempo-text')) {
+            if (target && (activeTool === 'text' || activeTool === 'tempo-text' || activeTool === 'sticky-note')) {
                 activeObject = target;
                 isMovingExisting = true;
                 this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
@@ -759,6 +759,35 @@ export class InteractionManager {
                             await this.app.saveToStorage(true)
                             this.app.redrawStamps(tPN)
                             startGracePeriod(syncObj, pointerType)
+                        } else if (syncObj.type === 'sticky-note' && isMovingExisting) {
+                            // Existing sticky note in select mode
+                            const hasMoved = !this.dragStartObject || syncObj.x !== this.dragStartObject.x || syncObj.y !== this.dragStartObject.y
+                            if (hasMoved) {
+                                // Just save new position after drag
+                                syncObj.updatedAt = Date.now()
+                                if (this.dragStartObject) this.app.pushHistory({ type: 'move', oldObj: this.dragStartObject, newObj: JSON.parse(JSON.stringify(syncObj)) })
+                                await this.app.saveToStorage(true)
+                                this.app.redrawStamps(tPN)
+                            } else {
+                                // Tap — check corner minimize button
+                                const canvas = tW?.querySelector('.annotation-layer.virtual-canvas')
+                                if (canvas && syncObj.draw && !syncObj.draw.minimized) {
+                                    const tapPos = CoordMapper.getPos(e, overlay)
+                                    const gs = this.app.scale / 1.5
+                                    const btnCX = syncObj.x + (420 * gs) / canvas.width
+                                    const btnCY = syncObj.y + (300 * gs) / canvas.height
+                                    const btnR = (14 * gs) / Math.min(canvas.width, canvas.height)
+                                    const dx = tapPos.x - btnCX, dy = tapPos.y - btnCY
+                                    if (dx * dx + dy * dy < btnR * btnR) {
+                                        syncObj.draw.minimized = true
+                                        syncObj.updatedAt = Date.now()
+                                        await this.app.saveToStorage(true)
+                                        this.app.redrawStamps(tPN)
+                                        return
+                                    }
+                                }
+                                this.app.annotationManager.spawnTextEditor(tW, tPN, syncObj)
+                            }
                         } else {
                             this.app.annotationManager.spawnTextEditor(tW, tPN, syncObj);
                         }

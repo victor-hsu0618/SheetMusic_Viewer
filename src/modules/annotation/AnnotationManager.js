@@ -93,7 +93,27 @@ export class AnnotationManager {
             if (s.page !== page || s.deleted) return
             if (!activeSourceIds.includes(s.sourceId)) return
             if (!visibleLayerIds.has(s.layerId)) return
-            
+
+            // Sticky notes: use bounding box hit test (they are too large for point distance)
+            if (s.type === 'sticky-note') {
+                const canvas = document.querySelector(`.page-container[data-page="${page}"] .annotation-layer.virtual-canvas`)
+                const cW = canvas?.width || 1
+                const cH = canvas?.height || 1
+                const gs = this.app.scale / 1.5
+                let wNorm, hNorm
+                if (s.draw?.minimized) {
+                    wNorm = 28 * gs / cW
+                    hNorm = 22 * gs / cH
+                } else {
+                    wNorm = 440 * gs / cW
+                    hNorm = 320 * gs / cH
+                }
+                if (x >= s.x && x <= s.x + wNorm && y >= s.y && y <= s.y + hNorm) {
+                    results.push({ stamp: s, dist: 0 })
+                }
+                return
+            }
+
             let dist
             if (s.points && s.points.length > 0) {
                 // Improved Path distance: Check all segments (line-point distance)
@@ -102,7 +122,7 @@ export class AnnotationManager {
                 // Stamp distance: simple Euclidean
                 dist = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2))
             }
-            
+
             if (dist < threshold) results.push({ stamp: s, dist })
         })
         return results.sort((a, b) => a.dist - b.dist).map(r => r.stamp)
