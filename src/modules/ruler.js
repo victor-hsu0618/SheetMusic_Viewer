@@ -193,7 +193,7 @@ export class RulerManager {
         // baseline is the vertical point in the viewer we want to focus on
         const currentFocusY = currentScroll + this.jumpOffsetPx
 
-        const visualMarks = this.app.stamps.filter(s => s.type === 'anchor')
+        const visualMarks = this.app.stamps.filter(s => s.type === 'anchor' && !s.deleted)
         const metrics = this.app.viewerManager._pageMetrics
         if (!metrics) { this.nextTargetAnchor = null; return }
 

@@ -262,6 +262,16 @@ export class GestureManager {
     }
 
     handleZoneTap(tapX, tapY) {
+        // Guard: don't trigger navigation when tapping near the dock bar or FAB
+        for (const id of ['sf-dock-fab', 'sf-dock-bar']) {
+            const el = document.getElementById(id)
+            if (!el) continue
+            const r = el.getBoundingClientRect()
+            const pad = 24
+            if (tapX >= r.left - pad && tapX <= r.right + pad &&
+                tapY >= r.top - pad && tapY <= r.bottom + pad) return
+        }
+
         const vh = window.innerHeight
         const viewer = document.getElementById('viewer-container')
         const firstPage = viewer.querySelector('.page-container')
