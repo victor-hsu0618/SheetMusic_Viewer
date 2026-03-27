@@ -758,3 +758,212 @@ body .library-overlay.active {
 .library-detail-view.hidden {
     display: none;
 }
+
+
+/* ── Score Detail Panel (Current tab) ── */
+.score-detail-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.sd-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Sections */
+.sd-section {
+    margin-bottom: 18px;
+}
+
+.sd-section:last-child {
+    margin-bottom: 0;
+}
+
+/* Label row with right-side meta */
+.sd-label-row {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.sd-meta-badge {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    opacity: 0.8;
+}
+
+/* Stats row */
+.sd-stats-row {
+    display: flex;
+    gap: 0;
+    background: rgba(0,0,0,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.sd-stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    gap: 2px;
+}
+
+.sd-stat + .sd-stat {
+    border-left: 1px solid var(--border);
+}
+
+.sd-stat-label {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sd-stat-value {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* Field groups */
+.sd-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 12px;
+}
+
+.sd-field:last-child {
+    margin-bottom: 0;
+}
+
+.sd-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.sd-fingerprint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: monospace;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* Toggle row */
+.sd-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.sd-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Compact inputs inside sd-section */
+.sd-section .search-input-mini {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Button groups — buttons auto-size, not full-width */
+.sd-btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.sd-btn-row:last-child {
+    margin-bottom: 0;
+}
+
+.sd-btn-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+/* Danger section */
+.sd-danger-label {
+    color: var(--danger, #ef4444) !important;
+}
+
+/* Media form */
+.sd-media-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sd-media-url-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.sd-media-url-row input {
+    flex: 1;
+}
+
+/* Media list */
+.sd-media-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sd-media-list:empty::after {
+    content: 'No media linked yet';
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    opacity: 0.6;
+    text-align: center;
+    padding: 12px 0;
+    display: block;
+}
+
+.media-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg-secondary, rgba(0,0,0,0.04));
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.media-item-label {
+    flex: 1;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.media-item-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}

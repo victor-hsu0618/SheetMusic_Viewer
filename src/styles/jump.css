@@ -28,7 +28,11 @@
 }
 
 .score-detail-toolbar {
-    padding-right: 12px; /* Standardize alignment with detail-content-area */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 12px 0;
     margin-bottom: 8px;
 }
 
@@ -516,8 +520,9 @@
 /* Score Detail Side Tabs Layout */
 .detail-main-content {
     display: flex;
-    height: 420px; /* Elegant height for piece details */
+    flex: 1;
     overflow: hidden;
+    min-height: 0;
 }
 
 .score-detail-tabs-side {

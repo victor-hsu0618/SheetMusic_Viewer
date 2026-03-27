@@ -18,6 +18,16 @@ export class SettingsPanelManager {
         document.getElementById('btn-close-settings')
             ?.addEventListener('click', () => this.toggle(false))
 
+        this.panel.querySelectorAll('.settings-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.panel.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'))
+                this.panel.querySelectorAll('.settings-pane').forEach(p => p.classList.remove('active'))
+                btn.classList.add('active')
+                const pane = document.getElementById('settings-pane-' + btn.dataset.tab)
+                if (pane) pane.classList.add('active')
+            })
+        })
+
         this.initSettings()
         this._initAccountSettings()
     }
@@ -316,19 +326,6 @@ export class SettingsPanelManager {
             })
         }
 
-        // Edit Strip Overlay Mode
-        const editOverlayChk = document.getElementById('settings-edit-strip-overlay')
-        if (editOverlayChk) {
-            const savedOverlay = localStorage.getItem('scoreflow_edit_strip_overlay') === 'true'
-            editOverlayChk.checked = savedOverlay
-            document.body.classList.toggle('sf-edit-strip-overlay', savedOverlay)
-            editOverlayChk.addEventListener('change', e => {
-                document.body.classList.toggle('sf-edit-strip-overlay', e.target.checked)
-                localStorage.setItem('scoreflow_edit_strip_overlay', e.target.checked)
-                // Recompute scale so fitToWidth picks up the new padding value
-                requestAnimationFrame(() => this.app.viewerManager?.fitToWidth?.())
-            })
-        }
 
         // Reload App
         document.getElementById('btn-reload-app')

@@ -280,15 +280,11 @@
       <div id="pane-current-score" class="library-grid hidden">
         <div class="score-detail-container">
           <div class="score-detail-toolbar">
-            <div class="flex-row-center" style="gap: 12px; justify-content: flex-end;">
-              <button id="btn-save-score-detail" class="btn btn-primary btn-sm" title="Save Changes">Save Changes</button>
-              <button id="btn-detail-add-setlist" class="btn btn-outline-sm" style="display: flex; align-items: center; gap: 6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span>Add to Setlist</span>
-              </button>
-            </div>
+            <button id="btn-detail-add-setlist" class="btn btn-outline-sm sd-toolbar-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              Add to Setlist
+            </button>
+            <button id="btn-save-score-detail" class="btn btn-primary btn-sm sd-toolbar-btn">Save Changes</button>
           </div>
 
           <div class="detail-main-content">
@@ -302,113 +298,119 @@
 
             <!-- Right Side: Content Area -->
             <div class="detail-content-area settings-scroll-area">
+
               <!-- Tab: General -->
               <div class="detail-tab-pane active" id="pane-general">
-                <div class="tab-section-label">Active Musician</div>
-                <div class="profile-card-minimal mb-15">
-                  <div class="prof-avatar" id="sidebar-user-avatar">?</div>
-                  <div class="prof-text">
-                    <div id="sidebar-user-name">Loading...</div>
-                    <small id="sidebar-user-email">No Email</small>
+                <div class="sd-section">
+                  <div class="tab-section-label">Active Musician</div>
+                  <div class="profile-card-minimal">
+                    <div class="prof-avatar" id="sidebar-user-avatar">?</div>
+                    <div class="prof-text">
+                      <div id="sidebar-user-name">Loading...</div>
+                      <small id="sidebar-user-email">No Email</small>
+                    </div>
                   </div>
                 </div>
 
-                <div class="tab-divider"></div>
-                <div class="tab-section-label">General Information</div>
-                <div class="setting-item mb-15">
-                  <label class="setting-label" for="score-name-input">Piece Title</label>
-                  <input type="text" id="score-name-input" class="search-input-mini w-full mt-5" placeholder="e.g. Cello Suite No.1" />
-                  <div class="text-mini opacity-50 mt-5" style="font-family: monospace; display: flex; gap: 4px; align-items: center;" title="SHA-256 Identification Hash">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    <span id="score-fingerprint-display">Unknown</span>
+                <div class="sd-section">
+                  <div class="tab-section-label">Score Information</div>
+                  <div class="sd-field">
+                    <label class="sd-label" for="score-name-input">Title</label>
+                    <input type="text" id="score-name-input" class="search-input-mini w-full" placeholder="e.g. Cello Suite No.1" />
+                    <div class="sd-fingerprint" title="SHA-256 Identification Hash">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                      <span id="score-fingerprint-display">Unknown</span>
+                    </div>
+                  </div>
+                  <div class="sd-field">
+                    <label class="sd-label" for="score-composer-input">Composer</label>
+                    <input type="text" id="score-composer-input" class="search-input-mini w-full" placeholder="e.g. J.S. Bach" />
                   </div>
                 </div>
-                <div class="setting-item mb-15">
-                  <label class="setting-label" for="score-composer-input">Composer</label>
-                  <input type="text" id="score-composer-input" class="search-input-mini w-full mt-5" placeholder="e.g. J.S. Bach" />
-                </div>
-                <div class="tab-divider"></div>
               </div>
 
               <!-- Tab: Styles -->
               <div class="detail-tab-pane" id="pane-styles">
-                <div class="tab-section-label" style="display: flex; justify-content: space-between; align-items: baseline;">
-                  <span>Interpretation Styles</span>
-                  <span id="stats-last-edit" class="text-mini opacity-70" title="Last Synchronized">Never</span>
-                </div>
-                <div class="stats-grid-tiny mb-10" style="display: flex; gap: 15px; background: rgba(0,0,0,0.03); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);">
-                  <div class="stats-item-tiny" style="display: flex; flex-direction: column; flex: 1;">
-                    <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Annotations</span>
-                    <span id="stats-total-count" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">0</span>
+                <div class="sd-section">
+                  <div class="tab-section-label sd-label-row">
+                    <span>Interpretation Styles</span>
+                    <span id="stats-last-edit" class="sd-meta-badge" title="Last Synchronized">Never</span>
                   </div>
-                  <div class="stats-item-tiny" style="display: flex; flex-direction: column; flex: 1;">
-                    <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">System</span>
-                    <span id="stats-system-count" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">0</span>
+                  <div class="sd-stats-row">
+                    <div class="sd-stat">
+                      <span class="sd-stat-label">Annotations</span>
+                      <span id="stats-total-count" class="sd-stat-value">0</span>
+                    </div>
+                    <div class="sd-stat">
+                      <span class="sd-stat-label">System</span>
+                      <span id="stats-system-count" class="sd-stat-value">0</span>
+                    </div>
                   </div>
-                </div>
-                <div id="interpretation-source-container">
-                  <!-- Dynamically populated by CollaborationManager -->
+                  <div id="interpretation-source-container"></div>
                 </div>
               </div>
 
               <!-- Tab: Media -->
               <div class="detail-tab-pane" id="pane-media">
-                <div class="tab-section-label">Media Resources</div>
-                <div class="media-input-group mb-15">
-                  <input type="text" id="sidebar-media-label" class="search-input-mini w-full mb-5" placeholder="Media Label (e.g. Rostropovich 1995)" />
-                  <div class="flex-row-center gap-5">
-                    <input type="text" id="sidebar-media-url" class="search-input-mini w-full" placeholder="YouTube URL" />
-                    <button id="sidebar-add-youtube" class="btn btn-outline-sm btn-icon-only" title="Add YouTube">Add</button>
+                <div class="sd-section">
+                  <div class="tab-section-label">Add Media</div>
+                  <div class="sd-media-form">
+                    <input type="text" id="sidebar-media-label" class="search-input-mini w-full" placeholder="Label (e.g. Rostropovich 1995)" />
+                    <div class="sd-media-url-row">
+                      <input type="text" id="sidebar-media-url" class="search-input-mini" placeholder="YouTube URL" />
+                      <button id="sidebar-add-youtube" class="btn btn-outline-sm">Add</button>
+                    </div>
+                    <button id="sidebar-add-local" class="btn btn-outline-sm">Upload Local Audio</button>
+                    <input type="file" id="sidebar-local-input" class="hidden" accept="audio/*" />
                   </div>
                 </div>
-                <div class="mb-15">
-                  <button id="sidebar-add-local" class="btn btn-outline-sm w-full">Upload Local Audio</button>
-                  <input type="file" id="sidebar-local-input" class="hidden" accept="audio/*" />
-                </div>
-                <div id="sidebar-media-list" class="media-list-minimal">
-                  <!-- Media list items -->
+                <div class="sd-section">
+                  <div class="tab-section-label">Linked Media</div>
+                  <div id="sidebar-media-list" class="sd-media-list"></div>
                 </div>
               </div>
 
               <!-- Tab: System -->
               <div class="detail-tab-pane" id="pane-system">
-                <div class="tab-section-label">Storage & Offline</div>
-                <div class="setting-item flex-row-center justify-between mb-5">
-                  <span class="setting-label">Keep Offline</span>
-                  <label class="switch">
-                    <input type="checkbox" id="btn-toggle-keep-offline">
-                    <span class="slider round"></span>
-                  </label>
-                </div>
-                <span class="setting-hint">Pin this score to always keep a local copy.</span>
-
-                <div class="tab-divider"></div>
-                <div class="tab-section-label">Score Annotation Exchange</div>
-                <div class="flex-row-center gap-10 mb-10">
-                  <button id="export-score-btn" class="btn btn-outline-sm w-full">Export Data</button>
-                  <button id="import-score-btn" class="btn btn-outline-sm w-full">Import Data</button>
-                  <input type="file" id="import-score-file" class="hidden" accept=".json" title="Import JSON" />
-                </div>
-                <div class="flex-row-center gap-10 mb-15">
-                  <button id="btn-export-pdf" class="btn btn-primary w-full">Export Merged PDF</button>
-                  <button id="btn-gist-share" class="btn btn-outline-sm w-full">Share Link</button>
+                <div class="sd-section">
+                  <div class="tab-section-label">Storage</div>
+                  <div class="sd-toggle-row">
+                    <span class="sd-label">Keep Offline</span>
+                    <label class="switch">
+                      <input type="checkbox" id="btn-toggle-keep-offline">
+                      <span class="slider round"></span>
+                    </label>
+                  </div>
+                  <p class="sd-hint">Pin this score to always keep a local copy.</p>
                 </div>
 
-                <div class="tab-divider"></div>
-                <div class="tab-section-label">Cloud Synchronization</div>
-                <div class="flex-row-center gap-10 mb-10">
-                  <button id="btn-force-push-supabase" class="btn btn-outline-sm w-full">Sync to Supabase</button>
-                </div>
-                <div class="flex-row-center gap-10 mb-15">
-                  <button id="btn-force-pull-supabase" class="btn btn-outline-sm w-full">Force Resync from Cloud</button>
+                <div class="sd-section">
+                  <div class="tab-section-label">Annotation Exchange</div>
+                  <div class="sd-btn-row">
+                    <button id="export-score-btn" class="btn btn-outline-sm">Export Data</button>
+                    <button id="import-score-btn" class="btn btn-outline-sm">Import Data</button>
+                    <input type="file" id="import-score-file" class="hidden" accept=".json" />
+                  </div>
+                  <div class="sd-btn-row">
+                    <button id="btn-export-pdf" class="btn btn-primary">Export PDF</button>
+                    <button id="btn-gist-share" class="btn btn-outline-sm">Share Link</button>
+                  </div>
                 </div>
 
-                <div class="tab-divider"></div>
-                <div class="tab-section-label text-danger">Danger Zone</div>
-                <button id="btn-reset-score-all" class="btn btn-outline-danger btn-full">Reset Score Metadata</button>
+                <div class="sd-section">
+                  <div class="tab-section-label">Cloud Sync</div>
+                  <div class="sd-btn-col">
+                    <button id="btn-force-push-supabase" class="btn btn-outline-sm">Sync to Cloud</button>
+                    <button id="btn-force-pull-supabase" class="btn btn-outline-sm">Force Pull from Cloud</button>
+                  </div>
+                </div>
+
+                <div class="sd-section">
+                  <div class="tab-section-label sd-danger-label">Danger Zone</div>
+                  <button id="btn-reset-score-all" class="btn btn-outline-danger">Reset Score Metadata</button>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -441,247 +443,265 @@
 
     <!-- Settings Panel (⚙ Doc Bar button) -->
     <div id="settings-panel" class="jump-sub-panel calculator-style">
-      <div class="jump-drag-handle">
-        <div class="drag-bar"></div>
-      </div>
       <div class="jump-header">
         <span class="jump-title">Settings</span>
-        <button id="btn-close-settings" class="btn-close-mini">✕</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="cloud-sync-status" class="sync-status-badge"></span>
+          <button id="btn-close-settings" class="btn-close-mini">✕</button>
+        </div>
       </div>
-      <div class="settings-scroll-area">
 
-        <div class="tab-section-label">Appearance</div>
-        <div class="setting-item mb-15">
-          <div class="flex-row-center flex-space-between w-full">
-            <label class="setting-label">Theme</label>
-            <select id="settings-app-theme" class="btn-outline-sm" style="width: auto; padding-right: 25px;" title="Select App Theme">
-              <option value="default">Light Suite</option>
-              <option value="dark">Midnight Suite</option>
-              <option value="deep">Deep Midnight (OLED)</option>
-              <option value="stage">Stage Mode (High Contrast)</option>
-            </select>
-          </div>
-          <span class="setting-hint">選擇適合演奏環境的視覺風格。舞台模式為極致高對比。</span>
+      <div class="settings-body">
+
+        <!-- Left tab rail -->
+        <div class="settings-tabs-side">
+          <button class="settings-tab-btn active" data-tab="look">
+            <span class="stab-icon">🎨</span>
+            <span class="stab-label">Look</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="perf">
+            <span class="stab-icon">⚡</span>
+            <span class="stab-label">Perf</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="nav">
+            <span class="stab-icon">🧭</span>
+            <span class="stab-label">Nav</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="sync">
+            <span class="stab-icon">☁️</span>
+            <span class="stab-label">Sync</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="system">
+            <span class="stab-icon">🔧</span>
+            <span class="stab-label">Sys</span>
+          </button>
         </div>
 
-        <div class="setting-item mb-15">
-          <div class="flex-row-center flex-space-between w-full">
-            <label class="setting-label">Accent Color</label>
-            <div id="accent-color-palette" class="flex-row-center" style="gap: 8px;">
-              <div class="accent-swatch active" data-color="#6366f1" data-rgb="99, 102, 241" style="background:#6366f1;" title="Indigo"></div>
-              <div class="accent-swatch" data-color="#10b981" data-rgb="16, 185, 129" style="background:#10b981;" title="Emerald"></div>
-              <div class="accent-swatch" data-color="#3b82f6" data-rgb="59, 130, 246" style="background:#3b82f6;" title="Royal Blue"></div>
-              <div class="accent-swatch" data-color="#ef4444" data-rgb="239, 68, 68" style="background:#ef4444;" title="Crimson"></div>
-              <div class="accent-swatch" data-color="#f59e0b" data-rgb="245, 158, 11" style="background:#f59e0b;" title="Amber"></div>
+        <!-- Right content area -->
+        <div class="settings-content-area">
+
+          <!-- ── Look ── -->
+          <div class="settings-pane active" id="settings-pane-look">
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">Theme</label>
+                <select id="settings-app-theme" class="btn-outline-sm" style="width:auto;padding-right:25px;" title="Select App Theme">
+                  <option value="default">Light Suite</option>
+                  <option value="dark">Midnight Suite</option>
+                  <option value="deep">Deep Midnight (OLED)</option>
+                  <option value="stage">Stage Mode (High Contrast)</option>
+                </select>
+              </div>
+              <span class="setting-hint">選擇適合演奏環境的視覺風格。舞台模式為極致高對比。</span>
+            </div>
+
+            <div class="setting-item">
+              <label class="setting-label" style="margin-bottom:8px;">Accent Color</label>
+              <div id="accent-color-palette" style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;">
+                <div class="accent-swatch active" data-color="#6366f1" data-rgb="99, 102, 241" style="background:#6366f1;" title="Indigo"></div>
+                <div class="accent-swatch" data-color="#10b981" data-rgb="16, 185, 129" style="background:#10b981;" title="Emerald"></div>
+                <div class="accent-swatch" data-color="#3b82f6" data-rgb="59, 130, 246" style="background:#3b82f6;" title="Royal Blue"></div>
+                <div class="accent-swatch" data-color="#ef4444" data-rgb="239, 68, 68" style="background:#ef4444;" title="Crimson"></div>
+                <div class="accent-swatch" data-color="#f59e0b" data-rgb="245, 158, 11" style="background:#f59e0b;" title="Amber"></div>
+              </div>
+              <span class="setting-hint">選擇全域重點配色（按鈕、高亮、連線顏色）。</span>
             </div>
           </div>
-          <span class="setting-hint">選擇全域重點配色（按鈕、高亮、連線顏色）。</span>
-        </div>
 
-        <div class="tab-divider"></div>
-        <div class="tab-section-label">Performance</div>
-
-        <div class="setting-item mb-15">
-          <div class="setting-row-compact">
-            <label class="setting-label">Scroll Offset</label>
-            <div class="slider-container">
-              <button class="slider-adj-btn minus" data-target="settings-jump-offset">−</button>
-              <input type="range" id="settings-jump-offset" min="0" max="800" step="5" value="40" class="setting-slider" />
-              <button class="slider-adj-btn plus" data-target="settings-jump-offset">+</button>
+          <!-- ── Perf ── -->
+          <div class="settings-pane" id="settings-pane-perf">
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">Scroll Offset</label>
+                <div class="slider-container">
+                  <button class="slider-adj-btn minus" data-target="settings-jump-offset">−</button>
+                  <input type="range" id="settings-jump-offset" min="0" max="800" step="5" value="40" class="setting-slider" />
+                  <button class="slider-adj-btn plus" data-target="settings-jump-offset">+</button>
+                </div>
+                <span id="settings-jump-offset-value" class="badge">40px</span>
+                <button class="btn-reset-mini" data-reset="jump-offset" title="Reset to 40px">Reset</button>
+              </div>
+              <span class="setting-hint">Jump 目標距畫面頂端的距離，演奏時建議 40–120px。</span>
             </div>
-            <span id="settings-jump-offset-value" class="badge">40px</span>
-            <button class="btn-reset-mini" data-reset="jump-offset" title="Reset to 40px">Reset</button>
-          </div>
-          <span class="setting-hint">Jump 目標距畫面頂端的距離，演奏時建議 40–120px。</span>
-        </div>
 
-        <div class="setting-item mb-15">
-          <div class="setting-row-compact">
-            <label class="setting-label">Jump Speed</label>
-            <div class="slider-container">
-              <button class="slider-adj-btn minus" data-target="settings-jump-speed">−</button>
-              <input type="range" id="settings-jump-speed" min="50" max="1000" step="50" value="300" class="setting-slider" />
-              <button class="slider-adj-btn plus" data-target="settings-jump-speed">+</button>
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">Jump Speed</label>
+                <div class="slider-container">
+                  <button class="slider-adj-btn minus" data-target="settings-jump-speed">−</button>
+                  <input type="range" id="settings-jump-speed" min="50" max="1000" step="50" value="300" class="setting-slider" />
+                  <button class="slider-adj-btn plus" data-target="settings-jump-speed">+</button>
+                </div>
+                <span id="settings-jump-speed-value" class="badge">300ms</span>
+                <button class="btn-reset-mini" data-reset="jump-speed" title="Reset to 300ms">Reset</button>
+              </div>
+              <span class="setting-hint">Jump 捲動動畫時長，演奏時建議 150–300ms。</span>
             </div>
-            <span id="settings-jump-speed-value" class="badge">300ms</span>
-            <button class="btn-reset-mini" data-reset="jump-speed" title="Reset to 300ms">Reset</button>
-          </div>
-          <span class="setting-hint">Jump 捲動動畫時長，演奏時建議 150–300ms。</span>
-        </div>
 
-        <div class="setting-item mb-15">
-          <div class="setting-row-compact">
-            <label class="setting-label">Idle Lock</label>
-            <div class="slider-container">
-              <button class="slider-adj-btn minus" data-target="settings-pointer-idle">−</button>
-              <input type="range" id="settings-pointer-idle" min="1" max="30" step="1" value="8" class="setting-slider" />
-              <button class="slider-adj-btn plus" data-target="settings-pointer-idle">+</button>
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">Idle Lock</label>
+                <div class="slider-container">
+                  <button class="slider-adj-btn minus" data-target="settings-pointer-idle">−</button>
+                  <input type="range" id="settings-pointer-idle" min="1" max="30" step="1" value="8" class="setting-slider" />
+                  <button class="slider-adj-btn plus" data-target="settings-pointer-idle">+</button>
+                </div>
+                <span id="settings-pointer-idle-value" class="badge">8s</span>
+                <button class="btn-reset-mini" data-reset="pointer-idle" title="Reset to 8s">Reset</button>
+              </div>
+              <span class="setting-hint">滑鼠靜止多久後自動鎖定互動，防止演奏時誤觸。</span>
             </div>
-            <span id="settings-pointer-idle-value" class="badge">8s</span>
-            <button class="btn-reset-mini" data-reset="pointer-idle" title="Reset to 8s">Reset</button>
-          </div>
-          <span class="setting-hint">滑鼠靜止多久後自動鎖定互動，防止演奏時誤觸。</span>
-        </div>
 
-        <div class="setting-item mb-15">
-          <label class="setting-label" for="turner-mode-select">Page Turner Mode</label>
-          <select id="turner-mode-select" class="form-select mini-select w-full mt-5">
-            <option value="default">Default (Space / Arrows)</option>
-            <option value="pgupdn">PageUp / PageDown</option>
-            <option value="arrows">Arrow Keys Only</option>
-          </select>
-          <span class="setting-hint">外接踏板或翻譜器的按鍵對應模式。</span>
-        </div>
-
-        <div class="tab-divider"></div>
-        <div class="tab-section-label">Navigation</div>
-
-        <div class="setting-item mb-15">
-          <div class="setting-row-compact">
-            <label class="setting-label">Jump Ruler</label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settings-ruler-visible">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <span class="setting-hint">顯示左側跳躍尺規與錨點標記。</span>
-        </div>
-
-        <div class="setting-item mb-15">
-          <div class="setting-row-compact">
-            <label class="setting-label">隱藏左側工具列</label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settings-doc-bar-hide">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <span class="setting-hint">隱藏左側導覽工具列以獲得更大視野。</span>
-        </div>
-
-        <div class="setting-item mb-15">
-          <div class="setting-row-compact">
-            <label class="setting-label">頁面重疊</label>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <button class="slider-adj-btn minus" id="settings-overlap-minus">−</button>
-              <span id="settings-overlap-val" class="badge" style="min-width:26px;text-align:center">1</span>
-              <button class="slider-adj-btn plus" id="settings-overlap-plus">+</button>
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">Turner Mode</label>
+                <select id="turner-mode-select" class="btn-outline-sm" style="width:auto;">
+                  <option value="default">Default (Space / Arrows)</option>
+                  <option value="pgupdn">PageUp / PageDown</option>
+                  <option value="arrows">Arrow Keys Only</option>
+                </select>
+              </div>
+              <span class="setting-hint">外接踏板或翻譜器的按鍵對應模式。</span>
             </div>
           </div>
-          <span class="setting-hint">Jump 時，以倒數第 N 個 System 為起點。</span>
-        </div>
 
-        <div class="setting-item mb-15">
-          <div class="setting-row-compact">
-            <label class="setting-label">System Detection</label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settings-show-systems">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button id="settings-detect-systems" class="btn btn-secondary btn-smaller" style="flex:1">Detect</button>
-            <button id="settings-clear-systems" class="btn btn-secondary btn-smaller" style="flex:1;color:#f66">刪除全部</button>
-          </div>
-          <span id="settings-system-status" class="setting-hint" style="display:block;margin-top:6px"></span>
-        </div>
+          <!-- ── Nav ── -->
+          <div class="settings-pane" id="settings-pane-nav">
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">Jump Ruler</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="settings-ruler-visible">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <span class="setting-hint">顯示左側跳躍尺規與錨點標記。</span>
+            </div>
 
-        <div class="setting-item mb-15">
-          <div class="setting-row-compact">
-            <label class="setting-label">編輯列覆蓋模式</label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settings-edit-strip-overlay">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <span class="setting-hint">開啟後，右側編輯列浮在樂譜上方，樂譜寬度不會縮小。</span>
-        </div>
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">隱藏左側工具列</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="settings-doc-bar-hide">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <span class="setting-hint">隱藏左側導覽工具列以獲得更大視野。</span>
+            </div>
 
-        <div class="setting-item mb-15">
-          <div class="setting-row-compact">
-            <label class="setting-label">兩指捲動 ⚠️</label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settings-two-finger-pan">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <span class="setting-hint">在標記模式下，用兩根手指拖曳捲動。實驗性功能。</span>
-        </div>
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">頁面重疊</label>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button class="slider-adj-btn minus" id="settings-overlap-minus">−</button>
+                  <span id="settings-overlap-val" class="badge" style="min-width:26px;text-align:center">1</span>
+                  <button class="slider-adj-btn plus" id="settings-overlap-plus">+</button>
+                </div>
+              </div>
+              <span class="setting-hint">Jump 時，以倒數第 N 個 System 為起點。</span>
+            </div>
 
-        <div class="tab-divider"></div>
-        <div class="tab-section-label">Account & Sync</div>
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">System Detection</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="settings-show-systems">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <button id="settings-detect-systems" class="btn btn-secondary btn-smaller" style="flex:1;">Detect</button>
+                <button id="settings-clear-systems" class="btn btn-secondary btn-smaller" style="flex:1;color:#f66;">刪除全部</button>
+              </div>
+              <span id="settings-system-status" class="setting-hint" style="display:block;margin-top:6px;"></span>
+            </div>
 
-        <div id="user-profile-summary-container" class="profile-card-minimal cursor-pointer mb-15">
-          <div class="prof-avatar" id="user-profile-avatar">?</div>
-          <div class="prof-text">
-            <div id="user-profile-name">Loading Profile...</div>
-            <small id="user-profile-email">No Email</small>
+            <div class="setting-item">
+              <div class="setting-row-compact">
+                <label class="setting-label">兩指捲動 ⚠️</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="settings-two-finger-pan">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <span class="setting-hint">在標記模式下，用兩根手指拖曳捲動。實驗性功能。</span>
+            </div>
           </div>
-        </div>
 
-        <div id="supabase-auth-logged-out">
-          <p class="setting-hint mb-10">Sign in to sync annotations across devices in real-time.</p>
-          <div class="setting-item mb-10">
-            <input type="email" id="supabase-email" class="search-input-mini w-full" placeholder="Email Address" />
-          </div>
-          <div class="setting-item mb-15">
-            <input type="password" id="supabase-password" class="search-input-mini w-full" placeholder="Password" />
-          </div>
-          <button id="btn-supabase-login" class="btn btn-primary btn-full mb-10">Sign In to Cloud</button>
-        </div>
+          <!-- ── Sync ── -->
+          <div class="settings-pane" id="settings-pane-sync">
+            <div id="user-profile-summary-container" class="profile-card-minimal cursor-pointer">
+              <div class="prof-avatar" id="user-profile-avatar">?</div>
+              <div class="prof-text">
+                <div id="user-profile-name">Loading Profile...</div>
+                <small id="user-profile-email">No Email</small>
+              </div>
+            </div>
 
-        <div id="supabase-auth-logged-in" class="hidden">
-          <div class="glass-card-mini mb-15" style="background: rgba(var(--primary-rgb), 0.1); border-color: rgba(var(--primary-rgb), 0.2);">
-            <div class="flex-row-center gap-10">
-              <div class="user-avatar-small" id="supabase-user-initials" style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">U</div>
-              <div class="flex-column">
-                <div id="supabase-user-email" class="text-bold text-sm" style="font-size: 13px;">user@example.com</div>
-                <div class="status-tag success" style="color: var(--success); font-size: 10px; font-weight: bold;">Connected</div>
+            <div id="supabase-auth-logged-out">
+              <p class="setting-hint" style="margin-bottom:10px;">Sign in to sync annotations across devices in real-time.</p>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <input type="email" id="supabase-email" class="search-input-mini w-full" placeholder="Email Address" />
+                <input type="password" id="supabase-password" class="search-input-mini w-full" placeholder="Password" />
+                <button id="btn-supabase-login" class="btn btn-primary btn-full">Sign In to Cloud</button>
+              </div>
+            </div>
+
+            <div id="supabase-auth-logged-in" class="hidden">
+              <div class="glass-card-mini" style="background:rgba(var(--primary-rgb),0.1);border-color:rgba(var(--primary-rgb),0.2);margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div id="supabase-user-initials" style="background:var(--primary);color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;flex-shrink:0;">U</div>
+                  <div>
+                    <div id="supabase-user-email" style="font-size:13px;font-weight:600;">user@example.com</div>
+                    <div style="color:var(--success);font-size:10px;font-weight:bold;">Connected</div>
+                  </div>
+                </div>
+              </div>
+              <button id="btn-supabase-logout" class="btn btn-outline-sm btn-full text-danger">Sign Out from Cloud</button>
+            </div>
+          </div>
+
+          <!-- ── System ── -->
+          <div class="settings-pane" id="settings-pane-system">
+            <div style="display:flex;gap:8px;">
+              <button id="btn-export-backup" class="btn btn-outline btn-smaller" style="flex:1;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export ZIP
+              </button>
+              <label id="btn-import-backup-label" class="btn btn-outline btn-smaller" style="cursor:pointer;display:flex;align-items:center;gap:6px;flex:1;justify-content:center;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Import ZIP
+                <input id="input-import-backup" type="file" accept=".zip" style="display:none">
+              </label>
+            </div>
+
+            <button id="btn-supabase-force-resync-all" class="btn btn-outline-danger btn-smaller" title="Wipe local library and restore everything from Supabase Cloud">
+              Force Global Cloud Resync
+            </button>
+
+            <button id="btn-reload-app" class="btn btn-outline btn-smaller">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Reload App
+            </button>
+
+            <button id="reset-system-btn" class="btn btn-outline text-danger btn-smaller">⚠️ Reset Full System</button>
+
+            <div class="build-info-section">
+              <div class="build-info-item">ScoreFlow v2.2 | Branch: <span id="build-branch">main</span></div>
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+                <a href="./tools/index.html" style="color:var(--primary);text-decoration:none;font-weight:600;font-size:11px;display:flex;align-items:center;gap:4px;">
+                  <span>🛠️</span> Developer Console
+                </a>
+                <a href="https://buymeacoffee.com/victorhsu" target="_blank" rel="noopener" style="background:#FFDD00;color:#000;text-decoration:none;font-weight:700;font-size:11px;padding:6px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;width:fit-content;box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+                  <img src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg" alt="BMC" style="width:14px;">
+                  Support Developer
+                </a>
               </div>
             </div>
           </div>
-          <button id="btn-supabase-logout" class="btn btn-outline-sm btn-full text-danger mb-10">Sign Out from Cloud</button>
-        </div>
 
-        <div class="tab-divider"></div>
-        <div class="tab-section-label">Maintenance & Backup</div>
-
-        <div style="display: flex; gap: 8px;" class="mb-10">
-          <button id="btn-export-backup" class="btn btn-outline btn-smaller" style="flex: 1;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Export ZIP
-          </button>
-          <label id="btn-import-backup-label" class="btn btn-outline btn-smaller" style="cursor:pointer; display:flex; align-items:center; gap:6px; flex: 1; justify-content: center;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Import ZIP
-            <input id="input-import-backup" type="file" accept=".zip" style="display:none">
-          </label>
-        </div>
-
-        <button id="btn-supabase-force-resync-all" class="btn btn-outline-danger btn-full btn-smaller mb-10" title="Wipe local library and restore everything from Supabase Cloud">
-          Force Global Cloud Resync
-        </button>
-
-        <button id="btn-reload-app" class="btn btn-outline btn-full btn-smaller mb-10">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          Reload App
-        </button>
-        <button id="reset-system-btn" class="btn btn-outline btn-full text-danger btn-smaller mb-15">⚠️ Reset Full System</button>
-
-        <div class="build-info-section">
-          <div class="build-info-item">ScoreFlow v2.2 | Branch: <span id="build-branch">main</span></div>
-          <div class="flex-column mt-8">
-            <a href="./tools/index.html" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 11px; display: flex; align-items: center; gap: 4px; padding: 4px 0;">
-              <span>🛠️</span> Developer Console
-            </a>
-            <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0; width: 50%;"></div>
-            <a href="https://buymeacoffee.com/victorhsu" target="_blank" rel="noopener" style="background: #FFDD00; color: #000; text-decoration: none; font-weight: 700; font-size: 11px; padding: 6px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; width: fit-content; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-              <img src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg" alt="BMC" style="width: 14px;">
-              Support Developer
-            </a>
-          </div>
-        </div>
-
-      </div>
+        </div><!-- /settings-content-area -->
+      </div><!-- /settings-body -->
     </div>
 
 

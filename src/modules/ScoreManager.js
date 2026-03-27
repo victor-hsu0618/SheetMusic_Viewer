@@ -131,14 +131,16 @@ export class ScoreManager {
 
     switchToTab(tabId) {
         document.querySelectorAll('.library-tabs .segment-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
-        
+
         const libraryGrid = document.getElementById('library-grid');
         const setlistGrid = document.getElementById('setlist-grid');
         const currentPane = document.getElementById('pane-current-score');
-        
+        const toolbar = document.querySelector('.library-toolbar');
+
         if (libraryGrid) libraryGrid.classList.toggle('hidden', tabId !== 'scores');
         if (setlistGrid) setlistGrid.classList.toggle('hidden', tabId !== 'setlists');
         if (currentPane) currentPane.classList.toggle('hidden', tabId !== 'current-score');
+        if (toolbar) toolbar.classList.toggle('hidden', tabId === 'current-score');
         
         const scoreActions = document.getElementById('score-actions-area');
         const setlistActions = document.getElementById('setlist-actions-area');
