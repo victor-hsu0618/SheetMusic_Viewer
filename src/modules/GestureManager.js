@@ -125,8 +125,13 @@ export class GestureManager {
                 this._pinchStartCentroid = { x: this._lastPinchX, y: this._lastPinchY }
                 
                 // Prioritize GPU resources & disable transitions
+                // Set transform-origin to pinch centroid so scale doesn't shift content
                 if (this._viewerEl) {
-                    this._viewerEl.style.willChange = 'transform' 
+                    const rect = this._viewerEl.getBoundingClientRect()
+                    const originX = this._pinchStartCentroid.x - rect.left
+                    const originY = this._pinchStartCentroid.y - rect.top
+                    this._viewerEl.style.transformOrigin = `${originX}px ${originY}px`
+                    this._viewerEl.style.willChange = 'transform'
                     this._viewerEl.style.transition = 'none'
                 }
             }
@@ -179,13 +184,15 @@ export class GestureManager {
                     }
                 }
 
-                // 3. PAN LOGIC (Manual Scroll)
-                const dx = this._lastPinchX - currentX
-                const dy = this._lastPinchY - currentY
-                
-                viewerContainer.scrollTop += dy
-                viewerContainer.scrollLeft += dx
-                
+                // 3. PAN LOGIC (Manual Scroll) — only when explicitly locked to pan
+                if (this._gestureLocked === 'pan') {
+                    const dx = this._lastPinchX - currentX
+                    const dy = this._lastPinchY - currentY
+
+                    viewerContainer.scrollTop += dy
+                    viewerContainer.scrollLeft += dx
+                }
+
                 this._lastPinchX = currentX
                 this._lastPinchY = currentY
                 return
@@ -213,6 +220,7 @@ export class GestureManager {
                 // Reset visual transform immediately
                 if (this._viewerEl) {
                     this._viewerEl.style.transform = ''
+                    this._viewerEl.style.transformOrigin = ''
                     this._viewerEl.style.willChange = ''
                     this._viewerEl.style.transition = 'transform 0.15s ease-out' 
                 }
