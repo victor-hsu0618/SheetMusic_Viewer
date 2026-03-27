@@ -11,9 +11,11 @@ export class DockingBarManager {
     constructor(app) {
         this.app = app
         this.el = null
+        this.fab = null
         this._subBarMgr = null
         this._page = 0
-        this._pages = null   // built lazily in _buildPages()
+        this._pages = null
+        this._visible = true
     }
 
     setSubBarManager(mgr) { this._subBarMgr = mgr }
@@ -27,7 +29,30 @@ export class DockingBarManager {
         }
         this.el = el
         this._pages = this._buildPages()
+        this._createFab()
+        document.body.classList.add('sf-dock-bar-visible')
         this.update()
+    }
+
+    _createFab() {
+        let fab = document.getElementById('sf-dock-fab')
+        if (!fab) {
+            fab = document.createElement('div')
+            fab.id = 'sf-dock-fab'
+            fab.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"/>
+            </svg>`
+            document.body.appendChild(fab)
+        }
+        this.fab = fab
+        fab.addEventListener('click', () => this.toggleVisible())
+    }
+
+    toggleVisible() {
+        this._visible = !this._visible
+        this.el.classList.toggle('hidden', !this._visible)
+        this.fab.classList.toggle('bar-hidden', !this._visible)
+        document.body.classList.toggle('sf-dock-bar-visible', this._visible)
     }
 
     update() {

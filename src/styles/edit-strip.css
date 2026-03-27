@@ -270,8 +270,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.8);
-    opacity: 0.15;
+    color: rgba(255, 255, 255, 0.9);
+    opacity: 0.5;
     /* Show a hint that they are interactive */
     pointer-events: auto;
     cursor: pointer;

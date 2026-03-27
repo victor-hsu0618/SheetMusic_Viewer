@@ -1,0 +1,34 @@
+/* ═══════════════════════════════════════════════════════════════
+   StandaloneScrollbarManager — right-edge spring-back scrollbar
+   ═══════════════════════════════════════════════════════════════ */
+
+#sf-standalone-scrollbar {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 60vh;                 /* 3/5 of viewport height */
+    width: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 0;
+    z-index: 199;
+    -webkit-user-select: none;
+    user-select: none;
+    background: transparent;
+    border: none;
+}
+
+/* Reached boundary — red flash on arrow */
+#sf-standalone-scrollbar .sf-scrollbar-arrow.limit {
+    color: rgba(239, 68, 68, 0.9);
+    opacity: 1;
+    animation: sf-limit-flash 0.4s ease-out forwards;
+}
+
+@keyframes sf-limit-flash {
+    0%   { opacity: 1; transform: translateX(-50%) scale(1.2); }
+    60%  { opacity: 1; transform: translateX(-50%) scale(1); }
+    100% { opacity: 0.5; }
+}
