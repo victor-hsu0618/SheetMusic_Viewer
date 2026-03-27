@@ -22,7 +22,20 @@
 
 #sf-standalone-scrollbar .sf-strip-scrollbar-track {
     width: 44px;
-    background: rgba(0, 0, 0, 0.07);
+    background: transparent;
+}
+
+#sf-standalone-scrollbar .sf-strip-scrollbar-track::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 55px;
+    bottom: 55px;
+    width: 2px;
+    transform: translateX(-50%);
+    background: rgba(150, 150, 150, 0.2);
+    border-radius: 1px;
+    pointer-events: none;
 }
 
 #sf-standalone-scrollbar .sf-strip-scrollbar-thumb {

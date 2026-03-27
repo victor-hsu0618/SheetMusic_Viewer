@@ -32,8 +32,11 @@ export class EditStripManager {
     }
 
     _initCollapse() {
-        const isHidden = localStorage.getItem('scoreflow_edit_strip_hide') === 'true'
-        this.toggleCollapse(isHidden)
+        // EditStrip permanently hidden — replaced by DockingBar + StandaloneScrollbar
+        this.collapsed = true
+        if (this.el) this.el.classList.add('collapsed')
+        document.body.classList.add('sf-strip-collapsed')
+        localStorage.setItem('scoreflow_edit_strip_hide', 'true')
     }
 
     /** Re-render all buttons (call after activeStampType changes) */
