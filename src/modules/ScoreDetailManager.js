@@ -104,6 +104,24 @@ export class ScoreDetailManager {
         }
 
         this.currentInfo = newInfo;
+        
+        // Load interpretation styles and stamps for this score
+        this.currentSources = await db.get(`sources_${fingerprint}`) || [];
+        this.currentStamps = await db.get(`stamps_${fingerprint}`) || [];
+        
+        if (this.currentSources.length === 0) {
+            // Default source if none exists
+            this.currentSources = [{ 
+                id: 'src_' + Date.now(), 
+                name: 'Primary Interpretation', 
+                visible: true, 
+                opacity: 1, 
+                color: '#6366f1',
+                updatedAt: Date.now()
+            }];
+            await db.set(`sources_${fingerprint}`, this.currentSources);
+        }
+
         this.render(fingerprint);
         this.isLoading = false;
 

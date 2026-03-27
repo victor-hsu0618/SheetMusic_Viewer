@@ -20,6 +20,18 @@
     width: auto;
 }
 
+.score-detail-container {
+    padding: 0 12px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.score-detail-toolbar {
+    padding-right: 12px; /* Standardize alignment with detail-content-area */
+    margin-bottom: 8px;
+}
+
 .jump-sub-panel.calculator-style {
     position: fixed;
     top: 0;
@@ -543,7 +555,7 @@
 
 .detail-content-area {
     flex: 1;
-    padding: 10px 16px 10px 20px; /* Added right padding */
+    padding: 10px 12px 10px 16px; /* Adjusted padding to match container padding */
     overflow-y: auto;
     box-sizing: border-box;
 }

@@ -19,11 +19,17 @@ export class CollaborationManager {
     if (this.app.welcomeIdentityName) this.app.welcomeIdentityName.textContent = `Welcome, ${active.name}`
   }
 
-  renderSourceUI() {
+  renderSourceUI(customSources = null, customStamps = null, targetFingerprint = null) {
     if (!this.app.sourceList) return
     this.app.sourceList.innerHTML = ''
-    this.app.sources.forEach(source => {
-      const isActive = this.app.activeSourceId === source.id
+    
+    const sourcesToRender = customSources || this.app.sources
+    const stampsToUse = customStamps || this.app.stamps
+    const isActiveScore = !targetFingerprint || targetFingerprint === this.app.pdfFingerprint
+    const activeId = isActiveScore ? this.app.activeSourceId : null
+
+    sourcesToRender.forEach(source => {
+      const isActive = activeId === source.id
       const item = document.createElement('div')
       item.className = `source-item ${isActive ? 'active' : ''}`
 
@@ -34,7 +40,7 @@ export class CollaborationManager {
            </div>`
         : '';
 
-      const stampCount = this.app.stamps.filter(s => s.sourceId === source.id && !s.deleted).length;
+      const stampCount = stampsToUse.filter(s => s.sourceId === source.id && !s.deleted).length;
 
       let statusSvg = '';
       if (!source.visible) {
@@ -60,11 +66,11 @@ export class CollaborationManager {
             </div>
           </div>
           <div class="source-controls">
-            <button class="btn-sm-icon rename-src" title="Rename Style">
+            <button class="rename-src btn-sm-icon" title="Rename Style">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
-            ${this.app.sources.length > 1 ? `
-              <button class="btn-sm-icon danger delete-src" title="Remove Style">
+            ${sourcesToRender.length > 1 ? `
+              <button class="delete-src btn-sm-icon danger" title="Remove Style">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             ` : ''}
@@ -79,20 +85,27 @@ export class CollaborationManager {
 
       item.onclick = (e) => {
         if (e.target.closest('.source-controls') || e.target.closest('.source-opacity-box') || e.target.closest('.source-actions') || e.target.closest('.toggle-vis')) return
-        this.app.activeSourceId = source.id
-        this.app.saveToStorage()
-        this.renderSourceUI()
+        if (isActiveScore) {
+          this.app.activeSourceId = source.id
+          this.app.saveToStorage()
+          this.renderSourceUI()
+        }
       }
 
       item.querySelector('.toggle-vis').onclick = (e) => {
         e.stopPropagation()
         source.visible = !source.visible
         source.updatedAt = Date.now()
-        this.app.saveToStorage()
-        this.renderSourceUI()
-        if (this.app.pdf) {
-          for (let i = 1; i <= this.app.pdf.numPages; i++) this.app.redrawStamps(i)
+        
+        if (isActiveScore) {
+          this.app.saveToStorage()
+          if (this.app.pdf) {
+            for (let i = 1; i <= this.app.pdf.numPages; i++) this.app.redrawStamps(i)
+          }
+        } else {
+          db.set(`sources_${targetFingerprint}`, sourcesToRender)
         }
+        this.renderSourceUI(customSources, customStamps, targetFingerprint)
       }
 
       item.querySelector('.rename-src').onclick = (e) => {
@@ -101,8 +114,12 @@ export class CollaborationManager {
         if (newName) {
           source.name = newName
           source.updatedAt = Date.now()
-          this.app.saveToStorage()
-          this.renderSourceUI()
+          if (isActiveScore) {
+            this.app.saveToStorage()
+          } else {
+            db.set(`sources_${targetFingerprint}`, sourcesToRender)
+          }
+          this.renderSourceUI(customSources, customStamps, targetFingerprint)
         }
       }
 
@@ -111,32 +128,37 @@ export class CollaborationManager {
         delBtn.onclick = (e) => {
           e.stopPropagation()
           if (confirm(`Remove "${source.name}" and all its annotations?`)) {
-            this.app.stamps = this.app.stamps.filter(s => s.sourceId !== source.id)
-            this.app.sources = this.app.sources.filter(s => s.id !== source.id)
-            if (this.app.activeSourceId === source.id) this.app.activeSourceId = this.app.sources[0].id
-            // The instruction implies adding 'updatedAt' to new layers.
-            // As there's no 'addLayer' function or 'this.app.layers' array in this context,
-            // and the 'addSource' already includes 'updatedAt',
-            // this insertion point for 'this.app.layers.push' is incorrect.
-            // Assuming the instruction meant to add 'updatedAt' to a new layer object
-            // if such a concept were introduced, but not here.
-            // The provided code snippet for insertion is syntactically incorrect here.
-            // I will proceed by *not* inserting the malformed snippet,
-            // as the 'addSource' function already has 'updatedAt'.
-            // If 'layers' is a new concept, it needs a proper function to add them.
-            this.app.saveToStorage()
-            location.reload()
+            const filteredStamps = stampsToUse.filter(s => s.sourceId !== source.id)
+            const filteredSources = sourcesToRender.filter(s => s.id !== source.id)
+            
+            if (isActiveScore) {
+              this.app.stamps = filteredStamps
+              this.app.sources = filteredSources
+              if (this.app.activeSourceId === source.id) this.app.activeSourceId = this.app.sources[0].id
+              this.app.saveToStorage()
+              location.reload()
+            } else {
+              db.set(`stamps_${targetFingerprint}`, filteredStamps)
+              db.set(`sources_${targetFingerprint}`, filteredSources)
+              this.renderSourceUI(filteredSources, filteredStamps, targetFingerprint)
+            }
           }
         }
       }
 
       item.querySelector('.source-opacity-slider').oninput = (e) => {
         source.opacity = parseFloat(e.target.value)
-        if (this.app.pdf) {
+        if (isActiveScore && this.app.pdf) {
           for (let i = 1; i <= this.app.pdf.numPages; i++) this.app.redrawStamps(i)
         }
       }
-      item.querySelector('.source-opacity-slider').onchange = () => this.app.saveToStorage()
+      item.querySelector('.source-opacity-slider').onchange = () => {
+        if (isActiveScore) {
+          this.app.saveToStorage()
+        } else {
+          db.set(`sources_${targetFingerprint}`, sourcesToRender)
+        }
+      }
 
       this.app.sourceList.appendChild(item)
     })

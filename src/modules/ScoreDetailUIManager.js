@@ -77,7 +77,13 @@ export class ScoreDetailUIManager {
     switchTab(tabId) {
         this.panel.querySelectorAll('.detail-tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId))
         this.panel.querySelectorAll('.detail-tab-pane').forEach(pane => pane.classList.toggle('active', pane.id === `pane-${tabId}`))
-        if (tabId === 'styles') this.app.renderSourceUI?.()
+        if (tabId === 'styles') {
+            this.app.collaboration?.renderSourceUI(
+                this.manager.currentSources, 
+                this.manager.currentStamps, 
+                this.manager.currentFp
+            );
+        }
     }
 
     refreshStats(fingerprint, info) {
