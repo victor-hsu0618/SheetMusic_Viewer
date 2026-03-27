@@ -196,7 +196,9 @@ export class EditStripManager {
             // Skip scroll-bar (dots) as it's now at the very bottom
             // Skip pen as it's now in the stamp bar
             // Skip stamp-palette as it's now at the bottom (above Others bar)
-            if (tool.id === 'trash-can' || tool.id === 'scroll-bar' || tool.id === 'pen' || tool.id === 'stamp-palette') return
+            // Skip core nav tools — rendered below scrollbar
+            if (tool.id === 'trash-can' || tool.id === 'scroll-bar' || tool.id === 'pen' || tool.id === 'stamp-palette'
+                || ['view', 'select', 'eraser', 'cycle'].includes(tool.id)) return
 
             const isStamp = tool.isStampTrigger
             const isOthers = tool.id === 'scroll-bar'
@@ -236,44 +238,10 @@ export class EditStripManager {
             el.appendChild(btn)
         })
 
-        // ── Scrollbar drag zone ──────────────────────────────────────────────
-        this._buildScrollbar(el)
+        // Remove trailing divider left by main loop (if any)
+        if (el.lastElementChild?.classList.contains('sf-strip-divider')) el.lastElementChild.remove()
 
-        // ── Trash / Undo / Redo (Bottom) ───────────────────────────────────
-        el.appendChild(this._divider())
-
-        // Clear All (Trash)
-        const trashBtn = document.createElement('div')
-        trashBtn.id = 'sf-edit-trash-btn'
-        trashBtn.className = 'sf-strip-btn sf-edit-trash'
-        trashBtn.title = '回收桶 (長按清除目前所有劃記)'
-        trashBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-            stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-        </svg>`
-        trashBtn.classList.toggle('active', this.app.activeStampType === 'recycle-bin')
-        trashBtn.addEventListener('click', () => {
-            const isAlreadyActive = this.app.activeStampType === 'recycle-bin'
-            this.app.activeStampType = isAlreadyActive ? 'view' : 'recycle-bin'
-            this.app.toolManager?.updateActiveTools()
-        })
-        // Long press for "Erase All"
-        let trashPressTimer
-        trashBtn.addEventListener('touchstart', (e) => {
-            trashPressTimer = setTimeout(async () => {
-                await this.app.annotationManager?.eraseAllAnnotationsWithConfirmation()
-            }, 800)
-        }, { passive: true })
-        trashBtn.addEventListener('touchend', () => clearTimeout(trashPressTimer))
-        trashBtn.addEventListener('touchmove', () => clearTimeout(trashPressTimer))
-        // Desktop support: Right-click to clear all
-        trashBtn.addEventListener('contextmenu', async (e) => {
-            e.preventDefault()
-            await this.app.annotationManager?.eraseAllAnnotationsWithConfirmation()
-        })
-        el.appendChild(trashBtn)
-
-        // Fit to Width
+        // ── Fit to Width / Height (above scrollbar) ──────────────────────────
         const fitWidthBtn = document.createElement('div')
         fitWidthBtn.className = 'sf-strip-btn'
         fitWidthBtn.title = 'Fit to Width (W)'
@@ -284,7 +252,6 @@ export class EditStripManager {
         fitWidthBtn.addEventListener('click', () => this.app.fitToWidth?.())
         el.appendChild(fitWidthBtn)
 
-        // Fit to Height
         const fitHeightBtn = document.createElement('div')
         fitHeightBtn.className = 'sf-strip-btn'
         fitHeightBtn.title = 'Fit to Height (F)'
@@ -295,7 +262,32 @@ export class EditStripManager {
         fitHeightBtn.addEventListener('click', () => this.app.fitToHeight?.())
         el.appendChild(fitHeightBtn)
 
+        el.appendChild(this._divider())
+
+        // ── Scrollbar drag zone ──────────────────────────────────────────────
+        this._buildScrollbar(el)
+
+        // ── Pan / Select / Erase / Cycle (below scrollbar) ──────────────────
+        el.appendChild(this._divider())
+
+        const coreActionIds = ['view', 'select', 'eraser', 'cycle']
+        coreActionIds.forEach(id => {
+            const tool = editTools.find(t => t.id === id)
+            if (!tool) return
+            const btn = document.createElement('div')
+            btn.className = 'sf-strip-btn'
+            btn.dataset.tool = tool.id
+            if (this.app.activeStampType === tool.id) btn.classList.add('active')
+            btn.title = tool.label
+            btn.innerHTML = tool.icon
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">${tool.icon}</svg>`
+                : `<span style="font-size:10px;font-weight:700;color:inherit">${tool.textIcon || tool.label}</span>`
+            btn.addEventListener('click', () => this._handleToolClick(tool, btn, false, false, false))
+            el.appendChild(btn)
+        })
+
         // ── Stamp Library / Palette (Consolidated Entrance) ──────────────────
+        el.appendChild(this._divider())
         const stampTool = editTools.find(t => t.id === 'stamp-palette')
         if (stampTool) {
             const btn = document.createElement('div')
@@ -314,7 +306,6 @@ export class EditStripManager {
         }
 
         // Others (Dots) Bar at the Bottom
-        el.appendChild(this._divider())
         const othersBtn = document.createElement('div')
         othersBtn.id = 'sf-edit-others-btn'
         othersBtn.className = 'sf-strip-btn'
