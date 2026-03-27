@@ -570,12 +570,18 @@ export class AnnotationManager {
         container.style.left = (stamp.x * 100) + '%'
         container.style.top = (stamp.y * 100) + '%'
         
+        const isStickyNote = stamp.type === 'sticky-note'
+
         const editor = document.createElement('textarea')
-        editor.className = 'floating-text-editor'
-        editor.placeholder = 'Type here...'
-        editor.style.fontSize = this.app.defaultFontSize + 'px'
-        const layer = this.app.layers.find(l => l.id === stamp.layerId)
-        editor.style.color = layer ? layer.color : '#ff4757'
+        editor.className = 'floating-text-editor' + (isStickyNote ? ' sticky-note-editor' : '')
+        editor.placeholder = isStickyNote ? '記下備注...' : 'Type here...'
+        editor.style.fontSize = isStickyNote ? '13px' : (this.app.defaultFontSize + 'px')
+        if (isStickyNote) {
+            editor.style.color = '#854d0e'
+        } else {
+            const layer = this.app.layers.find(l => l.id === stamp.layerId)
+            editor.style.color = layer ? layer.color : '#ff4757'
+        }
         editor.value = stamp.data || ''
 
         // Mini Toolbar (Confirm/Cancel) for touch users
@@ -584,6 +590,7 @@ export class AnnotationManager {
         toolbar.innerHTML = `
             <button class="editor-btn confirm" title="Confirm">✓</button>
             <button class="editor-btn cancel" title="Cancel">✕</button>
+            ${isStickyNote ? '<button class="editor-btn minimize" title="縮小">⊟</button>' : ''}
         `
 
         container.appendChild(editor)
@@ -614,6 +621,9 @@ export class AnnotationManager {
                     this.app.supabaseManager.pushAnnotation(stamp, this.app.pdfFingerprint)
                 }
                 this.redrawStamps(pageNum)
+                if (isStickyNote) {
+                    this.app.activeStampType = 'view'
+                }
                 if (this.app.toolManager) this.app.toolManager.updateActiveTools()
             }
             container.remove()
@@ -628,6 +638,23 @@ export class AnnotationManager {
         // Toolbar Events
         toolbar.querySelector('.confirm').onpointerdown = (e) => { e.stopPropagation(); finalize(); }
         toolbar.querySelector('.cancel').onpointerdown = (e) => { e.stopPropagation(); cancel(); }
+        if (isStickyNote) {
+            toolbar.querySelector('.minimize')?.addEventListener('pointerdown', (e) => {
+                e.stopPropagation()
+                const val = editor.value.trim()
+                this.app.activeTextEditor = null
+                if (val || stamp.data) {
+                    stamp.data = val || stamp.data
+                    if (!stamp.draw) stamp.draw = { type: 'sticky' }
+                    stamp.draw.minimized = true
+                    stamp.updatedAt = Date.now()
+                    if (!this.app.stamps.includes(stamp)) this.app.stamps.push(stamp)
+                    this.app.saveToStorage(true)
+                    this.redrawStamps(pageNum)
+                }
+                container.remove()
+            })
+        }
 
         editor.onblur = (e) => { 
             // Don't finalize if we just clicked the toolbar
@@ -637,8 +664,14 @@ export class AnnotationManager {
         }
 
         editor.onkeydown = (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finalize(); }
-            if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            if (isStickyNote) {
+                // Sticky note: Enter = newline, Cmd/Ctrl+Enter = confirm
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); finalize(); }
+                if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            } else {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finalize(); }
+                if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            }
             e.stopPropagation();
         }
         editor.oninput = () => {

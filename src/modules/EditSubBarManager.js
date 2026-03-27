@@ -680,6 +680,27 @@ export class EditSubBarManager {
         })
         content.appendChild(infoBtn)
 
+        addVDivider(content)
+
+        // Sticky Note
+        const stickyBtn = document.createElement('div')
+        stickyBtn.className = 'sf-others-style-btn' + (this.app.activeStampType === 'sticky-note' ? ' active' : '')
+        stickyBtn.title = '便條紙'
+        stickyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" width="20" height="20">
+            <rect x="4" y="4" width="14" height="16" rx="1" fill="#fef08a" stroke="currentColor" stroke-width="1.2"/>
+            <polygon points="14,4 18,4 18,8 14,8" fill="rgba(0,0,0,0.12)" stroke="none"/>
+            <line x1="14" y1="4" x2="18" y2="8" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="7" y1="10" x2="16" y2="10" stroke="#854d0e" stroke-width="1"/>
+            <line x1="7" y1="13" x2="16" y2="13" stroke="#854d0e" stroke-width="1"/>
+            <line x1="7" y1="16" x2="12" y2="16" stroke="#854d0e" stroke-width="1"/>
+        </svg>`
+        stickyBtn.addEventListener('click', () => {
+            this.app.activeStampType = 'sticky-note'
+            this.app.toolManager?.updateActiveTools()
+            this.toggle('others', null)
+        })
+        content.appendChild(stickyBtn)
+
         // Add all to bar
         bar.appendChild(content)
         bar.appendChild(this._barDivider())

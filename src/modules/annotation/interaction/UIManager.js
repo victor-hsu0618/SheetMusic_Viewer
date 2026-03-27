@@ -146,7 +146,7 @@ export const InteractionUI = {
 
         const hasOffset = Math.abs(previewPos.x - pos.x) > 0.0001 || Math.abs(previewPos.y - pos.y) > 0.0001
 
-        const isTargetingTool = ['select', 'copy', 'recycle-bin', 'text', 'tempo-text', 'eraser', 'measure'].includes(effectiveTool);
+        const isTargetingTool = ['select', 'copy', 'recycle-bin', 'text', 'tempo-text', 'eraser', 'measure', 'sticky-note'].includes(effectiveTool);
 
         const isDrawingEffectiveTool = ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter',
             'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur',

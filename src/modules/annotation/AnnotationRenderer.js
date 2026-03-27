@@ -629,6 +629,105 @@ export class AnnotationRenderer {
                     }
                     break
 
+                case 'sticky': {
+                    const isMinimized = d.minimized === true
+
+                    if (isMinimized) {
+                        // ── Minimized: small sticky icon ──
+                        const mW = 28 * globalScale
+                        const mH = 22 * globalScale
+                        const mFold = 7 * globalScale
+                        ctx.shadowColor = 'rgba(0,0,0,0.2)'
+                        ctx.shadowBlur = 3 * globalScale
+                        ctx.shadowOffsetX = 1 * globalScale
+                        ctx.shadowOffsetY = 1 * globalScale
+                        ctx.fillStyle = '#fef08a'
+                        ctx.beginPath()
+                        ctx.moveTo(x, y)
+                        ctx.lineTo(x + mW - mFold, y)
+                        ctx.lineTo(x + mW, y + mFold)
+                        ctx.lineTo(x + mW, y + mH)
+                        ctx.lineTo(x, y + mH)
+                        ctx.closePath()
+                        ctx.fill()
+                        ctx.shadowColor = 'transparent'
+                        ctx.fillStyle = 'rgba(0,0,0,0.13)'
+                        ctx.beginPath()
+                        ctx.moveTo(x + mW - mFold, y)
+                        ctx.lineTo(x + mW, y + mFold)
+                        ctx.lineTo(x + mW - mFold, y + mFold)
+                        ctx.closePath()
+                        ctx.fill()
+                        break
+                    }
+
+                    // ── Full size (4×) ──
+                    const W = 440 * globalScale
+                    const H = 320 * globalScale
+                    const pad = 16 * globalScale
+                    const fold = 40 * globalScale
+
+                    ctx.shadowColor = 'rgba(0,0,0,0.22)'
+                    ctx.shadowBlur = 8 * globalScale
+                    ctx.shadowOffsetX = 3 * globalScale
+                    ctx.shadowOffsetY = 3 * globalScale
+
+                    ctx.fillStyle = '#fef08a'
+                    ctx.beginPath()
+                    ctx.moveTo(x, y)
+                    ctx.lineTo(x + W - fold, y)
+                    ctx.lineTo(x + W, y + fold)
+                    ctx.lineTo(x + W, y + H)
+                    ctx.lineTo(x, y + H)
+                    ctx.closePath()
+                    ctx.fill()
+
+                    ctx.shadowColor = 'transparent'
+                    ctx.fillStyle = 'rgba(0,0,0,0.13)'
+                    ctx.beginPath()
+                    ctx.moveTo(x + W - fold, y)
+                    ctx.lineTo(x + W, y + fold)
+                    ctx.lineTo(x + W - fold, y + fold)
+                    ctx.closePath()
+                    ctx.fill()
+
+                    ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+                    ctx.lineWidth = 1.2 * globalScale
+                    ctx.beginPath()
+                    ctx.moveTo(x + W - fold, y)
+                    ctx.lineTo(x + W, y + fold)
+                    ctx.stroke()
+
+                    const sContent = stamp.data || ''
+                    const sfs = 18 * globalScale
+                    const lineH = sfs * 1.35
+                    const maxW = W - pad * 2 - fold * 0.3
+                    ctx.font = `500 ${sfs}px Outfit`
+                    ctx.fillStyle = '#854d0e'
+                    ctx.textAlign = 'left'
+                    ctx.textBaseline = 'top'
+
+                    const sLines = []
+                    sContent.split('\n').forEach(para => {
+                        if (!para) { sLines.push(''); return }
+                        const words = para.split(' ')
+                        let cur = ''
+                        words.forEach(w => {
+                            const test = cur ? cur + ' ' + w : w
+                            if (ctx.measureText(test).width > maxW && cur) {
+                                sLines.push(cur); cur = w
+                            } else { cur = test }
+                        })
+                        sLines.push(cur)
+                    })
+
+                    sLines.forEach((line, i) => {
+                        const lineY = y + pad + i * lineH
+                        if (lineY + sfs < y + H - pad) ctx.fillText(line, x + pad, lineY)
+                    })
+                    break
+                }
+
                 case 'complex':
                     // Legacy support for complex visual logic
                     if (d.variant === 'thumb') {

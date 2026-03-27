@@ -354,7 +354,7 @@ export class InteractionManager {
                     const graceCenter = CoordMapper.getGraceCenter(graceObject);
                     const wCenter = getPixelsForWrapper(wrapper, graceCenter.x, graceCenter.y);
                     const _tp0 = getTrashPos(graceCenter.x, wCenter.x, wCenter.y);
-                    if (!isDrawingType(activeObject.type)) {
+                    if (!isDrawingType(activeObject.type) && activeObject.type !== 'sticky-note') {
                         InteractionUI.showTrash(true, wrapper, _tp0.x, _tp0.y);
                     }
 
@@ -750,8 +750,18 @@ export class InteractionManager {
                         activeObject = null;
                         InteractionUI.showTrash(false, tW);
                         this.app.redrawStamps(tPN);
-                    } else if (['text', 'tempo-text', 'quick-text'].includes(syncObj.type)) {
-                        this.app.annotationManager.spawnTextEditor(tW, tPN, syncObj);
+                    } else if (['text', 'tempo-text', 'quick-text', 'sticky-note'].includes(syncObj.type)) {
+                        if (syncObj.type === 'sticky-note' && syncObj.draw?.minimized) {
+                            // Tap on minimized icon → expand
+                            syncObj.draw.minimized = false
+                            syncObj.updatedAt = Date.now()
+                            if (!this.app.stamps.includes(syncObj)) this.app.stamps.push(syncObj)
+                            await this.app.saveToStorage(true)
+                            this.app.redrawStamps(tPN)
+                            startGracePeriod(syncObj, pointerType)
+                        } else {
+                            this.app.annotationManager.spawnTextEditor(tW, tPN, syncObj);
+                        }
                     } else if (['page-bookmark', 'music-anchor'].includes(syncObj.type) && !isMovingExisting) {
                         const targetObj = syncObj;
                         const bookmarks = this.app.playbackManager?.currentMediaObj?.bookmarks || [];
@@ -884,7 +894,7 @@ export class InteractionManager {
             // --- NO GRACE PERIOD FOR PEN OR DRAWING TYPES ---
             // This prevents "nudging" written characters during handwriting.
             const isDrawing = isDrawingType(obj.type);
-            if (pType === 'pen' || isDrawing) return;
+            if (pType === 'pen' || isDrawing || obj.type === 'sticky-note') return;
 
             graceObject = obj; this.app._lastGraceObject = graceObject;
             this.app.redrawStamps(obj.page);
@@ -933,7 +943,7 @@ export class InteractionManager {
                     if (tt === 'eraser') this.app.hoveredStamp = f; else this.app.selectHoveredStamp = f;
                     this.app.redrawStamps(pageNum);
                 }
-            } else if (this.app.isStampTool() && tt !== 'view') {
+            } else if (this.app.isStampTool() && tt !== 'view' && tt !== 'sticky-note') {
                 const cvs = wrapper.querySelector('.annotation-layer.virtual-canvas');
                 if (cvs) {
                     this.app.redrawStamps(pageNum);

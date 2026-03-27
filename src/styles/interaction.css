@@ -353,6 +353,11 @@
   color: white;
 }
 
+.editor-btn.minimize {
+  background: #a16207;
+  color: white;
+}
+
 .editor-btn:active {
   transform: scale(0.9);
 }
@@ -378,6 +383,25 @@
 .floating-text-editor:focus {
   background: white;
   transform: scale(1.05);
+}
+
+/* Sticky Note Editor */
+.floating-text-editor.sticky-note-editor {
+  background: #fef9c3;
+  border: 1px solid #fbbf24;
+  border-radius: 2px;
+  width: 110px;
+  min-height: 80px;
+  color: #854d0e !important;
+  font-size: 13px !important;
+  font-weight: 500;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.22);
+  padding: 7px;
+}
+
+.floating-text-editor.sticky-note-editor:focus {
+  background: #fef9c3;
+  transform: none;
 }
 
 /* Persona (Source) Management Styles */
