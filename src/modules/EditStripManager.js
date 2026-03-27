@@ -142,7 +142,7 @@ export class EditStripManager {
         jumpBtn.title = '跳轉頁面 / Jump to Page (G/J)'
         jumpBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-            <polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
         </svg>`
         jumpBtn.addEventListener('click', () => this.app.jumpManager?.togglePanel())
         el.appendChild(jumpBtn)
@@ -235,9 +235,6 @@ export class EditStripManager {
             btn.addEventListener('click', () => this._handleToolClick(tool, btn, isStamp, isOthers, false))
             el.appendChild(btn)
         })
-
-        // ── Divider before scrollbar ─────────────────────────────────────────
-        el.appendChild(this._divider())
 
         // ── Scrollbar drag zone ──────────────────────────────────────────────
         this._buildScrollbar(el)
