@@ -111,6 +111,44 @@ export class EditStripManager {
         const el = this.el
         el.innerHTML = ''
 
+        // ── Top Utilities (Settings, Library, Jump) ──────────────────────────
+        
+        // 1. Settings
+        const settingsBtn = document.createElement('div')
+        settingsBtn.className = 'sf-strip-btn'
+        settingsBtn.title = '設定 / Settings (S)'
+        settingsBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>`
+        settingsBtn.addEventListener('click', () => this.app.settingsPanelManager?.toggle())
+        el.appendChild(settingsBtn)
+
+        // 2. Library
+        const libBtn = document.createElement('div')
+        libBtn.className = 'sf-strip-btn'
+        libBtn.title = '圖書庫 / Library (O)'
+        libBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <rect x="3" y="3" width="4" height="15" rx="1.5"/>
+            <rect x="10" y="6" width="4" height="12" rx="1.5"/>
+            <rect x="17" y="4.5" width="4" height="13.5" rx="1.5"/>
+            <rect x="2" y="19" width="20" height="2" rx="1"/>
+        </svg>`
+        libBtn.addEventListener('click', () => this.app.toggleLibrary?.())
+        el.appendChild(libBtn)
+
+        // 3. Jump (Go To)
+        const jumpBtn = document.createElement('div')
+        jumpBtn.className = 'sf-strip-btn'
+        jumpBtn.title = '跳轉頁面 / Jump to Page (G/J)'
+        jumpBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+        </svg>`
+        jumpBtn.addEventListener('click', () => this.app.jumpManager?.togglePanel())
+        el.appendChild(jumpBtn)
+        
+        el.appendChild(this._divider())
+
         // ── Edit tool buttons ────────────────────────────────────────────────
         const editGroup = TOOLSETS.find(g => g.type === 'edit')
         const editTools = editGroup ? [...editGroup.tools] : []

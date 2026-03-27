@@ -57,6 +57,7 @@ export class EditSubBarManager {
         this._bars      = {}     // { pen: el, shapes: el, stamp: el, text: el, others: el }
         this._stampPage = 0
         this._stampBarY  = null  // null = auto (near bottom), number = last dragged Y
+        this._othersBarY = null
         this._shapesBarY = null
         this._stampSettingsPanel = null
         this._stampSettingsOpen  = false
@@ -162,7 +163,7 @@ export class EditSubBarManager {
         const bar = document.createElement('div')
         bar.id = 'sf-sub-bar-' + name
         bar.className = 'sf-sub-bar'
-            + (name === 'others' ? ' sf-others-bar' : '')
+            + (name === 'others' ? ' sf-others-bar sf-wide-bar' : '')
             + (name === 'stamp' ? ' sf-wide-bar' : '')
         return bar
     }
@@ -191,7 +192,22 @@ export class EditSubBarManager {
             else requestAnimationFrame(refine)
 
         } else if (name === 'others') {
-            // Slides up from bottom — no top override needed (CSS handles it)
+            // Use stored Y or default to top
+            const stored = this._othersBarY
+            const raw = stored ?? Math.round(window.innerHeight * 0.82)
+            
+            bar.style.top = raw + 'px'
+
+            const refine = () => {
+                const h = bar.offsetHeight || 60
+                const halfH = h / 2
+                const clamped = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, raw))
+                bar.style.top = clamped + 'px'
+                this._othersBarY = clamped
+            }
+
+            if (bar.offsetHeight > 0) refine()
+            else requestAnimationFrame(refine)
         }
     }
 
@@ -415,7 +431,11 @@ export class EditSubBarManager {
         if (bar._dragAttached) return   // avoid duplicate listeners on repopulate
         bar._dragAttached = true
 
-        const getY = () => (type === 'stamp' ? this._stampBarY : this._shapesBarY) ?? (window.innerHeight * 0.82)
+        const getY = () => {
+            if (type === 'stamp') return this._stampBarY ?? (window.innerHeight * 0.82)
+            if (type === 'others') return this._othersBarY ?? 80
+            return this._shapesBarY ?? (window.innerHeight * 0.82)
+        }
         const setY = (y) => {
             // Bar is centered on `top` via translateY(-50%), so clamp using half-height
             const halfH = (bar.offsetHeight || 120) / 2
@@ -423,6 +443,7 @@ export class EditSubBarManager {
             const maxY = window.innerHeight - halfH - 8
             const v = Math.max(minY, Math.min(maxY, y))
             if (type === 'stamp') this._stampBarY = v
+            else if (type === 'others') this._othersBarY = v
             else                  this._shapesBarY = v
             bar.style.top = v + 'px'
         }
@@ -484,16 +505,20 @@ export class EditSubBarManager {
     // ─── Others Bar ───────────────────────────────────────────────────────────
 
     _buildOthersBar(bar) {
-        const addLabel = (txt) => {
+        // Wrap everything in a scrollable content area
+        const content = document.createElement('div')
+        content.className = 'sf-bar-content sf-others-scroll-content'
+
+        const addLabel = (parent, txt) => {
             const l = document.createElement('div')
             l.className = 'sf-others-label'
             l.textContent = txt
-            bar.appendChild(l)
+            parent.appendChild(l)
         }
-        const addVDivider = () => {
+        const addVDivider = (parent) => {
             const d = document.createElement('div')
             d.className = 'sf-others-divider-v'
-            bar.appendChild(d)
+            parent.appendChild(d)
         }
 
         // Helper to apply style to active selected object
@@ -515,7 +540,7 @@ export class EditSubBarManager {
         };
 
         // Color swatches
-        addLabel('Color')
+        addLabel(content, 'Color')
         EXTRA_COLORS.forEach(hex => {
             const c = document.createElement('div')
             c.className = 'sf-others-color' + (this.app.activeColor === hex ? ' active' : '')
@@ -527,13 +552,13 @@ export class EditSubBarManager {
                 applyToActiveStamp('color', hex)
                 this._populateBar(bar, 'others')
             })
-            bar.appendChild(c)
+            content.appendChild(c)
         })
 
-        addVDivider()
+        addVDivider(content)
 
         // Line style
-        addLabel('Line')
+        addLabel(content, 'Line')
         ;[['─', 'solid'], ['╌', 'dashed'], ['┄', 'dotted']].forEach(([sym, key]) => {
             const b = document.createElement('div')
             b.className = 'sf-others-style-btn' + ((this.app.activeLineStyle || 'solid') === key ? ' active' : '')
@@ -544,13 +569,13 @@ export class EditSubBarManager {
                 applyToActiveStamp('lineStyle', key)
                 this._populateBar(bar, 'others')
             })
-            bar.appendChild(b)
+            content.appendChild(b)
         })
 
-        addVDivider()
+        addVDivider(content)
 
         // Size preset (maps directly to activeToolPreset / userScale)
-        addLabel('Size')
+        addLabel(content, 'Size')
         ;[['S', 0.7], ['M', 1.0], ['L', 1.5]].forEach(([lbl, val]) => {
             const b = document.createElement('div')
             b.className = 'sf-others-style-btn' + (Math.abs((this.app.activeToolPreset || 1.0) - val) < 0.05 ? ' active' : '')
@@ -562,10 +587,10 @@ export class EditSubBarManager {
                 applyToActiveStamp('size', val)
                 this._populateBar(bar, 'others')
             })
-            bar.appendChild(b)
+            content.appendChild(b)
         })
 
-        addVDivider()
+        addVDivider(content)
 
         // Undo
         const undoBtn = document.createElement('div')
@@ -579,7 +604,7 @@ export class EditSubBarManager {
             this.app.undo()
             this._populateBar(bar, 'others')
         })
-        bar.appendChild(undoBtn)
+        content.appendChild(undoBtn)
 
         // Redo
         const redoBtn = document.createElement('div')
@@ -593,23 +618,7 @@ export class EditSubBarManager {
             this.app.redo()
             this._populateBar(bar, 'others')
         })
-        bar.appendChild(redoBtn)
-
-        addVDivider()
-
-        // Go To
-        const gotoBtn = document.createElement('div')
-        gotoBtn.className = 'sf-others-style-btn'
-        gotoBtn.title = 'Go To (G)'
-        gotoBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
-        </svg>`
-        gotoBtn.addEventListener('click', () => {
-            this.app.jumpManager?.togglePanel()
-        })
-        bar.appendChild(gotoBtn)
-
-        addVDivider()
+        content.appendChild(redoBtn)
 
         // Full Screen
         const fsBtn = document.createElement('div')
@@ -630,7 +639,9 @@ export class EditSubBarManager {
             setTimeout(updateFsIcon, 150)
         })
         document.addEventListener('fullscreenchange', updateFsIcon)
-        bar.appendChild(fsBtn)
+        content.appendChild(fsBtn)
+
+        addVDivider(content)
 
         // Zoom Out
         const zoomOutBtn = document.createElement('div')
@@ -638,13 +649,13 @@ export class EditSubBarManager {
         zoomOutBtn.title = 'Zoom Out (-)'
         zoomOutBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="5" y1="12" x2="19" y2="12"/></svg>`
         zoomOutBtn.addEventListener('click', () => this.app.changeZoom?.(-0.1))
-        bar.appendChild(zoomOutBtn)
+        content.appendChild(zoomOutBtn)
 
         // Zoom Readout
         const readout = document.createElement('div')
         readout.className = 'sf-others-zoom-readout'
         readout.textContent = `${Math.round((this.app.scale || 1.5) * 100)}%`
-        bar.appendChild(readout)
+        content.appendChild(readout)
         this._othersZoomReadout = readout
 
         // Zoom In
@@ -653,7 +664,9 @@ export class EditSubBarManager {
         zoomInBtn.title = 'Zoom In (+)'
         zoomInBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
         zoomInBtn.addEventListener('click', () => this.app.changeZoom?.(0.1))
-        bar.appendChild(zoomInBtn)
+        content.appendChild(zoomInBtn)
+
+        addVDivider(content)
 
         // Score Info
         const infoBtn = document.createElement('div')
@@ -665,34 +678,19 @@ export class EditSubBarManager {
         infoBtn.addEventListener('click', () => {
             this.app.toggleScoreDetail?.()
         })
-        bar.appendChild(infoBtn)
+        content.appendChild(infoBtn)
 
-        // Settings
-        const settingsBtn = document.createElement('div')
-        settingsBtn.className = 'sf-others-style-btn'
-        settingsBtn.title = 'Settings'
-        settingsBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>`
-        settingsBtn.addEventListener('click', () => {
-            this.app.settingsPanelManager?.toggle()
-        })
-        bar.appendChild(settingsBtn)
-
-        // Library
-        const libBtn = document.createElement('div')
-        libBtn.className = 'sf-others-style-btn'
-        libBtn.title = 'Library (O)'
-        libBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-            <rect x="3" y="3" width="4" height="15" rx="1.5"/>
-            <rect x="10" y="6" width="4" height="12" rx="1.5"/>
-            <rect x="17" y="4.5" width="4" height="13.5" rx="1.5"/>
-            <rect x="2" y="19" width="20" height="2" rx="1"/>
-        </svg>`
-        libBtn.addEventListener('click', () => {
-            this.app.toggleLibrary?.()
-        })
-        bar.appendChild(libBtn)
+        // Add all to bar
+        bar.appendChild(content)
+        bar.appendChild(this._barDivider())
+        
+        // Grip on the right for dragging
+        const grip = document.createElement('div')
+        grip.className = 'sf-bar-grip'
+        grip.innerHTML = '<span></span><span></span><span></span><span></span>'
+        grip.title = 'Drag to reposition'
+        this._attachGripDrag(grip, bar, 'others')
+        bar.appendChild(grip)
     }
 
     // ─── Stamp Settings Panel ─────────────────────────────────────────────────
