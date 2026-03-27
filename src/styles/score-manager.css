@@ -2,7 +2,7 @@
 .library-overlay {
     position: fixed;
     top: 0;
-    left: 50px;
+    left: 0;
     right: 54px;
     bottom: 0;
     width: auto;
