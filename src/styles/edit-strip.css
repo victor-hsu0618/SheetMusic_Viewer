@@ -80,7 +80,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #1e293b;
+    color: rgba(255, 255, 255, 0.75);
     transition: background .15s, color .15s, border-color .15s;
     flex-shrink: 0;
     position: relative;
@@ -88,9 +88,7 @@
 
 .sf-strip-btn svg {
     pointer-events: none;
-    stroke-width: 2.2px !important;
-    /* Strong 360-degree dark outline for extreme visibility on white paper */
-    filter: drop-shadow(1px 0 0 rgba(255, 255, 255, 0.6)) drop-shadow(-1px 0 0 rgba(255, 255, 255, 0.6)) drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.6));
+    stroke-width: 1.5px !important;
 }
 
 .sf-strip-btn:hover {
@@ -124,18 +122,9 @@
 .sf-strip-btn[data-tool="eraser"].active,
 .sf-strip-btn[data-tool="cycle"].active,
 .sf-strip-btn[data-tool="copy"].active {
-    background: rgba(255, 255, 255, 0.3) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
     color: #fff !important;
-}
-
-/* Ensure icons inside active neutral buttons are sharp */
-.sf-strip-btn[data-tool="view"].active svg,
-.sf-strip-btn[data-tool="select"].active svg,
-.sf-strip-btn[data-tool="eraser"].active svg {
-    opacity: 1 !important;
-    filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
 }
 
 /* Specific styling for the bottom Trash button (matches Doc Bar style) */

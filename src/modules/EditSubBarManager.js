@@ -102,6 +102,8 @@ export class EditSubBarManager {
         })
         this.activeBar = null
         this._closeStampSettings()
+        this.app.activeStampType = 'view'
+        this.app.toolManager?.updateActiveTools()
     }
 
     updateZoom() {
@@ -139,6 +141,10 @@ export class EditSubBarManager {
     _closeToolBar(name) {
         this._bars[name]?.classList.remove('open')
         this.activeBar = null
+        if (name === 'stamp') {
+            this.app.activeStampType = 'view'
+            this.app.toolManager?.updateActiveTools()
+        }
     }
 
     // ─── Private ──────────────────────────────────────────────────────────────
