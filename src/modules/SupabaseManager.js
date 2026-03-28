@@ -249,8 +249,6 @@ export class SupabaseManager {
             updated_at: stamp.updatedAt ? new Date(stamp.updatedAt).toISOString() : new Date().toISOString()
         }
 
-        console.log(`[Supabase] ⬆️ Pushing annotation [${stamp.type}] ID: ${stamp.id}`)
-
         try {
             const { error } = await this.client
                 .from('annotations')
@@ -258,8 +256,6 @@ export class SupabaseManager {
 
             if (error) {
                 console.error('[Supabase] ❌ Push annotation error:', error.message)
-            } else {
-                console.log(`[Supabase] ✅ Annotation pushed successfully.`)
             }
         } catch (err) {
             console.warn('[Supabase] ⚠️ Push annotation failed (network/offline):', err.message)
@@ -270,24 +266,17 @@ export class SupabaseManager {
      * Deletes an annotation from Supabase.
      */
     async deleteAnnotation(id) {
-        if (!this.client || !this.user) {
-            console.warn('[Supabase] ⚠️ Delete skipped: No session.')
-            return
-        }
-
-        console.log(`[Supabase] 🗑️ Deleting annotation ID: ${id}`)
+        if (!this.client || !this.user) return
 
         try {
             const { error } = await this.client
                 .from('annotations')
                 .delete()
                 .eq('id', id)
-                .eq('user_id', this.user.id) // Security check
+                .eq('user_id', this.user.id)
 
             if (error) {
                 console.error('[Supabase] ❌ Delete annotation error:', error.message)
-            } else {
-                console.log('[Supabase] ✅ Annotation deleted in cloud.')
             }
         } catch (err) {
             console.warn('[Supabase] ⚠️ Delete annotation failed (network/offline):', err.message)
