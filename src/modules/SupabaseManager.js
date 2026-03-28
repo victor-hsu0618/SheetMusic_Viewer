@@ -214,6 +214,9 @@ export class SupabaseManager {
 
     async signOut() {
         if (!this.client) return
+        // Clear local annotations so the next user on this device starts clean
+        const keys = await db.getAllKeys()
+        await Promise.all(keys.filter(k => k.startsWith('stamps_')).map(k => db.remove(k)))
         await this.client.auth.signOut()
     }
 

@@ -553,6 +553,36 @@
               </div>
               <span class="setting-hint" style="margin-top:6px;">選擇每個工具類別的預設顏色，切換工具時自動套用。</span>
             </div>
+
+            <div class="setting-item">
+              <label class="setting-label" style="margin-bottom:8px;">Dock Bar Auto-Hide</label>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div class="setting-row-compact">
+                  <label class="setting-hint" style="min-width:110px;margin:0;">Auto-Hide</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="settings-dock-autohide" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-row-compact" id="dock-delay-row">
+                  <label class="setting-hint" style="min-width:110px;margin:0;">Hide After</label>
+                  <div class="slider-container">
+                    <button class="slider-adj-btn minus" data-target="settings-dock-delay">−</button>
+                    <input type="range" id="settings-dock-delay" min="1" max="30" step="1" value="4" class="setting-slider" />
+                    <button class="slider-adj-btn plus" data-target="settings-dock-delay">+</button>
+                  </div>
+                  <span id="settings-dock-delay-value" class="badge">4s</span>
+                </div>
+                <div class="setting-row-compact">
+                  <label class="setting-hint" style="min-width:110px;margin:0;">Auto-Show</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="settings-dock-autoshow" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+              <span class="setting-hint" style="margin-top:6px;">自動隱藏底部工具列，移到底部邊緣可重新顯示。</span>
+            </div>
           </div>
 
           <!-- ── Perf ── -->

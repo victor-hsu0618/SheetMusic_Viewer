@@ -252,6 +252,42 @@ export class SettingsPanelManager {
             })
         })
 
+        // Dock Bar Auto-Hide
+        const dockAutoHide  = document.getElementById('settings-dock-autohide')
+        const dockDelay     = document.getElementById('settings-dock-delay')
+        const dockDelayVal  = document.getElementById('settings-dock-delay-value')
+        const dockDelayRow  = document.getElementById('dock-delay-row')
+        const dockAutoShow  = document.getElementById('settings-dock-autoshow')
+        if (dockAutoHide) {
+            const mgr = this.app.dockingBarManager
+            dockAutoHide.checked = mgr?._autoHideEnabled ?? false
+            if (dockDelay) {
+                dockDelay.value = mgr?._autoHideDelaySec ?? 4
+                if (dockDelayVal) dockDelayVal.textContent = `${dockDelay.value}s`
+                this.updateSliderGradient(dockDelay)
+            }
+            if (dockAutoShow)  dockAutoShow.checked  = mgr?._autoShowEnabled ?? true
+            if (dockDelayRow)  dockDelayRow.style.opacity = dockAutoHide.checked ? '1' : '0.4'
+
+            const applyDock = () => {
+                const enabled  = dockAutoHide.checked
+                const delaySec = parseInt(dockDelay?.value ?? 4)
+                const autoShow = dockAutoShow?.checked ?? true
+                localStorage.setItem('sf_dock_autohide',     enabled)
+                localStorage.setItem('sf_dock_autohide_sec', delaySec)
+                localStorage.setItem('sf_dock_autoshow',     autoShow)
+                this.app.dockingBarManager?.applyAutoHideSettings({ enabled, delaySec, autoShow })
+                if (dockDelayRow) dockDelayRow.style.opacity = enabled ? '1' : '0.4'
+            }
+            dockAutoHide.addEventListener('change', applyDock)
+            dockAutoShow.addEventListener('change', applyDock)
+            dockDelay?.addEventListener('input', (e) => {
+                if (dockDelayVal) dockDelayVal.textContent = `${e.target.value}s`
+                this.updateSliderGradient(dockDelay)
+                applyDock()
+            })
+        }
+
         // Scroll Offset
         const jumpOffsetInput = document.getElementById('settings-jump-offset')
         const jumpOffsetValue = document.getElementById('settings-jump-offset-value')

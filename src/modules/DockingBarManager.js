@@ -16,6 +16,13 @@ export class DockingBarManager {
         this._page = 0
         this._pages = null
         this._visible = true
+
+        // Auto-hide settings
+        this._autoHideEnabled  = localStorage.getItem('sf_dock_autohide') === 'true'
+        this._autoHideDelaySec = parseInt(localStorage.getItem('sf_dock_autohide_sec') || '4', 10)
+        this._autoShowEnabled  = localStorage.getItem('sf_dock_autoshow') !== 'false' // default true
+        this._hideTimer = null
+        this._trigger = null
     }
 
     setSubBarManager(mgr) { this._subBarMgr = mgr }
@@ -30,8 +37,15 @@ export class DockingBarManager {
         this.el = el
         this._pages = this._buildPages()
         this._createFab()
+        this._createTrigger()
         document.body.classList.add('sf-dock-bar-visible')
         this.update()
+        this._startHideTimer()
+
+        // Reset timer on any interaction with the bar
+        this.el.addEventListener('pointerenter', () => this._resetHideTimer())
+        this.el.addEventListener('pointermove',  () => this._resetHideTimer())
+        this.el.addEventListener('click',        () => this._resetHideTimer())
     }
 
     _createFab() {
@@ -45,14 +59,94 @@ export class DockingBarManager {
             document.body.appendChild(fab)
         }
         this.fab = fab
-        fab.addEventListener('click', () => this.toggleVisible())
+        fab.addEventListener('click', () => {
+            this.toggleVisible()
+            this._resetHideTimer()
+        })
+    }
+
+    _createTrigger() {
+        let trigger = document.getElementById('sf-dock-trigger')
+        if (!trigger) {
+            trigger = document.createElement('div')
+            trigger.id = 'sf-dock-trigger'
+            document.body.appendChild(trigger)
+        }
+        this._trigger = trigger
+        trigger.addEventListener('pointerenter', () => {
+            if (!this._visible && this._autoShowEnabled) this._showBar()
+        })
+        trigger.addEventListener('touchstart', () => {
+            if (!this._visible && this._autoShowEnabled) this._showBar()
+        }, { passive: true })
+        this._updateTrigger()
+    }
+
+    _updateTrigger() {
+        if (!this._trigger) return
+        // Trigger zone is only active when bar is hidden AND auto-show is on
+        this._trigger.style.pointerEvents = (!this._visible && this._autoShowEnabled) ? 'auto' : 'none'
+    }
+
+    _showBar() {
+        this._visible = true
+        this.el.classList.remove('hidden')
+        this.fab.classList.remove('bar-hidden')
+        document.body.classList.add('sf-dock-bar-visible')
+        this._updateTrigger()
+        this._startHideTimer()
+    }
+
+    _hideBar() {
+        this._visible = false
+        this.el.classList.add('hidden')
+        this.fab.classList.add('bar-hidden')
+        document.body.classList.remove('sf-dock-bar-visible')
+        this._updateTrigger()
     }
 
     toggleVisible() {
-        this._visible = !this._visible
-        this.el.classList.toggle('hidden', !this._visible)
-        this.fab.classList.toggle('bar-hidden', !this._visible)
-        document.body.classList.toggle('sf-dock-bar-visible', this._visible)
+        if (this._visible) {
+            this._hideBar()
+        } else {
+            this._showBar()
+        }
+    }
+
+    _startHideTimer() {
+        this._clearHideTimer()
+        if (!this._autoHideEnabled || !this._visible) return
+        this._hideTimer = setTimeout(() => {
+            if (this._visible) this._hideBar()
+        }, this._autoHideDelaySec * 1000)
+    }
+
+    _resetHideTimer() {
+        if (!this._autoHideEnabled) return
+        this._clearHideTimer()
+        this._startHideTimer()
+    }
+
+    _clearHideTimer() {
+        if (this._hideTimer) {
+            clearTimeout(this._hideTimer)
+            this._hideTimer = null
+        }
+    }
+
+    // Called from SettingsPanelManager when settings change
+    applyAutoHideSettings({ enabled, delaySec, autoShow }) {
+        if (enabled !== undefined)  this._autoHideEnabled  = enabled
+        if (delaySec !== undefined) this._autoHideDelaySec = delaySec
+        if (autoShow !== undefined) this._autoShowEnabled  = autoShow
+
+        if (!this._autoHideEnabled) {
+            this._clearHideTimer()
+            if (!this._visible) this._showBar()
+        } else {
+            this._startHideTimer()
+        }
+        this._updateTrigger()
     }
 
     update() {

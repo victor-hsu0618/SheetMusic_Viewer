@@ -997,31 +997,33 @@ export class InteractionManager {
                             this.app.redrawStamps(tPN);
                         };
 
-                        const pickerActions = [];
-                        if (hasBookmarks) {
-                            bookmarks.forEach(bm => {
-                                pickerActions.push({ label: bm.label, subLabel: this.app.playbackManager.formatTime(bm.time), value: bm.label });
+                        if (targetObj.type === 'page-bookmark') {
+                            // Skip picker — go straight to label input
+                            showFinalDialog({ type: 'input', placeholder: 'e.g. Solo, Intro...' }).then(processLabel);
+                        } else {
+                            const pickerActions = [];
+                            if (hasBookmarks) {
+                                bookmarks.forEach(bm => {
+                                    pickerActions.push({ label: bm.label, subLabel: this.app.playbackManager.formatTime(bm.time), value: bm.label });
+                                });
+                            }
+                            pickerActions.push({ label: '🔗 Link YouTube URL...', value: '__youtube__', subLabel: 'Paste URL' });
+                            pickerActions.push({ label: '📝 Manual Label...', value: '__manual__', subLabel: 'Enter Text' });
+
+                            showFinalDialog({
+                                type: 'picker',
+                                message: hasBookmarks ? 'Select a bookmark or link source:' : 'Choose anchor type:',
+                                actions: pickerActions
+                            })?.then(async result => {
+                                if (result === '__manual__') {
+                                    showFinalDialog({ type: 'input', placeholder: 'e.g. Solo, Intro...' }).then(processLabel);
+                                } else if (result === '__youtube__') {
+                                    showFinalDialog({ type: 'input', placeholder: 'Paste YouTube URL here...' }).then(processYoutube);
+                                } else if (result !== null) {
+                                    processLabel(result);
+                                }
                             });
                         }
-                        
-                        if (targetObj.type === 'music-anchor') {
-                            pickerActions.push({ label: '🔗 Link YouTube URL...', value: '__youtube__', subLabel: 'Paste URL' });
-                        }
-                        pickerActions.push({ label: '📝 Manual Label...', value: '__manual__', subLabel: 'Enter Text' });
-
-                        showFinalDialog({
-                            type: 'picker',
-                            message: hasBookmarks ? 'Select a bookmark or link source:' : 'Choose anchor type:',
-                            actions: pickerActions
-                        })?.then(async result => {
-                            if (result === '__manual__') {
-                                showFinalDialog({ type: 'input', placeholder: 'e.g. Solo, Intro...' }).then(processLabel);
-                            } else if (result === '__youtube__') {
-                                showFinalDialog({ type: 'input', placeholder: 'Paste YouTube URL here...' }).then(processYoutube);
-                            } else if (result !== null) {
-                                processLabel(result);
-                            }
-                        });
                         return;
                     } else if (syncObj.type.startsWith('tempo-') && !isMovingExisting) {
                         const targetObj = syncObj;

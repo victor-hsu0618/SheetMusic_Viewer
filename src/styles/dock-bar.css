@@ -144,6 +144,17 @@ body.sf-dock-bar-visible #sf-dock-fab {
     transform: rotate(180deg);
 }
 
+/* ── Trigger zone for auto-show ── */
+#sf-dock-trigger {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    z-index: 199;
+    pointer-events: none; /* toggled by JS based on bar visibility */
+}
+
 /* ── Viewer padding so score isn't hidden behind bar ── */
 body.sf-dock-bar-visible .viewer-container {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
