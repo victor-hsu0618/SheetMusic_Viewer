@@ -367,27 +367,46 @@ export class SupabaseManager {
         const cloudStamps = (data || []).map(r => r.data).filter(s => !s?.deleted)
         const cloudIds = new Set(cloudStamps.map(s => s.id))
 
-        // 3. Find local-only stamps and push them up (they never made it to Supabase)
         const syncSystemStamps = localStorage.getItem('scoreflow_sync_system_stamps') !== 'false'
-        const localOnly = localActive.filter(s => !cloudIds.has(s.id) && (syncSystemStamps || s.type !== 'system'))
-        if (localOnly.length > 0) {
-            console.log(`[Supabase] syncOnLoad: pushing ${localOnly.length} local-only stamps to cloud`)
-            for (const s of localOnly) {
-                await this.pushAnnotation(s, fingerprint)
+
+        // 3. Build a local map for quick lookup
+        const localMap = new Map(localActive.map(s => [s.id, s]))
+
+        // 4. Merge: newer updatedAt wins; local-only stamps get pushed up
+        const merged = []
+        const toUpload = []
+
+        for (const cloudS of cloudStamps) {
+            const local = localMap.get(cloudS.id)
+            if (local && (local.updatedAt || 0) > (cloudS.updatedAt || 0)) {
+                // Local is newer → keep local, push it up
+                merged.push(local)
+                toUpload.push(local)
+            } else {
+                merged.push(cloudS)
             }
         }
 
-        // 4. Merge: cloud wins on conflicts, local-only stamps are kept
-        const merged = [...cloudStamps]
+        // Local-only stamps (never reached Supabase)
         for (const local of localActive) {
-            if (!cloudIds.has(local.id)) merged.push(local)
+            if (!cloudIds.has(local.id)) {
+                if (syncSystemStamps || local.type !== 'system') toUpload.push(local)
+                merged.push(local)
+            }
+        }
+
+        if (toUpload.length > 0) {
+            console.log(`[Supabase] syncOnLoad: uploading ${toUpload.length} newer/local-only stamps`)
+            for (const s of toUpload) {
+                await this.pushAnnotation(s, fingerprint)
+            }
         }
 
         this.app.stamps = merged
         this.app.redrawAllAnnotationLayers?.()
         db.set(`stamps_${fingerprint}`, merged)
 
-        console.log(`[Supabase] syncOnLoad: ${cloudStamps.length} cloud + ${localOnly.length} local-only = ${merged.length} total`)
+        console.log(`[Supabase] syncOnLoad: ${cloudStamps.length} cloud, ${toUpload.length} uploaded, ${merged.length} total`)
     }
 
     /**
