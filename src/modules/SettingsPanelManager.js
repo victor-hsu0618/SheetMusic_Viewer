@@ -44,6 +44,8 @@ export class SettingsPanelManager {
             this.app.uiManager.closeAllActivePanels('SettingsPanelManager')
             this.panel.classList.add('active')
             this._refreshAccountUI()
+            this.app.activeStampType = 'view'
+            this.app.toolManager?.updateActiveTools()
         } else {
             this.panel.classList.remove('active')
         }

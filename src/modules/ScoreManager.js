@@ -150,6 +150,7 @@ export class ScoreManager {
         if (setlistActions) setlistActions.classList.toggle('hidden', tabId !== 'setlists');
         if (currentActions) currentActions.classList.toggle('hidden', tabId !== 'current-score');
 
+        if (tabId === 'scores') this.ui.renderGrid();
         if (tabId === 'setlists') this.app.setlistManager?.render();
         if (tabId === 'current-score' && this.app.scoreDetailManager) {
             this.app.scoreDetailManager.load(this.app.pdfFingerprint);
@@ -572,6 +573,8 @@ export class ScoreManager {
             document.querySelector('.library-toolbar')?.classList.remove('hidden-important');
             this.app.setlistManager?.closeDetailView(); // Close any left-over detail view
             this.render();
+            this.app.activeStampType = 'view'
+            this.app.toolManager?.updateActiveTools()
         }
     }
 

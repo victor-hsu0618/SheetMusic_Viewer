@@ -107,6 +107,8 @@ export class JumpManager {
 
         if (active) {
             this.app.uiManager.closeAllActivePanels('JumpManager')
+            this.app.activeStampType = 'view'
+            this.app.toolManager?.updateActiveTools()
         }
 
         this.panel.classList.toggle('active', active)

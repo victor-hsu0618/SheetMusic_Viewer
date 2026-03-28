@@ -147,10 +147,49 @@ export class AnnotationRenderer {
         const globalMultiplier = this.app.stampSizeMultiplier || 1.0;
         const individualScale = path.userScale || 1.0;
 
-        if (path.type && path.type.includes('highlighter')) {
+        if (path.type === 'correction-pen') {
+            // Erase-mode pen: removes annotation pixels without touching the PDF layer
+            ctx.shadowBlur = 0
+            if (isHovered) {
+                // Show as red preview when hovered (so user can see what will be erased)
+                ctx.strokeStyle = '#ef4444'
+                ctx.globalAlpha = 0.5
+            } else {
+                ctx.globalCompositeOperation = 'destination-out'
+                ctx.strokeStyle = 'rgba(0,0,0,1)' // Color irrelevant; alpha is what erases
+                ctx.globalAlpha = 1.0
+            }
+            ctx.lineWidth = 3 * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+        } else if (path.type === 'cover-brush') {
+            // Fully opaque wide stroke — covers PDF dirt with sampled background color
+            ctx.shadowBlur = 0  // No glow; edges must be invisible
+            ctx.strokeStyle = isHovered ? '#ef4444' : (path.color || '#ffffff')
+            ctx.lineWidth = (isHovered ? 14 : 9) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            ctx.globalAlpha = isHovered ? 0.7 : 1.0
+        } else if (path.type && path.type.includes('highlighter')) {
             const baseColor = path.color || '#fde047'
             ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : baseColor + '2D')
             ctx.lineWidth = (isHovered ? 24 : 14) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+        } else if (path.type === 'fine-pen') {
+            ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
+            ctx.lineWidth = (isHovered ? 1.4 : 0.8) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+        } else if (path.type === 'marker-pen') {
+            ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
+            ctx.lineWidth = (isHovered ? 6 : 4.5) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+        } else if (path.type === 'brush-pen') {
+            // Style set here; variable-width rendering handled below before ctx.stroke()
+            ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
+            ctx.lineWidth = 2.5 * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale // fallback for hover
+        } else if (path.type === 'rect-shape' || path.type === 'circle-shape') {
+            ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
+            ctx.lineWidth = 1.8 * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            if (isHovered) ctx.lineWidth *= 1.5
+        } else if (path.type === 'fountain-pen') {
+            ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
+            ctx.lineWidth = 2.0 * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale // fallback for hover
+        } else if (path.type === 'pencil-pen') {
+            ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
+            ctx.lineWidth = 1.2 * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale // fallback for hover
         } else {
             ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
             let baseWidth = (path.type === 'line' ? 1.2 : 1.8);
@@ -228,6 +267,18 @@ export class AnnotationRenderer {
             ctx.lineTo(x2, y2);
             // End cap
             ctx.lineTo(x2 + px, y2 + py);
+        } else if (path.type === 'rect-shape' && path.points.length >= 2) {
+            const p2 = path.points[path.points.length - 1]
+            ctx.beginPath()
+            ctx.rect(startX, startY, p2.x * canvas.width - startX, p2.y * canvas.height - startY)
+        } else if (path.type === 'circle-shape' && path.points.length >= 2) {
+            const p2 = path.points[path.points.length - 1]
+            const cx = (startX + p2.x * canvas.width) / 2
+            const cy = (startY + p2.y * canvas.height) / 2
+            const rx = Math.abs(p2.x * canvas.width - startX) / 2
+            const ry = Math.abs(p2.y * canvas.height - startY) / 2
+            ctx.beginPath()
+            ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2)
         } else {
             ctx.beginPath()
             ctx.moveTo(startX, startY)
@@ -238,7 +289,75 @@ export class AnnotationRenderer {
                 ctx.lineTo(px, py)
             }
         }
-        ctx.stroke()
+        // Brush pen: variable-width segment rendering (skip standard stroke)
+        if (path.type === 'brush-pen' && !isHovered && !isSelectHovered) {
+            const BASE = (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            const MIN_W = 0.8 * BASE, MAX_W = 5.5 * BASE
+            // Check if stroke has real pressure data (Apple Pencil)
+            const hasPressure = path.points.length > 0 && path.points[0].pressure !== undefined && path.points[0].pressure !== 0.5
+            const SLOW_PX = 3, FAST_PX = 20
+            for (let i = 0; i < path.points.length - 1; i++) {
+                const p1 = path.points[i], p2 = path.points[i + 1]
+                let w
+                if (hasPressure) {
+                    // Real Apple Pencil pressure: average of two endpoints, light=thin, heavy=thick
+                    const avgPressure = ((p1.pressure ?? 0.5) + (p2.pressure ?? 0.5)) / 2
+                    w = MIN_W + (MAX_W - MIN_W) * avgPressure
+                } else {
+                    // Fallback: speed simulation (slow=thick, fast=thin)
+                    const dx = (p2.x - p1.x) * canvas.width
+                    const dy = (p2.y - p1.y) * canvas.height
+                    const dist = Math.sqrt(dx * dx + dy * dy)
+                    const t = Math.max(0, Math.min(1, (dist - SLOW_PX) / (FAST_PX - SLOW_PX)))
+                    w = MAX_W * (1 - t) + MIN_W * t
+                }
+                ctx.lineWidth = w
+                ctx.beginPath()
+                ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height)
+                ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height)
+                ctx.stroke()
+            }
+        } else if (path.type === 'fountain-pen' && !isHovered && !isSelectHovered) {
+            // Taper at start/end + pressure-based width
+            const BASE = (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            const MIN_W = 0.4 * BASE, MAX_W = 4.0 * BASE
+            const n = path.points.length
+            const hasPressure = n > 0 && path.points[0].pressure !== undefined && path.points[0].pressure !== 0.5
+            for (let i = 0; i < n - 1; i++) {
+                const p1 = path.points[i], p2 = path.points[i + 1]
+                const progress = (i + 0.5) / Math.max(n - 1, 1)
+                // Smooth taper envelope: 0 at ends, 1 in middle
+                const taper = Math.min(progress / 0.12, 1) * Math.min((1 - progress) / 0.12, 1)
+                const avgPressure = hasPressure ? ((p1.pressure ?? 0.5) + (p2.pressure ?? 0.5)) / 2 : 0.6
+                ctx.lineWidth = MIN_W + (MAX_W - MIN_W) * avgPressure * taper
+                ctx.beginPath()
+                ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height)
+                ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height)
+                ctx.stroke()
+            }
+        } else if (path.type === 'pencil-pen' && !isHovered && !isSelectHovered) {
+            // Two-pass rendering with slight jitter to simulate pencil grain
+            const BASE = (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            const n = path.points.length
+            const hasPressure = n > 0 && path.points[0].pressure !== undefined && path.points[0].pressure !== 0.5
+            const passes = [{ aFactor: 1.0, jScale: 0 }, { aFactor: 0.3, jScale: 0.7 }]
+            for (const pass of passes) {
+                for (let i = 0; i < n - 1; i++) {
+                    const p1 = path.points[i], p2 = path.points[i + 1]
+                    const avgPressure = hasPressure ? ((p1.pressure ?? 0.5) + (p2.pressure ?? 0.5)) / 2 : 0.6
+                    const jx = Math.sin(i * 127.1 + pass.jScale * 311.7) * pass.jScale * BASE
+                    const jy = Math.cos(i * 311.7 + pass.jScale * 127.1) * pass.jScale * BASE
+                    ctx.globalAlpha = oldAlpha * (0.25 + avgPressure * 0.6) * pass.aFactor
+                    ctx.lineWidth = BASE * (0.7 + avgPressure * 0.5)
+                    ctx.beginPath()
+                    ctx.moveTo(p1.x * canvas.width + jx, p1.y * canvas.height + jy)
+                    ctx.lineTo(p2.x * canvas.width + jx, p2.y * canvas.height + jy)
+                    ctx.stroke()
+                }
+            }
+        } else {
+            ctx.stroke()
+        }
         ctx.globalAlpha = oldAlpha;
 
         // 矢印の描画 (Arrowhead rendering)

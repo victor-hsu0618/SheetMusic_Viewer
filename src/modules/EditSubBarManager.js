@@ -45,6 +45,21 @@ const TOOL_NATURAL_COLORS = Object.fromEntries(
         .map(t => [t.id, t.naturalColor])
 )
 
+// Drawing tools that support size picker on re-tap
+const PEN_SIZE_TOOL_TYPES = new Set([
+    'pen', 'fine-pen', 'marker-pen', 'brush-pen', 'fountain-pen', 'pencil-pen',
+    'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green',
+    'line', 'slur', 'dashed-pen', 'arrow-pen', 'cover-brush', 'correction-pen',
+])
+
+const PEN_SIZES = [
+    { label: 'XS', value: 0.5 },
+    { label: 'S',  value: 0.75 },
+    { label: 'M',  value: 1.0 },
+    { label: 'L',  value: 1.5 },
+    { label: 'XL', value: 2.5 },
+]
+
 const EXTRA_COLORS = [
     '#ef4444','#f97316','#eab308','#22c55e',
     '#3b82f6','#a855f7','#ec4899','#ffffff','#94a3b8','#475569',
@@ -371,7 +386,15 @@ export class EditSubBarManager {
                     if (item._group?.color) btn.style.borderColor = item._group.color + '55'
                     btn.innerHTML = this._cellIconHTML(item)
                     btn.title = item.label
-                    btn.addEventListener('click', () => this._selectTool(item.id, bar, type))
+                    btn.addEventListener('click', (e) => {
+                        if (isActive && PEN_SIZE_TOOL_TYPES.has(item.id)) {
+                            e.stopPropagation()
+                            this._togglePenSizePicker(btn)
+                            return
+                        }
+                        this._dismissPenSizePicker()
+                        this._selectTool(item.id, bar, type)
+                    })
                     rowEl.appendChild(btn)
                 })
                 return rowEl
@@ -1152,5 +1175,66 @@ export class EditSubBarManager {
         const d = document.createElement('div')
         d.className = 'sf-bar-divider'
         return d
+    }
+
+    _togglePenSizePicker(anchorEl) {
+        if (document.getElementById('sf-pen-size-picker')) {
+            this._dismissPenSizePicker()
+            return
+        }
+        const picker = document.createElement('div')
+        picker.id = 'sf-pen-size-picker'
+        picker.className = 'sf-pen-size-picker'
+
+        PEN_SIZES.forEach(({ label, value }) => {
+            const item = document.createElement('div')
+            const isActive = Math.abs((this.app.activeToolPreset || 1.0) - value) < 0.13
+            item.className = 'sf-pen-size-item' + (isActive ? ' active' : '')
+
+            const dot = document.createElement('div')
+            dot.className = 'sf-pen-size-dot'
+            const dotPx = Math.round(4 + value * 7)
+            dot.style.width = `${dotPx}px`
+            dot.style.height = `${dotPx}px`
+
+            const lbl = document.createElement('span')
+            lbl.className = 'sf-pen-size-label'
+            lbl.textContent = label
+
+            item.appendChild(dot)
+            item.appendChild(lbl)
+            item.addEventListener('click', (e) => {
+                e.stopPropagation()
+                this.app.activeToolPreset = value
+                this._dismissPenSizePicker()
+            })
+            picker.appendChild(item)
+        })
+
+        document.body.appendChild(picker)
+
+        // Position above anchor, centred
+        const rect = anchorEl.getBoundingClientRect()
+        const pw = picker.offsetWidth || 220
+        const ph = picker.offsetHeight || 72
+        let left = rect.left + rect.width / 2 - pw / 2
+        let top = rect.top - ph - 10
+        if (top < 8) top = rect.bottom + 10
+        left = Math.max(8, Math.min(window.innerWidth - pw - 8, left))
+        picker.style.left = `${left}px`
+        picker.style.top  = `${top}px`
+
+        setTimeout(() => {
+            this._pickerOutside = (e) => { if (!picker.contains(e.target)) this._dismissPenSizePicker() }
+            document.addEventListener('pointerdown', this._pickerOutside)
+        }, 0)
+    }
+
+    _dismissPenSizePicker() {
+        document.getElementById('sf-pen-size-picker')?.remove()
+        if (this._pickerOutside) {
+            document.removeEventListener('pointerdown', this._pickerOutside)
+            this._pickerOutside = null
+        }
     }
 }

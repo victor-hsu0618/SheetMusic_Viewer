@@ -35,7 +35,14 @@ export class InteractionManager {
             case 'recycle-bin':
                 overlay.style.cursor = 'wait'; // Or not-allowed
                 break;
+            case 'rect-shape':
+            case 'circle-shape':
             case 'pen':
+            case 'fine-pen':
+            case 'marker-pen':
+            case 'brush-pen':
+            case 'fountain-pen':
+            case 'pencil-pen':
             case 'red-pen':
             case 'green-pen':
             case 'blue-pen':
@@ -43,12 +50,84 @@ export class InteractionManager {
             case 'highlighter-red':
             case 'highlighter-blue':
             case 'highlighter-green':
+            case 'cover-brush':
+            case 'correction-pen':
                 overlay.style.cursor = 'none'; // Custom virtual pointer
                 break;
             default:
                 // Standard stamp tools: hide browser cursor if we have a preview
                 overlay.style.cursor = this.app.isStampTool() ? 'none' : 'default';
         }
+    }
+
+    _showStampContextMenu(stamp, clientX, clientY) {
+        this._dismissStampContextMenu()
+
+        const menu = document.createElement('div')
+        menu.id = 'sf-stamp-ctx-menu'
+        menu.className = 'sf-stamp-ctx-menu'
+
+        const makeItem = (label, isDanger, action) => {
+            const btn = document.createElement('button')
+            btn.className = 'sf-ctx-menu-item' + (isDanger ? ' danger' : '')
+            btn.textContent = label
+            btn.addEventListener('click', (e) => { e.stopPropagation(); action() })
+            return btn
+        }
+
+        menu.appendChild(makeItem('Duplicate', false, () => {
+            this._dismissStampContextMenu()
+            this._duplicateStamp(stamp)
+        }))
+        menu.appendChild(makeItem('Delete', true, async () => {
+            this._dismissStampContextMenu()
+            await this.app.annotationManager.eraseStampTarget(stamp)
+            this.app.showMessage('Deleted', 'success')
+        }))
+
+        document.body.appendChild(menu)
+
+        const mw = menu.offsetWidth || 148
+        const mh = menu.offsetHeight || 88
+        let left = clientX - mw / 2
+        let top  = clientY - mh - 14
+        if (top < 8) top = clientY + 14
+        left = Math.max(8, Math.min(window.innerWidth - mw - 8, left))
+        menu.style.left = `${left}px`
+        menu.style.top  = `${top}px`
+
+        setTimeout(() => {
+            this._ctxOutside = (e) => { if (!menu.contains(e.target)) this._dismissStampContextMenu() }
+            document.addEventListener('pointerdown', this._ctxOutside)
+        }, 0)
+    }
+
+    _dismissStampContextMenu() {
+        document.getElementById('sf-stamp-ctx-menu')?.remove()
+        if (this._ctxOutside) {
+            document.removeEventListener('pointerdown', this._ctxOutside)
+            this._ctxOutside = null
+        }
+    }
+
+    async _duplicateStamp(stamp) {
+        const copy = JSON.parse(JSON.stringify(stamp))
+        copy.id = crypto.randomUUID?.() || `stamp-${Date.now()}`
+        copy.createdAt = Date.now()
+        copy.updatedAt = Date.now()
+        const offset = 0.015
+        if (copy.points) {
+            copy.points = copy.points.map(p => ({ ...p, x: p.x + offset, y: p.y + offset }))
+        } else {
+            copy.x = (copy.x || 0) + offset
+            copy.y = (copy.y || 0) + offset
+        }
+        this.app.stamps.push(copy)
+        this.app.pushHistory({ type: 'add', obj: JSON.parse(JSON.stringify(copy)) })
+        this.app.redrawStamps(copy.page)
+        await this.app.saveToStorage(true)
+        if (this.app.supabaseManager) this.app.supabaseManager.pushAnnotation(copy, this.app.pdfFingerprint)
+        this.app.showMessage('Duplicated', 'success')
     }
 
     createCaptureOverlay(wrapper, pageNum, width, height) {
@@ -73,6 +152,8 @@ export class InteractionManager {
         let nudgeStartClient = { x: 0, y: 0 };
         let nudgeStartObjectPos = { x: 0, y: 0 };
         let isNudging = false;
+        let eraserClickTarget = null;  // Saved on pointerdown; erased on pointerup if no drag
+        let eraserHasDragged = false;  // Set to true on first move during eraser drag
 
         // Force reset closure state when switching tools to prevent stuck interactions
         overlay._resetState = () => {
@@ -86,6 +167,8 @@ export class InteractionManager {
             this.app._lastGraceObject = null;
             potentialNudge = null;
             isNudging = false;
+            eraserClickTarget = null;
+            eraserHasDragged = false;
             virtualPointer?.classList.remove('active');
             activePointers.clear();
             isTwoFingerPanning = false;
@@ -135,9 +218,12 @@ export class InteractionManager {
         };
 
         const isDrawingType = (type) => {
-            return ['pen', 'red-pen', 'green-pen', 'blue-pen', 
-                    'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 
-                    'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right'].includes(type);
+            return ['pen', 'fine-pen', 'marker-pen', 'brush-pen', 'fountain-pen', 'pencil-pen',
+                    'red-pen', 'green-pen', 'blue-pen', // legacy
+                    'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green',
+                    'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right',
+                    'rect-shape', 'circle-shape',
+                    'cover-brush', 'correction-pen'].includes(type);
         };
 
         const updateTouchAction = () => {
@@ -149,6 +235,7 @@ export class InteractionManager {
 
         const startAction = async (e) => {
             if (e.target.closest('.text-editor-container')) return;
+            this._dismissStampContextMenu();
 
             const toolType = this.app.activeStampType;
             const pointerType = getPointerType(e);
@@ -250,9 +337,10 @@ export class InteractionManager {
             const previewPosForGrab = CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay);
             const pickupTarget = graceObject || this.app.findClosestStamp(pageNum, previewPosForGrab.x, previewPosForGrab.y, true);
             
-            // If it's a finger and we're NOT in Pan mode, AND not targeting an existing object to move:
+            // If it's a finger (touch) and we're NOT in Pan mode, AND not targeting an existing object to move:
             // force it to 'view' (Neutral Pan) to prevent palms from drawing.
-            if (!isPen && activeTool !== 'view' && !pickupTarget && !this.app.isStampTool()) {
+            // Mouse is allowed to draw freely.
+            if (pointerType === 'touch' && activeTool !== 'view' && !pickupTarget && !this.app.isStampTool()) {
                 activeTool = 'view';
             }
 
@@ -463,10 +551,13 @@ export class InteractionManager {
                 }
             } else if (isDrawingType(activeTool)) {
                 const toolDef = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === activeTool);
+                const strokeColor = activeTool === 'cover-brush'
+                    ? this._samplePageColor(pageNum, pos.x, pos.y, wrapper)
+                    : this.app.activeColor;
                 activeObject = {
                     type: activeTool, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
-                    points: [CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay)],
-                    color: this.app.activeColor,
+                    points: [{ ...CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay), pressure: e.pressure ?? 0.5 }],
+                    color: strokeColor,
                     lineStyle: toolDef?.draw?.dashed ? 'dashed' : (this.app.activeLineStyle || 'solid'),
                     dashed: toolDef?.draw?.dashed || false,
                     arrow: toolDef?.draw?.arrow || false,
@@ -481,17 +572,14 @@ export class InteractionManager {
                 InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
             } else if (activeTool === 'eraser') {
                 const et = this.app.hoveredStamp || this.app.findClosestStamp(pageNum, pPos.x, pPos.y, false);
-                if (et) {
-                    await this.app.annotationManager.eraseStampTarget(et);
-                    isInteracting = false;
-                    this.app.isInteracting = false;
-                } else {
-                    isInteracting = true;
-                    this.app.isInteracting = true;
-                    activeObject = null;
-                    attachGlobalListeners();
-                    InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
-                }
+                // Don't erase immediately — wait to see if user drags (segment erase) or releases (whole erase)
+                eraserClickTarget = et || null;
+                eraserHasDragged = false;
+                isInteracting = true;
+                this.app.isInteracting = true;
+                activeObject = null;
+                attachGlobalListeners();
+                InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
             } else {
                 // Regular stamping
                 const fPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay);
@@ -600,7 +688,16 @@ export class InteractionManager {
                 const pp = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, currentOverlay);
                 const target = this.app.findClosestStamp(currentPageNum, pp.x, pp.y, toolType !== 'eraser');
                 if (target) {
-                    if (toolType === 'eraser' || toolType === 'recycle-bin') {
+                    if (toolType === 'eraser') {
+                        eraserHasDragged = true;
+                        // Segment-erase pen/highlighter strokes; fully erase everything else
+                        const SEGMENT_TYPES = new Set(['pen', 'fine-pen', 'marker-pen', 'brush-pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'cover-brush', 'correction-pen']);
+                        if (SEGMENT_TYPES.has(target.type)) {
+                            await this.app.annotationManager.eraseStrokeSegment(currentPageNum, pp.x, pp.y);
+                        } else {
+                            await this.app.annotationManager.eraseStampTarget(target);
+                        }
+                    } else if (toolType === 'recycle-bin') {
                         await this.app.annotationManager.eraseStampTarget(target);
                     } else {
                         activeObject = target;
@@ -661,8 +758,8 @@ export class InteractionManager {
                 if (activeObject.page !== currentPageNum) {
                     const oldP = activeObject.page; activeObject.page = currentPageNum; this.app.redrawStamps(oldP);
                 }
-                if (activeObject.type === 'line' || activeObject.type === 'slur') activeObject.points = [activeObject.points[0], cPos];
-                else activeObject.points.push(cPos);
+                if (['line', 'slur', 'rect-shape', 'circle-shape'].includes(activeObject.type)) activeObject.points = [activeObject.points[0], cPos];
+                else activeObject.points.push({ ...cPos, pressure: e.pressure ?? 0.5 });
                 const cvs = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
                 if (cvs) this.app.drawPathOnCanvas(cvs.getContext('2d'), cvs, activeObject);
             } else {
@@ -693,6 +790,13 @@ export class InteractionManager {
 
             if (this._penLongPressTimer) { clearTimeout(this._penLongPressTimer); this._penLongPressTimer = null; }
             if (!isInteracting) return;
+
+            // Eraser click (no drag) → whole-stroke erase
+            if (this.app.activeStampType === 'eraser' && eraserClickTarget && !eraserHasDragged) {
+                await this.app.annotationManager.eraseStampTarget(eraserClickTarget);
+            }
+            eraserClickTarget = null;
+            eraserHasDragged = false;
 
             if (potentialNudge) {
                 const isDragDone = isNudging; potentialNudge = null; isNudging = false;
@@ -903,6 +1007,7 @@ export class InteractionManager {
                         } else if (isMovingExisting && this.dragStartObject) {
                             const moved = syncObj.points ? JSON.stringify(syncObj.points) !== JSON.stringify(this.dragStartObject.points) : (syncObj.x !== this.dragStartObject.x || syncObj.y !== this.dragStartObject.y || syncObj.page !== this.dragStartObject.page);
                             if (moved) this.app.pushHistory({ type: 'move', oldObj: this.dragStartObject, newObj: JSON.parse(JSON.stringify(syncObj)) });
+                            else this._showStampContextMenu(syncObj, e.clientX, e.clientY);
                         }
                         if (syncObj.type === 'anchor') this.app.updateRulerMarks();
                         this.app.redrawStamps(tPN);
@@ -1012,6 +1117,7 @@ export class InteractionManager {
         document.querySelectorAll('.capture-overlay').forEach(el => {
             if (isView && el._resetState) el._resetState();
             el.style.touchAction = 'none'; el.style.pointerEvents = 'auto'; el.style.zIndex = isView ? '10' : '50';
+            this._updateCursor(el, 'mouse');
         });
         if (this.app.viewer) { 
             const isIOS = this.app.isIOS;
@@ -1029,4 +1135,33 @@ export class InteractionManager {
     }
 
     _hideDragGhost() { const g = document.getElementById('sf-drag-ghost'); if (g) g.style.display = 'none'; }
+
+    /**
+     * Sample the background color of the PDF canvas at normalized position (normX, normY).
+     * Averages a 7×7 pixel patch to reduce noise from isolated dirty pixels.
+     * Falls back to white if canvas is unavailable or tainted (cross-origin).
+     */
+    _samplePageColor(pageNum, normX, normY, wrapper) {
+        const canvas = wrapper?.querySelector('.pdf-canvas');
+        if (!canvas) return '#ffffff';
+        try {
+            const ctx = canvas.getContext('2d');
+            const PATCH = 3; // sample 7×7 area
+            const cx = Math.round(normX * canvas.width);
+            const cy = Math.round(normY * canvas.height);
+            const x0 = Math.max(0, cx - PATCH);
+            const y0 = Math.max(0, cy - PATCH);
+            const w = Math.min(PATCH * 2 + 1, canvas.width - x0);
+            const h = Math.min(PATCH * 2 + 1, canvas.height - y0);
+            const data = ctx.getImageData(x0, y0, w, h).data;
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
+            }
+            r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
+            return `rgb(${r},${g},${b})`;
+        } catch {
+            return '#ffffff';
+        }
+    }
 }

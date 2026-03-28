@@ -78,8 +78,8 @@ export class AnnotationManager {
      * Find all annotations near a normalized coordinate (x, y).
      */
     findNearbyStamps(page, x, y, allSources = false) {
-        // More precise threshold: 0.04 instead of 0.06
-        const threshold = 0.04
+        const STAMP_THRESHOLD = 0.04   // Point-based stamps (generous for tap accuracy)
+        const PATH_THRESHOLD  = 0.010  // Path-based strokes (tight — matches visual width)
         const results = []
         
         // Use all visible sources if allSources is true
@@ -114,13 +114,37 @@ export class AnnotationManager {
                 return
             }
 
-            let dist
-            if (s.points && s.points.length > 0) {
+            let dist, threshold
+            if (s.type === 'rect-shape' && s.points?.length >= 2) {
+                // Distance to rectangle outline (4 edges)
+                const p1 = s.points[0], p2 = s.points[s.points.length - 1]
+                const [x1, y1, x2, y2] = [p1.x, p1.y, p2.x, p2.y]
+                const edges = [
+                    [{ x: x1, y: y1 }, { x: x2, y: y1 }],
+                    [{ x: x2, y: y1 }, { x: x2, y: y2 }],
+                    [{ x: x2, y: y2 }, { x: x1, y: y2 }],
+                    [{ x: x1, y: y2 }, { x: x1, y: y1 }],
+                ]
+                dist = Math.min(...edges.map(([a, b]) => this._distToSegment(x, y, a, b)))
+                threshold = PATH_THRESHOLD * 1.5
+            } else if (s.type === 'circle-shape' && s.points?.length >= 2) {
+                // Distance to ellipse outline
+                const p1 = s.points[0], p2 = s.points[s.points.length - 1]
+                const cx = (p1.x + p2.x) / 2, cy = (p1.y + p2.y) / 2
+                const rx = Math.abs(p2.x - p1.x) / 2, ry = Math.abs(p2.y - p1.y) / 2
+                if (rx < 0.001 || ry < 0.001) { dist = Infinity } else {
+                    const nx = (x - cx) / rx, ny = (y - cy) / ry
+                    dist = Math.abs(Math.sqrt(nx * nx + ny * ny) - 1) * Math.min(rx, ry)
+                }
+                threshold = PATH_THRESHOLD * 1.5
+            } else if (s.points && s.points.length > 0) {
                 // Improved Path distance: Check all segments (line-point distance)
                 dist = this._minDistanceToPath(x, y, s.points)
+                threshold = PATH_THRESHOLD
             } else {
                 // Stamp distance: simple Euclidean
                 dist = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2))
+                threshold = STAMP_THRESHOLD
             }
 
             if (dist < threshold) results.push({ stamp: s, dist })
@@ -184,6 +208,103 @@ export class AnnotationManager {
 
         if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
         this.redrawStamps(page)
+    }
+
+    /**
+     * Segment-erase pen/highlighter strokes near (x, y).
+     * Points within `radius` are removed; remaining consecutive segments become new strokes.
+     * Non-path stamps within radius are fully erased (same as eraseStampTarget).
+     * Returns true if anything was modified.
+     */
+    async eraseStrokeSegment(pageNum, x, y, radius = 0.008) {
+        const STROKE_TYPES = new Set(['pen', 'fine-pen', 'marker-pen', 'brush-pen', 'fountain-pen', 'pencil-pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'rect-shape', 'circle-shape', 'cover-brush', 'correction-pen']);
+        const activeSourceIds = [this.app.activeSourceId];
+        const visibleLayerIds = new Set(this.app.layers.filter(l => l.visible).map(l => l.id));
+
+        // Collect strokes that are hit
+        const candidates = this.app.stamps.filter(s =>
+            s.page === pageNum && !s.deleted &&
+            activeSourceIds.includes(s.sourceId) &&
+            visibleLayerIds.has(s.layerId) &&
+            s.points?.length > 0 &&
+            STROKE_TYPES.has(s.type) &&
+            this._minDistanceToPath(x, y, s.points) < radius
+        );
+
+        if (candidates.length === 0) return false;
+
+        const now = Date.now();
+        const historyBatch = [];
+        const toAdd = [];
+
+        for (const stroke of candidates) {
+            // Find which points survive (outside eraser circle)
+            const keep = stroke.points.map(p =>
+                Math.sqrt(Math.pow(p.x - x, 2) + Math.pow(p.y - y, 2)) >= radius
+            );
+
+            // Check if any points were actually removed
+            if (keep.every(Boolean)) continue;
+
+            // Record for undo
+            historyBatch.push({ type: 'delete', obj: JSON.parse(JSON.stringify(stroke)) });
+
+            // Split surviving points into consecutive segments
+            const segments = [];
+            let seg = [];
+            for (let i = 0; i < stroke.points.length; i++) {
+                if (keep[i]) {
+                    seg.push(stroke.points[i]);
+                } else {
+                    if (seg.length >= 2) segments.push(seg);
+                    seg = [];
+                }
+            }
+            if (seg.length >= 2) segments.push(seg);
+
+            // Create new strokes for each segment
+            for (const segPoints of segments) {
+                const newStroke = {
+                    ...JSON.parse(JSON.stringify(stroke)),
+                    id: crypto.randomUUID?.() || `stamp-${now}-${Math.random()}`,
+                    points: segPoints,
+                    createdAt: now,
+                    updatedAt: now,
+                    deleted: false,
+                };
+                toAdd.push(newStroke);
+                historyBatch.push({ type: 'add', obj: JSON.parse(JSON.stringify(newStroke)) });
+            }
+
+            // Remove original from stamps array
+            const idx = this.app.stamps.indexOf(stroke);
+            if (idx !== -1) this.app.stamps.splice(idx, 1);
+            stroke.deleted = true;
+            stroke.updatedAt = now;
+
+            // Sync deletion to Supabase
+            if (this.app.supabaseManager) {
+                this.app.supabaseManager.pushAnnotation(stroke, this.app.pdfFingerprint);
+            }
+        }
+
+        if (historyBatch.length === 0) return false;
+
+        // Push single undo entry for the whole operation
+        this.app.pushHistory({ type: 'batch', ops: historyBatch });
+
+        // Add new segments to stamps
+        for (const s of toAdd) {
+            this.app.stamps.push(s);
+            if (this.app.supabaseManager) {
+                this.app.supabaseManager.pushAnnotation(s, this.app.pdfFingerprint);
+            }
+        }
+
+        await this.app.saveToStorage(true);
+        if (this.app.onAnnotationChanged) this.app.onAnnotationChanged();
+        this.redrawStamps(pageNum);
+        return true;
     }
 
     /**

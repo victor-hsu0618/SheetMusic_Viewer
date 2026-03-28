@@ -1160,3 +1160,62 @@
     margin-top: 8px;
 }
 
+
+/* ── Pen size picker popover ── */
+.sf-pen-size-picker {
+    position: fixed;
+    z-index: 9500;
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+    padding: 10px 12px;
+    background: rgba(28, 30, 38, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    align-items: flex-end;
+}
+
+.sf-pen-size-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    min-width: 34px;
+}
+
+.sf-pen-size-item:hover {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.sf-pen-size-item.active {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+.sf-pen-size-dot {
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.sf-pen-size-item.active .sf-pen-size-dot {
+    background: #818cf8;
+}
+
+.sf-pen-size-label {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.sf-pen-size-item.active .sf-pen-size-label {
+    color: #a5b4fc;
+}
