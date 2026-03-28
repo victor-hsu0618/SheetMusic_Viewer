@@ -260,7 +260,8 @@
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: white;
+  background: var(--bg-card, white);
+  color: var(--text-primary, #1e293b);
   font-size: 0.8rem;
   cursor: pointer;
   text-align: center;
