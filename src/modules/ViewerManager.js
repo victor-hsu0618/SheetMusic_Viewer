@@ -310,8 +310,8 @@ export class ViewerManager {
             // Supabase Realtime subscription for live changes during this session
             this.app.supabaseManager.subscribeToAnnotations(newFingerprint);
 
-            // Pull annotations for this score — force=true so cloud is authoritative on load
-            this.app.supabaseManager.pullAnnotations(newFingerprint, true);
+            // Bidirectional sync: pull cloud + push any local-only stamps up
+            this.app.supabaseManager.syncAnnotationsOnLoad(newFingerprint);
         }
 
         // --- SAFE CACHE: Persist buffer to IndexedDB ---

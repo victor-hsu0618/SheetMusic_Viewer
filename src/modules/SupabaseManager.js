@@ -332,6 +332,59 @@ export class SupabaseManager {
         return true;
     }
     /**
+     * Bidirectional sync on PDF open:
+     * 1. Pull cloud stamps (source of truth for what exists in cloud)
+     * 2. Push any local-only stamps up (catch annotations created before Supabase or during offline)
+     * 3. Merge both sets → update app.stamps + redraw
+     */
+    async syncAnnotationsOnLoad(fingerprint) {
+        if (!this.client || !this.user) return
+
+        // 1. Read local stamps from IndexedDB BEFORE any override
+        const localStamps = (await db.get(`stamps_${fingerprint}`)) || []
+        const localActive = localStamps.filter(s => !s?.deleted)
+
+        // 2. Pull cloud
+        const { data, error } = await this.client
+            .from('annotations')
+            .select('*')
+            .eq('fingerprint', fingerprint)
+            .eq('user_id', this.user.id)
+
+        if (error) {
+            console.error('[Supabase] syncAnnotationsOnLoad pull error:', error)
+            return
+        }
+
+        // Guard: fingerprint may have changed while pull was in flight
+        if (this.app.pdfFingerprint !== fingerprint) return
+
+        const cloudStamps = (data || []).map(r => r.data).filter(s => !s?.deleted)
+        const cloudIds = new Set(cloudStamps.map(s => s.id))
+
+        // 3. Find local-only stamps and push them up (they never made it to Supabase)
+        const localOnly = localActive.filter(s => !cloudIds.has(s.id))
+        if (localOnly.length > 0) {
+            console.log(`[Supabase] syncOnLoad: pushing ${localOnly.length} local-only stamps to cloud`)
+            for (const s of localOnly) {
+                await this.pushAnnotation(s, fingerprint)
+            }
+        }
+
+        // 4. Merge: cloud wins on conflicts, local-only stamps are kept
+        const merged = [...cloudStamps]
+        for (const local of localActive) {
+            if (!cloudIds.has(local.id)) merged.push(local)
+        }
+
+        this.app.stamps = merged
+        this.app.redrawAllAnnotationLayers?.()
+        db.set(`stamps_${fingerprint}`, merged)
+
+        console.log(`[Supabase] syncOnLoad: ${cloudStamps.length} cloud + ${localOnly.length} local-only = ${merged.length} total`)
+    }
+
+    /**
      * Fetches all annotations for a score from Supabase.
      */
     async pullAnnotations(fingerprint, force = false) {
