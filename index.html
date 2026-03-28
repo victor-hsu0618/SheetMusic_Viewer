@@ -693,11 +693,28 @@
             </div>
 
             <div id="supabase-auth-logged-out">
-              <p class="setting-hint" style="margin-bottom:10px;">Sign in to sync annotations across devices in real-time.</p>
-              <div style="display:flex;flex-direction:column;gap:6px;">
+              <!-- Tab Toggle -->
+              <div style="display:flex;gap:4px;margin-bottom:10px;">
+                <button id="auth-tab-signin" class="btn btn-outline btn-smaller" style="flex:1;font-weight:600;" onclick="document.getElementById('auth-panel-signin').style.display='flex';document.getElementById('auth-panel-register').style.display='none';this.classList.add('active');document.getElementById('auth-tab-register').classList.remove('active')">Sign In</button>
+                <button id="auth-tab-register" class="btn btn-outline btn-smaller" style="flex:1;" onclick="document.getElementById('auth-panel-register').style.display='flex';document.getElementById('auth-panel-signin').style.display='none';this.classList.add('active');document.getElementById('auth-tab-signin').classList.remove('active')">Register</button>
+              </div>
+
+              <!-- Sign In Panel -->
+              <div id="auth-panel-signin" style="display:flex;flex-direction:column;gap:6px;">
+                <p class="setting-hint" style="margin-bottom:4px;">Sign in to sync annotations across devices in real-time.</p>
                 <input type="email" id="supabase-email" class="search-input-mini w-full" placeholder="Email Address" />
                 <input type="password" id="supabase-password" class="search-input-mini w-full" placeholder="Password" />
                 <button id="btn-supabase-login" class="btn btn-primary btn-full">Sign In to Cloud</button>
+              </div>
+
+              <!-- Register Panel -->
+              <div id="auth-panel-register" style="display:none;flex-direction:column;gap:6px;">
+                <p class="setting-hint" style="margin-bottom:4px;">Create a new account. An invite code is required.</p>
+                <input type="email" id="supabase-register-email" class="search-input-mini w-full" placeholder="Email Address" />
+                <input type="password" id="supabase-register-password" class="search-input-mini w-full" placeholder="Password (min 6 chars)" />
+                <input type="text" id="supabase-invite-code" class="search-input-mini w-full" placeholder="Invite Code" />
+                <button id="btn-supabase-register" class="btn btn-primary btn-full">Create Account</button>
+                <div id="register-message" style="font-size:11px;text-align:center;min-height:16px;"></div>
               </div>
             </div>
 

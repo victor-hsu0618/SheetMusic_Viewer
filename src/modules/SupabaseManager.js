@@ -196,6 +196,12 @@ export class SupabaseManager {
         return { data, error }
     }
 
+    async signUp(email, password) {
+        if (!this.client) return { error: 'Supabase not configured' }
+        const { data, error } = await this.client.auth.signUp({ email, password })
+        return { data, error }
+    }
+
     async signOut() {
         if (!this.client) return
         await this.client.auth.signOut()

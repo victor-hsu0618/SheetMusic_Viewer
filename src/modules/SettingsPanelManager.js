@@ -110,9 +110,40 @@ export class SettingsPanelManager {
     }
 
     _bindSupabaseAuth() {
-        const loginBtn  = document.getElementById('btn-supabase-login')
-        const logoutBtn = document.getElementById('btn-supabase-logout')
-        const resyncBtn = document.getElementById('btn-supabase-force-resync-all')
+        const loginBtn    = document.getElementById('btn-supabase-login')
+        const logoutBtn   = document.getElementById('btn-supabase-logout')
+        const resyncBtn   = document.getElementById('btn-supabase-force-resync-all')
+        const registerBtn = document.getElementById('btn-supabase-register')
+
+        if (registerBtn) {
+            registerBtn.addEventListener('click', async () => {
+                const email    = document.getElementById('supabase-register-email')?.value?.trim()
+                const password = document.getElementById('supabase-register-password')?.value
+                const code     = document.getElementById('supabase-invite-code')?.value?.trim()
+                const msgEl    = document.getElementById('register-message')
+
+                const INVITE_CODE = localStorage.getItem('scoreflow_invite_code') || 'scoreflow2025'
+
+                const setMsg = (text, color = '#ef4444') => { if (msgEl) { msgEl.textContent = text; msgEl.style.color = color } }
+
+                if (!email || !password) return setMsg('Please enter email and password.')
+                if (password.length < 6) return setMsg('Password must be at least 6 characters.')
+                if (code !== INVITE_CODE) return setMsg('Invalid invite code.')
+
+                registerBtn.disabled = true
+                registerBtn.textContent = 'Creating account...'
+                const { error } = await this.app.supabaseManager.signUp(email, password)
+                registerBtn.disabled = false
+                registerBtn.textContent = 'Create Account'
+
+                if (error) {
+                    setMsg('Error: ' + error.message)
+                } else {
+                    setMsg('Account created! You are now signed in.', 'var(--success)')
+                    this._updateSupabaseUI()
+                }
+            })
+        }
 
         if (loginBtn) {
             loginBtn.addEventListener('click', async () => {
