@@ -236,7 +236,13 @@ this.playbackManager.init()
                     await this.loadPDF(new Uint8Array(buf), null, lastFp)
                     restored = true
                 } else {
-                    console.warn(`[ScoreFlow] Registry fingerprint exists but buffer missing: ${lastFp}`)
+                    // Buffer missing locally — try loading via ScoreManager (handles cloud download)
+                    console.warn(`[ScoreFlow] Buffer missing for ${lastFp}, trying ScoreManager.loadScore`)
+                    const inRegistry = this.scoreManager?.registry?.find(s => s.fingerprint === lastFp)
+                    if (inRegistry) {
+                        await this.scoreManager.loadScore(lastFp)
+                        restored = !!this.viewerManager.pdf
+                    }
                 }
             }
 

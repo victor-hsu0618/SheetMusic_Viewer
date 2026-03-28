@@ -48,6 +48,15 @@ export class ScoreDetailUIManager {
 
         this.btnSave?.addEventListener('click', () => this.manager.handleSave())
 
+        document.getElementById('export-score-btn')?.addEventListener('click', () => this.app.exportProject(false))
+        const importScoreBtn = document.getElementById('import-score-btn')
+        const importScoreFile = document.getElementById('import-score-file')
+        importScoreBtn?.addEventListener('click', () => importScoreFile?.click())
+        importScoreFile?.addEventListener('change', (e) => {
+            this.app.handleImport(e)
+            e.target.value = ''
+        })
+
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
         document.getElementById('btn-reset-score-all')?.addEventListener('click', () => this.manager.handleResetAll())
         document.getElementById('btn-force-push-supabase')?.addEventListener('click', () => this.manager.handleForcePushSupabase())
