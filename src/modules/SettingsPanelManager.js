@@ -313,6 +313,13 @@ export class SettingsPanelManager {
             })
         }
         refreshSysStatus()
+        const syncSysChk = document.getElementById('settings-sync-system-stamps')
+        if (syncSysChk) {
+            syncSysChk.checked = localStorage.getItem('scoreflow_sync_system_stamps') !== 'false'
+            syncSysChk.addEventListener('change', e => {
+                localStorage.setItem('scoreflow_sync_system_stamps', e.target.checked)
+            })
+        }
         document.getElementById('settings-detect-systems')?.addEventListener('click', async () => {
             if (sysStatus) sysStatus.textContent = '偵測中...'
             this.app.stamps = this.app.stamps?.filter(s => !(s.type === 'system' && s.auto)) ?? []

@@ -232,6 +232,11 @@ export class SupabaseManager {
             return this.deleteAnnotation(stamp.id)
         }
 
+        // Skip system stamps if cloud sync is disabled for them
+        if (stamp.type === 'system' && localStorage.getItem('scoreflow_sync_system_stamps') === 'false') {
+            return
+        }
+
         // Map app stamp structure to Supabase DB schema
         const dbRecord = {
             id: stamp.id,
@@ -363,7 +368,8 @@ export class SupabaseManager {
         const cloudIds = new Set(cloudStamps.map(s => s.id))
 
         // 3. Find local-only stamps and push them up (they never made it to Supabase)
-        const localOnly = localActive.filter(s => !cloudIds.has(s.id))
+        const syncSystemStamps = localStorage.getItem('scoreflow_sync_system_stamps') !== 'false'
+        const localOnly = localActive.filter(s => !cloudIds.has(s.id) && (syncSystemStamps || s.type !== 'system'))
         if (localOnly.length > 0) {
             console.log(`[Supabase] syncOnLoad: pushing ${localOnly.length} local-only stamps to cloud`)
             for (const s of localOnly) {
