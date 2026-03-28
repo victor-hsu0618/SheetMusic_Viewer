@@ -22,8 +22,9 @@ export class ViewerManager {
     }
 
     init() {
-        // Initialize PDF.js Worker with absolute root path (Most reliable for Capacitor)
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
+        // Initialize PDF.js Worker using Vite base URL for GitHub Pages compatibility
+        const base = import.meta.env.BASE_URL || '/'
+        pdfjsLib.GlobalWorkerOptions.workerSrc = base + 'pdfjs/pdf.worker.min.mjs';
         console.log('[ViewerManager] PDF.js Worker initialized at:', pdfjsLib.GlobalWorkerOptions.workerSrc);
 
         // Initialize rendering queue
@@ -256,13 +257,14 @@ export class ViewerManager {
         // Use absolute root paths for PDF.js assets (Compatible with both PWA and Capacitor root)
         console.log(`[ViewerManager] getDocument started with data size: ${uint8Data.length}`);
         
+        const _base = import.meta.env.BASE_URL || '/'
         const loadingTask = pdfjsLib.getDocument({
             data: uint8Data,
-            cMapUrl: '/pdfjs/cmaps/',
+            cMapUrl: _base + 'pdfjs/cmaps/',
             cMapPacked: true,
-            standardFontDataUrl: '/pdfjs/standard_fonts/',
-            jbig2WasmUrl: '/pdfjs/wasm/jbig2.wasm',
-            wasmUrl: '/pdfjs/wasm/',
+            standardFontDataUrl: _base + 'pdfjs/standard_fonts/',
+            jbig2WasmUrl: _base + 'pdfjs/wasm/jbig2.wasm',
+            wasmUrl: _base + 'pdfjs/wasm/',
             isEvalSupported: false,
             stopAtErrors: false,
         });
