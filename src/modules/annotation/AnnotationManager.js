@@ -217,7 +217,7 @@ export class AnnotationManager {
      * Returns true if anything was modified.
      */
     async eraseStrokeSegment(pageNum, x, y, radius = 0.008) {
-        const STROKE_TYPES = new Set(['pen', 'fine-pen', 'marker-pen', 'brush-pen', 'fountain-pen', 'pencil-pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'rect-shape', 'circle-shape', 'cover-brush', 'correction-pen']);
+        const STROKE_TYPES = new Set(['pen', 'fine-pen', 'marker-pen', 'brush-pen', 'fountain-pen', 'pencil-pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'rect-shape', 'circle-shape', 'cover-brush', 'correction-pen', 'bracket-left', 'bracket-right', 'curly-left', 'curly-right']);
         const activeSourceIds = [this.app.activeSourceId];
         const visibleLayerIds = new Set(this.app.layers.filter(l => l.visible).map(l => l.id));
 

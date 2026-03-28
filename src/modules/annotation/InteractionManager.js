@@ -154,6 +154,8 @@ export class InteractionManager {
         let isNudging = false;
         let eraserClickTarget = null;  // Saved on pointerdown; erased on pointerup if no drag
         let eraserHasDragged = false;  // Set to true on first move during eraser drag
+        let isDraggingHandle = false;  // Dragging an endpoint handle on a two-point stroke
+        let draggingHandleIndex = -1;  // 0 = start point, last = end point
 
         // Force reset closure state when switching tools to prevent stuck interactions
         overlay._resetState = () => {
@@ -173,6 +175,8 @@ export class InteractionManager {
             activePointers.clear();
             isTwoFingerPanning = false;
             this.isAdjustingCurvature = false;
+            isDraggingHandle = false;
+            draggingHandleIndex = -1;
             this.app._dragLastPos = null;
             if (this._penLongPressTimer) clearTimeout(this._penLongPressTimer);
             InteractionUI.showTrash(false, wrapper);
@@ -221,7 +225,7 @@ export class InteractionManager {
             return ['pen', 'fine-pen', 'marker-pen', 'brush-pen', 'fountain-pen', 'pencil-pen',
                     'red-pen', 'green-pen', 'blue-pen', // legacy
                     'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green',
-                    'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right',
+                    'line', 'slur', 'dashed-pen', 'arrow-pen', 'bracket-left', 'bracket-right', 'curly-left', 'curly-right',
                     'rect-shape', 'circle-shape',
                     'cover-brush', 'correction-pen'].includes(type);
         };
@@ -432,6 +436,19 @@ export class InteractionManager {
                 }
 
                 if (distPx < threshold && !isDrawingTool) {
+                    // Check endpoint handles first — allows resizing two-point strokes during grace period
+                    const TWO_PT_GRACE = new Set(['line', 'slur', 'bracket-left', 'bracket-right', 'curly-left', 'curly-right', 'rect-shape', 'circle-shape']);
+                    if (TWO_PT_GRACE.has(graceObject.type) && graceObject.points?.length >= 2) {
+                        const HIT_PX = 30;
+                        const hNX = HIT_PX / (overlay.offsetWidth || 1);
+                        const hNY = HIT_PX / (overlay.offsetHeight || 1);
+                        const p0 = graceObject.points[0], pN = graceObject.points[graceObject.points.length - 1];
+                        if (Math.abs(offsetPos.x - p0.x) < hNX && Math.abs(offsetPos.y - p0.y) < hNY) {
+                            isDraggingHandle = true; draggingHandleIndex = 0;
+                        } else if (Math.abs(offsetPos.x - pN.x) < hNX && Math.abs(offsetPos.y - pN.y) < hNY) {
+                            isDraggingHandle = true; draggingHandleIndex = graceObject.points.length - 1;
+                        }
+                    }
                     activeObject = graceObject;
                     isMovingExisting = true;
                     this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
@@ -524,9 +541,31 @@ export class InteractionManager {
                         activeObject = clone;
                         isMovingExisting = true;
                     } else {
-                        activeObject = target;
-                        isMovingExisting = true;
-                        this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
+                        // Check endpoint handles first — allows resizing two-point strokes
+                        const TWO_PT_SET = new Set(['line', 'slur', 'bracket-left', 'bracket-right', 'curly-left', 'curly-right', 'rect-shape', 'circle-shape']);
+                        const HIT_PX = 30;
+                        const hNX = HIT_PX / (overlay.offsetWidth || 1);
+                        const hNY = HIT_PX / (overlay.offsetHeight || 1);
+                        const handleCandidates = [this.app._lastGraceObject, this.app.selectHoveredStamp]
+                            .filter(s => s && TWO_PT_SET.has(s.type) && s.points?.length >= 2 && !s.deleted);
+                        for (const stamp of handleCandidates) {
+                            const p0 = stamp.points[0], pN = stamp.points[stamp.points.length - 1];
+                            if (Math.abs(pPos.x - p0.x) < hNX && Math.abs(pPos.y - p0.y) < hNY) {
+                                activeObject = stamp; isMovingExisting = true;
+                                isDraggingHandle = true; draggingHandleIndex = 0;
+                                this.dragStartObject = JSON.parse(JSON.stringify(stamp)); break;
+                            }
+                            if (Math.abs(pPos.x - pN.x) < hNX && Math.abs(pPos.y - pN.y) < hNY) {
+                                activeObject = stamp; isMovingExisting = true;
+                                isDraggingHandle = true; draggingHandleIndex = stamp.points.length - 1;
+                                this.dragStartObject = JSON.parse(JSON.stringify(stamp)); break;
+                            }
+                        }
+                        if (!activeObject) {
+                            activeObject = target;
+                            isMovingExisting = true;
+                            this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
+                        }
                     }
                     if (activeObject) {
                         this.app.lastFocusedStamp = activeObject;
@@ -719,7 +758,7 @@ export class InteractionManager {
                 return;
             }
 
-            if (isMovingExisting && outsideAll) {
+            if (isMovingExisting && outsideAll && !isDraggingHandle) {
                 this._showDragGhost(e.clientX, e.clientY, activeObject);
                 const dt = document.getElementById('sf-doc-trash-btn');
                 if (dt) {
@@ -733,7 +772,15 @@ export class InteractionManager {
             this._hideDragGhost();
 
             if (isMovingExisting) {
-                if (this.isAdjustingCurvature && activeObject.type === 'slur') {
+                if (isDraggingHandle && activeObject?.points && draggingHandleIndex >= 0) {
+                    const cPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
+                    const isVertLocked = ['bracket-left', 'bracket-right', 'curly-left', 'curly-right'].includes(activeObject.type);
+                    activeObject.points[draggingHandleIndex] = {
+                        ...activeObject.points[draggingHandleIndex],
+                        x: isVertLocked ? activeObject.points[draggingHandleIndex].x : cPos.x,
+                        y: cPos.y,
+                    };
+                } else if (this.isAdjustingCurvature && activeObject.type === 'slur') {
                     const p0 = activeObject.points[0], p1 = activeObject.points[activeObject.points.length - 1];
                     const dxB = p1.x - p0.x, dyB = p1.y - p0.y, distB = Math.sqrt(dxB * dxB + dyB * dyB);
                     if (distB > 0.0001) {
@@ -758,8 +805,14 @@ export class InteractionManager {
                 if (activeObject.page !== currentPageNum) {
                     const oldP = activeObject.page; activeObject.page = currentPageNum; this.app.redrawStamps(oldP);
                 }
-                if (['line', 'slur', 'rect-shape', 'circle-shape'].includes(activeObject.type)) activeObject.points = [activeObject.points[0], cPos];
-                else activeObject.points.push({ ...cPos, pressure: e.pressure ?? 0.5 });
+                if (['line', 'slur', 'rect-shape', 'circle-shape'].includes(activeObject.type)) {
+                    activeObject.points = [activeObject.points[0], cPos];
+                } else if (['bracket-left', 'bracket-right', 'curly-left', 'curly-right'].includes(activeObject.type)) {
+                    // Brackets/curly braces are always vertical — lock x to start point
+                    activeObject.points = [activeObject.points[0], { ...cPos, x: activeObject.points[0].x }];
+                } else {
+                    activeObject.points.push({ ...cPos, pressure: e.pressure ?? 0.5 });
+                }
                 const cvs = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
                 if (cvs) this.app.drawPathOnCanvas(cvs.getContext('2d'), cvs, activeObject);
             } else {
@@ -1054,7 +1107,7 @@ export class InteractionManager {
 
         const cleanupInteraction = (e) => {
             isInteracting = false; this.app.isInteracting = false; isMovingExisting = false; activeObject = null;
-            this.isAdjustingCurvature = false; this.app._dragLastPos = null;
+            this.isAdjustingCurvature = false; isDraggingHandle = false; draggingHandleIndex = -1; this.app._dragLastPos = null;
             if (e?.pointerId !== undefined) activePointers.delete(e.pointerId);
             if (activePointers.size === 0 && touchBufferTimer) { clearTimeout(touchBufferTimer); touchBufferTimer = null; }
             this._updateCursor(overlay, getPointerType(e || { type: 'mousemove' }));

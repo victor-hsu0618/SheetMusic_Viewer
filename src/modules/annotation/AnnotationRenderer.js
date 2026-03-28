@@ -241,6 +241,22 @@ export class AnnotationRenderer {
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.quadraticCurveTo(cx, cy, x2, y2);
+        } else if ((path.type === 'curly-left' || path.type === 'curly-right') && path.points.length >= 2) {
+            const p1 = path.points[0];
+            const p2 = path.points[path.points.length - 1];
+            const x1 = p1.x * canvas.width,  y1 = p1.y * canvas.height;
+            const x2 = p2.x * canvas.width,  y2 = p2.y * canvas.height;
+            const h  = y2 - y1;
+            // Horizontal extent of the curly bump (scales with bracket height)
+            const w  = Math.abs(h) * 0.18 * (path.type === 'curly-left' ? -1 : 1);
+            const mx = x1;  // x is locked, so x1 === x2
+            const my = (y1 + y2) / 2;
+            ctx.beginPath();
+            // Top half: straight start → curve out to midpoint
+            ctx.moveTo(mx, y1);
+            ctx.bezierCurveTo(mx, y1 + h * 0.18,  mx + w, my - h * 0.06,  mx + w, my);
+            // Bottom half: midpoint → curve back to straight end
+            ctx.bezierCurveTo(mx + w, my + h * 0.06,  mx, y2 - h * 0.18,  mx, y2);
         } else if ((path.type === 'bracket-left' || path.type === 'bracket-right') && path.points.length >= 2) {
             const p1 = path.points[0];
             const p2 = path.points[path.points.length - 1];
@@ -419,6 +435,31 @@ export class AnnotationRenderer {
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.stroke();
+        }
+
+        // ENDPOINT HANDLES for two-point strokes (shown on grace period or select hover)
+        const TWO_PT_HANDLE_TYPES = new Set(['line', 'slur', 'bracket-left', 'bracket-right', 'curly-left', 'curly-right', 'rect-shape', 'circle-shape']);
+        if (TWO_PT_HANDLE_TYPES.has(path.type) && path.points?.length >= 2 &&
+            (path === this.app._lastGraceObject || isSelectHovered)) {
+            const p0 = path.points[0];
+            const pN = path.points[path.points.length - 1];
+            const hr = 7 * (this.app.scale / 1.5) * pageFactor;
+            ctx.save();
+            ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
+            for (const [hx, hy] of [
+                [p0.x * canvas.width,  p0.y * canvas.height],
+                [pN.x * canvas.width,  pN.y * canvas.height],
+            ]) {
+                ctx.beginPath();
+                ctx.arc(hx, hy, hr, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.strokeStyle = '#6366f1';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            ctx.restore();
         }
 
         ctx.restore()
