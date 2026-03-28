@@ -309,6 +309,9 @@ export class ViewerManager {
             
             // Supabase Realtime subscription for live changes during this session
             this.app.supabaseManager.subscribeToAnnotations(newFingerprint);
+
+            // Pull annotations for this score (ensures fresh data even on new sessions)
+            this.app.supabaseManager.pullAnnotations(newFingerprint);
         }
 
         // --- SAFE CACHE: Persist buffer to IndexedDB ---
@@ -331,13 +334,7 @@ export class ViewerManager {
             this.pdf = pdf;
             console.log(`[ViewerManager] PDF.js success. Pages: ${this.pdf.numPages}`);
 
-            // Auto-detect system stamps in background if none exist (skip for User Guide)
-            const hasSystems = this.app.stamps.some(s => s.type === 'system' && !s.deleted)
-            if (!hasSystems && this.app.staffDetector && !this.app._skipStaffDetect) {
-                this.app.staffDetector.autoDetect(this.pdf, (page, total) => {
-                    this.app.showToast?.(`正在分析樂譜結構... ${page} / ${total}`)
-                })
-            }
+
         } catch (err) {
             clearTimeout(timeout);
             if (loadingId !== this.latestLoadingId) return;
