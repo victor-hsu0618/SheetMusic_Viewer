@@ -146,24 +146,24 @@ export class SupabaseManager {
             const stamp = newRecord.data
             if (!stamp) return
 
-            const idx = this.app.stamps.findIndex(s => s.id === stamp.id)
-            if (idx !== -1) {
-                // OPTIMISTIC LOCK: Only accept cloud version if it's strictly NEWER than local
-                const localStamp = this.app.stamps[idx]
-                if ((stamp.updatedAt || 0) <= (localStamp.updatedAt || 0)) {
-                    console.log(`[Supabase] 🛡️ Ignored stale cloud update for [${stamp.type}] (Local: ${localStamp.updatedAt}, Cloud: ${stamp.updatedAt})`)
-                    return
-                }
-                console.log(`   -> Syncing existing stamp [${stamp.type}] (Newer cloud version)`)
-                this.app.stamps[idx] = stamp
+            // Soft delete: remove from active stamps
+            if (stamp.deleted) {
+                this.app.stamps = this.app.stamps.filter(s => s.id !== stamp.id)
             } else {
-                console.log(`   -> New stamp from cloud [${stamp.type}]`)
-                this.app.stamps.push(stamp)
+                const idx = this.app.stamps.findIndex(s => s.id === stamp.id)
+                if (idx !== -1) {
+                    const localStamp = this.app.stamps[idx]
+                    if ((stamp.updatedAt || 0) <= (localStamp.updatedAt || 0)) {
+                        return
+                    }
+                    this.app.stamps[idx] = stamp
+                } else {
+                    this.app.stamps.push(stamp)
+                }
             }
         } else if (eventType === 'DELETE') {
-            const deleteId = oldRecord?.id 
+            const deleteId = oldRecord?.id
             if (deleteId) {
-                console.log(`[Supabase] 🗑️ Cloud DELETE: ${deleteId}`)
                 this.app.stamps = this.app.stamps.filter(s => s.id !== deleteId)
             }
         }
@@ -227,11 +227,6 @@ export class SupabaseManager {
             return
         }
         
-        // Deleted stamps: hard-delete from Supabase to prevent accumulation
-        if (stamp.deleted) {
-            return this.deleteAnnotation(stamp.id)
-        }
-
         // Skip system stamps unless sync is explicitly enabled
         if (stamp.type === 'system' && localStorage.getItem('scoreflow_sync_system_stamps') !== 'true') {
             return
@@ -336,9 +331,8 @@ export class SupabaseManager {
 
         // 1. Read local stamps from IndexedDB BEFORE any override
         const localStamps = (await db.get(`stamps_${fingerprint}`)) || []
-        const localActive = localStamps.filter(s => !s?.deleted)
 
-        // 2. Pull cloud
+        // 2. Pull ALL cloud stamps including deleted (tombstones)
         const { data, error } = await this.client
             .from('annotations')
             .select('*')
@@ -353,34 +347,38 @@ export class SupabaseManager {
         // Guard: fingerprint may have changed while pull was in flight
         if (this.app.pdfFingerprint !== fingerprint) return
 
-        const cloudStamps = (data || []).map(r => r.data).filter(s => !s?.deleted)
-        const cloudIds = new Set(cloudStamps.map(s => s.id))
+        // Keep ALL cloud stamps (including deleted) as tombstones
+        const allCloudStamps = (data || []).map(r => r.data).filter(Boolean)
+        const cloudMap = new Map(allCloudStamps.map(s => [s.id, s]))
+        const localMap = new Map(localStamps.map(s => [s.id, s]))
 
         const syncSystemStamps = localStorage.getItem('scoreflow_sync_system_stamps') === 'true'
 
-        // 3. Build a local map for quick lookup
-        const localMap = new Map(localActive.map(s => [s.id, s]))
-
-        // 4. Merge: newer updatedAt wins; local-only stamps get pushed up
         const merged = []
         const toUpload = []
 
-        for (const cloudS of cloudStamps) {
-            const local = localMap.get(cloudS.id)
-            if (local && (local.updatedAt || 0) > (cloudS.updatedAt || 0)) {
-                // Local is newer → keep local, push it up
-                merged.push(local)
-                toUpload.push(local)
+        // Process local stamps against cloud tombstones
+        for (const local of localStamps) {
+            const cloudS = cloudMap.get(local.id)
+            if (cloudS) {
+                const cloudIsNewer = (cloudS.updatedAt || 0) >= (local.updatedAt || 0)
+                const winner = cloudIsNewer ? cloudS : local
+                if (!cloudIsNewer) toUpload.push(local)
+                if (!winner.deleted) merged.push(winner)
+                // If winner.deleted → stamp is gone, do not include
             } else {
-                merged.push(cloudS)
+                // Local-only: not in cloud at all
+                if (!local.deleted) {
+                    if (syncSystemStamps || local.type !== 'system') toUpload.push(local)
+                    merged.push(local)
+                }
             }
         }
 
-        // Local-only stamps (never reached Supabase)
-        for (const local of localActive) {
-            if (!cloudIds.has(local.id)) {
-                if (syncSystemStamps || local.type !== 'system') toUpload.push(local)
-                merged.push(local)
+        // Cloud-only stamps (Device B never had them)
+        for (const cloudS of allCloudStamps) {
+            if (!localMap.has(cloudS.id) && !cloudS.deleted) {
+                merged.push(cloudS)
             }
         }
 
@@ -395,7 +393,7 @@ export class SupabaseManager {
         this.app.redrawAllAnnotationLayers?.()
         db.set(`stamps_${fingerprint}`, merged)
 
-        console.log(`[Supabase] syncOnLoad: ${cloudStamps.length} cloud, ${toUpload.length} uploaded, ${merged.length} total`)
+        console.log(`[Supabase] syncOnLoad: ${allCloudStamps.length} cloud, ${toUpload.length} uploaded, ${merged.length} active`)
     }
 
     /**
@@ -495,15 +493,15 @@ export class SupabaseManager {
             return
         }
 
-        // Group changed records by fingerprint (skip deleted — hard-deletes won't appear here)
+        // Group changed records by fingerprint (including deleted tombstones)
         const byFp = {}
         for (const record of data) {
-            if (record.data?.deleted) continue
+            if (!record.data) continue
             if (!byFp[record.fingerprint]) byFp[record.fingerprint] = []
             byFp[record.fingerprint].push(record.data)
         }
 
-        // Merge into IndexedDB for each fingerprint
+        // Merge into IndexedDB for each fingerprint, respecting tombstones
         for (const [fp, cloudStamps] of Object.entries(byFp)) {
             const localStamps = (await db.get(`stamps_${fp}`)) || []
             const merged = [...localStamps]
@@ -512,10 +510,17 @@ export class SupabaseManager {
             for (const cloudS of cloudStamps) {
                 const idx = merged.findIndex(s => s.id === cloudS.id)
                 if (idx === -1) {
-                    merged.push(cloudS)
-                    changed = true
+                    if (!cloudS.deleted) {
+                        merged.push(cloudS)
+                        changed = true
+                    }
                 } else if ((cloudS.updatedAt || 0) > (merged[idx].updatedAt || 0)) {
-                    merged[idx] = cloudS
+                    // Cloud is newer: apply update (including deletions)
+                    if (cloudS.deleted) {
+                        merged.splice(idx, 1)
+                    } else {
+                        merged[idx] = cloudS
+                    }
                     changed = true
                 }
             }
