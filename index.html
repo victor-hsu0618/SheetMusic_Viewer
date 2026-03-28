@@ -1175,6 +1175,21 @@
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script type="module" src="src/main.js"></script>
+  <!-- Multi-select floating action toolbar -->
+  <div id="sf-multiselect-bar" class="sf-multiselect-bar hidden">
+    <span id="sf-ms-count" class="sf-ms-count">0 selected</span>
+    <div class="sf-ms-divider"></div>
+    <button id="sf-ms-align-x" class="sf-ms-btn" title="Align Left Edge (same X)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="3" y2="18"/><rect x="3" y="7" width="8" height="3" rx="1"/><rect x="3" y="13" width="13" height="3" rx="1"/></svg>
+      Align X
+    </button>
+    <button id="sf-ms-delete" class="sf-ms-btn sf-ms-btn-danger" title="Delete all selected">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      Delete
+    </button>
+    <button id="sf-ms-clear" class="sf-ms-btn" title="Clear selection">✕</button>
+  </div>
+
   <!-- Toast Notifications -->
   <div id="toast-container" class="toast-container"></div>
 </body>

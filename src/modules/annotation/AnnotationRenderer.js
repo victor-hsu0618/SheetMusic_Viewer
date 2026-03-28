@@ -38,7 +38,8 @@ export class AnnotationRenderer {
                 if (stamp.hiddenGroup && !this.app.cloakVisible?.[stamp.hiddenGroup]) return;
 
                 const isHovered = stamp === this.app.hoveredStamp
-                const isSelectHovered = stamp === this.app.selectHoveredStamp
+                const isMultiSelected = this.app.annotationManager?.interaction?._multiSelected?.has(stamp.id) ?? false
+                const isSelectHovered = stamp === this.app.selectHoveredStamp || isMultiSelected
 
                 if (stamp.points) {
                     this.drawPathOnCanvas(ctx, canvas, stamp, isForeign, isHovered, isSelectHovered)

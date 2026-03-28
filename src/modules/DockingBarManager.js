@@ -166,7 +166,8 @@ export class DockingBarManager {
                     { id: '_jump',     label: '跳轉',   icon: `<polygon points="3 11 22 2 13 21 11 13 3 11"/>`,                                                                                                                                                                                                          action: () => this.app.jumpManager?.togglePanel() },
                     { divider: true },
                     { id: 'view',   label: 'View',   tool: true, icon: `<path d="M5 12.55V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6.55"/><path d="M12 22a2.98 2.98 0 0 0 2.81-2H9.18a3 3 0 0 0 2.82 2z"/><path d="M20 13a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4v-2z"/>` },
-                    { id: 'select', label: 'Select', tool: true, icon: `<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/>` },
+                    { id: 'select',       label: 'Select', tool: true, icon: `<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/>` },
+                    { id: 'multi-select', label: 'Multi',  tool: true, icon: `<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/><circle cx="19" cy="5" r="3" fill="currentColor"/>` },
                     { id: 'eraser', label: 'Eraser', tool: true, icon: `<path d="M16.5 4.5 L19.5 7.5 L9 18 L4.5 18 L4.5 13.5 Z" fill="none" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="15" y2="10.5"/><line x1="4.5" y1="18" x2="19.5" y2="18" stroke-linecap="round"/>` },
                     { id: 'cycle',  label: 'Cycle',  tool: true, icon: `<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" stroke-linecap="round"/><polyline points="21 3 21 8 16 8" stroke-linecap="round"/>` },
                     { divider: true },
@@ -228,7 +229,12 @@ export class DockingBarManager {
                 if (cfg.tool) {
                     this._subBarMgr?.closeToolBars ? this._subBarMgr.closeToolBars() : this._subBarMgr?.closeAll()
                     const already = this.app.activeStampType === cfg.id && cfg.id !== 'view'
-                    this.app.activeStampType = already ? 'view' : cfg.id
+                    const next = already ? 'view' : cfg.id
+                    // Clear multi-select when leaving multi-select tool
+                    if (this.app.activeStampType === 'multi-select' && next !== 'multi-select') {
+                        this.app.annotationManager?.interaction?.clearMultiSelect()
+                    }
+                    this.app.activeStampType = next
                     this.app.toolManager?.updateActiveTools()
                 }
             })

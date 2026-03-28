@@ -31,7 +31,7 @@ export const CoordMapper = {
      */
     getStampPreviewPos: (pos, pointerType, toolType, app, overlay) => {
         // Mode detection
-        const isTargetingTool = ['select', 'copy', 'recycle-bin', 'eraser', 'text', 'tempo-text', 'measure'].includes(toolType);
+        const isTargetingTool = ['select', 'multi-select', 'copy', 'recycle-bin', 'eraser', 'text', 'tempo-text', 'measure'].includes(toolType);
         
         const rect = overlay.getBoundingClientRect()
         const offsetX = Number(app.stampOffsetTouchX || 0);

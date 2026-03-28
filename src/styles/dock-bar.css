@@ -144,6 +144,64 @@ body.sf-dock-bar-visible #sf-dock-fab {
     transform: rotate(180deg);
 }
 
+/* ── Multi-select floating action bar ── */
+.sf-multiselect-bar {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 300;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: opacity 0.18s, transform 0.18s;
+}
+.sf-multiselect-bar.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(-8px);
+}
+.sf-ms-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+.sf-ms-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255,255,255,0.15);
+    flex-shrink: 0;
+}
+.sf-ms-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.8);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+.sf-ms-btn:hover { background: rgba(255,255,255,0.16); }
+.sf-ms-btn-danger { color: #ff6b6b; }
+.sf-ms-btn-danger:hover { background: rgba(239,68,68,0.2); }
+
 /* ── Trigger zone for auto-show ── */
 #sf-dock-trigger {
     position: fixed;

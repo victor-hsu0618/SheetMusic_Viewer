@@ -55,6 +55,17 @@ export class InitializationManager {
 
         document.getElementById('btn-library-close-main')?.addEventListener('click', () => app.toggleLibrary(false))
 
+        // Multi-select toolbar buttons
+        document.getElementById('sf-ms-align-x')?.addEventListener('click', () => {
+            app.annotationManager?.interaction?._alignMultiSelectedX()
+        })
+        document.getElementById('sf-ms-delete')?.addEventListener('click', async () => {
+            await app.annotationManager?.interaction?._deleteMultiSelected()
+        })
+        document.getElementById('sf-ms-clear')?.addEventListener('click', () => {
+            app.annotationManager?.interaction?.clearMultiSelect()
+        })
+
         const scoreActionsInput = document.querySelector('#score-actions-area input[type="file"]')
         if (scoreActionsInput) {
             scoreActionsInput.addEventListener('change', async (e) => {

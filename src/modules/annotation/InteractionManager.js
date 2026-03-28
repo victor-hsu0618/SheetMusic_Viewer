@@ -6,6 +6,7 @@ export class InteractionManager {
     constructor(app) {
         this.app = app;
         this._penLongPressTimer = null;
+        this._multiSelected = new Set(); // IDs of multi-selected stamps
     }
 
     _updateCursor(overlay, pointerType) {
@@ -27,6 +28,7 @@ export class InteractionManager {
                 break;
             case 'select':
             case 'cycle':
+            case 'multi-select':
                 overlay.style.cursor = 'pointer';
                 break;
             case 'copy':
@@ -503,7 +505,7 @@ export class InteractionManager {
             }
 
             const isCloakTool = activeTool.startsWith('cloak-');
-            const isSelectionTool = ['copy', 'select', 'recycle-bin', 'cycle'].includes(activeTool) || isCloakTool;
+            const isSelectionTool = ['copy', 'select', 'recycle-bin', 'cycle', 'multi-select'].includes(activeTool) || isCloakTool;
 
             if (isSelectionTool) {
                 if (target) {
@@ -580,6 +582,12 @@ export class InteractionManager {
                         InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
                     }
                 } else {
+                    // Tap on empty area with multi-select → clear selection
+                    if (activeTool === 'multi-select' && this._multiSelected.size > 0) {
+                        this._multiSelected.clear();
+                        this._updateMultiSelectToolbar();
+                        this.app.redrawAllAnnotationLayers?.();
+                    }
                     isInteracting = true;
                     this.app.isInteracting = true;
                     activeObject = null;
@@ -723,7 +731,7 @@ export class InteractionManager {
             const pos = CoordMapper.getPos(e, currentOverlay);
             const currentVP = currentOverlay.querySelector('.virtual-pointer');
 
-            if (!activeObject && ['select', 'eraser', 'copy', 'recycle-bin'].includes(toolType)) {
+            if (!activeObject && ['select', 'eraser', 'copy', 'recycle-bin', 'multi-select'].includes(toolType)) {
                 const pp = CoordMapper.getStampPreviewPos(pos, pointerType, toolType, this.app, currentOverlay);
                 const target = this.app.findClosestStamp(currentPageNum, pp.x, pp.y, toolType !== 'eraser');
                 if (target) {
@@ -788,7 +796,7 @@ export class InteractionManager {
                         activeObject.curvature = (perpDist / distB) * 2;
                     }
                 } else {
-                    const eType = ['select', 'copy', 'recycle-bin'].includes(toolType) ? toolType : activeObject.type;
+                    const eType = ['select', 'copy', 'recycle-bin', 'multi-select'].includes(toolType) ? toolType : activeObject.type;
                     const tPos = CoordMapper.getStampPreviewPos(pos, pointerType, eType, this.app, currentOverlay);
                     if (activeObject.page !== currentPageNum) {
                         const oldP = activeObject.page; activeObject.page = currentPageNum; this.app.redrawStamps(oldP);
@@ -798,6 +806,17 @@ export class InteractionManager {
                     if (activeObject.points) activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
                     else { activeObject.x = Number(activeObject.x) + dx; activeObject.y = Number(activeObject.y) + dy; }
                     this.app._dragLastPos = tPos;
+                    // Multi-select: propagate same delta to all other selected stamps
+                    if (toolType === 'multi-select' && this._multiSelected.has(activeObject.id)) {
+                        for (const sid of this._multiSelected) {
+                            if (sid === activeObject.id) continue;
+                            const s = this.app.stamps.find(st => st.id === sid && !st.deleted);
+                            if (!s) continue;
+                            if (s.points) s.points = s.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+                            else { s.x = Number(s.x) + dx; s.y = Number(s.y) + dy; }
+                            if (s.page !== currentPageNum) this.app.redrawStamps(s.page);
+                        }
+                    }
                 }
                 this.app.redrawStamps(currentPageNum);
             } else if (activeObject.points) {
@@ -1059,6 +1078,30 @@ export class InteractionManager {
                             this.app.redrawStamps(tPN);
                         });
                         return;
+                    } else if (this.app.activeStampType === 'multi-select' && isMovingExisting) {
+                        // Multi-select: tap = toggle selection, drag = save all moved
+                        const moved = this.dragStartObject && (
+                            syncObj.points ? JSON.stringify(syncObj.points) !== JSON.stringify(this.dragStartObject.points)
+                            : (syncObj.x !== this.dragStartObject.x || syncObj.y !== this.dragStartObject.y || syncObj.page !== this.dragStartObject.page)
+                        );
+                        if (!moved) {
+                            // Tap: toggle this stamp in selection
+                            if (this._multiSelected.has(syncObj.id)) this._multiSelected.delete(syncObj.id);
+                            else this._multiSelected.add(syncObj.id);
+                            this._updateMultiSelectToolbar();
+                        } else {
+                            // Drag complete: save all selected stamps
+                            syncObj.updatedAt = Date.now();
+                            for (const sid of this._multiSelected) {
+                                const s = this.app.stamps.find(st => st.id === sid && !st.deleted);
+                                if (s) {
+                                    s.updatedAt = Date.now();
+                                    this.app.supabaseManager?.pushAnnotation(s, this.app.pdfFingerprint);
+                                }
+                            }
+                            await this.app.saveToStorage(true);
+                        }
+                        this.app.redrawStamps(tPN);
                     } else {
                         syncObj.updatedAt = Date.now();
                         if (!isMovingExisting && syncObj.type !== 'view') {
@@ -1195,6 +1238,49 @@ export class InteractionManager {
     }
 
     _hideDragGhost() { const g = document.getElementById('sf-drag-ghost'); if (g) g.style.display = 'none'; }
+
+    // ── Multi-select helpers ────────────────────────────────────────────────
+
+    _updateMultiSelectToolbar() {
+        const bar = document.getElementById('sf-multiselect-bar');
+        if (!bar) return;
+        const count = this._multiSelected.size;
+        if (count === 0) { bar.classList.add('hidden'); return; }
+        bar.classList.remove('hidden');
+        const label = bar.querySelector('#sf-ms-count');
+        if (label) label.textContent = `${count} selected`;
+    }
+
+    _alignMultiSelectedX() {
+        if (this._multiSelected.size < 2) return;
+        const stamps = [...this._multiSelected]
+            .map(id => this.app.stamps.find(s => s.id === id && !s.deleted))
+            .filter(Boolean)
+            .filter(s => s.x !== undefined);
+        if (!stamps.length) return;
+        const minX = Math.min(...stamps.map(s => s.x));
+        stamps.forEach(s => { s.x = minX; s.updatedAt = Date.now(); });
+        const pages = new Set(stamps.map(s => s.page));
+        pages.forEach(p => this.app.redrawStamps(p));
+        this.app.saveToStorage(true);
+        stamps.forEach(s => this.app.supabaseManager?.pushAnnotation(s, this.app.pdfFingerprint));
+    }
+
+    async _deleteMultiSelected() {
+        if (this._multiSelected.size === 0) return;
+        for (const id of this._multiSelected) {
+            const s = this.app.stamps.find(st => st.id === id && !st.deleted);
+            if (s) await this.app.annotationManager.eraseStampTarget(s);
+        }
+        this._multiSelected.clear();
+        this._updateMultiSelectToolbar();
+    }
+
+    clearMultiSelect() {
+        this._multiSelected.clear();
+        this._updateMultiSelectToolbar();
+        this.app.redrawAllAnnotationLayers?.();
+    }
 
     /**
      * Sample the background color of the PDF canvas at normalized position (normX, normY).
