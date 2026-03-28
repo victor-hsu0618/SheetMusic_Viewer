@@ -372,7 +372,6 @@ export class ScoreManager {
             return;
         }
 
-        this.app.showMessage('正在生成縮略圖...', 'system')
         const thumbnail = await this.helper.generateThumbnail(buffer.slice(0));
         const entry = {
             fingerprint: fp,
