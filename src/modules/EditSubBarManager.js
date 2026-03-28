@@ -45,12 +45,20 @@ const TOOL_NATURAL_COLORS = Object.fromEntries(
         .map(t => [t.id, t.naturalColor])
 )
 
-// Drawing tools that support size picker on re-tap
-const PEN_SIZE_TOOL_TYPES = new Set([
-    'pen', 'fine-pen', 'marker-pen', 'brush-pen', 'fountain-pen', 'pencil-pen',
-    'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green',
-    'line', 'slur', 'dashed-pen', 'arrow-pen', 'cover-brush', 'correction-pen',
+// Tools that do NOT get the options popover (have special tap behavior or no meaningful options)
+const NO_OPTIONS_TYPES = new Set([
+    'view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle', 'stamp-palette', 'scroll-bar',
+    'anchor', 'music-anchor', 'page-bookmark',
+    'sticky-note', 'measure', 'measure-free',
+    'cover-brush', 'correction-pen',
+    'text-library-add', 'text-library-edit',
 ])
+
+// Curated color palette for the options popover
+const PICKER_COLORS = [
+    '#1a1a1a', '#ef4444', '#f97316', '#eab308',
+    '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#94a3b8',
+]
 
 const PEN_SIZES = [
     { label: 'XS', value: 0.5 },
@@ -387,12 +395,16 @@ export class EditSubBarManager {
                     btn.innerHTML = this._cellIconHTML(item)
                     btn.title = item.label
                     btn.addEventListener('click', (e) => {
-                        if (isActive && PEN_SIZE_TOOL_TYPES.has(item.id)) {
+                        const canShowOptions = isActive
+                            && !NO_OPTIONS_TYPES.has(item.id)
+                            && !item.id.startsWith('cloak-')
+                            && !item.id.startsWith('custom-text-')
+                        if (canShowOptions) {
                             e.stopPropagation()
-                            this._togglePenSizePicker(btn)
+                            this._toggleToolOptionsPicker(btn)
                             return
                         }
-                        this._dismissPenSizePicker()
+                        this._dismissToolOptionsPicker()
                         this._selectTool(item.id, bar, type)
                     })
                     rowEl.appendChild(btn)
@@ -1177,28 +1189,58 @@ export class EditSubBarManager {
         return d
     }
 
-    _togglePenSizePicker(anchorEl) {
-        if (document.getElementById('sf-pen-size-picker')) {
-            this._dismissPenSizePicker()
+    _toggleToolOptionsPicker(anchorEl) {
+        if (document.getElementById('sf-tool-options-picker')) {
+            this._dismissToolOptionsPicker()
             return
         }
         const picker = document.createElement('div')
-        picker.id = 'sf-pen-size-picker'
-        picker.className = 'sf-pen-size-picker'
+        picker.id = 'sf-tool-options-picker'
+        picker.className = 'sf-tool-options-picker'
 
+        // ── Color row ──
+        const colorRow = document.createElement('div')
+        colorRow.className = 'sf-options-color-row'
+        PICKER_COLORS.forEach(color => {
+            const dot = document.createElement('div')
+            const isActive = this.app.activeColor?.toLowerCase() === color.toLowerCase()
+            dot.className = 'sf-options-color-dot' + (isActive ? ' active' : '')
+            dot.style.background = color
+            if (color === '#1a1a1a') dot.style.border = '1.5px solid rgba(255,255,255,0.25)'
+            dot.addEventListener('click', (e) => {
+                e.stopPropagation()
+                this.app.activeColor = color
+                this.app.toolManager?.updateActiveTools?.()
+                // Refresh active state in-place
+                colorRow.querySelectorAll('.sf-options-color-dot').forEach(d => {
+                    d.classList.toggle('active', d === dot)
+                })
+            })
+            colorRow.appendChild(dot)
+        })
+        picker.appendChild(colorRow)
+
+        // ── Divider ──
+        const divider = document.createElement('div')
+        divider.className = 'sf-options-divider'
+        picker.appendChild(divider)
+
+        // ── Size row ──
+        const sizeRow = document.createElement('div')
+        sizeRow.className = 'sf-options-size-row'
         PEN_SIZES.forEach(({ label, value }) => {
             const item = document.createElement('div')
             const isActive = Math.abs((this.app.activeToolPreset || 1.0) - value) < 0.13
-            item.className = 'sf-pen-size-item' + (isActive ? ' active' : '')
+            item.className = 'sf-options-size-item' + (isActive ? ' active' : '')
 
             const dot = document.createElement('div')
-            dot.className = 'sf-pen-size-dot'
+            dot.className = 'sf-options-size-dot'
             const dotPx = Math.round(4 + value * 7)
             dot.style.width = `${dotPx}px`
             dot.style.height = `${dotPx}px`
 
             const lbl = document.createElement('span')
-            lbl.className = 'sf-pen-size-label'
+            lbl.className = 'sf-options-size-label'
             lbl.textContent = label
 
             item.appendChild(dot)
@@ -1206,17 +1248,20 @@ export class EditSubBarManager {
             item.addEventListener('click', (e) => {
                 e.stopPropagation()
                 this.app.activeToolPreset = value
-                this._dismissPenSizePicker()
+                sizeRow.querySelectorAll('.sf-options-size-item').forEach(it => {
+                    it.classList.toggle('active', it === item)
+                })
             })
-            picker.appendChild(item)
+            sizeRow.appendChild(item)
         })
+        picker.appendChild(sizeRow)
 
         document.body.appendChild(picker)
 
         // Position above anchor, centred
         const rect = anchorEl.getBoundingClientRect()
-        const pw = picker.offsetWidth || 220
-        const ph = picker.offsetHeight || 72
+        const pw = picker.offsetWidth || 260
+        const ph = picker.offsetHeight || 110
         let left = rect.left + rect.width / 2 - pw / 2
         let top = rect.top - ph - 10
         if (top < 8) top = rect.bottom + 10
@@ -1225,13 +1270,13 @@ export class EditSubBarManager {
         picker.style.top  = `${top}px`
 
         setTimeout(() => {
-            this._pickerOutside = (e) => { if (!picker.contains(e.target)) this._dismissPenSizePicker() }
+            this._pickerOutside = (e) => { if (!picker.contains(e.target)) this._dismissToolOptionsPicker() }
             document.addEventListener('pointerdown', this._pickerOutside)
         }, 0)
     }
 
-    _dismissPenSizePicker() {
-        document.getElementById('sf-pen-size-picker')?.remove()
+    _dismissToolOptionsPicker() {
+        document.getElementById('sf-tool-options-picker')?.remove()
         if (this._pickerOutside) {
             document.removeEventListener('pointerdown', this._pickerOutside)
             this._pickerOutside = null

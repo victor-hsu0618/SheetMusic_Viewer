@@ -1161,24 +1161,66 @@
 }
 
 
-/* ── Pen size picker popover ── */
-.sf-pen-size-picker {
+/* ── Tool options popover (color + size) ── */
+.sf-tool-options-picker {
     position: fixed;
     z-index: 9500;
     display: flex;
-    flex-direction: row;
-    gap: 2px;
-    padding: 10px 12px;
-    background: rgba(28, 30, 38, 0.96);
+    flex-direction: column;
+    gap: 0;
+    padding: 10px 12px 8px;
+    background: rgba(28, 30, 38, 0.97);
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 16px;
     box-shadow: 0 6px 28px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+}
+
+/* Color row */
+.sf-options-color-row {
+    display: flex;
+    flex-direction: row;
+    gap: 7px;
+    justify-content: center;
+    padding-bottom: 10px;
+}
+
+.sf-options-color-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    flex-shrink: 0;
+    transition: transform 0.12s, border-color 0.12s;
+}
+
+.sf-options-color-dot:hover {
+    transform: scale(1.15);
+}
+
+.sf-options-color-dot.active {
+    border-color: rgba(255, 255, 255, 0.85);
+    transform: scale(1.15);
+}
+
+/* Divider */
+.sf-options-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 -12px 8px;
+}
+
+/* Size row */
+.sf-options-size-row {
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
     align-items: flex-end;
 }
 
-.sf-pen-size-item {
+.sf-options-size-item {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1190,32 +1232,32 @@
     min-width: 34px;
 }
 
-.sf-pen-size-item:hover {
+.sf-options-size-item:hover {
     background: rgba(255, 255, 255, 0.09);
 }
 
-.sf-pen-size-item.active {
+.sf-options-size-item.active {
     background: rgba(99, 102, 241, 0.2);
 }
 
-.sf-pen-size-dot {
+.sf-options-size-dot {
     background: rgba(255, 255, 255, 0.75);
     border-radius: 50%;
     flex-shrink: 0;
     transition: background 0.15s;
 }
 
-.sf-pen-size-item.active .sf-pen-size-dot {
+.sf-options-size-item.active .sf-options-size-dot {
     background: #818cf8;
 }
 
-.sf-pen-size-label {
+.sf-options-size-label {
     font-size: 10px;
     color: rgba(255, 255, 255, 0.45);
     font-weight: 600;
     letter-spacing: 0.02em;
 }
 
-.sf-pen-size-item.active .sf-pen-size-label {
+.sf-options-size-item.active .sf-options-size-label {
     color: #a5b4fc;
 }
