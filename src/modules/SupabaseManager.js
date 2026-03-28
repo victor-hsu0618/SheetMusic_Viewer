@@ -202,6 +202,16 @@ export class SupabaseManager {
         return { data, error }
     }
 
+    async getInviteCode() {
+        if (!this.client) return null
+        const { data } = await this.client
+            .from('app_config')
+            .select('value')
+            .eq('key', 'invite_code')
+            .maybeSingle()
+        return data?.value || null
+    }
+
     async signOut() {
         if (!this.client) return
         await this.client.auth.signOut()
