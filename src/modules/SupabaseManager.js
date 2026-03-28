@@ -227,15 +227,20 @@ export class SupabaseManager {
             return
         }
         
+        // Deleted stamps: hard-delete from Supabase to prevent accumulation
+        if (stamp.deleted) {
+            return this.deleteAnnotation(stamp.id)
+        }
+
         // Map app stamp structure to Supabase DB schema
         const dbRecord = {
-            id: stamp.id, // We use the same UUID generated locally
+            id: stamp.id,
             fingerprint: fingerprint,
             user_id: this.user.id,
             layer_id: stamp.layerId || 'draw',
             type: stamp.type,
             page: stamp.page || 0,
-            data: stamp, // The whole object goes into JSONB
+            data: stamp,
             updated_at: stamp.updatedAt ? new Date(stamp.updatedAt).toISOString() : new Date().toISOString()
         }
 
@@ -337,13 +342,14 @@ export class SupabaseManager {
             .from('annotations')
             .select('*')
             .eq('fingerprint', fingerprint)
+            .eq('user_id', this.user.id)
 
         if (error) {
             console.error('[Supabase] Pull annotations error:', error)
             return null
         }
 
-        const cloudStamps = (data || []).map(record => record.data)
+        const cloudStamps = (data || []).map(record => record.data).filter(s => !s?.deleted)
 
         // Guard: if user switched scores while pull was in flight, do NOT touch this.app.stamps.
         // Only update local IndexedDB so the correct data is available next time this score loads.
@@ -422,9 +428,10 @@ export class SupabaseManager {
             return
         }
 
-        // Group changed records by fingerprint
+        // Group changed records by fingerprint (skip deleted — hard-deletes won't appear here)
         const byFp = {}
         for (const record of data) {
+            if (record.data?.deleted) continue
             if (!byFp[record.fingerprint]) byFp[record.fingerprint] = []
             byFp[record.fingerprint].push(record.data)
         }
