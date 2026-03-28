@@ -252,6 +252,9 @@ export class ViewerManager {
         if (loadingId !== this.latestLoadingId) return;
         this.pdfFingerprint = newFingerprint;
         this.app.pdfFingerprint = newFingerprint;
+        // Always persist the resolved fingerprint immediately — ensures restart restores correctly
+        // even when no user interaction follows (e.g. boot restore with filename=null)
+        localStorage.setItem('scoreflow_current_fingerprint', newFingerprint);
 
         // --- START PDF PARSING ---
         // Use absolute root paths for PDF.js assets (Compatible with both PWA and Capacitor root)
