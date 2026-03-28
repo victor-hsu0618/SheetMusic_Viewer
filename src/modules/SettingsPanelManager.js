@@ -200,6 +200,25 @@ export class SettingsPanelManager {
             })
         }
 
+        // Category Default Colors
+        const CAT_COLOR_KEYS = [
+            { id: 'cat-color-draw',        key: 'draw' },
+            { id: 'cat-color-shapes',      key: 'shapes' },
+            { id: 'cat-color-fingering',   key: 'fingering' },
+            { id: 'cat-color-articulation',key: 'articulation' },
+            { id: 'cat-color-text',        key: 'text' },
+        ]
+        CAT_COLOR_KEYS.forEach(({ id, key }) => {
+            const input = document.getElementById(id)
+            if (!input) return
+            input.value = this.app.categoryDefaultColors?.[key] || input.value
+            input.addEventListener('input', (e) => {
+                if (!this.app.categoryDefaultColors) return
+                this.app.categoryDefaultColors[key] = e.target.value
+                localStorage.setItem('sf-category-default-colors', JSON.stringify(this.app.categoryDefaultColors))
+            })
+        })
+
         // Scroll Offset
         const jumpOffsetInput = document.getElementById('settings-jump-offset')
         const jumpOffsetValue = document.getElementById('settings-jump-offset-value')

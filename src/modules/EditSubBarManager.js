@@ -1108,9 +1108,12 @@ export class EditSubBarManager {
         }
 
         this.app.activeStampType = toolId
-        // Sync activeColor when tool has a natural color (red-pen, highlighter, etc.)
+        // Sync activeColor: natural color wins, else apply category default
         if (TOOL_NATURAL_COLORS[toolId] !== undefined) {
             this.app.activeColor = TOOL_NATURAL_COLORS[toolId]
+        } else {
+            const catColor = this.app.getCategoryDefaultColor?.(toolId)
+            if (catColor) this.app.activeColor = catColor
         }
         this.app.toolManager?.updateActiveTools()
         // Update active state in-place for all bar types
@@ -1255,6 +1258,24 @@ export class EditSubBarManager {
             sizeRow.appendChild(item)
         })
         picker.appendChild(sizeRow)
+
+        // ── Reset row ──
+        const resetDivider = document.createElement('div')
+        resetDivider.className = 'sf-options-divider'
+        resetDivider.style.margin = '8px -12px 0'
+        picker.appendChild(resetDivider)
+
+        const resetBtn = document.createElement('div')
+        resetBtn.className = 'sf-options-reset-btn'
+        resetBtn.textContent = 'Reset to Default'
+        resetBtn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.app.activeColor = this.app.getCategoryDefaultColor?.(this.app.activeStampType) ?? '#1a1a1a'
+            this.app.activeToolPreset = 1.0
+            this.app.toolManager?.updateActiveTools?.()
+            this._dismissToolOptionsPicker()
+        })
+        picker.appendChild(resetBtn)
 
         document.body.appendChild(picker)
 

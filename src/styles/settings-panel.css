@@ -248,6 +248,20 @@
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
+/* Category default color inputs */
+.sf-cat-color-input {
+    width: 32px;
+    height: 24px;
+    border: none;
+    border-radius: 6px;
+    padding: 0 2px;
+    cursor: pointer;
+    background: transparent;
+    flex-shrink: 0;
+}
+.sf-cat-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+.sf-cat-color-input::-webkit-color-swatch { border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); }
+
 .build-info-item {
     font-size: 11px;
     opacity: 0.5;

@@ -80,7 +80,7 @@ class ScoreFlow {
     this.activeStampType = 'view'
     this.activeCategories = ['Pens']
     this.isMultiSelectMode = false
-    this.activeColor = '#ff4757'
+    this.activeColor = '#1d4ed8'
     this.defaultFontSize = 15
     this.toolbarWidth = 600
     this.lastUsedToolPerCategory = {}
@@ -98,6 +98,9 @@ class ScoreFlow {
     this.activeToolPreset = 1.0 // S/M/L preset for the active tool
     this.activeLineStyle = 'solid' // 'solid' | 'dashed' | 'dotted'
     this.presetScales = JSON.parse(localStorage.getItem('scoreflow_preset_scales')) || { S: 0.7, M: 1.0, L: 1.6 }
+    this.categoryDefaultColors = JSON.parse(localStorage.getItem('sf-category-default-colors')) || {
+        draw: '#1d4ed8', shapes: '#7c3aed', fingering: '#be123c', articulation: '#15803d', text: '#374151',
+    }
     
     // Undo/Redo History
     this.history = []
@@ -441,6 +444,17 @@ this.playbackManager.init()
         window.location.href = window.location.origin + window.location.pathname + '?reset=' + Date.now()
       }, 1000)
     }
+  }
+
+  getCategoryDefaultColor(toolId) {
+    const SHAPE_TOOLS = new Set(['rect-shape', 'circle-shape'])
+    if (SHAPE_TOOLS.has(toolId)) return this.categoryDefaultColors.shapes || null
+    for (const toolset of (this.toolsets || [])) {
+        if (toolset.tools?.some(t => t.id === toolId)) {
+            return this.categoryDefaultColors[toolset.type] || null
+        }
+    }
+    return null
   }
 
   updateJumpOffset(val) {

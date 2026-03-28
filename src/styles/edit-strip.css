@@ -1261,3 +1261,17 @@
 .sf-options-size-item.active .sf-options-size-label {
     color: #a5b4fc;
 }
+
+.sf-options-reset-btn {
+    text-align: center;
+    padding: 8px 0 2px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    transition: color 0.15s;
+    user-select: none;
+}
+
+.sf-options-reset-btn:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
