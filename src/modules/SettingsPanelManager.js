@@ -315,7 +315,7 @@ export class SettingsPanelManager {
         refreshSysStatus()
         const syncSysChk = document.getElementById('settings-sync-system-stamps')
         if (syncSysChk) {
-            syncSysChk.checked = localStorage.getItem('scoreflow_sync_system_stamps') !== 'false'
+            syncSysChk.checked = localStorage.getItem('scoreflow_sync_system_stamps') === 'true'
             syncSysChk.addEventListener('change', e => {
                 localStorage.setItem('scoreflow_sync_system_stamps', e.target.checked)
             })

@@ -232,8 +232,8 @@ export class SupabaseManager {
             return this.deleteAnnotation(stamp.id)
         }
 
-        // Skip system stamps if cloud sync is disabled for them
-        if (stamp.type === 'system' && localStorage.getItem('scoreflow_sync_system_stamps') === 'false') {
+        // Skip system stamps unless sync is explicitly enabled
+        if (stamp.type === 'system' && localStorage.getItem('scoreflow_sync_system_stamps') !== 'true') {
             return
         }
 
@@ -356,7 +356,7 @@ export class SupabaseManager {
         const cloudStamps = (data || []).map(r => r.data).filter(s => !s?.deleted)
         const cloudIds = new Set(cloudStamps.map(s => s.id))
 
-        const syncSystemStamps = localStorage.getItem('scoreflow_sync_system_stamps') !== 'false'
+        const syncSystemStamps = localStorage.getItem('scoreflow_sync_system_stamps') === 'true'
 
         // 3. Build a local map for quick lookup
         const localMap = new Map(localActive.map(s => [s.id, s]))
