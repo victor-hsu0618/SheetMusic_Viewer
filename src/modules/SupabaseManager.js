@@ -73,9 +73,11 @@ export class SupabaseManager {
                     }
                 })
 
+                // Background-sync all annotations once at login — no per-score pull needed
+                this.backgroundSyncAllAnnotations()
+
                 if (this.app.pdfFingerprint) {
                     this.subscribeToAnnotations(this.app.pdfFingerprint)
-                    this.pullAnnotations(this.app.pdfFingerprint)
                 }
             } else if (event === 'SIGNED_OUT') {
                 this.unsubscribeAnnotations()
@@ -373,6 +375,82 @@ export class SupabaseManager {
         db.set(`stamps_${fingerprint}`, this.app.stamps)
 
         return this.app.stamps
+    }
+
+    /**
+     * Background sync: fetch only annotations updated since last sync,
+     * then update IndexedDB for every affected fingerprint.
+     * Called once on app startup / login — opening a score reads only IndexedDB.
+     */
+    async backgroundSyncAllAnnotations() {
+        if (!this.client || !this.user) return
+
+        const syncKey = `scoreflow_annot_sync_${this.user.id}`
+        const lastSync = localStorage.getItem(syncKey)  // ISO string or null
+
+        console.log(`[Supabase] Background sync: fetching annotations updated since ${lastSync ?? 'beginning'}`)
+
+        const syncStartedAt = new Date().toISOString()
+
+        let query = this.client
+            .from('annotations')
+            .select('fingerprint, data, updated_at')
+            .eq('user_id', this.user.id)
+
+        if (lastSync) {
+            query = query.gt('updated_at', lastSync)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+            console.warn('[Supabase] Background sync failed:', error)
+            return
+        }
+
+        if (!data || data.length === 0) {
+            console.log('[Supabase] Background sync: nothing new since last sync.')
+            localStorage.setItem(syncKey, syncStartedAt)
+            return
+        }
+
+        // Group changed records by fingerprint
+        const byFp = {}
+        for (const record of data) {
+            if (!byFp[record.fingerprint]) byFp[record.fingerprint] = []
+            byFp[record.fingerprint].push(record.data)
+        }
+
+        // Merge into IndexedDB for each fingerprint
+        for (const [fp, cloudStamps] of Object.entries(byFp)) {
+            const localStamps = (await db.get(`stamps_${fp}`)) || []
+            const merged = [...localStamps]
+            let changed = false
+
+            for (const cloudS of cloudStamps) {
+                const idx = merged.findIndex(s => s.id === cloudS.id)
+                if (idx === -1) {
+                    merged.push(cloudS)
+                    changed = true
+                } else if ((cloudS.updatedAt || 0) > (merged[idx].updatedAt || 0)) {
+                    merged[idx] = cloudS
+                    changed = true
+                }
+            }
+
+            if (changed) {
+                await db.set(`stamps_${fp}`, merged)
+                if (fp === this.app.pdfFingerprint) {
+                    this.app.stamps = merged.filter(s => !s.deleted)
+                    this.app.redrawAllAnnotationLayers?.()
+                    console.log(`[Supabase] Background sync updated active score (${fp.slice(0, 8)})`)
+                }
+            }
+        }
+
+        // Save sync timestamp only after successful update
+        localStorage.setItem(syncKey, syncStartedAt)
+        console.log(`[Supabase] Background sync: ${data.length} record(s) across ${Object.keys(byFp).length} score(s) updated.`)
     }
 
     /**

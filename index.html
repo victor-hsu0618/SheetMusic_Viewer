@@ -279,30 +279,49 @@
       <!-- Tab: Current Score Detail -->
       <div id="pane-current-score" class="library-grid hidden">
         <div class="score-detail-container">
-          <div class="score-detail-toolbar">
-            <button id="btn-detail-add-setlist" class="btn btn-outline-sm sd-toolbar-btn">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Add to Setlist
-            </button>
-            <button id="btn-save-score-detail" class="btn btn-primary btn-sm sd-toolbar-btn">Save Changes</button>
+
+          <!-- Hero Header: editable title + composer + actions -->
+          <div class="sd-hero-header">
+            <div class="sd-hero-fields">
+              <input type="text" id="score-name-input" class="sd-hero-title" placeholder="Score Title" />
+              <input type="text" id="score-composer-input" class="sd-hero-composer" placeholder="Composer" />
+            </div>
+            <div class="sd-hero-actions">
+              <button id="btn-detail-add-setlist" class="btn btn-outline-sm sd-toolbar-btn" title="Add to Setlist">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                Setlist
+              </button>
+              <button id="btn-save-score-detail" class="btn btn-primary btn-sm">Save</button>
+            </div>
           </div>
 
           <div class="detail-main-content">
             <!-- Left Side: Tabs -->
             <div class="score-detail-tabs-side">
-              <button class="detail-tab-btn active" data-tab="general">General</button>
-              <button class="detail-tab-btn" data-tab="styles">Styles</button>
-              <button class="detail-tab-btn" data-tab="media">Media</button>
-              <button class="detail-tab-btn" data-tab="system">System</button>
+              <button class="detail-tab-btn active" data-tab="general">
+                <span class="dtab-icon">📄</span>
+                <span class="dtab-label">Info</span>
+              </button>
+              <button class="detail-tab-btn" data-tab="styles">
+                <span class="dtab-icon">🎨</span>
+                <span class="dtab-label">Style</span>
+              </button>
+              <button class="detail-tab-btn" data-tab="media">
+                <span class="dtab-icon">🎬</span>
+                <span class="dtab-label">Media</span>
+              </button>
+              <button class="detail-tab-btn" data-tab="system">
+                <span class="dtab-icon">⚙️</span>
+                <span class="dtab-label">Sys</span>
+              </button>
             </div>
 
             <!-- Right Side: Content Area -->
-            <div class="detail-content-area settings-scroll-area">
+            <div class="detail-content-area">
 
               <!-- Tab: General -->
               <div class="detail-tab-pane active" id="pane-general">
-                <div class="sd-section">
-                  <div class="tab-section-label">Active Musician</div>
+                <div class="sd-card">
                   <div class="profile-card-minimal">
                     <div class="prof-avatar" id="sidebar-user-avatar">?</div>
                     <div class="prof-text">
@@ -311,29 +330,29 @@
                     </div>
                   </div>
                 </div>
-
-                <div class="sd-section">
-                  <div class="tab-section-label">Score Information</div>
-                  <div class="sd-field">
-                    <label class="sd-label" for="score-name-input">Title</label>
-                    <input type="text" id="score-name-input" class="search-input-mini w-full" placeholder="e.g. Cello Suite No.1" />
-                    <div class="sd-fingerprint" title="SHA-256 Identification Hash">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                      <span id="score-fingerprint-display">Unknown</span>
-                    </div>
+                <div class="sd-card">
+                  <div class="sd-info-row">
+                    <span class="sd-label">Last Reviewed</span>
+                    <span id="score-last-reviewed-display" class="sd-info-value">—</span>
                   </div>
-                  <div class="sd-field">
-                    <label class="sd-label" for="score-composer-input">Composer</label>
-                    <input type="text" id="score-composer-input" class="search-input-mini w-full" placeholder="e.g. J.S. Bach" />
+                  <div class="sd-info-row" style="margin-top:8px;">
+                    <span class="sd-label">Storage</span>
+                    <span id="score-storage-status-display" class="sd-info-value">—</span>
+                  </div>
+                </div>
+                <div class="sd-card sd-fingerprint-card">
+                  <div class="sd-fingerprint" title="SHA-256 Identification Hash">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span id="score-fingerprint-display">Unknown</span>
                   </div>
                 </div>
               </div>
 
               <!-- Tab: Styles -->
               <div class="detail-tab-pane" id="pane-styles">
-                <div class="sd-section">
-                  <div class="tab-section-label sd-label-row">
-                    <span>Interpretation Styles</span>
+                <div class="sd-card">
+                  <div class="sd-label-row" style="margin-bottom:10px;">
+                    <span class="sd-label">Overview</span>
                     <span id="stats-last-edit" class="sd-meta-badge" title="Last Synchronized">Never</span>
                   </div>
                   <div class="sd-stats-row">
@@ -342,38 +361,35 @@
                       <span id="stats-total-count" class="sd-stat-value">0</span>
                     </div>
                     <div class="sd-stat">
-                      <span class="sd-stat-label">System</span>
+                      <span class="sd-stat-label">Systems</span>
                       <span id="stats-system-count" class="sd-stat-value">0</span>
                     </div>
                   </div>
-                  <div id="interpretation-source-container"></div>
                 </div>
+                <div id="interpretation-source-container"></div>
               </div>
 
               <!-- Tab: Media -->
               <div class="detail-tab-pane" id="pane-media">
-                <div class="sd-section">
-                  <div class="tab-section-label">Add Media</div>
+                <div class="sd-card">
+                  <div class="sd-label" style="margin-bottom:8px;">Add YouTube</div>
                   <div class="sd-media-form">
-                    <input type="text" id="sidebar-media-label" class="search-input-mini w-full" placeholder="Label (e.g. Rostropovich 1995)" />
+                    <input type="text" id="sidebar-media-label" class="search-input-mini" placeholder="Label (e.g. Rostropovich 1995)" />
                     <div class="sd-media-url-row">
                       <input type="text" id="sidebar-media-url" class="search-input-mini" placeholder="YouTube URL" />
                       <button id="sidebar-add-youtube" class="btn btn-outline-sm">Add</button>
                     </div>
-                    <button id="sidebar-add-local" class="btn btn-outline-sm">Upload Local Audio</button>
-                    <input type="file" id="sidebar-local-input" class="hidden" accept="audio/*" />
                   </div>
                 </div>
-                <div class="sd-section">
-                  <div class="tab-section-label">Linked Media</div>
+                <div class="sd-card">
+                  <div class="sd-label" style="margin-bottom:8px;">Linked Media</div>
                   <div id="sidebar-media-list" class="sd-media-list"></div>
                 </div>
               </div>
 
               <!-- Tab: System -->
               <div class="detail-tab-pane" id="pane-system">
-                <div class="sd-section">
-                  <div class="tab-section-label">Storage</div>
+                <div class="sd-card">
                   <div class="sd-toggle-row">
                     <span class="sd-label">Keep Offline</span>
                     <label class="switch">
@@ -384,36 +400,36 @@
                   <p class="sd-hint">Pin this score to always keep a local copy.</p>
                 </div>
 
-                <div class="sd-section">
-                  <div class="tab-section-label">Annotation Exchange</div>
+                <div class="sd-card">
+                  <div class="sd-label" style="margin-bottom:8px;">Annotation Exchange</div>
                   <div class="sd-btn-row">
                     <button id="export-score-btn" class="btn btn-outline-sm">Export Data</button>
                     <button id="import-score-btn" class="btn btn-outline-sm">Import Data</button>
                     <input type="file" id="import-score-file" class="hidden" accept=".json" />
                   </div>
                   <div class="sd-btn-row">
-                    <button id="btn-export-pdf" class="btn btn-primary">Export PDF</button>
+                    <button id="btn-export-pdf" class="btn btn-primary btn-sm">Export PDF</button>
                     <button id="btn-gist-share" class="btn btn-outline-sm">Share Link</button>
                   </div>
                 </div>
 
-                <div class="sd-section">
-                  <div class="tab-section-label">Cloud Sync</div>
+                <div class="sd-card">
+                  <div class="sd-label" style="margin-bottom:8px;">Cloud Sync</div>
                   <div class="sd-btn-col">
                     <button id="btn-force-push-supabase" class="btn btn-outline-sm">Sync to Cloud</button>
-                    <button id="btn-force-pull-supabase" class="btn btn-outline-sm">Force Pull from Cloud</button>
+                    <button id="btn-force-pull-supabase" class="btn btn-outline-sm">Force Pull</button>
                   </div>
                 </div>
 
-                <div class="sd-section">
-                  <div class="tab-section-label sd-danger-label">Danger Zone</div>
-                  <button id="btn-reset-score-all" class="btn btn-outline-danger">Reset Score Metadata</button>
+                <div class="sd-card sd-danger-card">
+                  <div class="sd-label sd-danger-label" style="margin-bottom:8px;">Danger Zone</div>
+                  <button id="btn-reset-score-all" class="btn btn-outline-danger btn-sm">Reset Score Metadata</button>
                 </div>
               </div>
 
-            </div>
-          </div>
-        </div>
+            </div><!-- /detail-content-area -->
+          </div><!-- /detail-main-content -->
+        </div><!-- /score-detail-container -->
       </div>
 
       <!-- Setlist Detail View (Hidden by default) -->

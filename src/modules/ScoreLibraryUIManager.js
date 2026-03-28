@@ -35,8 +35,6 @@ export class ScoreLibraryUIManager {
         header.innerHTML = `
             <div class="header-item col-select">#</div>
             <div class="header-item col-title">Piece Title</div>
-            <div class="header-item col-time">Last Viewed</div>
-            <div class="header-item col-status">Status</div>
             <div class="header-item col-action"></div>
         `;
         this.manager.grid.appendChild(header);
@@ -115,12 +113,6 @@ export class ScoreLibraryUIManager {
                 ${cellSelect}
                 <div class="col-title score-title-cell">
                     <span class="score-title" title="${displayTitle}">${displayTitle}</span>
-                </div>
-                <div class="col-time score-time-cell">
-                    <span class="score-time-text">${this.formatRelativeTime(score.lastAccessed)}</span>
-                </div>
-                <div class="col-status score-status-cell">
-                    ${storageBadge}
                 </div>
                 <div class="col-action score-action-cell">
                     <div class="score-info-btn" title="More Actions">

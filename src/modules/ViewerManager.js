@@ -29,10 +29,11 @@ export class ViewerManager {
         // Initialize rendering queue
         this._renderQueue = []
         this._activeRenderCount = 0
-        this._maxActiveRenders = 2 // Limit simultaneous renders to prevent UI lag
+        this._maxActiveRenders = 3 // Allow 3 concurrent renders for smoother page-ahead loading
 
         // Initialize IntersectionObserver for Lazy Rendering and Virtualization (Memory Cleanup)
-        // More conservative rootMargin (600px) to reduce number of active canvases
+        // 1200px rootMargin ensures pages start rendering ~1 full page before becoming visible,
+        // eliminating white-flash on scroll and jump navigation.
         this.observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 const pageNum = parseInt(entry.target.dataset.page)
@@ -42,16 +43,16 @@ export class ViewerManager {
                     }
                 } else {
                     // OFF-SCREEN VIRTUALIZATION:
+                    // Only unrender pages well outside the rootMargin to avoid thrashing.
                     const rect = entry.boundingClientRect;
                     const vh = window.innerHeight;
-                    // Unrender if farther than 1200px (approx 1.5 screen heights)
-                    if (entry.target.dataset.rendered === 'true' && (rect.bottom < -1200 || rect.top > vh + 1200)) {
+                    if (entry.target.dataset.rendered === 'true' && (rect.bottom < -2800 || rect.top > vh + 2800)) {
                         this.unrenderPage(pageNum, entry.target);
                     }
                 }
             })
         }, {
-            rootMargin: '600px 0px', 
+            rootMargin: '1200px 0px',
             threshold: 0.01
         })
 
@@ -304,9 +305,8 @@ export class ViewerManager {
                 } catch (err) { console.error('[ViewerManager] BG Sync Error:', err); }
             })();
             
-            // Supabase Realtime
+            // Supabase Realtime subscription for live changes during this session
             this.app.supabaseManager.subscribeToAnnotations(newFingerprint);
-            this.app.supabaseManager.pullAnnotations(newFingerprint);
         }
 
         // --- SAFE CACHE: Persist buffer to IndexedDB ---
@@ -603,9 +603,15 @@ export class ViewerManager {
         if (!this.pdf) return
         const wrapper = document.querySelector(`.page-container[data-page="${pageNum}"]`)
         if (wrapper && wrapper.dataset.rendered === 'false') {
-            console.log(`[ViewerManager] High priority render for page ${pageNum}`)
-            // Bypass queue for high priority jumps
+            // Bypass queue for high priority — render target page immediately
             await this.renderPage(pageNum, wrapper)
+        }
+        // Pre-render the next 2 pages so they're ready before the user scrolls to them
+        for (let i = 1; i <= 2; i++) {
+            const nextWrapper = document.querySelector(`.page-container[data-page="${pageNum + i}"]`)
+            if (nextWrapper && nextWrapper.dataset.rendered === 'false') {
+                this.enqueueRender(pageNum + i, nextWrapper)
+            }
         }
     }
 

@@ -16,6 +16,8 @@ export class ScoreDetailUIManager {
         this.scoreComposerInput = document.getElementById('score-composer-input')
 
         this.scoreFingerprintDisplay = document.getElementById('score-fingerprint-display')
+        this.scoreLastReviewedDisplay = document.getElementById('score-last-reviewed-display')
+        this.scoreStorageStatusDisplay = document.getElementById('score-storage-status-display')
         this.btnSave = document.getElementById('btn-save-score-detail')
 
 
@@ -23,8 +25,7 @@ export class ScoreDetailUIManager {
         this.mediaUrlInput = document.getElementById('sidebar-media-url')
         this.mediaListContainer = document.getElementById('sidebar-media-list')
         this.btnAddYoutube = document.getElementById('sidebar-add-youtube')
-        this.btnAddLocal = document.getElementById('sidebar-add-local')
-        this.localFileInput = document.getElementById('sidebar-local-input')
+
 
         this.statsTotalCount = document.getElementById('stats-total-count')
         this.statsSystemCount = document.getElementById('stats-system-count')
@@ -44,8 +45,7 @@ export class ScoreDetailUIManager {
         })
 
         this.btnAddYoutube?.addEventListener('click', () => this.manager.handleAddYoutube())
-        this.btnAddLocal?.addEventListener('click', () => this.localFileInput.click())
-        this.localFileInput?.addEventListener('change', (e) => this.manager.handleLocalFile(e))
+
         this.btnSave?.addEventListener('click', () => this.manager.handleSave())
 
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
@@ -137,6 +137,17 @@ export class ScoreDetailUIManager {
             const shortFinger = fingerprint ? `${fingerprint.slice(0, 8)}...${fingerprint.slice(-8)}` : 'Unknown'
             this.scoreFingerprintDisplay.textContent = shortFinger
             this.scoreFingerprintDisplay.title = fingerprint || ''
+        }
+
+        if (this.scoreLastReviewedDisplay) {
+            const fmt = this.app.scoreManager?.ui?.formatRelativeTime
+            this.scoreLastReviewedDisplay.textContent = fmt ? fmt(regScore?.lastAccessed) : '—'
+        }
+
+        if (this.scoreStorageStatusDisplay) {
+            const mode = regScore?.storageMode || 'cached'
+            const labels = { pinned: '📌 Pinned', cached: '📍 Cached', cloud: '☁️ Cloud only' }
+            this.scoreStorageStatusDisplay.textContent = labels[mode] ?? '📍 Cached'
         }
 
 

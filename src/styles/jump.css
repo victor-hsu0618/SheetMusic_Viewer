@@ -21,19 +21,9 @@
 }
 
 .score-detail-container {
-    padding: 0 12px;
     height: 100%;
     display: flex;
     flex-direction: column;
-}
-
-.score-detail-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 12px 12px 0;
-    margin-bottom: 8px;
 }
 
 .jump-sub-panel.calculator-style {
@@ -526,27 +516,41 @@
 }
 
 .score-detail-tabs-side {
-    width: 100px;
+    width: 76px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     border-right: 1px solid var(--border);
-    padding: 10px 12px 10px 0;
+    padding: 12px 8px 12px 8px;
+    flex-shrink: 0;
 }
 
 .detail-tab-btn {
-    padding: 12px 8px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 10px 6px;
     color: var(--text-secondary);
     background: transparent;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: center;
+}
+
+.dtab-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.dtab-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1;
 }
 
 .detail-tab-btn.active {
@@ -560,7 +564,7 @@
 
 .detail-content-area {
     flex: 1;
-    padding: 10px 12px 10px 16px; /* Adjusted padding to match container padding */
+    padding: 12px 14px;
     overflow-y: auto;
     box-sizing: border-box;
 }

@@ -3,10 +3,10 @@
     position: fixed;
     top: 0;
     left: 0;
-    right: 54px;
+    right: auto;
     bottom: calc(72px + env(safe-area-inset-bottom));
-    width: auto;
-    max-width: none;
+    width: calc(100% - 54px);
+    max-width: 640px;
     height: auto;
     max-height: none;
     overflow-y: auto;
@@ -293,7 +293,7 @@ body .library-overlay.active {
 
 .library-grid-header {
     display: grid;
-    grid-template-columns: 44px 1fr 100px 50px 44px;
+    grid-template-columns: 44px 1fr 44px;
     align-items: center;
     padding: 0 12px;
     height: 36px;
@@ -323,7 +323,7 @@ body .library-overlay.active {
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     cursor: pointer;
     display: grid;
-    grid-template-columns: 44px 1fr 100px 50px 44px;
+    grid-template-columns: 44px 1fr 44px;
     align-items: center;
     height: 40px;
     min-height: 40px;
@@ -370,11 +370,6 @@ body .library-overlay.active {
     text-align: left;
 }
 
-.score-card:hover .score-index-badge {
-    background: var(--primary);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.3);
-}
 
 /* Mini Selection Indicator for Grid */
 .selection-indicator-cell {
@@ -475,10 +470,7 @@ body .library-overlay.active {
 /* Hide some columns on mobile */
 @media (max-width: 600px) {
     .library-grid-header, .score-card {
-        grid-template-columns: 40px 32px 1fr 44px;
-    }
-    .col-composer, .col-time {
-        display: none !important;
+        grid-template-columns: 44px 1fr 44px;
     }
 }
 
@@ -761,16 +753,115 @@ body .library-overlay.active {
 
 
 /* ── Score Detail Panel (Current tab) ── */
-.score-detail-container {
+
+/* Hero header — editable title/composer + actions */
+.sd-hero-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: rgba(var(--primary-rgb), 0.03);
+}
+
+.sd-hero-fields {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    gap: 1px;
+}
+
+.sd-hero-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    outline: none;
+    padding: 2px 0;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.sd-hero-title::placeholder {
+    color: var(--text-muted);
+    opacity: 0.45;
+    font-weight: 400;
+}
+
+.sd-hero-title:focus {
+    border-bottom-color: var(--primary);
+}
+
+.sd-hero-composer {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    outline: none;
+    padding: 1px 0;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.sd-hero-composer::placeholder {
+    opacity: 0.4;
+}
+
+.sd-hero-composer:focus {
+    border-bottom-color: var(--primary);
+}
+
+.sd-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 .sd-toolbar-btn {
     display: inline-flex;
     align-items: center;
     gap: 5px;
+}
+
+/* Cards — soft container for content groups */
+.sd-card {
+    background: rgba(0, 0, 0, 0.025);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.sd-card:last-child {
+    margin-bottom: 0;
+}
+
+.sd-fingerprint-card {
+    padding: 8px 12px;
+}
+
+.sd-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.sd-info-value {
+    font-size: 0.78rem;
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+.sd-danger-card {
+    border-color: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.03);
 }
 
 /* Sections */
@@ -803,7 +894,6 @@ body .library-overlay.active {
     border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
-    margin-bottom: 12px;
 }
 
 .sd-stat {

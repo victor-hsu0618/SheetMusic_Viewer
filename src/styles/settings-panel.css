@@ -4,10 +4,10 @@
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    right: 54px !important;
+    right: auto !important;
     bottom: calc(72px + env(safe-area-inset-bottom)) !important;
-    width: auto !important;
-    max-width: none !important;
+    width: calc(100% - 54px) !important;
+    max-width: 640px !important;
     height: auto !important;
     max-height: none !important;
     display: flex;

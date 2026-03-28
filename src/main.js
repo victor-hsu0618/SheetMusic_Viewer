@@ -487,21 +487,29 @@ this.playbackManager.init()
     const action = this.history.pop()
     this.redoStack.push(action)
     
-    if (action.type === 'add') {
-      const idx = this.stamps.findIndex(s => s.id === action.obj.id)
-      if (idx !== -1) {
-        const removed = this.stamps.splice(idx, 1)[0]
-        if (this.supabaseManager) this.supabaseManager.pushAnnotation({...removed, deleted: true, updatedAt: Date.now()}, this.pdfFingerprint)
+    const applyUndo = (op) => {
+      if (op.type === 'add') {
+        const idx = this.stamps.findIndex(s => s.id === op.obj.id)
+        if (idx !== -1) {
+          const removed = this.stamps.splice(idx, 1)[0]
+          if (this.supabaseManager) this.supabaseManager.pushAnnotation({...removed, deleted: true, updatedAt: Date.now()}, this.pdfFingerprint)
+        }
+      } else if (op.type === 'delete') {
+        this.stamps.push(op.obj)
+        if (this.supabaseManager) this.supabaseManager.pushAnnotation(op.obj, this.pdfFingerprint)
+      } else if (op.type === 'move') {
+        const idx = this.stamps.findIndex(s => s.id === op.oldObj.id)
+        if (idx !== -1) {
+          this.stamps[idx] = JSON.parse(JSON.stringify(op.oldObj))
+          if (this.supabaseManager) this.supabaseManager.pushAnnotation(this.stamps[idx], this.pdfFingerprint)
+        }
       }
-    } else if (action.type === 'delete') {
-      this.stamps.push(action.obj)
-      if (this.supabaseManager) this.supabaseManager.pushAnnotation(action.obj, this.pdfFingerprint)
-    } else if (action.type === 'move') {
-      const idx = this.stamps.findIndex(s => s.id === action.oldObj.id)
-      if (idx !== -1) {
-        this.stamps[idx] = JSON.parse(JSON.stringify(action.oldObj))
-        if (this.supabaseManager) this.supabaseManager.pushAnnotation(this.stamps[idx], this.pdfFingerprint)
-      }
+    }
+    if (action.type === 'batch') {
+      // Undo in reverse order
+      for (let i = action.ops.length - 1; i >= 0; i--) applyUndo(action.ops[i])
+    } else {
+      applyUndo(action)
     }
 
     await this.saveToStorage(true)
@@ -514,21 +522,28 @@ this.playbackManager.init()
     const action = this.redoStack.pop()
     this.history.push(action)
 
-    if (action.type === 'add') {
-      this.stamps.push(action.obj)
-      if (this.supabaseManager) this.supabaseManager.pushAnnotation(action.obj, this.pdfFingerprint)
-    } else if (action.type === 'delete') {
-      const idx = this.stamps.findIndex(s => s.id === action.obj.id)
-      if (idx !== -1) {
-        const removed = this.stamps.splice(idx, 1)[0]
-        if (this.supabaseManager) this.supabaseManager.pushAnnotation({...removed, deleted: true, updatedAt: Date.now()}, this.pdfFingerprint)
+    const applyRedo = (op) => {
+      if (op.type === 'add') {
+        this.stamps.push(op.obj)
+        if (this.supabaseManager) this.supabaseManager.pushAnnotation(op.obj, this.pdfFingerprint)
+      } else if (op.type === 'delete') {
+        const idx = this.stamps.findIndex(s => s.id === op.obj.id)
+        if (idx !== -1) {
+          const removed = this.stamps.splice(idx, 1)[0]
+          if (this.supabaseManager) this.supabaseManager.pushAnnotation({...removed, deleted: true, updatedAt: Date.now()}, this.pdfFingerprint)
+        }
+      } else if (op.type === 'move') {
+        const idx = this.stamps.findIndex(s => s.id === op.newObj.id)
+        if (idx !== -1) {
+          this.stamps[idx] = JSON.parse(JSON.stringify(op.newObj))
+          if (this.supabaseManager) this.supabaseManager.pushAnnotation(this.stamps[idx], this.pdfFingerprint)
+        }
       }
-    } else if (action.type === 'move') {
-      const idx = this.stamps.findIndex(s => s.id === action.newObj.id)
-      if (idx !== -1) {
-        this.stamps[idx] = JSON.parse(JSON.stringify(action.newObj))
-        if (this.supabaseManager) this.supabaseManager.pushAnnotation(this.stamps[idx], this.pdfFingerprint)
-      }
+    }
+    if (action.type === 'batch') {
+      for (const op of action.ops) applyRedo(op)
+    } else {
+      applyRedo(action)
     }
 
     await this.saveToStorage(true)
