@@ -98,8 +98,9 @@ class ScoreFlow {
     this.activeToolPreset = 1.0 // S/M/L preset for the active tool
     this.activeLineStyle = 'solid' // 'solid' | 'dashed' | 'dotted'
     this.presetScales = JSON.parse(localStorage.getItem('scoreflow_preset_scales')) || { S: 0.7, M: 1.0, L: 1.6 }
-    this.categoryDefaultColors = JSON.parse(localStorage.getItem('sf-category-default-colors')) || {
-        draw: '#1d4ed8', shapes: '#7c3aed', fingering: '#be123c', articulation: '#15803d', text: '#374151',
+    this.categoryDefaultColors = {
+        draw: '#1d4ed8', shapes: '#7c3aed', fingering: '#be123c', articulation: '#15803d', text: '#374151', others: '#94a3b8',
+        ...JSON.parse(localStorage.getItem('sf-category-default-colors') || '{}'),
     }
     
     // Undo/Redo History

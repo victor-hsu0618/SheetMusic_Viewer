@@ -207,6 +207,7 @@ export class SettingsPanelManager {
             { id: 'cat-color-fingering',   key: 'fingering' },
             { id: 'cat-color-articulation',key: 'articulation' },
             { id: 'cat-color-text',        key: 'text' },
+            { id: 'cat-color-others',      key: 'others' },
         ]
         CAT_COLOR_KEYS.forEach(({ id, key }) => {
             const input = document.getElementById(id)

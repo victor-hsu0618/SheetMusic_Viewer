@@ -39,11 +39,18 @@ const SHAPE_VARIANTS = [
 ]
 
 // Tools that carry a "natural" default color — clicking them syncs activeColor
-const TOOL_NATURAL_COLORS = Object.fromEntries(
-    [...PEN_VARIANTS, ...HL_VARIANTS]
-        .filter(t => t.naturalColor)
-        .map(t => [t.id, t.naturalColor])
-)
+const TOOL_NATURAL_COLORS = {
+    ...Object.fromEntries(
+        [...PEN_VARIANTS, ...HL_VARIANTS]
+            .filter(t => t.naturalColor)
+            .map(t => [t.id, t.naturalColor])
+    ),
+    'page-bookmark': '#ef4444',
+    'cloak-black':   '#1a1a1a',
+    'cloak-red':     '#be123c',
+    'cloak-blue':    '#1d4ed8',
+    'anchor':        '#1e3a8a',
+}
 
 // Tools that do NOT get the options popover (have special tap behavior or no meaningful options)
 const NO_OPTIONS_TYPES = new Set([
@@ -267,11 +274,14 @@ export class EditSubBarManager {
         } else if (item.id === this.app.activeStampType) {
             // Active tool: show the user's current chosen color
             displayColor = this.app.activeColor || '#e2e8f0'
+        } else if (TOOL_NATURAL_COLORS[item.id] !== undefined) {
+            // Inactive but has a fixed natural color (cloak, bookmark, anchor…)
+            displayColor = TOOL_NATURAL_COLORS[item.id]
         } else {
             // Inactive tools: show category default color
             const SHAPE_TOOLS = new Set(['rect-shape', 'circle-shape'])
             const catKey = SHAPE_TOOLS.has(item.id) ? 'shapes' : item._group?.type
-            displayColor = (catKey && this.app.categoryDefaultColors?.[catKey]) || (this.app.activeColor || '#e2e8f0')
+            displayColor = (catKey && this.app.categoryDefaultColors?.[catKey]) || '#94a3b8'
         }
         if (!icon) {
             return `<span class="sf-bar-cell-text" style="color:${displayColor}">${item.textIcon || item.label}</span>`
@@ -1092,7 +1102,11 @@ export class EditSubBarManager {
             this.app.activeColor = TOOL_NATURAL_COLORS[toolId]
         } else {
             const catColor = this.app.getCategoryDefaultColor?.(toolId)
-            if (catColor) this.app.activeColor = catColor
+            this.app.activeColor = catColor || '#94a3b8'
+        }
+        // Tools with no options popover can't reset size manually — force back to 1.0
+        if (NO_OPTIONS_TYPES.has(toolId) || toolId.startsWith('cloak-')) {
+            this.app.activeToolPreset = 1.0
         }
         this.app.toolManager?.updateActiveTools()
         // Update active state in-place for all bar types
@@ -1193,10 +1207,16 @@ export class EditSubBarManager {
                 e.stopPropagation()
                 this.app.activeColor = color
                 this.app.toolManager?.updateActiveTools?.()
-                // Refresh active state in-place
+                // Refresh active dot state
                 colorRow.querySelectorAll('.sf-options-color-dot').forEach(d => {
                     d.classList.toggle('active', d === dot)
                 })
+                // Update active cell icon color in stamp bar
+                const activeCell = this._bars?.['stamp']?.querySelector('.sf-bar-cell.active')
+                if (activeCell) {
+                    activeCell.querySelector('svg')?.style.setProperty('color', color)
+                    activeCell.querySelector('span')?.style.setProperty('color', color)
+                }
             })
             colorRow.appendChild(dot)
         })
@@ -1249,9 +1269,16 @@ export class EditSubBarManager {
         resetBtn.textContent = 'Reset to Default'
         resetBtn.addEventListener('click', (e) => {
             e.stopPropagation()
-            this.app.activeColor = this.app.getCategoryDefaultColor?.(this.app.activeStampType) ?? '#1a1a1a'
+            const defColor = this.app.getCategoryDefaultColor?.(this.app.activeStampType) ?? '#1a1a1a'
+            this.app.activeColor = defColor
             this.app.activeToolPreset = 1.0
             this.app.toolManager?.updateActiveTools?.()
+            // Update active cell icon color in stamp bar
+            const activeCell = this._bars?.['stamp']?.querySelector('.sf-bar-cell.active')
+            if (activeCell) {
+                activeCell.querySelector('svg')?.style.setProperty('color', defColor)
+                activeCell.querySelector('span')?.style.setProperty('color', defColor)
+            }
             this._dismissToolOptionsPicker()
         })
         picker.appendChild(resetBtn)
