@@ -47,7 +47,7 @@ const TOOL_NATURAL_COLORS = Object.fromEntries(
 
 // Tools that do NOT get the options popover (have special tap behavior or no meaningful options)
 const NO_OPTIONS_TYPES = new Set([
-    'view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle', 'stamp-palette', 'scroll-bar',
+    'view', 'select', 'eraser', 'recycle-bin', 'cycle', 'stamp-palette', 'scroll-bar',
     'anchor', 'music-anchor', 'page-bookmark',
     'sticky-note', 'measure', 'measure-free',
     'cover-brush', 'correction-pen',
@@ -261,17 +261,25 @@ export class EditSubBarManager {
     /** Render the icon HTML for a stamp bar cell */
     _cellIconHTML(item) {
         const icon = item.icon
-        const activeColor = (item.id === 'view' || item.id === 'select') ? 'currentColor' : (this.app.activeColor || '#e2e8f0')
+        let displayColor
+        if (item.id === 'view' || item.id === 'select') {
+            displayColor = 'currentColor'
+        } else if (item.id === this.app.activeStampType) {
+            // Active tool: show the user's current chosen color
+            displayColor = this.app.activeColor || '#e2e8f0'
+        } else {
+            // Inactive tools: show category default color
+            const SHAPE_TOOLS = new Set(['rect-shape', 'circle-shape'])
+            const catKey = SHAPE_TOOLS.has(item.id) ? 'shapes' : item._group?.type
+            displayColor = (catKey && this.app.categoryDefaultColors?.[catKey]) || (this.app.activeColor || '#e2e8f0')
+        }
         if (!icon) {
-            // No icon at all — fall back to textIcon or label
-            return `<span class="sf-bar-cell-text" style="color:${activeColor}">${item.textIcon || item.label}</span>`
+            return `<span class="sf-bar-cell-text" style="color:${displayColor}">${item.textIcon || item.label}</span>`
         }
         if (icon.trim().startsWith('<')) {
-            // SVG markup
-            return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:${activeColor}">${icon}</svg>`
+            return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:${displayColor}">${icon}</svg>`
         }
-        // Plain text (e.g. dynamics: ppp, pp, p, mf, f, ff, fff …)
-        return `<span class="sf-bar-cell-dynamic" style="color:${activeColor}">${icon}</span>`
+        return `<span class="sf-bar-cell-dynamic" style="color:${displayColor}">${icon}</span>`
     }
 
     _buildWideBar(bar, type) {
@@ -291,35 +299,7 @@ export class EditSubBarManager {
         navCol.className = 'sf-bar-nav'
 
         if (isStamp) {
-            // Stamp bar: color quick select (Red/Blue) + gear settings button
-            const colorBtn = (hex, label) => {
-                const btn = document.createElement('div')
-                btn.className = 'sf-others-color' + (this.app.activeColor === hex ? ' active' : '')
-                btn.style.background = hex
-                btn.style.width = '22px'
-                btn.style.height = '22px'
-                btn.title = label
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation()
-                    this.app.activeColor = hex
-                    this.app.toolManager?.updateActiveTools()
-                    this._populateBar(bar, 'stamp')
-                })
-                return btn
-            }
-            
-            const rBtn = colorBtn('#be123c', 'Red')
-            rBtn.style.marginBottom = '2px'
-            navCol.appendChild(rBtn)
-
-            const gBtn = colorBtn('#15803d', 'Green')
-            gBtn.style.marginBottom = '2px'
-            navCol.appendChild(gBtn)
-            
-            const bBtn = colorBtn('#1d4ed8', 'Blue')
-            bBtn.style.marginBottom = '6px' // Extra gap before the settings gear
-            navCol.appendChild(bBtn)
-
+            // Stamp bar: gear settings button
             const settingsBtn = document.createElement('div')
             settingsBtn.className = 'sf-nav-btn sf-nav-settings-btn' + (this._stampSettingsOpen ? ' active' : '')
             settingsBtn.title = 'Stamp Settings'
@@ -398,7 +378,6 @@ export class EditSubBarManager {
                         const canShowOptions = isActive
                             && !NO_OPTIONS_TYPES.has(item.id)
                             && !item.id.startsWith('cloak-')
-                            && !item.id.startsWith('custom-text-')
                         if (canShowOptions) {
                             e.stopPropagation()
                             this._toggleToolOptionsPicker(btn)

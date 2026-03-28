@@ -265,7 +265,8 @@
         .ref-grid { display:flex; flex-wrap:wrap; gap:4px; }
         .ref-card { display:flex; flex-direction:column; background:var(--sf-surface); border:1px solid var(--sf-border); border-radius:8px; padding:10px 12px; min-width:180px; }
         .ref-card-header { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
-        .ref-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+        .ref-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; cursor:pointer; transition:transform .15s, box-shadow .15s; }
+        .ref-dot:hover { transform:scale(1.25); box-shadow:0 0 0 3px rgba(0,0,0,0.12); }
         .ref-card-name { font-size:12px; font-weight:700; }
         .ref-card-subtitle { font-size:10px; color:var(--sf-muted); margin-left:auto; }
         .ref-rows { display:flex; flex-direction:column; gap:4px; }
@@ -281,6 +282,26 @@
         .ref-chip .rc-icon { width:64px; height:22px; display:flex; align-items:center; justify-content:center; border-bottom:1px solid var(--sf-border); margin-bottom:4px; }
         .ref-chip .rc-id { font-size:9px; font-family:'JetBrains Mono',monospace; color:var(--sf-primary); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:60px; user-select:all; cursor:text; }
         .ref-chip .rc-label { display:none; }
+        .rc-tag { font-size:8px; font-weight:700; border-radius:3px; padding:0 4px; line-height:14px; margin-top:3px; white-space:nowrap; }
+        .rc-tag.fixed-color { background:rgba(239,68,68,0.1); color:#dc2626; }
+        .rc-tag.no-options  { background:rgba(100,116,139,0.12); color:#64748b; }
+
+        /* ── Category color swatch picker ── */
+        #cat-color-picker {
+            position: fixed; z-index: 9999;
+            background: #fff; border: 1px solid var(--sf-border);
+            border-radius: 10px; padding: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+            display: flex; flex-wrap: wrap; gap: 6px; width: 152px;
+        }
+        .cat-swatch {
+            width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform .12s, border-color .12s;
+            flex-shrink: 0;
+        }
+        .cat-swatch:hover { transform: scale(1.25); }
+        .cat-swatch.active { border-color: #1e293b; }
 
         /* ── Bar reorder sections ── */
         .reorder-section { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:12px; padding:14px; margin-bottom:16px; }
@@ -1083,6 +1104,7 @@
         <div class="section-label" style="margin-top:28px">
             Symbol 對照表
             <span style="font-size:10px;color:var(--sf-muted);font-weight:400;margin-left:6px">複製 ID 填入上方 textarea</span>
+            <span style="font-size:10px;color:var(--sf-primary);font-weight:400;margin-left:10px">● 點擊類別圓點可更改該類別的預設顏色</span>
         </div>
         <div class="ref-grid" id="ref-grid"></div>
 
@@ -1340,7 +1362,6 @@ const TOOLSETS = [
         { id: 'text-senza-sord', label: 'Senza sord.', row:3, textIcon: 'S.srd.' },
     ]},
     { name: 'Others', type: 'others', color: '#94a3b8', tools: [
-        { id: 'copy',         label: 'Copy',     icon: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>' },
         { id: 'cloak-black',  label: '黑斗篷',   icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>' },
         { id: 'cloak-red',    label: '紅斗篷',   icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#dc2626" stroke-width="1.6" stroke-linejoin="round"/>' },
         { id: 'cloak-blue',   label: '藍斗篷',   icon: '<path d="M12 3a6 6 0 0 0-6 6v8l1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V9a6 6 0 0 0-6-6z" fill="none" stroke="#2563eb" stroke-width="1.6" stroke-linejoin="round"/>' },
@@ -1721,6 +1742,18 @@ function renderRowEditor() {
 }
 
 // ── Reference grid ─────────────────────────────────────────────────────────────
+const NATURAL_COLOR_IDS = new Set([
+    'red-pen','green-pen','blue-pen',
+    'highlighter','highlighter-red','highlighter-blue','highlighter-green',
+])
+const NO_OPTIONS_IDS = new Set([
+    'view','select','eraser','copy','recycle-bin','cycle','stamp-palette','scroll-bar',
+    'anchor','music-anchor','page-bookmark',
+    'sticky-note','measure','measure-free',
+    'cover-brush','correction-pen',
+    'text-library-add','text-library-edit',
+])
+
 function renderRefGrid() {
     const grid = document.getElementById('ref-grid')
     if (!grid) return
@@ -1738,6 +1771,14 @@ function renderRefGrid() {
         const chip = document.createElement('div')
         chip.className = 'ref-chip'
         chip.title = id
+
+        let tag = ''
+        if (NATURAL_COLOR_IDS.has(id)) {
+            tag = '<span class="rc-tag fixed-color">fixed color</span>'
+        } else if (NO_OPTIONS_IDS.has(id) || id.startsWith('cloak-')) {
+            tag = '<span class="rc-tag no-options">no options</span>'
+        }
+
         chip.innerHTML = `
             <div class="rc-icon">${icon
                 ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14">${icon}</svg>`
@@ -1745,6 +1786,7 @@ function renderRefGrid() {
             }</div>
             <span class="rc-label">${label}</span>
             <span class="rc-id">${id}</span>
+            ${tag}
         `
         return chip
     }
@@ -1757,15 +1799,28 @@ function renderRefGrid() {
 
         const card = document.createElement('div')
         card.className = 'ref-card'
+
+        // Determine the sf-category-default-colors key for this group
+        const catKey = group.name === 'Shapes' ? 'shapes' : group.type
+        const catColors = JSON.parse(localStorage.getItem('sf-category-default-colors') || '{}')
+        const dotColor = catColors[catKey] || group.color
+
         card.innerHTML = `
             <div class="ref-card-header">
-                <div class="ref-dot" style="background:${group.color}"></div>
+                <div class="ref-dot" style="background:${dotColor}" title="點擊更改 ${group.name} 預設顏色"></div>
                 <div class="ref-card-name">${group.name}</div>
                 <div class="ref-card-subtitle">${group.tools.length + extraCount} tools</div>
             </div>
             <div class="ref-tools" id="refrows-${group.name.replace(/[^a-z]/gi,'')}"></div>
         `
         grid.appendChild(card)
+
+        // Wire up dot → swatch picker popover
+        const dot = card.querySelector('.ref-dot')
+        dot.addEventListener('click', (e) => {
+            e.stopPropagation()
+            showCatColorPicker(dot, catKey)
+        })
 
         const toolsEl = card.querySelector('.ref-tools')
         const rowWrap = document.createElement('div')
@@ -2688,6 +2743,57 @@ async function applyTextPresets() {
 
     const el = document.getElementById('save-status')
     if (el) { el.textContent = '✓ Text 已同步'; el.style.color = ''; setTimeout(() => el.textContent = '', 2000) }
+}
+
+// ── Category color swatch picker ──────────────────────────────────────────────
+const CAT_PICKER_COLORS = [
+    '#1a1a1a','#374151','#64748b','#94a3b8',
+    '#ef4444','#be123c','#f97316','#eab308',
+    '#22c55e','#15803d','#3b82f6','#1d4ed8',
+    '#7c3aed','#a855f7','#ec4899','#ffffff',
+]
+
+function showCatColorPicker(dotEl, catKey) {
+    document.getElementById('cat-color-picker')?.remove()
+
+    const currentColors = JSON.parse(localStorage.getItem('sf-category-default-colors') || '{}')
+    const current = (currentColors[catKey] || '').toLowerCase()
+
+    const picker = document.createElement('div')
+    picker.id = 'cat-color-picker'
+
+    CAT_PICKER_COLORS.forEach(hex => {
+        const s = document.createElement('div')
+        s.className = 'cat-swatch' + (current === hex ? ' active' : '')
+        s.style.background = hex
+        if (hex === '#ffffff') s.style.border = '2px solid #e2e8f0'
+        s.title = hex
+        s.addEventListener('click', (e) => {
+            e.stopPropagation()
+            const colors = JSON.parse(localStorage.getItem('sf-category-default-colors') || '{}')
+            colors[catKey] = hex
+            localStorage.setItem('sf-category-default-colors', JSON.stringify(colors))
+            dotEl.style.background = hex
+            picker.remove()
+        })
+        picker.appendChild(s)
+    })
+
+    document.body.appendChild(picker)
+
+    // Position near dot
+    const r = dotEl.getBoundingClientRect()
+    const pw = 152, ph = 84
+    let left = r.left, top = r.bottom + 8
+    if (top + ph > window.innerHeight - 8) top = r.top - ph - 8
+    left = Math.max(8, Math.min(window.innerWidth - pw - 8, left))
+    picker.style.left = left + 'px'
+    picker.style.top  = top + 'px'
+
+    setTimeout(() => {
+        const dismiss = (e) => { if (!picker.contains(e.target)) { picker.remove(); document.removeEventListener('pointerdown', dismiss) } }
+        document.addEventListener('pointerdown', dismiss)
+    }, 0)
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
