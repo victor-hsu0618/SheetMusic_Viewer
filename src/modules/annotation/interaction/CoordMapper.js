@@ -37,10 +37,7 @@ export const CoordMapper = {
         const offsetX = Number(app.stampOffsetTouchX || 0);
         const offsetY = Number(app.stampOffsetTouchY || 0);
 
-        // 1. Standard Measure Lock: Always stay on the left margin, exact y (no offset)
-        if (toolType === 'measure') {
-            return { x: 0.05, y: Number(pos.y) };
-        }
+        // Measure follows cursor freely (x snapped to existing same-page measure at commit time)
 
         // No offset for any tool if using Mouse or Pen (high precision)
         if (pointerType !== 'touch') {

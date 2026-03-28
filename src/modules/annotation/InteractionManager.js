@@ -1042,6 +1042,11 @@ export class InteractionManager {
                         return;
                     } else if (['measure', 'measure-free'].includes(syncObj.type) && !isMovingExisting) {
                         const targetObj = syncObj;
+                        // Snap x to existing measure on the same page (if any)
+                        if (syncObj.type === 'measure') {
+                            const existing = this.app.stamps.find(s => s.type === 'measure' && s.page === syncObj.page && !s.deleted)
+                            if (existing) targetObj.x = existing.x
+                        }
                         this.app.annotationManager.promptMeasureNumber().then(async num => {
                             if (num) {
                                 targetObj.data = num; targetObj.updatedAt = Date.now();

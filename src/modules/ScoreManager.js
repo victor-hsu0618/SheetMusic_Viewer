@@ -124,12 +124,12 @@ export class ScoreManager {
         document.querySelectorAll('.library-tabs .segment-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tabId = e.target.dataset.tab;
-                this.switchToTab(tabId);
+                this.switchToTab(tabId, true);
             });
         });
     }
 
-    switchToTab(tabId) {
+    switchToTab(tabId, userInitiated = false) {
         document.querySelectorAll('.library-tabs .segment-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
 
         const libraryGrid = document.getElementById('library-grid');
@@ -153,7 +153,13 @@ export class ScoreManager {
         if (tabId === 'scores') this.ui.render();
         if (tabId === 'setlists') this.app.setlistManager?.render();
         if (tabId === 'current-score' && this.app.scoreDetailManager) {
-            this.app.scoreDetailManager.load(this.app.pdfFingerprint);
+            const mgr = this.app.scoreDetailManager;
+            // User tapping the tab always resets to the current score.
+            // Programmatic calls (from showPanel) skip this so the explicitly
+            // loaded fingerprint is not overwritten.
+            if (userInitiated || !mgr.currentFp || mgr.currentFp === this.app.pdfFingerprint) {
+                mgr.load(this.app.pdfFingerprint);
+            }
         }
     }
 
