@@ -150,7 +150,7 @@ export class ScoreManager {
         if (setlistActions) setlistActions.classList.toggle('hidden', tabId !== 'setlists');
         if (currentActions) currentActions.classList.toggle('hidden', tabId !== 'current-score');
 
-        if (tabId === 'scores') this.ui.renderGrid();
+        if (tabId === 'scores') this.ui.render();
         if (tabId === 'setlists') this.app.setlistManager?.render();
         if (tabId === 'current-score' && this.app.scoreDetailManager) {
             this.app.scoreDetailManager.load(this.app.pdfFingerprint);
