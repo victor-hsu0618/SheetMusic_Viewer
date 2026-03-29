@@ -259,17 +259,27 @@ export class PdfExportManager {
                                             annoCtx.fillText(line, x, y + (i * lineHeight));
                                         });
                                     } else if (d.variant === 'measure') {
-                                        const bw = 24 * textScale, bh = 22 * textScale;
-                                        const bx = x - bw / 2, by = y - bh / 2;
-                                        annoCtx.strokeStyle = 'rgba(0,0,0,0.3)';
-                                        annoCtx.lineWidth = 1.2 * textScale;
-                                        if (annoCtx.roundRect) annoCtx.roundRect(bx, by, bw, bh, 3 * textScale);
-                                        else annoCtx.rect(bx, by, bw, bh);
-                                        annoCtx.stroke();
-                                        annoCtx.font = `500 ${14 * textScale}px Outfit`;
-                                        annoCtx.fillStyle = 'rgba(0,0,0,0.5)';
-                                        annoCtx.textAlign = 'center';
+                                        // Normalize to renderer reference scale (1.5) so size matches live view
+                                        const isFree = group.type === 'measure-free';
+                                        const REF_SCALE = 1.5;
+                                        const fontSize = (isFree ? 12 : 13) / REF_SCALE * textScale;
+                                        const gScale = textScale / REF_SCALE;
+                                        annoCtx.font = `700 ${fontSize}px Outfit`;
+                                        annoCtx.fillStyle = 'rgba(0,0,0,0.55)';
+                                        annoCtx.textAlign = 'left';
                                         annoCtx.textBaseline = 'middle';
+                                        if (isFree) {
+                                            const tw = annoCtx.measureText(group.data || '#').width;
+                                            const pad = fontSize * 0.4;
+                                            const fw = tw + pad * 2, fh = fontSize + pad;
+                                            annoCtx.strokeStyle = 'rgba(0,0,0,0.55)';
+                                            annoCtx.lineWidth = 1.2 * gScale;
+                                            annoCtx.beginPath();
+                                            if (annoCtx.roundRect) annoCtx.roundRect(x - pad, y - fh / 2, fw, fh, 4 * gScale);
+                                            else annoCtx.strokeRect(x - pad, y - fh / 2, fw, fh);
+                                            annoCtx.stroke();
+                                            annoCtx.fillStyle = 'rgba(0,0,0,0.8)';
+                                        }
                                         annoCtx.fillText(group.data || '#', x, y);
                                     }
                                     break;
