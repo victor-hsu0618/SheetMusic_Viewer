@@ -207,26 +207,32 @@ body.sf-dock-bar-visible #sf-dock-fab {
 .sf-ms-btn-danger { color: #ff6b6b; }
 .sf-ms-btn-danger:hover { background: rgba(239,68,68,0.2); }
 
-/* Score name — appears just below the dock bar pill, in the grey strip */
-#sf-dock-bar::after {
-    content: attr(data-score-name);
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 4px;
-    white-space: nowrap;
+/* Score name strip — fixed above physical bottom, below dock bar */
+#sf-dock-bottom-fill {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(10px + env(safe-area-inset-bottom));
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 205;
+    overflow: hidden;
+}
+
+#sf-dock-score-name {
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.65);
-    pointer-events: none;
-}
-
-/* Bottom fill kept hidden — score name handled via ::after above */
-#sf-dock-bottom-fill {
-    display: none;
+    color: rgba(255, 255, 255, 0.75);
+    white-space: nowrap;
+    max-width: 70vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ── Trigger zone for auto-show ── */
