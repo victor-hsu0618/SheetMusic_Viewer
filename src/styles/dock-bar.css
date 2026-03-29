@@ -207,9 +207,32 @@ body.sf-dock-bar-visible #sf-dock-fab {
 .sf-ms-btn-danger { color: #ff6b6b; }
 .sf-ms-btn-danger:hover { background: rgba(239,68,68,0.2); }
 
-/* #sf-dock-bottom-fill intentionally has no background — body is already dark */
+/* Score name strip — sits in the iOS home-indicator safe area at the bottom */
 #sf-dock-bottom-fill {
-    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-bottom);
+    background: #525659;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 198;
+    overflow: hidden;
+}
+
+#sf-dock-score-name {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.45);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
+    text-transform: uppercase;
 }
 
 /* ── Trigger zone for auto-show ── */
