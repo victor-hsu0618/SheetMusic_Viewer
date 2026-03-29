@@ -224,6 +224,7 @@ body.sf-dock-bar-visible #sf-dock-fab {
 }
 
 /* ── Viewer padding so score isn't hidden behind bar ── */
+/* No safe-area offset — let score extend into home indicator zone */
 body.sf-dock-bar-visible .viewer-container {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    padding-bottom: 72px;
 }
