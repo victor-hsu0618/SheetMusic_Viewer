@@ -19,7 +19,12 @@ export default defineConfig({
         }
     },
     define: {
-        __BUILD_TIME__: JSON.stringify(new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })),
+        __BUILD_TIME__: (() => {
+            const now = new Date();
+            const tpe = new Date(now.getTime() + 8 * 3600 * 1000);
+            const p = n => String(n).padStart(2, '0');
+            return JSON.stringify(`${tpe.getUTCFullYear()}/${p(tpe.getUTCMonth()+1)}/${p(tpe.getUTCDate())} ${p(tpe.getUTCHours())}:${p(tpe.getUTCMinutes())} (UTC+8)`);
+        })(),
         __APP_BRANCH__: JSON.stringify(process.env.GITHUB_REF_NAME || process.env.GITHUB_HEAD_REF || 'local-dev'),
         __APP_MODE__: JSON.stringify(process.env.VITE_APP_MODE || 'current')
     },
