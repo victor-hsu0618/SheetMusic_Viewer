@@ -72,8 +72,14 @@ export class DockingBarManager {
         if (!fill) {
             fill = document.createElement('div')
             fill.id = 'sf-dock-bottom-fill'
+            fill.innerHTML = '<span id="sf-dock-score-name"></span>'
             document.body.appendChild(fill)
         }
+    }
+
+    updateScoreName(name) {
+        const el = document.getElementById('sf-dock-score-name')
+        if (el) el.textContent = name || ''
     }
 
     _createTrigger() {

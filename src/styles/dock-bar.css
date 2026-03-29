@@ -219,6 +219,21 @@ body.sf-dock-bar-visible #sf-dock-fab {
     -webkit-backdrop-filter: blur(16px);
     z-index: 199;
     pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#sf-dock-score-name {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* ── Trigger zone for auto-show ── */

@@ -483,6 +483,7 @@ export class ViewerManager {
             this.app.floatingScoreTitle.classList.add('active');
         }
         if (watermark) watermark.textContent = displayName;
+        this.app.dockingBarManager?.updateScoreName(displayName.replace(/^⏳\s*/, ''));
     }
 
 
