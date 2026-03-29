@@ -929,7 +929,7 @@
   height: 100dvh !important;
   z-index: 99999 !important;
   overflow: hidden;
-  background: #0f0f13;
+  background: var(--bg-viewer, #0f0f13);
   padding: env(safe-area-inset-top) 0 0 0;
 }
 

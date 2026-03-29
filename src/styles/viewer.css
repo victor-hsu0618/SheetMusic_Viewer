@@ -22,21 +22,35 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }
-
 /* Viewer Container */
 .viewer-container {
   position: fixed;
-  inset: 0;
-  overflow-y: auto;
-  background-color: #525659;
+  inset: 0 !important; /* Forces it to fill the entire window including home indicator */
+  height: 100dvh !important;
+  width: 100% !important;
+  overflow-y: auto !important; /* Force enable scrolling */
+  overflow-x: hidden;
+  background-color: transparent !important;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 0;
+  margin: 0;
   overscroll-behavior-y: none;
-  /* Allow native gestures on desktop, block for iPad to enable our JS gestures */
-  touch-action: manipulation; 
+  touch-action: pan-y !important; /* Allow vertical panning */
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  z-index: 10; /* Make sure it stays on top of any root elements */
+}
+
+#pdf-viewer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Natural padding for the last page to sit comfortably over the home indicator */
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  background: transparent !important;
 }
 
 /* Edit mode indicator: fixed viewport border when NOT in view mode */
@@ -56,11 +70,8 @@ body:not([data-active-tool="view"])::before {
   will-change: opacity;
 }
 
-/* HARD BLOCK for View Mode - ONLY on iPad to prevent Safari bounce/interference */
-body.platform-ios[data-active-tool="view"] .viewer-container {
-  touch-action: none !important;
-  overflow: hidden !important; /* Block all native scroll only on touch devices */
-}
+/* HARD BLOCK for View Mode - REMOVED to allow penetration scrolling */
+/* body.platform-ios[data-active-tool="view"] .viewer-container { ... } */
 
 #viewer {
     transition: transform 0.1s ease-out;

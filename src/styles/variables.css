@@ -2,7 +2,7 @@
   --primary: #6366f1;
   --primary-rgb: 99, 102, 241;
   --primary-hover: #4f46e5;
-  --bg-app: #f8fafc;
+  --bg-app: #0f0f13;
   --bg-sidebar: #ffffff;
   --bg-card: #ffffff;
   --bg-card-rgb: 255, 255, 255;
@@ -19,6 +19,11 @@
   --sheet-max-height: 85vh;
   --sheet-radius: 24px;
 
+  /* Viewer Background (Legacy PDF.js grey by default) */
+  --bg-viewer: #0f0f13;
+  --bg-pattern: none;
+  --bg-pattern-size: auto;
+
   /* Safe Area Insets (for Notch/Home Indicator) */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -28,6 +33,10 @@
 
 [data-theme="dark"] {
   --bg-app: #111827;
+  --bg-viewer: #111827;
+  /* Subtle professional dot grid */
+  --bg-pattern: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+  --bg-pattern-size: 24px 24px;
   /* Slightly brighter, more slate-blue */
   --bg-sidebar: #1f2937;
   --bg-card: #1f2937;
@@ -41,6 +50,7 @@
 /* Stage Mode: Extreme High Contrast for Stage Lighting */
 [data-theme="stage"] {
   --bg-app: #000000;
+  --bg-viewer: #000000;
   --bg-sidebar: #050505;
   --bg-card: #0a0a0a;
   --bg-card-rgb: 10, 10, 10;
@@ -53,6 +63,7 @@
 /* Deep Midnight: OLED Optimized */
 [data-theme="deep"] {
   --bg-app: #030712;
+  --bg-viewer: #030712;
   --bg-sidebar: #0f172a;
   --bg-card: #0f172a;
   --bg-card-rgb: 15, 23, 42;

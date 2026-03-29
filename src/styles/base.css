@@ -9,27 +9,27 @@
   padding: 0;
 }
 
-html,
-body {
+html, body {
   height: 100%;
+  height: 100dvh;
   width: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
-  position: fixed;
-  /* Lock root to prevent rubber-band on entire body */
+  /* Lock root but ALLOW touch gestures */
   -webkit-user-select: none;
   user-select: none;
-  touch-action: none;
-  /* Only allow scrolling on specific elements */
+  touch-action: manipulation;
 }
 
-/* Both html and body background match the viewer grey (#525659).
+/* Both html and body background match the viewer theme.
    On iOS PWA (viewport-fit=cover) the home-indicator zone bleeds through whatever
-   root background is used. Making them match the viewer makes the bleed invisible.
+   root background is used. Making them match the viewer theme makes the bleed invisible.
    All panels (library, settings, sidebar) paint their own backgrounds over this. */
 html, body {
-  background-color: #525659;
+  background-color: var(--bg-viewer, #525659);
+  background-image: var(--bg-pattern);
+  background-size: var(--bg-pattern-size);
 }
 
 button {
@@ -54,6 +54,8 @@ body {
   position: fixed;
   inset: 0; /* top:0 right:0 bottom:0 left:0 — true full screen including safe areas */
   overflow: hidden;
+  background: transparent;
+  height: 100dvh;
 }
 
 /* UTILS from index.html extraction */

@@ -63,7 +63,7 @@ const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'jus
 class ScoreFlow {
   constructor() {
     window.app = this
-    this.DEBUG_VERSION = 'V3.1.4'
+    this.DEBUG_VERSION = 'V3.1.9'
     this.isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
     this.isDev = window.location.hostname === 'localhost' || 
                  window.location.hostname === '127.0.0.1' || 
