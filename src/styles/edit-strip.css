@@ -731,26 +731,6 @@
     pointer-events: none;
 }
 
-/* ── Quick color dots (stamp bar left column) ── */
-.sf-quick-color-dot {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    cursor: pointer;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-.sf-quick-color-dot:hover {
-    transform: scale(1.15);
-    border-color: rgba(255, 255, 255, 0.5);
-}
-.sf-quick-color-dot.active {
-    border-color: #fff;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
-    transform: scale(1.1);
-}
-
 /* Stamp page btn in navCol — make it compact */
 .sf-bar-nav .sf-stamp-page-btn {
     width: 28px;

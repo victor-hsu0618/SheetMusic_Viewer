@@ -308,26 +308,7 @@ export class EditSubBarManager {
         const navCol = document.createElement('div')
         navCol.className = 'sf-bar-nav'
 
-        if (isStamp) {
-            // Quick color dots (3 slots)
-            const quickColors = this._getQuickColors()
-            quickColors.forEach((hex, idx) => {
-                const dot = document.createElement('div')
-                dot.className = 'sf-quick-color-dot' + (this.app.activeColor === hex ? ' active' : '')
-                dot.style.background = hex
-                dot.title = hex
-                dot.addEventListener('click', (e) => {
-                    e.stopPropagation()
-                    this.app.activeColor = hex
-                    localStorage.setItem('scoreflow_active_color', hex)
-                    // Refresh dot active states
-                    navCol.querySelectorAll('.sf-quick-color-dot').forEach((d, i) => {
-                        d.classList.toggle('active', this._getQuickColors()[i] === hex)
-                    })
-                })
-                navCol.appendChild(dot)
-            })
-        } else {
+        if (!isStamp) {
             // Shapes bar: prev/next pagination
             const prevBtn = this._navBtn('prev')
             const nextBtn = this._navBtn('next')
@@ -1216,14 +1197,6 @@ export class EditSubBarManager {
             this.app.toolManager?.updateActiveTools()
         }
         this._populateBar(bar, 'stamp')
-    }
-
-    _getQuickColors() {
-        try {
-            const stored = JSON.parse(localStorage.getItem('sf_quick_colors') || 'null')
-            if (Array.isArray(stored) && stored.length === 3) return stored
-        } catch {}
-        return ['#1a1a1a', '#ef4444', '#3b82f6']
     }
 
     _navBtn(dir) {
