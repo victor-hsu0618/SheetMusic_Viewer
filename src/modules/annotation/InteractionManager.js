@@ -542,6 +542,12 @@ export class InteractionManager {
                         this.app.activeStampType = 'select'; // Switch to select to move the copy
                         activeObject = clone;
                         isMovingExisting = true;
+                    } else if (activeTool === 'multi-select') {
+                        // Multi-select: always use the tapped target directly,
+                        // skip handle logic so activeObject is always in _multiSelected
+                        activeObject = target;
+                        isMovingExisting = true;
+                        this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
                     } else {
                         // Check endpoint handles first — allows resizing two-point strokes
                         const TWO_PT_SET = new Set(['line', 'slur', 'bracket-left', 'bracket-right', 'curly-left', 'curly-right', 'rect-shape', 'circle-shape']);
@@ -807,7 +813,7 @@ export class InteractionManager {
                     else { activeObject.x = Number(activeObject.x) + dx; activeObject.y = Number(activeObject.y) + dy; }
                     this.app._dragLastPos = tPos;
                     // Multi-select: propagate same delta to all other selected stamps
-                    if (toolType === 'multi-select' && this._multiSelected.has(activeObject.id)) {
+                    if (toolType === 'multi-select' && this._multiSelected.size > 0) {
                         for (const sid of this._multiSelected) {
                             if (sid === activeObject.id) continue;
                             const s = this.app.stamps.find(st => st.id === sid && !st.deleted);
@@ -1098,6 +1104,10 @@ export class InteractionManager {
                                     s.updatedAt = Date.now();
                                     this.app.supabaseManager?.pushAnnotation(s, this.app.pdfFingerprint);
                                 }
+                            }
+                            // Also push syncObj if it wasn't in _multiSelected (dragged non-selected stamp)
+                            if (!this._multiSelected.has(syncObj.id)) {
+                                this.app.supabaseManager?.pushAnnotation(syncObj, this.app.pdfFingerprint);
                             }
                             await this.app.saveToStorage(true);
                         }
