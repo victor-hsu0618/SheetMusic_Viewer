@@ -55,9 +55,8 @@ body {
   overflow: hidden;
   position: relative;
   
-  /* Safe Area Support */
+  /* Safe Area Support — only top/sides here; bottom handled per-component */
   padding-top: var(--safe-top);
-  padding-bottom: var(--safe-bottom);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
 }
