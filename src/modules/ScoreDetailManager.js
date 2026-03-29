@@ -124,6 +124,7 @@ export class ScoreDetailManager {
 
         this.render(fingerprint);
         this.refreshStats();
+        this.app.layerManager?.renderLayerUI();
         this.isLoading = false;
 
         if (this.currentInfo.activeMediaId) {
