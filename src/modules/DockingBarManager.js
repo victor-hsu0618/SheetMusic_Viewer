@@ -78,6 +78,7 @@ export class DockingBarManager {
     }
 
     updateScoreName(name) {
+        if (this.el) this.el.dataset.scoreName = name || ''
         const el = document.getElementById('sf-dock-score-name')
         if (el) el.textContent = name || ''
     }
