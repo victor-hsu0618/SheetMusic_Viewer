@@ -30,7 +30,10 @@ export class ViewerManager {
         // Initialize rendering queue
         this._renderQueue = []
         this._activeRenderCount = 0
-        this._maxActiveRenders = 3 // Allow 3 concurrent renders for smoother page-ahead loading
+        this._maxActiveRenders = 2 // Keep low on iPad to avoid memory pressure
+
+        // Bitmap cache: stores rendered page bitmaps for instant re-render
+        this._bitmapCache = {}
 
         // Initialize IntersectionObserver for Lazy Rendering and Virtualization (Memory Cleanup)
         // 1200px rootMargin ensures pages start rendering ~1 full page before becoming visible,
@@ -47,13 +50,13 @@ export class ViewerManager {
                     // Only unrender pages well outside the rootMargin to avoid thrashing.
                     const rect = entry.boundingClientRect;
                     const vh = window.innerHeight;
-                    if (entry.target.dataset.rendered === 'true' && (rect.bottom < -2800 || rect.top > vh + 2800)) {
+                    if (entry.target.dataset.rendered === 'true' && (rect.bottom < -4000 || rect.top > vh + 4000)) {
                         this.unrenderPage(pageNum, entry.target);
                     }
                 }
             })
         }, {
-            rootMargin: '1200px 0px',
+            rootMargin: '2000px 0px',
             threshold: 0.01
         })
 
@@ -545,7 +548,8 @@ export class ViewerManager {
         })
         this.pages = []
         this._pageViewports = {}
-        this._pageCache = {} // Cache for PDFPageProxy objects
+        this._pageCache = {}      // Cache for PDFPageProxy objects
+        this._bitmapCache = {}    // Cache for rendered page bitmaps (cleared on zoom change)
 
         const numPages = this.pdf.numPages
         const pageIndices = Array.from({ length: numPages }, (_, i) => i + 1)
@@ -645,7 +649,7 @@ export class ViewerManager {
      */
     async renderPage(pageNum, wrapper) {
         if (!this.pdf || wrapper.dataset.rendered === 'true') return
-        
+
         // Prevent multiple simultaneous render calls for the same page
         if (wrapper.dataset.rendering === 'true') return
         wrapper.dataset.rendering = 'true'
@@ -663,6 +667,28 @@ export class ViewerManager {
 
             const canvas = wrapper.querySelector('.pdf-canvas')
             if (!canvas) return
+
+            // ── Bitmap cache: instant re-render for already-rendered pages ──
+            const cached = this._bitmapCache[pageNum]
+            if (cached) {
+                const context = canvas.getContext('2d', { alpha: false })
+                if (context) {
+                    canvas.width = cached.width
+                    canvas.height = cached.height
+                    canvas.style.width = ''
+                    canvas.style.height = ''
+                    context.drawImage(cached, 0, 0)
+                    // Restore annotation layers
+                    const vp = this._pageViewports[pageNum]
+                    if (vp) {
+                        this.app.createAnnotationLayers(wrapper, pageNum, vp.width, vp.height, 1)
+                        this.app.createCaptureOverlay(wrapper, pageNum, vp.width, vp.height)
+                        this.app.redrawStamps(pageNum)
+                    }
+                    wrapper.dataset.rendered = 'true'
+                    return
+                }
+            }
 
             const context = canvas.getContext('2d', { alpha: false })
             // iOS limits simultaneous canvas contexts; getContext returns null when exceeded
@@ -752,11 +778,18 @@ export class ViewerManager {
             }
 
             // Attach annotation layers once the real canvas is ready
-            this.app.createAnnotationLayers(wrapper, pageNum, viewport.width, viewport.height, renderScale) // Use original renderScale for ann matching
+            this.app.createAnnotationLayers(wrapper, pageNum, viewport.width, viewport.height, renderScale)
             this.app.createCaptureOverlay(wrapper, pageNum, viewport.width, viewport.height)
             this.app.redrawStamps(pageNum)
 
             wrapper.dataset.rendered = 'true'
+
+            // Save bitmap for instant re-render (skip if createImageBitmap unavailable)
+            if (typeof createImageBitmap === 'function' && canvas.width > 0 && canvas.height > 0) {
+                createImageBitmap(canvas).then(bm => {
+                    this._bitmapCache[pageNum] = bm
+                }).catch(() => {})
+            }
 
             // If this page scrolled off-screen while rendering, unrender it now.
             // (IntersectionObserver won't re-fire since the intersection didn't change after render.)
