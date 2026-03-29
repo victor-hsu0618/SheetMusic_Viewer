@@ -24,14 +24,12 @@ body {
   /* Only allow scrolling on specific elements */
 }
 
-/* html background fills the home-indicator zone on iOS PWA (viewport-fit=cover).
-   Match it to the viewer grey so any bleed-through at the physical bottom is invisible. */
-html {
+/* Both html and body background match the viewer grey (#525659).
+   On iOS PWA (viewport-fit=cover) the home-indicator zone bleeds through whatever
+   root background is used. Making them match the viewer makes the bleed invisible.
+   All panels (library, settings, sidebar) paint their own backgrounds over this. */
+html, body {
   background-color: #525659;
-}
-
-body {
-  background-color: #0f0f13; /* app shell / library screen stays dark */
 }
 
 button {
@@ -41,7 +39,7 @@ button {
 
 body {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #0f0f13; /* Always dark — prevents white gaps in safe areas */
+  /* background-color set above via html,body rule (#525659 viewer grey) */
   color: var(--text-main);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
