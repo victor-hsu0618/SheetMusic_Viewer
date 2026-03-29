@@ -718,7 +718,7 @@ export class AnnotationRenderer {
                         // Also for Free Measure, add a circle frame
                         const fontSize = (isFree ? 12 : 13) * textScale
                         ctx.font = `700 ${fontSize}px Outfit`
-                        ctx.fillStyle = isHovered ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.55)'
+                        ctx.fillStyle = isHovered ? 'rgba(0,0,0,0.9)' : isSelectHovered ? 'rgba(99,102,241,0.9)' : 'rgba(0,0,0,0.55)'
                         ctx.textAlign = 'left'
                         ctx.textBaseline = 'middle'
 
@@ -745,7 +745,7 @@ export class AnnotationRenderer {
                             ctx.stroke()
 
                             // Slightly darker text inside frame
-                            ctx.fillStyle = isHovered ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.8)'
+                            ctx.fillStyle = isHovered ? 'rgba(0,0,0,1)' : isSelectHovered ? 'rgba(99,102,241,1)' : 'rgba(0,0,0,0.8)'
                         }
 
                         ctx.fillText(stamp.data || '#', x, y)
