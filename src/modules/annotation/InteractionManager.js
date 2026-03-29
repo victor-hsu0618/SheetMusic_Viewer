@@ -35,7 +35,7 @@ export class InteractionManager {
                 overlay.style.cursor = 'copy';
                 break;
             case 'recycle-bin':
-                overlay.style.cursor = 'wait'; // Or not-allowed
+                overlay.style.cursor = 'not-allowed';
                 break;
             case 'rect-shape':
             case 'circle-shape':
