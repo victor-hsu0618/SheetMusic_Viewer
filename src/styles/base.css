@@ -55,10 +55,7 @@ body {
   overflow: hidden;
   position: relative;
   
-  /* Safe Area Support — only top/sides here; bottom handled per-component */
-  padding-top: var(--safe-top);
-  padding-left: var(--safe-left);
-  padding-right: var(--safe-right);
+  /* No safe area padding — viewer fills full screen, UI elements handle their own offsets */
 }
 
 /* UTILS from index.html extraction */

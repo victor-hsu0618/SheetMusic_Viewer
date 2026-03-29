@@ -3,7 +3,8 @@
   position: fixed;
   right: 0;
   top: 0;
-  height: 100vh;
+  height: 100%;
+  padding-top: env(safe-area-inset-top);
   width: var(--sidebar-width);
   background: var(--bg-card);
   border-left: 1px solid var(--border);

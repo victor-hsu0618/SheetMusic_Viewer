@@ -1,7 +1,7 @@
 /* Score Library Overlay - Wide Split View Sidebar Style */
 .library-overlay {
     position: fixed;
-    top: 0;
+    top: env(safe-area-inset-top);
     left: 0;
     right: auto;
     bottom: calc(72px + env(safe-area-inset-bottom));

@@ -2,7 +2,7 @@
 #settings-panel,
 #account-panel {
     position: fixed !important;
-    top: 0 !important;
+    top: env(safe-area-inset-top) !important;
     left: 0 !important;
     right: auto !important;
     bottom: calc(72px + env(safe-area-inset-bottom)) !important;
