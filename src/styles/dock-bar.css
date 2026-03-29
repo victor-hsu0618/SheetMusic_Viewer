@@ -9,7 +9,7 @@
     transform: translateX(-50%);
     width: max-content;
     max-width: calc(100vw - 68px);   /* breathing room from standalone scrollbar (52px) */
-    height: 52px;
+    height: auto;
     background: rgba(15, 23, 42, 0.82);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-top-left-radius: 20px;
@@ -20,13 +20,29 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     display: flex;
-    align-items: center;
-    gap: 2px;
-    padding: 0 10px;
-    padding-bottom: env(safe-area-inset-bottom);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
     z-index: 200;
     -webkit-user-select: none;
     user-select: none;
+}
+
+/* Inner row holds the actual buttons — always 52px tall */
+#sf-dock-bar .sf-dock-inner {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 10px;
+    height: 52px;
+    flex-shrink: 0;
+}
+
+/* Safe area spacer — fills home indicator zone with bar background */
+#sf-dock-bar .sf-dock-safe-spacer {
+    height: env(safe-area-inset-bottom);
+    flex-shrink: 0;
 }
 
 /* ── Scrollable tool area ── */
@@ -133,9 +149,14 @@
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5);
 }
 
-/* When bar is visible, FAB sits just above the bar (52px bar + safe-area + 8px gap) */
+/* When bar is visible, FAB sits just above the bar (52px + safe-area + 8px gap) */
 body.sf-dock-bar-visible #sf-dock-fab {
     bottom: calc(60px + env(safe-area-inset-bottom));
+}
+
+/* Trigger zone sits above safe area */
+#sf-dock-trigger {
+    height: calc(28px + env(safe-area-inset-bottom));
 }
 
 #sf-dock-fab svg {

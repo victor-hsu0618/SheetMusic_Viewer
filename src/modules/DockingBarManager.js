@@ -197,15 +197,19 @@ export class DockingBarManager {
         const stampBarOpen = this._subBarMgr?.activeBar === 'stamp'
         const isCoreAction = ['view','select','eraser','cycle','recycle-bin'].includes(curTool)
 
+        // Inner row — always 52px, holds all buttons
+        const inner = document.createElement('div')
+        inner.className = 'sf-dock-inner'
+
         // ── Prev arrow (only shown when multiple pages) ────────────────
-        if (multi) this.el.appendChild(this._navArrow('‹', -1, pages.length))
+        if (multi) inner.appendChild(this._navArrow('‹', -1, pages.length))
 
         // ── Tool buttons ───────────────────────────────────────────────
         page.buttons.forEach(cfg => {
             if (cfg.divider) {
                 const d = document.createElement('div')
                 d.className = 'sf-dock-divider'
-                this.el.appendChild(d)
+                inner.appendChild(d)
                 return
             }
 
@@ -239,12 +243,12 @@ export class DockingBarManager {
                 }
             })
 
-            this.el.appendChild(btn)
+            inner.appendChild(btn)
         })
 
         // ── Next arrow + dots ──────────────────────────────────────────
         if (multi) {
-            this.el.appendChild(this._navArrow('›', 1, pages.length))
+            inner.appendChild(this._navArrow('›', 1, pages.length))
             const dots = document.createElement('div')
             dots.className = 'sf-dock-dots'
             pages.forEach((_, i) => {
@@ -253,8 +257,15 @@ export class DockingBarManager {
                 d.addEventListener('click', () => { this._page = i; this.update() })
                 dots.appendChild(d)
             })
-            this.el.appendChild(dots)
+            inner.appendChild(dots)
         }
+
+        this.el.appendChild(inner)
+
+        // Safe area spacer fills home indicator zone with bar background
+        const spacer = document.createElement('div')
+        spacer.className = 'sf-dock-safe-spacer'
+        this.el.appendChild(spacer)
     }
 
     _navArrow(label, dir, total) {
