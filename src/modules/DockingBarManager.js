@@ -38,6 +38,8 @@ export class DockingBarManager {
         this._pages = this._buildPages()
         this._createFab()
         this._createTrigger()
+        this._createBottomFill()
+
         document.body.classList.add('sf-dock-bar-visible')
         this.update()
         this._startHideTimer()
@@ -63,6 +65,15 @@ export class DockingBarManager {
             this.toggleVisible()
             this._resetHideTimer()
         })
+    }
+
+    _createBottomFill() {
+        let fill = document.getElementById('sf-dock-bottom-fill')
+        if (!fill) {
+            fill = document.createElement('div')
+            fill.id = 'sf-dock-bottom-fill'
+            document.body.appendChild(fill)
+        }
     }
 
     _createTrigger() {
