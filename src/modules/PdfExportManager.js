@@ -3,10 +3,11 @@ export class PdfExportManager {
         this.app = app;
     }
 
-    async exportFlattenedPDF() {
+    async exportFlattenedPDF(options = {}) {
+        const { returnBlob = false } = options;
         if (!this.app.viewerManager.pdf) {
             this.app.showMessage('請先開啟一份樂譜。', 'info');
-            return;
+            return null;
         }
 
         // Ask which cloaks to include in PDF
@@ -26,7 +27,7 @@ export class PdfExportManager {
                 cloakDefs,
                 defaultInclude: pdfIncludeCloaks,
             })
-            if (result === 'cancel') return
+            if (result === 'cancel') return null
             if (result && typeof result === 'object') pdfIncludeCloaks = result
         }
         // Temporarily override cloakVisible for rendering
@@ -334,17 +335,24 @@ export class PdfExportManager {
             }
 
             console.log('[PdfExportManager] Saving output...');
-            // 5. Save the output PDF
             const userName = this.app.profileManager?.data?.userName || 'Export';
-            const baseFilename = this.app.scoreDetailManager.currentInfo?.metadata?.name || 'ScoreFlow_Export';
+            const baseFilename = this.app.scoreDetailManager?.currentInfo?.name || 'ScoreFlow_Export';
+
+            if (returnBlob) {
+                const blob = outPdf.output('blob');
+                console.log('[PdfExportManager] Returning blob');
+                return blob;
+            }
+
+            // 5. Save the output PDF
             outPdf.save(`${baseFilename}_${userName}_Annotated.pdf`);
-            
             this.app.showMessage('PDF 匯出完畢！', 'system');
             console.log('[PdfExportManager] Export complete');
 
         } catch (err) {
             console.error('[PdfExportManager] PDF Export Failed Details:', err.name, err.message, err.stack);
-            this.app.showMessage(`PDF 匯出失敗: ${err.message || 'Unknown Error'}`, 'error');
+            if (!returnBlob) this.app.showMessage(`PDF 匯出失敗: ${err.message || 'Unknown Error'}`, 'error');
+            return null;
         } finally {
             // Memory Cleanup
             baseCanvas.width = 0; baseCanvas.height = 0;

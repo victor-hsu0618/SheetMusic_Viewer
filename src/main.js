@@ -47,7 +47,7 @@ import { InitializationManager } from './modules/InitializationManager.js'
 import { PdfExportManager } from './modules/PdfExportManager.js'
 import { applyAppProxies } from './modules/AppProxyHandler.js'
 import { StaffDetector } from './modules/StaffDetector.js'
-import { GistShareManager } from './modules/GistShareManager.js'
+import { ShareManager } from './modules/ShareManager.js'
 import { LocalBackupManager } from './modules/LocalBackupManager.js'
 import { SupabaseManager } from './modules/SupabaseManager.js'
 import { EditSubBarManager } from './modules/EditSubBarManager.js'
@@ -150,7 +150,7 @@ this.setlistManager = new SetlistManager(this)
     if (this.isIOS) document.body.classList.add('platform-ios')
     this.initManager = new InitializationManager(this)
     this.staffDetector = new StaffDetector(this)
-    this.gistShareManager = new GistShareManager(this)
+    this.shareManager = new ShareManager(this)
     this.localBackupManager = new LocalBackupManager(this)
     this.supabaseManager = new SupabaseManager(this)
     this.editSubBarManager = new EditSubBarManager(this)
@@ -182,7 +182,7 @@ this.setlistManager = new SetlistManager(this)
     this.scoreDetailManager.init()
 this.playbackManager.init()
     this.scoreManager.init()
-    this.gistShareManager.init()
+    // gistShareManager removed — replaced by ShareManager (Supabase-based)
     this.settingsPanelManager.init()
     this.setlistManager.init()
 

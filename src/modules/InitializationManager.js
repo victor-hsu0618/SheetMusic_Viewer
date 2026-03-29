@@ -122,6 +122,6 @@ export class InitializationManager {
 
 
 
-        document.getElementById('btn-gist-share')?.addEventListener('click', () => app.gistShareManager?.share())
+        document.getElementById('btn-gist-share')?.addEventListener('click', () => app.shareManager?.sharePDF())
     }
 }

@@ -925,6 +925,23 @@ export class SupabaseManager {
     }
 
     /**
+     * Uploads an annotated PDF blob to the public 'shared-pdfs' bucket.
+     * Returns the public URL, or null on failure.
+     */
+    async uploadSharedPdf(blob, filename) {
+        if (!this.client) return null;
+        const { error } = await this.client.storage
+            .from('shared-pdfs')
+            .upload(filename, blob, { contentType: 'application/pdf', upsert: false });
+        if (error) {
+            console.error('[Supabase] Shared PDF upload failed:', error.message);
+            return null;
+        }
+        const { data } = this.client.storage.from('shared-pdfs').getPublicUrl(filename);
+        return data?.publicUrl || null;
+    }
+
+    /**
      * Downloads a PDF from Supabase Storage.
      */
     async downloadPDFBuffer(fingerprint) {
