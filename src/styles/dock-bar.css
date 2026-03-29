@@ -223,8 +223,7 @@ body.sf-dock-bar-visible #sf-dock-fab {
     pointer-events: none; /* toggled by JS based on bar visibility */
 }
 
-/* ── Viewer padding so score isn't hidden behind bar ── */
-/* No safe-area offset — let score extend into home indicator zone */
+/* Score extends to physical screen bottom — dock bar floats over it */
 body.sf-dock-bar-visible .viewer-container {
-    padding-bottom: 72px;
+    padding-bottom: 0;
 }
