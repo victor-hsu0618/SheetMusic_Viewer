@@ -731,13 +731,6 @@
     pointer-events: none;
 }
 
-/* Stamp page btn in navCol — make it compact */
-.sf-bar-nav .sf-stamp-page-btn {
-    width: 28px;
-    height: 22px;
-    font-size: 9px;
-}
-
 /* ── Stamp / Shapes cells ── */
 .sf-bar-cell {
     width: 100%;

@@ -308,7 +308,21 @@ export class EditSubBarManager {
         const navCol = document.createElement('div')
         navCol.className = 'sf-bar-nav'
 
-        if (!isStamp) {
+        if (isStamp) {
+            // Stamp bar: gear settings button
+            const settingsBtn = document.createElement('div')
+            settingsBtn.className = 'sf-nav-btn sf-nav-settings-btn' + (this._stampSettingsOpen ? ' active' : '')
+            settingsBtn.title = 'Stamp Settings'
+            settingsBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+            </svg>`
+            settingsBtn.addEventListener('click', (e) => {
+                e.stopPropagation()
+                this._toggleStampSettings(bar, settingsBtn)
+            })
+            navCol.appendChild(settingsBtn)
+        } else {
             // Shapes bar: prev/next pagination
             const prevBtn = this._navBtn('prev')
             const nextBtn = this._navBtn('next')
@@ -390,38 +404,10 @@ export class EditSubBarManager {
             if (row1Items.length) content.appendChild(buildRow(row1Items, title1))
             if (row2Items.length) content.appendChild(buildRow(row2Items, title2))
 
-            // Page button → navCol (left side, below color dots)
-            if (pageCount > 1) {
-                const pageBtn = document.createElement('div')
-                pageBtn.className = 'sf-stamp-page-btn'
-                pageBtn.title = 'Switch Page'
-                pageBtn.innerHTML = `<span>${this._stampPage + 1}/${pageCount}</span>`
-                pageBtn.addEventListener('click', (e) => {
-                    e.stopPropagation()
-                    this._stampPage = (this._stampPage + 1) % pageCount
-                    this._populateBar(bar, 'stamp')
-                })
-                navCol.appendChild(pageBtn)
-            }
-
             bar.appendChild(this._barDivider())
 
             const rightCol = document.createElement('div')
             rightCol.className = 'sf-bar-right-nav'
-
-            // Settings gear → rightCol
-            const settingsBtn = document.createElement('div')
-            settingsBtn.className = 'sf-nav-btn sf-nav-settings-btn' + (this._stampSettingsOpen ? ' active' : '')
-            settingsBtn.title = 'Stamp Settings'
-            settingsBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-            </svg>`
-            settingsBtn.addEventListener('click', (e) => {
-                e.stopPropagation()
-                this._toggleStampSettings(bar, settingsBtn)
-            })
-            rightCol.appendChild(settingsBtn)
 
             const grip = document.createElement('div')
             grip.className = 'sf-bar-grip'
@@ -430,6 +416,22 @@ export class EditSubBarManager {
             this._attachGripDrag(grip, bar, type)
             rightCol.appendChild(grip)
 
+            if (pageCount > 1) {
+                const pageBtn = document.createElement('div')
+                pageBtn.className = 'sf-stamp-page-btn sf-dual-page-btn'
+                
+                const label  = `${this._stampPage + 1}/${pageCount}`
+                
+                pageBtn.title = `Switch Page`
+                pageBtn.innerHTML = `<span>${label}</span>`
+                pageBtn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    this._stampPage = (this._stampPage + 1) % pageCount
+                    this._populateBar(bar, 'stamp')
+                })
+                rightCol.appendChild(pageBtn)
+            }
+            
             bar.appendChild(rightCol)
 
         } else {

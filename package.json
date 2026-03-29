@@ -19,6 +19,7 @@
     "@capacitor/core": "^8.3.0",
     "@capacitor/ios": "^8.3.0",
     "@supabase/supabase-js": "^2.99.2",
+    "@vercel/speed-insights": "^2.0.0",
     "jszip": "^3.10.1",
     "lucide-static": "^0.576.0",
     "pdfjs-dist": "^5.5.207"
