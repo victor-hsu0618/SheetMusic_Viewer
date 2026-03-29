@@ -1,7 +1,7 @@
 /* Score Library Overlay - Wide Split View Sidebar Style */
 .library-overlay {
     position: fixed;
-    top: env(safe-area-inset-top);
+    top: 0;
     left: 0;
     right: auto;
     bottom: calc(72px + env(safe-area-inset-bottom));
@@ -40,11 +40,13 @@ body .library-overlay.active {
 }
 
 .library-header {
-    height: 64px;
+    height: calc(64px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding-left: 20px;
+    padding-right: 20px;
     border-bottom: 1px solid var(--border);
     background: rgba(255, 255, 255, 0.03);
     flex-shrink: 0;

@@ -2,7 +2,7 @@
 #settings-panel,
 #account-panel {
     position: fixed !important;
-    top: env(safe-area-inset-top) !important;
+    top: 0 !important;
     left: 0 !important;
     right: auto !important;
     bottom: calc(72px + env(safe-area-inset-bottom)) !important;
@@ -39,7 +39,7 @@
 #settings-panel .jump-header,
 #account-panel .jump-header {
     border-bottom: 1px solid var(--border);
-    padding: 20px 24px;
+    padding: calc(20px + env(safe-area-inset-top)) 24px 20px;
 }
 
 /* Sync status badge in account panel header */
