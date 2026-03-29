@@ -576,7 +576,7 @@ export class InteractionManager {
                         const cent = CoordMapper.getGraceCenter(activeObject);
                         const wCent = getPixelsForWrapper(wrapper, cent.x, cent.y);
                         const _tp = getTrashPos(cent.x, wCent.x, wCent.y);
-                        if (!isDrawingType(activeObject.type)) InteractionUI.showTrash(true, wrapper, _tp.x, _tp.y);
+                        if (!isDrawingType(activeObject.type) && activeTool !== 'multi-select') InteractionUI.showTrash(true, wrapper, _tp.x, _tp.y);
                         this.app.redrawStamps(pageNum);
                         attachGlobalListeners();
                         InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
@@ -766,7 +766,7 @@ export class InteractionManager {
                 return;
             }
 
-            if (isMovingExisting && outsideAll && !isDraggingHandle) {
+            if (isMovingExisting && outsideAll && !isDraggingHandle && toolType !== 'multi-select') {
                 this._showDragGhost(e.clientX, e.clientY, activeObject);
                 const dt = document.getElementById('sf-doc-trash-btn');
                 if (dt) {
