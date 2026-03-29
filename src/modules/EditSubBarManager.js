@@ -476,16 +476,38 @@ export class EditSubBarManager {
             if (type === 'others') return this._othersBarY ?? 80
             return this._shapesBarY ?? (window.innerHeight * 0.82)
         }
-        const setY = (y) => {
-            // Bar is centered on `top` via translateY(-50%), so clamp using half-height
-            const halfH = (bar.offsetHeight || 120) / 2
-            const minY = halfH + 8
-            const maxY = window.innerHeight - halfH - 8
-            const v = Math.max(minY, Math.min(maxY, y))
-            if (type === 'stamp') this._stampBarY = v
-            else if (type === 'others') this._othersBarY = v
-            else                  this._shapesBarY = v
+        const halfH = () => (bar.offsetHeight || 120) / 2
+        const maxY  = () => window.innerHeight - halfH() - 8
+        const minY  = () => halfH() + 8
+
+        const setY = (y, allowPastBottom = false) => {
+            const v = allowPastBottom
+                ? Math.max(minY(), y)                          // only clamp top
+                : Math.max(minY(), Math.min(maxY(), y))        // clamp both
+            if (type === 'stamp') this._stampBarY = Math.min(v, maxY())
+            else if (type === 'others') this._othersBarY = Math.min(v, maxY())
+            else this._shapesBarY = Math.min(v, maxY())
             bar.style.top = v + 'px'
+            return v
+        }
+
+        const dismissBar = () => {
+            // Animate off-screen then close
+            bar.style.transition = 'top 0.22s ease-in'
+            bar.style.top = (window.innerHeight + halfH() + 20) + 'px'
+            setTimeout(() => {
+                bar.style.transition = ''
+                this.closeAll()
+                // Reset stored Y so next open starts at default position
+                if (type === 'stamp') this._stampBarY = null
+            }, 230)
+        }
+
+        const snapBack = () => {
+            bar.style.transition = 'top 0.2s cubic-bezier(0.34,1.56,0.64,1)'
+            bar.style.top = maxY() + 'px'
+            if (type === 'stamp') this._stampBarY = maxY()
+            setTimeout(() => { bar.style.transition = '' }, 220)
         }
 
         bar.addEventListener('pointerdown', (e) => {
@@ -515,7 +537,9 @@ export class EditSubBarManager {
 
                 if (ds.axis === 'y') {
                     ev.preventDefault()
-                    setY(ds.startBarY + dy)
+                    const newY = ds.startBarY + dy
+                    // Allow dragging past bottom (for dismiss gesture)
+                    setY(newY, newY > maxY())
                     bar.style.cursor = 'grabbing'
                 } else if (ds.axis === 'x' && ds.contentEl) {
                     ev.preventDefault()
@@ -529,6 +553,14 @@ export class EditSubBarManager {
                 window.removeEventListener('pointermove',   onMove)
                 window.removeEventListener('pointerup',     onEnd)
                 window.removeEventListener('pointercancel', onEnd)
+
+                // Dismiss if dragged more than 80px past the bottom edge
+                const currentY = parseFloat(bar.style.top) || getY()
+                if (type === 'stamp' && currentY > maxY() + 80) {
+                    dismissBar()
+                } else if (currentY > maxY()) {
+                    snapBack()
+                }
             }
 
             // Use window-level listeners — more reliable than setPointerCapture on iOS Safari
