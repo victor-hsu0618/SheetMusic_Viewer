@@ -214,7 +214,7 @@ body.sf-dock-bar-visible #sf-dock-fab {
     left: 0;
     right: 0;
     height: env(safe-area-inset-bottom);
-    background: #525659;
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
