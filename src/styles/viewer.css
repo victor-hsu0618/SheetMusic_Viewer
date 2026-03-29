@@ -25,10 +25,9 @@
 
 /* Viewer Container */
 .viewer-container {
-  flex: 1;
-  height: 100%;
+  position: fixed;
+  inset: 0;
   overflow-y: auto;
-  position: relative;
   background-color: #525659;
   display: flex;
   flex-direction: column;
