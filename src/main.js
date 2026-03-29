@@ -597,13 +597,17 @@ this.playbackManager.init()
 new ScoreFlow()
 
 // Register Service Worker for offline support
-registerSW({
+const updateSW = registerSW({
   onNeedRefresh() {
-    if (confirm('ScoreFlow 偵測到重大更新 (V3.1.4)，是否立即重新載入以啟用歌單雲端同步？')) {
-      window.location.reload();
-    }
+    // Auto-reload when new version is available (no prompt)
+    updateSW(true)
   },
   onOfflineReady() {
     console.log('[PWA] App ready to work offline.')
   },
+})
+
+// Check for SW update every time the app comes back to foreground
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') updateSW()
 })
