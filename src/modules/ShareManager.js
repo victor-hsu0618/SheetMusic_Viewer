@@ -25,7 +25,14 @@ export class ShareManager {
             // 2. Upload to Supabase Storage 'shared-pdfs' bucket
             this.app.showMessage('正在上傳...', 'system');
             const title = this.app.scoreDetailManager?.currentInfo?.name || 'Score';
-            const safeTitle = title.replace(/[^\w\u4e00-\u9fff\-]/g, '_').slice(0, 40);
+            // Supabase Storage keys must be ASCII-safe: strip non-ASCII, collapse separators
+            const safeTitle = title
+                .replace(/[^\x20-\x7E]/g, '')   // remove non-ASCII (CJK, etc.)
+                .replace(/[^a-zA-Z0-9\-_. ]/g, '_') // replace special chars
+                .replace(/\s+/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_|_$/g, '')
+                .slice(0, 40) || 'Score';
             const shareId = crypto.randomUUID?.() || `${Date.now()}`;
             const filename = `${safeTitle}_${shareId.slice(0, 8)}.pdf`;
 
