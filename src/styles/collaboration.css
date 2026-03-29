@@ -467,23 +467,120 @@
 .layer-list-mini {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 400px;
-  overflow-y: auto;
+  gap: 4px;
 }
 
 .layer-list-mini .layer-item {
+  display: block;
+  padding: 0;
+  border-radius: 10px;
+  background: var(--bg-soft, rgba(255,255,255,0.04));
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.layer-list-mini .layer-item:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.08));
+}
+.layer-list-mini .layer-item.active {
+  border-color: rgba(99,102,241,0.35);
+  background: rgba(99,102,241,0.08);
+}
+
+/* Row layout inside each item */
+.layer-row-layout {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--bg-soft);
+  gap: 8px;
+  padding: 7px 10px;
+}
+
+.layer-list-mini .color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .layer-list-mini .layer-name {
-  font-size: 0.8rem;
+  flex: 1;
+  font-size: 0.78rem;
   font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-count-value {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 16px;
+  text-align: right;
+}
+
+/* Right-side action buttons */
+.layer-btns {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.btn-placeholder {
+  width: 26px;
+  height: 26px;
+}
+
+/* Override sidebar's large .layer-vis-btn inside mini context */
+.layer-list-mini .layer-vis-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.layer-list-mini .layer-vis-btn.visible {
+  color: var(--text-main);
+  background: transparent;
+}
+.layer-list-mini .layer-vis-btn.inactive {
+  color: var(--text-muted);
+  opacity: 0.4;
+  background: transparent;
+}
+.layer-list-mini .layer-vis-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-main);
+  opacity: 1;
+}
+
+.layer-erase-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.layer-erase-btn:hover {
+  background: rgba(239,68,68,0.15);
+  color: #ef4444;
 }
 
 .layer-count-badge {
