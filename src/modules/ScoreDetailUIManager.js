@@ -95,12 +95,14 @@ export class ScoreDetailUIManager {
         }
     }
 
-    refreshStats(fingerprint, info) {
-        if (this.app.pdfFingerprint === fingerprint) {
+    refreshStats(fingerprint, info, stamps = null) {
+        if (stamps !== null) {
+            this._applyStats(stamps, info)
+        } else if (this.app.pdfFingerprint === fingerprint) {
             this._applyStats(this.app.stamps || [], info)
         } else {
-            import('../db.js').then(db => db.get(`stamps_${fingerprint}`)).then(stamps => {
-                this._applyStats(stamps || [], info)
+            import('../db.js').then(db => db.get(`stamps_${fingerprint}`)).then(s => {
+                this._applyStats(s || [], info)
             }).catch(() => this._applyStats([], info))
         }
     }

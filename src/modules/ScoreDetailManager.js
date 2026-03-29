@@ -123,6 +123,7 @@ export class ScoreDetailManager {
         }
 
         this.render(fingerprint);
+        this.refreshStats();
         this.isLoading = false;
 
         if (this.currentInfo.activeMediaId) {
@@ -222,7 +223,10 @@ export class ScoreDetailManager {
 
     refreshStats() {
         const fingerprint = this.currentFp || this.app.pdfFingerprint
-        if (fingerprint) this.ui.refreshStats(fingerprint, this.currentInfo)
+        if (!fingerprint) return
+        // If we already have currentStamps in memory, pass them directly to avoid a redundant DB read
+        const cachedStamps = this.currentStamps ?? null
+        this.ui.refreshStats(fingerprint, this.currentInfo, cachedStamps)
     }
 
     async onModification() {
