@@ -46,13 +46,19 @@ export class ShareManager {
             let copied = false;
             try { await navigator.clipboard.writeText(url); copied = true; } catch {}
 
-            // 4. Show result dialog
+            // 4. Show result dialog with URL field + email button
+            const title = this.app.scoreDetailManager?.currentInfo?.name || 'Score';
+            const mailSubject = encodeURIComponent(`ScoreFlow 樂譜分享：${title}`);
+            const mailBody = encodeURIComponent(`你好，\n\n以下是含標記的樂譜連結，直接在瀏覽器開啟即可查看：\n\n${url}\n\n（由 ScoreFlow 產生）`);
+            const mailtoHref = `mailto:?subject=${mailSubject}&body=${mailBody}`;
+
             const dialogPromise = this.app.showDialog({
                 title: copied ? '分享連結已複製！' : '分享連結已建立',
                 message: '收件人直接點開連結即可在瀏覽器查看含標記的樂譜，無需安裝任何 App 或 PDF。',
                 icon: '✅',
                 type: 'alert',
             });
+
             const urlField = document.createElement('input');
             urlField.type = 'text';
             urlField.value = url;
@@ -60,7 +66,14 @@ export class ShareManager {
             urlField.style.cssText = 'width:100%;margin-top:12px;font-family:monospace;font-size:11px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);color:var(--text-main);cursor:text;';
             urlField.addEventListener('focus', () => urlField.select());
             urlField.addEventListener('click', () => urlField.select());
+
+            const emailBtn = document.createElement('a');
+            emailBtn.href = mailtoHref;
+            emailBtn.textContent = '✉️  Send via Email';
+            emailBtn.style.cssText = 'display:block;margin-top:10px;padding:8px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--text-main);font-size:0.8rem;font-weight:600;text-align:center;text-decoration:none;cursor:pointer;';
+
             this.app.dialogMessage?.appendChild(urlField);
+            this.app.dialogMessage?.appendChild(emailBtn);
             setTimeout(() => { urlField.focus(); urlField.select(); }, 50);
             await dialogPromise;
 
