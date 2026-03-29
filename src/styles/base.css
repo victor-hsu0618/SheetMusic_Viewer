@@ -45,17 +45,9 @@ body {
 
 #app-root {
   display: flex;
-  width: 100%;
-  /* Use height:100% (inherits from body which is position:fixed; height:100%).
-     On iOS with viewport-fit=cover, position:fixed fills the full screen including
-     safe areas. 100dvh only covers the visual viewport *between* safe areas,
-     leaving the body background (#0f0f13) exposed as black bars at top/bottom
-     in fullscreen PWA mode. */
-  height: 100%;
+  position: fixed;
+  inset: 0; /* top:0 right:0 bottom:0 left:0 — true full screen including safe areas */
   overflow: hidden;
-  position: relative;
-  
-  /* No safe area padding — viewer fills full screen, UI elements handle their own offsets */
 }
 
 /* UTILS from index.html extraction */
