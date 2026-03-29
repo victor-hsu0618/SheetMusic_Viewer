@@ -47,7 +47,6 @@ export class ShareManager {
             try { await navigator.clipboard.writeText(url); copied = true; } catch {}
 
             // 4. Show result dialog with URL field + email button
-            const title = this.app.scoreDetailManager?.currentInfo?.name || 'Score';
             const mailSubject = encodeURIComponent(`ScoreFlow 樂譜分享：${title}`);
             const mailBody = encodeURIComponent(`你好，\n\n以下是含標記的樂譜連結，直接在瀏覽器開啟即可查看：\n\n${url}\n\n（由 ScoreFlow 產生）`);
             const mailtoHref = `mailto:?subject=${mailSubject}&body=${mailBody}`;
