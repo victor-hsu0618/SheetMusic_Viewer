@@ -68,12 +68,11 @@ export class DockingBarManager {
     }
 
     _createBottomFill() {
-        let fill = document.getElementById('sf-dock-bottom-fill')
-        if (!fill) {
-            fill = document.createElement('div')
-            fill.id = 'sf-dock-bottom-fill'
-            fill.innerHTML = '<span id="sf-dock-score-name"></span>'
-            document.body.appendChild(fill)
+        let label = document.getElementById('sf-dock-score-name')
+        if (!label) {
+            label = document.createElement('div')
+            label.id = 'sf-dock-score-name'
+            document.body.appendChild(label)
         }
     }
 
