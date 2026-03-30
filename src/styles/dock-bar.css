@@ -214,19 +214,36 @@ body.sf-dock-bar-visible #sf-dock-fab {
 .sf-ms-btn-danger { color: #ff6b6b; }
 .sf-ms-btn-danger:hover { background: rgba(239,68,68,0.2); }
 
-/* Safe-area bottom fill — matches viewer background to hide home indicator zone.
-   min-height ensures it renders even when env(safe-area-inset-bottom) resolves to 0. */
+/* Full-screen fixed overlay — same pattern as PWA test's .guides container */
 #sf-dock-bottom-fill {
     position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+    display: block;
+}
+
+/* Score name sits in the safe-area-inset-bottom zone — position:absolute inside fixed */
+#sf-dock-score-name {
+    position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
     height: env(safe-area-inset-bottom);
-    min-height: 20px;
-    background-color: #525659;
-    z-index: 9999;
-    pointer-events: none;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Score extends to physical screen bottom — dock bar floats over it */
