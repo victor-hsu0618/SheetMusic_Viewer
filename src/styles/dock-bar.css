@@ -233,6 +233,7 @@ body.sf-dock-bar-visible #sf-dock-fab {
     left: 0;
     width: 100%;
     height: env(safe-area-inset-bottom);
+    min-height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -240,7 +241,7 @@ body.sf-dock-bar-visible #sf-dock-fab {
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(0, 0, 0, 0.45);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
