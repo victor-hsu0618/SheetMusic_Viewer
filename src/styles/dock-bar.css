@@ -237,11 +237,12 @@ body.sf-dock-bar-visible #sf-dock-fab {
     display: flex;
     align-items: center;
     justify-content: center;
+    background: rgba(0, 200, 200, 0.4); /* debug: 確認位置正確後移除 */
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: rgba(0, 0, 0, 0.45);
+    color: white;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
