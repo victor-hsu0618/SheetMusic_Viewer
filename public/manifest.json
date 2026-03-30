@@ -4,8 +4,8 @@
     "description": "Elite Sheet Music Viewer for Professional Musicians",
     "start_url": "./",
     "display": "standalone",
-    "background_color": "#0f0f13",
-    "theme_color": "#6366f1",
+    "background_color": "#525659",
+    "theme_color": "#525659",
     "icons": [
         {
             "src": "vite.svg",
