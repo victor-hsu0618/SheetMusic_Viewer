@@ -214,13 +214,15 @@ body.sf-dock-bar-visible #sf-dock-fab {
 .sf-ms-btn-danger { color: #ff6b6b; }
 .sf-ms-btn-danger:hover { background: rgba(239,68,68,0.2); }
 
-/* Safe-area bottom fill — matches viewer background to hide home indicator zone */
+/* Safe-area bottom fill — matches viewer background to hide home indicator zone.
+   min-height ensures it renders even when env(safe-area-inset-bottom) resolves to 0. */
 #sf-dock-bottom-fill {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     height: env(safe-area-inset-bottom);
+    min-height: 20px;
     background-color: #525659;
     z-index: 9999;
     pointer-events: none;

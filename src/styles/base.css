@@ -22,14 +22,15 @@ html, body {
   touch-action: manipulation;
 }
 
-/* Both html and body background match the viewer theme.
-   On iOS PWA (viewport-fit=cover) the home-indicator zone bleeds through whatever
-   root background is used. Making them match the viewer theme makes the bleed invisible.
-   All panels (library, settings, sidebar) paint their own backgrounds over this. */
-html, body {
-  background-color: var(--bg-viewer, #525659);
-  background-image: var(--bg-pattern);
-  background-size: var(--bg-pattern-size);
+/* html background fills the native home-indicator zone on iOS PWA.
+   body MUST be transparent so html's background shows through to that zone.
+   This is the only reliable way to colour the area below position:fixed bottom:0. */
+html {
+  background-color: #525659; /* viewer grey — matches viewer-container background */
+}
+
+body {
+  background: transparent; /* 必須透明才能看到 html 的背景 */
 }
 
 button {
@@ -39,7 +40,6 @@ button {
 
 body {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  /* background-color set above via html,body rule (#525659 viewer grey) */
   color: var(--text-main);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -49,50 +49,15 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-#app-root {
+#app-root, main {
   display: flex;
   position: fixed;
   inset: 0; /* top:0 right:0 bottom:0 left:0 — true full screen including safe areas */
   overflow: hidden;
-  background: transparent;
+  background: transparent !important;
+  background-color: transparent !important;
+  height: 100%;
   height: 100dvh;
-}
-
-/* UTILS from index.html extraction */
-.ruler-toggle-text {
-  font-size: 0.65rem;
-  font-weight: 700;
-  margin-left: 2px;
-}
-
-.icon-open-pdf {
-  margin-right: 6px;
-}
-
-.section-label-recent {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.clear-recent-btn {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-}
-
-.erase-all-intro {
-  font-size: 13px;
-  opacity: 0.7;
-}
-
-.cancel-btn-container {
-  text-align: center;
-  margin-top: 14px;
 }
 
 /* Force remove Webkit tap highlight and custom focus rings globally for interactive elements */
