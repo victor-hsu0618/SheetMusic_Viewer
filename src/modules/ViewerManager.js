@@ -544,10 +544,16 @@ export class ViewerManager {
 
         if (!isInitialLoad && existingPages.length > 0) {
             existingPages.forEach(el => {
+                const staleTop = el.offsetTop
                 el.classList.add('is-stale')
                 el.removeAttribute('data-page') // Remove so jumps don't target stale containers
                 el.style.pointerEvents = 'none' 
                 el.style.zIndex = '1'
+                el.style.position = 'absolute'
+                el.style.top = `${staleTop}px`
+                el.style.left = '0'
+                el.style.right = '0'
+                el.style.width = '100%'
                 if (this.observer) this.observer.unobserve(el) // Release from observer immediately
                 
                 // If a ratio is provided, lock the visual scale on the stale page
@@ -919,6 +925,18 @@ export class ViewerManager {
                 }
             }
         })
+        this.updateHorizontalPanState()
+    }
+
+    updateHorizontalPanState() {
+        const viewer = this.app.viewer
+        if (!viewer) return
+
+        viewer.classList.remove('can-pan-x')
+        viewer.style.overflowX = 'hidden'
+        if (viewer.scrollLeft !== 0) {
+            viewer.scrollLeft = 0
+        }
     }
 
     createPageElement(pageNum) {

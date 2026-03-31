@@ -25,6 +25,8 @@ export class GestureManager {
         
         this._lastPinchX = 0
         this._lastPinchY = 0
+        this._suppressSingleTouchUntil = 0
+        this._lastZoneTapAt = 0
         
         this._viewerEl = null
     }
@@ -105,6 +107,11 @@ export class GestureManager {
             if (this.inputManager.isEventInUI(e)) return
             if (this.app.viewerManager?.isApplyingZoom) return
             this.inputManager.isLongPressActive = false
+
+            if (e.touches.length === 1 && Date.now() < this._suppressSingleTouchUntil) {
+                if (e.cancelable) e.preventDefault()
+                return
+            }
 
             if (e.touches.length === 1) {
                 this._startX = e.touches[0].clientX
@@ -188,11 +195,8 @@ export class GestureManager {
 
                 // 3. PAN LOGIC (Manual Scroll) — only when explicitly locked to pan
                 if (this._gestureLocked === 'pan') {
-                    const dx = this._lastPinchX - currentX
                     const dy = this._lastPinchY - currentY
-
                     viewerContainer.scrollTop += dy
-                    viewerContainer.scrollLeft += dx
                 }
 
                 this._lastPinchX = currentX
@@ -202,6 +206,10 @@ export class GestureManager {
 
             // SINGLE-FINGER DRAG PREVENTION
             if (e.touches.length === 1 && !this.app.isMac) {
+                if (Date.now() < this._suppressSingleTouchUntil) {
+                    if (e.cancelable) e.preventDefault()
+                    return
+                }
                 const dx = Math.abs(e.touches[0].clientX - this._startX)
                 const dy = Math.abs(e.touches[0].clientY - this._startY)
                 if (dx > 5 || dy > 5) { 
@@ -212,9 +220,11 @@ export class GestureManager {
 
         viewerContainer.addEventListener('touchend', (e) => {
             if (this._isPinching) {
+                const endedPanGesture = this._gestureLocked === 'pan'
                 this._isPinching = false
-                this.app.isPinching = false;
-                
+                this.app.isPinching = false
+                this.app._wasPanning = endedPanGesture
+
                 const ratioStr = this._viewerEl?.style.transform || "";
                 const match = ratioStr.match(/scale\(([^)]+)\)/);
                 const ratio = match ? parseFloat(match[1]) : 1;
@@ -227,6 +237,15 @@ export class GestureManager {
                     this._viewerEl.style.transition = 'transform 0.15s ease-out' 
                 }
 
+                // After a two-finger pan on iPad, briefly block residual single-finger
+                // scrolling so lift-off does not fall through to native vertical scroll.
+                if (endedPanGesture) {
+                    this._suppressSingleTouchUntil = Date.now() + 180
+                    this._gestureLocked = null
+                    if (e.cancelable) e.preventDefault()
+                    return
+                }
+
                 // Apply final scale to PDF.js
                 if (e.touches.length < 2) {
                     const newScale = this._initialScale * ratio
@@ -237,6 +256,7 @@ export class GestureManager {
                         this.app.viewerManager?.changeZoom(delta, ratio)
                     }
                 }
+                this._gestureLocked = null
                 return
             }
 
@@ -269,9 +289,34 @@ export class GestureManager {
                 }
             }
         }, { passive: false })
+
+        viewerContainer.addEventListener('touchcancel', (e) => {
+            if (!this._isPinching) return
+
+            const endedPanGesture = this._gestureLocked === 'pan'
+            this._isPinching = false
+            this.app.isPinching = false
+            this.app._wasPanning = endedPanGesture
+            this._gestureLocked = null
+
+            if (this._viewerEl) {
+                this._viewerEl.style.transform = ''
+                this._viewerEl.style.transformOrigin = ''
+                this._viewerEl.style.willChange = ''
+                this._viewerEl.style.transition = 'transform 0.15s ease-out'
+            }
+
+            if (endedPanGesture) this._suppressSingleTouchUntil = Date.now() + 180
+
+            if (e.cancelable) e.preventDefault()
+        }, { passive: false })
     }
 
     handleZoneTap(tapX, tapY) {
+        const now = Date.now()
+        if (now - this._lastZoneTapAt < 350) return
+        this._lastZoneTapAt = now
+
         // Guard: don't trigger navigation when tapping near the dock bar or FAB
         for (const id of ['sf-dock-fab', 'sf-dock-bar']) {
             const el = document.getElementById(id)
@@ -284,10 +329,14 @@ export class GestureManager {
 
         const vh = window.innerHeight
         const viewer = document.getElementById('viewer-container')
-        const firstPage = viewer.querySelector('.page-container')
+        const pages = Array.from(viewer.querySelectorAll('.page-container'))
+        const pageUnderTap = pages.find(page => {
+            const rect = page.getBoundingClientRect()
+            return tapY >= rect.top && tapY <= rect.bottom
+        }) || pages[0]
         
-        if (firstPage) {
-            const rect = firstPage.getBoundingClientRect()
+        if (pageUnderTap) {
+            const rect = pageUnderTap.getBoundingClientRect()
             const relX = tapX - rect.left
             let success = true
             if (tapY < vh * 0.35) {
