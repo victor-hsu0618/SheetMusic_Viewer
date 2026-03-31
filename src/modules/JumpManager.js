@@ -245,7 +245,7 @@ export class JumpManager {
 
     async goToPage(pageNumber) {
         if (!this.app.pdf) return
-        const pageElem = document.querySelector(`.page-container[data-page="${pageNumber}"]`)
+        const pageElem = document.querySelector(`.page-container:not(.is-stale)[data-page="${pageNumber}"]`)
         if (pageElem) {
             // Priority render before or during scroll
             this.app.viewerManager.ensurePageRendered(pageNumber)
@@ -293,7 +293,7 @@ export class JumpManager {
         this.totalPages = this.app.pdf.numPages
 
         const scrollTop = this.app.viewer.scrollTop
-        const pages = document.querySelectorAll('.page-container')
+        const pages = document.querySelectorAll('.page-container:not(.is-stale)')
         let current = 1
         for (let p of pages) {
             if (p.offsetTop <= scrollTop + window.innerHeight / 3) {

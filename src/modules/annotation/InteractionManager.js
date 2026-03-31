@@ -914,8 +914,8 @@ export class InteractionManager {
             let syncObj = activeObject;
             try {
                 if (syncObj) {
-                    const tPN = syncObj.page;
-                    const tW = document.querySelector(`.page-container[data-page="${tPN}"]`);
+                    const tPN = this._findTargetPage(syncObj);
+                    const tW = document.querySelector(`.page-container:not(.is-stale)[data-page="${tPN}"]`);
                     const dt = document.getElementById('sf-doc-trash-btn'), et = document.getElementById('sf-edit-trash-btn');
                     const isPointerOverTrash = (ev, el) => {
                         if (!el) return false;
@@ -1144,7 +1144,7 @@ export class InteractionManager {
 
             graceObject = obj; this.app._lastGraceObject = graceObject;
             this.app.redrawStamps(obj.page);
-            const tW = document.querySelector(`.page-container[data-page="${obj.page}"]`);
+            const tW = document.querySelector(`.page-container:not(.is-stale)[data-page="${obj.page}"]`);
             if (tW && !isDrawing) {
                 const cent = CoordMapper.getGraceCenter(obj);
                 const wc = getPixelsForWrapper(tW, cent.x, cent.y);
@@ -1156,7 +1156,7 @@ export class InteractionManager {
             graceTimer = setTimeout(() => {
                 if (graceObject === obj) {
                     graceObject = null;
-                    const w = document.querySelector(`.page-container[data-page="${obj.page}"]`);
+                    const w = document.querySelector(`.page-container:not(.is-stale)[data-page="${obj.page}"]`);
                     if (w) InteractionUI.showTrash(false, w);
                     const ov = w?.querySelector('.capture-overlay'), vp = ov?.querySelector('.virtual-pointer');
                     InteractionUI.syncVirtualPointer({ type: 'mousemove' }, null, ov, vp, CoordMapper, this.app);

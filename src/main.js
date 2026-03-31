@@ -411,10 +411,11 @@ this.playbackManager.init()
 
   goToHead() { this.jumpManager.goToHead() }
   goToEnd() { this.jumpManager.goToEnd() }
+
   goToAnchor() {
     const anchor = this.stamps.find(s => s.type === 'anchor')
     if (anchor && anchor.page) {
-        const page = document.querySelector(`.page-container[data-page="${anchor.page}"]`)
+        const page = document.querySelector(`.page-container:not(.is-stale)[data-page="${anchor.page}"]`)
         if (page) {
             const canvas = page.querySelector('.pdf-canvas')
             this.viewer.scrollTo({ top: page.offsetTop + (anchor.y * canvas.height) - this.jumpOffsetPx, behavior: 'smooth' })

@@ -599,11 +599,16 @@ export class AnnotationManager {
             }
 
             this.app.updateRulerMarks()
-            this.app.computeNextTarget()
-            document.querySelectorAll('.page-container[data-page]').forEach(wrapper => {
-                const page = parseInt(wrapper.dataset.page)
-                this.redrawStamps(page)
-            })
+            const scrollTop = this.app.viewer.scrollTop
+            const pages = document.querySelectorAll('.page-container:not(.is-stale)')
+            let current = 1
+            for (let p of pages) {
+                if (p.offsetTop <= scrollTop + window.innerHeight / 3) {
+                    current = parseInt(p.dataset.page)
+                } else {
+                    break
+                }
+            }
             await this.app.saveToStorage(true)
             if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
         }
@@ -1198,12 +1203,14 @@ export class AnnotationManager {
      * Draw a default anchor at the bottom of a page to ensure continuous flow.
      */
     drawPageEndAnchor(page) {
-        const pageWrapper = document.querySelector(`.page-container[data-page="${page}"]`)
-        if (!pageWrapper) return
-        const activeCanvas = pageWrapper.querySelector(`.annotation-layer[data-layer-id="${this.app.activeLayerId}"]`)
-        if (activeCanvas) {
-            const ctx = activeCanvas.getContext('2d')
-            this.renderer.drawStampOnCanvas(ctx, activeCanvas, { type: 'anchor', x: 0.05, y: 1.0, isDefault: true }, '#3b82f6')
+        this.app.viewerManager.ensurePageRendered(page)
+        const wrapper = document.querySelector(`.page-container:not(.is-stale)[data-page="${page}"]`)
+        if (wrapper) {
+            const activeCanvas = wrapper.querySelector(`.annotation-layer[data-layer-id="${this.app.activeLayerId}"]`)
+            if (activeCanvas) {
+                const ctx = activeCanvas.getContext('2d')
+                this.renderer.drawStampOnCanvas(ctx, activeCanvas, { type: 'anchor', x: 0.05, y: 1.0, isDefault: true }, '#3b82f6')
+            }
         }
     }
 

@@ -541,6 +541,7 @@ export class ViewerManager {
         if (!isInitialLoad && existingPages.length > 0) {
             existingPages.forEach(el => {
                 el.classList.add('is-stale')
+                el.removeAttribute('data-page') // Remove so jumps don't target stale containers
                 el.style.pointerEvents = 'none' 
                 el.style.zIndex = '1'
                 
@@ -629,14 +630,14 @@ export class ViewerManager {
      */
     async ensurePageRendered(pageNum) {
         if (!this.pdf) return
-        const wrapper = document.querySelector(`.page-container[data-page="${pageNum}"]`)
+        const wrapper = document.querySelector(`.page-container:not(.is-stale)[data-page="${pageNum}"]`)
         if (wrapper && wrapper.dataset.rendered === 'false') {
             // Bypass queue for high priority — render target page immediately
             await this.renderPage(pageNum, wrapper)
         }
         // Pre-render the next 2 pages so they're ready before the user scrolls to them
         for (let i = 1; i <= 2; i++) {
-            const nextWrapper = document.querySelector(`.page-container[data-page="${pageNum + i}"]`)
+            const nextWrapper = document.querySelector(`.page-container:not(.is-stale)[data-page="${pageNum + i}"]`)
             if (nextWrapper && nextWrapper.dataset.rendered === 'false') {
                 this.enqueueRender(pageNum + i, nextWrapper)
             }
