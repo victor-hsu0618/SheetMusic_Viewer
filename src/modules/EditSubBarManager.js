@@ -539,7 +539,7 @@ export class EditSubBarManager {
 
         const halfH = () => (bar.offsetHeight || 120) / 2
         const halfW = () => (bar.offsetWidth || (bar.classList.contains('vertical') ? 60 : 400)) / 2
-        const topM = 36, botM = 160
+        const topM = 36, botM = 72
         const minY  = () => halfH() + topM
         const maxY  = () => window.innerHeight - halfH() - botM
         const minX  = () => halfW() + 8
@@ -659,11 +659,12 @@ export class EditSubBarManager {
                 window.removeEventListener('pointerup',     onEnd)
                 window.removeEventListener('pointercancel', onEnd)
 
-                // Dismiss if dragged more than 80px past the bottom edge
-                const currentY = parseFloat(bar.style.top) || getY()
-                if (type === 'stamp' && currentY > maxY() + 80) {
+                // Dismiss if Top Edge is dragged more than 120px past the "Snap Target Top Edge"
+                const currentY = parseFloat(bar.style.top) || (getY() - halfH())
+                const snapTop  = maxY() - halfH()
+                if (type === 'stamp' && currentY > snapTop + 120) {
                     dismissBar()
-                } else if (currentY > maxY()) {
+                } else if (currentY > snapTop) {
                     snapBack()
                 }
             }

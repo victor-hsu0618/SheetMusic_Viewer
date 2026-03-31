@@ -451,14 +451,14 @@
     touch-action: pan-y;
     /* prevent browser from hijacking horizontal touch gestures */
     left: 8px;
-    /* Gutter from left edge since Doc bar is removed */
-    transform: translateX(8px) scale(0.95) translateY(-50%);
+    /* 橫向模式下不再依賴 translateY(-50%)，由 JS 完整控制其中心點座標 */
+    transform: translateX(8px) scale(0.95);
     transform-origin: right center;
     transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s;
 }
 
 .sf-wide-bar.open {
-    transform: translateX(0) scale(1) translateY(-50%);
+    transform: translateX(0) scale(1);
 }
 
 
@@ -659,7 +659,7 @@
     left: auto;
     padding-bottom: 4px;
     touch-action: pan-y;
-    transform: none !important; /* Eliminate translateY(-50%) conflict from base wide-bar */
+    /* 移除之前的 transform: none !important 補償，因為全域座標現已統一由 JS 驅動 */
 }
 
 .sf-wide-bar.vertical .sf-bar-nav {
