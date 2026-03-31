@@ -224,8 +224,6 @@ export class EditSubBarManager {
             
             // X position
             const storedX = name === 'stamp' ? this._stampBarX : this._shapesBarX
-            // In vertical mode, default to right side (window.innerWidth - barWidth - margin)
-            // In horizontal mode, it covers full width so we ignore X
             
             const refine = () => {
                 const h = bar.offsetHeight || 120
@@ -234,18 +232,20 @@ export class EditSubBarManager {
                 const halfW = w / 2
 
                 // Clamping is done to Center coordinates
-                const clampedY = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, rawY))
-                // Convert Center to Top
+                const topMargin = 68    // Avoid top toolbar
+                const bottomMargin = 95 // Avoid bottom docking bar
+                const clampedY = Math.max(halfH + topMargin, Math.min(window.innerHeight - halfH - bottomMargin, rawY))
+                // Convert Center to Top-Left for CSS
                 bar.style.top = (clampedY - halfH) + 'px'
                 
                 if (name === 'stamp') this._stampBarY = clampedY
                 else this._shapesBarY = clampedY
 
                 if (isVertical) {
-                    const margin = 62 // Default right-side margin for toolbar
+                    const margin = 62 // Right-side margin for toolbar
                     const rawX = storedX ?? (window.innerWidth - w - margin + halfW)
                     const clampedX = Math.max(halfW + 8, Math.min(window.innerWidth - halfW - 8, rawX))
-                    // Convert Center to Left
+                    // Convert Center to Left for CSS
                     bar.style.left = (clampedX - halfW) + 'px'
                     if (name === 'stamp') this._stampBarX = clampedX
                     else this._shapesBarX = clampedX
@@ -265,8 +265,10 @@ export class EditSubBarManager {
                 const h = bar.offsetHeight || 60
                 const halfH = h / 2
                 const raw = stored ?? (halfH + 16)
-                const clamped = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, raw))
-                bar.style.top = (clamped - halfH) + 'px' // Correct center to top
+                const topMargin = 68
+                const bottomMargin = 95
+                const clamped = Math.max(halfH + topMargin, Math.min(window.innerHeight - halfH - bottomMargin, raw))
+                bar.style.top = (clamped - halfH) + 'px' // Correct center to top-left
                 this._othersBarY = clamped
             }
 
@@ -541,10 +543,11 @@ export class EditSubBarManager {
 
         const halfH = () => (bar.offsetHeight || 120) / 2
         const halfW = () => (bar.offsetWidth || (bar.classList.contains('vertical') ? 60 : 400)) / 2
-        const maxY  = () => window.innerHeight - halfH() - 8
-        const minY  = () => halfH() + 8
-        const maxX  = () => window.innerWidth - halfW() - 8
+        const topM = 68, botM = 95
+        const minY  = () => halfH() + topM
+        const maxY  = () => window.innerHeight - halfH() - botM
         const minX  = () => halfW() + 8
+        const maxX  = () => window.innerWidth - halfW() - 8
 
         const setY = (y, allowPastBottom = false) => {
             const v = allowPastBottom
@@ -553,21 +556,23 @@ export class EditSubBarManager {
             if (type === 'stamp') this._stampBarY = Math.min(v, maxY())
             else if (type === 'others') this._othersBarY = Math.min(v, maxY())
             else this._shapesBarY = Math.min(v, maxY())
-            bar.style.top = v + 'px'
+            // Convert center to top-left
+            bar.style.top = (v - halfH()) + 'px'
             return v
         }
         const setX = (x) => {
             const v = Math.max(minX(), Math.min(maxX(), x))
             if (type === 'stamp') this._stampBarX = v
             else this._shapesBarX = v
-            bar.style.left = v + 'px'
+            // Convert center to top-left
+            bar.style.left = (v - halfW()) + 'px'
             return v
         }
 
         const dismissBar = () => {
             // Animate off-screen then close
             bar.style.transition = 'top 0.22s ease-in'
-            bar.style.top = (window.innerHeight + halfH() + 20) + 'px'
+            bar.style.top = (window.innerHeight + 20) + 'px'
             setTimeout(() => {
                 bar.style.transition = ''
                 this.closeAll()
@@ -582,7 +587,8 @@ export class EditSubBarManager {
         const snapBack = () => {
             bar.style.transition = 'top 0.2s cubic-bezier(0.34,1.56,0.64,1)'
             const targetY = maxY()
-            bar.style.top = targetY + 'px'
+            // Convert center to top
+            bar.style.top = (targetY - halfH()) + 'px'
             if (type === 'stamp') this._stampBarY = targetY
             setTimeout(() => { bar.style.transition = '' }, 220)
         }

@@ -445,6 +445,7 @@
 .sf-others-bar {
     /* Inherits floating styles from .sf-wide-bar */
     z-index: 300; /* Float above everything */
+    transform: none !important; /* Eliminate translateY(-50%) conflict */
 }
 
 /* Specific scroll content for others bar to ensure single row with labels/dividers */
@@ -630,13 +631,14 @@
 .sf-wide-bar.vertical {
     flex-direction: column;
     width: 132px; /* Fixed width for 2 rows of icons + padding */
-    height: calc(100vh - 160px); /* Maximize height with top/bottom bar clearance */
-    max-height: 95vh;
+    height: auto; /* Allow content to fit while respecting max-height */
+    max-height: calc(100vh - 200px); /* Leave plenty of room for toolbar and dock-bar */
     min-height: 200px;
     right: auto;
     left: auto;
     padding-bottom: 4px;
     touch-action: pan-y;
+    transform: none !important; /* Eliminate translateY(-50%) conflict from base wide-bar */
 }
 
 .sf-wide-bar.vertical .sf-bar-nav {
