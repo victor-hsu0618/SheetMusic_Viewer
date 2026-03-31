@@ -219,10 +219,10 @@ body.sf-dock-bar-visible #sf-dock-fab {
     display: none;
 }
 
-/* Score name — directly fixed at bottom of screen, in the grey safe-area strip */
+/* Score name — fixed at the top of the screen, in the safe-area strip */
 #sf-dock-score-name {
     position: fixed;
-    bottom: 5px;
+    top: calc(2px + env(safe-area-inset-top));
     left: 0;
     right: 0;
     text-align: center;

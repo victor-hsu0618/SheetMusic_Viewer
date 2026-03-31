@@ -390,7 +390,7 @@ export class EditSubBarManager {
                             && !item.id.startsWith('cloak-')
                         if (canShowOptions) {
                             e.stopPropagation()
-                            this._toggleToolOptionsPicker(btn)
+                            this._toggleToolOptionsPicker(btn, item.id)
                             return
                         }
                         this._dismissToolOptionsPicker()
@@ -1217,7 +1217,7 @@ export class EditSubBarManager {
         return d
     }
 
-    _toggleToolOptionsPicker(anchorEl) {
+    _toggleToolOptionsPicker(anchorEl, toolId) {
         if (document.getElementById('sf-tool-options-picker')) {
             this._dismissToolOptionsPicker()
             return
@@ -1226,38 +1226,42 @@ export class EditSubBarManager {
         picker.id = 'sf-tool-options-picker'
         picker.className = 'sf-tool-options-picker'
 
-        // ── Color row ──
-        const colorRow = document.createElement('div')
-        colorRow.className = 'sf-options-color-row'
-        PICKER_COLORS.forEach(color => {
-            const dot = document.createElement('div')
-            const isActive = this.app.activeColor?.toLowerCase() === color.toLowerCase()
-            dot.className = 'sf-options-color-dot' + (isActive ? ' active' : '')
-            dot.style.background = color
-            if (color === '#1a1a1a') dot.style.border = '1.5px solid rgba(255,255,255,0.25)'
-            dot.addEventListener('click', (e) => {
-                e.stopPropagation()
-                this.app.activeColor = color
-                this.app.toolManager?.updateActiveTools?.()
-                // Refresh active dot state
-                colorRow.querySelectorAll('.sf-options-color-dot').forEach(d => {
-                    d.classList.toggle('active', d === dot)
-                })
-                // Update active cell icon color in stamp bar
-                const activeCell = this._bars?.['stamp']?.querySelector('.sf-bar-cell.active')
-                if (activeCell) {
-                    activeCell.querySelector('svg')?.style.setProperty('color', color)
-                    activeCell.querySelector('span')?.style.setProperty('color', color)
-                }
-            })
-            colorRow.appendChild(dot)
-        })
-        picker.appendChild(colorRow)
+        const isEmoji = toolId && toolId.startsWith('emoji-');
 
-        // ── Divider ──
-        const divider = document.createElement('div')
-        divider.className = 'sf-options-divider'
-        picker.appendChild(divider)
+        if (!isEmoji) {
+            // ── Color row ──
+            const colorRow = document.createElement('div')
+            colorRow.className = 'sf-options-color-row'
+            PICKER_COLORS.forEach(color => {
+                const dot = document.createElement('div')
+                const isActive = this.app.activeColor?.toLowerCase() === color.toLowerCase()
+                dot.className = 'sf-options-color-dot' + (isActive ? ' active' : '')
+                dot.style.background = color
+                if (color === '#1a1a1a') dot.style.border = '1.5px solid rgba(255,255,255,0.25)'
+                dot.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    this.app.activeColor = color
+                    this.app.toolManager?.updateActiveTools?.()
+                    // Refresh active dot state
+                    colorRow.querySelectorAll('.sf-options-color-dot').forEach(d => {
+                        d.classList.toggle('active', d === dot)
+                    })
+                    // Update active cell icon color in stamp bar
+                    const activeCell = this._bars?.['stamp']?.querySelector('.sf-bar-cell.active')
+                    if (activeCell) {
+                        activeCell.querySelector('svg')?.style.setProperty('color', color)
+                        activeCell.querySelector('span')?.style.setProperty('color', color)
+                    }
+                })
+                colorRow.appendChild(dot)
+            })
+            picker.appendChild(colorRow)
+
+            // ── Divider ──
+            const divider = document.createElement('div')
+            divider.className = 'sf-options-divider'
+            picker.appendChild(divider)
+        }
 
         // ── Size row ──
         const sizeRow = document.createElement('div')

@@ -1,9 +1,9 @@
 .sf-score-title-watermark {
     position: fixed;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%) rotate(180deg);
-    writing-mode: vertical-rl;
+    top: calc(15px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    writing-mode: horizontal-tb;
     opacity: 0.15;
     pointer-events: none;
     font-size: 1.8rem;

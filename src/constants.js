@@ -148,6 +148,29 @@ export const TOOLSETS = [
         ]
     },
     {
+        name: 'Breaths & Pauses',
+        type: 'draw',
+        tools: [
+            { id: 'breath-mark', label: 'Breath', icon: '<path d="M12 8 C 14 8, 15 10, 15 12 C 15 14, 13 16, 10 17 C 11.5 15.5, 12.5 14, 12.5 12 C 12.5 11, 12 10, 11 10 C 11 9, 11.5 8, 12 8 Z" fill="currentColor"/>', draw: { type: 'path', data: 'M 0 -0.4 C 0.2 -0.4, 0.3 -0.2, 0.3 0 C 0.3 0.2, 0.1 0.4, -0.2 0.5 C -0.05 0.35, 0.05 0.2, 0.05 0 C 0.05 -0.1, 0 -0.2, -0.1 -0.2 C -0.1 -0.3, -0.05 -0.4, 0 -0.4 Z', size: 10, strokeWidth: 0, fill: 'currentColor' } },
+            { id: 'caesura',     label: 'Caesura', icon: '<path d="M10 6 L7 18 M16 6 L13 18" fill="none" stroke="currentColor" stroke-width="2" />', draw: { type: 'path', data: 'M -0.1 0.4 L 0.05 -0.4 M 0.1 0.4 L 0.25 -0.4', size: 24, strokeWidth: 2, fill: 'none' } }
+        ]
+    },
+    {
+        name: 'Emoji',
+        type: 'emoji',
+        tools: [
+            { id: 'emoji-star',   label: '⭐', textIcon: '⭐', draw: { type: 'text', content: '⭐', size: 26, fontFace: 'system-ui' } },
+            { id: 'emoji-check',  label: '✅', textIcon: '✅', draw: { type: 'text', content: '✅', size: 26, fontFace: 'system-ui' } },
+            { id: 'emoji-cross',  label: '❌', textIcon: '❌', draw: { type: 'text', content: '❌', size: 26, fontFace: 'system-ui' } },
+            { id: 'emoji-exclaim',label: '❗', textIcon: '❗', draw: { type: 'text', content: '❗', size: 26, fontFace: 'system-ui' } },
+            { id: 'emoji-question',label:'❓', textIcon: '❓', draw: { type: 'text', content: '❓', size: 26, fontFace: 'system-ui' } },
+            { id: 'emoji-heart',  label: '❤️', textIcon: '❤️', draw: { type: 'text', content: '❤️', size: 26, fontFace: 'system-ui' } },
+            { id: 'emoji-idea',   label: '💡', textIcon: '💡', draw: { type: 'text', content: '💡', size: 26, fontFace: 'system-ui' } },
+            { id: 'emoji-eyes',   label: '👀', textIcon: '👀', draw: { type: 'text', content: '👀', size: 26, fontFace: 'system-ui' } },
+            { id: 'emoji-music',  label: '🎵', textIcon: '🎵', draw: { type: 'text', content: '🎵', size: 26, fontFace: 'system-ui' } }
+        ]
+    },
+    {
         name: 'Others',
         type: 'others',
         tools: [
@@ -159,7 +182,8 @@ export const TOOLSETS = [
             { id: 'music-anchor', label: 'Music', icon: '<path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />', draw: { type: 'special', variant: 'playback' } },
             { id: 'measure', label: 'Measure', icon: '<text x="12" y="16.5" font-size="14" font-family="Outfit" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">#</text>', draw: { type: 'special', variant: 'measure' } },
             { id: 'measure-free', label: 'Free #', icon: '<text x="12" y="16.5" font-size="14" font-family="Outfit" font-weight="500" text-anchor="middle" fill="currentColor" stroke="none">#</text><circle cx="18" cy="18" r="4" fill="currentColor" opacity="0.5"/>', draw: { type: 'special', variant: 'measure' } },
-            { id: 'sticky-note', label: '便條紙', row: 1, icon: '<rect x="4" y="4" width="14" height="16" rx="1" fill="#fef08a" stroke="currentColor" stroke-width="1.2"/><polygon points="14,4 18,4 18,8 14,8" fill="rgba(0,0,0,0.12)" stroke="none"/><line x1="14" y1="4" x2="18" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="10" x2="16" y2="10" stroke="#854d0e" stroke-width="1"/><line x1="7" y1="13" x2="16" y2="13" stroke="#854d0e" stroke-width="1"/><line x1="7" y1="16" x2="12" y2="16" stroke="#854d0e" stroke-width="1"/>', draw: { type: 'sticky' } }
+            { id: 'sticky-note', label: '便條紙', row: 1, icon: '<rect x="4" y="4" width="14" height="16" rx="1" fill="#fef08a" stroke="currentColor" stroke-width="1.2"/><polygon points="14,4 18,4 18,8 14,8" fill="rgba(0,0,0,0.12)" stroke="none"/><line x1="14" y1="4" x2="18" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="10" x2="16" y2="10" stroke="#854d0e" stroke-width="1"/><line x1="7" y1="13" x2="16" y2="13" stroke="#854d0e" stroke-width="1"/><line x1="7" y1="16" x2="12" y2="16" stroke="#854d0e" stroke-width="1"/>', draw: { type: 'sticky' } },
+            { id: 'star-icon', label: 'Star', row: 1, icon: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor" stroke="none"/>', draw: { type: 'path', data: 'M 0 -0.5 L 0.15 -0.15 L 0.5 -0.1 L 0.25 0.15 L 0.3 0.5 L 0 0.3 L -0.3 0.5 L -0.25 0.15 L -0.5 -0.1 L -0.15 -0.15 Z', size: 25, strokeWidth: 0, fill: 'currentColor' } }
         ]
     }
 ];
