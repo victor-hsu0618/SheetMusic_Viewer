@@ -122,7 +122,7 @@ export class SettingsPanelManager {
                 const code     = document.getElementById('supabase-invite-code')?.value?.trim()
                 const msgEl    = document.getElementById('register-message')
 
-                const setMsg = (text, color = '#ef4444') => { if (msgEl) { msgEl.textContent = text; msgEl.style.color = color } }
+                const setMsg = (text, color = 'var(--danger)') => { if (msgEl) { msgEl.textContent = text; msgEl.style.color = color } }
 
                 if (!email || !password) return setMsg('Please enter email and password.')
                 if (password.length < 6) return setMsg('Password must be at least 6 characters.')
