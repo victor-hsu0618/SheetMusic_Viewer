@@ -231,18 +231,22 @@ export class EditSubBarManager {
                 const h = bar.offsetHeight || 120
                 const w = bar.offsetWidth || 400
                 const halfH = h / 2
+                const halfW = w / 2
+
+                // Clamping is done to Center coordinates
                 const clampedY = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, rawY))
-                bar.style.top = clampedY + 'px'
+                // Convert Center to Top
+                bar.style.top = (clampedY - halfH) + 'px'
                 
                 if (name === 'stamp') this._stampBarY = clampedY
                 else this._shapesBarY = clampedY
 
                 if (isVertical) {
-                    const margin = 62 // Ensure it doesn't overlap the edit strip
-                    const rawX = storedX ?? (window.innerWidth - w - margin)
-                    const halfW = w / 2
+                    const margin = 62 // Default right-side margin for toolbar
+                    const rawX = storedX ?? (window.innerWidth - w - margin + halfW)
                     const clampedX = Math.max(halfW + 8, Math.min(window.innerWidth - halfW - 8, rawX))
-                    bar.style.left = clampedX + 'px'
+                    // Convert Center to Left
+                    bar.style.left = (clampedX - halfW) + 'px'
                     if (name === 'stamp') this._stampBarX = clampedX
                     else this._shapesBarX = clampedX
                 } else {
@@ -262,7 +266,7 @@ export class EditSubBarManager {
                 const halfH = h / 2
                 const raw = stored ?? (halfH + 16)
                 const clamped = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, raw))
-                bar.style.top = clamped + 'px'
+                bar.style.top = (clamped - halfH) + 'px' // Correct center to top
                 this._othersBarY = clamped
             }
 

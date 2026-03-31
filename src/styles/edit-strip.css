@@ -630,8 +630,8 @@
 .sf-wide-bar.vertical {
     flex-direction: column;
     width: 132px; /* Fixed width for 2 rows of icons + padding */
-    height: calc(100vh - 120px); /* Fill height while leaving headroom */
-    max-height: 850px; /* Sensible upper bound for desktop */
+    height: calc(100vh - 160px); /* Maximize height with top/bottom bar clearance */
+    max-height: 95vh;
     min-height: 200px;
     right: auto;
     left: auto;
