@@ -480,14 +480,7 @@ input[type="range"] {
   }
 }
 
-.btn-danger-outline {
-  color: var(--danger);
-  border: 1px solid var(--danger);
-}
 
-.btn-danger-outline:hover {
-  background: rgba(var(--danger-rgb, 239, 68, 68), 0.1);
-}
 
 /* Mobile Toolbar Removed */
 .help-hints {

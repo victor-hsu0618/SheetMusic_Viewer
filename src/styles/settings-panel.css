@@ -89,14 +89,14 @@
     align-items: center;
     gap: 12px;
     padding: 12px;
-    background: var(--bg-soft);
+    background: var(--bg-app);
     border-radius: 10px;
     border: 1px solid var(--border);
-    transition: background 0.2s;
+    transition: all 0.2s;
 }
 
 .profile-card-minimal:hover {
-    background: rgba(var(--text-main-rgb), 0.1);
+    background: var(--bg-soft);
 }
 
 .prof-avatar {

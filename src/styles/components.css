@@ -85,9 +85,19 @@ label.btn:active {
     background: rgba(var(--primary-rgb), 0.1);
 }
 
+.btn-danger-outline, .btn-outline-danger {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+}
+
+.btn-danger-outline:hover, .btn-outline-danger:hover {
+    background: rgba(var(--danger-rgb), 0.1);
+}
+
 .btn-primary-highlight {
-    background: #4f46e5;
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    background: var(--primary);
+    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.4);
     transform: scale(1.02);
 }
 
@@ -126,7 +136,7 @@ label.btn:active {
     }
 }
 
-/* Category Navigator \u0026 Dropdown */
+/* Category Navigator & Dropdown */
 .nav-trigger {
     display: flex;
     align-items: center;
