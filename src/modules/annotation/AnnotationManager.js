@@ -397,7 +397,7 @@ export class AnnotationManager {
         if (lid && coreIds.includes(lid)) return lid;
 
         // 2. Legacy ID Mapping
-        if (lid === 'performance' || stamp.type.startsWith('text-') || stamp.type.startsWith('custom-text-')) {
+        if (lid === 'performance' || stamp.type.startsWith('text-') || stamp.type.startsWith('custom-text')) {
             return 'text';
         }
         if (lid === 'anchor' || lid === 'other' || lid === 'layout' || ['anchor', 'music-anchor', 'measure', 'measure-free'].includes(stamp.type)) {
@@ -758,8 +758,8 @@ export class AnnotationManager {
             if (val) {
                 stamp.data = val
                 stamp.updatedAt = Date.now()
-                if (stamp.type !== 'quick-text' && !this.app.userTextLibrary.includes(val)) {
-                    this.app.userTextLibrary.push(val)
+                if (stamp.type !== 'quick-text') {
+                    this.app.ensureUserTextEntry(val)
                     if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
                 }
                 if (!this.app.stamps.includes(stamp)) {
@@ -1099,7 +1099,7 @@ export class AnnotationManager {
         let draw = group?.tools.find(t => t.id === type)?.draw
 
         // SPECIAL: Handle User Custom Text Library
-        if (type.startsWith('custom-text-') && this.app._activeCustomText) {
+        if (type.startsWith('custom-text') && this.app._activeCustomText) {
             draw = {
                 type: 'text',
                 content: this.app._activeCustomText,
@@ -1114,8 +1114,8 @@ export class AnnotationManager {
             if (!inputText || !inputText.trim()) return
             data = inputText.trim()
             // Auto-save to library
-            if (!this.app.userTextLibrary.includes(data)) {
-                this.app.userTextLibrary.push(data)
+            if (data) {
+                this.app.ensureUserTextEntry(data)
                 if (this.app.profileManager?.data) this.app.profileManager.data.updatedAt = Date.now()
             }
         } else if (type === 'measure' || type === 'measure-free') {

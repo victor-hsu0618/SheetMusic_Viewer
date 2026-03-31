@@ -27,7 +27,7 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_layers', JSON.stringify(this.app.layers))
         localStorage.setItem('scoreflow_active_color', this.app.activeColor)
         localStorage.setItem('scoreflow_default_font_size', this.app.defaultFontSize)
-        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary))
+        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.getUserTextEntries()))
         localStorage.setItem('scoreflow_stamp_size_multiplier', this.app.stampSizeMultiplier)
         localStorage.setItem('scoreflow_stamp_size_overrides', JSON.stringify(this.app.stampSizeOverrides || {}))
         localStorage.setItem('scoreflow_stamp_offset_touch_y', this.app.stampOffsetTouchY)
@@ -142,14 +142,17 @@ export class PersistenceManager {
         }
         if (rulerVisibleData !== null) this.app.rulerVisible = JSON.parse(rulerVisibleData)
         if (userTextLibraryData) {
-            this.app.userTextLibrary = JSON.parse(userTextLibraryData)
+            this.app.userTextLibrary = this.app.normalizeUserTextLibrary(JSON.parse(userTextLibraryData))
         }
         // One-time migration: prepend built-in presets for users who had an older library
         if (!localStorage.getItem('scoreflow_text_presets_v1')) {
             const PRESETS = ['指揮', '小提', '大提', '管樂', '打擊', '獨奏', '換頁', '換譜', '呼吸']
             PRESETS.forEach(t => {
-                if (!this.app.userTextLibrary.includes(t)) this.app.userTextLibrary.unshift(t)
+                if (!this.app.getUserTextEntries().some(entry => entry.text === t)) {
+                    this.app.userTextLibrary.unshift(this.app.createUserTextEntry(t))
+                }
             })
+            this.app.userTextLibrary = this.app.normalizeUserTextLibrary(this.app.userTextLibrary)
             localStorage.setItem('scoreflow_text_presets_v1', '1')
         }
         if (activeColorData) this.app.activeColor = activeColorData

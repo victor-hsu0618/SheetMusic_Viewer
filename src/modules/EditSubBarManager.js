@@ -1086,11 +1086,24 @@ export class EditSubBarManager {
     _loadMyPanelItems() {
         try {
             const cfg = JSON.parse(localStorage.getItem('scoreflow_panel_config') || '{}')
-            const stamps = cfg.stamps
-                || JSON.parse(localStorage.getItem('scoreflow_my_panel') || '[]')
+            const legacyPanel = JSON.parse(localStorage.getItem('scoreflow_my_panel') || '[]')
+            const sourceStamps = cfg.stamps || legacyPanel
+            const migrated = this.app.migrateCustomTextPanelEntries(sourceStamps)
+            const stamps = migrated.entries
+
+            if (migrated.changed) {
+                if (cfg.stamps) {
+                    const nextCfg = { ...cfg, stamps }
+                    localStorage.setItem('scoreflow_panel_config', JSON.stringify(nextCfg))
+                    this.app.supabaseManager?.pushPanelConfig(nextCfg)
+                } else {
+                    localStorage.setItem('scoreflow_my_panel', JSON.stringify(stamps))
+                }
+            }
 
             const textGroup = TOOLSETS.find(g => g.name === 'Text') || { name: 'Text' }
-            const lib = this.app.userTextLibrary || []
+            const lib = this.app.getUserTextEntries()
+            const customTextGroupId = this.app.getCustomTextGroupToolId()
 
             // Build a special text item with page/row taken from the config entry
             const makeTextItem = (entry, base) => ({
@@ -1125,16 +1138,21 @@ export class EditSubBarManager {
                     // Special text items not in TOOLSETS — honour page/row from config
                     if (entry.id === 'quick-text') {
                         items.push(makeTextItem(entry, { id: 'quick-text', label: 'Free Text', icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8"/>', _isSpecial: true }))
+                    } else if (entry.id === customTextGroupId) {
+                        lib.forEach((textEntry) => {
+                            items.push(makeTextItem(entry, {
+                                id: this.app.buildCustomTextToolId(textEntry.id),
+                                label: textEntry.text,
+                                textIcon: textEntry.text,
+                                draw: { type: 'text', content: textEntry.text, font: 'italic 400', size: 16, fontFace: 'serif' },
+                                _isUserText: true,
+                                _textId: textEntry.id,
+                            }))
+                        })
                     } else if (entry.id === 'text-library-add') {
                         items.push(makeTextItem(entry, { id: 'text-library-add', label: 'Add Text', icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>', _isSpecial: true }))
                     } else if (entry.id === 'text-library-edit') {
                         items.push(makeTextItem(entry, { id: 'text-library-edit', label: 'Edit Library', icon: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>', _isSpecial: true }))
-                    } else if (/^custom-text-\d+$/.test(entry.id)) {
-                        const idx = parseInt(entry.id.split('-').pop())
-                        const text = lib[idx]
-                        if (text !== undefined) {
-                            items.push(makeTextItem(entry, { id: entry.id, label: text, textIcon: text, draw: { type: 'text', content: text, font: 'italic 400', size: 16, fontFace: 'serif' }, _isUserText: true, _textIdx: idx }))
-                        }
                     }
                 }
 
@@ -1149,19 +1167,11 @@ export class EditSubBarManager {
                 }
             }
 
-            // Append any text items not already in the configured layout
-            // (these default to page 1 via _page: undefined)
             const alreadyIn = (id) => items.some(item => item.id === id)
 
             if (!alreadyIn('quick-text')) {
                 items.push({ id: 'quick-text', label: 'Free Text', icon: '<path d="M4 7V4h16v3M12 4v16m-4 0h8"/>', _group: textGroup, _isSpecial: true })
             }
-            lib.forEach((text, idx) => {
-                const id = 'custom-text-' + idx
-                if (!alreadyIn(id)) {
-                    items.push({ id, label: text, textIcon: text, draw: { type: 'text', content: text, font: 'italic 400', size: 16, fontFace: 'serif' }, _group: textGroup, _isUserText: true, _textIdx: idx })
-                }
-            })
             if (!alreadyIn('text-library-add')) {
                 items.push({ id: 'text-library-add', label: 'Add Text', icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>', _group: textGroup, _isSpecial: true })
             }
@@ -1196,11 +1206,11 @@ export class EditSubBarManager {
             this._handleEditLibrary(bar)
             return
         }
-        if (toolId.startsWith('custom-text-')) {
-            const idx = parseInt(toolId.split('-').pop())
-            const text = (this.app.userTextLibrary || [])[idx]
-            if (text) {
-                this.app._activeCustomText = text
+        if (toolId.startsWith('custom-text')) {
+            const textEntry = this.app.resolveCustomTextFromToolId(toolId)
+            if (textEntry) {
+                this.app._activeCustomText = textEntry.text
+                this.app._activeCustomTextId = textEntry.id
                 this.app.activeStampType = toolId
                 this.app.toolManager?.updateActiveTools()
                 this._populateBar(bar, barType)
@@ -1209,6 +1219,8 @@ export class EditSubBarManager {
         }
 
         this.app.activeStampType = toolId
+        this.app._activeCustomText = null
+        this.app._activeCustomTextId = null
         // Sync activeColor: natural color wins, else apply category default
         if (TOOL_NATURAL_COLORS[toolId] !== undefined) {
             this.app.activeColor = TOOL_NATURAL_COLORS[toolId]
@@ -1233,16 +1245,14 @@ export class EditSubBarManager {
             placeholder: 'e.g. Pizz., dolce, a tempo…',
         })
         if (!text?.trim()) return
-        if (!this.app.userTextLibrary) this.app.userTextLibrary = []
-        if (!this.app.userTextLibrary.includes(text.trim())) {
-            this.app.userTextLibrary.push(text.trim())
-            this._saveTextLibrary()
-        }
+        const textEntry = this.app.ensureUserTextEntry(text)
+        this._saveTextLibrary()
+        if (textEntry) this._ensureCustomTextPanelEntry()
         this._populateBar(bar, 'stamp')
     }
 
     async _handleEditLibrary(bar) {
-        const current = (this.app.userTextLibrary || []).join(', ')
+        const current = this.app.getUserTextValues().join(', ')
         const result = await this.app.showDialog({
             title: 'Edit Text Library',
             message: 'Items separated by comma:',
@@ -1251,30 +1261,89 @@ export class EditSubBarManager {
             placeholder: '指揮, 小提, Pizz., dolce…',
         })
         if (result === null || result === undefined) return
-        this.app.userTextLibrary = result.split(',').map(s => s.trim()).filter(Boolean)
+        const existing = this.app.getUserTextEntries()
+        const nextEntries = []
+        result.split(',').map(s => s.trim()).filter(Boolean).forEach((text) => {
+            const reused = existing.find(entry => entry.text === text && !nextEntries.some(item => item.id === entry.id))
+            nextEntries.push(reused || this.app.createUserTextEntry(text))
+        })
+        this.app.userTextLibrary = this.app.normalizeUserTextLibrary(nextEntries)
         this._saveTextLibrary()
         this._populateBar(bar, 'stamp')
     }
 
     _saveTextLibrary() {
+        this.app.userTextLibrary = this.app.normalizeUserTextLibrary(this.app.userTextLibrary)
         this.app.saveToStorage?.()
-        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary || []))
-        this.app.supabaseManager?.pushUserContent({ userTextLibrary: this.app.userTextLibrary || [] })
+        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.getUserTextEntries()))
+        this.app.supabaseManager?.pushUserContent({ userTextLibrary: this.app.getUserTextEntries() })
+    }
+
+    _ensureCustomTextPanelEntry() {
+        const cfg = JSON.parse(localStorage.getItem('scoreflow_panel_config') || '{}')
+        const legacyPanel = JSON.parse(localStorage.getItem('scoreflow_my_panel') || '[]')
+        const sourceStamps = Array.isArray(cfg.stamps) ? cfg.stamps : legacyPanel
+        const migrated = this.app.migrateCustomTextPanelEntries(sourceStamps)
+        const stamps = Array.isArray(migrated.entries) ? [...migrated.entries] : []
+        const toolId = this.app.getCustomTextGroupToolId()
+
+        if (stamps.some(entry => entry?.id === toolId)) {
+            if (migrated.changed && Array.isArray(cfg.stamps)) {
+                const nextCfg = { ...cfg, stamps }
+                localStorage.setItem('scoreflow_panel_config', JSON.stringify(nextCfg))
+                this.app.supabaseManager?.pushPanelConfig(nextCfg)
+            }
+            return
+        }
+
+        const anchor = stamps.find(entry => entry?.id === 'text-library-add')
+            || stamps.find(entry => entry?.id === 'text-library-edit')
+            || stamps.find(entry => entry?.id === 'quick-text')
+
+        if (!anchor) {
+            if (migrated.changed && Array.isArray(cfg.stamps)) {
+                const nextCfg = { ...cfg, stamps }
+                localStorage.setItem('scoreflow_panel_config', JSON.stringify(nextCfg))
+                this.app.supabaseManager?.pushPanelConfig(nextCfg)
+            }
+            return
+        }
+
+        const nextEntry = {
+            id: toolId,
+            category: 'Text',
+            page: anchor.page ?? 1,
+            row: anchor.row ?? 1,
+        }
+        const anchorIndex = stamps.findIndex(entry => entry?.id === anchor.id)
+        const insertAt = anchorIndex >= 0 ? anchorIndex : stamps.length
+        stamps.splice(insertAt, 0, nextEntry)
+
+        if (Array.isArray(cfg.stamps)) {
+            const nextCfg = { ...cfg, stamps }
+            localStorage.setItem('scoreflow_panel_config', JSON.stringify(nextCfg))
+            this.app.supabaseManager?.pushPanelConfig(nextCfg)
+            return
+        }
+
+        localStorage.setItem('scoreflow_my_panel', JSON.stringify(stamps))
     }
 
     async _deleteUserText(idx, bar) {
-        if (!this.app.userTextLibrary) return
-        const text = this.app.userTextLibrary[idx]
+        const entries = this.app.getUserTextEntries()
+        const textEntry = entries[idx]
+        if (!textEntry) return
         const confirmed = await this.app.showDialog({
             title: 'Remove from Library',
-            message: `Remove "${text}" from your text library?`,
+            message: `Remove "${textEntry.text}" from your text library?`,
             type: 'confirm',
         })
         if (!confirmed) return
         this.app.userTextLibrary.splice(idx, 1)
         this._saveTextLibrary()
-        if (this.app._activeCustomText === text) {
+        if (this.app._activeCustomTextId === textEntry.id || this.app._activeCustomText === textEntry.text) {
             this.app._activeCustomText = null
+            this.app._activeCustomTextId = null
             this.app.activeStampType = 'view'
             this.app.toolManager?.updateActiveTools()
         }

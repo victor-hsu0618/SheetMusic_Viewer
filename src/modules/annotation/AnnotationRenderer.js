@@ -492,7 +492,7 @@ export class AnnotationRenderer {
         }
 
         // PRIORITY 3: Global state fallback (ONLY for unplaced/preview stamps)
-        if (!toolDef && stamp.type && stamp.type.startsWith('custom-text-') && this.app._activeCustomText) {
+        if (!toolDef && stamp.type && stamp.type.startsWith('custom-text') && this.app._activeCustomText) {
             toolDef = {
                 draw: {
                     type: 'text',

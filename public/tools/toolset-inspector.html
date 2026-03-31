@@ -1423,6 +1423,21 @@ let myPanel      = []   // stamps: [{id, category}]
 let editBarOrder = EDIT_TOOLS.map(t => t.id)
 let docBarOrder  = DOC_BAR_BTNS.map(b => b.id)
 
+function persistPanelConfig(cfg, { showStatus = false } = {}) {
+    localStorage.setItem(LS_PANEL_CONFIG, JSON.stringify(cfg))
+    if (showStatus) {
+        const el = document.getElementById('save-status')
+        if (!navigator.onLine) {
+            if (el) { el.textContent = '✓ 本地已儲存（離線，未同步雲端）'; el.style.color = '#f59e0b'; setTimeout(() => { el.textContent = ''; el.style.color = '' }, 3000) }
+            return
+        }
+        _pushPanelConfigToCloud(cfg)
+        if (el) { el.textContent = '✓ 已儲存'; el.style.color = ''; setTimeout(() => el.textContent = '', 2000) }
+        return
+    }
+    if (navigator.onLine) _pushPanelConfigToCloud(cfg)
+}
+
 function loadMyPanel() {
     try {
         const cfg = JSON.parse(localStorage.getItem(LS_PANEL_CONFIG) || '{}')
@@ -1432,19 +1447,17 @@ function loadMyPanel() {
         const validDocIds = new Set(DOC_BAR_BTNS.map(b => b.id))
         const savedDocBar = (cfg.docBar || []).filter(id => validDocIds.has(id))
         docBarOrder = savedDocBar.length ? savedDocBar : DOC_BAR_BTNS.map(b => b.id)
+        const migrated = migrateCustomTextPanelEntries(myPanel)
+        myPanel = migrated.entries
+        if (migrated.changed) {
+            persistPanelConfig({ stamps: myPanel, editBar: editBarOrder, docBar: docBarOrder })
+        }
     } catch { myPanel = []; editBarOrder = EDIT_TOOLS.map(t => t.id); docBarOrder = DOC_BAR_BTNS.map(b => b.id) }
 }
 
 function saveMyPanel() {
     const cfg = { stamps: myPanel, editBar: editBarOrder, docBar: docBarOrder }
-    localStorage.setItem(LS_PANEL_CONFIG, JSON.stringify(cfg))
-    const el = document.getElementById('save-status')
-    if (!navigator.onLine) {
-        if (el) { el.textContent = '✓ 本地已儲存（離線，未同步雲端）'; el.style.color = '#f59e0b'; setTimeout(() => { el.textContent = ''; el.style.color = '' }, 3000) }
-        return
-    }
-    _pushPanelConfigToCloud(cfg)
-    if (el) { el.textContent = '✓ 已儲存'; el.style.color = ''; setTimeout(() => el.textContent = '', 2000) }
+    persistPanelConfig(cfg, { showStatus: true })
 }
 
 async function _pushPanelConfigToCloud(cfg) {
@@ -1628,6 +1641,69 @@ function renderIcon(tool, size = 20) {
 
 function renderMyPanel() { /* no-op */ }
 
+function makeUserTextEntry(text, id = null) {
+    const trimmed = String(text || '').trim()
+    if (!trimmed) return null
+    return {
+        id: id || `txt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        text: trimmed
+    }
+}
+
+function getCustomTextGroupToolId() {
+    return 'custom-text-all'
+}
+
+function normalizeUserTextLibrary(entries) {
+    if (!Array.isArray(entries)) return []
+    const seen = new Set()
+    return entries.map(entry => {
+        if (typeof entry === 'string') return makeUserTextEntry(entry)
+        return makeUserTextEntry(entry?.text, entry?.id)
+    }).filter(Boolean).filter(entry => {
+        if (seen.has(entry.text)) return false
+        seen.add(entry.text)
+        return true
+    })
+}
+
+function buildCustomTextToolId(textId) {
+    return `custom-text:${textId}`
+}
+
+function migrateCustomTextPanelEntries(entries) {
+    if (!Array.isArray(entries)) return { entries: [], changed: false }
+    let changed = false
+    let groupAnchor = null
+    const next = []
+    entries.forEach(entry => {
+        if (!entry || typeof entry !== 'object') {
+            next.push(entry)
+            return
+        }
+        if (entry.id === getCustomTextGroupToolId()) {
+            if (!groupAnchor) {
+                groupAnchor = { ...entry, id: getCustomTextGroupToolId(), category: entry.category || 'Text' }
+                next.push(groupAnchor)
+            } else {
+                changed = true
+            }
+            return
+        }
+        const isLegacyCustom = typeof entry.id === 'string' && (entry.id.startsWith('custom-text:') || /^custom-text-\d+$/.test(entry.id))
+        if (!isLegacyCustom) {
+            next.push(entry)
+            return
+        }
+        if (!groupAnchor) {
+            groupAnchor = { ...entry, id: getCustomTextGroupToolId(), category: entry.category || 'Text' }
+            next.push(groupAnchor)
+        }
+        changed = true
+    })
+    return { entries: next, changed }
+}
+
 // All non-edit tool IDs globally unique → look up by ID only
 function findToolById(id) {
     for (const g of TOOLSETS) {
@@ -1635,14 +1711,24 @@ function findToolById(id) {
         const t = g.tools.find(t => t.id === id)
         if (t) return { tool: t, group: g }
     }
-    // Dynamic user text items: custom-text-N
-    const m = id.match(/^custom-text-(\d+)$/)
-    if (m) {
-        const lib = getUserTextLibrary()
-        const text = lib[parseInt(m[1])]
-        if (text !== undefined) {
+    const lib = getUserTextLibrary()
+    if (id === getCustomTextGroupToolId()) {
+        return { tool: { id, label: 'Preset Text', textIcon: 'Text' }, group: { name: 'Text', color: '#b45309' } }
+    }
+    if (typeof id === 'string' && id.startsWith('custom-text:')) {
+        const textId = id.slice('custom-text:'.length)
+        const textEntry = lib.find(item => item.id === textId)
+        if (textEntry) {
             const fakeGroup = { name: 'Text', color: '#b45309' }
-            return { tool: { id, label: text, textIcon: text }, group: fakeGroup }
+            return { tool: { id, label: textEntry.text, textIcon: textEntry.text }, group: fakeGroup }
+        }
+    }
+    const m = typeof id === 'string' ? id.match(/^custom-text-(\d+)$/) : null
+    if (m) {
+        const textEntry = lib[parseInt(m[1], 10)]
+        if (textEntry) {
+            const fakeGroup = { name: 'Text', color: '#b45309' }
+            return { tool: { id: buildCustomTextToolId(textEntry.id), label: textEntry.text, textIcon: textEntry.text }, group: fakeGroup }
         }
     }
     // Special text tools
@@ -1657,8 +1743,24 @@ function findToolById(id) {
     return null
 }
 
+function describeStampId(id) {
+    const found = findToolById(id)
+    if (found?.tool) {
+        const label = found.tool.label || found.tool.textIcon || found.tool.id
+        return { id: found.tool.id || id, label }
+    }
+    return { id, label: id }
+}
+
 function getUserTextLibrary() {
-    try { return JSON.parse(localStorage.getItem('scoreflow_user_text_library') || '[]') } catch { return [] }
+    try {
+        const raw = JSON.parse(localStorage.getItem('scoreflow_user_text_library') || '[]')
+        const normalized = normalizeUserTextLibrary(raw)
+        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(normalized))
+        return normalized
+    } catch {
+        return []
+    }
 }
 
 // ── Stamp page+row text editor ────────────────────────────────────────────────
@@ -1678,19 +1780,19 @@ function parseStampText(text, page, row) {
     return text.split(',').map(s => s.trim()).filter(Boolean).map(id => {
         const found = findToolById(id)
         return found
-            ? { id, category: found.group.name, row, page, _valid: true }
+            ? { id: found.tool.id || id, category: found.group.name, row, page, _valid: true }
             : { id, category: '', row, page, _valid: false }
     })
 }
 
 function buildStampChips(items) {
     return items.map(item => {
-        const found = findToolById(item.id)
-        const t = found?.tool
+        const found = describeStampId(item.id)
+        const t = findToolById(found.id)?.tool
         if (!item._valid || !t) {
             return `<div class="mock-cell edit-cell" title="未知 ID: ${item.id}" style="width:44px;font-size:9px;color:#ef4444">${item.id}</div>`
         }
-        return `<div class="mock-cell" title="${t.label} (${item.id})">${renderIcon(t, 20)}<span class="cell-label">${t.label}</span></div>`
+        return `<div class="mock-cell" title="${found.label} (${found.id})">${renderIcon({ ...t, label: found.label, textIcon: t.textIcon || found.label }, 20)}<span class="cell-label">${found.label}</span></div>`
     }).join('')
 }
 
@@ -1782,9 +1884,9 @@ function renderRefGrid() {
     const lib = getUserTextLibrary()
     const freeTextItems = [
         { id: 'quick-text',        label: 'Free Text' },
+        { id: getCustomTextGroupToolId(), label: 'Preset Text' },
         { id: 'text-library-add',  label: 'Add Text'  },
         { id: 'text-library-edit', label: 'Edit Lib'  },
-        ...lib.map((text, i) => ({ id: `custom-text-${i}`, label: text }))
     ]
 
     const makeChip = (icon, textIcon, label, id) => {
@@ -2720,13 +2822,13 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 function loadTextPresets() {
     try {
         const data = localStorage.getItem('scoreflow_user_text_library')
-        return data ? JSON.parse(data) : []
+        return normalizeUserTextLibrary(data ? JSON.parse(data) : [])
     } catch { return [] }
 }
 
 function buildTextPresetChips(items) {
     return items.map(t => {
-        const safe = t.replace(/</g, '&lt;')
+        const safe = t.text.replace(/</g, '&lt;')
         return `<span class="row-chip" title="${safe}">${safe}</span>`
     }).join('')
 }
@@ -2738,7 +2840,7 @@ function renderTextPresetEditor() {
     if (!ta) return
 
     const items = loadTextPresets()
-    ta.value = items.join(', ')
+    ta.value = items.map(item => item.text).join(', ')
     chips.innerHTML = buildTextPresetChips(items)
     count.textContent = `${items.length} items`
 
@@ -2753,7 +2855,13 @@ function renderTextPresetEditor() {
 
 async function applyTextPresets() {
     const ta = document.getElementById('text-preset-ta')
-    const items = ta.value.split(',').map(s => s.trim()).filter(Boolean)
+    const existing = loadTextPresets()
+    const items = normalizeUserTextLibrary(
+        ta.value.split(',').map(s => s.trim()).filter(Boolean).map(text => {
+            const reused = existing.find(entry => entry.text === text)
+            return reused || makeUserTextEntry(text)
+        })
+    )
 
     localStorage.setItem('scoreflow_user_text_library', JSON.stringify(items))
     renderTextPresetEditor()

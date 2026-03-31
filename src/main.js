@@ -81,11 +81,13 @@ class ScoreFlow {
     this.activeCategories = ['Pens']
     this.isMultiSelectMode = false
     this.activeColor = '#1d4ed8'
+    this._activeCustomText = null
+    this._activeCustomTextId = null
     this.defaultFontSize = 15
     this.toolbarWidth = 600
     this.lastUsedToolPerCategory = {}
     this.recentTools = []
-    this.userTextLibrary = ['指揮', '小提', '大提', '管樂', '打擊', '獨奏', '換頁', '換譜', '呼吸', 'dolce']
+    this.userTextLibrary = this.normalizeUserTextLibrary(['指揮', '小提', '大提', '管樂', '打擊', '獨奏', '換頁', '換譜', '呼吸', 'dolce'])
     this.stampSizeMultiplier = 1.0
     this.stampSizeOverrides = {}   // per-tool size overrides: { toolId: sizeNumber }
     this.pageScales = {}
@@ -626,6 +628,137 @@ this.playbackManager.init()
         document.documentElement.style.setProperty('--primary-rgb', savedAccentRgb)
         document.documentElement.style.setProperty('--primary-hover', savedAccent)
     }
+  }
+
+  createUserTextEntry(text, id = null) {
+    const trimmed = String(text || '').trim()
+    if (!trimmed) return null
+    return {
+      id: id || (crypto.randomUUID?.() || `txt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+      text: trimmed,
+    }
+  }
+
+  normalizeUserTextLibrary(entries) {
+    if (!Array.isArray(entries)) return []
+
+    const normalized = []
+    const seenTexts = new Set()
+
+    entries.forEach((entry) => {
+      const next = typeof entry === 'string'
+        ? this.createUserTextEntry(entry)
+        : this.createUserTextEntry(entry?.text, entry?.id)
+
+      if (!next || seenTexts.has(next.text)) return
+      seenTexts.add(next.text)
+      normalized.push(next)
+    })
+
+    return normalized
+  }
+
+  getUserTextEntries() {
+    if (!Array.isArray(this.userTextLibrary)) this.userTextLibrary = []
+    this.userTextLibrary = this.normalizeUserTextLibrary(this.userTextLibrary)
+    return this.userTextLibrary
+  }
+
+  getUserTextValues() {
+    return this.getUserTextEntries().map(entry => entry.text)
+  }
+
+  findUserTextEntryById(textId) {
+    if (!textId) return null
+    return this.getUserTextEntries().find(entry => entry.id === textId) || null
+  }
+
+  ensureUserTextEntry(text) {
+    const trimmed = String(text || '').trim()
+    if (!trimmed) return null
+
+    const existing = this.getUserTextEntries().find(entry => entry.text === trimmed)
+    if (existing) return existing
+
+    const entry = this.createUserTextEntry(trimmed)
+    if (!entry) return null
+    this.userTextLibrary.push(entry)
+    return entry
+  }
+
+  buildCustomTextToolId(textId) {
+    return textId ? `custom-text:${textId}` : 'custom-text'
+  }
+
+  getCustomTextGroupToolId() {
+    return 'custom-text-all'
+  }
+
+  parseCustomTextToolId(toolId) {
+    if (typeof toolId !== 'string') return null
+    if (toolId.startsWith('custom-text:')) return toolId.slice('custom-text:'.length) || null
+    return null
+  }
+
+  resolveCustomTextFromToolId(toolId) {
+    const textId = this.parseCustomTextToolId(toolId)
+    if (textId) return this.findUserTextEntryById(textId)
+
+    if (typeof toolId === 'string' && /^custom-text-\d+$/.test(toolId)) {
+      const idx = parseInt(toolId.split('-').pop(), 10)
+      return this.getUserTextEntries()[idx] || null
+    }
+
+    return null
+  }
+
+  migrateCustomTextPanelEntries(entries) {
+    if (!Array.isArray(entries)) return { entries: Array.isArray(entries) ? entries : [], changed: false }
+
+    let changed = false
+    let groupAnchor = null
+    const nextEntries = []
+
+    entries.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        nextEntries.push(entry)
+        return
+      }
+
+      if (entry.id === this.getCustomTextGroupToolId()) {
+        if (!groupAnchor) {
+          groupAnchor = {
+            ...entry,
+            id: this.getCustomTextGroupToolId(),
+            category: entry.category || 'Text',
+          }
+          nextEntries.push(groupAnchor)
+        } else {
+          changed = true
+        }
+        return
+      }
+
+      const isLegacyCustomText = typeof entry.id === 'string'
+        && (entry.id.startsWith('custom-text:') || /^custom-text-\d+$/.test(entry.id))
+
+      if (!isLegacyCustomText) {
+        nextEntries.push(entry)
+        return
+      }
+
+      if (!groupAnchor) {
+        groupAnchor = {
+          ...entry,
+          id: this.getCustomTextGroupToolId(),
+          category: entry.category || 'Text',
+        }
+        nextEntries.push(groupAnchor)
+      }
+      changed = true
+    })
+
+    return { entries: nextEntries, changed }
   }
 }
 

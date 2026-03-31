@@ -649,7 +649,7 @@ export class InteractionManager {
                     if (l) activeObject.layerId = l.id;
                 }
                 if (!activeObject.layerId) activeObject.layerId = 'draw';
-                if (activeTool.startsWith('custom-text-') && this.app._activeCustomText) {
+                if (activeTool.startsWith('custom-text') && this.app._activeCustomText) {
                     activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 500', size: 16, fontFace: 'serif' };
                 } else {
                     const t = grp?.tools.find(tl => tl.id === activeTool);
@@ -898,7 +898,7 @@ export class InteractionManager {
                             if (l) activeObject.layerId = l.id;
                         }
                         if (!activeObject.layerId) activeObject.layerId = 'draw';
-                        if (tt.startsWith('custom-text-') && this.app._activeCustomText) {
+                        if (tt.startsWith('custom-text') && this.app._activeCustomText) {
                             activeObject.draw = { type: 'text', content: this.app._activeCustomText, font: 'italic 500', size: 16, fontFace: 'serif' };
                         } else {
                             const t = g?.tools.find(tl => tl.id === tt);

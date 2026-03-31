@@ -108,4 +108,26 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **ToolManager**：負責工具欄狀態與最後使用工具記憶。
 
 ---
-*最後更新日期：2026-03-31（補充：Grace Period 兩段式互動設計與 Nudge 任意位置微移功能說明）*
+---
+## 🎨 物理感知與適應性佈局 (Physical-Aware Adaptive Layout)
+
+### 1. 動態視窗適應 (Dynamic Viewport Adaptation)
+- **dvh 技術**：全系統 UI 高度計算統一採用 `dvh` (Dynamic Viewport Height)，確保在 iPad Safari 瀏覽器工具列彈出時，內容能自動收縮而不溢出螢幕。
+- **硬體安全區域 (Safe-Area Awareness)**：
+  - **CSS 橋接**：透過 `--safe-bottom` 變數捕捉 `env(safe-area-inset-bottom)`。
+  - **自動補償**：底部浮動組件（如 Dock Bar 與 Stamp Bar）會自動根據硬體安全間距向上偏移，避開 iOS 的 Home Indicator 線。
+
+### 2. 座標引擎與邊際規範 (Coordinate Engine)
+- **統一邊距常數**：
+  - **頂部限制 (topM)**：`36px`（確保避開頂部狀態列或 Tab 欄）。
+  - **底部磁吸基準 (botM)**：`58px + Safe Area`（確保在 Dock Bar 上方保留 4px 的美感間隙）。
+- **像素級精確度 (Pixel-Perfect Precision)**：
+  - 所有 JS 輸出的 CSS 座標（`top`, `left`）必須經過 `Math.round()` 取整，消除次像素渲染 (Sub-pixel rendering) 產生的 1 像素抖動。
+
+### 3. 浮動面板設計 (Floating Panel Design)
+- **歸零貼地設計 (Absolute Floor Layout)**：
+  - **Dock Bar**：底部間距設為 `0px`（基準），直接貼齊安全區域邊界，達成物理螢幕最大化利用。
+  - **Stamp Bar**：垂直模式下支援「自由停靠」與「底部磁吸」雙重邏輯。
+
+---
+*最後更新日期：2026-03-31（同步：物理感知高度、dvh 適應與座標引擎大一統規格案）*

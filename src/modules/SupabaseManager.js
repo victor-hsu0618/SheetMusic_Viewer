@@ -68,8 +68,8 @@ export class SupabaseManager {
                 this.pullUserContent().then(content => {
                     if (!content) return
                     if (Array.isArray(content.userTextLibrary)) {
-                        this.app.userTextLibrary = content.userTextLibrary
-                        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(content.userTextLibrary))
+                        this.app.userTextLibrary = this.app.normalizeUserTextLibrary(content.userTextLibrary)
+                        localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.userTextLibrary))
                     }
                 })
 
@@ -665,7 +665,12 @@ export class SupabaseManager {
         if (!navigator.onLine) return
         const cfg = await this.pullPanelConfig()
         if (!cfg) return
-        localStorage.setItem('scoreflow_panel_config', JSON.stringify(cfg))
+        const migrated = this.app.migrateCustomTextPanelEntries(cfg.stamps || [])
+        const nextCfg = migrated.changed ? { ...cfg, stamps: migrated.entries } : cfg
+        localStorage.setItem('scoreflow_panel_config', JSON.stringify(nextCfg))
+        if (migrated.changed) {
+            this.pushPanelConfig(nextCfg)
+        }
 
         // Re-render strips with updated order
         this.app.docBarStripManager?.applyPanelConfig()
