@@ -213,6 +213,15 @@ export class EditSubBarManager {
             + (name === 'stamp' ? ' sf-wide-bar' : '')
         return bar
     }
+    /** Get dynamic margins for sub-bar positioning (Safe-Area aware) */
+    _getLayoutMargins() {
+        const raw = getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom') || '0px'
+        const safeBottom = parseInt(raw) || 0
+        return {
+            top: 36,
+            bottom: 58 + safeBottom
+        }
+    }
 
     _positionBar(bar, name, triggerBtn) {
         if (name === 'stamp' || name === 'shapes') {
@@ -232,11 +241,10 @@ export class EditSubBarManager {
                 const halfW = w / 2
 
                 // Clamping is done to Center coordinates
-                const topMargin = 36    // Closer to top
-                const bottomMargin = 160 // Extra safety for Dock Bar
-                const clampedY = Math.max(halfH + topMargin, Math.min(window.innerHeight - halfH - bottomMargin, rawY))
-                // Convert Center to Top-Left for CSS
-                bar.style.top = (clampedY - halfH) + 'px'
+                const margins = this._getLayoutMargins()
+                const clampedY = Math.max(halfH + margins.top, Math.min(window.innerHeight - halfH - margins.bottom, rawY))
+                // Convert Center to Top-Left for CSS (Rounded for pixel-perfect alignment)
+                bar.style.top = Math.round(clampedY - halfH) + 'px'
                 
                 if (name === 'stamp') this._stampBarY = clampedY
                 else this._shapesBarY = clampedY
@@ -246,7 +254,7 @@ export class EditSubBarManager {
                     const rawX = storedX ?? (window.innerWidth - w - margin + halfW)
                     const clampedX = Math.max(halfW + 8, Math.min(window.innerWidth - halfW - 8, rawX))
                     // Convert Center to Left for CSS
-                    bar.style.left = (clampedX - halfW) + 'px'
+                    bar.style.left = Math.round(clampedX - halfW) + 'px'
                     if (name === 'stamp') this._stampBarX = clampedX
                     else this._shapesBarX = clampedX
                 } else {
@@ -264,11 +272,12 @@ export class EditSubBarManager {
             const refine = () => {
                 const h = bar.offsetHeight || 60
                 const halfH = h / 2
-                const topMargin = 0 // Absolute top as requested
-                const bottomMargin = 95
-                // Force top position as requested
+                const margins = this._getLayoutMargins()
+                // Force top position based on margins (Others bar can ignore top limit but respect bottom)
+                // Actually top:0 for others is absolute. Let's keep it as requested: topMargin 0
+                const topMargin = 0
                 const clamped = halfH + topMargin
-                bar.style.top = (clamped - halfH) + 'px' 
+                bar.style.top = Math.round(clamped - halfH) + 'px' 
                 bar.style.left = '50%' // Center horizontally
                 this._othersBarY = clamped
             }
@@ -537,14 +546,10 @@ export class EditSubBarManager {
             return this._shapesBarX ?? (window.innerWidth - 450)
         }
 
-        const halfH = () => (bar.offsetHeight || 120) / 2
-        const halfW = () => (bar.offsetWidth || (bar.classList.contains('vertical') ? 60 : 400)) / 2
-        const getSafeBottom = () => {
-            const raw = getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom') || '0px'
-            return parseInt(raw) || 0
-        }
-
-        const topM = 36, botM = 62 + getSafeBottom()
+        const halfH = () => Math.round((bar.offsetHeight || 120) / 2)
+        const halfW = () => Math.round((bar.offsetWidth || (bar.classList.contains('vertical') ? 60 : 400)) / 2)
+        const margins = this._getLayoutMargins()
+        const topM = margins.top, botM = margins.bottom
         const minY  = () => halfH() + topM
         const maxY  = () => window.innerHeight - halfH() - botM
         const minX  = () => halfW() + 8
@@ -552,21 +557,23 @@ export class EditSubBarManager {
 
         const setY = (y, allowPastBottom = false) => {
             const v = allowPastBottom
-                ? Math.max(minY(), y)                          // only clamp top
-                : Math.max(minY(), Math.min(maxY(), y))        // clamp both
-            if (type === 'stamp') this._stampBarY = Math.min(v, maxY())
-            else if (type === 'others') this._othersBarY = Math.min(v, maxY())
-            else this._shapesBarY = Math.min(v, maxY())
-            // Convert center to top-left
-            bar.style.top = (v - halfH()) + 'px'
+                ? Math.max(minY(), y)
+                : Math.max(minY(), Math.min(maxY(), y))
+            
+            // Capture real position into state (crucial for onEnd snap-back detection)
+            if (type === 'stamp') this._stampBarY = v 
+            else if (type === 'others') this._othersBarY = v
+            else this._shapesBarY = v
+            
+            // Convert center to top-left (Rounded for precision)
+            bar.style.top = Math.round(v - halfH()) + 'px'
             return v
         }
         const setX = (x) => {
             const v = Math.max(minX(), Math.min(maxX(), x))
             if (type === 'stamp') this._stampBarX = v
             else this._shapesBarX = v
-            // Convert center to left
-            bar.style.left = (v - halfW()) + 'px'
+            bar.style.left = Math.round(v - halfW()) + 'px'
             return v
         }
 
@@ -589,7 +596,7 @@ export class EditSubBarManager {
             bar.style.transition = 'top 0.2s cubic-bezier(0.34,1.56,0.64,1)'
             const targetY = maxY()
             // Convert center to top
-            bar.style.top = (targetY - halfH()) + 'px'
+            bar.style.top = Math.round(targetY - halfH()) + 'px'
             if (type === 'stamp') this._stampBarY = targetY
             setTimeout(() => { bar.style.transition = '' }, 220)
         }
@@ -665,13 +672,15 @@ export class EditSubBarManager {
                 window.removeEventListener('pointercancel', onEnd)
 
                 // Dismiss if Top Edge is dragged more than 120px past the "Snap Target Top Edge"
-                const currentY = parseFloat(bar.style.top) || (getY() - halfH())
-                const snapTop  = maxY() - halfH()
-                if (type === 'stamp' && currentY > snapTop + 120) {
+                const currentY = (type === 'stamp') ? this._stampBarY : (type === 'shapes' ? this._shapesBarY : this._othersBarY)
+                const threshold = 120
+                if (currentY > maxY() + threshold) {
                     dismissBar()
-                } else if (currentY > snapTop) {
+                } else if (currentY > maxY()) {
+                    // Only snap back if it's currently beyond the bottom limit
                     snapBack()
                 }
+                // Otherwise: remain at the currentY position.
             }
 
             // Use window-level listeners — more reliable than setPointerCapture on iOS Safari
