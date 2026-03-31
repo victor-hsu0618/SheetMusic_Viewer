@@ -160,9 +160,10 @@ export class GestureManager {
                 const panDelta = Math.sqrt(Math.pow(currentX - this._pinchStartCentroid.x, 2) + Math.pow(currentY - this._pinchStartCentroid.y, 2))
 
                 if (!this._gestureLocked) {
-                    if (panDelta > 20 && distDelta < 10) {
+                    // Give priority to panning (two-finger drag) if movement is detected but fingers stay at similar distance
+                    if (panDelta > 15 && distDelta < 25) {
                         this._gestureLocked = 'pan' 
-                    } else if (distDelta > 15) {
+                    } else if (distDelta > 35) {
                         this._gestureLocked = 'zoom' 
                         this._isZoomActive = true
                     }
@@ -171,10 +172,11 @@ export class GestureManager {
                 // 2. PINCH LOGIC (Visual Scale) - Only runs if NOT locked to pan
                 if (this._gestureLocked !== 'pan') {
                     const rawRatio = currentDist / Math.max(10, this._initialDistance)
-                    // Increased damping (0.85) for a more direct, natural feel
+                    // Damping (0.85) remains direct, but activation is now less twitchy
                     const ratio = 1 + (rawRatio - 1) * 0.85
 
-                    if (!this._isZoomActive && Math.abs(ratio - 1) > 0.02) {
+                    // Activation threshold: 0.06 (6% change) to distinguish from accidental drag-drifts
+                    if (!this._isZoomActive && Math.abs(ratio - 1) > 0.06) {
                         this._isZoomActive = true
                         this._gestureLocked = 'zoom'
                     }
