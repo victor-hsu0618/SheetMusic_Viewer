@@ -535,15 +535,20 @@ export class ViewerManager {
         }
 
         // --- DOUBLE BUFFERING (Seamless Zoom) ---
+        // 先清掉上一批 stale（防止連續縮放時 DOM 無限累積）
+        this.cleanupStale()
+
         // Instead of immediate removal, mark current containers as stale.
         // We only do this for Zoom/Resize (isInitialLoad === false).
         const existingPages = Array.from(this.app.container.querySelectorAll('.page-container:not(.is-stale)'))
+
         if (!isInitialLoad && existingPages.length > 0) {
             existingPages.forEach(el => {
                 el.classList.add('is-stale')
                 el.removeAttribute('data-page') // Remove so jumps don't target stale containers
                 el.style.pointerEvents = 'none' 
                 el.style.zIndex = '1'
+                if (this.observer) this.observer.unobserve(el) // Release from observer immediately
                 
                 // If a ratio is provided, lock the visual scale on the stale page
                 // so it doesn't jump when the viewer's container transform is reset.
@@ -554,8 +559,8 @@ export class ViewerManager {
 
                 this._staleContainers.push(el)
             })
-            // Safety timeout to cleanup stale containers if visibility trigger fails
-            setTimeout(() => this.cleanupStale(), 2000)
+            // Safety timeout: remove stale containers if render callback doesn't fire
+            setTimeout(() => this.cleanupStale(), 1500)
         } else {
             // Hard clear for new file uploads or initial load
             existingPages.forEach(el => {
@@ -903,7 +908,8 @@ export class ViewerManager {
     updatePageMetrics() {
         if (!this.app.container) return
         this._pageMetrics = {}
-        const containers = this.app.container.querySelectorAll('.page-container')
+        // Only read active (non-stale) containers to keep metrics accurate
+        const containers = this.app.container.querySelectorAll('.page-container:not(.is-stale)')
         containers.forEach(el => {
             const pageNum = parseInt(el.dataset.page)
             if (pageNum) {
@@ -913,7 +919,6 @@ export class ViewerManager {
                 }
             }
         })
-        // No-log metrics update to save CPU
     }
 
     createPageElement(pageNum) {

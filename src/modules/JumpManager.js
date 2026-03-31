@@ -292,16 +292,33 @@ export class JumpManager {
         }
         this.totalPages = this.app.pdf.numPages
 
+        // Performance: Use pre-cached _pageMetrics instead of querySelectorAll
+        // This avoids Layout Thrashing on every scroll event
+        const metrics = this.app.viewerManager?._pageMetrics
         const scrollTop = this.app.viewer.scrollTop
-        const pages = document.querySelectorAll('.page-container:not(.is-stale)')
+        const threshold = scrollTop + window.innerHeight / 3
         let current = 1
-        for (let p of pages) {
-            if (p.offsetTop <= scrollTop + window.innerHeight / 3) {
-                current = parseInt(p.dataset.page)
-            } else {
-                break
+
+        if (metrics && Object.keys(metrics).length > 0) {
+            for (const [page, m] of Object.entries(metrics)) {
+                if (m.top <= threshold) {
+                    current = parseInt(page)
+                } else {
+                    break
+                }
+            }
+        } else {
+            // Fallback: DOM query (only when metrics not ready)
+            const pages = document.querySelectorAll('.page-container:not(.is-stale)')
+            for (let p of pages) {
+                if (p.offsetTop <= threshold) {
+                    current = parseInt(p.dataset.page)
+                } else {
+                    break
+                }
             }
         }
+
         this.currentPage = current
 
         if (this.display) {

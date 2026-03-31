@@ -599,16 +599,11 @@ export class AnnotationManager {
             }
 
             this.app.updateRulerMarks()
-            const scrollTop = this.app.viewer.scrollTop
-            const pages = document.querySelectorAll('.page-container:not(.is-stale)')
-            let current = 1
-            for (let p of pages) {
-                if (p.offsetTop <= scrollTop + window.innerHeight / 3) {
-                    current = parseInt(p.dataset.page)
-                } else {
-                    break
-                }
-            }
+            this.app.computeNextTarget()
+            document.querySelectorAll('.page-container:not(.is-stale)[data-page]').forEach(wrapper => {
+                const page = parseInt(wrapper.dataset.page)
+                this.redrawStamps(page)
+            })
             await this.app.saveToStorage(true)
             if (this.app.onAnnotationChanged) this.app.onAnnotationChanged()
         }
