@@ -313,6 +313,8 @@ export class GestureManager {
     }
 
     handleZoneTap(tapX, tapY) {
+        if (this.app.activeStampType !== 'view') return
+
         const now = Date.now()
         if (now - this._lastZoneTapAt < 350) return
         this._lastZoneTapAt = now

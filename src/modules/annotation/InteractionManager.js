@@ -1216,7 +1216,6 @@ export class InteractionManager {
         }, { passive: true });
         overlay.addEventListener('mouseleave', () => { virtualPointer?.classList.remove('active'); this.app.hoveredStamp = this.app.selectHoveredStamp = null; this.app.redrawStamps(pageNum); });
 
-        InteractionUI.ensureTrashBin(wrapper);
         wrapper.appendChild(overlay);
         overlay._updateTouchAction = () => this.updateAllOverlaysTouchAction();
         this.updateAllOverlaysTouchAction();
