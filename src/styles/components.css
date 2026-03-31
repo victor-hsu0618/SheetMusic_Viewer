@@ -23,6 +23,17 @@
     border-radius: 10px !important;
 }
 
+.btn-smaller {
+    padding: 6px 14px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+
+.btn-full {
+    width: 100% !important;
+}
+
 @media (hover: none) {
 
     .btn,

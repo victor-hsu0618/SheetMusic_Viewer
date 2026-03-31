@@ -87,16 +87,19 @@
 .profile-card-minimal {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: var(--bg-app);
-    border-radius: 10px;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-card);
+    border-radius: 12px;
     border: 1px solid var(--border);
-    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .profile-card-minimal:hover {
     background: var(--bg-soft);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .prof-avatar {
@@ -448,6 +451,24 @@
     min-height: 0;
 }
 
+.category-dropdown {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    z-index: 1100;
+}
+
 .settings-tabs-side {
     width: 76px;
     display: flex;
@@ -518,7 +539,7 @@
 .settings-pane {
     display: none;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
     animation: tabAppear 0.25s ease-out forwards;
 }
 
