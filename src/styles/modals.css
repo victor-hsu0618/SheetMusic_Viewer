@@ -82,7 +82,7 @@
 }
 
 .close-modal:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-soft);
   color: var(--primary);
 }
 
@@ -132,7 +132,7 @@ kbd {
   font-size: 0.75rem;
   font-weight: 800;
   color: var(--primary);
-  background: var(--bg-app);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 6px;
   box-shadow: 0 2px 0 var(--border);
@@ -195,8 +195,8 @@ body[data-active-tool="eraser"] .capture-overlay {
 /* Erase hover: floating delete chip above hovered object */
 .erase-hover-chip {
   position: absolute;
-  background: #ef4444;
-  color: white;
+  background: var(--danger);
+  color: #fff;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -207,5 +207,5 @@ body[data-active-tool="eraser"] .capture-overlay {
   transform: translateX(-50%) translateY(-100%);
   white-space: nowrap;
   animation: chip-pop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 2px 8px rgba(var(--danger-rgb), 0.4);
 }

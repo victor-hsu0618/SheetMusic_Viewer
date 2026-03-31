@@ -58,3 +58,8 @@
    - 只有在您說出 **"deploy"** 後，我才能開始執行打包與部署相關動作。
 3. **規格強制同步 (Mandatory PRD Sync)**
    - 當設計與修改確認完畢後，若有任何設計變更，**絕對必須**更新 `PRD.MD`，維持文件與程式碼的第一手同步。
+
+## 六、 資源與檔案查找 (Resource & File Discovery)
+
+1. **截圖查找路徑 (Screenshot Discovery)**
+   - 若開發者提及截圖或需要查看介面表現，AI 助理應優先前往 `/Users/victor_hsu/Downloads/screenshot` 路徑查找最新相關圖片。

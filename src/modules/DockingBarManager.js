@@ -55,7 +55,7 @@ export class DockingBarManager {
         if (!fab) {
             fab = document.createElement('div')
             fab.id = 'sf-dock-fab'
-            fab.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            fab.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="18 15 12 9 6 15"/>
             </svg>`
             document.body.appendChild(fab)

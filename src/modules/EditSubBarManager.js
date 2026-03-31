@@ -88,8 +88,10 @@ export class EditSubBarManager {
         this._bars      = {}     // { pen: el, shapes: el, stamp: el, text: el, others: el }
         this._stampPage = 0
         this._stampBarY  = null  // null = auto (near bottom), number = last dragged Y
+        this._stampBarX  = null  // null = auto (right side), number = last dragged X
         this._othersBarY = null
         this._shapesBarY = null
+        this._shapesBarX = null
         this._stampSettingsPanel = null
         this._stampSettingsOpen  = false
         this._stampSettingsTab   = 'display'
@@ -213,23 +215,39 @@ export class EditSubBarManager {
     }
 
     _positionBar(bar, name, triggerBtn) {
-        if (name === 'stamp') {
-            // Use stored Y or default to near bottom
-            const stored = this._stampBarY
-            const raw = stored ?? Math.round(window.innerHeight * 0.82)
+        if (name === 'stamp' || name === 'shapes') {
+            const isVertical = bar.classList.contains('vertical')
+            // Y position
+            const storedY = name === 'stamp' ? this._stampBarY : this._shapesBarY
+            const defaultY = isVertical ? Math.round(window.innerHeight / 2) : Math.round(window.innerHeight * 0.82)
+            const rawY = storedY ?? defaultY
             
-            // Set initial top immediately
-            bar.style.top = raw + 'px'
-
-            // Refine top based on actual height to ensure it fits on screen
-            // Since we just populated the bar, we try to measure now.
-            // If offsetHeight is 0, we'll try one frame later but avoid double jumps.
+            // X position
+            const storedX = name === 'stamp' ? this._stampBarX : this._shapesBarX
+            // In vertical mode, default to right side (window.innerWidth - barWidth - margin)
+            // In horizontal mode, it covers full width so we ignore X
+            
             const refine = () => {
                 const h = bar.offsetHeight || 120
+                const w = bar.offsetWidth || 400
                 const halfH = h / 2
-                const clamped = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, raw))
-                bar.style.top = clamped + 'px'
-                this._stampBarY  = clamped
+                const clampedY = Math.max(halfH + 8, Math.min(window.innerHeight - halfH - 8, rawY))
+                bar.style.top = clampedY + 'px'
+                
+                if (name === 'stamp') this._stampBarY = clampedY
+                else this._shapesBarY = clampedY
+
+                if (isVertical) {
+                    const margin = 62 // Ensure it doesn't overlap the edit strip
+                    const rawX = storedX ?? (window.innerWidth - w - margin)
+                    const halfW = w / 2
+                    const clampedX = Math.max(halfW + 8, Math.min(window.innerWidth - halfW - 8, rawX))
+                    bar.style.left = clampedX + 'px'
+                    if (name === 'stamp') this._stampBarX = clampedX
+                    else this._shapesBarX = clampedX
+                } else {
+                    bar.style.left = ''
+                }
             }
 
             if (bar.offsetHeight > 0) refine()
@@ -295,6 +313,14 @@ export class EditSubBarManager {
     _buildWideBar(bar, type) {
         const isStamp = type === 'stamp'
 
+        // Apply saved orientation
+        const isVertical = localStorage.getItem('sf_stamp_orientation_' + type) === 'vertical'
+        if (isVertical) {
+            bar.classList.add('vertical')
+        } else {
+            bar.classList.remove('vertical')
+        }
+
         // Collect items
         let flatItems
         if (isStamp) {
@@ -331,6 +357,34 @@ export class EditSubBarManager {
             bar._prevBtn = prevBtn
             bar._nextBtn = nextBtn
         }
+
+        // Layout Orientation Toggle Button
+        const orientBtn = document.createElement('div')
+        orientBtn.className = 'sf-nav-btn'
+        orientBtn.title = 'Rotate Layout'
+        orientBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>`
+        orientBtn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            if (bar.classList.contains('vertical')) {
+                bar.classList.remove('vertical')
+                localStorage.setItem('sf_stamp_orientation_' + type, 'horizontal')
+            } else {
+                bar.classList.add('vertical')
+                localStorage.setItem('sf_stamp_orientation_' + type, 'vertical')
+            }
+            // Reposition explicitly to test height constraints immediately after CSS transition
+            this._positionBar(bar, type)
+            requestAnimationFrame(() => {
+                if (bar.classList.contains('open')) {
+                    this._positionBar(bar, type)
+                }
+            })
+        })
+        navCol.appendChild(orientBtn)
 
         bar.appendChild(navCol)
         bar.appendChild(this._barDivider())
@@ -476,9 +530,17 @@ export class EditSubBarManager {
             if (type === 'others') return this._othersBarY ?? 80
             return this._shapesBarY ?? (window.innerHeight * 0.82)
         }
+        const getX = () => {
+            if (type === 'stamp') return this._stampBarX ?? (window.innerWidth - 450)
+            return this._shapesBarX ?? (window.innerWidth - 450)
+        }
+
         const halfH = () => (bar.offsetHeight || 120) / 2
+        const halfW = () => (bar.offsetWidth || (bar.classList.contains('vertical') ? 60 : 400)) / 2
         const maxY  = () => window.innerHeight - halfH() - 8
         const minY  = () => halfH() + 8
+        const maxX  = () => window.innerWidth - halfW() - 8
+        const minX  = () => halfW() + 8
 
         const setY = (y, allowPastBottom = false) => {
             const v = allowPastBottom
@@ -490,6 +552,13 @@ export class EditSubBarManager {
             bar.style.top = v + 'px'
             return v
         }
+        const setX = (x) => {
+            const v = Math.max(minX(), Math.min(maxX(), x))
+            if (type === 'stamp') this._stampBarX = v
+            else this._shapesBarX = v
+            bar.style.left = v + 'px'
+            return v
+        }
 
         const dismissBar = () => {
             // Animate off-screen then close
@@ -498,15 +567,19 @@ export class EditSubBarManager {
             setTimeout(() => {
                 bar.style.transition = ''
                 this.closeAll()
-                // Reset stored Y so next open starts at default position
-                if (type === 'stamp') this._stampBarY = null
+                // Reset stored positions so next open starts at default position
+                if (type === 'stamp') {
+                    this._stampBarY = null
+                    this._stampBarX = null
+                }
             }, 230)
         }
 
         const snapBack = () => {
             bar.style.transition = 'top 0.2s cubic-bezier(0.34,1.56,0.64,1)'
-            bar.style.top = maxY() + 'px'
-            if (type === 'stamp') this._stampBarY = maxY()
+            const targetY = maxY()
+            bar.style.top = targetY + 'px'
+            if (type === 'stamp') this._stampBarY = targetY
             setTimeout(() => { bar.style.transition = '' }, 220)
         }
 
@@ -514,14 +587,17 @@ export class EditSubBarManager {
             if (e.target.closest('button, input')) return
 
             const contentEl = bar.querySelector('.sf-bar-content')
+            const isVertical = bar.classList.contains('vertical')
             const ds = {
                 id:              e.pointerId,
                 startX:          e.clientX,
                 startY:          e.clientY,
                 startBarY:       getY(),
+                startBarX:       getX(),
                 startScrollLeft: contentEl?.scrollLeft ?? 0,
                 contentEl,
                 axis:            null,
+                isVertical
             }
 
             const onMove = (ev) => {
@@ -529,8 +605,31 @@ export class EditSubBarManager {
                 const dx = ev.clientX - ds.startX
                 const dy = ev.clientY - ds.startY
 
-                // Lock axis once we have enough movement.
-                // Strongly biased toward vertical: horizontal only when dx ≥ 2.5× dy.
+                // In vertical mode, we only allow horizontal (X) dragging of the panel.
+                // Vertical movement is NOT intercepted, allowing native internal scrolling.
+                if (ds.isVertical) {
+                    if (ds.axis === null) {
+                        const adx = Math.abs(dx), ady = Math.abs(dy);
+                        if (adx > 10 || ady > 5) {
+                            ds.axis = (adx > ady * 2) ? 'x' : 'y';
+                        }
+                    }
+                    
+                    if (ds.axis === 'x') {
+                        ev.preventDefault()
+                        setX(ds.startBarX + dx)
+                        bar.style.cursor = 'ew-resize'
+                    } else if (ds.axis === 'y') {
+                        // Hand-off to native scroll: stop our listener immediately
+                        // This allows internal scrolling of the icons without moving the panel.
+                        window.removeEventListener('pointermove', onMove)
+                        window.removeEventListener('pointerup',   onEnd)
+                        bar.style.cursor = ''
+                    }
+                    return
+                }
+
+                // Lock axis once we have enough movement for horizontal mode.
                 if (ds.axis === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
                     ds.axis = (Math.abs(dx) >= Math.abs(dy) * 2.5) ? 'x' : 'y'
                 }

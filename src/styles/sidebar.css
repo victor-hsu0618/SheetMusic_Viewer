@@ -70,8 +70,8 @@
 
 .search-input-mini:focus {
   border-color: var(--primary);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
 }
 
 .library-scores-list {
@@ -115,13 +115,13 @@
 
 @media (hover: hover) {
   .score-item:hover {
-    background: rgba(99, 102, 241, 0.06);
-    border-left-color: rgba(99, 102, 241, 0.3);
+    background: rgba(var(--primary-rgb), 0.06);
+    border-left-color: rgba(var(--primary-rgb), 0.3);
   }
 }
 
 .score-item.active {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(var(--primary-rgb), 0.1);
   border-left-color: var(--primary);
 }
 
@@ -158,7 +158,7 @@
   border-radius: 50%;
   background: var(--primary);
   flex-shrink: 0;
-  box-shadow: 0 0 6px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 6px rgba(var(--primary-rgb), 0.5);
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
@@ -184,7 +184,7 @@
 .btn-text-danger {
   background: none;
   border: none;
-  color: #ef4444;
+  color: var(--danger);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -228,7 +228,7 @@
   width: 32px;
   height: 32px;
   background: var(--primary);
-  color: white;
+  color: #fff;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -261,8 +261,8 @@
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--bg-card, white);
-  color: var(--text-primary, #1e293b);
+  background: var(--bg-card);
+  color: var(--text-main);
   font-size: 0.8rem;
   cursor: pointer;
   text-align: center;
@@ -402,7 +402,7 @@
 
 .selector-item input:checked+.selector-label {
   background: var(--primary);
-  color: white;
+  color: #fff;
   border-color: var(--primary);
 }
 
@@ -476,12 +476,12 @@ input[type="range"] {
 }
 
 .btn-danger-outline {
-  color: #ef4444;
-  border: 1px solid #ef4444;
+  color: var(--danger);
+  border: 1px solid var(--danger);
 }
 
 .btn-danger-outline:hover {
-  background: #fee2e2;
+  background: rgba(var(--danger-rgb, 239, 68, 68), 0.1);
 }
 
 /* Mobile Toolbar Removed */
@@ -579,12 +579,12 @@ input[type="range"] {
 
 .layer-vis-btn.visible {
   background: var(--primary);
-  color: white;
+  color: #fff;
   border-color: var(--primary);
 }
 
 .layer-vis-btn.inactive {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-soft);
   color: var(--text-muted);
 }
 
@@ -612,7 +612,7 @@ input[type="range"] {
   justify-content: center;
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 @media (hover: none) {
@@ -624,10 +624,10 @@ input[type="range"] {
 @media (hover: hover) {
   .zoom-btn:hover {
     background: var(--primary);
-    color: white;
+    color: #fff;
     border-color: var(--primary);
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.3);
   }
 }
 
@@ -671,7 +671,7 @@ input[type="range"] {
   height: 32px;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -680,14 +680,14 @@ input[type="range"] {
 }
 
 .sidebar-close-btn:hover {
-  background: #fee2e2;
-  color: #ef4444;
+  background: rgba(var(--danger-rgb, 239, 68, 68), 0.1);
+  color: var(--danger);
 }
 
 .v-tag {
   font-size: 0.6rem;
   background: var(--primary);
-  color: white;
+  color: #fff;
   padding: 2px 6px;
   border-radius: 6px;
   margin-left: 6px;
@@ -731,14 +731,14 @@ input[type="range"] {
 }
 
 .sidebar-tab:hover {
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(var(--primary-rgb), 0.05);
   color: var(--primary);
 }
 
 .sidebar-tab.active {
-  background: white;
+  background: var(--bg-card);
   color: var(--primary);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.12);
 }
 
 /* Tab Panels */

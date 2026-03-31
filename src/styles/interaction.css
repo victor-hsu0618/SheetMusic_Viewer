@@ -65,13 +65,13 @@
 }
 
 .erase-menu-item:hover {
-  background: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
+  background: rgba(var(--danger-rgb), 0.08);
+  color: var(--danger);
 }
 
 .erase-menu-item:hover .erase-item-icon {
-  background: #ef4444;
-  color: white;
+  background: var(--danger);
+  color: #fff;
 }
 
 .erase-item-icon {
@@ -126,13 +126,13 @@
 
 /* Select picker: use blue instead of red */
 .select-context-menu .erase-menu-item:hover {
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(var(--primary-rgb), 0.08);
   color: var(--primary);
 }
 
 .select-context-menu .erase-menu-item:hover .erase-item-icon {
   background: var(--primary);
-  color: white;
+  color: #fff;
 }
 
 /* Erase All by Category Modal */
@@ -148,7 +148,7 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.05));
+  background: var(--bg-soft);
   border: 1px solid transparent;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
@@ -156,18 +156,18 @@
 }
 
 .erase-all-cat-row:hover {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(var(--danger-rgb), 0.12);
+  border-color: rgba(var(--danger-rgb), 0.35);
 }
 
 .erase-all-cat-row.cat-all {
   margin-top: 6px;
-  border-color: rgba(239, 68, 68, 0.2);
+  border-color: rgba(var(--danger-rgb), 0.2);
 }
 
 .erase-all-cat-row.cat-all:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(var(--danger-rgb), 0.2);
+  border-color: rgba(var(--danger-rgb), 0.55);
 }
 
 .erase-all-cat-icon {
@@ -187,7 +187,7 @@
 .erase-all-cat-count {
   font-size: 12px;
   font-weight: 600;
-  background: var(--surface-3, rgba(255, 255, 255, 0.1));
+  background: var(--bg-soft);
   color: var(--text-muted);
   border-radius: 10px;
   padding: 2px 8px;
@@ -196,8 +196,8 @@
 }
 
 .erase-all-cat-row:hover .erase-all-cat-count {
-  background: rgba(239, 68, 68, 0.25);
-  color: var(--text);
+  background: rgba(var(--danger-rgb), 0.25);
+  color: var(--text-main);
 }
 
 /* Exchange UI Enhancements */
@@ -232,8 +232,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
   padding: 6px 12px;
   border-radius: 12px;
   cursor: pointer;
@@ -245,7 +245,7 @@
 
 .nav-trigger:hover {
   background: var(--primary);
-  color: white;
+  color: #fff;
 }
 
 .category-dropdown {
@@ -282,13 +282,13 @@
 }
 
 .dropdown-item:hover {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(var(--primary-rgb), 0.1);
   color: var(--primary);
 }
 
 .dropdown-item.active {
   background: var(--primary);
-  color: white;
+  color: #fff;
 }
 
 @keyframes slideUp {
@@ -321,12 +321,12 @@
 .text-editor-toolbar {
   display: flex;
   gap: 5px;
-  background: white;
+  background: var(--bg-card);
   padding: 4px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   margin-top: 6px;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border);
 }
 
 .editor-btn {
@@ -345,17 +345,17 @@
 
 .editor-btn.confirm {
   background: #10b981;
-  color: white;
+  color: #fff;
 }
 
 .editor-btn.cancel {
-  background: #ef4444;
-  color: white;
+  background: var(--danger);
+  color: #fff;
 }
 
 .editor-btn.minimize {
   background: #a16207;
-  color: white;
+  color: #fff;
 }
 
 .editor-btn:active {
@@ -363,7 +363,7 @@
 }
 
 .floating-text-editor {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(var(--bg-card-rgb), 0.95);
   border: 1px solid var(--primary);
   border-radius: 4px;
   padding: 4px 8px;
@@ -378,10 +378,11 @@
   white-space: pre-wrap;
   word-wrap: break-word;
   transition: transform 0.1s ease;
+  color: var(--text-main);
 }
 
 .floating-text-editor:focus {
-  background: white;
+  background: var(--bg-card);
   transform: scale(1.05);
 }
 
@@ -523,19 +524,19 @@
 }
 
 .btn-sm-icon:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-soft);
   color: var(--text-main);
 }
 
 .btn-sm-icon.danger:hover {
-  color: #ef4444;
-  background: #fee2e2;
+  color: var(--danger);
+  background: rgba(var(--danger-rgb), 0.15);
 }
 
 .active-source-badge {
   font-size: 0.6rem;
   background: var(--primary);
-  color: white;
+  color: #fff;
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: 700;
@@ -546,7 +547,7 @@
   position: fixed;
   width: 50px;
   height: 50px;
-  background: rgba(99, 102, 241, 0.4);
+  background: rgba(var(--primary-rgb), 0.4);
   /* Primary theme color */
   border-radius: 50%;
   display: flex;
@@ -556,8 +557,8 @@
   z-index: 100002;
   /* above css-fullscreen (99999) and strips (100001) */
   transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
-  color: white;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.6);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.4);
@@ -578,9 +579,8 @@
 }
 
 .tap-zone-indicator.limit {
-  background: rgba(239, 68, 68, 0.5);
-  /* Vivid Red */
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.7);
+  background: rgba(var(--danger-rgb), 0.5);
+  box-shadow: 0 0 20px rgba(var(--danger-rgb), 0.7);
   border-color: rgba(255, 255, 255, 0.6);
 }
 
@@ -589,36 +589,29 @@
   position: fixed;
   pointer-events: none;
   z-index: 10001;
-  /* Stay just above Shelf Panels (10000) */
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(var(--primary-rgb), 0.05);
   transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
-  pointer-events: none;
-  /* Already there but being explicit */
 }
 
 /* flash effect */
 .nav-zone-divider.active {
   opacity: 1;
   transition: opacity 0.1s ease-out;
-  /* Show instantly */
 }
 
 .nav-zone-divider-h {
-  /* Dynamic positioning + 1/5 width logic handled in JS, 
-     but we'll setup the look here */
   height: 2px;
-  background: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.4), transparent);
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+  background: linear-gradient(to right, transparent, rgba(var(--primary-rgb), 0.4), transparent);
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3);
 }
 
 .nav-zone-divider-v {
-  /* Dynamic positioning + 1/5 height logic handled in JS */
   width: 2px;
-  background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.4), transparent);
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+  background: linear-gradient(to bottom, transparent, rgba(var(--primary-rgb), 0.4), transparent);
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3);
 }
 
 /* ─── Tap Zone Indicators (Multi-Directional) ─── */
@@ -641,7 +634,7 @@
 /* ─── Segmented Control (Tabs) ─── */
 .segmented-control {
   display: flex;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--bg-soft);
   padding: 4px;
   border-radius: 12px;
   gap: 4px;
@@ -664,13 +657,13 @@
 
 .segment-btn:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-soft);
 }
 
 .segment-btn.active {
   background: var(--bg-card);
   color: var(--primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .detail-tab-pane,
@@ -749,7 +742,7 @@
   gap: 2px;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #fff;
   z-index: 15000;
   /* High enough to be over everything */
   opacity: 0;
@@ -769,16 +762,16 @@
 }
 
 .grace-trash-bin.active {
-  background: #ef4444;
-  border-color: white;
+  background: var(--danger);
+  border-color: #fff;
   transform: scale(1.2);
-  box-shadow: 0 0 40px rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 40px rgba(var(--danger-rgb), 0.6);
 }
 
 .grace-trash-bin svg {
   width: 32px;
   height: 32px;
-  color: white;
+  color: #fff;
   transition: transform 0.2s ease;
 }
 

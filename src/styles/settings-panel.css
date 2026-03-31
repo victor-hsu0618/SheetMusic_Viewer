@@ -57,7 +57,7 @@
 
 .sync-status-badge.online {
     background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
+    color: #10b981; /* Brand green usually stays green */
     border-color: rgba(16, 185, 129, 0.3);
 }
 
@@ -78,7 +78,7 @@
 }
 
 .settings-scroll-area::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(var(--text-main-rgb), 0.15);
     border-radius: 2px;
 }
 
@@ -88,14 +88,14 @@
     align-items: center;
     gap: 12px;
     padding: 12px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(var(--text-main-rgb), 0.05);
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border);
     transition: background 0.2s;
 }
 
 .profile-card-minimal:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(var(--text-main-rgb), 0.1);
 }
 
 .prof-avatar {
@@ -135,7 +135,7 @@
 
 .tab-divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--border);
     margin: 15px 0;
 }
 
@@ -224,8 +224,9 @@
 
 .build-info-section {
     padding: 10px;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(var(--text-main-rgb), 0.05);
     border-radius: 8px;
+    border: 1px solid var(--border);
 }
 
 .accent-swatch {
@@ -243,9 +244,9 @@
 }
 
 .accent-swatch.active {
-    border-color: #fff;
+    border-color: var(--primary);
     transform: scale(1.1);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3);
 }
 
 /* Category default color inputs */
@@ -460,7 +461,7 @@
     align-items: center;
     gap: 3px;
     padding: 10px 6px;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     background: transparent;
     border: none;
     border-radius: 10px;
@@ -488,7 +489,7 @@
 }
 
 .settings-tab-btn:hover:not(.active) {
-    background: rgba(0, 0, 0, 0.04);
+    background: rgba(var(--text-main-rgb), 0.05);
 }
 
 .settings-content-area {
