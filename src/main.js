@@ -516,29 +516,39 @@ this.playbackManager.init()
     const action = this.history.pop()
     this.redoStack.push(action)
     
+    const affected = []
+    
     const applyUndo = (op) => {
       if (op.type === 'add') {
         const idx = this.stamps.findIndex(s => s.id === op.obj.id)
         if (idx !== -1) {
           const removed = this.stamps.splice(idx, 1)[0]
-          if (this.supabaseManager) this.supabaseManager.pushAnnotation({...removed, deleted: true, updatedAt: Date.now()}, this.pdfFingerprint)
+          affected.push({...removed, deleted: true, updatedAt: Date.now()})
         }
       } else if (op.type === 'delete') {
         this.stamps.push(op.obj)
-        if (this.supabaseManager) this.supabaseManager.pushAnnotation(op.obj, this.pdfFingerprint)
+        affected.push(op.obj)
       } else if (op.type === 'move') {
-        const idx = this.stamps.findIndex(s => s.id === op.oldObj.id)
+        const idx = this.stamps.findIndex(s => s.id === (op.oldObj?.id || op.newObj?.id))
         if (idx !== -1) {
           this.stamps[idx] = JSON.parse(JSON.stringify(op.oldObj))
-          if (this.supabaseManager) this.supabaseManager.pushAnnotation(this.stamps[idx], this.pdfFingerprint)
+          affected.push(this.stamps[idx])
         }
       }
     }
     if (action.type === 'batch') {
-      // Undo in reverse order
       for (let i = action.ops.length - 1; i >= 0; i--) applyUndo(action.ops[i])
     } else {
       applyUndo(action)
+    }
+
+    // Batch sync to Supabase if multiple stamps changed
+    if (this.supabaseManager && affected.length > 0) {
+      if (affected.length > 1) {
+        this.supabaseManager.pushAllAnnotations(this.pdfFingerprint, affected)
+      } else {
+        this.supabaseManager.pushAnnotation(affected[0], this.pdfFingerprint)
+      }
     }
 
     await this.saveToStorage(true)
@@ -551,21 +561,23 @@ this.playbackManager.init()
     const action = this.redoStack.pop()
     this.history.push(action)
 
+    const affected = []
+
     const applyRedo = (op) => {
       if (op.type === 'add') {
         this.stamps.push(op.obj)
-        if (this.supabaseManager) this.supabaseManager.pushAnnotation(op.obj, this.pdfFingerprint)
+        affected.push(op.obj)
       } else if (op.type === 'delete') {
         const idx = this.stamps.findIndex(s => s.id === op.obj.id)
         if (idx !== -1) {
           const removed = this.stamps.splice(idx, 1)[0]
-          if (this.supabaseManager) this.supabaseManager.pushAnnotation({...removed, deleted: true, updatedAt: Date.now()}, this.pdfFingerprint)
+          affected.push({...removed, deleted: true, updatedAt: Date.now()})
         }
       } else if (op.type === 'move') {
-        const idx = this.stamps.findIndex(s => s.id === op.newObj.id)
+        const idx = this.stamps.findIndex(s => s.id === (op.newObj?.id || op.oldObj?.id))
         if (idx !== -1) {
           this.stamps[idx] = JSON.parse(JSON.stringify(op.newObj))
-          if (this.supabaseManager) this.supabaseManager.pushAnnotation(this.stamps[idx], this.pdfFingerprint)
+          affected.push(this.stamps[idx])
         }
       }
     }
@@ -573,6 +585,15 @@ this.playbackManager.init()
       for (const op of action.ops) applyRedo(op)
     } else {
       applyRedo(action)
+    }
+
+    // Batch sync to Supabase if multiple stamps changed
+    if (this.supabaseManager && affected.length > 0) {
+      if (affected.length > 1) {
+        this.supabaseManager.pushAllAnnotations(this.pdfFingerprint, affected)
+      } else {
+        this.supabaseManager.pushAnnotation(affected[0], this.pdfFingerprint)
+      }
     }
 
     await this.saveToStorage(true)
