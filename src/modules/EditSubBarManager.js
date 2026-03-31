@@ -232,8 +232,8 @@ export class EditSubBarManager {
                 const halfW = w / 2
 
                 // Clamping is done to Center coordinates
-                const topMargin = 68    // Avoid top toolbar
-                const bottomMargin = 120 // Avoid bottom docking bar
+                const topMargin = 36    // Closer to top
+                const bottomMargin = 160 // Extra safety for Dock Bar
                 const clampedY = Math.max(halfH + topMargin, Math.min(window.innerHeight - halfH - bottomMargin, rawY))
                 // Convert Center to Top-Left for CSS
                 bar.style.top = (clampedY - halfH) + 'px'
@@ -383,16 +383,7 @@ export class EditSubBarManager {
                 bar.classList.add('vertical')
                 localStorage.setItem('sf_stamp_orientation_' + type, 'vertical')
             }
-            // Reposition explicitly to test height: auto !important;
-            // max-height: calc(100vh - 210px) !important;
-            // overflow-y: auto !important;
-            // s immediately after CSS transition
             this._positionBar(bar, type)
-            requestAnimationFrame(() => {
-                if (bar.classList.contains('open')) {
-                    this._positionBar(bar, type)
-                }
-            })
         })
         navCol.appendChild(orientBtn)
 
@@ -548,7 +539,7 @@ export class EditSubBarManager {
 
         const halfH = () => (bar.offsetHeight || 120) / 2
         const halfW = () => (bar.offsetWidth || (bar.classList.contains('vertical') ? 60 : 400)) / 2
-        const topM = 68, botM = 120
+        const topM = 36, botM = 160
         const minY  = () => halfH() + topM
         const maxY  = () => window.innerHeight - halfH() - botM
         const minX  = () => halfW() + 8
@@ -569,7 +560,7 @@ export class EditSubBarManager {
             const v = Math.max(minX(), Math.min(maxX(), x))
             if (type === 'stamp') this._stampBarX = v
             else this._shapesBarX = v
-            // Convert center to top-left
+            // Convert center to left
             bar.style.left = (v - halfW()) + 'px'
             return v
         }
