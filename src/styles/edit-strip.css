@@ -1368,14 +1368,21 @@
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
     padding: 0 !important;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: calc(100vh - 210px) !important;
+    overflow-y: auto !important;
+}
+
+.sf-sub-bar.sf-wide-bar {
+    max-height: calc(100vh - 210px) !important;
+    overflow-y: auto !important;
 }
 
 /* Ensure the content inside can expand fully */
 .sf-sub-bar.sf-wide-bar.sf-others-bar .sf-others-scroll-content {
     display: flex !important;
     flex-direction: row !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
     align-items: center !important;
     gap: 8px !important;
     padding: 2px 14px !important;
@@ -1383,5 +1390,6 @@
     max-width: 100% !important;
     min-width: min-content !important;
     height: auto !important;
-    overflow: visible !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
 }
