@@ -160,9 +160,9 @@ export class GestureManager {
                 const panDelta = Math.sqrt(Math.pow(currentX - this._pinchStartCentroid.x, 2) + Math.pow(currentY - this._pinchStartCentroid.y, 2))
 
                 if (!this._gestureLocked) {
-                    if (panDelta > 20 && distDelta < 15) {
+                    if (panDelta > 20 && distDelta < 10) {
                         this._gestureLocked = 'pan' 
-                    } else if (distDelta > 40) {
+                    } else if (distDelta > 15) {
                         this._gestureLocked = 'zoom' 
                         this._isZoomActive = true
                     }
@@ -171,10 +171,10 @@ export class GestureManager {
                 // 2. PINCH LOGIC (Visual Scale) - Only runs if NOT locked to pan
                 if (this._gestureLocked !== 'pan') {
                     const rawRatio = currentDist / Math.max(10, this._initialDistance)
-                    // Increased damping (0.5) for even smoother zoom
-                    const ratio = 1 + (rawRatio - 1) * 0.5
+                    // Increased damping (0.85) for a more direct, natural feel
+                    const ratio = 1 + (rawRatio - 1) * 0.85
 
-                    if (!this._isZoomActive && Math.abs(ratio - 1) > 0.15) {
+                    if (!this._isZoomActive && Math.abs(ratio - 1) > 0.02) {
                         this._isZoomActive = true
                         this._gestureLocked = 'zoom'
                     }
@@ -230,8 +230,8 @@ export class GestureManager {
                     const newScale = this._initialScale * ratio
                     const delta = newScale - this._initialScale
                     
-                    // Final threshold: 0.1 (10% change) to trigger expensive re-render
-                    if (Math.abs(delta) > 0.1) {
+                    // Final threshold: 0.01 (1% change) to support fine adjustments
+                    if (Math.abs(delta) > 0.01) {
                         this.app.viewerManager?.changeZoom(delta)
                     }
                 }
