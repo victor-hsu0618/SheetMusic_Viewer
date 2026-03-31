@@ -553,6 +553,8 @@ export class ViewerManager {
 
                 this._staleContainers.push(el)
             })
+            // Safety timeout to cleanup stale containers if visibility trigger fails
+            setTimeout(() => this.cleanupStale(), 2000)
         } else {
             // Hard clear for new file uploads or initial load
             existingPages.forEach(el => {
@@ -588,6 +590,10 @@ export class ViewerManager {
             pageWrapper.style.minHeight = `${firstViewport.height}px`
             pageWrapper.style.width = `${firstViewport.width}px`
             pageWrapper.style.zIndex = '2' // Render new pages ON TOP of stale ones
+            // --- FLASH PREVENTION ---
+            // New pages start invisible so they don't cover stale pages with white canvases
+            pageWrapper.style.opacity = '0'
+            pageWrapper.style.transition = 'opacity 0.15s ease-out'
             
             fragment.appendChild(pageWrapper)
             this.observer.observe(pageWrapper)
@@ -793,11 +799,11 @@ export class ViewerManager {
                 console.log(`[ViewerManager] Page ${pageNum} rendered via fallback (Resolution: ${canvas.width}x${canvas.height})`);
             }
 
-            // Attach annotation layers once the real canvas is ready
             this.app.createAnnotationLayers(wrapper, pageNum, viewport.width, viewport.height, renderScale)
             this.app.createCaptureOverlay(wrapper, pageNum, viewport.width, viewport.height)
             this.app.redrawStamps(pageNum)
             wrapper.dataset.rendered = 'true'
+            wrapper.style.opacity = '1' // NEW: Make page visible once fully ready
 
             // --- DOUBLE BUFFERING CLEANUP ---
             // Once the first new page is rendered, we can safely remove the stale "buffer" pages.
