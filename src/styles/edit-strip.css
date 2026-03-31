@@ -653,7 +653,8 @@
     flex-direction: column;
     width: 132px; /* Fixed width for 2 rows of icons + padding */
     height: auto; /* Allow content to fit while respecting max-height */
-    max-height: calc(100vh - 200px); /* Leave plenty of room for toolbar and dock-bar */
+    /* 物理螢幕高度動態計算：使用 100dvh 以處理 Browser/PWA 模式差異，並自動避開 Safe Area */
+    max-height: calc(100dvh - 110px - var(--safe-bottom, 0px)); 
     min-height: 200px;
     right: auto;
     left: auto;
@@ -1422,7 +1423,7 @@
 }
 
 .sf-sub-bar.sf-wide-bar {
-    max-height: calc(100vh - 220px) !important;
+    max-height: calc(100dvh - 110px - var(--safe-bottom, 0px)) !important;
     overflow-y: auto !important;
 }
 

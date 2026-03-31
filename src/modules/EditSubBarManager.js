@@ -539,7 +539,12 @@ export class EditSubBarManager {
 
         const halfH = () => (bar.offsetHeight || 120) / 2
         const halfW = () => (bar.offsetWidth || (bar.classList.contains('vertical') ? 60 : 400)) / 2
-        const topM = 36, botM = 72
+        const getSafeBottom = () => {
+            const raw = getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom') || '0px'
+            return parseInt(raw) || 0
+        }
+
+        const topM = 36, botM = 62 + getSafeBottom()
         const minY  = () => halfH() + topM
         const maxY  = () => window.innerHeight - halfH() - botM
         const minX  = () => halfW() + 8

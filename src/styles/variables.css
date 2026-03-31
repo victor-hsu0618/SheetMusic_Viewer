@@ -35,6 +35,10 @@
   --bg-pattern: radial-gradient(var(--border) 0.5px, transparent 0.5px);
   --bg-pattern-size: 24px 24px;
 
+  /* ⚖️ 物理感知變數 — 用於同步 Browser/PWA 模式的高度差異 */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+
   /* Safe Area Insets */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
