@@ -264,11 +264,12 @@ export class EditSubBarManager {
             const refine = () => {
                 const h = bar.offsetHeight || 60
                 const halfH = h / 2
-                const raw = stored ?? (halfH + 16)
-                const topMargin = 68
+                const topMargin = 0 // Absolute top as requested
                 const bottomMargin = 95
-                const clamped = Math.max(halfH + topMargin, Math.min(window.innerHeight - halfH - bottomMargin, raw))
-                bar.style.top = (clamped - halfH) + 'px' // Correct center to top-left
+                // Force top position as requested
+                const clamped = halfH + topMargin
+                bar.style.top = (clamped - halfH) + 'px' 
+                bar.style.left = '50%' // Center horizontally
                 this._othersBarY = clamped
             }
 
@@ -528,6 +529,7 @@ export class EditSubBarManager {
     }
 
     _attachBarDrag(bar, type) {
+        if (type === 'others') return   // others bar is fixed at top
         if (bar._dragAttached) return   // avoid duplicate listeners on repopulate
         bar._dragAttached = true
 
@@ -720,23 +722,7 @@ export class EditSubBarManager {
             }
         };
 
-        // Color swatches
-        addLabel(content, 'Color')
-        EXTRA_COLORS.forEach(hex => {
-            const c = document.createElement('div')
-            c.className = 'sf-others-color' + (this.app.activeColor === hex ? ' active' : '')
-            c.style.background = hex
-            c.title = hex
-            c.addEventListener('click', () => {
-                this.app.activeColor = hex
-                this.app.toolManager?.updateActiveTools()
-                applyToActiveStamp('color', hex)
-                this._populateBar(bar, 'others')
-            })
-            content.appendChild(c)
-        })
-
-        addVDivider(content)
+        // Line style
 
         // Line style
         addLabel(content, 'Line')
@@ -753,25 +739,7 @@ export class EditSubBarManager {
             content.appendChild(b)
         })
 
-        addVDivider(content)
-
-        // Size preset (maps directly to activeToolPreset / userScale)
-        addLabel(content, 'Size')
-        ;[['S', 0.7], ['M', 1.0], ['L', 1.5]].forEach(([lbl, val]) => {
-            const b = document.createElement('div')
-            b.className = 'sf-others-style-btn' + (Math.abs((this.app.activeToolPreset || 1.0) - val) < 0.05 ? ' active' : '')
-            b.title = lbl
-            b.textContent = lbl
-            b.addEventListener('click', () => {
-                this.app.activeToolPreset = val
-                this.app.toolManager?.updateActiveTools()
-                applyToActiveStamp('size', val)
-                this._populateBar(bar, 'others')
-            })
-            content.appendChild(b)
-        })
-
-        addVDivider(content)
+        // Undo
 
         // Undo
         const undoBtn = document.createElement('div')
@@ -884,15 +852,7 @@ export class EditSubBarManager {
 
         // Add all to bar
         bar.appendChild(content)
-        bar.appendChild(this._barDivider())
-        
-        // Grip on the right for dragging
-        const grip = document.createElement('div')
-        grip.className = 'sf-bar-grip'
-        grip.innerHTML = '<span></span><span></span><span></span><span></span>'
-        grip.title = 'Drag to reposition'
-        this._attachGripDrag(grip, bar, 'others')
-        bar.appendChild(grip)
+        // Others bar is now fixed at top, removing grip
     }
 
     // ─── Stamp Settings Panel ─────────────────────────────────────────────────

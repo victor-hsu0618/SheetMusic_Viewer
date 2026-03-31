@@ -441,26 +441,10 @@
     transform: translateX(0) scale(1) translateY(-50%);
 }
 
-/* ── Others bar (floating, scrollable) ── */
-.sf-others-bar {
-    /* Inherits floating styles from .sf-wide-bar */
-    z-index: 300; /* Float above everything */
-    transform: none !important; /* Eliminate translateY(-50%) conflict */
-}
 
-/* Specific scroll content for others bar to ensure single row with labels/dividers */
-.sf-others-scroll-content {
-    display: flex;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 10px;
-    padding: 0 12px;
-    min-width: max-content;
-}
 
 .sf-others-label {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.12em;
@@ -472,17 +456,17 @@
 
 .sf-others-divider-v {
     width: 1px;
-    height: 24px;
+    height: 16px;
     background: var(--bg-surface-border);
     flex-shrink: 0;
     margin: 0 4px;
 }
 
 .sf-others-color {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    border: 2px solid var(--bg-surface-border);
+    border: 1px solid var(--bg-surface-border);
     cursor: pointer;
     flex-shrink: 0;
     transition: transform 0.1s;
@@ -1359,4 +1343,45 @@
 
 .sf-options-reset-btn:hover {
     color: var(--text-main);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   ULTIMATE OVERRIDES - OTHERS BAR (Must be at the end for specificity)
+   ────────────────────────────────────────────────────────────────────────── */
+.sf-sub-bar.sf-wide-bar.sf-others-bar {
+    z-index: 9999; /* Highest priority */
+    position: fixed !important;
+    top: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    right: auto !important;
+    width: auto !important;
+    max-width: 98vw !important;
+    min-width: 0 !important;
+    height: auto !important;
+    background: var(--bg-card) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid var(--bg-surface-border) !important;
+    border-top: none !important;
+    border-radius: 0 0 12px 12px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+    padding: 0 !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Ensure the content inside can expand fully */
+.sf-sub-bar.sf-wide-bar.sf-others-bar .sf-others-scroll-content {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 2px 14px !important;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: min-content !important;
+    height: auto !important;
+    overflow: visible !important;
 }

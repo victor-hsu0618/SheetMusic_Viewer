@@ -448,25 +448,19 @@ export class ViewerManager {
         const watermark = document.getElementById('sf-score-title-watermark');
         
         if (!fp) {
+            let loadingName = "";
             if (this.activeScoreName) {
-                const loadingName = "Loading " + this.activeScoreName.replace(/\.pdf$/i, '') + "..."
-                if (this.app.floatingScoreTitle) {
-                    this.app.floatingScoreTitle.textContent = loadingName;
-                    this.app.floatingScoreTitle.classList.add('active');
-                }
+                loadingName = "Loading " + this.activeScoreName.replace(/\.pdf$/i, '') + "..."
                 if (watermark) watermark.textContent = loadingName;
             } else {
-                if (this.app.floatingScoreTitle) {
-                    this.app.floatingScoreTitle.classList.remove('active');
-                }
                 if (watermark) watermark.textContent = '';
             }
+            this.app.dockingBarManager?.updateScoreName(loadingName.replace(/^⏳\s*/, ''));
             return;
         }
 
         let displayName = "";
         if (this.app.scoreDetailManager) {
-            // Get cached or stored metadata
             const meta = await this.app.scoreDetailManager.getMetadata(fp);
             displayName = meta?.name || "";
         }
@@ -475,13 +469,8 @@ export class ViewerManager {
             displayName = this.activeScoreName ? this.activeScoreName.replace(/\.pdf$/i, '') : "Opening Score...";
         }
 
-        // If we are still hashing/parsing, add a visual cue
         if (!this.pdf) displayName = "⏳ " + displayName;
 
-        if (this.app.floatingScoreTitle) {
-            this.app.floatingScoreTitle.textContent = displayName;
-            this.app.floatingScoreTitle.classList.add('active');
-        }
         if (watermark) watermark.textContent = displayName;
         this.app.dockingBarManager?.updateScoreName(displayName.replace(/^⏳\s*/, ''));
     }

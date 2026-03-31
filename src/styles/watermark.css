@@ -1,4 +1,5 @@
 .sf-score-title-watermark {
+    display: none !important;
     position: fixed;
     top: calc(15px + env(safe-area-inset-top));
     left: 50%;
