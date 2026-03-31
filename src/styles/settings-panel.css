@@ -128,7 +128,7 @@
 .prof-text small {
     display: block;
     font-size: 11px;
-    opacity: 0.6;
+    opacity: 0.75;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -157,7 +157,7 @@
 .setting-hint {
     font-size: 11px;
     color: var(--text-muted);
-    opacity: 0.7;
+    opacity: 0.85;
     margin-top: 3px;
     line-height: 1.4;
 }
@@ -165,7 +165,7 @@
 .setting-label {
     font-size: 13px;
     font-weight: 500;
-    opacity: 0.8;
+    opacity: 1;
 }
 
 /* One-line row layout alignment */

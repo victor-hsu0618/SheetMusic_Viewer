@@ -68,6 +68,11 @@
   transition: all 0.2s;
 }
 
+.search-input-mini::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
 .search-input-mini:focus {
   border-color: var(--primary);
   background: var(--bg-card);
