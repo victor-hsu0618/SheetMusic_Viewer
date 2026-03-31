@@ -20,7 +20,9 @@
     border-radius: 0;
     border-left: 1px solid var(--border);
     border-right: 1px solid var(--border);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+    border-bottom: 3px solid transparent;
+    border-image: linear-gradient(90deg, var(--primary), #818cf8, #a5b4fc) 1;
+    box-shadow: 4px 0 40px rgba(99, 102, 241, 0.12), 0 0 40px rgba(0, 0, 0, 0.2);
     transform: translateY(-100%) !important;
     transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
@@ -470,54 +472,88 @@
 }
 
 .settings-tabs-side {
-    width: 76px;
+    width: 78px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     border-right: 1px solid var(--border);
-    padding: 12px 8px 12px 0;
+    padding: 16px 4px 16px 0;
     flex-shrink: 0;
+    background: var(--bg-sidebar); /* Use the new lavender-tinted background */
 }
 
 .settings-tab-btn {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    padding: 10px 6px;
+    justify-content: center;
+    gap: 4px;
+    padding: 14px 4px;
     color: var(--text-muted);
     background: transparent;
     border: none;
-    border-radius: 10px;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: center;
-    opacity: 0.7;
+    opacity: 0.8;
 }
 
 .settings-tab-btn .stab-icon {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     line-height: 1;
+    filter: grayscale(0.2);
+    transition: transform 0.2s;
 }
 
 .settings-tab-btn .stab-label {
-    font-size: 0.6rem;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
     line-height: 1;
+    color: var(--text-muted);
 }
 
 .settings-tab-btn.active {
-    background: rgba(var(--primary-rgb), 0.15);
+    background: white; /* Clean white for active state in light theme */
     color: var(--primary);
     opacity: 1;
+    box-shadow: 4px 0 15px rgba(99, 102, 241, 0.08); /* Indigo tinted shadow */
+}
+
+/* Accent line for active tab */
+.settings-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height: 60%;
+    width: 4px;
+    background: var(--primary);
+    border-radius: 0 4px 4px 0;
+    box-shadow: 2px 0 8px rgba(var(--primary-rgb), 0.4);
+}
+
+.settings-tab-btn.active .stab-icon {
+    filter: grayscale(0);
+    transform: scale(1.1);
+}
+
+.settings-tab-btn.active .stab-label {
+    color: var(--primary);
 }
 
 .settings-tab-btn:hover:not(.active) {
-    background: var(--bg-soft);
+    background: rgba(var(--primary-rgb), 0.04);
     opacity: 1;
     color: var(--text-main);
+}
+
+.settings-tab-btn:hover:not(.active) .stab-icon {
+    transform: translateY(-2px);
 }
 
 .settings-content-area {

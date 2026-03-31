@@ -3,19 +3,22 @@
   --primary-rgb: 99, 102, 241;
   --primary-hover: #4f46e5;
   --bg-app: #0f0f13;
-  --bg-sidebar: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-rgb: 255, 255, 255;
-  --text-main: #1e293b;
-  --text-main-rgb: 30, 41, 59;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
-  --border-rgb: 226, 232, 240;
+
+  /* Indigo Suite: 加深薰衣草靛藍，賦予面版與側邊欄更強的主題個性 */
+  --bg-sidebar: #edf0ff;
+  --bg-card: #f1f3ff;
+  --bg-card-rgb: 241, 243, 255;
+
+  --text-main: #1e1b4b;         /* 深靛藍文字，保持高對比度 */
+  --text-main-rgb: 30, 27, 75;
+  --text-muted: #6366a0;         /* Indigo 調 muted */
+  --border: rgba(99, 102, 241, 0.22);   /* 稍微加強邊界感 */
+  --border-rgb: 99, 102, 241;
   
-  /* Floating surfaces (Dock, Stamp Bar) */
-  --bg-surface: rgba(15, 23, 42, 0.82);
-  --bg-surface-border: rgba(255, 255, 255, 0.1);
-  --glass-blur: 16px;
+  /* Floating surfaces (Dock, Stamp Bar): 加強藍調濃度與不透明度 */
+  --bg-surface: rgba(240, 243, 255, 0.94);
+  --bg-surface-border: rgba(99, 102, 241, 0.25);
+  --glass-blur: 18px;
   
   --sidebar-width: 320px;
   --header-height: 0px;
@@ -27,12 +30,12 @@
   --sheet-max-height: 85vh;
   --sheet-radius: 24px;
 
-  /* Viewer Background (Legacy PDF.js grey by default) */
-  --bg-viewer: #0f0f13;
-  --bg-pattern: none;
-  --bg-pattern-size: auto;
+  --bg-app: #e5e8f7;          /* 更厚實的應用襯底色 */
+  --bg-viewer: #edf0f9;       /* 帶有深度的檢視區域 */
+  --bg-pattern: radial-gradient(var(--border) 0.5px, transparent 0.5px);
+  --bg-pattern-size: 24px 24px;
 
-  /* Safe Area Insets (for Notch/Home Indicator) */
+  /* Safe Area Insets */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
@@ -40,7 +43,7 @@
 
   --danger: #ef4444;
   --danger-rgb: 239, 68, 68;
-  --bg-soft: rgba(var(--text-main-rgb), 0.06);
+  --bg-soft: rgba(99, 102, 241, 0.08);  /* Indigo 調 hover 背景 */
 }
 
 [data-theme="dark"] {

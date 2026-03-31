@@ -33,7 +33,7 @@
     bottom: 55px;
     width: 2px;
     transform: translateX(-50%);
-    background: rgba(150, 150, 150, 0.2);
+    background: var(--border);
     border-radius: 1px;
     pointer-events: none;
 }
@@ -44,7 +44,13 @@
 
 #sf-standalone-scrollbar .sf-scrollbar-arrow {
     opacity: 1;
-    color: rgba(150, 150, 150, 0.9);
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+#sf-standalone-scrollbar .sf-scrollbar-arrow:hover {
+    color: var(--primary);
+    transform: scale(1.2);
 }
 
 /* Reached boundary — red flash on arrow */

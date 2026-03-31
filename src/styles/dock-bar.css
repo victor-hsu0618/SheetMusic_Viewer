@@ -9,11 +9,12 @@
     transform: translateX(-50%);
     width: max-content;
     max-width: calc(100vw - 68px);
-    height: 52px;
+    height: 54px;
     background: var(--bg-surface);
     border: 1px solid var(--bg-surface-border);
-    border-radius: 20px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(var(--text-main-rgb), 0.06) inset;
+    border-radius: 27px;
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.12), 
+                0 2px 8px rgba(0, 0, 0, 0.04);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     display: flex;
@@ -39,18 +40,18 @@
 
 /* ── Prev/Next nav buttons ── */
 .sf-dock-nav-btn {
-    width: 28px;
+    width: 32px;
     height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
-    font-weight: 300;
-    color: rgba(var(--text-main-rgb), 0.5);
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--text-muted);
     cursor: pointer;
     flex-shrink: 0;
-    border-radius: 6px;
-    transition: color .15s, background .15s;
+    border-radius: 8px;
+    transition: all .2s;
 }
 .sf-dock-nav-btn:hover {
     color: var(--text-main);
@@ -76,12 +77,12 @@
 }
 
 .sf-dock-dot {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: rgba(var(--text-main-rgb), 0.25);
+    background: var(--border);
     cursor: pointer;
-    transition: background .15s, transform .15s;
+    transition: all .2s;
 }
 
 .sf-dock-dot.active {
@@ -106,12 +107,12 @@
     bottom: calc(8px + env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
-    width: 36px;
-    height: 20px;
+    width: 40px;
+    height: 24px;
     background: var(--bg-surface);
     border: 1px solid var(--bg-surface-border);
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     display: flex;

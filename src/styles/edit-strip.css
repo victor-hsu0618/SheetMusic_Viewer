@@ -7,20 +7,21 @@
 /* ── Others trigger button (top of strip) ── */
 .sf-strip-others-btn {
     width: 42px;
-    height: 36px;
-    border-radius: 8px;
+    height: 38px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: rgba(var(--text-main-rgb), 0.65);
-    transition: background .15s, color .15s;
+    color: var(--text-muted);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
 }
 
 .sf-strip-others-btn:hover {
-    background: rgba(var(--text-main-rgb), 0.08);
-    color: rgba(var(--text-main-rgb), 0.9);
+    background: var(--bg-soft);
+    color: var(--primary);
+    transform: translateY(-1px);
 }
 
 .sf-strip-others-btn.open {
@@ -51,8 +52,9 @@
 }
 
 .sf-strip-btn:hover {
-    background: rgba(var(--text-main-rgb), 0.1);
-    color: var(--text-main);
+    background: var(--bg-soft);
+    color: var(--primary);
+    transform: scale(1.05);
 }
 
 .sf-bar-cell.active {
@@ -183,32 +185,40 @@
 /* ── Scrollbar drag zone ── */
 .sf-strip-scrollbar-track {
     flex: 1;
-    width: 32px;
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 10px;
+    width: 36px;
+    background: rgba(var(--primary-rgb), 0.04);
+    border: none;
+    border-radius: 18px;
     position: relative;
     margin: 6px 0;
     cursor: grab;
     align-self: center;
-    min-height: 40px;
+    min-height: 48px;
 }
 
 .sf-strip-scrollbar-thumb {
     position: absolute;
-    width: 32px;
-    left: 0;
-    /* High visibility thumb for navigation */
+    width: 36px;
+    left: -1px;
     background: transparent;
     border: none;
-
-    border-radius: 10px;
+    border-radius: 18px;
     cursor: grab;
-    transition: background .15s;
+    transition: none;
+    box-shadow: none;
+}
+
+.sf-strip-scrollbar-thumb:hover {
+    background: transparent;
+    transform: none;
+    box-shadow: none;
 }
 
 .sf-strip-scrollbar-thumb.grabbing {
     cursor: grabbing;
+    transform: none;
     background: transparent;
+    border: none;
 }
 
 /* ── Scrollbar Dynamic Arrows ── */
@@ -216,19 +226,23 @@
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    width: 44px;
-    /* Larger hit area for iPad */
-    height: 50px;
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-main);
-    opacity: 0.5;
-    /* Show a hint that they are interactive */
-    pointer-events: auto;
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    color: var(--primary);
     cursor: pointer;
-    transition: opacity 0.2s, transform 0.2s;
+    transition: all 0.2s;
     z-index: 10;
+}
+
+.sf-scrollbar-arrow:hover {
+    color: var(--primary-hover);
+    transform: translateX(-50%) translateY(-2px) scale(1.2);
 }
 
 .sf-scrollbar-arrow-up {
@@ -295,21 +309,21 @@
 .sf-sub-bar {
     position: fixed;
     right: 58px;
-    /* 54px strip + 4px gap */
     background: var(--bg-surface);
     -webkit-backdrop-filter: blur(var(--glass-blur));
     backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--bg-surface-border);
-    border-radius: 12px;
-    z-index: 300; /* Ensured sub-bar is above everything in the main strip */
-    box-shadow: -4px 8px 24px rgba(0, 0, 0, 0.55);
+    border-radius: 16px;
+    z-index: 300;
+    /* 調整為更精緻的漫反射陰影，帶有淡淡的 Indigo 色調 */
+    box-shadow: 0 10px 40px rgba(99, 102, 241, 0.12), 
+                0 2px 10px rgba(0, 0, 0, 0.05);
     color: var(--text-main);
     -webkit-user-select: none;
     user-select: none;
     overflow: hidden;
     opacity: 0;
     pointer-events: none;
-    /* Arrow pointing right toward edit strip */
 }
 
 .sf-sub-bar::before {
@@ -397,30 +411,36 @@
 /* Library text cell */
 .sf-text-cell {
     height: 38px;
-    padding: 0 10px;
+    padding: 0 12px;
     min-width: 38px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: white;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    font-size: 12px;
-    font-style: italic;
+    font-size: 13px;
+    font-weight: 500;
     color: var(--text-main);
-    transition: background .15s, border-color .15s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 
 .sf-text-cell:hover {
-    background: rgba(var(--text-main-rgb), 0.1);
+    background: var(--bg-soft);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
 }
 
 .sf-text-cell.active {
-    background: rgba(var(--primary-rgb), 0.25);
+    background: var(--primary);
     border-color: var(--primary);
-    color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 /* ── Wide bars (shapes, stamp) ── */
@@ -482,66 +502,77 @@
 }
 
 .sf-others-style-btn {
-    width: 36px;
-    height: 28px;
-    border-radius: 6px;
-    background: rgba(var(--text-main-rgb), 0.06);
+    width: 38px;
+    height: 30px;
+    border-radius: 8px;
+    background: white;
     border: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--text-muted);
-    font-size: 12px;
-    transition: background .15s;
+    font-size: 13px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .sf-others-style-btn:hover {
-    background: rgba(var(--text-main-rgb), 0.12);
-    border-color: rgba(var(--text-main-rgb), 0.2);
+    background: var(--bg-soft);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
 }
 
 .sf-others-style-btn.active {
-    background: rgba(var(--primary-rgb), 0.25);
+    background: var(--primary);
     border-color: var(--primary);
-    color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .sf-others-zoom-readout {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 800;
     color: var(--text-main);
     text-align: center;
-    min-width: 42px;
-    padding: 0 4px;
+    min-width: 46px;
+    padding: 0 6px;
     -webkit-user-select: none;
     user-select: none;
     flex-shrink: 0;
+    letter-spacing: 0.02em;
 }
 
 /* ── Pen bar cells ── */
 .sf-pen-cell {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     flex-shrink: 0;
-    background: rgba(var(--text-main-rgb), 0.05);
-    border: 1px solid var(--border);
+    background: white;
+    border: 1.5px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background .15s, border-color .15s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 
 .sf-pen-cell:hover {
-    background: rgba(var(--text-main-rgb), 0.1);
+    background: var(--bg-soft);
+    border-color: var(--primary);
+    transform: translateY(-1px);
 }
 
 .sf-pen-cell.active {
-    background: rgba(var(--primary-rgb), 0.25);
+    background: var(--primary);
     border-color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .sf-pen-label {

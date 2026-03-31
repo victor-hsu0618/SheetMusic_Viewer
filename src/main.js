@@ -99,7 +99,12 @@ class ScoreFlow {
     this.activeLineStyle = 'solid' // 'solid' | 'dashed' | 'dotted'
     this.presetScales = JSON.parse(localStorage.getItem('scoreflow_preset_scales')) || { S: 0.7, M: 1.0, L: 1.6 }
     this.categoryDefaultColors = {
-        draw: '#1d4ed8', shapes: '#7c3aed', fingering: '#be123c', articulation: '#15803d', text: '#374151', others: '#94a3b8',
+        draw: '#4f46e5',         /* Indigo Blue — 與主題色呼應 */
+        shapes: '#818cf8',       /* Soft Indigo — 相比原紫色更柔和 */
+        fingering: '#e11d48',    /* Rose Red — 提升在淺背景下的辨識度 */
+        articulation: '#059669', /* Emerald Green — 取代原本過深的森林綠 */
+        text: '#1e1b4b',         /* Deep Indigo — 取代死板的深灰 */
+        others: '#6366a0',       /* Muted Indigo — 取代普通灰色 */
         ...JSON.parse(localStorage.getItem('sf-category-default-colors') || '{}'),
     }
     
