@@ -914,7 +914,7 @@ export class InteractionManager {
             let syncObj = activeObject;
             try {
                 if (syncObj) {
-                    const tPN = this._findTargetPage(syncObj);
+                    const tPN = syncObj.page;
                     const tW = document.querySelector(`.page-container:not(.is-stale)[data-page="${tPN}"]`);
                     const dt = document.getElementById('sf-doc-trash-btn'), et = document.getElementById('sf-edit-trash-btn');
                     const isPointerOverTrash = (ev, el) => {
