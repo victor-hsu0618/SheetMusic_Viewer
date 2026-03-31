@@ -19,6 +19,7 @@ export class ViewerManager {
         this.latestLoadingId = 0 // Race condition protection
         this._loadingPdf = false // True while any loadPDF is actively in progress
         this.baseNaturalWidth = 0 // Reference width for uniform rendering
+        this._staleContainers = [] // Buffer for double-buffering (flash-free zoom)
     }
 
     init() {
@@ -533,10 +534,33 @@ export class ViewerManager {
             this.init()
         }
 
-        this.app.container.querySelectorAll('.page-container').forEach(el => {
-            if (this.observer) this.observer.unobserve(el)
-            el.remove()
-        })
+        // --- DOUBLE BUFFERING (Seamless Zoom) ---
+        // Instead of immediate removal, mark current containers as stale.
+        // We only do this for Zoom/Resize (isInitialLoad === false).
+        const existingPages = Array.from(this.app.container.querySelectorAll('.page-container:not(.is-stale)'))
+        if (!isInitialLoad && existingPages.length > 0) {
+            existingPages.forEach(el => {
+                el.classList.add('is-stale')
+                el.style.pointerEvents = 'none' 
+                el.style.zIndex = '1'
+                
+                // If a ratio is provided, lock the visual scale on the stale page
+                // so it doesn't jump when the viewer's container transform is reset.
+                if (window.currentGestureRatio && window.currentGestureRatio !== 1) {
+                    el.style.transform = `scale(${window.currentGestureRatio})`
+                    el.style.transformOrigin = 'top center'
+                }
+
+                this._staleContainers.push(el)
+            })
+        } else {
+            // Hard clear for new file uploads or initial load
+            existingPages.forEach(el => {
+                if (this.observer) this.observer.unobserve(el)
+                el.remove()
+            })
+        }
+        
         this.pages = []
         this._pageViewports = {}
         this._pageCache = {}      // Cache for PDFPageProxy objects
@@ -563,6 +587,7 @@ export class ViewerManager {
             
             pageWrapper.style.minHeight = `${firstViewport.height}px`
             pageWrapper.style.width = `${firstViewport.width}px`
+            pageWrapper.style.zIndex = '2' // Render new pages ON TOP of stale ones
             
             fragment.appendChild(pageWrapper)
             this.observer.observe(pageWrapper)
@@ -772,8 +797,18 @@ export class ViewerManager {
             this.app.createAnnotationLayers(wrapper, pageNum, viewport.width, viewport.height, renderScale)
             this.app.createCaptureOverlay(wrapper, pageNum, viewport.width, viewport.height)
             this.app.redrawStamps(pageNum)
-
             wrapper.dataset.rendered = 'true'
+
+            // --- DOUBLE BUFFERING CLEANUP ---
+            // Once the first new page is rendered, we can safely remove the stale "buffer" pages.
+            // We use a small delay or check if it's visible to ensure the user actually sees content.
+            if (this._staleContainers.length > 0) {
+                // If it's a visible page, cleanup immediately to show the clear version
+                const rect = wrapper.getBoundingClientRect()
+                if (rect.top < window.innerHeight && rect.bottom > 0) {
+                    this.cleanupStale()
+                }
+            }
 
             // Save bitmap for instant re-render (skip if createImageBitmap unavailable)
             if (typeof createImageBitmap === 'function' && canvas.width > 0 && canvas.height > 0) {
@@ -842,6 +877,19 @@ export class ViewerManager {
     }
 
     /**
+     * Completely remove stale containers used for double-buffering.
+     */
+    cleanupStale() {
+        if (this._staleContainers.length === 0) return
+        console.log(`[ViewerManager] Cleanup: Removing ${this._staleContainers.length} stale containers.`)
+        this._staleContainers.forEach(el => {
+            if (this.observer) this.observer.unobserve(el)
+            el.remove()
+        })
+        this._staleContainers = []
+    }
+
+    /**
      * Efficiently capture all page offsets and heights to avoid continuous getBoundingClientRect/offsetTop calls.
      * Call this after renderPDF, resize, or zoom change.
      */
@@ -897,7 +945,10 @@ export class ViewerManager {
         }
     }
 
-    async changeZoom(delta) {
+    async changeZoom(delta, ratio = 1) {
+        // Store ratio globally or pass through to renderPDF for double-buffering lock
+        window.currentGestureRatio = ratio 
+        
         const focalPoint = this._captureFocalPoint()
         this.scale = Math.min(Math.max(0.2, this.scale + delta), 4)
         this.isFitToHeight = false
@@ -908,6 +959,8 @@ export class ViewerManager {
             await this.renderPDF(false) // Not initial load
             this._restoreFocalPoint(focalPoint)
         }
+        
+        window.currentGestureRatio = 1 // Reset for next time
         this.app.updateRulerPosition()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()

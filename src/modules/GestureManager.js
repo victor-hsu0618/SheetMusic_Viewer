@@ -232,7 +232,7 @@ export class GestureManager {
                     
                     // Final threshold: 0.01 (1% change) to support fine adjustments
                     if (Math.abs(delta) > 0.01) {
-                        this.app.viewerManager?.changeZoom(delta)
+                        this.app.viewerManager?.changeZoom(delta, ratio)
                     }
                 }
                 return
