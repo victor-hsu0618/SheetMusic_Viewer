@@ -106,6 +106,7 @@ class ScoreFlow {
     // Undo/Redo History
     this.history = []
     this.redoStack = []
+    this.historyLimit = 100 // Increased from 50
     
     this.stampOffsetTouchY = 50
     this.stampOffsetTouchX = -30
@@ -500,8 +501,14 @@ this.playbackManager.init()
 
   pushHistory(action) {
     this.history.push(action)
-    if (this.history.length > 50) this.history.shift()
+    if (this.history.length > this.historyLimit) this.history.shift()
     this.redoStack = []
+  }
+
+  clearHistory() {
+    this.history = []
+    this.redoStack = []
+    console.log('[ScoreFlow] Undo/Redo history cleared.')
   }
 
   async undo() {

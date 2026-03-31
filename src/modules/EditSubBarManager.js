@@ -708,12 +708,14 @@ export class EditSubBarManager {
         const applyToActiveStamp = (key, val) => {
             const stamp = this.app._lastGraceObject;
             if (stamp && !stamp.deleted) {
+                const oldObj = JSON.parse(JSON.stringify(stamp));
                 if (key === 'size') {
                     stamp.userScale = val;
                 } else {
                     stamp[key] = val;
                 }
                 stamp.updatedAt = Date.now();
+                this.app.pushHistory({ type: 'move', oldObj, newObj: JSON.parse(JSON.stringify(stamp)) });
                 this.app.saveToStorage?.(true);
                 this.app.redrawStamps?.(stamp.page);
                 if (this.app.supabaseManager) {

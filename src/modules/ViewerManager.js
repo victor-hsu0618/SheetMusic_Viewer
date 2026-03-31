@@ -212,6 +212,7 @@ export class ViewerManager {
 
         // Update UI to "Loading" or new Title immediately
         this.updateFloatingTitle();
+        this.app.clearHistory(); // Isolated history per score
         if (this.app.scoreDetailManager && expectedFp) {
             this.app.scoreDetailManager.load(expectedFp);
         }

@@ -102,5 +102,6 @@ export function applyAppProxies(app) {
     // --- Collaboration Proxies ---
     app.renderSourceUI = () => app.collaborationManager.renderSourceUI();
     app.addSource = () => app.collaborationManager.addSource();
+    app.clearHistory = () => app.clearHistory();
     app.updateScoreDetailUI = (f) => app.scoreDetailManager?.load(f);
 }

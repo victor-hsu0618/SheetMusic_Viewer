@@ -554,6 +554,9 @@ export class AnnotationManager {
         
         // Physically remove stamps from the array
         const idsToRemove = new Set(stampsToErase.map(s => s.id))
+        const historyBatch = stampsToErase.map(s => ({ type: 'delete', obj: JSON.parse(JSON.stringify(s)) }))
+        this.app.pushHistory({ type: 'batch', ops: historyBatch })
+
         this.app.stamps = this.app.stamps.filter(s => !idsToRemove.has(s.id))
 
         // --- Supabase Sync ---
@@ -577,8 +580,13 @@ export class AnnotationManager {
     async eraseAllByLayer(layerId) {
         const originalCount = this.app.stamps.length
         if (layerId === '__all__') {
+            const historyBatch = this.app.stamps.map(s => ({ type: 'delete', obj: JSON.parse(JSON.stringify(s)) }))
+            this.app.pushHistory({ type: 'batch', ops: historyBatch })
             this.app.stamps = []
         } else {
+            const toErase = this.app.stamps.filter(s => s.layerId === layerId)
+            const historyBatch = toErase.map(s => ({ type: 'delete', obj: JSON.parse(JSON.stringify(s)) }))
+            this.app.pushHistory({ type: 'batch', ops: historyBatch })
             this.app.stamps = this.app.stamps.filter(s => s.layerId !== layerId)
         }
 
