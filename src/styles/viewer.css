@@ -270,21 +270,12 @@ body.mode-horizontal .page-container.slide-prev-in {
   opacity: 1;
 }
 
-/* 2. 3D Book Flip (Classic Mode) */
-/* Pivot on the left Edge for Forward Flip */
-body.mode-horizontal .page-container.flip-forward-out {
-  transform-origin: left center;
-  transform: rotateY(-100deg);
-  opacity: 1; /* Keep bright */
-  z-index: 10;
-}
-
-/* Pivot on the Right Edge for Backward Flip */
+/* 2. Simplified Flip (Professional Stack Turn) — Optimized for absolute stability */
+body.mode-horizontal .page-container.flip-forward-out,
 body.mode-horizontal .page-container.flip-backward-out {
-  transform-origin: right center;
-  transform: rotateY(100deg);
-  opacity: 1; /* Keep bright */
-  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.4s ease-in;
+  z-index: 1;
 }
 
 /* 3. Shadow Fade — Removed to prevent eye strain during transitions */

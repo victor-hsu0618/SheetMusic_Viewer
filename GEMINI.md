@@ -19,8 +19,8 @@ The application follows a modular "Manager" pattern coordinated by a central `Sc
 
 ### Manager Modules (`src/modules/`)
 - **`AnnotationManager`**: Centralizes logic for drawing (pens, stamps), coordinate mapping, erasing, and anchor/measure cleanup logic.
-- **`ZoomFABManager`**: 提供類似 Debug Console 的獨立懸浮縮放控制艙，具備即時縮放百分比顯示與膠囊選單互動。
-- **`ViewerManager`**: 負責 PDF.js 渲染、縮放比例計算、全頁面 Viewport 探測（Layout Pre-probing）。
+- **`DockingBarManager`**: 提供「珍珠白」全屏可拖曳懸浮球 (FAB)，支援邊界磁吸、狀態持久化，並作為縮放與底欄控制的統一入口。
+- **`ViewerManager`**: 負責 PDF.js 渲染與縮放比例。具備「閱讀模式感知」佈局，在橫向模式下強制執行 `100vw` 以確保捲動一致性。
 - **`InputManager`**: Unified event hub for keyboard shortcuts, iPad touch gestures (Swipe Jump), and scroll-linked UI updates.
 - **`JumpManager`**: Central logic for navigation (Page/Anchor/History). Uses a **Navigation Epoch** design to clear history on manual warp jumps.
 - **`ToolManager`**: Manages the toolbar state, dynamic toolsets per layer, and last-used tool persistence.

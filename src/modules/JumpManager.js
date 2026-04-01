@@ -256,7 +256,7 @@ export class JumpManager {
         const isHorizontal = this.app.readingMode === 'horizontal';
 
         const doRealJump = (targetLeft, targetTop) => {
-            const behavior = (isHorizontal && this.app.transitionManager?.currentStyle === 'slide') ? 'smooth' : (isHorizontal ? 'instant' : 'smooth');
+            const behavior = (isHorizontal && (this.app.transitionManager?.currentStyle === 'slide' || this.app.transitionManager?.currentStyle === 'flip')) ? 'smooth' : (isHorizontal ? 'instant' : 'smooth');
             this.app.viewer.scrollTo({
                 left: targetLeft,
                 top: targetTop,
