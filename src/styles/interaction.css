@@ -632,38 +632,45 @@
 }
 
 /* ─── Segmented Control (Tabs) ─── */
-.segmented-control {
+.sf-segmented-control {
   display: flex;
   background: var(--bg-soft);
-  padding: 4px;
+  padding: 5px;
   border-radius: 12px;
-  gap: 4px;
+  gap: 5px;
+  min-height: 44px; /* iPad friendly touch height */
+  align-items: stretch;
 }
 
-.segment-btn {
+.sf-seg-btn {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.75rem;
+  padding: 10px 20px;
+  border-radius: 9px;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
   text-align: center;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
 }
 
-.segment-btn:hover {
+.sf-seg-btn:hover {
   color: var(--text-main);
-  background: var(--bg-soft);
+  background: rgba(var(--primary-rgb), 0.05);
 }
 
-.segment-btn.active {
+.sf-seg-btn.active {
   background: var(--bg-card);
   color: var(--primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.12), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .detail-tab-pane,

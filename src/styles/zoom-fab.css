@@ -1,0 +1,152 @@
+#sf-zoom-fab-container {
+    position: fixed;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    right: 18px;
+    z-index: 10005;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* The Main Trigger Ball */
+.sf-zoom-fab-trigger {
+    width: 48px;
+    height: 48px;
+    background: rgba(20, 20, 25, 0.85);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    backdrop-filter: blur(15px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(99, 102, 241, 0.1);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sf-zoom-fab-trigger:hover {
+    transform: scale(1.08);
+    background: rgba(30, 30, 35, 0.9);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+.sf-zoom-fab-trigger:active {
+    transform: scale(0.92);
+}
+
+/* Percentage Text */
+.sf-zoom-val {
+    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--primary, #818cf8);
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Pop animation on value change */
+.sf-zoom-val.pop {
+    animation: zoomReadoutPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes zoomReadoutPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.25); color: #fff; }
+    100% { transform: scale(1); }
+}
+
+/* The Capsule Menu (Horizontal expansion to the left) */
+.sf-zoom-capsule {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(25, 25, 30, 0.9);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 4px;
+    opacity: 0;
+    transform: translateX(25px) scale(0.85);
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+#sf-zoom-fab-container.expanded .sf-zoom-capsule {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: auto;
+}
+
+#sf-zoom-fab-container.expanded .sf-zoom-fab-trigger {
+    background: var(--primary);
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.6);
+}
+
+#sf-zoom-fab-container.expanded .sf-zoom-val {
+    color: #fff;
+}
+
+/* Small Capsule Buttons */
+.sf-zoom-cap-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sf-zoom-cap-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sf-zoom-cap-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.sf-zoom-cap-btn:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.sf-zoom-cap-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 4px;
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .sf-zoom-fab-trigger,
+[data-theme="midnight"] .sf-zoom-fab-trigger {
+    background: rgba(10, 10, 15, 0.9);
+}
+
+/* Hide when docking bar is explicitly hidden if desired, or keep as debug tool?
+   Usually vConsole is ALWAYS visible. I'll keep it always visible. */
+
+/* Responsive: Move up on mobile if docking bar is present */
+@media (max-width: 600px) {
+    #sf-zoom-fab-container {
+        right: 12px;
+        bottom: calc(88px + env(safe-area-inset-bottom));
+    }
+}

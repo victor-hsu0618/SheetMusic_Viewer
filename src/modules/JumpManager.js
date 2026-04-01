@@ -250,48 +250,50 @@ export class JumpManager {
     async goToPage(pageNumber) {
         if (!this.app.pdf) return
         
-        // Priority: Use cached metrics from ViewerManager for absolute alignment
         const metrics = this.app.viewerManager?._pageMetrics;
         const targetMetric = metrics ? metrics[pageNumber] : null;
-        
-        if (targetMetric) {
-            this.app.viewerManager.ensurePageRendered(pageNumber)
-            const isHorizontal = this.app.readingMode === 'horizontal'
+        const fromPage = this.currentPage;
+        const isHorizontal = this.app.readingMode === 'horizontal';
 
-            // Fix: Use scrollTo to work reliably with snap. 
-            // In horizontal mode, 'behavior: instant' is passed to JS, 
-            // letting CSS 'scroll-behavior: smooth' handle the animation without snap conflict.
+        const doRealJump = (targetLeft, targetTop) => {
             this.app.viewer.scrollTo({
-                left: isHorizontal ? targetMetric.left : 0,
-                top: isHorizontal ? 0 : targetMetric.top,
+                left: targetLeft,
+                top: targetTop,
                 behavior: isHorizontal ? 'instant' : 'smooth'
-            })
-            
-            this.currentPage = pageNumber
-            this.updateDisplay()
-
+            });
+            this.currentPage = pageNumber;
+            this.updateDisplay();
             this.app.inputManager?.forceResetInteractionState();
-            return true; // Success
+            return true;
+        };
+
+        if (targetMetric) {
+            this.app.viewerManager.ensurePageRendered(pageNumber);
+            
+            if (isHorizontal && this.app.transitionManager) {
+                return await this.app.transitionManager.performTransition(
+                    fromPage, 
+                    pageNumber, 
+                    () => doRealJump(targetMetric.left, 0)
+                );
+            }
+            return doRealJump(targetMetric.left, isHorizontal ? 0 : targetMetric.top);
         }
 
         // Fallback: DOM query (only if metrics aren't ready/cached)
         const pageElem = document.querySelector(`.page-container:not(.is-stale)[data-page="${pageNumber}"]`)
         if (pageElem) {
-            this.app.viewerManager.ensurePageRendered(pageNumber)
-            const isHorizontal = this.app.readingMode === 'horizontal'
-            
-            this.app.viewer.scrollTo({
-                left: isHorizontal ? pageElem.offsetLeft : 0,
-                top: isHorizontal ? 0 : pageElem.offsetTop,
-                behavior: isHorizontal ? 'instant' : 'smooth'
-            })
-
-            this.currentPage = pageNumber
-            this.updateDisplay()
-            this.app.inputManager?.forceResetInteractionState();
-            return true; // Success
+            this.app.viewerManager.ensurePageRendered(pageNumber);
+            if (isHorizontal && this.app.transitionManager) {
+                return await this.app.transitionManager.performTransition(
+                    fromPage, 
+                    pageNumber, 
+                    () => doRealJump(pageElem.offsetLeft, 0)
+                );
+            }
+            return doRealJump(pageElem.offsetLeft, isHorizontal ? 0 : pageElem.offsetTop);
         }
-        return false; // Failed
+        return false;
     }
 
     prevPage() {

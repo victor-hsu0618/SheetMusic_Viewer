@@ -233,3 +233,71 @@ body.mode-horizontal .nav-divider {
     display: none !important;
   }
 }
+/* -------------------------------------------------------------------------
+   PAGE TRANSITIONS (Horizontal Mode Only)
+   ------------------------------------------------------------------------- */
+
+body.mode-horizontal #pdf-viewer {
+  perspective: 1500px;
+  perspective-origin: center center;
+  overflow-x: auto; /* Ensure scroll container stays scrollable */
+  scrollbar-width: none;
+}
+
+body.mode-horizontal #pdf-viewer::-webkit-scrollbar {
+  display: none;
+}
+
+/* Base Page State for Transitions */
+body.mode-horizontal .page-container {
+  transform-origin: center center;
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), 
+              opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* 1. Slide Over (Professional Mode) */
+body.mode-horizontal .page-container.slide-next-out {
+  transform: translateX(-15%) scale(0.96);
+  opacity: 0.6;
+}
+
+body.mode-horizontal .page-container.slide-next-in {
+  /* Incoming page starts slightly zoomed */
+  transform: scale(0.98);
+  opacity: 1;
+}
+
+/* 2. 3D Book Flip (Classic Mode) */
+/* Pivot on the left Edge for Forward Flip */
+body.mode-horizontal .page-container.flip-forward-out {
+  transform-origin: left center;
+  transform: rotateY(-100deg);
+  opacity: 0;
+  z-index: 10;
+}
+
+/* Pivot on the Right Edge for Backward Flip */
+body.mode-horizontal .page-container.flip-backward-out {
+  transform-origin: right center;
+  transform: rotateY(100deg);
+  opacity: 0;
+  z-index: 10;
+}
+
+/* 3. Shadow Fade (Visual depth) */
+body.mode-horizontal .page-container::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.1);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+  z-index: 6;
+}
+
+body.mode-horizontal .page-container.is-transitioning::after {
+  opacity: 1;
+}

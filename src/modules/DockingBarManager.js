@@ -186,12 +186,6 @@ export class DockingBarManager {
                     { id: 'multi-select', label: 'Multi',  tool: true, icon: `<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/><circle cx="19" cy="5" r="3" fill="currentColor"/>` },
                     { id: 'eraser', label: 'Eraser', tool: true, icon: `<path d="M16.5 4.5 L19.5 7.5 L9 18 L4.5 18 L4.5 13.5 Z" fill="none" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="15" y2="10.5"/><line x1="4.5" y1="18" x2="19.5" y2="18" stroke-linecap="round"/>` },
                     { id: 'cycle',  label: 'Cycle',  tool: true, icon: `<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" stroke-linecap="round"/><polyline points="21 3 21 8 16 8" stroke-linecap="round"/>` },
-                    { divider: true },
-                    { id: '_fitw',    label: 'Fit W', icon: `<path d="M21 12H3M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/>`,                                      action: () => this.app.fitToWidth?.() },
-                    { id: '_fith',    label: 'Fit H', icon: `<path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4"/>`,                                       action: () => this.app.fitToHeight?.() },
-                    { id: '_zoomin',  label: 'Zoom+', icon: `<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>`, action: () => this.app.changeZoom?.(0.25) },
-                    { id: '_zoomout', label: 'Zoom-', icon: `<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>`,                                        action: () => this.app.changeZoom?.(-0.25) },
-                    { divider: true },
                     { id: 'stamp-palette', label: 'Stamps', stamp: true, icon: `<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>` },
                     { id: '_others', label: 'Others', icon: `<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>`, action: (btn) => this._subBarMgr?.toggle('others', btn) },
                 ]

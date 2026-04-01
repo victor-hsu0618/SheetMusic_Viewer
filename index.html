@@ -644,12 +644,25 @@
             <div class="setting-item">
               <div class="setting-row-compact">
                 <label class="setting-label">Reading Mode</label>
-                <div class="sf-segmented-control mini-toggle" id="reading-mode-selector">
+                <div class="sf-segmented-control" id="reading-mode-selector">
                   <button class="sf-seg-btn active" data-mode="vertical">Vertical</button>
                   <button class="sf-seg-btn" data-mode="horizontal">Horizontal</button>
                 </div>
               </div>
-              <span class="setting-hint">切換直式換頁或橫式換頁模式。</span>
+              <span class="setting-hint">選擇音譜捲動方向。Horizontal 支援翻頁動畫。</span>
+            </div>
+
+            <div class="setting-item" id="transition-style-row">
+              <div class="setting-row-compact">
+                <label class="setting-label">Page Effect</label>
+                <div class="sf-segmented-control" id="transition-style-selector">
+                  <button class="sf-seg-btn active" data-style="none">None</button>
+                  <button class="sf-seg-btn" data-style="slide">Slide</button>
+                  <button class="sf-seg-btn" data-style="flip">Flip</button>
+                </div>
+              </div>
+              <span class="setting-hint">橫向翻頁動畫風格。推薦演奏時使用 Slide。</span>
+            </div>
             </div>
 
             <div class="setting-item">

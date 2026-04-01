@@ -335,6 +335,24 @@ export class SettingsPanelManager {
             })
         }
 
+        // Transition Style selector
+        const transitionSelector = document.getElementById('transition-style-selector')
+        if (transitionSelector) {
+            const btns = transitionSelector.querySelectorAll('.sf-seg-btn')
+            const currentStyle = this.app.transitionManager?.currentStyle || 'none'
+            
+            btns.forEach(btn => {
+                if (btn.dataset.style === currentStyle) btn.classList.add('active')
+                else btn.classList.remove('active')
+                
+                btn.addEventListener('click', () => {
+                    btns.forEach(b => b.classList.remove('active'))
+                    btn.classList.add('active')
+                    this.app.transitionManager?.setStyle(btn.dataset.style)
+                })
+            })
+        }
+
         // Jump Ruler toggle
         const rulerChk = document.getElementById('settings-ruler-visible')
         if (rulerChk) {

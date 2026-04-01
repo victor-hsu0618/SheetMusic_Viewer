@@ -114,6 +114,15 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **GestureManager**：負責複雜手勢解析 (Pinch/Pan/Swipe)。
 - **ToolManager**：負責工具欄狀態與最後使用工具記憶。
 
+### 4. 縮放獨立浮動艙 (Zoom FAB)
+
+- **獨立控制中心**：仿效移動端除錯工具 (`vConsole`) 風格，將縮放控制從底欄解耦，建立為獨立的懸浮組件。
+- **即時數值顯示**：FAB 表面常駐顯示當前樂譜的縮放百分比（如 `100%`），數值變動時具備微跳轉動畫 (`pop`)。
+- **膠囊式選單**：點擊 FAB 後橫向彈出功能膠囊，包含：
+  - **Fit Width / Fit Height**：一鍵自適應佈局。
+  - **精確調整 (+ / -)**：固定步進值的縮放控制。
+- **視覺規範**：採用高階毛玻璃 (`backdrop-filter`) 材質，支援自適應主題色（Indigo Accent），並自動避開底部安全區域與側邊捲軸。
+
 ---
 ---
 ## 🎨 物理感知與適應性佈局 (Physical-Aware Adaptive Layout)

@@ -43,12 +43,13 @@
 2. **規格同步更新 (Sync PRD)**
    - 每當完成一項重大架構改動（如：引入自製 Smooth Scroll Engine），必須即時更新或提示更新 `PRD.MD` 及 `GEMINI.md`，保持工程實作與產品規格的 100% 一致。
 
-## 五、 指令與實作計畫流程 (Commands & Implementation Plan Flow)
+### 五、 指令與實作計畫流程 (Commands & Implementation Plan Flow)
 
 為了確保開發過程中的每一步都在您掌控之中，我們將遵循以下嚴格的專案開發與確認流程：
 
 1. **實作計畫 (Implementation Plan)**
-   - `implementation_plan.md` 必須統一使用**繁體中文**撰寫，並**直接存檔在專案根目錄資料夾中**（而非隱藏的暫存或 AI 快取區），以便隨時翻閱與追蹤歷史。
+   - 實作計畫必須統一使用**繁體中文**撰寫，並**直接存檔在專案根目錄資料夾中**，以方便隨時翻閱與追蹤歷史。
+   - **獨立命名規範**：不應覆寫同一個檔案。針對每一項重大新功能或改動，應產生專屬的計畫說明檔（例如：`plan_zoom_fab.md`, `plan_horizontal_transitions.md`）。
    - 在計畫中修改設計時，必須清楚對比並列出「**原本的設計狀態**」與「**預計修改後的設計狀態**」，讓預期改動的範圍一目了然。
 2. **通關密語執行流程 (Keyword Gates)**
    - 所有開發動作必須一律在 `git` 的 **`main` branch** 上進行。
