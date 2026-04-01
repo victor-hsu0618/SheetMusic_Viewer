@@ -19,6 +19,20 @@
     user-select: none;
     background: transparent;
     border: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Horizontal Mode Adaptation: Keep it vertical on the side to avoid DockBar overlap, 
+   but with horizontal arrows and logic */
+body.mode-horizontal #sf-standalone-scrollbar {
+    flex-direction: column; /* Back to column to avoid overlap */
+    width: 52px;
+    height: 40vh;
+    right: 0;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    padding: 6px 0;
 }
 
 #sf-standalone-scrollbar .sf-std-track {
@@ -29,17 +43,27 @@
     cursor: pointer;
 }
 
+/* Track Orientation Adaptation */
 #sf-standalone-scrollbar .sf-std-track::before {
     content: '';
     position: absolute;
+    background: var(--border);
+    border-radius: 1px;
+    pointer-events: none;
     left: 50%;
     top: 40px;
     bottom: 40px;
     width: 2px;
     transform: translateX(-50%);
-    background: var(--border);
-    border-radius: 1px;
-    pointer-events: none;
+}
+/* Force vertical line even in horizontal mode since we moved the bar back to vertical */
+body.mode-horizontal #sf-standalone-scrollbar .sf-std-track::before {
+    left: 50%;
+    top: 40px;
+    bottom: 40px;
+    width: 2px;
+    height: auto;
+    transform: translateX(-50%);
 }
 
 #sf-standalone-scrollbar .sf-std-thumb {
@@ -54,6 +78,14 @@
     cursor: grabbing;
 }
 
+/* Horizontal Mode Thumb: Back to Vertical Position */
+body.mode-horizontal #sf-standalone-scrollbar .sf-std-thumb {
+    top: auto !important;
+    left: 0 !important;
+    transform: none !important;
+    width: 44px !important;
+}
+
 #sf-standalone-scrollbar .sf-std-arrow {
     opacity: 0.6;
     color: var(--text-muted);
@@ -65,15 +97,31 @@
     padding: 4px;
 }
 
+/* Rotate Arrows in Horizontal Mode */
+body.mode-horizontal .sf-std-arrow-up {
+    transform: rotate(-90deg); /* Up -> Left */
+}
+body.mode-horizontal .sf-std-arrow-down {
+    transform: rotate(-90deg); /* Down -> Right */
+}
+
 #sf-standalone-scrollbar .sf-std-arrow:hover {
     color: var(--primary);
     transform: scale(1.2);
     opacity: 1;
 }
 
+body.mode-horizontal #sf-standalone-scrollbar .sf-std-arrow:hover {
+    transform: rotate(-90deg) scale(1.2);
+}
+
 #sf-standalone-scrollbar .sf-std-arrow.active {
     color: var(--primary);
     opacity: 1;
+}
+
+body.mode-horizontal #sf-standalone-scrollbar .sf-std-arrow.active {
+    transform: rotate(-90deg) scale(1.1);
 }
 
 /* Reached boundary — red flash on arrow */
@@ -83,8 +131,18 @@
     animation: sf-std-limit-flash 0.4s ease-out forwards;
 }
 
+body.mode-horizontal #sf-standalone-scrollbar .sf-std-arrow.limit {
+    animation: sf-std-limit-flash-horizontal 0.4s ease-out forwards;
+}
+
 @keyframes sf-std-limit-flash {
     0%   { transform: scale(1.2); opacity: 1; }
     60%  { transform: scale(1); opacity: 1; }
     100% { opacity: 0.6; }
+}
+
+@keyframes sf-std-limit-flash-horizontal {
+    0%   { transform: rotate(-90deg) scale(1.2); opacity: 1; }
+    60%  { transform: rotate(-90deg) scale(1); opacity: 1; }
+    100% { transform: rotate(-90deg); opacity: 0.6; }
 }

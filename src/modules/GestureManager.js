@@ -195,8 +195,14 @@ export class GestureManager {
 
                 // 3. PAN LOGIC (Manual Scroll) — only when explicitly locked to pan
                 if (this._gestureLocked === 'pan') {
-                    const dy = this._lastPinchY - currentY
-                    viewerContainer.scrollTop += dy
+                    const isHorizontal = this.app.readingMode === 'horizontal'
+                    if (isHorizontal) {
+                        const dx = this._lastPinchX - currentX
+                        viewerContainer.scrollLeft += dx
+                    } else {
+                        const dy = this._lastPinchY - currentY
+                        viewerContainer.scrollTop += dy
+                    }
                 }
 
                 this._lastPinchX = currentX
@@ -329,27 +335,48 @@ export class GestureManager {
                 tapY >= r.top - pad && tapY <= r.bottom + pad) return
         }
 
+        const isHorizontal = this.app.readingMode === 'horizontal'
         const vh = window.innerHeight
+        const vw = window.innerWidth
         const viewer = document.getElementById('viewer-container')
         const pages = Array.from(viewer.querySelectorAll('.page-container'))
+        
         const pageUnderTap = pages.find(page => {
             const rect = page.getBoundingClientRect()
-            return tapY >= rect.top && tapY <= rect.bottom
+            if (isHorizontal) {
+                return tapX >= rect.left && tapX <= rect.right
+            } else {
+                return tapY >= rect.top && tapY <= rect.bottom
+            }
         }) || pages[0]
         
         if (pageUnderTap) {
             const rect = pageUnderTap.getBoundingClientRect()
             const relX = tapX - rect.left
+            const relY = tapY - rect.top
             let success = true
-            if (tapY < vh * 0.35) {
-                success = this.app.jump(-1)
-                this.showZoneIndicator('up', tapX, tapY, !success)
-            } else if (relX < rect.width * 0.40) {
-                success = this.app.jump(-1)
-                this.showZoneIndicator('left', tapX, tapY, !success)
+
+            if (isHorizontal) {
+                // Horizontal Mode: Left 30% = Prev, Right 70% = Next
+                if (tapX < vw * 0.30) {
+                    success = this.app.jump(-1)
+                    this.showZoneIndicator('left', tapX, tapY, !success)
+                } else {
+                    success = this.app.jump(1)
+                    this.showZoneIndicator('right', tapX, tapY, !success)
+                }
             } else {
-                success = this.app.jump(1)
-                this.showZoneIndicator('right', tapX, tapY, !success)
+                // Vertical Mode: Top 35% = Prev, Left 40% = Prev, Rest = Next
+                if (tapY < vh * 0.35) {
+                    success = this.app.jump(-1)
+                    this.showZoneIndicator('up', tapX, tapY, !success)
+                } else if (relX < rect.width * 0.40) {
+                    success = this.app.jump(-1)
+                    this.showZoneIndicator('left', tapX, tapY, !success)
+                } else {
+                    success = this.app.jump(1)
+                    this.showZoneIndicator('right', tapX, tapY, !success)
+                }
             }
             this.inputManager.flashDividers()
         }

@@ -129,6 +129,9 @@ class ScoreFlow {
         blue:  localStorage.getItem('scoreflow_cloak_visible_blue')  !== 'false',
     }
     this.isPinching = false
+    this.readingMode = localStorage.getItem('scoreflow_reading_mode') || 'vertical' // 'vertical' | 'horizontal'
+    document.body.classList.toggle('mode-horizontal', this.readingMode === 'horizontal')
+    
     // Fix: If it has multi-touch points, prioritize it as iOS/Handheld (even if Mac UA)
     this.isIOS = (navigator.maxTouchPoints > 1) || /iPad|iPhone|iPod/.test(navigator.userAgent);
     this.isMac = /Macintosh/.test(navigator.userAgent) && !this.isIOS;
@@ -282,6 +285,16 @@ this.playbackManager.init()
             this.renderSourceUI()
             this.toolManager.updateActiveTools()
             this.viewerManager.checkInitialView()
+            
+            // Post-boot mode sync to ensure navigation metrics, scrollbar, and jump manager are aware of horizontal layout
+            if (this.readingMode === 'horizontal') {
+                requestAnimationFrame(() => {
+                    this.viewerManager?.updatePageMetrics();
+                    this.standaloneScrollbarManager?.init();
+                    this.jumpManager?.updateDisplay();
+                });
+            }
+
             this.toolManager.preloadSvgs()
             this.renderBuildInfo()
             console.log('[ScoreFlow] Boot complete - Version 3.1.4')
@@ -483,6 +496,32 @@ this.playbackManager.init()
         }
     }
     return null
+  }
+
+  setReadingMode(mode) {
+    this.readingMode = mode
+    localStorage.setItem('scoreflow_reading_mode', mode)
+    
+    if (mode === 'horizontal') {
+        document.body.classList.add('mode-horizontal')
+        // Auto-switch to Fit to Height for horizontal paging
+        this.viewerManager?.fitToHeight()
+    } else {
+        document.body.classList.remove('mode-horizontal')
+        // Auto-switch to Fit to Width for vertical scrolling
+        this.viewerManager?.fitToWidth()
+    }
+    
+    // Force re-calculate page metrics for the new layout
+    this.viewerManager?.updatePageMetrics()
+    
+    // Refresh the standalone scrollbar to adapt to new axis/UI
+    this.standaloneScrollbarManager?.init()
+
+    // Ensure the current page stays somewhat in view or at least the jump manager is synced
+    this.jumpManager?.updateDisplay()
+    
+    this.showMessage(`已切換至 ${mode === 'horizontal' ? '橫向' : '直式'} 閱讀模式`, 'system')
   }
 
   updateJumpOffset(val) {

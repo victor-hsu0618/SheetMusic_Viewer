@@ -67,28 +67,40 @@ export class StandaloneScrollbarManager {
             const viewer = this.app.viewer
             const trackH = track.clientHeight || 120
             const thumbH = Math.max(28, Math.round(trackH / 5))
-            const centerTop = Math.round((trackH - thumbH) / 2)
+            const centerPos = Math.round((trackH - thumbH) / 2)
+            
             thumb.style.height = thumbH + 'px'
-            thumb.style.top = centerTop + 'px'
+            thumb.style.top = centerPos + 'px'
+            thumb.style.width = ''
+            thumb.style.left = ''
 
             let dragging = false, lastClientY = 0, lastTime = 0, movedDist = 0
 
             const onMove = (clientY) => {
+                const isHorizontal = this.app.readingMode === 'horizontal'
                 const now = performance.now()
                 const dt = Math.max(1, now - lastTime)
-                const dy = clientY - lastClientY
+                const dDelta = clientY - lastClientY // Always vertical drag delta
+                
+                // Direction indicators
+                if (dDelta < -2) { upArrow.classList.add('active'); downArrow.classList.remove('active') }
+                else if (dDelta > 2) { downArrow.classList.add('active'); upArrow.classList.remove('active') }
 
-                if (dy < -2) { upArrow.classList.add('active'); downArrow.classList.remove('active') }
-                else if (dy > 2) { downArrow.classList.add('active'); upArrow.classList.remove('active') }
-
-                const speed = Math.abs(dy) / dt
+                const speed = Math.abs(dDelta) / dt
                 const multiplier = Math.min(8, Math.max(1, speed * 40))
-                const maxScroll = viewer.scrollHeight - viewer.clientHeight
-                viewer.scrollTop = Math.max(0, Math.min(maxScroll, viewer.scrollTop - dy * multiplier))
-                movedDist += Math.abs(dy)
-
-                const maxTop = trackH - thumbH
-                thumb.style.top = Math.max(0, Math.min(maxTop, centerTop + dy * 0.5)) + 'px'
+                
+                if (isHorizontal) {
+                    const maxScroll = viewer.scrollWidth - viewer.clientWidth
+                    viewer.scrollLeft = Math.max(0, Math.min(maxScroll, viewer.scrollLeft - dDelta * multiplier))
+                } else {
+                    const maxScroll = viewer.scrollHeight - viewer.clientHeight
+                    viewer.scrollTop = Math.max(0, Math.min(maxScroll, viewer.scrollTop - dDelta * multiplier))
+                }
+                
+                const maxPos = trackH - thumbH
+                thumb.style.top = Math.max(0, Math.min(maxPos, (Math.round((trackH - thumbH) / 2)) + dDelta * 0.5)) + 'px'
+                
+                movedDist += Math.abs(dDelta)
                 lastClientY = clientY
                 lastTime = now
             }
@@ -100,16 +112,16 @@ export class StandaloneScrollbarManager {
                 thumb.classList.remove('grabbing')
                 upArrow.classList.remove('active')
                 downArrow.classList.remove('active')
-                thumb.style.top = centerTop + 'px'   // spring back
+                thumb.style.top = Math.round((trackH - thumbH) / 2) + 'px'
             }
 
-            // ── Pointer Events (covers mouse + touch + pen, handles out-of-window release) ──
+            // ── Pointer Events ──
             track.addEventListener('pointerdown', (e) => {
                 if (e.button !== 0 && e.pointerType === 'mouse') return
                 e.preventDefault()
-                track.setPointerCapture(e.pointerId)   // ensures pointerup fires even outside window
+                track.setPointerCapture(e.pointerId)
                 dragging = true
-                lastClientY = e.clientY
+                lastClientY = e.clientY // Always vertical movement now
                 movedDist = 0
                 lastTime = performance.now()
                 thumb.classList.add('grabbing')
@@ -117,7 +129,7 @@ export class StandaloneScrollbarManager {
 
             track.addEventListener('pointermove', (e) => {
                 if (!dragging) return
-                onMove(e.clientY)
+                onMove(e.clientY) // Always vertical movement now
             })
 
             track.addEventListener('pointerup',     (e) => stopDrag(e))
@@ -127,10 +139,18 @@ export class StandaloneScrollbarManager {
             let wheelTimer = null
             track.addEventListener('wheel', (e) => {
                 if (e.cancelable) e.preventDefault()
-                const maxScroll = viewer.scrollHeight - viewer.clientHeight
-                viewer.scrollTop = Math.max(0, Math.min(maxScroll, viewer.scrollTop + e.deltaY))
-                if (e.deltaY < -2) { upArrow.classList.add('active'); downArrow.classList.remove('active') }
-                else if (e.deltaY > 2) { downArrow.classList.add('active'); upArrow.classList.remove('active') }
+                const isHorizontal = this.app.readingMode === 'horizontal'
+                if (isHorizontal) {
+                    const maxScroll = viewer.scrollWidth - viewer.clientWidth
+                    viewer.scrollLeft = Math.max(0, Math.min(maxScroll, viewer.scrollLeft + (e.deltaY || e.deltaX)))
+                } else {
+                    const maxScroll = viewer.scrollHeight - viewer.clientHeight
+                    viewer.scrollTop = Math.max(0, Math.min(maxScroll, viewer.scrollTop + e.deltaY))
+                }
+                
+                const deltaPower = e.deltaY || e.deltaX
+                if (deltaPower < -2) { upArrow.classList.add('active'); downArrow.classList.remove('active') }
+                else if (deltaPower > 2) { downArrow.classList.add('active'); upArrow.classList.remove('active') }
                 if (wheelTimer) clearTimeout(wheelTimer)
                 wheelTimer = setTimeout(() => { upArrow.classList.remove('active'); downArrow.classList.remove('active') }, 300)
             }, { passive: false })
@@ -138,9 +158,15 @@ export class StandaloneScrollbarManager {
             // Tap on track → jump to position
             track.addEventListener('click', (e) => {
                 if (movedDist > 5) return
+                const isHorizontal = this.app.readingMode === 'horizontal'
                 const rect = track.getBoundingClientRect()
                 const pct = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
-                viewer.scrollTop = (viewer.scrollHeight - viewer.clientHeight) * pct
+                
+                if (isHorizontal) {
+                    viewer.scrollLeft = (viewer.scrollWidth - viewer.clientWidth) * pct
+                } else {
+                    viewer.scrollTop = (viewer.scrollHeight - viewer.clientHeight) * pct
+                }
             })
         })
     }

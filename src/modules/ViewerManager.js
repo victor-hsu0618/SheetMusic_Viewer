@@ -358,8 +358,10 @@ export class ViewerManager {
         this.showMainUI()
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
         
-        // Initial render: Pass true to enable scroll restoration from DB
-        if (isTouch) {
+        // Initial render: Honor reading mode first, then fall back to platform defaults
+        if (this.app.readingMode === 'horizontal') {
+            await this.fitToHeight(true)
+        } else if (isTouch) {
             await this.fitToWidth(true)
         } else {
             await this.fitToHeight(true)
@@ -617,6 +619,10 @@ export class ViewerManager {
         this.probeAllPageHeights().then(() => {
             requestAnimationFrame(() => {
                 this.updatePageMetrics()
+                // Sync scrollbar if in horizontal mode after metrics are ready
+                if (this.app.readingMode === 'horizontal') {
+                    this.app.standaloneScrollbarManager?.init();
+                }
                 this.app.updateRulerPosition()
                 this.app.updateRulerClip()
                 this.app.computeNextTarget()
@@ -965,21 +971,59 @@ export class ViewerManager {
     updatePageMetrics() {
         if (!this.app.container) return
         this._pageMetrics = {}
-        // Only read active (non-stale) containers to keep metrics accurate
+        const isHorizontal = this.app.readingMode === 'horizontal'
         const containers = this.app.container.querySelectorAll('.page-container:not(.is-stale)')
+        
+        // Sync width to container in horizontal mode BEFORE reading metrics
+        if (isHorizontal) {
+            const availWidth = this.app.viewer.clientWidth
+            containers.forEach(el => {
+                el.style.width = availWidth + 'px'
+                el.style.flex = `0 0 ${availWidth}px`
+            })
+        } else {
+            // Restore for vertical mode
+            containers.forEach(el => {
+                el.style.width = ''
+                el.style.flex = ''
+            })
+        }
+
         let zeroCount = 0;
+        let horizontalReady = true;
+        
         containers.forEach(el => {
             const pageNum = parseInt(el.dataset.page)
             if (!isNaN(pageNum)) {
                 const top = el.offsetTop;
-                if (top === 0 && pageNum > 1) zeroCount++;
+                const left = el.offsetLeft;
+                
+                // Detection: In horizontal mode, if page 2+ is at left:0, layout isn't ready
+                if (isHorizontal && pageNum > 1 && left === 0) {
+                    horizontalReady = false;
+                }
+                
+                if (top === 0 && left === 0 && pageNum > 1) zeroCount++;
                 
                 this._pageMetrics[pageNum] = {
                     top: top,
-                    height: el.clientHeight
+                    left: left,
+                    height: el.clientHeight,
+                    width: el.clientWidth
                 }
             }
         })
+
+        // If horizontal layout isn't ready, retry once after a short delay
+        if (isHorizontal && !horizontalReady && !this._retryingMetrics) {
+            this._retryingMetrics = true;
+            console.log('[ViewerManager] Horizontal layout not ready, retrying metrics in 50ms...');
+            setTimeout(() => {
+                this._retryingMetrics = false;
+                this.updatePageMetrics();
+            }, 50);
+            return;
+        }
         
         if (zeroCount > 0) {
             console.warn(`[ViewerManager] Detected ${zeroCount} suspicious zero offsets. Layout might be unstable.`);
@@ -988,6 +1032,8 @@ export class ViewerManager {
     }
 
     updateHorizontalPanState() {
+        if (this.app.readingMode === 'horizontal') return
+        
         const viewer = this.app.viewer
         if (!viewer) return
 
@@ -1002,16 +1048,26 @@ export class ViewerManager {
         const div = document.createElement('div')
         div.className = 'page-container'
         div.dataset.page = pageNum
-        // Ensure centering and full width availability for Fit to Width
+        // Ensure centering for both vertical and horizontal modes
         div.style.display = 'flex'
         div.style.justifyContent = 'center'
-        div.style.width = '100%'
+        div.style.position = 'relative'
 
-        div.innerHTML = `<canvas class="pdf-canvas"></canvas>`
+        // Content wrapper to anchor annotation layers correctly
+        const wrapper = document.createElement('div')
+        wrapper.className = 'page-content-wrapper'
+        wrapper.style.position = 'relative'
+        wrapper.style.display = 'block'
+        wrapper.innerHTML = `<canvas class="pdf-canvas"></canvas>`
+        
+        div.appendChild(wrapper)
         return div
     }
 
-    createAnnotationLayers(wrapper, pageNum, width, height, renderScale = 1.0) {
+    createAnnotationLayers(container, pageNum, width, height, renderScale = 1.0) {
+        // Use the inner wrapper if it exists (for alignment), fallback to container
+        const wrapper = container.querySelector('.page-content-wrapper') || container;
+        
         // Find or create annotation layer
         let canvas = wrapper.querySelector('.annotation-layer')
         if (!canvas) {

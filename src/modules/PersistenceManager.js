@@ -36,6 +36,7 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_stamp_offset_mouse_x', this.app.stampOffsetMouseX)
         localStorage.setItem('scoreflow_pointer_idle_timeout_ms', this.app.pointerIdleTimeoutMs || 8000)
 
+        localStorage.setItem('scoreflow_reading_mode', this.app.readingMode || 'vertical')
         const turnerMode = document.getElementById('turner-mode-select') ? document.getElementById('turner-mode-select').value : 'default';
         localStorage.setItem('scoreflow_turner_mode', turnerMode)
 
@@ -96,6 +97,7 @@ export class PersistenceManager {
         const userTextLibraryData = localStorage.getItem('scoreflow_user_text_library')
         const activeColorData = localStorage.getItem('scoreflow_active_color')
         const defaultFontSizeData = localStorage.getItem('scoreflow_default_font_size')
+        const readingModeData = localStorage.getItem('scoreflow_reading_mode') || 'vertical'
         const stampSizeMultiplierData = localStorage.getItem('scoreflow_stamp_size_multiplier')
 
         if (recentSoloData) this.app.recentSoloScores = JSON.parse(recentSoloData)
@@ -165,6 +167,12 @@ export class PersistenceManager {
         }
         const stampSizeOverridesData = localStorage.getItem('scoreflow_stamp_size_overrides')
         this.app.stampSizeOverrides = stampSizeOverridesData ? JSON.parse(stampSizeOverridesData) : {}
+        this.app.readingMode = readingModeData
+        if (this.app.readingMode === 'horizontal') {
+            document.body.classList.add('mode-horizontal')
+        } else {
+            document.body.classList.remove('mode-horizontal')
+        }
 
         if (stampSizeMultiplierData) {
             this.app.stampSizeMultiplier = parseFloat(stampSizeMultiplierData)

@@ -317,6 +317,24 @@ export class SettingsPanelManager {
             turnerSelect.addEventListener('change', () => this.app.saveToStorage())
         }
 
+        // Reading Mode selector
+        const readingModeSelector = document.getElementById('reading-mode-selector')
+        if (readingModeSelector) {
+            const btns = readingModeSelector.querySelectorAll('.sf-seg-btn')
+            const currentMode = this.app.readingMode || 'vertical'
+            
+            btns.forEach(btn => {
+                if (btn.dataset.mode === currentMode) btn.classList.add('active')
+                else btn.classList.remove('active')
+                
+                btn.addEventListener('click', () => {
+                    btns.forEach(b => b.classList.remove('active'))
+                    btn.classList.add('active')
+                    this.app.setReadingMode(btn.dataset.mode)
+                })
+            })
+        }
+
         // Jump Ruler toggle
         const rulerChk = document.getElementById('settings-ruler-visible')
         if (rulerChk) {

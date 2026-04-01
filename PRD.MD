@@ -6,15 +6,19 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 
 ## 核心功能 (Core Features)
 
-### 1. 連續捲動檢視器 (Continuous Scroll Viewer)
+### 1. 雙模式連續捲動檢視器 (Dual-Mode Continuous Scroll Viewer)
 
-- **瀏覽模式**：採用垂直連續捲動 (Vertical Continuous Scroll)，取代傳統的一頁一頁跳轉。
+- **瀏覽模式**：支援「垂直連續捲動 (Vertical)」與「橫向連續捲動 (Horizontal)」兩種模式，可透過設定面板隨時切換。
+- **橫向模式 (Horizontal Mode)**：
+  - **流暢換頁**：採用 `flex-row` 佈局搭配 `CSS Scroll Snap (x mandatory)`，實現如同翻書般的橫向精準分頁跳轉。
+  - **封裝式對齊架構 (Wrapper Alignment)**：採用 `.page-content-wrapper` 結構，確保 `.pdf-canvas` 與 `.annotation-layer` 在 Flex 置中佈局下依然共享同一個座標原點，解決寬螢幕下的標記偏移問題。
+  - **視窗適配**：各分頁容器寬度自動填滿視窗，確保單頁顯示效果極大化。
 - **PDF 渲染**：整合 PDF.js，支援高解析度樂譜預覽。
 - **流暢度與記憶體優化**：
   - **延遲渲染 (Lazy Rendering)**：採用 `IntersectionObserver` 技術，僅在頁面進入可視區域時才進行繪製。
-  - **佈局預校準 (Layout Pre-probing)**：載入 PDF 後立即探測所有頁面的真實 Viewport 尺寸（不執行繪製），確保即使在頁面未渲染前，各頁容器的高度與座標也具備 100% 物理精確度。
-  - **動態分段載入**：同步容器高度以計算偏移，大幅降低行動裝置記憶體負擔。
-- **全離線支援**：具備 PWA 技術，可在無網路環境（如音樂廳）下正常運作。
+  - **佈局預校準 (Layout Pre-probing)**：載入 PDF 後立即探測所有頁面的真實 Viewport 尺寸與偏移量（offsetLeft/offsetTop），確保無論在何種閱讀模式下，座標映射與跳轉皆具備 100% 物理精確度。
+  - **動態分段載入**：根據當前閱讀模式自動同步容器寬度或高度，大幅降低行動裝置記憶體負擔。
+- **全離線支援**：具備 PWA 技術，可在無網路環境下正常運作。
 
 ### 2. 專業分層註記 (Structured Layered Annotations)
 
@@ -67,12 +71,13 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 
 ### 2. iPad 專屬手勢 (iPad Gestures)
 - **智慧點擊跳轉 (Zone Tap)**：僅在 View 模式啟用。
-  - **35% Top / 40% Left**：回跳。
-  - **60% Right**：前跳。
+  - **垂直模式 (Vertical)**：35% Top / 40% Left 為上一頁，其餘為下一頁。
+  - **橫向模式 (Horizontal)**：30% Left 為上一頁，70% Right 為下一頁，符合翻頁閱讀直覺。
 - **雙二進位手勢鎖定 (Gesture Locking)**：
   - 雙指觸碰後，若先進行平移則鎖定為 **Pan (捲動)**；若先進行開合則鎖定為 **Zoom (縮放)**。
+  - **Pan 自動適配**：垂直模式下執行 scrollTop 捲動；橫向模式下執行 scrollLeft 捲動。
 - **2-Finger Double Tap**：快速切換工具箱 (Stamp Palette) 顯隱。
-- **Swipe Navigation**：水平滑動進行頁面跳轉。
+- **Swipe Navigation**：水平滑動進行頁面跳轉（在全模式適用）。
 
 ## 數據架構與持久化 (Data & Persistence)
 

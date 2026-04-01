@@ -1,54 +1,49 @@
-# [實作計畫] 支援「直式換頁」與「橫式換頁」切換模式
+# 橫向模式功能修復實作計畫 (implementation_plan.md)
 
-目前的 `ScoreFlow` 採用的是傳統的「縱向連續捲動 (Vertical Continuous)」，這在瀏覽長篇樂譜時很方便，但在演奏 (Performance) 時，許多音樂家更偏好「橫式翻頁 (Horizontal Flip)」。這份計畫旨在擴充檢視器功能，讓使用者能根據需求切換閱讀模式。
+使用者回報在橫向模式下點擊與手勢失效。經過診斷，我們確認是核心組件中的捲動鎖定邏輯與 CSS 佈局發生衝突所致。
 
-## 使用者評論與決策 (User Review Required)
+## 問題診斷 (Diagnostic Findings)
 
-> [!IMPORTANT]
-> **切換邏輯的副作用**
-> 1. **座標映射改變**：當模式切換為「橫向」時，原本基於 `offsetTop` (垂直距離) 的跳轉邏輯需改為 `offsetLeft` (水平距離)。這會影響 `JumpManager` 的所有跳轉方法。
-> 2. **Ruler (導航尺) 的適應**：側邊的跳轉導航尺目前的設計是根據縱向高度映射。在橫向模式下，我們需要決定導航尺是否也要改為水平展示，或者維持垂直（作為全譜進度條）。
-> 3. **翻頁動畫**：橫式模式通常伴隨「分頁感 (Paging)」，建議引入 `CSS Scroll Snap` 來達成俐落的換頁感。
+1.  **ViewerManager 捲動鎖定 (核心原因)**：
+    *   `ViewerManager.updateHorizontalPanState` 方法在每次重新計算頁面座標 (`updatePageMetrics`) 時，會強制將 `overflowX` 設為 `hidden` 並將 `scrollLeft` 重置為 `0`。
+    *   這導致橫向捲動功能被 JS 硬性封鎖，且吸附效果 (Scroll Snap) 會不斷被重置回到第一頁。
+2.  **彈出面板 (ViewPanel) ID 遺失/隱藏**：
+    *   `ViewPanelManager` 嘗試獲取的 `view-control-panel` 在 `index.html` 中可能因為之前的版本調整而未正確宣告或隱蔽，這可能導致點擊控制按鈕時報錯。
+3.  **手勢判定範圍補償**：
+    *   `GestureManager.handleZoneTap` 在橫向模式下對「下一頁」的區域判定可能受 `width: 100%` 的頁面容器干擾（若容器過寬，點擊可能落於無效區域）。
 
-## 預計修改狀態 (Design Comparison)
+## 預計修改狀態對比 (Before vs After)
 
-| 功能 | 原本狀態 (Vertical) | 預計修改後 (Horizontal) |
-| :--- | :--- | :--- |
-| **容器排列** | `flex-direction: column` | `flex-direction: row` |
-| **捲動軸** | `overflow-y: auto`, `overflow-x: hidden` | `overflow-y: hidden`, `overflow-x: auto` |
-| **跳轉參考** | 使用 `target.offsetTop` | 使用 `target.offsetLeft` |
-| **翻頁感** | 連續捲動 | 分頁對齊 (`scroll-snap-type: x mandatory`) |
+### 1. 捲動屬性管理
+*   **原本狀態**：JS 無視模式，強制將橫向捲動設為 `hidden`。
+*   **修改後狀態**：`ViewerManager` 僅在「垂直模式」下鎖定橫向捲動。在「橫向模式」下，將決定權交還給 CSS (`overflow-x: auto`)。
 
----
+### 2. 佈局容器適配
+*   **原本狀態**：`.page-container` 在橫向模式下寬度固定為 `100%` (父容器彈性寬度)，且缺乏明確的 `scroll-snap-align`。
+*   **修改後狀態**：修正 `.page-container` 的寬度屬性，並在橫向時強制 `flex-shrink: 0` 防止頁面被壓縮。
 
-## 預計改動範圍
+### 3. 跳轉邏輯強化
+*   **原本狀態**：`JumpManager` 的 `goToPage` 對於橫向捲動的 `top/left` 座標切換不完全。
+*   **修改後狀態**：修正跳轉座標，確保在使用微動 (`smooth`) 跳轉時，能與系統 `scroll-snap` 同步。
 
-### 1. 核心狀態與設定 (App State) [MODIFY] [main.js](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/main.js)
-- 在全域設定中新增 `readingMode: 'vertical' | 'horizontal'`。
-- 持久化儲存此設定至 IndexedDB (透過 `PersistenceManager`)。
+## 待修改檔案與範圍 (Proposed Changes)
 
-### 2. 介面樣式切換 [MODIFY] [viewer.css](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/styles/viewer.css)
-- 新增 `.mode-horizontal` 相關樣式，將 `#pdf-viewer` 改為水平布局。
-- 針對橫向模式優化 `.page-container` 的寬高佔比，確保一頁佔滿可見區域。
+#### [MODIFY] [ViewerManager.js](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/modules/ViewerManager.js)
+*   **第 1000 行左右**：修改 `updateHorizontalPanState`，加入 `if (this.app.readingMode === 'horizontal') return;` 防護。
+*   **第 1013 行**：修改 `createPageElement`，移除行內 `width: 100%`，交由 CSS 控制。
 
-### 3. 跳轉邏輯適應 [MODIFY] [JumpManager.js](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/modules/JumpManager.js)
-- 修改 `goToPage` 與 `jumpToStamp` 方法。
-- 判斷當前模式：若為 `horizontal`，則捲動至 `scrollLeft`。
+#### [MODIFY] [viewer.css](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/styles/viewer.css)
+*   強化 `body.mode-horizontal .viewer-container` 的屬性，強制 `overflow-x: auto !important` 以對抗 JS 殘留影響。
 
-### 4. 檢視面板更新 [MODIFY] [ViewPanelManager.js](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/modules/ViewPanelManager.js)
-- 在「檢視面板」新增一個切換按鈕或選單，讓使用者切換 `Reading Mode`。
+#### [MODIFY] [GestureManager.js](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/modules/GestureManager.js)
+*   檢查並優化 `handleZoneTap` 的邊界判定座標點。
 
----
+## 驗證計畫 (Verification Plan)
 
-## 開放性問題 (Open Questions)
+### 手動測試 (Manual Checks)
+1.  **捲動自由度**：開啟橫向模式後，確認可以用手指自由水平滑動，且滑動停止後會正確吸附 (Snap) 到頁面中心。
+2.  **跳轉反應**：點擊螢幕左右兩側區域，確認頁面能立即觸發橫向切換。
+3.  **模式持久化測試**：切換至橫向模式後重新整理頁面，確認水平換頁功能依然正常運作且不被鎖定。
 
-> [!TIP]
-> 1. **單頁 vs 雙頁**：在橫向模式下，若螢幕寬度足夠 (如 iPad 橫向使用)，是否要自動切換為「雙頁並排」模式？
-> 2. **翻頁手勢與 Tap Zone**：目前滑動手勢已支援橫向。在橫式模式下，是否需要強化「點擊邊緣翻頁」的視覺回饋？
-
-## 驗證計畫
-
-### 手動測試項目
-1. **模式切換**：點擊切換鈕後，樂譜能即時由縱向排列變更為橫向排列。
-2. **換頁精準度**：在橫向模式下，點擊「下一頁」應精準對齊到下一張紙的左邊界。
-3. **數據持久化**：切換模式後重新整理頁面，應能記住上次的選擇。
+## 通關密語
+本計畫符合開發規範，並直接存檔於專案根目錄。若確認無誤，請說 **"engage"**。

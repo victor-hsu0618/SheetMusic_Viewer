@@ -59,7 +59,15 @@ export function applyAppProxies(app) {
         nextTargetAnchor: { get() { return this.rulerManager.nextTargetAnchor }, set(v) { this.rulerManager.nextTargetAnchor = v } },
         jumpHistory: { get() { return this.rulerManager.jumpHistory }, set(v) { this.rulerManager.jumpHistory = v } }
     });
-    app.jump = (d) => app.rulerManager.jump(d);
+    app.jump = (d) => {
+        if (!app.jumpManager || !app.rulerManager) return false;
+        
+        if (app.readingMode === 'horizontal') {
+            return d > 0 ? app.jumpManager.nextPage() : app.jumpManager.prevPage();
+        } else {
+            return app.rulerManager.jump(d);
+        }
+    };
     app.updateJumpLinePosition = () => app.rulerManager.updateJumpLinePosition();
     app.updateRulerPosition = () => app.rulerManager.updateRulerPosition();
     app.updateRulerClip = () => app.rulerManager.updateRulerClip();

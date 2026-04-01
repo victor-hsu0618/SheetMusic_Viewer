@@ -189,9 +189,13 @@ export class JumpManager {
         this.app.viewerManager.ensurePageRendered(stamp.page)
         const metrics = this.app.viewerManager._pageMetrics[stamp.page]
         if (metrics) {
-            const absoluteY = metrics.top + (stamp.y * metrics.height)
+            const isHorizontal = this.app.readingMode === 'horizontal'
+            const targetX = isHorizontal ? metrics.left + (stamp.x * metrics.width) : 0
+            const targetY = isHorizontal ? 0 : metrics.top + (stamp.y * metrics.height)
+            
             this.app.viewer.scrollTo({
-                top: Math.max(0, absoluteY - 100),
+                top: isHorizontal ? 0 : Math.max(0, targetY - 100),
+                left: isHorizontal ? Math.max(0, targetX - 100) : 0,
                 behavior: 'smooth'
             })
             // iPad Fix: Force reset interaction state after jump to ensure responsiveness
@@ -251,58 +255,74 @@ export class JumpManager {
         const targetMetric = metrics ? metrics[pageNumber] : null;
         
         if (targetMetric) {
-            // Priority render before or during scroll
             this.app.viewerManager.ensurePageRendered(pageNumber)
+            const isHorizontal = this.app.readingMode === 'horizontal'
 
+            // Fix: Use scrollTo to work reliably with snap. 
+            // In horizontal mode, 'behavior: instant' is passed to JS, 
+            // letting CSS 'scroll-behavior: smooth' handle the animation without snap conflict.
             this.app.viewer.scrollTo({
-                top: targetMetric.top,
-                behavior: 'smooth'
+                left: isHorizontal ? targetMetric.left : 0,
+                top: isHorizontal ? 0 : targetMetric.top,
+                behavior: isHorizontal ? 'instant' : 'smooth'
             })
+            
             this.currentPage = pageNumber
             this.updateDisplay()
 
-            // iPad Fix: Force reset interaction state after jump to ensure responsiveness
             this.app.inputManager?.forceResetInteractionState();
-            return;
+            return true; // Success
         }
 
         // Fallback: DOM query (only if metrics aren't ready/cached)
         const pageElem = document.querySelector(`.page-container:not(.is-stale)[data-page="${pageNumber}"]`)
         if (pageElem) {
             this.app.viewerManager.ensurePageRendered(pageNumber)
+            const isHorizontal = this.app.readingMode === 'horizontal'
+            
             this.app.viewer.scrollTo({
-                top: pageElem.offsetTop,
-                behavior: 'smooth'
+                left: isHorizontal ? pageElem.offsetLeft : 0,
+                top: isHorizontal ? 0 : pageElem.offsetTop,
+                behavior: isHorizontal ? 'instant' : 'smooth'
             })
+
             this.currentPage = pageNumber
             this.updateDisplay()
             this.app.inputManager?.forceResetInteractionState();
+            return true; // Success
         }
+        return false; // Failed
     }
 
     prevPage() {
         if (this.currentPage > 1) {
-            this.goToPage(this.currentPage - 1)
+            return this.goToPage(this.currentPage - 1)
         } else {
             const btn = document.getElementById('btn-calc-prev')
             btn?.classList.add('error-flash')
             setTimeout(() => btn?.classList.remove('error-flash'), 500)
+            return false
         }
     }
 
     nextPage() {
         if (this.currentPage < this.totalPages) {
-            this.goToPage(this.currentPage + 1)
+            return this.goToPage(this.currentPage + 1)
         } else {
             const btn = document.getElementById('btn-calc-next')
             btn?.classList.add('error-flash')
             setTimeout(() => btn?.classList.remove('error-flash'), 500)
+            return false
         }
     }
 
     goToHead() {
         this.app.jumpHistory = []
-        this.app.viewer.scrollTo({ top: 0, behavior: 'smooth' })
+        this.app.viewer.scrollTo({ 
+            top: 0, 
+            left: 0, 
+            behavior: 'smooth' 
+        })
         
         // iPad Fix: Force reset interaction state after jump to ensure responsiveness
         this.app.inputManager?.forceResetInteractionState();
@@ -311,19 +331,28 @@ export class JumpManager {
     goToEnd() {
         if (!this.app.pdf) return
         this.app.jumpHistory = []
+        const isHorizontal = this.app.readingMode === 'horizontal'
 
         const metrics = this.app.viewerManager?._pageMetrics;
         if (metrics && Object.keys(metrics).length > 0) {
             const lastPage = this.totalPages;
             const m = metrics[lastPage];
             if (m) {
-                this.app.viewer.scrollTo({ top: m.top, behavior: 'smooth' });
+                this.app.viewer.scrollTo({ 
+                    top: isHorizontal ? 0 : m.top, 
+                    left: isHorizontal ? m.left : 0, 
+                    behavior: 'smooth' 
+                });
                 return;
             }
         }
         
-        // Fallback: Total scroll height
-        this.app.viewer.scrollTo({ top: this.app.viewer.scrollHeight, behavior: 'smooth' })
+        // Fallback: Total scroll height/width
+        this.app.viewer.scrollTo({ 
+            top: isHorizontal ? 0 : this.app.viewer.scrollHeight, 
+            left: isHorizontal ? this.app.viewer.scrollWidth : 0, 
+            behavior: 'smooth' 
+        })
     }
 
     updateDisplay() {
@@ -337,8 +366,9 @@ export class JumpManager {
         // Performance: Use pre-cached _pageMetrics instead of querySelectorAll
         // This avoids Layout Thrashing on every scroll event
         const metrics = this.app.viewerManager?._pageMetrics
-        const scrollTop = this.app.viewer.scrollTop
-        const threshold = scrollTop + window.innerHeight / 3
+        const isHorizontal = this.app.readingMode === 'horizontal'
+        const scrollPos = isHorizontal ? this.app.viewer.scrollLeft : this.app.viewer.scrollTop
+        const threshold = scrollPos + (isHorizontal ? this.app.viewer.clientWidth / 2 : window.innerHeight / 3)
         let current = 1
 
         if (metrics && Object.keys(metrics).length > 0) {
@@ -346,7 +376,8 @@ export class JumpManager {
             const sortedPages = Object.keys(metrics).map(Number).sort((a,b) => a - b);
             for (const page of sortedPages) {
                 const m = metrics[page];
-                if (m.top <= threshold) {
+                const pos = isHorizontal ? m.left : m.top;
+                if (pos <= threshold) {
                     current = page;
                 } else {
                     break;
@@ -358,7 +389,8 @@ export class JumpManager {
                 .sort((a,b) => parseInt(a.dataset.page) - parseInt(b.dataset.page));
                 
             for (let p of pages) {
-                if (p.offsetTop <= threshold) {
+                const pos = isHorizontal ? p.offsetLeft : p.offsetTop;
+                if (pos <= threshold) {
                     current = parseInt(p.dataset.page)
                 } else {
                     break
