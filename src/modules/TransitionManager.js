@@ -47,8 +47,8 @@ export class TransitionManager {
 
         // 2. Apply classes based on style
         if (this.currentStyle === 'slide') {
-            fromEl.classList.add('slide-next-out');
-            // Incoming page slide will be partially visual via scroll
+            const slideClass = direction === 'next' ? 'slide-next-out' : 'slide-prev-out';
+            fromEl.classList.add(slideClass);
         } else if (this.currentStyle === 'flip') {
             const flipClass = direction === 'next' ? 'flip-forward-out' : 'flip-backward-out';
             fromEl.classList.add(flipClass);

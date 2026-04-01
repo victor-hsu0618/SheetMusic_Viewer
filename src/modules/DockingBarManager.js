@@ -23,6 +23,10 @@ export class DockingBarManager {
         this._autoShowEnabled  = localStorage.getItem('sf_dock_autoshow') !== 'false' // default true
         this._hideTimer = null
         this._trigger = null
+        this._dragInfo = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0, moved: false }
+        
+        // Persisted positions
+        this._pos = JSON.parse(localStorage.getItem('sf_dock_fab_pos') || '{"right": 18, "bottom": 85}')
     }
 
     setSubBarManager(mgr) { this._subBarMgr = mgr }
@@ -55,15 +59,97 @@ export class DockingBarManager {
         if (!fab) {
             fab = document.createElement('div')
             fab.id = 'sf-dock-fab'
-            fab.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            fab.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"/>
             </svg>`
             document.body.appendChild(fab)
         }
         this.fab = fab
-        fab.addEventListener('click', () => {
+        this._applyFabPosition()
+        this._initFabDragging()
+        
+        fab.addEventListener('click', (e) => {
+            if (this._dragInfo.moved) return
             this.toggleVisible()
             this._resetHideTimer()
+        })
+    }
+
+    _applyFabPosition() {
+        if (!this.fab) return
+        this.fab.style.left = 'auto'
+        this.fab.style.top = 'auto'
+        this.fab.style.right = `${this._pos.right}px`
+        this.fab.style.bottom = `${this._pos.bottom}px`
+    }
+
+    _initFabDragging() {
+        const fab = this.fab
+        const onMove = (e) => {
+            if (!this._dragInfo.active) return
+            const dx = e.clientX - this._dragInfo.startX
+            const dy = e.clientY - this._dragInfo.startY
+            
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                this._dragInfo.moved = true
+            }
+
+            const x = this._dragInfo.initX + dx
+            const y = this._dragInfo.initY + dy
+            
+            // Constrain within viewport
+            const safeX = Math.max(10, Math.min(window.innerWidth - 60, x))
+            const safeY = Math.max(20, Math.min(window.innerHeight - 80, y))
+
+            fab.style.right = `${window.innerWidth - safeX - 48}px`
+            fab.style.bottom = `${window.innerHeight - safeY - 48}px`
+            fab.classList.add('dragging')
+        }
+
+        const onUp = (e) => {
+            if (!this._activePointerId === e.pointerId) return
+            document.removeEventListener('pointermove', onMove)
+            document.removeEventListener('pointerup', onUp)
+            
+            if (this._dragInfo.active) {
+                this._dragInfo.active = false
+                fab.classList.remove('dragging')
+                
+                // Snapping logic
+                const rect = fab.getBoundingClientRect()
+                const centerXPct = (rect.left + rect.width / 2) / window.innerWidth
+                const snapRight = centerXPct > 0.5
+                
+                this._pos.right = snapRight ? 18 : (window.innerWidth - 60)
+                this._pos.bottom = window.innerHeight - rect.bottom
+                
+                fab.style.transition = 'all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1)'
+                this._applyFabPosition()
+                
+                localStorage.setItem('sf_dock_fab_pos', JSON.stringify(this._pos))
+                
+                setTimeout(() => {
+                    fab.style.transition = ''
+                    this._dragInfo.moved = false
+                }, 400)
+            }
+        }
+
+        fab.addEventListener('pointerdown', (e) => {
+            this._activePointerId = e.pointerId
+            const rect = fab.getBoundingClientRect()
+            this._dragInfo = {
+                active: true,
+                moved: false,
+                startX: e.clientX,
+                startY: e.clientY,
+                initX: rect.left,
+                initY: rect.top
+            }
+            fab.setPointerCapture(e.pointerId)
+            document.addEventListener('pointermove', onMove)
+            document.addEventListener('pointerup', onUp)
+            e.preventDefault()
         })
     }
 
@@ -186,6 +272,12 @@ export class DockingBarManager {
                     { id: 'multi-select', label: 'Multi',  tool: true, icon: `<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/><circle cx="19" cy="5" r="3" fill="currentColor"/>` },
                     { id: 'eraser', label: 'Eraser', tool: true, icon: `<path d="M16.5 4.5 L19.5 7.5 L9 18 L4.5 18 L4.5 13.5 Z" fill="none" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="15" y2="10.5"/><line x1="4.5" y1="18" x2="19.5" y2="18" stroke-linecap="round"/>` },
                     { id: 'cycle',  label: 'Cycle',  tool: true, icon: `<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" stroke-linecap="round"/><polyline points="21 3 21 8 16 8" stroke-linecap="round"/>` },
+                    { divider: true },
+                    { id: '_fitw',    label: 'Fit W', icon: `<path d="M21 12H3M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/>`,                                      action: () => this.app.fitToWidth?.() },
+                    { id: '_fith',    label: 'Fit H', icon: `<path d="M12 3v18M12 3L8 7M12 3l4 4M12 21l-4-4M12 21l4-4"/>`,                                       action: () => this.app.fitToHeight?.() },
+                    { id: '_zoomin',  label: 'Zoom+', icon: `<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>`, action: () => this.app.changeZoom?.(0.25) },
+                    { id: '_zoomout', label: 'Zoom-', icon: `<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>`,                                        action: () => this.app.changeZoom?.(-0.25) },
+                    { divider: true },
                     { id: 'stamp-palette', label: 'Stamps', stamp: true, icon: `<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>` },
                     { id: '_others', label: 'Others', icon: `<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>`, action: (btn) => this._subBarMgr?.toggle('others', btn) },
                 ]

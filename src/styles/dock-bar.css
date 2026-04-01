@@ -101,40 +101,45 @@
     transition: opacity 0.22s, transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── FAB toggle button ── */
+/* ── FAB toggle button (Debug / Floating Ball Style) ── */
 #sf-dock-fab {
     position: fixed;
-    bottom: env(safe-area-inset-bottom);
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 24px;
-    background: var(--bg-surface);
-    border: 1px solid var(--bg-surface-border);
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.4) !important; /* Force high brightness */
+    border: 1.5px solid #ffffff !important;
+    border-radius: 50%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 
+                inset 0 0 10px rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(15px) saturate(200%);
+    -webkit-backdrop-filter: blur(15px) saturate(200%);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 201;
+    z-index: 10006; /* Higher than standalone scrollbar */
     color: var(--text-main);
     -webkit-user-select: none;
     user-select: none;
-    transition: background 0.15s, box-shadow 0.15s, bottom 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    touch-action: none;
+    /* transition is managed via JS for smooth snapping */
 }
 
 #sf-dock-fab:hover {
-    background: rgba(var(--text-main-rgb), 0.1);
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5);
+    background: rgba(35, 35, 40, 0.95);
     border-color: var(--primary);
+    transform: scale(1.05);
 }
 
-/* When bar is visible, FAB sits just above the bar */
-body.sf-dock-bar-visible #sf-dock-fab {
-    bottom: calc(60px + env(safe-area-inset-bottom));
+#sf-dock-fab:active {
+    transform: scale(0.95);
+}
+
+#sf-dock-fab.dragging {
+    opacity: 0.85;
+    transform: scale(1.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    cursor: grabbing;
 }
 
 /* ── Trigger zone for auto-show ── */

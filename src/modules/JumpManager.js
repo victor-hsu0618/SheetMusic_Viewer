@@ -256,10 +256,11 @@ export class JumpManager {
         const isHorizontal = this.app.readingMode === 'horizontal';
 
         const doRealJump = (targetLeft, targetTop) => {
+            const behavior = (isHorizontal && this.app.transitionManager?.currentStyle === 'slide') ? 'smooth' : (isHorizontal ? 'instant' : 'smooth');
             this.app.viewer.scrollTo({
                 left: targetLeft,
                 top: targetTop,
-                behavior: isHorizontal ? 'instant' : 'smooth'
+                behavior: behavior
             });
             this.currentPage = pageNumber;
             this.updateDisplay();

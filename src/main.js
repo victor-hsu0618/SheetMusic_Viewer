@@ -40,7 +40,6 @@ import { CollaborationManager } from './modules/collaboration.js'
 import { InputManager } from './modules/InputManager.js'
 import { PlaybackManager } from './modules/PlaybackManager.js'
 import { JumpManager } from './modules/JumpManager.js'
-import { ZoomFABManager } from './modules/ZoomFABManager.js'
 import { TransitionManager } from './modules/TransitionManager.js'
 import { ViewPanelManager } from './modules/ViewPanelManager.js'
 import { SetlistManager } from './modules/SetlistManager.js'
@@ -176,7 +175,6 @@ this.setlistManager = new SetlistManager(this)
     applyAppProxies(this)
 
     // UI & Logic Sync
-    this.zoomFabManager = new ZoomFABManager(this)
     this.transitionManager = new TransitionManager(this)
     this.initManager.initElements()
     this.uiManager.init()
@@ -192,7 +190,6 @@ this.setlistManager = new SetlistManager(this)
     this.viewerManager.updateFloatingTitle() // sync score name into dock bar after init
     this.standaloneScrollbarManager.init()
     this.rulerManager.init()
-    this.zoomFabManager?.init()
 
     this.inputManager.init()
     this.profileManager.init()

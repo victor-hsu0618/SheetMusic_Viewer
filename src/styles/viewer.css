@@ -257,15 +257,15 @@ body.mode-horizontal .page-container {
   backface-visibility: hidden;
 }
 
-/* 1. Slide Over (Professional Mode) */
-body.mode-horizontal .page-container.slide-next-out {
-  transform: translateX(-15%) scale(0.96);
-  opacity: 0.6;
+/* 1. Slide Over (Simple Pusher Mode — Driven by smooth scroll) */
+body.mode-horizontal .page-container.slide-next-out,
+body.mode-horizontal .page-container.slide-prev-out {
+  opacity: 1; 
+  transition: opacity 0.4s;
 }
 
-body.mode-horizontal .page-container.slide-next-in {
-  /* Incoming page starts slightly zoomed */
-  transform: scale(0.98);
+body.mode-horizontal .page-container.slide-next-in, 
+body.mode-horizontal .page-container.slide-prev-in {
   opacity: 1;
 }
 
@@ -274,7 +274,7 @@ body.mode-horizontal .page-container.slide-next-in {
 body.mode-horizontal .page-container.flip-forward-out {
   transform-origin: left center;
   transform: rotateY(-100deg);
-  opacity: 0;
+  opacity: 1; /* Keep bright */
   z-index: 10;
 }
 
@@ -282,22 +282,11 @@ body.mode-horizontal .page-container.flip-forward-out {
 body.mode-horizontal .page-container.flip-backward-out {
   transform-origin: right center;
   transform: rotateY(100deg);
-  opacity: 0;
+  opacity: 1; /* Keep bright */
   z-index: 10;
 }
 
-/* 3. Shadow Fade (Visual depth) */
+/* 3. Shadow Fade — Removed to prevent eye strain during transitions */
 body.mode-horizontal .page-container::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.1);
-  opacity: 0;
-  transition: opacity 0.4s;
-  pointer-events: none;
-  z-index: 6;
-}
-
-body.mode-horizontal .page-container.is-transitioning::after {
-  opacity: 1;
+  display: none;
 }
