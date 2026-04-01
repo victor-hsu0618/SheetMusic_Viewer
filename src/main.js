@@ -421,14 +421,25 @@ this.playbackManager.init()
 
   goToAnchor() {
     const anchor = this.stamps.find(s => s.type === 'anchor')
-    if (anchor && anchor.page) {
+        const metrics = this.viewerManager?._pageMetrics
+        const m = metrics ? metrics[anchor.page] : null
+        
+        if (m) {
+            const absoluteY = m.top + (anchor.y * m.height)
+            this.viewer.scrollTo({ 
+                top: Math.max(0, absoluteY - this.jumpOffsetPx), 
+                behavior: 'smooth' 
+            })
+            return
+        }
+
+        // Fallback: DOM query
         const page = document.querySelector(`.page-container:not(.is-stale)[data-page="${anchor.page}"]`)
         if (page) {
             const canvas = page.querySelector('.pdf-canvas')
             this.viewer.scrollTo({ top: page.offsetTop + (anchor.y * canvas.height) - this.jumpOffsetPx, behavior: 'smooth' })
             return
         }
-    }
     this.goToHead()
   }
 

@@ -599,11 +599,10 @@ export class ViewerManager {
             const pageWrapper = this.createPageElement(i)
             pageWrapper.dataset.rendered = 'false'
             
+            // Temporary estimate until probed or rendered
             pageWrapper.style.minHeight = `${firstViewport.height}px`
             pageWrapper.style.width = `${firstViewport.width}px`
-            pageWrapper.style.zIndex = '2' // Render new pages ON TOP of stale ones
-            // --- FLASH PREVENTION ---
-            // New pages start invisible so they don't cover stale pages with white canvases
+            pageWrapper.style.zIndex = '2'
             pageWrapper.style.opacity = '0'
             pageWrapper.style.transition = 'opacity 0.15s ease-out'
             
@@ -613,6 +612,18 @@ export class ViewerManager {
         })
         this.app.container.appendChild(fragment)
 
+        // 3. New Physical Probe: Scan all pages for real dimensions (Lightweight)
+        // This ensures JumpManager always has accurate metrics even for unrendered pages.
+        this.probeAllPageHeights().then(() => {
+            requestAnimationFrame(() => {
+                this.updatePageMetrics()
+                this.app.updateRulerPosition()
+                this.app.updateRulerClip()
+                this.app.computeNextTarget()
+                this.app.updateRulerMarks()
+            })
+        });
+
         // Initial UI updates for first page
         this.showMainUI()
         this.app.updateJumpLinePosition()
@@ -620,9 +631,6 @@ export class ViewerManager {
         this.app.updateRulerClip()
         this.app.computeNextTarget()
         this.app.updateRulerMarks()
-
-        // 3. Update cached metrics once after initial layout
-        this.updatePageMetrics()
 
         // Ensure scroll restoration ONLY on initial file load
         if (isInitialLoad && this.app.viewer) {
@@ -633,7 +641,50 @@ export class ViewerManager {
         }
 
         if (this.app.inputManager) this.app.inputManager.updateDividerPositions()
-        console.log(`[ViewerManager] renderPDF layout completed for ${numPages} pages.`);
+        console.log(`[ViewerManager] renderPDF layout initiated for ${numPages} pages.`);
+    }
+
+    /**
+     * Probes all page viewports immediately after container creation.
+     * This creates 100% accurate layout metrics without waiting for full rendering.
+     */
+    async probeAllPageHeights() {
+        if (!this.pdf) return;
+        const numPages = this.pdf.numPages;
+        const probePromises = [];
+
+        console.log(`[ViewerManager] Probing ${numPages} page viewports...`);
+        for (let i = 1; i <= numPages; i++) {
+            // Already have page 1 from renderPDF
+            if (i === 1) continue;
+
+            probePromises.push((async () => {
+                try {
+                    let page = this._pageCache[i];
+                    if (!page) {
+                        page = await this.pdf.getPage(i);
+                        this._pageCache[i] = page;
+                    }
+                    
+                    const naturalViewport = page.getViewport({ scale: 1.0 });
+                    const targetWidth = this.baseNaturalWidth * this.scale;
+                    const specificScale = targetWidth / naturalViewport.width;
+                    const viewport = page.getViewport({ scale: specificScale });
+
+                    this._pageViewports[i] = viewport;
+                    const wrapper = document.querySelector(`.page-container:not(.is-stale)[data-page="${i}"]`);
+                    if (wrapper) {
+                        wrapper.style.minHeight = `${viewport.height}px`;
+                        wrapper.style.width = `${viewport.width}px`;
+                    }
+                } catch (err) {
+                    console.warn(`[ViewerManager] Probing page ${i} failed:`, err);
+                }
+            })());
+        }
+
+        await Promise.all(probePromises);
+        console.log(`[ViewerManager] All ${numPages} viewports probed.`);
     }
 
     /**
@@ -916,15 +967,23 @@ export class ViewerManager {
         this._pageMetrics = {}
         // Only read active (non-stale) containers to keep metrics accurate
         const containers = this.app.container.querySelectorAll('.page-container:not(.is-stale)')
+        let zeroCount = 0;
         containers.forEach(el => {
             const pageNum = parseInt(el.dataset.page)
-            if (pageNum) {
+            if (!isNaN(pageNum)) {
+                const top = el.offsetTop;
+                if (top === 0 && pageNum > 1) zeroCount++;
+                
                 this._pageMetrics[pageNum] = {
-                    top: el.offsetTop,
+                    top: top,
                     height: el.clientHeight
                 }
             }
         })
+        
+        if (zeroCount > 0) {
+            console.warn(`[ViewerManager] Detected ${zeroCount} suspicious zero offsets. Layout might be unstable.`);
+        }
         this.updateHorizontalPanState()
     }
 

@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    StandaloneScrollbarManager — right-edge spring-back scrollbar
+   (Quarantined with .sf-std- prefix to avoid conflicts)
    ═══════════════════════════════════════════════════════════════ */
 
 #sf-standalone-scrollbar {
@@ -13,24 +14,27 @@
     flex-direction: column;
     align-items: center;
     padding: 6px 0;
-    z-index: 199;
+    z-index: 1000;                /* Ensure it is above most elements */
     -webkit-user-select: none;
     user-select: none;
     background: transparent;
     border: none;
 }
 
-#sf-standalone-scrollbar .sf-strip-scrollbar-track {
+#sf-standalone-scrollbar .sf-std-track {
     width: 44px;
     background: transparent;
+    flex: 1;
+    position: relative;
+    cursor: pointer;
 }
 
-#sf-standalone-scrollbar .sf-strip-scrollbar-track::before {
+#sf-standalone-scrollbar .sf-std-track::before {
     content: '';
     position: absolute;
     left: 50%;
-    top: 55px;
-    bottom: 55px;
+    top: 40px;
+    bottom: 40px;
     width: 2px;
     transform: translateX(-50%);
     background: var(--border);
@@ -38,30 +42,49 @@
     pointer-events: none;
 }
 
-#sf-standalone-scrollbar .sf-strip-scrollbar-thumb {
+#sf-standalone-scrollbar .sf-std-thumb {
     width: 44px;
+    position: absolute;
+    left: 0;
+    cursor: grab;
+    transition: none;
 }
 
-#sf-standalone-scrollbar .sf-scrollbar-arrow {
-    opacity: 1;
+#sf-standalone-scrollbar .sf-std-thumb.grabbing {
+    cursor: grabbing;
+}
+
+#sf-standalone-scrollbar .sf-std-arrow {
+    opacity: 0.6;
     color: var(--text-muted);
     transition: all 0.2s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
 }
 
-#sf-standalone-scrollbar .sf-scrollbar-arrow:hover {
+#sf-standalone-scrollbar .sf-std-arrow:hover {
     color: var(--primary);
     transform: scale(1.2);
+    opacity: 1;
+}
+
+#sf-standalone-scrollbar .sf-std-arrow.active {
+    color: var(--primary);
+    opacity: 1;
 }
 
 /* Reached boundary — red flash on arrow */
-#sf-standalone-scrollbar .sf-scrollbar-arrow.limit {
+#sf-standalone-scrollbar .sf-std-arrow.limit {
     color: rgba(239, 68, 68, 0.9);
     opacity: 1;
-    animation: sf-limit-flash 0.4s ease-out forwards;
+    animation: sf-std-limit-flash 0.4s ease-out forwards;
 }
 
-@keyframes sf-limit-flash {
-    0%   { opacity: 1; transform: translateX(-50%) scale(1.2); }
-    60%  { opacity: 1; transform: translateX(-50%) scale(1); }
-    100% { opacity: 0.5; }
+@keyframes sf-std-limit-flash {
+    0%   { transform: scale(1.2); opacity: 1; }
+    60%  { transform: scale(1); opacity: 1; }
+    100% { opacity: 0.6; }
 }

@@ -1,32 +1,44 @@
-# 🎨 Indigo Suite 配色飽和度加強計畫
+# 修復頁面跳轉與尺規指標顏色問題
 
-## 根本原因分析 (Root Cause)
-1. **背景色過淡**：目前的背景（側邊欄、卡片、漂浮條）過於接近白色或極淡灰，導致整體感覺較為像一般的「白底模式」，缺乏「Indigo Suite」的主題個性。
-2. **層次感不足**：由於背景色過淡，各個層次（側邊欄 vs 樂譜 vs 漂浮條）的對應感不夠強烈。
+此計畫旨在修復 `ScoreFlow` 中頁面跳轉 (Page Jump) 不準確以及尺規指標 (Ruler Pointer) 顏色未正確更新的問題。
 
-## 預計改動細節
+## 根本原因分析
 
-### 1. 加強核心背景變數 [variables.css](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/styles/variables.css)
-*   **[MODIFY]** `--bg-sidebar`: `#f5f6ff` → `#edf0ff` (加深薰衣草靛藍調)。
-*   **[MODIFY]** `--bg-card`: `#f7f7ff` → `#f1f3ff` (讓設定卡片有更明確的背景感)。
-*   **[MODIFY]** `--bg-surface`: `rgba(255, 255, 255, 0.88)` → `rgba(240, 243, 255, 0.94)` (漂浮條背景加深為帶藍調的毛玻璃，並提高不透明度)。
-*   **[MODIFY]** `--bg-app`: `#ebebf5` → `#e5e8f7` (整體應用的襯底色更具厚度)。
+1.  **頁面跳轉不準確 (跳到頭尾)**:
+    - **原本的設計狀態 (Original State)**: `JumpManager.js` 的 `updateDisplay` 在遍歷 `_pageMetrics` 物件時未經排序。由於 JS 物件 key 的遍歷規則，數字索引（頁碼）的遍歷順序不一定由小到大。
+    - **跳轉邏輯 (Jump Logic)**: `goToPage` 直接依賴 DOM 的 `offsetTop`。在頁面縮放或重新渲染期間，DOM 面板數值可能未與 Core Metrics 完全同步。
+    - **預計修改後的設計狀態 (Refined State)**: 在計算當前頁碼前對頁碼進行數字排序。`goToPage` 將改為讀取 `ViewerManager._pageMetrics` 以確保數值絕對一致。
 
-### 2. 優化層次陰影與邊界
-*   **[MODIFY]** 稍微加強 `--border` 的不透明度，讓淺色面版在更有質感的背景上有清晰的邊界感。
+2.  **指標未變色**:
+    - **原本的設計狀態 (Original State)**: `ruler.js` 的 `nextTargetAnchor` 計算結果在快速捲動時可能被跳過，且尺規上的橘色標記（下一個目標）在 `ruler-next-target` 類別套用時可能因 CSS 權重或顏色變數未正確更新。
+    - **預計修改後的設計狀態 (Refined State)**: 加強 `computeNextTarget` 的魯棒性 (Robustness)，並確保 `updateRulerMarks` 在每次 Render 時精確比對當前目標，同時優化 CSS 顯著度。
 
-## 修改前後狀態對比
+## 預計修改清單
 
-| 元素 | 原本狀態 (偏白) | 修改後狀態 (主題感) |
-|---|---|---|
-| **Sidebar 背景** | 極淡白 (接近無色) | 柔和薰衣草靛藍 (Lavender-Tint) |
-| **漂浮條玻璃背景** | 純白玻璃 (White Glass) | 靛藍玻璃 (Indigo Porcelain Glass) |
-| **整體視覺感** | 像是 Generic Light Theme | 真正的品牌主題「Indigo Suite」 |
+### [MODIFY] [JumpManager.js](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/modules/JumpManager.js)
 
-## 開放性問題
-- **飽和度程度**：我會將紫色調控制在「精緻但明確」的範圍。您是否偏好再更濃郁一點的紫色背景？還是目前建議的「柔和層次」即可？
-- **對比度**：背景色加深後，原本的深靛藍文字 (--text-main) 會顯得更穩定，我會同時檢查可讀性。
+- 在 `updateDisplay()` 中排序頁碼。
+- 修復 `goToPage()` 與 `goToEnd()` 捲動座標計算邏輯。
+
+### [MODIFY] [ruler.js](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/modules/ruler.js)
+
+- 優化 `computeNextTarget()` 與 `updateRulerMarks()` 的連動邏輯。
+- 修復 `nextSystemTarget` 指標的高亮判斷。
+
+### [MODIFY] [ruler.css](file:///Volumes/PNGPRO500G/MyPrograms/ScoreFlowPWA/src/styles/ruler.css)
+
+- 加強 `.ruler-next-target` 類別的視覺樣式（增加 Shadow 或加強橘色飽和度）。
+
+## 開放性問題 (Open Questions)
+
+- **使用者反饋**: 您提到的「指標也沒有變色」具體是指尺規左邊的橘色標點，還是畫面上那一條橫向的 Jump Beam？（目前計畫同時優化這兩者的反應速度與視覺顯著度）
 
 ## 驗證計畫
-- **視覺對比**：確保側邊欄 (Sidebar) 與主樂譜區 (Viewer Area) 的區隔更加明顯且具高品質美感。
-- **主題一致性**：切換主題，檢查對其他主題 (Dark, Midnight) 的副作用（預案為僅影響 :root 預設主題）。
+
+### 手動驗證
+1. 啟動 `npm run dev -- --host`。
+2. 使用 iPad 跳轉到中間頁面（例如 P.5），確認是否準確。
+3. 觀察跳轉後，尺規左側是否出現明顯的橘色標記指向下一個目標。
+
+### 自動化驗證
+- 執行 `npm run test:e2e` 確認基本功能正常。

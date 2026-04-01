@@ -245,13 +245,17 @@ export class JumpManager {
 
     async goToPage(pageNumber) {
         if (!this.app.pdf) return
-        const pageElem = document.querySelector(`.page-container:not(.is-stale)[data-page="${pageNumber}"]`)
-        if (pageElem) {
+        
+        // Priority: Use cached metrics from ViewerManager for absolute alignment
+        const metrics = this.app.viewerManager?._pageMetrics;
+        const targetMetric = metrics ? metrics[pageNumber] : null;
+        
+        if (targetMetric) {
             // Priority render before or during scroll
             this.app.viewerManager.ensurePageRendered(pageNumber)
 
             this.app.viewer.scrollTo({
-                top: pageElem.offsetTop,
+                top: targetMetric.top,
                 behavior: 'smooth'
             })
             this.currentPage = pageNumber
@@ -259,15 +263,41 @@ export class JumpManager {
 
             // iPad Fix: Force reset interaction state after jump to ensure responsiveness
             this.app.inputManager?.forceResetInteractionState();
+            return;
+        }
+
+        // Fallback: DOM query (only if metrics aren't ready/cached)
+        const pageElem = document.querySelector(`.page-container:not(.is-stale)[data-page="${pageNumber}"]`)
+        if (pageElem) {
+            this.app.viewerManager.ensurePageRendered(pageNumber)
+            this.app.viewer.scrollTo({
+                top: pageElem.offsetTop,
+                behavior: 'smooth'
+            })
+            this.currentPage = pageNumber
+            this.updateDisplay()
+            this.app.inputManager?.forceResetInteractionState();
         }
     }
 
     prevPage() {
-        if (this.currentPage > 1) this.goToPage(this.currentPage - 1)
+        if (this.currentPage > 1) {
+            this.goToPage(this.currentPage - 1)
+        } else {
+            const btn = document.getElementById('btn-calc-prev')
+            btn?.classList.add('error-flash')
+            setTimeout(() => btn?.classList.remove('error-flash'), 500)
+        }
     }
 
     nextPage() {
-        if (this.currentPage < this.totalPages) this.goToPage(this.currentPage + 1)
+        if (this.currentPage < this.totalPages) {
+            this.goToPage(this.currentPage + 1)
+        } else {
+            const btn = document.getElementById('btn-calc-next')
+            btn?.classList.add('error-flash')
+            setTimeout(() => btn?.classList.remove('error-flash'), 500)
+        }
     }
 
     goToHead() {
@@ -281,6 +311,18 @@ export class JumpManager {
     goToEnd() {
         if (!this.app.pdf) return
         this.app.jumpHistory = []
+
+        const metrics = this.app.viewerManager?._pageMetrics;
+        if (metrics && Object.keys(metrics).length > 0) {
+            const lastPage = this.totalPages;
+            const m = metrics[lastPage];
+            if (m) {
+                this.app.viewer.scrollTo({ top: m.top, behavior: 'smooth' });
+                return;
+            }
+        }
+        
+        // Fallback: Total scroll height
         this.app.viewer.scrollTo({ top: this.app.viewer.scrollHeight, behavior: 'smooth' })
     }
 
@@ -300,16 +342,21 @@ export class JumpManager {
         let current = 1
 
         if (metrics && Object.keys(metrics).length > 0) {
-            for (const [page, m] of Object.entries(metrics)) {
+            // Fix: Sort numeric keys to ensure we detect the visually leading page correctly
+            const sortedPages = Object.keys(metrics).map(Number).sort((a,b) => a - b);
+            for (const page of sortedPages) {
+                const m = metrics[page];
                 if (m.top <= threshold) {
-                    current = parseInt(page)
+                    current = page;
                 } else {
-                    break
+                    break;
                 }
             }
         } else {
             // Fallback: DOM query (only when metrics not ready)
-            const pages = document.querySelectorAll('.page-container:not(.is-stale)')
+            const pages = Array.from(document.querySelectorAll('.page-container:not(.is-stale)'))
+                .sort((a,b) => parseInt(a.dataset.page) - parseInt(b.dataset.page));
+                
             for (let p of pages) {
                 if (p.offsetTop <= threshold) {
                     current = parseInt(p.dataset.page)

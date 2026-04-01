@@ -270,6 +270,13 @@
     color: var(--primary);
 }
 
+.calc-btn.error-flash {
+    color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.05);
+}
+
 .calc-btn.action-btn.clear {
     color: #ff4d4d;
     grid-row: span 1;

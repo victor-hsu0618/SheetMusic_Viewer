@@ -29,7 +29,7 @@ export class StandaloneScrollbarManager {
         el.innerHTML = ''
 
         const upArrow = document.createElement('div')
-        upArrow.className = 'sf-scrollbar-arrow sf-scrollbar-arrow-up'
+        upArrow.className = 'sf-std-arrow sf-std-arrow-up'
         upArrow.innerHTML = `<svg viewBox="0 0 24 36" width="20" height="30" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
             <polyline points="18 12 12 6 6 12" opacity="0.4"/>
             <polyline points="18 20 12 14 6 20" opacity="0.7"/>
@@ -37,14 +37,14 @@ export class StandaloneScrollbarManager {
         </svg>`
 
         const track = document.createElement('div')
-        track.className = 'sf-strip-scrollbar-track'
+        track.className = 'sf-std-track'
 
         const thumb = document.createElement('div')
-        thumb.className = 'sf-strip-scrollbar-thumb'
+        thumb.className = 'sf-std-thumb'
         track.appendChild(thumb)
 
         const downArrow = document.createElement('div')
-        downArrow.className = 'sf-scrollbar-arrow sf-scrollbar-arrow-down'
+        downArrow.className = 'sf-std-arrow sf-std-arrow-down'
         downArrow.innerHTML = `<svg viewBox="0 0 24 36" width="20" height="30" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
             <polyline points="6 8 12 14 18 8"/>
             <polyline points="6 16 12 22 18 16" opacity="0.7"/>
@@ -160,7 +160,14 @@ export class StandaloneScrollbarManager {
             longPressTimer = setTimeout(() => {
                 isLongPress = true
                 if (navigator.vibrate) navigator.vibrate(10)
-                this.app.viewer.scrollTop = direction === -1 ? 0 : this.app.viewer.scrollHeight
+                
+                // Use Manager methods for proper history reset and physical probing logic
+                if (direction === -1) {
+                    this.app.jumpManager?.goToHead()
+                } else {
+                    this.app.jumpManager?.goToEnd()
+                }
+                
                 setTimeout(() => arrow.classList.remove('active'), 200)
             }, LONG_PRESS_MS)
         }
