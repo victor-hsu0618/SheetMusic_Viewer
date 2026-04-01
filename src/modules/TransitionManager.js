@@ -37,7 +37,7 @@ export class TransitionManager {
         if (!fromEl || !toEl) return scrollFn();
 
         this._isAnimating = true;
-        const duration = this.currentStyle === 'slide' ? 400 : 500;
+        const duration = this.currentStyle === 'slide' ? 600 : 500;
         const direction = toPage > fromPage ? 'next' : 'prev';
 
         // 1. Prepare for Animation

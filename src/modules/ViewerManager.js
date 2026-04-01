@@ -603,7 +603,9 @@ export class ViewerManager {
             
             // Temporary estimate until probed or rendered
             pageWrapper.style.minHeight = `${firstViewport.height}px`
-            pageWrapper.style.width = `${firstViewport.width}px`
+            if (this.app.readingMode !== 'horizontal') {
+                pageWrapper.style.width = `${firstViewport.width}px`
+            }
             pageWrapper.style.zIndex = '2'
             pageWrapper.style.opacity = '0'
             pageWrapper.style.transition = 'opacity 0.15s ease-out'
@@ -681,7 +683,9 @@ export class ViewerManager {
                     const wrapper = document.querySelector(`.page-container:not(.is-stale)[data-page="${i}"]`);
                     if (wrapper) {
                         wrapper.style.minHeight = `${viewport.height}px`;
-                        wrapper.style.width = `${viewport.width}px`;
+                        if (this.app.readingMode !== 'horizontal') {
+                            wrapper.style.width = `${viewport.width}px`;
+                        }
                     }
                 } catch (err) {
                     console.warn(`[ViewerManager] Probing page ${i} failed:`, err);

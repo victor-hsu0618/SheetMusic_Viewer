@@ -146,8 +146,9 @@ body.mode-horizontal .page-container {
   margin-bottom: 0 !important;
   margin-right: 0px; 
   scroll-snap-align: start;
-  flex: 0 0 100vw; /* Restore to viewport width to fix white screen first */
-  width: 100vw;
+  flex: 0 0 100vw !important; /* Force 100vw to prevent shrinkage */
+  width: 100vw !important;
+  min-width: 100vw !important;
   display: flex;
   justify-content: center;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
