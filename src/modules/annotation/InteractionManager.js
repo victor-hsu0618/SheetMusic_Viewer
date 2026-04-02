@@ -1216,7 +1216,8 @@ export class InteractionManager {
         }, { passive: true });
         overlay.addEventListener('mouseleave', () => { virtualPointer?.classList.remove('active'); this.app.hoveredStamp = this.app.selectHoveredStamp = null; this.app.redrawStamps(pageNum); });
 
-        wrapper.appendChild(overlay);
+        const actualWrapper = wrapper.querySelector('.page-content-wrapper') || wrapper;
+        actualWrapper.appendChild(overlay);
         overlay._updateTouchAction = () => this.updateAllOverlaysTouchAction();
         this.updateAllOverlaysTouchAction();
     }
