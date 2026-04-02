@@ -76,11 +76,11 @@ const PEN_SIZES = [
 ]
 
 const HL_SIZES = [
-    { label: 'XS', value: 0.5 },
-    { label: 'S',  value: 0.8 },
-    { label: 'M',  value: 1.0 },
-    { label: 'L',  value: 1.5 },
-    { label: 'XL', value: 2.1 },
+    { label: 'XS', value: 0.3 },
+    { label: 'S',  value: 0.6 },
+    { label: 'M',  value: 0.9 },
+    { label: 'L',  value: 1.3 },
+    { label: 'XL', value: 1.8 },
 ]
 
 const EXTRA_COLORS = [
