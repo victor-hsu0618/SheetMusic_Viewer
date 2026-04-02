@@ -1,4 +1,8 @@
 /* Score Library Overlay - Wide Split View Sidebar Style */
+
+.hidden {
+    display: none !important;
+}
 .library-overlay {
     position: fixed;
     top: 0;
@@ -50,6 +54,11 @@ body .library-overlay.active {
     border-bottom: 1px solid var(--border);
     background: var(--bg-soft);
     flex-shrink: 0;
+}
+
+.library-tabs {
+    margin-left: 14px;
+    max-width: 400px;
 }
 
 .btn-import-wrapper {
@@ -293,9 +302,19 @@ body .library-overlay.active {
     overflow-y: auto;
 }
 
+/* Specific Content Pane for Detail/Sets (without the grid-list padding-bottom) */
+.library-pane-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    padding: 0;
+}
+
 .library-grid-header {
     display: grid;
-    grid-template-columns: 44px 1fr 44px;
+    grid-template-columns: 44px 1fr 80px;
     align-items: center;
     padding: 0 12px;
     height: 36px;
@@ -325,7 +344,7 @@ body .library-overlay.active {
     border-bottom: 1px solid var(--border);
     cursor: pointer;
     display: grid;
-    grid-template-columns: 44px 1fr 44px;
+    grid-template-columns: 44px 1fr 80px;
     align-items: center;
     height: 40px;
     min-height: 40px;
@@ -472,8 +491,33 @@ body .library-overlay.active {
 /* Hide some columns on mobile */
 @media (max-width: 600px) {
     .library-grid-header, .score-card {
-        grid-template-columns: 44px 1fr 44px;
+        grid-template-columns: 44px 1fr 80px;
     }
+}
+
+.score-delete-btn-mini {
+    color: var(--text-muted);
+    opacity: 0.25;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.score-delete-btn-mini:hover {
+    opacity: 1;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.score-action-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
 }
 
 /* Score info content */
@@ -759,10 +803,11 @@ body .library-overlay.active {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 16px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    background: rgba(var(--primary-rgb), 0.03);
+    min-height: 72px;
+    background: rgba(var(--primary-rgb), 0.04);
 }
 
 .sd-hero-fields {

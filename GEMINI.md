@@ -33,6 +33,8 @@ The application follows a modular "Manager" pattern coordinated by a central `Sc
 - **`CollaborationManager`**: Manages the multi-interpretation style engine and source data routing.
 - **`ProfileManager`**: Manages user identity and profile settings.
 - **`ScoreDetailManager`**: Manages score-specific metadata (Composer, Title) linked to PDF fingerprints.
+- **`ScoreManager`**: 核心書庫管理器。負責樂譜導入、檢索、磁吸存儲切換，以及支援「單體/批量」檔案銷毀邏輯。
+- **`ScoreLibraryUIManager`**: 樂譜庫介面控制。提供 Glassmorphism 清單佈局、搜尋、排序，以及直覺式的快速刪除管理按鈕。
 
 ### Supporting Files
 - **`index.html`**: Main DOM structure and entry point.

@@ -84,18 +84,10 @@
         padding: 8px !important;
     }
 
-    .segmented-control {
-        flex-wrap: wrap !important; /* Allow tabs to flow to next line */
-        height: auto !important;
-        gap: 6px !important;
-        padding: 6px !important;
-    }
-
-    .segment-btn {
-        flex: 1 1 auto !important; /* Grow and shrink but allow multi-line */
-        min-width: 60px;
-        padding: 6px 4px !important;
-        font-size: 0.7rem !important;
+    .sf-segmented-control.library-tabs {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
     }
 
     .search-input-mini, input[type="text"], select {

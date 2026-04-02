@@ -214,10 +214,10 @@
             <circle cx="6" cy="18" r="3" />
             <circle cx="18" cy="16" r="3" />
           </svg>
-          <div class="segmented-control library-tabs" style="margin-left: 10px;">
-            <button class="segment-btn active" data-tab="scores">Scores</button>
-            <button class="segment-btn" data-tab="setlists">Setlists</button>
-            <button class="segment-btn" data-tab="current-score">Current</button>
+          <div class="sf-segmented-control library-tabs">
+            <button class="sf-seg-btn active" data-tab="scores">Scores</button>
+            <button class="sf-seg-btn" data-tab="setlists">Setlists</button>
+            <button class="sf-seg-btn" data-tab="current-score">Current</button>
           </div>
         </div>
         <div class="library-actions">
@@ -278,7 +278,7 @@
       </div>
 
       <!-- Tab: Current Score Detail -->
-      <div id="pane-current-score" class="library-grid hidden">
+      <div id="pane-current-score" class="library-pane-content hidden">
         <div class="score-detail-container">
 
           <!-- Hero Header: editable title + composer + actions -->
@@ -430,7 +430,10 @@
 
                 <div class="sd-card sd-danger-card">
                   <div class="sd-label sd-danger-label" style="margin-bottom:8px;">Danger Zone</div>
-                  <button id="btn-reset-score-all" class="btn btn-outline-danger btn-sm">Reset Score Metadata</button>
+                  <div class="sd-btn-row">
+                    <button id="btn-reset-score-all" class="btn btn-outline-danger btn-sm">Reset Markup & Stats</button>
+                    <button id="btn-delete-score-from-device" class="btn btn-danger btn-sm">Delete Score from Device</button>
+                  </div>
                 </div>
               </div>
 

@@ -375,7 +375,7 @@ export class SetlistManager {
         document.querySelector('.library-header')?.classList.remove('hidden-important')
         document.querySelector('.library-toolbar')?.classList.remove('hidden-important')
 
-        const tabs = document.querySelectorAll('.library-tabs .segment-btn')
+        const tabs = document.querySelectorAll('.library-tabs .sf-seg-btn')
         let activeTab = 'scores'
         tabs.forEach(t => { if (t.classList.contains('active')) activeTab = t.dataset.tab })
 

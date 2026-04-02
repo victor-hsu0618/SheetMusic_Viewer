@@ -115,6 +115,12 @@ export class ScoreLibraryUIManager {
                     <span class="score-title" title="${displayTitle}">${displayTitle}</span>
                 </div>
                 <div class="col-action score-action-cell">
+                    <div class="score-delete-btn-mini text-danger" title="Delete Score">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </div>
                     <div class="score-info-btn" title="More Actions">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <circle cx="12" cy="12" r="1"></circle>
@@ -124,6 +130,20 @@ export class ScoreLibraryUIManager {
                     </div>
                 </div>
             `;
+
+            card.querySelector('.score-delete-btn-mini')?.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const confirmed = await this.app.showDialog({
+                    title: 'Delete Score?',
+                    message: `Delete "${displayTitle}" and all its markings from this device?`,
+                    type: 'confirm',
+                    icon: '🗑️'
+                });
+                if (confirmed) {
+                    await this.manager.deleteScore(score.fingerprint);
+                    this.app.showMessage('Score deleted.', 'success');
+                }
+            });
 
             card.querySelector('.score-info-btn').onclick = (e) => {
                 e.stopPropagation();

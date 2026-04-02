@@ -44,7 +44,7 @@ export class ScoreDetailManager {
 
         // If clicking same button and library is open on current tab, toggle it off
         const isLibraryOpen = this.app.scoreManager?.overlay?.classList.contains('active');
-        const isCurrentTab = document.querySelector('.library-tabs .segment-btn[data-tab="current-score"]')?.classList.contains('active');
+        const isCurrentTab = document.querySelector('.library-tabs .sf-seg-btn[data-tab="current-score"]')?.classList.contains('active');
 
         if (!fingerprint && isLibraryOpen && isCurrentTab) {
             this.toggle(false)
@@ -411,6 +411,29 @@ export class ScoreDetailManager {
         this.render(fingerprint)
         this.refreshStats()
         this.app.showMessage('Score reset successfully.', 'success')
+    }
+    
+    async handleDeleteScore() {
+        const fingerprint = this.currentFp || this.app.pdfFingerprint
+        if (!fingerprint) return
+
+        const confirmed = await this.app.showDialog({
+            title: 'Delete Score Forever?',
+            message: `This will PERMANENTLY remove "${this.currentInfo.name || 'this score'}" and all its local markings. This cannot be undone.`,
+            type: 'confirm',
+            icon: '🗑️',
+            confirmText: 'Delete'
+        })
+        if (!confirmed) return
+
+        this.app.showMessage('Deleting score...', 'system')
+        
+        // Use the centralized ScoreManager motor to clean up everything
+        await this.app.scoreManager.deleteScore(fingerprint)
+        
+        // If we were displaying this specific score, close it and refresh library
+        this.app.scoreManager.toggleOverlay(true)
+        this.app.showMessage('Score deleted successfully.', 'success')
     }
 
     async handleAddSetlist() {

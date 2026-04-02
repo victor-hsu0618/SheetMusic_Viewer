@@ -59,6 +59,7 @@ export class ScoreDetailUIManager {
 
         document.getElementById('btn-detail-add-setlist')?.addEventListener('click', () => this.manager.handleAddSetlist())
         document.getElementById('btn-reset-score-all')?.addEventListener('click', () => this.manager.handleResetAll())
+        document.getElementById('btn-delete-score-from-device')?.addEventListener('click', () => this.manager.handleDeleteScore())
         document.getElementById('btn-force-push-supabase')?.addEventListener('click', () => this.manager.handleForcePushSupabase())
         document.getElementById('btn-force-push-drive')?.addEventListener('click', () => this.manager.handleForcePushDrive())
         document.getElementById('btn-force-pull-supabase')?.addEventListener('click', () => this.manager.handleForcePullSupabase())
@@ -175,7 +176,7 @@ export class ScoreDetailUIManager {
                     </div>
                 `
                 const actions = document.createElement('div')
-                actions.className = 'flex-row-center gap-5'
+                actions.className = 'sd-btn-row gap-5'
                 
                 const selectBtn = document.createElement('button')
                 selectBtn.className = 'btn-icon-mini media-select-btn'

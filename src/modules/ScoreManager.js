@@ -121,16 +121,16 @@ export class ScoreManager {
             });
         }
 
-        document.querySelectorAll('.library-tabs .segment-btn').forEach(btn => {
+        document.querySelectorAll('.library-tabs .sf-seg-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const tabId = e.target.dataset.tab;
+                const tabId = e.currentTarget.dataset.tab;
                 this.switchToTab(tabId, true);
             });
         });
     }
 
     switchToTab(tabId, userInitiated = false) {
-        document.querySelectorAll('.library-tabs .segment-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
+        document.querySelectorAll('.library-tabs .sf-seg-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
 
         const libraryGrid = document.getElementById('library-grid');
         const setlistGrid = document.getElementById('setlist-grid');
