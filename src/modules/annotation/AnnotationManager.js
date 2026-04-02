@@ -115,8 +115,11 @@ export class AnnotationManager {
             }
 
             let dist, threshold
+            const PATH_THRESHOLD = 0.008; // Tighter base threshold
+            const STAMP_THRESHOLD = 0.025;
+            const MIN_DOT_HIT_RADIUS = 0.012; // Minimum hitbox for tiny single points
+            
             if (s.type === 'rect-shape' && s.points?.length >= 2) {
-                // Distance to rectangle outline (4 edges)
                 const p1 = s.points[0], p2 = s.points[s.points.length - 1]
                 const [x1, y1, x2, y2] = [p1.x, p1.y, p2.x, p2.y]
                 const edges = [
@@ -128,7 +131,6 @@ export class AnnotationManager {
                 dist = Math.min(...edges.map(([a, b]) => this._distToSegment(x, y, a, b)))
                 threshold = PATH_THRESHOLD * 1.5
             } else if (s.type === 'circle-shape' && s.points?.length >= 2) {
-                // Distance to ellipse outline
                 const p1 = s.points[0], p2 = s.points[s.points.length - 1]
                 const cx = (p1.x + p2.x) / 2, cy = (p1.y + p2.y) / 2
                 const rx = Math.abs(p2.x - p1.x) / 2, ry = Math.abs(p2.y - p1.y) / 2
@@ -138,11 +140,16 @@ export class AnnotationManager {
                 }
                 threshold = PATH_THRESHOLD * 1.5
             } else if (s.points && s.points.length > 0) {
-                // Improved Path distance: Check all segments (line-point distance)
                 dist = this._minDistanceToPath(x, y, s.points)
-                threshold = PATH_THRESHOLD
+                // PRECISE HIT: Hit if it's within the visual stroke width OR within a tight proximity
+                const visualRadius = (s.lineWidth || 2) / 2000; 
+                threshold = Math.max(visualRadius, PATH_THRESHOLD);
+                
+                // Extra grace for single-click dots because they have no length
+                if (s.points.length <= 2 && dist < MIN_DOT_HIT_RADIUS) {
+                    threshold = MIN_DOT_HIT_RADIUS;
+                }
             } else {
-                // Stamp distance: simple Euclidean
                 dist = Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2))
                 threshold = STAMP_THRESHOLD
             }
@@ -226,7 +233,7 @@ export class AnnotationManager {
             activeSourceIds.includes(s.sourceId) &&
             visibleLayerIds.has(s.layerId) &&
             (
-                (s.points?.length > 0 && this._minDistanceToPath(x, y, s.points) < radius) ||
+                (s.points?.length > 0 && this._minDistanceToPath(x, y, s.points) < Math.max(radius, (s.lineWidth || 2) / 2000)) ||
                 (Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2)) < radius)
             )
         );

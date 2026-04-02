@@ -54,6 +54,9 @@ import { SupabaseManager } from './modules/SupabaseManager.js'
 import { EditSubBarManager } from './modules/EditSubBarManager.js'
 import { DockingBarManager } from './modules/DockingBarManager.js'
 import { StandaloneScrollbarManager } from './modules/StandaloneScrollbarManager.js'
+import { InspectorManager } from './modules/annotation/InspectorManager.js'
+
+import './styles/annotation-inspector.css'
 
 const baseUrl = window.location.origin + (import.meta.env.BASE_URL || '/')
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs/pdf.worker.min.mjs', baseUrl).href
@@ -169,6 +172,7 @@ this.setlistManager = new SetlistManager(this)
     this.supabaseManager = new SupabaseManager(this)
     this.editSubBarManager = new EditSubBarManager(this)
     this.dockingBarManager = new DockingBarManager(this)
+    this.inspectorManager = new InspectorManager(this)
     this.standaloneScrollbarManager = new StandaloneScrollbarManager(this)
     // Link docking bar ↔ sub-bar
     this.dockingBarManager.setSubBarManager(this.editSubBarManager)

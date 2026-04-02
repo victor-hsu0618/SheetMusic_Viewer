@@ -252,6 +252,7 @@ export class SupabaseManager {
         }
 
         // Map app stamp structure to Supabase DB schema
+        const updatedAtStr = stamp.updatedAt ? new Date(stamp.updatedAt).toISOString() : new Date().toISOString()
         const dbRecord = {
             id: stamp.id,
             fingerprint: fingerprint,
@@ -260,7 +261,11 @@ export class SupabaseManager {
             type: stamp.type,
             page: stamp.page || 0,
             data: stamp,
-            updated_at: stamp.updatedAt ? new Date(stamp.updatedAt).toISOString() : new Date().toISOString()
+            updated_at: updatedAtStr
+        }
+
+        if (stamp.points?.length <= 2) {
+            console.log(`[Supabase] 📡 Pushing dot/short-path: ${stamp.type} (ID: ${stamp.id.substring(0,8)})`);
         }
 
         try {

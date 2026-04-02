@@ -833,6 +833,9 @@ export class InteractionManager {
                 if (activeObject.page !== currentPageNum) {
                     const oldP = activeObject.page; activeObject.page = currentPageNum; this.app.redrawStamps(oldP);
                 }
+                // Ensure the preview canvas is cleared before drawing the updated path
+                // to prevent transparency stacking (making colors too dark) during the drag.
+                this.app.redrawStamps(currentPageNum);
                 if (['line', 'slur', 'rect-shape', 'circle-shape'].includes(activeObject.type)) {
                     activeObject.points = [activeObject.points[0], cPos];
                 } else if (['bracket-left', 'bracket-right', 'curly-left', 'curly-right'].includes(activeObject.type)) {

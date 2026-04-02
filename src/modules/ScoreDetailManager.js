@@ -387,17 +387,37 @@ export class ScoreDetailManager {
         if (!confirmed) return
 
         this.app.showMessage('Resetting score data...', 'system')
+
+        // 1. SYNC DELETION: Create tombstones for all current stamps to propagate deletion
+        const allStamps = await db.get(`stamps_${fingerprint}`) || []
+        if (allStamps.length > 0) {
+            const tombstones = allStamps.map(s => ({
+                ...s,
+                deleted: true,
+                updatedAt: Date.now()
+            }))
+            
+            // Push tombstones to Supabase so Machine B knows to delete them
+            if (this.app.supabaseManager?.user) {
+                console.log(`[ScoreDetail] Pushing ${tombstones.length} tombstones to sync reset...`);
+                await this.app.supabaseManager.pushAllAnnotations(fingerprint, tombstones);
+            }
+        }
+
+        // 2. LOCAL CLEANUP
         if (this.app.pdfFingerprint === fingerprint) {
             this.app.stamps = []
             this.app.annotationManager.redrawAllAnnotationLayers()
         }
-        db.remove(`stamps_${fingerprint}`)
+        await db.remove(`stamps_${fingerprint}`)
+        
         if (this.app.jumpManager) {
             this.app.jumpManager.bookmarks = []
             this.app.jumpManager.renderBookmarks()
             await db.remove(`bookmarks_${fingerprint}`)
         }
 
+        // 3. RESET METADATA
         this.currentInfo = {
             name: this.currentInfo.name || 'Untitled',
             composer: this.currentInfo.composer || 'Unknown',

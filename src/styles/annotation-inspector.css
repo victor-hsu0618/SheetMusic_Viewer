@@ -1,0 +1,155 @@
+/**
+ * Annotation Inspector Styles
+ * ───────────────────────────
+ * Glassmorphism Floating Panel for the Inspector Tool.
+ */
+
+.sf-inspector-panel {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 240px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    z-index: 10000;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transform: translateY(20px) scale(0.9);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: #1e293b;
+    user-select: none;
+}
+
+.sf-inspector-panel.open {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sf-inspector-header {
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    color: #64748b;
+    letter-spacing: 0.5px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.sf-inspector-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sf-inspector-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.sf-inspector-controls button {
+    background: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #475569;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+}
+
+.sf-inspector-controls button:active {
+    transform: scale(0.9);
+    background: #f1f5f9;
+}
+
+#ins-count {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: #334155;
+    min-width: 60px;
+    text-align: center;
+}
+
+.sf-inspector-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.sf-inspector-actions button {
+    flex: 1;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+#ins-delete {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+#ins-delete:active {
+    background: #fecaca;
+    transform: translateY(1px);
+}
+
+#ins-close {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+#ins-close:hover {
+    background: #e2e8f0;
+}
+
+/* Dark Mode Overrides */
+body.dark-mode .sf-inspector-panel {
+    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+}
+
+body.dark-mode .sf-inspector-controls {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .sf-inspector-controls button {
+    background: #334155;
+    color: #cbd5e1;
+}
+
+body.dark-mode #ins-delete {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+body.dark-mode #ins-close {
+    background: rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+}

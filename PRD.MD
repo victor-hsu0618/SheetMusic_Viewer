@@ -30,6 +30,9 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - **Export JSON**：打包所有註解、圖層、演奏人格及樂譜指紋。
 - **斗篷標籤系統 (Cloak Labels)**：
   - 各標記可標記為「黑 / 紅 / 藍」斗篷之一，用於不同演奏情境（如排練/正式演出）的快速顯隱切換。
+- **標記視覺規範 (Aesthetic Standards)**：
+  - **螢光筆 (Highlighter)**：採用 60% 透明度搭配 `Multiply` 模式，確保標記不遮擋音符並具備真實墨水感。
+  - **馬克筆 (Marker)**：採用 75% 透明度，提供厚重標記感同時保持底層譜面可見。
 
 ### 3. 標記操作流程 (Annotation Workflow)
 
@@ -49,6 +52,10 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - Nudge 模式特別適合：放置完 stamp 後，單手大拇指在螢幕角落微幅拖動即可完成微調，不遮掩樂譜。
 - **智慧垃圾桶 (Smart Trash Bin)**：
   - 拖曳物件時自動出現，位置根據物件座標智慧調整（中心上方 70px 或左側下方 90px）。
+- **標記巡檢助手 (Annotation Inspector)**：
+  - **自動定位與對焦**：提供循環導航面板，按下 `Next` 自動飛躍並置中顯示當前頁面標記。
+  - **視覺雷射波 (Radar Pulse)**：在巡檢目標上方渲染金色擴散脈衝動畫，解決微小塵埃物件難以辨識與選取的問題。
+  - **極速清理**：內建一鍵刪除按鈕，無需精確點擊標記本體即可執行物理刪除。
 
 ### 4. 智慧錨點跳轉 (Smart Anchor & Jump)
 
@@ -88,7 +95,13 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **LocalStorage**：
   - 存放全域設定：`turner_mode`, `stamp_size_multiplier`, `idle_timeout`。
   - 存放 UI 現況：`last_opened_score`, `active_category`, `active_source`。
-  - 存放指紋快取：`scoreFingerprintMap`。
+  - **指紋快取**：`scoreFingerprintMap`。
+
+### 3. 多裝置同步策略 (Multi-Device Sync)
+- **墓碑策略 (Tombstone Strategy)**：
+  - 當標記被刪除或執行「全域重設 (Reset All)」時，系統不會直接抹除記錄，而是將物件標記為 `deleted: true` (Tombstone) 並推送到雲端。
+  - 其他裝置同步時，透過識別 `deleted` 狀態來主動清除本機 IndexedDB 快取，確保多端狀態最終一致，防止已刪除數據「死而復生」。
+- **增量背景同步**：僅抓取 `updated_at` 晚於上次同步時間的變動。
 
 ### 2. 數據模型 (Annotation Model)
 ```json
@@ -113,6 +126,7 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **PersistenceManager**：負責數據同步與快取。
 - **GestureManager**：負責複雜手勢解析 (Pinch/Pan/Swipe)。
 - **ToolManager**：負責工具欄狀態與最後使用工具記憶。
+- **InspectorManager**：負責標記巡檢邏輯與導航對焦。
 
 ### 4. 懸浮控制入口 (Pearl White FAB & Draggable Dock)
 
@@ -162,4 +176,4 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - 刪除當前開啟的樂譜後，系統會自動定位並載入最近使用的其他樂譜，維持工作流連續性。
 
 ---
-*最後更新日期：2026-04-02（同步：樂譜庫快速刪除入口、詳情面板 Danger Zone 刪除功能）*
+*最後更新日期：2026-04-02（同步：標記巡檢助手功能、雷達波視覺導航、Tombstone 墓碑同步重設機制）*

@@ -869,6 +869,23 @@ export class EditSubBarManager {
         })
         content.appendChild(stickyBtn)
 
+        // --- 標記巡檢助手按鈕 (Inspector) ---
+        addVDivider(content)
+        const insBtn = document.createElement('div')
+        insBtn.className = 'sf-others-style-btn sf-others-inspector-btn'
+        insBtn.title = '標記巡檢助手 (檢查微小塵埃)'
+        insBtn.style.background = 'rgba(255, 215, 0, 0.15)'
+        insBtn.style.borderColor = 'rgba(255, 215, 0, 0.4)'
+        insBtn.style.width = 'auto'
+        insBtn.style.padding = '0 10px'
+        insBtn.innerHTML = `<span style="font-size:16px; margin-right:4px;">🕵️</span><span style="font-size:11px; font-weight:700; color:#854d0e;">巡檢</span>`
+        insBtn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.app.inspectorManager?.start();
+            this.toggle('others', null); // 點擊後自動關閉 Others bar 讓出視野
+        })
+        content.appendChild(insBtn)
+
         // Add all to bar
         bar.appendChild(content)
         // Others bar is now fixed at top, removing grip
