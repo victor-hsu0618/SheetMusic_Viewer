@@ -609,7 +609,10 @@ export class InteractionManager {
                     : this.app.activeColor;
                 activeObject = {
                     type: activeTool, page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId,
-                    points: [{ ...CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay), pressure: e.pressure ?? 0.5 }],
+                    points: [
+                        { ...CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay), pressure: e.pressure ?? 0.5 },
+                        { ...CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay), pressure: e.pressure ?? 0.5 }
+                    ],
                     color: strokeColor,
                     lineStyle: toolDef?.draw?.dashed ? 'dashed' : (this.app.activeLineStyle || 'solid'),
                     dashed: toolDef?.draw?.dashed || false,
