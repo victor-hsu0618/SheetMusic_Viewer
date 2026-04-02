@@ -317,6 +317,19 @@ export class SettingsPanelManager {
             turnerSelect.addEventListener('change', () => this.app.saveToStorage())
         }
 
+        // Pinch Zoom Toggle
+        const pinchToggle = document.getElementById('settings-enable-pinch')
+        if (pinchToggle) {
+            const isEnabled = localStorage.getItem('sf_enable_pinch_zoom') === 'true' // Default false if missing
+            pinchToggle.checked = isEnabled
+            this.app.pinchZoomEnabled = isEnabled
+            pinchToggle.addEventListener('change', (e) => {
+                const checked = e.target.checked
+                this.app.pinchZoomEnabled = checked
+                localStorage.setItem('sf_enable_pinch_zoom', checked)
+            })
+        }
+
         // Reading Mode selector
         const readingModeSelector = document.getElementById('reading-mode-selector')
         if (readingModeSelector) {

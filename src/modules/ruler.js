@@ -421,6 +421,13 @@ export class RulerManager {
 
     updateRulerMarks() {
         this.computeNextTarget()
+        const ruler = document.getElementById('jump-ruler')
+        if (ruler) {
+            const jm = this.app.jumpManager
+            const atEnd = (jm && jm.currentPage === jm.totalPages && jm.totalPages > 0)
+            ruler.classList.toggle('at-end', atEnd)
+        }
+
         const marksContainer = document.getElementById('ruler-marks')
         if (!marksContainer) return
 

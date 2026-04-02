@@ -46,13 +46,13 @@ export class GestureManager {
 
             handle.addEventListener('touchstart', (e) => {
                 if (window.innerWidth > 600) return 
-                e.stopImmediatePropagation() // Kill manager handles
+                // Don't stopPropagation if we want to be sensitive
                 this._startY = e.touches[0].clientY
                 activePanel = panel
                 isDraggingGesture = true
                 panel.style.transition = 'none'
                 this._lastMobilePanelId = panel.id
-            }, { capture: true, passive: false })
+            }, { capture: true, passive: true })
         })
 
         document.addEventListener('touchmove', (e) => {
@@ -60,10 +60,10 @@ export class GestureManager {
             const currentY = e.touches[0].clientY
             const diff = currentY - this._startY
             if (diff > 0) {
-                if (e.cancelable) e.preventDefault()
+                // Remove preventDefault() to allow more fluid response
                 activePanel.style.transform = `translate3d(0, ${diff}px, 0)`
             }
-        }, { passive: false })
+        }, { passive: true })
 
         document.addEventListener('touchend', (e) => {
             if (!isDraggingGesture || !activePanel) return
@@ -156,8 +156,6 @@ export class GestureManager {
 
         viewerContainer.addEventListener('touchmove', (e) => {
             if (this._isPinching && e.touches.length === 2) {
-                if (e.cancelable) e.preventDefault()
-                
                 const currentX = (e.touches[0].clientX + e.touches[1].clientX) / 2
                 const currentY = (e.touches[0].clientY + e.touches[1].clientY) / 2
                 
@@ -170,41 +168,31 @@ export class GestureManager {
                     // Give priority to panning (two-finger drag) if movement is detected but fingers stay at similar distance
                     if (panDelta > 15 && distDelta < 25) {
                         this._gestureLocked = 'pan' 
-                    } else if (distDelta > 35) {
+                    } else if (distDelta > 35 && this.app.pinchZoomEnabled) {
                         this._gestureLocked = 'zoom' 
                         this._isZoomActive = true
                     }
                 }
 
                 // 2. PINCH LOGIC (Visual Scale) - Only runs if NOT locked to pan
-                if (this._gestureLocked !== 'pan') {
+                if (this._gestureLocked !== 'pan' && this.app.pinchZoomEnabled) {
                     const rawRatio = currentDist / Math.max(10, this._initialDistance)
-                    // Damping (0.85) remains direct, but activation is now less twitchy
                     const ratio = 1 + (rawRatio - 1) * 0.85
 
-                    // Activation threshold: 0.06 (6% change) to distinguish from accidental drag-drifts
                     if (!this._isZoomActive && Math.abs(ratio - 1) > 0.06) {
                         this._isZoomActive = true
                         this._gestureLocked = 'zoom'
+                        if (e.cancelable) e.preventDefault() // Only block if we ARE zooming
                     }
 
                     if (this._isZoomActive && this._viewerEl) {
+                        if (e.cancelable) e.preventDefault()
                         this._viewerEl.style.transform = `scale(${ratio})`
                     }
                 }
 
-                // 3. PAN LOGIC (Manual Scroll) — only when explicitly locked to pan
-                if (this._gestureLocked === 'pan') {
-                    const isHorizontal = this.app.readingMode === 'horizontal'
-                    if (isHorizontal) {
-                        const dx = this._lastPinchX - currentX
-                        viewerContainer.scrollLeft += dx
-                    } else {
-                        const dy = this._lastPinchY - currentY
-                        viewerContainer.scrollTop += dy
-                    }
-                }
-
+                // 3. PAN LOGIC — REMOVED (Let browser handle native two-finger scroll)
+                
                 this._lastPinchX = currentX
                 this._lastPinchY = currentY
                 return
@@ -216,6 +204,11 @@ export class GestureManager {
                     if (e.cancelable) e.preventDefault()
                     return
                 }
+
+                // If in VIEW mode (Reading Mode), let the browser handle NATIVE SLIDE
+                const isViewMode = this.app.activeStampType === 'view'
+                if (isViewMode) return 
+
                 const dx = Math.abs(e.touches[0].clientX - this._startX)
                 const dy = Math.abs(e.touches[0].clientY - this._startY)
                 if (dx > 5 || dy > 5) { 

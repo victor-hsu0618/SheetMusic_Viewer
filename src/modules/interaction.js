@@ -25,17 +25,22 @@ export class InteractionManager {
             }
         }
 
-        overlay.onmousedown = overlay.ontouchstart = (e) => {
+        const handleStart = (e) => {
             if (this.app.activeStampType === 'view') return
-            e.preventDefault()
+            // For stamp mode, prevent default to avoid scrolling while stamping
+            if (e.cancelable) e.preventDefault()
             const pos = getPos(e)
             this.app.addStamp(pageNum, pos.x, pos.y)
         }
 
-        overlay.onmousemove = overlay.ontouchmove = (e) => {
+        const handleMove = (e) => {
             if (this.app.activeStampType === 'view') return
-            // Preview logic ...
         }
+
+        overlay.addEventListener('mousedown', handleStart)
+        overlay.addEventListener('touchstart', handleStart, { passive: true })
+        overlay.addEventListener('mousemove', handleMove)
+        overlay.addEventListener('touchmove', handleMove, { passive: true })
 
         return overlay
     }

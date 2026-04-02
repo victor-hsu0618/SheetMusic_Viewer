@@ -118,6 +118,8 @@ body:not([data-active-tool="view"])::before {
 }
 
 /* --- Horizontal Mode Overrides --- */
+
+/* --- Horizontal Mode Overrides --- */
 body.mode-horizontal .viewer-container {
   display: block; /* Restore to block scroll area */
   position: relative;
@@ -125,7 +127,7 @@ body.mode-horizontal .viewer-container {
   overflow-y: hidden !important;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
-  touch-action: pan-x;
+  touch-action: pan-x pinch-zoom; /* Allow horizontal pan AND pinch zoom natively */
   padding: 0;
   width: 100%;
   height: 100%;

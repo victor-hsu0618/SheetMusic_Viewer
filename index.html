@@ -191,6 +191,10 @@
 
     <!-- Next Target Jump Ruler -->
     <div id="jump-ruler" class="jump-ruler hidden">
+      <!-- Fin. Indicator at the bottom of the track -->
+      <div id="ruler-fin-indicator" class="ruler-fin-indicator">
+        <span>Fin.</span>
+      </div>
       <div class="ruler-track"></div>
       <div id="ruler-marks" class="ruler-marks"></div>
       <div id="jump-line" class="jump-line">
@@ -551,35 +555,7 @@
               <span class="setting-hint" style="margin-top:6px;">選擇每個工具類別的預設顏色，切換工具時自動套用。</span>
             </div>
 
-            <div class="setting-item">
-              <label class="setting-label" style="margin-bottom:8px;">Dock Bar Auto-Hide</label>
-              <div style="display:flex;flex-direction:column;gap:10px;">
-                <div class="setting-row-compact">
-                  <label class="setting-hint" style="min-width:110px;margin:0;">Auto-Hide</label>
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="settings-dock-autohide" />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-                <div class="setting-row-compact" id="dock-delay-row">
-                  <label class="setting-hint" style="min-width:110px;margin:0;">Hide After</label>
-                  <div class="slider-container">
-                    <button class="slider-adj-btn minus" data-target="settings-dock-delay">−</button>
-                    <input type="range" id="settings-dock-delay" min="1" max="30" step="1" value="4" class="setting-slider" />
-                    <button class="slider-adj-btn plus" data-target="settings-dock-delay">+</button>
-                  </div>
-                  <span id="settings-dock-delay-value" class="badge">4s</span>
-                </div>
-                <div class="setting-row-compact">
-                  <label class="setting-hint" style="min-width:110px;margin:0;">Auto-Show</label>
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="settings-dock-autoshow" checked />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-              </div>
-              <span class="setting-hint" style="margin-top:6px;">自動隱藏底部工具列，移到底部邊緣可重新顯示。</span>
-            </div>
+            <!-- Moved Dock Auto-Hide to NAV Pane -->
           </div>
 
           <!-- ── Perf ── -->
@@ -700,6 +676,17 @@
 
             <div class="setting-item">
               <div class="setting-row-compact">
+                <label class="setting-label">雙指手勢縮放</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="settings-enable-pinch">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <span class="setting-hint">在畫面上用兩根手指捏合進行縮放。預設關閉以維持穩定。</span>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-row-compact">
                 <label class="setting-label">兩指捲動 ⚠️</label>
                 <label class="toggle-switch">
                   <input type="checkbox" id="settings-two-finger-pan">
@@ -707,6 +694,36 @@
                 </label>
               </div>
               <span class="setting-hint">在標記模式下，用兩根手指拖曳捲動。實驗性功能。</span>
+            </div>
+
+            <div class="setting-item">
+              <label class="setting-label" style="margin-bottom:8px;">Dock Bar 收合策略</label>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div class="setting-row-compact">
+                  <label class="setting-hint" style="min-width:110px;margin:0;">自動隱藏</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="settings-dock-autohide" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-row-compact" id="dock-delay-row">
+                  <label class="setting-hint" style="min-width:110px;margin:0;">隱藏延遲</label>
+                  <div class="slider-container">
+                    <button class="slider-adj-btn minus" data-target="settings-dock-delay">−</button>
+                    <input type="range" id="settings-dock-delay" min="1" max="30" step="1" value="4" class="setting-slider" />
+                    <button class="slider-adj-btn plus" data-target="settings-dock-delay">+</button>
+                  </div>
+                  <span id="settings-dock-delay-value" class="badge">4s</span>
+                </div>
+                <div class="setting-row-compact">
+                  <label class="setting-hint" style="min-width:110px;margin:0;">自動顯示</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="settings-dock-autoshow" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+              <span class="setting-hint" style="margin-top:6px;">自動隱藏底部工具列，移到底部邊緣可重新顯示。</span>
             </div>
           </div>
 

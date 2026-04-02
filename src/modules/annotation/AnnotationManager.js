@@ -79,7 +79,7 @@ export class AnnotationManager {
      */
     findNearbyStamps(page, x, y, allSources = false) {
         const STAMP_THRESHOLD = 0.04   // Point-based stamps (generous for tap accuracy)
-        const PATH_THRESHOLD  = 0.010  // Path-based strokes (tight — matches visual width)
+        const PATH_THRESHOLD  = 0.025  // Path-based strokes (balanced for iPad touch)
         const results = []
         
         // Use all visible sources if allSources is true
@@ -211,95 +211,55 @@ export class AnnotationManager {
     }
 
     /**
-     * Segment-erase pen/highlighter strokes near (x, y).
-     * Points within `radius` are removed; remaining consecutive segments become new strokes.
-     * Non-path stamps within radius are fully erased (same as eraseStampTarget).
-     * Returns true if anything was modified.
+     * Erase pen/highlighter strokes near (x, y) by deleting the whole object.
+     * This fulfills the requirement of an Object Eraser rather than a pixel eraser.
+     * Returns true if anything was deleted.
      */
-    async eraseStrokeSegment(pageNum, x, y, radius = 0.008) {
+    async eraseStrokeSegment(pageNum, x, y, radius = 0.025) {
         const STROKE_TYPES = new Set(['pen', 'fine-pen', 'marker-pen', 'brush-pen', 'fountain-pen', 'pencil-pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'rect-shape', 'circle-shape', 'cover-brush', 'correction-pen', 'bracket-left', 'bracket-right', 'curly-left', 'curly-right']);
         const activeSourceIds = [this.app.activeSourceId];
         const visibleLayerIds = new Set(this.app.layers.filter(l => l.visible).map(l => l.id));
 
-        // Collect strokes that are hit
+        // Find all stamps that intersect with the eraser point
         const candidates = this.app.stamps.filter(s =>
             s.page === pageNum && !s.deleted &&
             activeSourceIds.includes(s.sourceId) &&
             visibleLayerIds.has(s.layerId) &&
-            s.points?.length > 0 &&
-            STROKE_TYPES.has(s.type) &&
-            this._minDistanceToPath(x, y, s.points) < radius
+            (
+                (s.points?.length > 0 && this._minDistanceToPath(x, y, s.points) < radius) ||
+                (Math.sqrt(Math.pow(s.x - x, 2) + Math.pow(s.y - y, 2)) < radius)
+            )
         );
 
         if (candidates.length === 0) return false;
 
         const now = Date.now();
         const historyBatch = [];
-        const toAdd = [];
 
-        for (const stroke of candidates) {
-            // Find which points survive (outside eraser circle)
-            const keep = stroke.points.map(p =>
-                Math.sqrt(Math.pow(p.x - x, 2) + Math.pow(p.y - y, 2)) >= radius
-            );
+        for (const target of candidates) {
+            // Push to history for undo
+            historyBatch.push({ type: 'delete', obj: JSON.parse(JSON.stringify(target)) });
 
-            // Check if any points were actually removed
-            if (keep.every(Boolean)) continue;
-
-            // Record for undo
-            historyBatch.push({ type: 'delete', obj: JSON.parse(JSON.stringify(stroke)) });
-
-            // Split surviving points into consecutive segments
-            const segments = [];
-            let seg = [];
-            for (let i = 0; i < stroke.points.length; i++) {
-                if (keep[i]) {
-                    seg.push(stroke.points[i]);
-                } else {
-                    if (seg.length >= 2) segments.push(seg);
-                    seg = [];
-                }
+            // Mark as deleted effectively
+            const idx = this.app.stamps.indexOf(target);
+            if (idx !== -1) {
+                this.app.stamps.splice(idx, 1);
             }
-            if (seg.length >= 2) segments.push(seg);
+            target.deleted = true;
+            target.updatedAt = now;
 
-            // Create new strokes for each segment
-            for (const segPoints of segments) {
-                const newStroke = {
-                    ...JSON.parse(JSON.stringify(stroke)),
-                    id: crypto.randomUUID?.() || `stamp-${now}-${Math.random()}`,
-                    points: segPoints,
-                    createdAt: now,
-                    updatedAt: now,
-                    deleted: false,
-                };
-                toAdd.push(newStroke);
-                historyBatch.push({ type: 'add', obj: JSON.parse(JSON.stringify(newStroke)) });
+            if (target.type === 'anchor' || target.type === 'measure' || target.type === 'measure-free') {
+                this.app.updateRulerMarks();
             }
 
-            // Remove original from stamps array
-            const idx = this.app.stamps.indexOf(stroke);
-            if (idx !== -1) this.app.stamps.splice(idx, 1);
-            stroke.deleted = true;
-            stroke.updatedAt = now;
-
-            // Sync deletion to Supabase
+            // Sync to Supabase
             if (this.app.supabaseManager) {
-                this.app.supabaseManager.pushAnnotation(stroke, this.app.pdfFingerprint);
+                this.app.supabaseManager.pushAnnotation(target, this.app.pdfFingerprint);
             }
         }
 
-        if (historyBatch.length === 0) return false;
-
-        // Push single undo entry for the whole operation
+        // Push single undo entry for the whole swipe
         this.app.pushHistory({ type: 'batch', ops: historyBatch });
-
-        // Add new segments to stamps
-        for (const s of toAdd) {
-            this.app.stamps.push(s);
-            if (this.app.supabaseManager) {
-                this.app.supabaseManager.pushAnnotation(s, this.app.pdfFingerprint);
-            }
-        }
 
         await this.app.saveToStorage(true);
         if (this.app.onAnnotationChanged) this.app.onAnnotationChanged();

@@ -256,7 +256,18 @@ export class JumpManager {
         const isHorizontal = this.app.readingMode === 'horizontal';
 
         const doRealJump = (targetLeft, targetTop) => {
+            const isHorizontal = this.app.readingMode === 'horizontal';
+            
+            // CRITICAL: If jumping rapidly, we MUST cancel any ongoing native smooth scroll
+            // by forcing an 'instant' scroll of 0 distance first (iOS Safari Trick)
+            this.app.viewer.scrollTo({
+                left: this.app.viewer.scrollLeft,
+                top: this.app.viewer.scrollTop,
+                behavior: 'instant'
+            });
+
             const behavior = (isHorizontal && (this.app.transitionManager?.currentStyle === 'slide' || this.app.transitionManager?.currentStyle === 'flip')) ? 'smooth' : (isHorizontal ? 'instant' : 'smooth');
+            
             this.app.viewer.scrollTo({
                 left: targetLeft,
                 top: targetTop,
@@ -410,6 +421,20 @@ export class JumpManager {
             this.displayValue = this.currentPage.toString()
             this.refreshCalcDisplay()
         }
+
+        // --- Final Page UI Hint (Pixel-Perfect Detection) ---
+        const ruler = document.getElementById('jump-ruler');
+        if (ruler && this.app.viewer) {
+            const v = this.app.viewer;
+            const isHorizontal = this.app.readingMode === 'horizontal';
+            
+            // Native boundary check: Is the scroll position at the literal end?
+            const atEnd = isHorizontal 
+                ? (v.scrollLeft + v.clientWidth >= v.scrollWidth - 15)
+                : (v.scrollTop + v.clientHeight >= v.scrollHeight - 15);
+            
+            ruler.classList.toggle('at-end', (atEnd && this.totalPages > 0));
+        }
     }
 
     // Bookmark Logic
@@ -552,8 +577,8 @@ export class JumpManager {
 
         handle.addEventListener('touchstart', (e) => {
             start(e)
-        }, { passive: false })
-        document.addEventListener('touchmove', move, { passive: false })
-        document.addEventListener('touchend', end)
+        }, { passive: true })
+        document.addEventListener('touchmove', move, { passive: true })
+        document.addEventListener('touchend', end, { passive: true })
     }
 }
