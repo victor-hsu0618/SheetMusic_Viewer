@@ -180,7 +180,7 @@ export class DocActionManager {
         this.app.showMessage('Project overwritten successfully', 'success')
     }
 
-    async showDialog({ title, message, icon = 'ℹ️', type = 'alert', actions = [], defaultValue = '', placeholder = '', cloakDefs = [], defaultInclude = {} }) {
+    async showDialog({ title, message, icon = 'ℹ️', type = 'alert', actions = [], defaultValue = '', placeholder = '', cloakDefs = [], defaultInclude = {}, checkboxLabel = '' }) {
         if (!this.app.systemDialog) return
 
         this.app.dialogTitle.textContent = title
@@ -212,16 +212,32 @@ export class DocActionManager {
                 const cancelBtn = document.createElement('button')
                 cancelBtn.className = 'btn btn-outline'
                 cancelBtn.textContent = 'Cancel'
+
+                let checkbox = null;
+                if (checkboxLabel) {
+                    const row = document.createElement('label')
+                    row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:15px;cursor:pointer;font-size:14.5px;padding:12px;background:rgba(255,100,100,0.06);border-radius:12px;user-select:none;border:1px dashed rgba(255,0,0,0.25);'
+                    checkbox = document.createElement('input')
+                    checkbox.type = 'checkbox'
+                    checkbox.style.cssText = 'width:19px;height:19px;cursor:pointer;'
+                    const lbl = document.createElement('span')
+                    lbl.textContent = checkboxLabel
+                    lbl.style.cssText = 'flex:1;color:var(--text);'
+                    row.append(checkbox, lbl)
+                    this.app.dialogMessage.appendChild(row)
+                }
+
                 cancelBtn.onclick = () => {
                     this.app.systemDialog.classList.remove('active')
-                    resolve(false)
+                    resolve(checkbox ? { confirmed: false, checkboxChecked: false } : false)
                 }
                 const confirmBtn = document.createElement('button')
                 confirmBtn.className = 'btn btn-primary'
                 confirmBtn.textContent = 'Confirm'
                 confirmBtn.onclick = () => {
+                    const result = checkbox ? { confirmed: true, checkboxChecked: checkbox.checked } : true
                     this.app.systemDialog.classList.remove('active')
-                    resolve(true)
+                    resolve(result)
                 }
                 this.app.dialogActions.appendChild(cancelBtn)
                 this.app.dialogActions.appendChild(confirmBtn)

@@ -767,79 +767,119 @@ export class SupabaseManager {
             return;
         }
 
-        if (data && data.length > 0) {
-            let registryChanged = false;
-            data.forEach(cloudRecord => {
-                const fp = cloudRecord.fingerprint;
-                const exists = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
+        const cloudData = data || [];
+        const cloudFps = new Set(cloudData.map(d => d.fingerprint));
+        let registryChanged = false;
+
+        // 1. ADD / UPDATE: Process incoming cloud records
+        cloudData.forEach(cloudRecord => {
+            const fp = cloudRecord.fingerprint;
+            const exists = this.app.scoreManager.registry.find(s => s.fingerprint === fp);
+            
+            if (!exists) {
+                // Create placeholder for cloud-available score
+                const placeholder = {
+                    fingerprint: fp,
+                    title: cloudRecord.title || 'Untitled',
+                    composer: cloudRecord.composer || 'Unknown',
+                    fileName: cloudRecord.filename || '',
+                    storageMode: 'cloud', // It's on cloud but not yet locally cached
+                    isCloudOnly: true,
+                    isSynced: true,
+                    dateImported: cloudRecord.created_at ? new Date(cloudRecord.created_at).getTime() : 0,
+                    tags: cloudRecord.tags || []
+                };
+                this.app.scoreManager.registry.push(placeholder);
+                registryChanged = true;
+                console.log(`[Supabase] ↓ New placeholder: ${placeholder.title}`);
+            } else {
+                // Update existing local entry if cloud data is newer
+                let itemChanged = false;
                 
-                if (!exists) {
-                    // Create placeholder for cloud-available score
-                    const placeholder = {
-                        fingerprint: fp,
-                        title: cloudRecord.title || 'Untitled',
-                        composer: cloudRecord.composer || 'Unknown',
-                        fileName: cloudRecord.filename || '',
-                        storageMode: 'cloud', // It's on cloud but not yet locally cached
-                        isCloudOnly: true,
-                        isSynced: true,
-                        dateImported: cloudRecord.created_at ? new Date(cloudRecord.created_at).getTime() : 0,
-                        tags: cloudRecord.tags || []
-                    };
-                    this.app.scoreManager.registry.push(placeholder);
-                    registryChanged = true;
-                    console.log(`[Supabase] ↓ New placeholder: ${placeholder.title}`);
-                } else {
-                    // Update existing local entry if cloud data is newer
-                    let itemChanged = false;
+                const cloudUpdate = cloudRecord.updated_at ? new Date(cloudRecord.updated_at).getTime() : 0;
+                const localUpdate = exists.updatedAt || 0;
+
+                if (cloudUpdate > localUpdate) {
+                    // Update metadata fields from cloud
+                    exists.title = cloudRecord.title;
+                    exists.composer = cloudRecord.composer;
+                    exists.sortIndex = cloudRecord.sort_index;
                     
-                    const cloudUpdate = cloudRecord.updated_at ? new Date(cloudRecord.updated_at).getTime() : 0;
-                    const localUpdate = exists.updatedAt || 0;
+                    exists.updatedAt = cloudUpdate;
+                    itemChanged = true;
 
-                    if (cloudUpdate > localUpdate) {
-                        exists.updatedAt = cloudUpdate;
-                        itemChanged = true;
-
-                        // Also update Detail record in IndexedDB if it exists
-                        (async () => {
-                            try {
-                                const detail = await db.get(`detail_${fp}`);
-                                if (detail) {
-                                    detail.name = exists.title;
-                                    detail.composer = exists.composer;
-                                    
-                                    // Sync media_list from cloud if present
-                                    if (cloudRecord.media_list) {
-                                        detail.mediaList = cloudRecord.media_list;
-                                        console.log(`[Supabase] ↓ Updated mediaList for ${exists.title}`);
-                                    }
-                                    
-                                    await db.set(`detail_${fp}`, detail);
-                                    
-                                    // If active score updated, refresh its UI
-                                    if (fp === this.app.pdfFingerprint) {
-                                        this.app.viewerManager?.updateFloatingTitle();
-                                        if (this.app.scoreDetailManager?.currentFp === fp) {
-                                            this.app.scoreDetailManager.render(fp);
-                                        }
+                    // Also update Detail record in IndexedDB if it exists
+                    (async () => {
+                        try {
+                            const detail = await db.get(`detail_${fp}`);
+                            if (detail) {
+                                detail.name = exists.title;
+                                detail.composer = exists.composer;
+                                detail.sortIndex = exists.sortIndex;
+                                
+                                // Sync media_list from cloud if present
+                                if (cloudRecord.media_list) {
+                                    detail.mediaList = cloudRecord.media_list;
+                                    console.log(`[Supabase] ↓ Updated mediaList for ${exists.title}`);
+                                }
+                                
+                                await db.set(`detail_${fp}`, detail);
+                                
+                                // If active score updated, refresh its UI
+                                if (fp === this.app.pdfFingerprint) {
+                                    this.app.viewerManager?.updateFloatingTitle();
+                                    if (this.app.scoreDetailManager?.currentFp === fp) {
+                                        this.app.scoreDetailManager.render(fp);
                                     }
                                 }
-                            } catch (e) {
-                                console.warn('[Supabase] Failed to update detail record during sync:', e);
                             }
-                        })();
-                    }
-
-                    if (exists.isSynced === undefined) { exists.isSynced = true; itemChanged = true; }
-                    
-                    if (itemChanged) registryChanged = true;
+                        } catch (e) {
+                            console.warn('[Supabase] Failed to update detail record during sync:', e);
+                        }
+                    })();
                 }
-            });
 
-            if (registryChanged) {
-                this.app.scoreManager.render();
-                this.app.scoreManager.saveRegistry();
+                if (exists.isSynced === undefined || exists.isSynced === false) {
+                    exists.isSynced = true;
+                    itemChanged = true;
+                }
+                
+                if (itemChanged) registryChanged = true;
             }
+        });
+
+        // 2. DELETE: Cleanup local entries that were previously synced but are missing from cloud
+        // Using a filter on fingerprints first to avoid mutation issues during loop
+        const staleFps = this.app.scoreManager.registry.filter(s => {
+            const missingOnCloud = !cloudFps.has(s.fingerprint);
+            if (!missingOnCloud) return false;
+
+            // Diagnostic: Why is this missing?
+            const wasSynced = s.isSynced || s.storageMode === 'cloud';
+            
+            if (wasSynced) {
+                console.log(`[Supabase] ❌ Cleanup: Score "${s.title}" (fp: ${s.fingerprint.substring(0,8)}) is missing from cloud. Removing locally...`);
+                return true;
+            } else {
+                // This score exists locally but not on cloud, and has never been marked as synced.
+                // We keep it to avoid deleting purely local/unsynced user files.
+                console.log(`[Supabase] ℹ️ Skipping cleanup for "${s.title}": Not marked as synced (isSynced=${s.isSynced}, mode=${s.storageMode}).`);
+                return false;
+            }
+        }).map(s => s.fingerprint);
+
+        if (staleFps.length > 0) {
+            for (const fp of staleFps) {
+                // Always delete locally. Skip cloud deletion since we already know it's gone from cloud.
+                // Third param 'true' (skipAutoLoad) prevents UI jumping mid-sync.
+                await this.app.scoreManager.deleteScore(fp, false, true);
+            }
+            registryChanged = true;
+        }
+
+        if (registryChanged) {
+            this.app.scoreManager.render();
+            await this.app.scoreManager.saveRegistry();
         }
     }
 
@@ -882,6 +922,13 @@ export class SupabaseManager {
             console.error('[Supabase] ❌ Sync score error:', error.message)
         } else {
             console.log('[Supabase] ✅ Registry Metadata synced:', metadata?.title)
+            
+            // Mark as synced locally so deletion propagation can recognize it
+            const entry = this.app.scoreManager.registry.find(s => s.fingerprint === fingerprint);
+            if (entry) {
+                entry.isSynced = true;
+                this.app.scoreManager.saveRegistry();
+            }
         }
     }
 

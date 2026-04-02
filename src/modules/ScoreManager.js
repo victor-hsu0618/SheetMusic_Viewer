@@ -202,15 +202,17 @@ export class ScoreManager {
         const count = this.selectedFingerprints.size;
         if (count === 0) return;
 
-        let deleteFromCloud = false;
-
-        const confirmed = await this.app.showDialog({
-            title: 'Batch Delete',
-            message: `Delete ${count} score${count !== 1 ? 's' : ''} from this device?`,
+        const result = await this.app.showDialog({
+            title: `批次刪除 (${count}份)`,
+            message: `確定要從本機移除這 ${count} 份樂譜嗎？`,
             type: 'confirm',
-            icon: '🗑️'
+            icon: '🗑️',
+            checkboxLabel: this.app.supabaseManager?.user ? '同時從雲端資料庫徹底刪除' : ''
         });
-        if (!confirmed) return;
+        
+        if (!result || !result.confirmed) return;
+
+        const deleteFromCloud = !!result.checkboxChecked;
 
         this.app.showMessage(`Deleting ${count} score${count !== 1 ? 's' : ''}...`, 'system');
         
@@ -538,13 +540,13 @@ export class ScoreManager {
         try {
             this.app.showMessage('正在同步雲端書庫...', 'info');
             
-            // 1. Push Phase: Ensure all local scores are known by cloud
-            console.log('[ScoreManager] ⬆️ Pushing local registry to cloud...');
-            await this.app.supabaseManager.syncScoreRegistry(this.registry);
-            
-            // 2. Pull Phase: Get new placements from other devices
-            console.log('[ScoreManager] ↓ Pulling cloud placeholders...');
+            // 1. Pull Phase: Get new placeholders and CLEANUP deletions from other devices
+            console.log('[ScoreManager] ↓ Pulling cloud placeholders & cleaning deletions...');
             await this.app.supabaseManager.pullScoreRegistry();
+
+            // 2. Push Phase: Sync local additions/metadata to cloud
+            console.log('[ScoreManager] ↑ Pushing local registry changes to cloud...');
+            await this.app.supabaseManager.syncScoreRegistry(this.registry);
             
             this.app.showMessage('書庫同步完成！', 'success');
         } catch (err) {

@@ -169,8 +169,12 @@ export class AnnotationRenderer {
             ctx.globalAlpha = isHovered ? 0.7 : 1.0
         } else if (path.type && path.type.includes('highlighter')) {
             const baseColor = path.color || '#fde047'
-            ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : baseColor + '2D')
-            ctx.lineWidth = (isHovered ? 24 : 14) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            // Use high alpha (99 = ~60% or B3 = 70%) with multiply for natural looking highlight
+            ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : baseColor + '99')
+            ctx.lineWidth = (isHovered ? 48 : 32) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            if (!isHovered && !isSelectHovered && path !== this.app._lastGraceObject) {
+                ctx.globalCompositeOperation = 'multiply'
+            }
         } else if (path.type === 'fine-pen') {
             ctx.strokeStyle = isHovered ? '#ef4444' : isSelectHovered ? '#6366f1' : (path.color || '#ff4757')
             ctx.lineWidth = (isHovered ? 1.4 : 0.8) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
@@ -376,6 +380,7 @@ export class AnnotationRenderer {
             ctx.stroke()
         }
         ctx.globalAlpha = oldAlpha;
+        ctx.globalCompositeOperation = 'source-over'; // Ensure reset after any tool-specific operations
 
         // 矢印の描画 (Arrowhead rendering)
         if (path.arrow && path.points.length >= 2) {
@@ -989,7 +994,8 @@ export class AnnotationRenderer {
     drawFreehandPreview(ctx, canvas, pos, color, type) {
         const x = pos.x * canvas.width
         const y = pos.y * canvas.height
-        const size = 6 * (this.app.scale / 1.5)
+        const preset = this.app.activeToolPreset || 1.0
+        const size = 6 * (this.app.scale / 1.5) * preset
 
         ctx.save()
         ctx.beginPath()
@@ -997,8 +1003,8 @@ export class AnnotationRenderer {
         ctx.fillStyle = color
 
         if (type === 'highlighter') {
-            // Rectangular tip for highlighter
-            const w = size * 2.5, h = size * 0.8
+            // Rectangular tip for highlighter - match the new base 26
+            const w = size * 4.5, h = size * 1.5
             ctx.roundRect(x - w / 2, y - h / 2, w, h, 2)
         } else {
             // Circular tip for pen

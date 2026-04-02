@@ -99,6 +99,8 @@ class ScoreFlow {
     this.toolsets = TOOLSETS
     this.scoreStampScale = 1.0
     this.activeToolPreset = 1.0 // S/M/L preset for the active tool
+    this.toolPresets = JSON.parse(localStorage.getItem('scoreflow_tool_presets') || '{}')
+    this.toolColors = JSON.parse(localStorage.getItem('scoreflow_tool_colors') || '{}')
     this.activeLineStyle = 'solid' // 'solid' | 'dashed' | 'dotted'
     this.presetScales = JSON.parse(localStorage.getItem('scoreflow_preset_scales')) || { S: 0.7, M: 1.0, L: 1.6 }
     this.categoryDefaultColors = {

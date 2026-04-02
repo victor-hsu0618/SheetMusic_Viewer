@@ -19,7 +19,9 @@ export class PersistenceManager {
             await db.set(`sources_${this.app.pdfFingerprint}`, this.app.sources)
             await db.set(`layers_${this.app.pdfFingerprint}`, this.app.layers)
         }
-        localStorage.setItem('scoreflow_current_fingerprint', this.app.pdfFingerprint || '')
+        if (this.app.pdfFingerprint) {
+            localStorage.setItem('scoreflow_current_fingerprint', this.app.pdfFingerprint)
+        }
         localStorage.setItem('scoreflow_sources', JSON.stringify(this.app.sources))
         localStorage.setItem('scoreflow_active_source', this.app.activeSourceId)
         localStorage.setItem('scoreflow_recent_solo_scores', JSON.stringify(this.app.recentSoloScores || []))
@@ -30,6 +32,8 @@ export class PersistenceManager {
         localStorage.setItem('scoreflow_user_text_library', JSON.stringify(this.app.getUserTextEntries()))
         localStorage.setItem('scoreflow_stamp_size_multiplier', this.app.stampSizeMultiplier)
         localStorage.setItem('scoreflow_stamp_size_overrides', JSON.stringify(this.app.stampSizeOverrides || {}))
+        localStorage.setItem('scoreflow_tool_presets', JSON.stringify(this.app.toolPresets || {}))
+        localStorage.setItem('scoreflow_tool_colors', JSON.stringify(this.app.toolColors || {}))
         localStorage.setItem('scoreflow_stamp_offset_touch_y', this.app.stampOffsetTouchY)
         localStorage.setItem('scoreflow_stamp_offset_touch_x', this.app.stampOffsetTouchX)
         localStorage.setItem('scoreflow_stamp_offset_mouse_y', this.app.stampOffsetMouseY)

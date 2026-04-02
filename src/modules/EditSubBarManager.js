@@ -68,11 +68,19 @@ const PICKER_COLORS = [
 ]
 
 const PEN_SIZES = [
+    { label: 'XS', value: 0.4 },
+    { label: 'S',  value: 0.7 },
+    { label: 'M',  value: 1.0 },
+    { label: 'L',  value: 1.3 },
+    { label: 'XL', value: 1.6 },
+]
+
+const HL_SIZES = [
     { label: 'XS', value: 0.5 },
-    { label: 'S',  value: 0.75 },
+    { label: 'S',  value: 0.8 },
     { label: 'M',  value: 1.0 },
     { label: 'L',  value: 1.5 },
-    { label: 'XL', value: 2.5 },
+    { label: 'XL', value: 2.1 },
 ]
 
 const EXTRA_COLORS = [
@@ -1224,6 +1232,8 @@ export class EditSubBarManager {
         // Sync activeColor: natural color wins, else apply category default
         if (TOOL_NATURAL_COLORS[toolId] !== undefined) {
             this.app.activeColor = TOOL_NATURAL_COLORS[toolId]
+        } else if (this.app.toolColors?.[toolId]) {
+            this.app.activeColor = this.app.toolColors[toolId]
         } else {
             const catColor = this.app.getCategoryDefaultColor?.(toolId)
             this.app.activeColor = catColor || '#94a3b8'
@@ -1231,6 +1241,8 @@ export class EditSubBarManager {
         // Tools with no options popover can't reset size manually — force back to 1.0
         if (NO_OPTIONS_TYPES.has(toolId) || toolId.startsWith('cloak-')) {
             this.app.activeToolPreset = 1.0
+        } else {
+            this.app.activeToolPreset = this.app.toolPresets?.[toolId] ?? 1.0
         }
         this.app.toolManager?.updateActiveTools()
         // Update active state in-place for all bar types
@@ -1367,12 +1379,15 @@ export class EditSubBarManager {
     }
 
     _toggleToolOptionsPicker(anchorEl, toolId) {
-        if (document.getElementById('sf-tool-options-picker')) {
+        const existing = document.getElementById('sf-tool-options-picker')
+        if (existing) {
+            const isSame = existing._anchor === anchorEl
             this._dismissToolOptionsPicker()
-            return
+            if (isSame) return
         }
         const picker = document.createElement('div')
         picker.id = 'sf-tool-options-picker'
+        picker._anchor = anchorEl
         picker.className = 'sf-tool-options-picker'
 
         const isEmoji = toolId && toolId.startsWith('emoji-');
@@ -1390,6 +1405,9 @@ export class EditSubBarManager {
                 dot.addEventListener('click', (e) => {
                     e.stopPropagation()
                     this.app.activeColor = color
+                    if (!this.app.toolColors) this.app.toolColors = {}
+                    this.app.toolColors[this.app.activeStampType] = color
+                    this.app.persistenceManager?.saveToStorage?.()
                     this.app.toolManager?.updateActiveTools?.()
                     // Refresh active dot state
                     colorRow.querySelectorAll('.sf-options-color-dot').forEach(d => {
@@ -1415,7 +1433,11 @@ export class EditSubBarManager {
         // ── Size row ──
         const sizeRow = document.createElement('div')
         sizeRow.className = 'sf-options-size-row'
-        PEN_SIZES.forEach(({ label, value }) => {
+        
+        const isHL = toolId?.includes('highlighter')
+        const sizes = isHL ? HL_SIZES : PEN_SIZES
+        
+        sizes.forEach(({ label, value }) => {
             const item = document.createElement('div')
             const isActive = Math.abs((this.app.activeToolPreset || 1.0) - value) < 0.13
             item.className = 'sf-options-size-item' + (isActive ? ' active' : '')
@@ -1435,6 +1457,9 @@ export class EditSubBarManager {
             item.addEventListener('click', (e) => {
                 e.stopPropagation()
                 this.app.activeToolPreset = value
+                if (!this.app.toolPresets) this.app.toolPresets = {}
+                this.app.toolPresets[this.app.activeStampType] = value
+                this.app.persistenceManager?.saveToStorage?.()
                 sizeRow.querySelectorAll('.sf-options-size-item').forEach(it => {
                     it.classList.toggle('active', it === item)
                 })
@@ -1457,6 +1482,8 @@ export class EditSubBarManager {
             const defColor = this.app.getCategoryDefaultColor?.(this.app.activeStampType) ?? '#1a1a1a'
             this.app.activeColor = defColor
             this.app.activeToolPreset = 1.0
+            if (this.app.toolPresets) delete this.app.toolPresets[this.app.activeStampType]
+            this.app.persistenceManager?.saveToStorage?.()
             this.app.toolManager?.updateActiveTools?.()
             // Update active cell icon color in stamp bar
             const activeCell = this._bars?.['stamp']?.querySelector('.sf-bar-cell.active')
@@ -1482,7 +1509,11 @@ export class EditSubBarManager {
         picker.style.top  = `${top}px`
 
         setTimeout(() => {
-            this._pickerOutside = (e) => { if (!picker.contains(e.target)) this._dismissToolOptionsPicker() }
+            this._pickerOutside = (e) => { 
+                if (!picker.contains(e.target) && !anchorEl.contains(e.target)) {
+                    this._dismissToolOptionsPicker() 
+                }
+            }
             document.addEventListener('pointerdown', this._pickerOutside)
         }, 0)
     }

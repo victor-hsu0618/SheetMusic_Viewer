@@ -133,15 +133,23 @@ export class ScoreLibraryUIManager {
 
             card.querySelector('.score-delete-btn-mini')?.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const confirmed = await this.app.showDialog({
+                
+                const hasCloudConnection = this.app.supabaseManager?.user && (score.isSynced || score.storageMode === 'cloud');
+                
+                const dialogResult = await this.app.showDialog({
                     title: 'Delete Score?',
                     message: `Delete "${displayTitle}" and all its markings from this device?`,
                     type: 'confirm',
-                    icon: '🗑️'
+                    icon: '🗑️',
+                    checkboxLabel: hasCloudConnection ? '同時從雲端資料庫徹底刪除' : ''
                 });
+
+                const confirmed = (typeof dialogResult === 'object') ? dialogResult.confirmed : dialogResult;
+                const deleteFromCloud = (typeof dialogResult === 'object') ? dialogResult.checkboxChecked : false;
+
                 if (confirmed) {
-                    await this.manager.deleteScore(score.fingerprint);
-                    this.app.showMessage('Score deleted.', 'success');
+                    await this.manager.deleteScore(score.fingerprint, deleteFromCloud);
+                    this.app.showMessage(deleteFromCloud ? 'Score and Cloud backup deleted.' : 'Score deleted locally.', 'success');
                 }
             });
 

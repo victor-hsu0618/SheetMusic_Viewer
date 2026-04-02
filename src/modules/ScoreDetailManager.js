@@ -81,15 +81,16 @@ export class ScoreDetailManager {
             newInfo = {
                 ...newInfo,
                 ...info,
-                name: info.name || regScore?.title || '',
-                composer: info.composer || regScore?.composer || '',
+                // Self-healing: if stored name is corrupted as "Untitled" but registry has a title
+                name: (info.name === 'Untitled' || !info.name) ? (regScore?.title || info.name || '') : info.name,
+                composer: (info.composer === 'Unknown' || !info.composer) ? (regScore?.composer || info.composer || '') : info.composer,
                 nameEditedAt: info.nameEditedAt || info.lastEdit || 0,
                 composerEditedAt: info.composerEditedAt || info.lastEdit || 0
             };
             
-            if (regScore && info.name && info.name !== regScore.title) {
-                console.log(`[ScoreDetailManager] Healing registry title for ${fingerprint.slice(0,8)}: "${regScore.title}" -> "${info.name}"`);
-                this.app.scoreManager.updateMetadata(fingerprint, { title: info.name });
+            if (regScore && newInfo.name && newInfo.name !== regScore.title) {
+                console.log(`[ScoreDetailManager] Healing registry title for ${fingerprint.slice(0,8)}: "${regScore.title}" -> "${newInfo.name}"`);
+                this.app.scoreManager.updateMetadata(fingerprint, { title: newInfo.name });
             }
         } else {
             let fallbackName = regScore?.title || (this.app.pdfFingerprint === fingerprint ? this.app.activeScoreName?.replace(/\.pdf$/i, '') : "") || "Untitled";
@@ -135,6 +136,10 @@ export class ScoreDetailManager {
 
     async save(fingerprint) {
         if (!fingerprint) return
+        if (this.isLoading) {
+            console.log(`[ScoreDetailManager] Blocked save for ${fingerprint.slice(0, 8)} because loading is in progress.`);
+            return;
+        }
         if (fingerprint !== this.currentFp) {
             console.warn(`[ScoreDetailManager] Blocked stale save for ${fingerprint.slice(0, 8)}. Current FP: ${this.currentFp?.slice(0, 8)}`);
             return;
@@ -393,10 +398,9 @@ export class ScoreDetailManager {
             await db.remove(`bookmarks_${fingerprint}`)
         }
 
-        const regScore = this.app.scoreManager?.registry.find(s => s.fingerprint === fingerprint)
         this.currentInfo = {
-            name: regScore?.fileName?.replace(/\.pdf$/i, '') || 'Untitled',
-            composer: 'Unknown',
+            name: this.currentInfo.name || 'Untitled',
+            composer: this.currentInfo.composer || 'Unknown',
             lastEdit: Date.now(),
             lastAuthor: this.app.profileManager?.data?.userName || 'Guest',
             mediaList: [],
@@ -417,23 +421,25 @@ export class ScoreDetailManager {
         const fingerprint = this.currentFp || this.app.pdfFingerprint
         if (!fingerprint) return
 
-        const confirmed = await this.app.showDialog({
-            title: 'Delete Score Forever?',
-            message: `This will PERMANENTLY remove "${this.currentInfo.name || 'this score'}" and all its local markings. This cannot be undone.`,
+        const result = await this.app.showDialog({
+            title: '徹底刪除樂譜？',
+            message: `確定要移除 "${this.currentInfo.name || '這份樂譜'}" 嗎？此操作將清除所有標記。`,
             type: 'confirm',
             icon: '🗑️',
-            confirmText: 'Delete'
+            checkboxLabel: this.app.supabaseManager?.user ? '同時徹底刪除雲端備份 (推薦)' : ''
         })
-        if (!confirmed) return
+        
+        if (!result || !result.confirmed) return
 
-        this.app.showMessage('Deleting score...', 'system')
+        const deleteFromCloud = !!result.checkboxChecked;
+        this.app.showMessage(deleteFromCloud ? '正在從本機與雲端刪除...' : '正在刪除本機檔案...', 'system')
         
         // Use the centralized ScoreManager motor to clean up everything
-        await this.app.scoreManager.deleteScore(fingerprint)
-        
+        await this.app.scoreManager.deleteScore(fingerprint, deleteFromCloud)
+
         // If we were displaying this specific score, close it and refresh library
         this.app.scoreManager.toggleOverlay(true)
-        this.app.showMessage('Score deleted successfully.', 'success')
+        this.app.showMessage('已成功刪除樂譜。', 'success')
     }
 
     async handleAddSetlist() {
