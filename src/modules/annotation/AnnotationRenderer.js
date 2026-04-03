@@ -177,7 +177,7 @@ export class AnnotationRenderer {
             const baseColor = path.color || '#fde047'
             // Use high alpha (99 = ~60% or B3 = 70%) with multiply for natural looking highlight
             ctx.strokeStyle = isHovered ? '#ef4444' : (isForeign ? '#e5e7ebAA' : baseColor + '99')
-            ctx.lineWidth = (isHovered ? 48 : 32) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
+            ctx.lineWidth = (isHovered ? 36 : 24) * (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale
             if (!isHovered && !isSelectHovered && path !== this.app._lastGraceObject) {
                 ctx.globalCompositeOperation = 'multiply'
             }

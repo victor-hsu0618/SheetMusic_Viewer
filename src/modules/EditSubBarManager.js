@@ -77,10 +77,10 @@ const PEN_SIZES = [
 
 const HL_SIZES = [
     { label: 'XS', value: 0.3 },
-    { label: 'S',  value: 0.6 },
-    { label: 'M',  value: 0.9 },
-    { label: 'L',  value: 1.3 },
-    { label: 'XL', value: 1.8 },
+    { label: 'S',  value: 0.4 },
+    { label: 'M',  value: 0.5 },
+    { label: 'L',  value: 0.7 },
+    { label: 'XL', value: 0.9 },
 ]
 
 const EXTRA_COLORS = [
@@ -1456,7 +1456,7 @@ export class EditSubBarManager {
         
         sizes.forEach(({ label, value }) => {
             const item = document.createElement('div')
-            const isActive = Math.abs((this.app.activeToolPreset || 1.0) - value) < 0.13
+            const isActive = Math.abs((this.app.activeToolPreset || 1.0) - value) < 0.05
             item.className = 'sf-options-size-item' + (isActive ? ' active' : '')
 
             const dot = document.createElement('div')
