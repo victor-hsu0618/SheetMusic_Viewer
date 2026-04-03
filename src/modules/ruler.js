@@ -309,16 +309,16 @@ export class RulerManager {
                 const metrics = this.app.viewerManager._pageMetrics
                 const viewportHeight = this.app.viewer.clientHeight
 
-                // In fit-to-height mode, skip system stamps and jump by page
+                // In fit-to-height mode, jump to next page by index
                 if (this.app.viewerManager.isFitToHeight) {
-                    const nextPageNum = Object.keys(metrics)
-                        .map(Number)
-                        .sort((a, b) => a - b)
-                        .find(n => metrics[n].top > effectiveScroll + 10)
-                    if (nextPageNum) {
+                    const sortedPages = Object.keys(metrics).map(Number).sort((a, b) => a - b)
+                    // Current page = last page whose top is at or before current scroll
+                    const currentPage = [...sortedPages].reverse().find(n => metrics[n].top <= effectiveScroll + 5) ?? sortedPages[0]
+                    const nextPage = sortedPages.find(n => n > currentPage)
+                    if (nextPage) {
                         this.jumpHistory.push(effectiveScroll)
                         if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                        this._executeJump(metrics[nextPageNum].top)
+                        this._executeJump(metrics[nextPage].top)
                     }
                     return true
                 }
@@ -398,13 +398,12 @@ export class RulerManager {
 
                 if (this.app.viewerManager.isFitToHeight) {
                     const metrics = this.app.viewerManager._pageMetrics
-                    const prevPageNum = Object.keys(metrics)
-                        .map(Number)
-                        .sort((a, b) => b - a)
-                        .find(n => metrics[n].top < effectiveScroll - 10)
-
-                    if (prevPageNum) {
-                        this._executeJump(metrics[prevPageNum].top)
+                    const sortedPages = Object.keys(metrics).map(Number).sort((a, b) => a - b)
+                    // Current page = last page whose top is at or before current scroll
+                    const currentPage = [...sortedPages].reverse().find(n => metrics[n].top <= effectiveScroll + 5) ?? sortedPages[0]
+                    const prevPage = [...sortedPages].reverse().find(n => n < currentPage)
+                    if (prevPage) {
+                        this._executeJump(metrics[prevPage].top)
                         return true;
                     }
                 } else {
