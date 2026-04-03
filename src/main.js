@@ -135,6 +135,34 @@ class ScoreFlow {
         blue:  localStorage.getItem('scoreflow_cloak_visible_blue')  !== 'false',
     }
     this.isPinching = false
+    this.activePointers = new Map() // Global pointerId tracker for multi-touch
+    this.isTwoFingerPanning = false // Global flag for 2-finger scroll
+    this.panCooldown = false        // Global cooldown to suppress stamps after pan
+    this._panCooldownTimer = null
+
+    // GLOBAL TOUCH STATE CLEANUP
+    window.addEventListener('pointerup', (e) => {
+        this.activePointers.delete(e.pointerId);
+        if (this.activePointers.size === 0) {
+            if (this.isTwoFingerPanning) {
+                this.isTwoFingerPanning = false;
+                this.panCooldown = true;
+                if (this._panCooldownTimer) clearTimeout(this._panCooldownTimer);
+                this._panCooldownTimer = setTimeout(() => {
+                    this.panCooldown = false;
+                    this._panCooldownTimer = null;
+                }, 400);
+            }
+        }
+    }, { passive: true });
+
+    window.addEventListener('pointercancel', (e) => {
+        this.activePointers.delete(e.pointerId);
+        if (this.activePointers.size === 0) {
+            this.isTwoFingerPanning = false;
+        }
+    }, { passive: true });
+
     this.readingMode = localStorage.getItem('scoreflow_reading_mode') || 'vertical' // 'vertical' | 'horizontal'
     document.body.classList.toggle('mode-horizontal', this.readingMode === 'horizontal')
     
@@ -231,11 +259,11 @@ this.playbackManager.init()
                         console.log('[ScoreFlow] Cloud is empty but local has data, pushing first flight...');
                         await this.supabaseManager.pushSetlists(this.setlistManager.setlists);
                     }
-                    // Pull score registry AFTER scoreManager.init() completes.
-                    // This prevents a race where SIGNED_IN fires during init() and
-                    // the cloud-populated registry gets overwritten by the empty IndexedDB read.
-                    // Critical for recovery when Safari purges IndexedDB storage.
-                    await this.supabaseManager.pullScoreRegistry();
+                    // Pull score registry AFTER scoreManager.init() completes in the background.
+                    // This prevents blocking the main boot process and PDF loading.
+                    this.supabaseManager.pullScoreRegistry().catch(err => {
+                        console.error('[ScoreFlow] Background registry sync failed:', err);
+                    });
                 } else {
                     console.log('[ScoreFlow] ⚠️ Supabase Auth not ready after wait, skipping early sync.');
                 }

@@ -191,8 +191,17 @@ export class GestureManager {
                     }
                 }
 
-                // 3. PAN LOGIC — REMOVED (Let browser handle native two-finger scroll)
-                
+                // 3. PAN LOGIC — RESTORED (Handled manually due to touch-action: none on overlays)
+                if (this._gestureLocked === 'pan' && this.app.twoFingerPanEnabled) {
+                    const dx = currentX - this._lastPinchX
+                    const dy = currentY - this._lastPinchY
+                    
+                    if (this.app.viewer && (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)) {
+                        this.app.viewer.scrollTop -= dy
+                        this.app.viewer.scrollLeft -= dx
+                    }
+                }
+
                 this._lastPinchX = currentX
                 this._lastPinchY = currentY
                 return
@@ -239,6 +248,7 @@ export class GestureManager {
                 // After a two-finger pan on iPad, briefly block residual single-finger
                 // scrolling so lift-off does not fall through to native vertical scroll.
                 if (endedPanGesture) {
+                    this.app.isTwoFingerPanning = false // Sync with InteractionManager
                     this._suppressSingleTouchUntil = Date.now() + 180
                     this._gestureLocked = null
                     if (e.cancelable) e.preventDefault()
@@ -295,6 +305,7 @@ export class GestureManager {
             const endedPanGesture = this._gestureLocked === 'pan'
             this._isPinching = false
             this.app.isPinching = false
+            this.app.isTwoFingerPanning = false // Safety reset
             this.app._wasPanning = endedPanGesture
             this._gestureLocked = null
 

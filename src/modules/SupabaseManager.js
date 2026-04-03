@@ -407,10 +407,9 @@ export class SupabaseManager {
         }
 
         if (toUpload.length > 0) {
-            console.log(`[Supabase] syncOnLoad: uploading ${toUpload.length} newer/local-only stamps`)
-            for (const s of toUpload) {
-                await this.pushAnnotation(s, fingerprint)
-            }
+            console.log(`[Supabase] syncOnLoad: batch uploading ${toUpload.length} newer/local-only stamps`)
+            // --- OPTIMIZATION: Use pushAllAnnotations instead of individual await loop ---
+            await this.pushAllAnnotations(fingerprint, toUpload)
         }
 
         this.app.stamps = merged
@@ -438,7 +437,8 @@ export class SupabaseManager {
             return null
         }
 
-        const cloudStamps = (data || []).map(record => record.data).filter(s => !s?.deleted)
+        const allCloudStamps = (data || []).map(record => record.data).filter(Boolean)
+        const cloudStamps = allCloudStamps.filter(s => !s.deleted)
 
         // Guard: if user switched scores while pull was in flight, do NOT touch this.app.stamps.
         // Only update local IndexedDB so the correct data is available next time this score loads.
@@ -453,10 +453,20 @@ export class SupabaseManager {
             this.app.stamps = cloudStamps
             this.app.redrawAllAnnotationLayers()
         } else if (data && data.length > 0) {
-            // Merge logic: Add new ones, update existing if cloud is newer
+            // Merge logic: Add new ones, update existing if cloud is newer, remove if cloud is deleted
             let changed = false
-            cloudStamps.forEach(cloudS => {
+            allCloudStamps.forEach(cloudS => {
                 const localIdx = this.app.stamps.findIndex(s => s.id === cloudS.id)
+                
+                if (cloudS.deleted) {
+                    // Tombstone: if local exists and cloud is newer, remove local
+                    if (localIdx !== -1 && (cloudS.updatedAt || 0) >= (this.app.stamps[localIdx].updatedAt || 0)) {
+                        this.app.stamps.splice(localIdx, 1)
+                        changed = true
+                    }
+                    return
+                }
+
                 if (localIdx === -1) {
                     this.app.stamps.push(cloudS)
                     changed = true
@@ -470,7 +480,7 @@ export class SupabaseManager {
 
             if (changed) {
                 this.app.redrawAllAnnotationLayers()
-                console.log(`[Supabase] Merged ${cloudStamps.length} stamps from cloud.`)
+                console.log(`[Supabase] Merged ${cloudStamps.length} stamps from cloud (including removals).`)
             }
         }
 
@@ -874,12 +884,32 @@ export class SupabaseManager {
         }).map(s => s.fingerprint);
 
         if (staleFps.length > 0) {
-            for (const fp of staleFps) {
-                // Always delete locally. Skip cloud deletion since we already know it's gone from cloud.
-                // Third param 'true' (skipAutoLoad) prevents UI jumping mid-sync.
-                await this.app.scoreManager.deleteScore(fp, false, true);
+            console.log(`[Supabase] ❌ Cleanup: ${staleFps.length} items missing on cloud. Processing batch removal...`);
+            
+            // 1. Update memory registry once
+            const staleFpsSet = new Set(staleFps);
+            const originalLength = this.app.scoreManager.registry.length;
+            this.app.scoreManager.registry = this.app.scoreManager.registry.filter(s => !staleFpsSet.has(s.fingerprint));
+            
+            // 2. Perform all I/O deletions in parallel
+            // We use the raw db.remove to avoid the overhead of the full deleteScore logic for each item
+            await Promise.all(staleFps.map(async fp => {
+                try {
+                    await Promise.all([
+                        db.remove(`score_buf_${fp}`),
+                        db.remove(`detail_${fp}`),
+                        db.remove(`stamps_${fp}`),
+                        db.remove(`bookmarks_${fp}`)
+                    ]);
+                } catch (e) {
+                    console.warn(`[Supabase] Failed to remove local buffers for ${fp}:`, e);
+                }
+            }));
+
+            if (originalLength !== this.app.scoreManager.registry.length) {
+                registryChanged = true;
+                console.log(`[Supabase] ✅ Batch cleanup complete. ${staleFps.length} records removed.`);
             }
-            registryChanged = true;
         }
 
         if (registryChanged) {
@@ -917,7 +947,9 @@ export class SupabaseManager {
             updated_at: new Date().toISOString()
         }
 
-        this.subscribeToAnnotations(fingerprint)
+        // --- CRITICAL REMOVAL: Do NOT subscribe here. ---
+        // Subscribing to the entire library causes massive overhead and blocks the main thread.
+        // Subscription should only happen lazily in openScore or pullAnnotations.
 
         const { error } = await this.client
             .from('scores')
@@ -937,17 +969,38 @@ export class SupabaseManager {
         }
     }
 
+    async syncWithCloud() {
+        if (!this.client || !this.user) return;
+        
+        console.log('[Supabase] ☁️ Starting async cloud sync...');
+        
+        // 1. First, pull registry from cloud to handle library cleanup (non-blocking)
+        // This ensures Machine A's deletions are propagated before we push Machine B's list.
+        this.pullScoreRegistry().then(() => {
+            // 2. After cleanup pull, push local registry in background
+            this.syncScoreRegistry(this.app.scoreManager.registry);
+        }).catch(err => {
+            console.error('[Supabase] Background registry sync failed:', err);
+        });
+    }
+
     /**
      * Batch sync the entire local registry to Supabase
      */
     async syncScoreRegistry(registry) {
         if (!this.client || !this.user) return;
         
-        console.log(`[Supabase] ⬆️ Syncing full registry (${registry.length} items)...`);
+        console.log(`[Supabase] ⬆️ Syncing full registry (${registry.length} items) in background...`);
         
-        // Push each one. In the future, we could use a single bulk upsert for performance.
-        const promises = registry.map(score => this.syncScore(score.fingerprint, score));
-        await Promise.all(promises);
+        // Push each one. We use a micro-delay or non-blocking loop to avoid saturating connections.
+        // We do NOT await this in syncWithCloud to keep UI responsive.
+        for (const score of registry) {
+            this.syncScore(score.fingerprint, score).catch(e => {
+                console.error(`[Supabase] Background sync failed for ${score.title}:`, e);
+            });
+            // Yield every few items? For now, we rely on the browser's concurrency management
+            // since we removed the 'await' from the caller.
+        }
     }
 
     // --- STORAGE (PDF) ---

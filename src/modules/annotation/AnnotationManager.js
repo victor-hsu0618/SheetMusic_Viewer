@@ -527,11 +527,10 @@ export class AnnotationManager {
         this.app.stamps = this.app.stamps.filter(s => !idsToRemove.has(s.id))
 
         // --- Supabase Sync ---
-        if (this.app.supabaseManager) {
+        if (this.app.supabaseManager && stampsToErase.length > 0) {
             const now = Date.now()
-            stampsToErase.forEach(s => {
-                this.app.supabaseManager.pushAnnotation({...s, deleted: true, updatedAt: now}, this.app.pdfFingerprint)
-            });
+            const tombstones = stampsToErase.map(s => ({ ...s, deleted: true, updatedAt: now }))
+            this.app.supabaseManager.pushAllAnnotations(this.app.pdfFingerprint, tombstones)
         }
         
         this.app.updateRulerMarks()
@@ -560,9 +559,11 @@ export class AnnotationManager {
         if (this.app.stamps.length !== originalCount) {
             // --- Supabase Sync ---
             if (this.app.supabaseManager) {
-                const removedStamps = originalCount > this.app.stamps.length ? originalCount - this.app.stamps.length : 0; 
-                // Note: For large deletions, we might need a batch delete in SupabaseManager
-                // For now, let the individual deletes handle it or refresh later.
+                const now = Date.now()
+                // Use the stamps from history as the source for tombstones
+                const toErase = historyBatch.map(op => op.obj)
+                const tombstones = toErase.map(s => ({ ...s, deleted: true, updatedAt: now }))
+                this.app.supabaseManager.pushAllAnnotations(this.app.pdfFingerprint, tombstones)
             }
 
             this.app.updateRulerMarks()

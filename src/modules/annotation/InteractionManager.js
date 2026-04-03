@@ -7,6 +7,7 @@ export class InteractionManager {
         this.app = app;
         this._penLongPressTimer = null;
         this._multiSelected = new Set(); // IDs of multi-selected stamps
+        this._lastRedrawTime = 0; // Throttle timer for iPad stability
     }
 
     _updateCursor(overlay, pointerType) {
@@ -174,8 +175,11 @@ export class InteractionManager {
             eraserClickTarget = null;
             eraserHasDragged = false;
             virtualPointer?.classList.remove('active');
-            activePointers.clear();
-            isTwoFingerPanning = false;
+            
+            this.app.activePointers.clear();
+            this.app.isTwoFingerPanning = false;
+            this.app.panCooldown = false;
+            
             this.isAdjustingCurvature = false;
             isDraggingHandle = false;
             draggingHandleIndex = -1;
@@ -189,13 +193,9 @@ export class InteractionManager {
             detachGlobalListeners();
         };
 
-        let activePointers = new Map(); // pointerId → {x, y}
-        let isTwoFingerPanning = false;
-        let twoFingerScrollStart = { top: 0, left: 0 };
-        let twoFingerCentroidStart = { x: 0, y: 0 };
-        let panCooldown = false;        // Brief post-pan window: suppress preview + stamp placement
-        let panCooldownTimer = null;
+        // Note: activePointers, isTwoFingerPanning, panCooldown moved to this.app (Global)
         let touchBufferTimer = null;
+        let panCooldownTimer = null; // Still per-manager timer to clear the global flag
 
         const resetPointerIdleTimer = () => {
             if (pointerIdleTimer) clearTimeout(pointerIdleTimer);
@@ -247,15 +247,24 @@ export class InteractionManager {
             const pointerType = getPointerType(e);
             const isPen = pointerType === 'pen';
 
-            // Always track pointers for multi-touch handling
-            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            // Safety: If this is the start of a potential single action (only 1 touch on screen),
+            // reset global state to ensure no ghost pointers from previous pages/gestures remain.
+            if (e.pointerType === 'touch' && e.isPrimary) {
+                // If it's a primary touch down, it's a fresh start. 
+                // We clear to resolve "only works once" issues.
+                this.app.activePointers.clear();
+                this.app.isTwoFingerPanning = false;
+            } else if (e.pointerType === 'mouse') {
+                this.app.activePointers.clear();
+            }
 
-            if (activePointers.size >= 2) {
+            // Always track pointers for multi-touch handling
+            this.app.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (this.app.activePointers.size >= 2) {
                 if (touchBufferTimer) clearTimeout(touchBufferTimer);
                 
                 // --- CONSOLIDATED GESTURE HANDLING ---
-                // GestureManager handles 2-finger Pan/Zoom globally (bubbles from overlays).
-                // We simply stop our current INTERACTION (e.g., drawing) to let the zoom take over.
                 if (isInteracting) {
                     isInteracting = false;
                     this.app.isInteracting = false;
@@ -265,7 +274,7 @@ export class InteractionManager {
                     detachGlobalListeners();
                 }
                 
-                isTwoFingerPanning = true; 
+                this.app.isTwoFingerPanning = true; 
                 isInteracting = false;
                 this.app.isInteracting = false;
                 virtualPointer?.classList.remove('active');
@@ -277,7 +286,11 @@ export class InteractionManager {
                 if (touchBufferTimer) clearTimeout(touchBufferTimer);
                 touchBufferTimer = setTimeout(() => {
                     touchBufferTimer = null;
-                    if (activePointers.size <= 1 && !isTwoFingerPanning) {
+                    // IF we still only have 1 finger AND weren't just panning...
+                    if (this.app.activePointers.size <= 1 && !this.app.isTwoFingerPanning) {
+                        proceedWithAction(e);
+                    } else if (this.app.activePointers.size === 0) {
+                        // Edge case: lifted finger within 35ms
                         proceedWithAction(e);
                     }
                 }, 35);
@@ -298,7 +311,7 @@ export class InteractionManager {
                 isMovingExisting = false;
                 detachGlobalListeners();
             }
-            if (panCooldown) return;
+            if (this.app.panCooldown) return;
 
             const pos = CoordMapper.getPos(e, overlay);
 
@@ -343,23 +356,18 @@ export class InteractionManager {
             const previewPosForGrab = CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay);
             const pickupTarget = graceObject || this.app.findClosestStamp(pageNum, previewPosForGrab.x, previewPosForGrab.y, true);
             
-            // If it's a finger (touch) and we're NOT in Pan mode, AND not targeting an existing object to move:
-            // force it to 'view' (Neutral Pan) to prevent palms from drawing.
-            // Mouse is allowed to draw freely.
-            if (pointerType === 'touch' && activeTool !== 'view' && !pickupTarget && !this.app.isStampTool()) {
-                activeTool = 'view';
-            }
+            // iPad Optimization: Since we now have reliable Two-Finger Pan, we allow 1-finger markings 
+            // for ALL tools (Pen, HL, Stamps) to remain consistent.
+            // Redirection to 'view' is no longer needed here as it blocked tools like highlighters.
 
             // 1. View Mode Panning
             if (activeTool === 'view') {
-                const isTouch = (pointerType === 'touch' || pointerType === 'pen') && !this.app.isMac;
+                const isMac = this.app.isMac;
+                const isTouch = (pointerType === 'touch' || pointerType === 'pen') && !isMac;
                 
-                // --- BLOCK 1-FINGER PAN FOR iPad ---
-                // We keep 1-finger panning FOR Mac (to remain usable on desktop trackpads).
-                if (isTouch) {
-                    return; 
-                }
-
+                // Allow 1-finger pan in VIEW mode for all devices (including iPad).
+                // In STAMP modes, 1-finger is for marking, 2-finger is for panning.
+                
                 if (isPanning) return;
                 isPanning = true;
                 const startX = e.clientX, startY = e.clientY;
@@ -679,6 +687,9 @@ export class InteractionManager {
             const pointerType = getPointerType(e);
             const toolType = this.app.activeStampType;
 
+            // Update tracked position for all pointers
+            this.app.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
             if (potentialNudge) {
                 const cx = e.clientX ?? (e.touches?.[0]?.clientX || 0);
                 const cy = e.clientY ?? (e.touches?.[0]?.clientY || 0);
@@ -718,7 +729,14 @@ export class InteractionManager {
                 return;
             }
 
-            if (pointerType === 'touch' && e.cancelable) e.preventDefault();
+            // --- iPad Fix: Only prevent default (blocking scroll) if NOT in multi-touch panning mode ---
+            if (pointerType === 'touch' && e.cancelable && !this.app.isTwoFingerPanning && this.app.activePointers.size < 2) {
+                e.preventDefault();
+            } else if (!isInteracting && (this.app.isTwoFingerPanning || this.app.activePointers.size >= 2)) {
+                // Only return early if we are NOT already actively drawing/dragging.
+                // This prevents strokes from breaking midway if a second finger (palm) touches the edge.
+                return;
+            }
 
             let currentOverlay = overlay, currentWrapper = wrapper, currentPageNum = pageNum;
             const rawPos = CoordMapper.getPos(e, overlay);
@@ -827,25 +845,46 @@ export class InteractionManager {
                         }
                     }
                 }
-                this.app.redrawStamps(currentPageNum);
+                // Optimization for iPad/Performance: Only redraw whole page at ~30fps
+                // This prevents blocking the main thread (which blocks PDF.js workers)
+                const now = Date.now();
+                if (!currentPageNum || isNaN(currentPageNum)) return;
+                
+                if (now - this._lastRedrawTime > 30) {
+                    this.app.redrawStamps(currentPageNum);
+                    this._lastRedrawTime = now;
+                }
+                
+                const cvs = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
+                if (cvs) {
+                    const ctx = cvs.getContext('2d');
+                    const lyr = this.app.layers.find(l => l.id === activeObject.layerId);
+                    this.app.drawStampOnCanvas(ctx, cvs, activeObject, activeObject.color || lyr?.color || '#000', true, false, false, pos);
+                }
             } else if (activeObject.points) {
                 const cPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
                 if (activeObject.page !== currentPageNum) {
                     const oldP = activeObject.page; activeObject.page = currentPageNum; this.app.redrawStamps(oldP);
                 }
-                // Ensure the preview canvas is cleared before drawing the updated path
-                // to prevent transparency stacking (making colors too dark) during the drag.
-                this.app.redrawStamps(currentPageNum);
                 if (['line', 'slur', 'rect-shape', 'circle-shape'].includes(activeObject.type)) {
                     activeObject.points = [activeObject.points[0], cPos];
                 } else if (['bracket-left', 'bracket-right', 'curly-left', 'curly-right'].includes(activeObject.type)) {
-                    // Brackets/curly braces are always vertical — lock x to start point
                     activeObject.points = [activeObject.points[0], { ...cPos, x: activeObject.points[0].x }];
                 } else {
                     activeObject.points.push({ ...cPos, pressure: e.pressure ?? 0.5 });
                 }
                 const cvs = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
-                if (cvs) this.app.drawPathOnCanvas(cvs.getContext('2d'), cvs, activeObject);
+                if (cvs && currentPageNum && !isNaN(currentPageNum)) {
+                    const ctx = cvs.getContext('2d');
+                    
+                    const now = Date.now();
+                    if (now - this._lastRedrawTime > 30) {
+                        this.app.redrawStamps(currentPageNum); // THROTTLED REDRAW
+                        this._lastRedrawTime = now;
+                    }
+                    
+                    this.app.drawPathOnCanvas(ctx, cvs, activeObject);
+                }
             } else {
                 const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeObject.type, this.app, currentOverlay);
                 if (activeObject.page !== currentPageNum) {
@@ -853,10 +892,17 @@ export class InteractionManager {
                 }
                 activeObject.x = Number(pPos.x); activeObject.y = Number(pPos.y);
                 const cvs = currentWrapper.querySelector('.annotation-layer.virtual-canvas');
-                if (cvs) {
-                    this.app.redrawStamps(currentPageNum);
+                if (cvs && currentPageNum && !isNaN(currentPageNum)) {
+                    const ctx = cvs.getContext('2d');
+                    
+                    const now = Date.now();
+                    if (now - this._lastRedrawTime > 30) {
+                        this.app.redrawStamps(currentPageNum); // THROTTLED REDRAW
+                        this._lastRedrawTime = now;
+                    }
+                    
                     const lyr = this.app.layers.find(l => l.id === activeObject.layerId);
-                    this.app.drawStampOnCanvas(cvs.getContext('2d'), cvs, activeObject, activeObject.color || lyr?.color || '#000', true, false, false, pos);
+                    this.app.drawStampOnCanvas(ctx, cvs, activeObject, activeObject.color || lyr?.color || '#000', true, false, false, pos);
                 }
             }
             if (!isDrawingType(activeObject.type)) {
@@ -869,8 +915,18 @@ export class InteractionManager {
 
         const endAction = async (e) => {
             const pointerType = getPointerType(e);
-            if (e?.pointerId !== undefined) activePointers.delete(e.pointerId);
-            if (activePointers.size < 2) isTwoFingerPanning = false;
+            if (e?.pointerId !== undefined) this.app.activePointers.delete(e.pointerId);
+
+            // Handle transition out of 2-finger panning
+            if (this.app.isTwoFingerPanning && this.app.activePointers.size < 2) {
+                this.app.isTwoFingerPanning = false;
+                this.app.panCooldown = true;
+                if (panCooldownTimer) clearTimeout(panCooldownTimer);
+                panCooldownTimer = setTimeout(() => {
+                    this.app.panCooldown = false;
+                    panCooldownTimer = null;
+                }, 400);
+            }
 
             if (this._penLongPressTimer) { clearTimeout(this._penLongPressTimer); this._penLongPressTimer = null; }
             if (!isInteracting) return;
@@ -1174,8 +1230,21 @@ export class InteractionManager {
         const cleanupInteraction = (e) => {
             isInteracting = false; this.app.isInteracting = false; isMovingExisting = false; activeObject = null;
             this.isAdjustingCurvature = false; isDraggingHandle = false; draggingHandleIndex = -1; this.app._dragLastPos = null;
-            if (e?.pointerId !== undefined) activePointers.delete(e.pointerId);
-            if (activePointers.size === 0 && touchBufferTimer) { clearTimeout(touchBufferTimer); touchBufferTimer = null; }
+            
+            if (e?.pointerId !== undefined) this.app.activePointers.delete(e.pointerId);
+            
+            // Handle transition out of 2-finger panning
+            if (this.app.isTwoFingerPanning && this.app.activePointers.size < 2) {
+                this.app.isTwoFingerPanning = false;
+                this.app.panCooldown = true;
+                if (panCooldownTimer) clearTimeout(panCooldownTimer);
+                panCooldownTimer = setTimeout(() => {
+                    this.app.panCooldown = false;
+                    panCooldownTimer = null;
+                }, 400);
+            }
+
+            if (this.app.activePointers.size === 0 && touchBufferTimer) { clearTimeout(touchBufferTimer); touchBufferTimer = null; }
             this._updateCursor(overlay, getPointerType(e || { type: 'mousemove' }));
             if (!graceObject) InteractionUI.showTrash(false, wrapper);
             else InteractionUI.setTrashActive(false, wrapper);
@@ -1186,6 +1255,15 @@ export class InteractionManager {
         const hoverAction = (e) => {
             if (isInteracting) return;
             const pt = getPointerType(e); const tt = this.app.activeStampType;
+            
+            // Track pointers even in hover mode for cross-page gesture detection
+            this.app.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            
+            if (this.app.activePointers.size >= 2 || this.app.isTwoFingerPanning || this.app.panCooldown) {
+                virtualPointer?.classList.remove('active');
+                return;
+            }
+
             this._updateCursor(overlay, pt);
             const pPos = CoordMapper.getStampPreviewPos(CoordMapper.getPos(e, overlay), pt, tt, this.app, overlay);
             
@@ -1209,21 +1287,26 @@ export class InteractionManager {
         const attachGlobalListeners = () => { detachGlobalListeners(); window.addEventListener('pointermove', moveAction); window.addEventListener('pointerup', endAction); window.addEventListener('pointercancel', endAction); };
         const detachGlobalListeners = () => { window.removeEventListener('pointermove', moveAction); window.removeEventListener('pointerup', endAction); window.removeEventListener('pointercancel', endAction); };
 
-        overlay.addEventListener('touchstart', (e) => { if (this.app.activeStampType !== 'view' && e.cancelable) e.preventDefault(); }, { passive: false });
-        overlay.addEventListener('pointerdown', startAction);
-        overlay.addEventListener('pointermove', hoverAction);
-        overlay.addEventListener('pointerup', (e) => { 
-            activePointers.delete(e.pointerId); 
-            if (activePointers.size < 2) isTwoFingerPanning = false;
-        }, { passive: true });
-        overlay.addEventListener('pointercancel', (e) => { 
-            activePointers.delete(e.pointerId); 
-            if (activePointers.size < 2) isTwoFingerPanning = false;
-        }, { passive: true });
-        overlay.addEventListener('mouseleave', () => { virtualPointer?.classList.remove('active'); this.app.hoveredStamp = this.app.selectHoveredStamp = null; this.app.redrawStamps(pageNum); });
-
         const actualWrapper = wrapper.querySelector('.page-content-wrapper') || wrapper;
         actualWrapper.appendChild(overlay);
+
+        overlay.addEventListener('touchstart', (e) => { 
+            // iPad Fix: Only prevent default if it's a single-finger interaction (drawing/tapping)
+            // If it's 2+ fingers, let it bubble so GestureManager can handle Pan/Zoom.
+            if (this.app.activeStampType !== 'view' && e.touches.length < 2 && e.cancelable) {
+                e.preventDefault(); 
+            }
+        }, { passive: false });
+
+        overlay.addEventListener('pointerdown', startAction);
+        overlay.addEventListener('pointermove', hoverAction);
+
+        overlay.addEventListener('mouseleave', () => { 
+            virtualPointer?.classList.remove('active'); 
+            this.app.hoveredStamp = this.app.selectHoveredStamp = null; 
+            this.app.redrawStamps(pageNum); 
+        });
+
         overlay._updateTouchAction = () => this.updateAllOverlaysTouchAction();
         this.updateAllOverlaysTouchAction();
     }

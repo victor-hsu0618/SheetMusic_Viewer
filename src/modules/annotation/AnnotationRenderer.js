@@ -10,6 +10,7 @@ export class AnnotationRenderer {
      * @param {number} page - The page number to redraw.
      */
     redrawStamps(page) {
+        if (!page || isNaN(page)) return;
         const wrapper = document.querySelector(`.page-container[data-page="${page}"]`)
         if (!wrapper) return
 
@@ -306,47 +307,45 @@ export class AnnotationRenderer {
             ctx.beginPath()
             ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2)
         } else {
-            ctx.beginPath()
-            ctx.moveTo(startX, startY)
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
 
             let isDot = true;
             let lastX = startX, lastY = startY;
+            
+            // 1. Process points to build the main path and determine if it's just a dot
             for (let i = 1; i < path.points.length; i++) {
-                const px = path.points[i].x * canvas.width
-                const py = path.points[i].y * canvas.height
-                // Skip duplicate points to prevent transparency stacking "dark dots" at the same spot
+                const px = path.points[i].x * canvas.width;
+                const py = path.points[i].y * canvas.height;
+                
+                // Keep the "anti-dark-point" skip logic but ensure it doesn't break standard stroke
                 if (Math.abs(px - lastX) < 0.1 && Math.abs(py - lastY) < 0.1) continue;
                 
-                isDot = false
-                ctx.lineTo(px, py)
+                isDot = false;
+                ctx.lineTo(px, py);
                 lastX = px; lastY = py;
             }
 
-            // If it's a true single-tap (or all points are identical)
+            // 2. Render based on detection
             if (isDot) {
-                ctx.save()
-                ctx.fillStyle = ctx.strokeStyle
-                ctx.beginPath()
-                ctx.arc(startX, startY, ctx.lineWidth / 2, 0, Math.PI * 2)
-                ctx.fill()
-                ctx.restore()
-                
-                // CRITICAL: Must restore the OUTER save() from the start of the function
-                // before returning, otherwise the canvas state stack leaks to other stamps!
-                ctx.restore() 
-                return; 
+                // TRUE DOT: Ensure even tiny clicks are rendered as visible circles
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.beginPath();
+                ctx.arc(startX, startY, Math.max(ctx.lineWidth / 2, 0.5), 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // TRUE PATH: Branch based on tool type
+                if (['brush-pen', 'fountain-pen', 'pencil-pen'].includes(path.type) && !isHovered && !isSelectHovered) {
+                    // Special stylized pens need segment-by-segment rendering
+                    this._renderSpecialPen(ctx, canvas, path, pageFactor, globalMultiplier, individualScale, oldAlpha);
+                } else {
+                    // Standard: pen, highlighter, correction-pen, markers, or hover-state previews
+                    // The lineTo() commands were already issued in the loop above.
+                    ctx.stroke();
+                }
             }
         }
-        // Brush pen: variable-width segment rendering (skip standard stroke)
-        if (path.type === 'brush-pen' && !isHovered && !isSelectHovered) {
-            // ... (rest of the specific tool logic remains the same)
-        } else if (path.type === 'fountain-pen' && !isHovered && !isSelectHovered) {
-            // ...
-        } else if (path.type === 'pencil-pen' && !isHovered && !isSelectHovered) {
-             // ...
-        } else {
-            ctx.stroke()
-        }
+        
         ctx.globalAlpha = oldAlpha;
         ctx.globalCompositeOperation = 'source-over'; // Ensure reset after any tool-specific operations
 
@@ -437,6 +436,71 @@ export class AnnotationRenderer {
         }
 
         ctx.restore()
+    }
+
+    /**
+     * Internal helper to render stylized pens segment-by-segment.
+     */
+    _renderSpecialPen(ctx, canvas, path, pageFactor, globalMultiplier, individualScale, oldAlpha) {
+        const BASE = (this.app.scale / 1.5) * pageFactor * globalMultiplier * individualScale;
+        const n = path.points.length;
+
+        if (path.type === 'brush-pen') {
+            const MIN_W = 0.8 * BASE, MAX_W = 4.5 * BASE;
+            const SLOW_PX = 1.5 * BASE, FAST_PX = 30 * BASE;
+            for (let i = 0; i < n - 1; i++) {
+                const p1 = path.points[i], p2 = path.points[i + 1];
+                let w = MAX_W;
+                if (p1.pressure !== undefined && p1.pressure !== 0.5) {
+                    w = MIN_W + (MAX_W - MIN_W) * ((p1.pressure + p2.pressure) / 2);
+                } else {
+                    const dx = (p2.x - p1.x) * canvas.width;
+                    const dy = (p2.y - p1.y) * canvas.height;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const t = Math.max(0, Math.min(1, (dist - SLOW_PX) / (FAST_PX - SLOW_PX)));
+                    w = MAX_W * (1 - t) + MIN_W * t;
+                }
+                ctx.lineWidth = w;
+                ctx.beginPath();
+                ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+                ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+                ctx.stroke();
+            }
+        } 
+        else if (path.type === 'fountain-pen') {
+            const MIN_W = 0.4 * BASE, MAX_W = 4.0 * BASE;
+            const hasPressure = n > 0 && path.points[0].pressure !== undefined && path.points[0].pressure !== 0.5;
+            for (let i = 0; i < n - 1; i++) {
+                const p1 = path.points[i], p2 = path.points[i + 1];
+                const progress = (i + 0.5) / Math.max(n - 1, 1);
+                // Smooth taper envelope: 0 at ends, 1 in middle
+                const taper = Math.min(progress / 0.12, 1) * Math.min((1 - progress) / 0.12, 1);
+                const avgPressure = hasPressure ? ((p1.pressure ?? 0.5) + (p2.pressure ?? 0.5)) / 2 : 0.6;
+                ctx.lineWidth = MIN_W + (MAX_W - MIN_W) * avgPressure * taper;
+                ctx.beginPath();
+                ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+                ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+                ctx.stroke();
+            }
+        } 
+        else if (path.type === 'pencil-pen') {
+            const hasPressure = n > 0 && path.points[0].pressure !== undefined && path.points[0].pressure !== 0.5;
+            const passes = [{ aFactor: 1.0, jScale: 0 }, { aFactor: 0.3, jScale: 0.7 }];
+            for (const pass of passes) {
+                for (let i = 0; i < n - 1; i++) {
+                    const p1 = path.points[i], p2 = path.points[i + 1];
+                    const avgPressure = hasPressure ? ((p1.pressure ?? 0.5) + (p2.pressure ?? 0.5)) / 2 : 0.6;
+                    const jx = Math.sin(i * 127.1 + pass.jScale * 311.7) * pass.jScale * BASE;
+                    const jy = Math.cos(i * 311.7 + pass.jScale * 127.1) * pass.jScale * BASE;
+                    ctx.globalAlpha = oldAlpha * (0.25 + avgPressure * 0.6) * pass.aFactor;
+                    ctx.lineWidth = BASE * (0.7 + avgPressure * 0.5);
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x * canvas.width + jx, p1.y * canvas.height + jy);
+                    ctx.lineTo(p2.x * canvas.width + jx, p2.y * canvas.height + jy);
+                    ctx.stroke();
+                }
+            }
+        }
     }
 
     /**
@@ -1033,8 +1097,7 @@ export class AnnotationRenderer {
         ctx.restore();
 
         // If inspector is active and there's a target, keep animating the frame
-        if (this.app.inspectorManager?.isActive && this.app.inspectorTarget === s) {
-            requestAnimationFrame(() => this.redrawStamps(s.page));
-        }
+        // NOTE: We do NOT use requestAnimationFrame() directly inside the logic loop to avoid infinite recursion.
+        // Animation should be driven by the InspectorManager or specific UI triggers.
     }
 }
