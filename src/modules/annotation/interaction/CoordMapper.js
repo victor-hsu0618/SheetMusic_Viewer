@@ -33,16 +33,15 @@ export const CoordMapper = {
         // Mode detection
         const isTargetingTool = ['select', 'multi-select', 'copy', 'recycle-bin', 'eraser', 'text', 'tempo-text', 'measure'].includes(toolType);
         
-        const rect = overlay.getBoundingClientRect()
-        const offsetX = Number(app.stampOffsetTouchX || 0);
-        const offsetY = Number(app.stampOffsetTouchY || 0);
-
-        // Measure follows cursor freely (x snapped to existing same-page measure at commit time)
-
-        // No offset for any tool if using Mouse or Pen (high precision)
+        // NO OFFSET for Mouse or Pen (high precision)
+        // Also skip clamping for Pen to avoid 1cm jump at edges
         if (pointerType !== 'touch') {
             return pos;
         }
+
+        const rect = overlay.getBoundingClientRect()
+        const offsetX = Number(app.stampOffsetTouchX || 0);
+        const offsetY = Number(app.stampOffsetTouchY || 0);
 
         // 2. Direct Tools check: No offset for Pens and Edit tools
         const isPenTool = toolType && ['pen', 'red-pen', 'green-pen', 'blue-pen', 'highlighter', 'highlighter-red', 'highlighter-blue', 'highlighter-green', 'line', 'slur', 'dashed-pen', 'arrow-pen'].includes(toolType);

@@ -18,12 +18,44 @@ npm run test:e2e     # Run Playwright E2E tests
 
 ### Core files
 
-- **`src/main.js`** (~4200 lines) — Monolithic `ScoreFlow` class containing all application logic: PDF rendering, annotation drawing, layer management, UI controls, persistence, and collaboration.
+- **`src/main.js`** (~867 lines) — Entry point that instantiates the `ScoreFlow` class (defined across modules) and registers the PWA service worker. Imports ~24 module managers.
 - **`index.html`** (~3950 lines) — Main entry point with all HTML structure, embedded anti-FOUC CSS, and Google Sign-In script.
 - **`src/constants.js`** — Tool category definitions (Edit, Pens, Bowing, Fingering, Articulation, Tempo, Dynamic, Anchor).
 - **`src/db.js`** — Thin IndexedDB wrapper (`get`, `set`, `clear`) for offline storage.
+- **`src/fingerprint.js`** — SHA-256 PDF fingerprinting for per-score annotation keying.
 - **`src/gdrive.js`** — Google Drive integration (stub/in-progress).
-- **`src/style.css`** — Application styles with dark/light theme.
+- **`src/style.css`** — Main stylesheet (imports from `src/styles/`).
+
+### Module system (`src/modules/`)
+
+All feature logic lives in ~41 manager modules. Key modules:
+
+| Module | Responsibility |
+|---|---|
+| `ViewerManager.js` | PDF canvas rendering, page layout |
+| `annotation/AnnotationManager.js` | Annotation CRUD, storage |
+| `annotation/AnnotationRenderer.js` | Drawing annotations onto canvas |
+| `annotation/InteractionManager.js` | Pen/eraser/stamp input handling |
+| `annotation/interaction/CoordMapper.js` | PDF↔canvas coordinate mapping |
+| `JumpManager.js` | Anchor navigation, jump targets |
+| `ruler.js` | Jump ruler display (22 KB) |
+| `TransitionManager.js` | View/page transitions |
+| `LayerManager.js` | Layer visibility toggle |
+| `PersistenceManager.js` | IndexedDB save/restore |
+| `EditSubBarManager.js` | Edit toolbar UI (69 KB — largest module) |
+| `SupabaseManager.js` | Supabase backend integration (49 KB) |
+| `ScoreManager.js` | Score library management |
+| `SetlistManager.js` | Setlist/playlist management |
+| `PlaybackManager.js` | Playback/animation features |
+| `GestureManager.js` | Touch/gesture handling |
+| `InputManager.js` | Keyboard shortcuts |
+| `collaboration.js` | Real-time collaboration |
+| `DocActionManager.js` | Document action orchestration |
+| `InitializationManager.js` | App startup sequence |
+
+### Styles (`src/styles/`)
+
+26 CSS files organized by feature (e.g., `edit-strip.css`, `ruler.css`, `modals.css`). CSS custom properties live in `variables.css`. Responsive breakpoints in `features/responsive.css`.
 
 ### Key architectural concepts
 
@@ -42,6 +74,10 @@ npm run test:e2e     # Run Playwright E2E tests
 **Persistence flow:** User annotates → canvas drawings stored in IndexedDB (keyed by score fingerprint) → switching scores saves/restores from IndexedDB → export produces a `.json` bundle.
 
 **Exit Mission flow:** Settings > Exit Mission hides all main UI elements (floating-doc-bar, ruler, sidebar-trigger) and returns to the startup wizard (Mission Hub) unless the user cancels the dialog.
+
+**Backend / sync:** Supabase (`SupabaseManager.js`) powers cloud storage and real-time collaboration. A Vite proxy forwards `/api/` requests to the Supabase storage endpoint.
+
+**iOS native:** Capacitor (`capacitor.config.json`, `/ios/`) wraps the PWA for App Store distribution.
 
 ### Floating Document Control Bar (`#floating-doc-bar`)
 
@@ -87,7 +123,7 @@ Optimized for macOS (desktop) and iPad/iOS. The layout has two modes:
 
 **iPad Safari:** `overscroll-behavior: none` on `body` prevents Safari's back/forward swipe gesture from conflicting with the app. `overscroll-behavior: contain` on `.viewer-container` prevents rubber-band scroll propagation. No `touch-action` overrides (breaks annotation overlay touch handlers). No JS edge-swipe interceptors (block doc-bar button taps near the right edge).
 
-PWA service worker caches all assets for fully offline operation (important for concert halls without WiFi).
+PWA service worker (Workbox) caches all assets for fully offline operation (important for concert halls without WiFi). Deployed to GitHub Pages via `.github/workflows/deploy.yml`.
 
 ### Testing
 
@@ -110,7 +146,6 @@ E2E tests use Playwright (`tests/automation-check.js`). Test PDFs are stored loc
 | - | Zoom out |
 | S | Toggle sidebar |
 | H / ? | Help / Shortcuts overlay |
-
 | T | Toggle stamp palette |
 | Esc | Close all panels, return to View mode |
 | Delete / Backspace | Delete focused stamp |

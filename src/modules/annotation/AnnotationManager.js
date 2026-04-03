@@ -115,9 +115,9 @@ export class AnnotationManager {
             }
 
             let dist, threshold
-            const PATH_THRESHOLD = 0.008; // Tighter base threshold
-            const STAMP_THRESHOLD = 0.025;
-            const MIN_DOT_HIT_RADIUS = 0.012; // Minimum hitbox for tiny single points
+            const PATH_THRESHOLD = 0.012; // Slightly more generous for paths
+            const STAMP_THRESHOLD = 0.045; // Increased from 0.025 for better touch hits
+            const MIN_DOT_HIT_RADIUS = 0.018; 
             
             if (s.type === 'rect-shape' && s.points?.length >= 2) {
                 const p1 = s.points[0], p2 = s.points[s.points.length - 1]
@@ -1213,5 +1213,42 @@ export class AnnotationManager {
             return true
         }
         return false
+    }
+
+    /**
+     * Removes all system stamps from every score stored in IndexedDB, and from app.stamps in memory.
+     * Also triggers cloud cleanup via SupabaseManager.
+     * Safe to call from console: app.annotationManager.deleteAllSystemStamps()
+     */
+    async deleteAllSystemStamps() {
+        const db = await import('../../db.js')
+        const allKeys = await db.getAllKeys()
+        const stampKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith('stamps_'))
+        let totalRemoved = 0
+
+        for (const key of stampKeys) {
+            const stamps = await db.get(key)
+            if (!Array.isArray(stamps)) continue
+            const filtered = stamps.filter(s => s.type !== 'system')
+            if (filtered.length < stamps.length) {
+                totalRemoved += stamps.length - filtered.length
+                await db.set(key, filtered)
+            }
+        }
+
+        // Clear from current in-memory stamps
+        const before = this.app.stamps?.length ?? 0
+        this.app.stamps = (this.app.stamps ?? []).filter(s => s.type !== 'system')
+        totalRemoved += before - this.app.stamps.length
+
+        console.log(`[AnnotationManager] 🧹 Removed ${totalRemoved} system stamps from local storage.`)
+
+        // Also clean cloud
+        if (this.app.supabaseManager) {
+            await this.app.supabaseManager.deleteAllSystemStampsFromCloud()
+        }
+
+        this.app.updateRulerMarks?.()
+        this.app.redrawAllAnnotationLayers?.()
     }
 }

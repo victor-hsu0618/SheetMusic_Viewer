@@ -125,7 +125,7 @@ class ScoreFlow {
     this.stampOffsetTouchX = -30
     this.stampOffsetMouseY = 25
     this.stampOffsetMouseX = 0
-    this.showSystemStamps = localStorage.getItem('scoreflow_show_systems') === 'true'
+    this.showSystemStamps = false // DISABLED: performance issue — ~1000 stamps slows redraw
     this.showCloakBadge = localStorage.getItem('scoreflow_show_cloak_badge') !== 'false'
     this.twoFingerPanEnabled = localStorage.getItem('scoreflow_two_finger_pan') !== 'false' // default ON
     this.systemJumpOverlap = parseInt(localStorage.getItem('scoreflow_system_jump_overlap') || '1')

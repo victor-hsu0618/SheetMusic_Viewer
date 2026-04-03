@@ -275,6 +275,8 @@ export class ViewerManager {
             wasmUrl: _base + 'pdfjs/wasm/',
             isEvalSupported: false,
             stopAtErrors: false,
+            disableAutoFetch: true,
+            disableStream: true,
         });
         
         // Add a timeout logger
@@ -305,9 +307,12 @@ export class ViewerManager {
 
         // 4. Background Storage Sync
         if (this.app.supabaseManager?.user) {
-            const uploadCopy = uint8Data.slice(0); 
+            // Defer buffer copy to avoid blocking the main thread before PDF parsing completes
+            const capturedData = uint8Data;
             (async () => {
                 try {
+                    await Promise.resolve(); // yield so PDF parsing can start
+                    const uploadCopy = capturedData.slice(0);
                     const exists = await this.app.supabaseManager.checkPDFExists(newFingerprint);
                     if (!exists) {
                         await this.app.supabaseManager.uploadPDFBuffer(newFingerprint, uploadCopy);
@@ -322,11 +327,14 @@ export class ViewerManager {
             this.app.supabaseManager.syncAnnotationsOnLoad(newFingerprint);
         }
 
-        // --- SAFE CACHE: Persist buffer to IndexedDB ---
-        try {
-            if (filename) await db.set(`recent_buf_${filename}`, uint8Data);
-            if (newFingerprint && !expectedFp) await db.set(`score_buf_${newFingerprint}`, uint8Data);
-        } catch (err) { console.warn('[ViewerManager] Storage cache failed:', err); }
+        // --- SAFE CACHE: Persist buffer to IndexedDB (fire-and-forget — must not block PDF load) ---
+        // handleUpload already writes recent_buf_${filename}, so only write score_buf here.
+        ;(async () => {
+            try {
+                if (filename) await db.set(`recent_buf_${filename}`, uint8Data);
+                if (newFingerprint && !expectedFp) await db.set(`score_buf_${newFingerprint}`, uint8Data);
+            } catch (err) { console.warn('[ViewerManager] Storage cache failed:', err); }
+        })();
 
         // Final Wait: Ensure BOTH PDF parsing and Data loads are done
         try {
@@ -1161,7 +1169,9 @@ export class ViewerManager {
         const page = await this.pdf.getPage(1)
         const naturalHeight = page.getViewport({ scale: 1 }).height
 
-        const availH = this.app.viewer.clientHeight
+        const _s = window.getComputedStyle(this.app.viewer)
+        const _pad = (parseFloat(_s.paddingTop) || 0) + (parseFloat(_s.paddingBottom) || 0)
+        const availH = this.app.viewer.clientHeight - _pad
         this.scale = Math.min(Math.max(0.2, availH / naturalHeight), 4)
         this.isFitToHeight = true
         this.isFitToWidth  = false

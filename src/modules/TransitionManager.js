@@ -88,4 +88,29 @@ export class TransitionManager {
         this._finishTimeout = null;
         console.log('[TransitionManager] Transition finalized.');
     }
+
+    /**
+     * Force-stops any active transition and clears related state.
+     */
+    stop() {
+        if (!this._isAnimating) return;
+        if (this._finishTimeout) clearTimeout(this._finishTimeout);
+        
+        const viewer = this.app.viewer;
+        if (viewer) viewer.style.scrollSnapType = (this.app.readingMode === 'horizontal') ? 'x mandatory' : '';
+        
+        // Find and clean all transitioning elements
+        const transitionEls = this.app.container?.querySelectorAll('.is-transitioning');
+        transitionEls?.forEach(el => {
+            el.classList.remove(
+                'is-transitioning', 'slide-next-out', 'slide-next-in',
+                'slide-prev-out', 'slide-prev-in',
+                'flip-forward-out', 'flip-backward-out'
+            );
+        });
+
+        this._isAnimating = false;
+        this._finishTimeout = null;
+        console.log('[TransitionManager] Transition forced stop.');
+    }
 }

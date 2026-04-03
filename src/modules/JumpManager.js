@@ -266,6 +266,9 @@ export class JumpManager {
                 behavior: 'instant'
             });
 
+            const originalSnap = this.app.viewer.style.scrollSnapType;
+            if (isHorizontal) this.app.viewer.style.scrollSnapType = 'none';
+
             const behavior = (isHorizontal && (this.app.transitionManager?.currentStyle === 'slide' || this.app.transitionManager?.currentStyle === 'flip')) ? 'smooth' : (isHorizontal ? 'instant' : 'smooth');
             
             this.app.viewer.scrollTo({
@@ -273,6 +276,12 @@ export class JumpManager {
                 top: targetTop,
                 behavior: behavior
             });
+
+            if (isHorizontal) {
+                requestAnimationFrame(() => {
+                    if (this.app.viewer) this.app.viewer.style.scrollSnapType = originalSnap;
+                });
+            }
             this.currentPage = pageNumber;
             this.updateDisplay();
             this.app.inputManager?.forceResetInteractionState();

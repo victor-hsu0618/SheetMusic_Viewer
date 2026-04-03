@@ -20,7 +20,11 @@ export class AnnotationRenderer {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
 
         // OPTIMIZATION: Filter page stamps once before the sources loop
-        const pageStamps = this.app.stamps.filter(s => s.page === page && !s.deleted);
+        // Exclude system stamps when the feature is disabled — avoids iterating ~1000 auto stamps on every redraw.
+        const pageStamps = this.app.stamps.filter(s =>
+            s.page === page && !s.deleted &&
+            (s.type !== 'system' || this.app.showSystemStamps)
+        );
         if (pageStamps.length === 0) return;
 
         this.app.sources.forEach(source => {

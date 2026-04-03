@@ -109,19 +109,13 @@ export class SupabaseManager {
                 table: 'annotations',
                 filter: `fingerprint=eq.${fingerprint}`
             }, (payload) => {
-                // WIRE-LEVEL DEBUG: See EVERY packet entering this machine's subscription
-                console.log(`[Supabase] 🛰️ Pulse [${payload.eventType}]:`, payload.new?.id || payload.old?.id);
-
                 // Since we have a server-side filter, anything arriving here should match.
-                // However, we'll keep a loose safety check that doesn't block empty DELETE payloads.
+                // Keep a loose safety check that doesn't block empty DELETE payloads.
                 const targetFp = String(fingerprint).trim().toLowerCase();
                 const packetFp = String(payload.new?.fingerprint || payload.old?.fingerprint || '').trim().toLowerCase();
-                
+
                 if (!packetFp || packetFp === targetFp) {
-                    console.log('%c⚡ REALTIME MATCH', 'background: #222; color: #bada55', payload.eventType);
                     this.handleRealtimePayload(payload)
-                } else {
-                    console.log(`[Supabase] 📡 Ignored packet (FP mismatch: ${packetFp} vs ${targetFp})`);
                 }
             })
             .subscribe((status) => {
@@ -141,6 +135,13 @@ export class SupabaseManager {
 
     async handleRealtimePayload(payload) {
         const { eventType, new: newRecord, old: oldRecord } = payload
+
+        // Suppress echoes for stamps we just uploaded during syncAnnotationsOnLoad
+        const echoId = String(newRecord?.id || oldRecord?.id || '')
+        if (this._suppressEchoIds?.has(echoId)) {
+            console.log(`[Supabase] 🔕 Suppressed self-echo [${eventType}] for ${echoId}`)
+            return
+        }
 
         if (eventType === 'INSERT' || eventType === 'UPDATE') {
             const stamp = newRecord.data
@@ -170,16 +171,11 @@ export class SupabaseManager {
 
         const incomingPage = (newRecord || oldRecord)?.page;
 
-        // Create a local backup or notify system
+        // Redraw affected pages
         if (this.app.annotationManager) {
-            console.log(`[Supabase] 🎨 Sync redraw triggered for page: ${incomingPage || 'unknown'}`)
-            
-            // 1. Target the specific page first (fastest, most direct)
             if (incomingPage) {
                 this.app.annotationManager.redrawStamps(incomingPage);
             }
-            
-            // 2. Refresh global layers (handles cross-page dependencies)
             this.app.annotationRenderer?.redrawAllAnnotationLayers(true);
         }
 
@@ -371,12 +367,26 @@ export class SupabaseManager {
         // Guard: fingerprint may have changed while pull was in flight
         if (this.app.pdfFingerprint !== fingerprint) return
 
+        const syncSystemStamps = localStorage.getItem('scoreflow_sync_system_stamps') === 'true'
+
         // Keep ALL cloud stamps (including deleted) as tombstones
         const allCloudStamps = (data || []).map(r => r.data).filter(Boolean)
-        const cloudMap = new Map(allCloudStamps.map(s => [s.id, s]))
-        const localMap = new Map(localStamps.map(s => [s.id, s]))
 
-        const syncSystemStamps = localStorage.getItem('scoreflow_sync_system_stamps') === 'true'
+        // When system stamp sync is disabled, delete any system stamps already in cloud (one-time cleanup)
+        if (!syncSystemStamps) {
+            const hasCloudSystemStamps = allCloudStamps.some(s => s.type === 'system')
+            if (hasCloudSystemStamps) {
+                this.deleteAllSystemStampsFromCloud(fingerprint)
+            }
+        }
+
+        // Exclude system stamps from cloud set when sync is disabled
+        const relevantCloudStamps = syncSystemStamps
+            ? allCloudStamps
+            : allCloudStamps.filter(s => s.type !== 'system')
+
+        const cloudMap = new Map(relevantCloudStamps.map(s => [s.id, s]))
+        const localMap = new Map(localStamps.map(s => [s.id, s]))
 
         const merged = []
         const toUpload = []
@@ -400,7 +410,7 @@ export class SupabaseManager {
         }
 
         // Cloud-only stamps (Device B never had them)
-        for (const cloudS of allCloudStamps) {
+        for (const cloudS of relevantCloudStamps) {
             if (!localMap.has(cloudS.id) && !cloudS.deleted) {
                 merged.push(cloudS)
             }
@@ -408,8 +418,11 @@ export class SupabaseManager {
 
         if (toUpload.length > 0) {
             console.log(`[Supabase] syncOnLoad: batch uploading ${toUpload.length} newer/local-only stamps`)
-            // --- OPTIMIZATION: Use pushAllAnnotations instead of individual await loop ---
+            // Suppress realtime echoes for IDs we're about to push (they're already local)
+            this._suppressEchoIds = new Set(toUpload.map(s => String(s.id)))
             await this.pushAllAnnotations(fingerprint, toUpload)
+            // Clear suppression after a generous window for the echoes to arrive and be ignored
+            setTimeout(() => { this._suppressEchoIds = null }, 8000)
         }
 
         this.app.stamps = merged
@@ -417,6 +430,26 @@ export class SupabaseManager {
         db.set(`stamps_${fingerprint}`, merged)
 
         console.log(`[Supabase] syncOnLoad: ${allCloudStamps.length} cloud, ${toUpload.length} uploaded, ${merged.length} active`)
+    }
+
+    /**
+     * Deletes all system-type stamps from Supabase for a given fingerprint (or all scores if omitted).
+     * Safe to call manually: app.supabaseManager.deleteAllSystemStampsFromCloud()
+     */
+    async deleteAllSystemStampsFromCloud(fingerprint = null) {
+        if (!this.client || !this.user) return
+        let query = this.client
+            .from('annotations')
+            .delete()
+            .eq('user_id', this.user.id)
+            .eq('type', 'system')
+        if (fingerprint) query = query.eq('fingerprint', fingerprint)
+        const { error, count } = await query
+        if (error) {
+            console.warn('[Supabase] system stamp cloud cleanup error:', error.message)
+        } else {
+            console.log(`[Supabase] ✅ Deleted system stamps from cloud${fingerprint ? ` (score: ${fingerprint.substring(0,8)})` : ' (ALL scores)'}.`)
+        }
     }
 
     /**

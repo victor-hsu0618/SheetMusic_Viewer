@@ -473,8 +473,10 @@ export class EditSubBarManager {
                 return rowEl
             }
 
-            if (row1Items.length) content.appendChild(buildRow(row1Items, title1))
-            if (row2Items.length) content.appendChild(buildRow(row2Items, title2))
+            // Always render both rows so the panel keeps a consistent height across pages.
+            // An empty row is kept via min-height in CSS.
+            content.appendChild(buildRow(row1Items, title1))
+            content.appendChild(buildRow(row2Items, title2))
 
             bar.appendChild(this._barDivider())
 

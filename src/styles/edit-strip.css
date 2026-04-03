@@ -645,7 +645,7 @@
     gap: 4px;
     flex-shrink: 0;
     min-width: max-content;
-    /* prevent row from collapsing */
+    min-height: 48px; /* keep panel height consistent even on pages with fewer items */
 }
 
 /* ── Vertical orientation overrides ── */
