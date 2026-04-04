@@ -239,7 +239,7 @@ export class StandaloneScrollbarManager {
             e.stopPropagation()
             if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
             if (!isLongPress) {
-                const success = this.app.jump(direction)
+                const success = this.app.jump(direction, true) // skipAnchors: page-by-page
                 arrow.classList.add(success === false ? 'limit' : 'active')
                 setTimeout(() => arrow.classList.remove('active', 'limit'), 400)
             } else {
