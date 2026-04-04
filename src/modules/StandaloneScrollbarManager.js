@@ -34,17 +34,27 @@ export class StandaloneScrollbarManager {
         if (!this._pageLabel) return
         const metrics = this.app.viewerManager?._pageMetrics
         if (!metrics) return
-        const scrollTop = this.app.viewer?.scrollTop ?? 0
-        const viewportH = this.app.viewer?.clientHeight ?? 0
-        const midY = scrollTop + viewportH * 0.5
+        const isHorizontal = this.app.readingMode === 'horizontal'
+        const viewer = this.app.viewer
+        if (!viewer) return
 
-        // Find the page whose top is closest to (but not past) midY
-        let currentPage = 1
-        let best = -Infinity
-        for (const [num, m] of Object.entries(metrics)) {
-            if (m.top <= midY && m.top > best) {
-                best = m.top
-                currentPage = parseInt(num)
+        let mid, best = -Infinity, currentPage = 1
+
+        if (isHorizontal) {
+            mid = (viewer.scrollLeft ?? 0) + (viewer.clientWidth ?? 0) * 0.5
+            for (const [num, m] of Object.entries(metrics)) {
+                if (m.left <= mid && m.left > best) {
+                    best = m.left
+                    currentPage = parseInt(num)
+                }
+            }
+        } else {
+            mid = (viewer.scrollTop ?? 0) + (viewer.clientHeight ?? 0) * 0.5
+            for (const [num, m] of Object.entries(metrics)) {
+                if (m.top <= mid && m.top > best) {
+                    best = m.top
+                    currentPage = parseInt(num)
+                }
             }
         }
         this._pageLabel.textContent = currentPage
