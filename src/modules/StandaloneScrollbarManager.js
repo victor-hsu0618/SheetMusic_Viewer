@@ -21,6 +21,35 @@ export class StandaloneScrollbarManager {
         }
         this.el = el
         this._build(el)
+        this._attachScrollListener()
+    }
+
+    _attachScrollListener() {
+        const viewer = this.app.viewer
+        if (!viewer) return
+        viewer.addEventListener('scroll', () => this._updatePageLabel(), { passive: true })
+        // Initial update once metrics are likely ready
+        requestAnimationFrame(() => this._updatePageLabel())
+    }
+
+    _updatePageLabel() {
+        if (!this._pageLabel) return
+        const metrics = this.app.viewerManager?._pageMetrics
+        if (!metrics) return
+        const scrollTop = this.app.viewer?.scrollTop ?? 0
+        const viewportH = this.app.viewer?.clientHeight ?? 0
+        const midY = scrollTop + viewportH * 0.5
+
+        // Find the page whose top is closest to (but not past) midY
+        let currentPage = 1
+        let best = -Infinity
+        for (const [num, m] of Object.entries(metrics)) {
+            if (m.top <= midY && m.top > best) {
+                best = m.top
+                currentPage = parseInt(num)
+            }
+        }
+        this._pageLabel.textContent = currentPage
     }
 
     // ── Build ──────────────────────────────────────────────────────────────────
@@ -41,6 +70,13 @@ export class StandaloneScrollbarManager {
 
         const thumb = document.createElement('div')
         thumb.className = 'sf-std-thumb'
+
+        const pageLabel = document.createElement('span')
+        pageLabel.className = 'sf-std-page'
+        pageLabel.textContent = '1'
+        thumb.appendChild(pageLabel)
+        this._pageLabel = pageLabel
+
         track.appendChild(thumb)
 
         const downArrow = document.createElement('div')
