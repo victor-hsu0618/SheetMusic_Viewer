@@ -266,7 +266,7 @@ export class InteractionManager {
 
             if (this.app.activePointers.size >= 2) {
                 if (touchBufferTimer) clearTimeout(touchBufferTimer);
-                
+
                 // --- CONSOLIDATED GESTURE HANDLING ---
                 if (isInteracting) {
                     isInteracting = false;
@@ -276,8 +276,13 @@ export class InteractionManager {
                     InteractionUI.showTrash(false, wrapper);
                     detachGlobalListeners();
                 }
-                
-                this.app.isTwoFingerPanning = true; 
+
+                // Stop any active 1-finger view-mode pan so its doPan listener doesn't fire
+                // for the 2nd finger's position (which is far from startX/Y → huge scroll jump).
+                if (this._viewPanCleanup) { this._viewPanCleanup(); this._viewPanCleanup = null; }
+                isPanning = false;
+
+                this.app.isTwoFingerPanning = true;
                 isInteracting = false;
                 this.app.isInteracting = false;
                 virtualPointer?.classList.remove('active');

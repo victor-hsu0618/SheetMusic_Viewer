@@ -187,9 +187,8 @@ export class RulerManager {
     computeNextTarget(baseScroll = null) {
         if (!this.app.pdf || !this.app.viewer) { this.nextTargetAnchor = null; return }
 
-        const currentScroll = this.app.viewer.scrollTop
+        const currentScroll = baseScroll !== null ? baseScroll : this.app.viewer.scrollTop
         const viewportHeight = this.app.viewer.clientHeight
-        const viewportCenter = currentScroll + viewportHeight / 2
         // baseline is the vertical point in the viewer we want to focus on
         const currentFocusY = currentScroll + this.jumpOffsetPx
 
