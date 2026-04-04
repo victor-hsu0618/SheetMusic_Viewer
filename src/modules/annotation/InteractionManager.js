@@ -148,6 +148,7 @@ export class InteractionManager {
         let activeObject = null;
         let isMovingExisting = false;
         let isPanning = false;
+        let viewPanCleanup = null; // Tracks current view-mode pan cleanup to prevent stacked doPan listeners
         let graceObject = null;
         let graceTimer = null;
         let pointerIdleTimer = null;
@@ -163,6 +164,7 @@ export class InteractionManager {
         // Force reset closure state when switching tools to prevent stuck interactions
         overlay._resetState = () => {
             isInteracting = false;
+            if (viewPanCleanup) { viewPanCleanup(); viewPanCleanup = null; }
             isPanning = false;
             activeObject = null;
             isMovingExisting = false;
@@ -368,10 +370,10 @@ export class InteractionManager {
                 
                 // Allow 1-finger pan in VIEW mode for all devices (including iPad).
                 // In STAMP modes, 1-finger is for marking, 2-finger is for panning.
-                
-                // Always reset to avoid stale isPanning (can occur when pointercancel
-                // fires before stopPan is attached, e.g. during fast native scroll takeover)
-                isPanning = false;
+
+                // Clean up any stale pan (e.g. pointercancel fired before stopPan attached).
+                // This removes stale doPan from window.pointermove, preventing translateY glitches.
+                if (viewPanCleanup) { viewPanCleanup(); viewPanCleanup = null; }
                 isPanning = true;
                 const startX = e.clientX, startY = e.clientY;
                 const startScrollTop = this.app.viewer.scrollTop;
@@ -407,6 +409,7 @@ export class InteractionManager {
 
                 const stopPan = () => {
                     isPanning = false;
+                    viewPanCleanup = null;
                     overlay.style.cursor = '';
                     this.app.viewer.style.scrollBehavior = '';
                     this.app.container.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
@@ -418,6 +421,7 @@ export class InteractionManager {
                     window.removeEventListener('pointercancel', stopPan);
                 };
 
+                viewPanCleanup = stopPan;
                 window.addEventListener('pointermove', doPan, { passive: true });
                 window.addEventListener('pointerup', stopPan);
                 window.addEventListener('pointercancel', stopPan);
