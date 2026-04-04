@@ -259,15 +259,20 @@ export class GestureManager {
                 if (e.touches.length < 2) {
                     const newScale = this._initialScale * ratio
                     const delta = newScale - this._initialScale
-                    
+
                     // Final threshold: 0.01 (1% change) to support fine adjustments
                     if (Math.abs(delta) > 0.01) {
                         this.app.viewerManager?.changeZoom(delta, ratio)
                     }
                 }
                 this._gestureLocked = null
+                // Suppress residual single-finger touchend from triggering zone tap/swipe
+                this._suppressSingleTouchUntil = Date.now() + 180
                 return
             }
+
+            // Suppress swipe/tap detection after any two-finger gesture (e.g. residual second-finger lift)
+            if (Date.now() < this._suppressSingleTouchUntil) return
 
             if (this.inputManager.isEventInUI(e)) return
             if (this.app.viewerManager?.isApplyingZoom) return
