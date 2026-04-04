@@ -290,7 +290,7 @@ export class RulerManager {
         this._jumpTimer = requestAnimationFrame(animateScroll)
     }
 
-    jump(delta) {
+    jump(delta, skipAnchors = false) {
         // Use expected target if jumping rapidly to allow queueing/skipping
         const effectiveScroll = (this._isJumping && this._expectedTargetY !== null)
             ? this._expectedTargetY
@@ -301,8 +301,8 @@ export class RulerManager {
         if (delta > 0) {
             if (effectiveScroll >= maxScroll - 2) return false; // Prevent spamming past the bottom
 
-            this.computeNextTarget(effectiveScroll)
-            if (this.nextTargetAnchor) {
+            if (!skipAnchors) this.computeNextTarget(effectiveScroll)
+            if (!skipAnchors && this.nextTargetAnchor) {
                 this.scrollToNextTarget(effectiveScroll)
             } else {
                 const metrics = this.app.viewerManager._pageMetrics

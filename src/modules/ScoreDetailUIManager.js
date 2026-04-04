@@ -65,6 +65,26 @@ export class ScoreDetailUIManager {
         document.getElementById('btn-force-pull-supabase')?.addEventListener('click', () => this.manager.handleForcePullSupabase())
 
 
+        document.getElementById('btn-clear-system-stamps')?.addEventListener('click', async () => {
+            const count = this.app.stamps?.filter(s => s.type === 'system' && !s.deleted).length ?? 0
+            if (count === 0) { this.app.showMessage('No system stamps to delete', 'info'); return }
+            const confirmed = await this.app.showDialog?.({
+                title: 'Delete System Stamps?',
+                message: `This will permanently delete all ${count} system stamps for this score.`,
+                type: 'confirm',
+                icon: '🗑️'
+            })
+            if (!confirmed) return
+            this.app.stamps = this.app.stamps?.filter(s => s.type !== 'system') ?? []
+            this.app.saveToStorage?.(true)
+            this.app.updateRulerMarks?.()
+            this.app.redrawAllAnnotationLayers?.()
+            const fp = this.manager.currentFp || this.app.pdfFingerprint
+            const info = this.manager.currentInfo || {}
+            if (fp) this.refreshStats(fp, info)
+            this.app.showMessage('System stamps deleted', 'success')
+        })
+
         document.getElementById('btn-toggle-keep-offline')?.addEventListener('change', async (e) => {
             const fp = this.manager.currentFp || this.app.pdfFingerprint
             if (!fp) return
