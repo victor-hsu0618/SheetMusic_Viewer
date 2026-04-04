@@ -281,8 +281,9 @@ export class InteractionManager {
                 return;
             }
             
-            // Touch buffer to allow second finger to land
-            if (pointerType === 'touch' && !isPen) {
+            // Touch buffer to allow second finger to land (skip in view mode —
+            // stopPan must attach synchronously so pointercancel from native scroll doesn't leave isPanning stuck)
+            if (pointerType === 'touch' && !isPen && toolType !== 'view') {
                 if (touchBufferTimer) clearTimeout(touchBufferTimer);
                 touchBufferTimer = setTimeout(() => {
                     touchBufferTimer = null;
@@ -368,7 +369,9 @@ export class InteractionManager {
                 // Allow 1-finger pan in VIEW mode for all devices (including iPad).
                 // In STAMP modes, 1-finger is for marking, 2-finger is for panning.
                 
-                if (isPanning) return;
+                // Always reset to avoid stale isPanning (can occur when pointercancel
+                // fires before stopPan is attached, e.g. during fast native scroll takeover)
+                isPanning = false;
                 isPanning = true;
                 const startX = e.clientX, startY = e.clientY;
                 const startScrollTop = this.app.viewer.scrollTop;
