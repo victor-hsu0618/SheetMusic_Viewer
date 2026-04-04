@@ -296,8 +296,8 @@ export class GestureManager {
                     return
                 }
 
-                // Zone Tapping
-                if (this.app.activeStampType === 'view' && dt < 300 && Math.abs(dx) < 30 && Math.abs(dy) < 30) {
+                // Zone Tapping — skip if the touch was actually a pan/scroll gesture
+                if (this.app.activeStampType === 'view' && dt < 300 && Math.abs(dx) < 30 && Math.abs(dy) < 30 && !this.app._wasPanning) {
                     this.inputManager._suppressNextClick = true
                     this.handleZoneTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
                 }

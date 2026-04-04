@@ -8,6 +8,7 @@ export class InteractionManager {
         this._penLongPressTimer = null;
         this._multiSelected = new Set(); // IDs of multi-selected stamps
         this._lastRedrawTime = 0; // Throttle timer for iPad stability
+        this._viewPanCleanup = null; // Shared across all overlays — prevents stacked doPan listeners
     }
 
     _updateCursor(overlay, pointerType) {
@@ -148,7 +149,7 @@ export class InteractionManager {
         let activeObject = null;
         let isMovingExisting = false;
         let isPanning = false;
-        let viewPanCleanup = null; // Tracks current view-mode pan cleanup to prevent stacked doPan listeners
+        // viewPanCleanup is now this._viewPanCleanup (shared across all overlays)
         let graceObject = null;
         let graceTimer = null;
         let pointerIdleTimer = null;
@@ -164,7 +165,7 @@ export class InteractionManager {
         // Force reset closure state when switching tools to prevent stuck interactions
         overlay._resetState = () => {
             isInteracting = false;
-            if (viewPanCleanup) { viewPanCleanup(); viewPanCleanup = null; }
+            if (this._viewPanCleanup) { this._viewPanCleanup(); this._viewPanCleanup = null; }
             isPanning = false;
             activeObject = null;
             isMovingExisting = false;
@@ -373,7 +374,9 @@ export class InteractionManager {
 
                 // Clean up any stale pan (e.g. pointercancel fired before stopPan attached).
                 // This removes stale doPan from window.pointermove, preventing translateY glitches.
-                if (viewPanCleanup) { viewPanCleanup(); viewPanCleanup = null; }
+                // Uses this._viewPanCleanup (shared across all overlays) so panning on a new page
+                // always cancels any active doPan from a previous page's overlay.
+                if (this._viewPanCleanup) { this._viewPanCleanup(); this._viewPanCleanup = null; }
                 isPanning = true;
                 const startX = e.clientX, startY = e.clientY;
                 const startScrollTop = this.app.viewer.scrollTop;
@@ -409,7 +412,7 @@ export class InteractionManager {
 
                 const stopPan = () => {
                     isPanning = false;
-                    viewPanCleanup = null;
+                    this._viewPanCleanup = null;
                     overlay.style.cursor = '';
                     this.app.viewer.style.scrollBehavior = '';
                     this.app.container.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
@@ -421,7 +424,7 @@ export class InteractionManager {
                     window.removeEventListener('pointercancel', stopPan);
                 };
 
-                viewPanCleanup = stopPan;
+                this._viewPanCleanup = stopPan;
                 window.addEventListener('pointermove', doPan, { passive: true });
                 window.addEventListener('pointerup', stopPan);
                 window.addEventListener('pointercancel', stopPan);
