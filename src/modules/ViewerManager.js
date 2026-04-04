@@ -1185,14 +1185,11 @@ export class ViewerManager {
             this.updatePageMetrics()
             const m = this._pageMetrics[targetPage]
             if (m) {
-                // Stop momentum scroll, snap to page, then restore overflow.
-                // Re-apply scrollTop after restoring overflow because iOS native scroll
-                // can reset the position when overflow changes from hidden → auto.
+                // Briefly disable overflow to stop any iOS momentum scroll, then snap to page top
                 this.app.viewer.style.overflowY = 'hidden'
                 this.app.viewer.scrollTop = m.top
                 requestAnimationFrame(() => {
                     this.app.viewer.style.overflowY = ''
-                    this.app.viewer.scrollTop = m.top
                 })
             }
         }
