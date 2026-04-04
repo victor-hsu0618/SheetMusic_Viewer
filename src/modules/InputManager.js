@@ -387,6 +387,7 @@ export class InputManager {
                     this.app.updateRulerMarks()  // already calls computeNextTarget internally
                     this.app.updateRulerClip()
                     if (this.app.jumpManager) this.app.jumpManager.updateDisplay()
+                    this.app.standaloneScrollbarManager?._updatePageLabel()
                     this.scrollTicking = false
                 })
                 this.scrollTicking = true

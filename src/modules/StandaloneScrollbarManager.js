@@ -25,10 +25,8 @@ export class StandaloneScrollbarManager {
     }
 
     _attachScrollListener() {
-        const viewer = this.app.viewer
-        if (!viewer) return
-        viewer.addEventListener('scroll', () => this._updatePageLabel(), { passive: true })
-        // Initial update once metrics are likely ready
+        // Page label is updated by InputManager's scroll handler (same rAF batch as updateRulerMarks).
+        // Just do an initial update once metrics are likely ready.
         requestAnimationFrame(() => this._updatePageLabel())
     }
 
