@@ -296,9 +296,14 @@ export class EditSubBarManager {
     }
 
     _populateBar(bar, name) {
+        const prevScrollLeft = bar.querySelector('.sf-bar-content')?.scrollLeft ?? 0
         bar.innerHTML = ''
         if (name === 'stamp')  this._buildWideBar(bar, 'stamp')
         if (name === 'others') this._buildOthersBar(bar)
+        if (prevScrollLeft > 0) {
+            const content = bar.querySelector('.sf-bar-content')
+            if (content) content.scrollLeft = prevScrollLeft
+        }
     }
 
     // ─── Drawing & Text Bar (Merged) ──────────────────────────────────────────
