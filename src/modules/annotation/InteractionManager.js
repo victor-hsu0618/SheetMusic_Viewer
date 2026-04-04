@@ -1318,12 +1318,14 @@ export class InteractionManager {
         if (this.app.viewer) this.app.viewer.dataset.activeTool = tt;
         document.querySelectorAll('.capture-overlay').forEach(el => {
             if (isView && el._resetState) el._resetState();
-            el.style.touchAction = 'none'; el.style.pointerEvents = 'auto'; el.style.zIndex = isView ? '10' : '50';
+            // In view mode: CSS sets touch-action: pan-y via body[data-active-tool="view"] rule,
+            // restoring native iOS scroll with momentum. Clear inline override.
+            el.style.touchAction = isView ? '' : 'none';
+            el.style.pointerEvents = 'auto'; el.style.zIndex = isView ? '10' : '50';
             this._updateCursor(el, 'mouse');
         });
-        if (this.app.viewer) { 
-            const isIOS = this.app.isIOS;
-            this.app.viewer.style.touchAction = (isIOS && isView) ? 'none' : 'pan-x pan-y';
+        if (this.app.viewer) {
+            this.app.viewer.style.touchAction = isView ? '' : 'pan-x pan-y';
         }
         if (isView) this.app.isInteracting = false;
     }

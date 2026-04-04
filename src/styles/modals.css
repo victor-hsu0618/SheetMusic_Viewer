@@ -173,6 +173,9 @@ kbd {
 /* Interaction Mode Cursors */
 body[data-active-tool="view"] .capture-overlay {
   cursor: grab;
+  /* Restore native iOS scroll (with momentum) in view mode.
+     This overrides the base touch-action: none !important on .capture-overlay. */
+  touch-action: pan-y !important;
 }
 
 body[data-active-tool="view"] .capture-overlay:active {
