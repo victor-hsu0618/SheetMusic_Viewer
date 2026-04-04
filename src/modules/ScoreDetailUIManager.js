@@ -70,19 +70,28 @@ export class ScoreDetailUIManager {
             if (count === 0) { this.app.showMessage('No system stamps to delete', 'info'); return }
             const confirmed = await this.app.showDialog?.({
                 title: 'Delete System Stamps?',
-                message: `This will permanently delete all ${count} system stamps for this score.`,
+                message: `This will permanently delete all ${count} auto-detected system stamps (local + cloud).`,
                 type: 'confirm',
                 icon: '🗑️'
             })
             if (!confirmed) return
-            this.app.stamps = this.app.stamps?.filter(s => s.type !== 'system') ?? []
-            this.app.saveToStorage?.(true)
+            // Mark as deleted (tombstone) so cloud sync propagates removal
+            const now = Date.now()
+            this.app.stamps = this.app.stamps?.map(s =>
+                s.type === 'system' ? { ...s, deleted: true, updatedAt: now } : s
+            ) ?? []
+            const fp = this.app.pdfFingerprint
+            await this.app.saveToStorage?.(true)
+            // Push tombstones to Supabase so cloud copy is also cleared
+            if (fp && this.app.supabaseManager?.user) {
+                const tombstones = this.app.stamps.filter(s => s.type === 'system' && s.deleted)
+                if (tombstones.length) await this.app.supabaseManager.pushAllAnnotations(fp, tombstones).catch(() => {})
+            }
             this.app.updateRulerMarks?.()
             this.app.redrawAllAnnotationLayers?.()
-            const fp = this.manager.currentFp || this.app.pdfFingerprint
             const info = this.manager.currentInfo || {}
             if (fp) this.refreshStats(fp, info)
-            this.app.showMessage('System stamps deleted', 'success')
+            this.app.showMessage(`${count} system stamps deleted`, 'success')
         })
 
         document.getElementById('btn-toggle-keep-offline')?.addEventListener('change', async (e) => {
@@ -138,7 +147,7 @@ export class ScoreDetailUIManager {
         const activeStamps = stamps.filter(s => !s.deleted);
         const sysTypes = ['system', 'anchor', 'measure', 'measure-free', 'settings'];
         const annotCount = activeStamps.filter(s => s.type && !sysTypes.includes(s.type)).length;
-        const systemCount = activeStamps.filter(s => !s.type || sysTypes.includes(s.type)).length;
+        const systemCount = activeStamps.filter(s => s.type === 'system').length; // only auto-detected staff lines
 
         if (this.statsTotalCount) this.statsTotalCount.textContent = annotCount;
         if (this.statsSystemCount) this.statsSystemCount.textContent = systemCount;
