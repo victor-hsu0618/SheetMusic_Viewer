@@ -173,12 +173,9 @@ kbd {
 /* Interaction Mode Cursors */
 body[data-active-tool="view"] .capture-overlay {
   cursor: grab;
-  /* Restore native iOS scroll (with momentum) in vertical view mode.
-     This overrides the base touch-action: none !important on .capture-overlay. */
-  touch-action: pan-y !important;
 }
 
-/* Horizontal paging mode: allow native left-right swipe instead */
+/* Horizontal paging mode: allow native left-right swipe instead of JS-driven scroll */
 body.mode-horizontal[data-active-tool="view"] .capture-overlay {
   touch-action: pan-x !important;
 }
