@@ -281,15 +281,7 @@ body.mode-horizontal .page-container.flip-backward-out {
   z-index: 1;
 }
 
-/* 3. Page Separator Line in Horizontal Mode — Centered in gap */
+/* 3. Page separator — removed, gap alone is sufficient */
 body.mode-horizontal .page-container::after {
-  content: '';
-  position: absolute;
-  right: -7px;
-  top: 5%;
-  bottom: 5%;
-  width: 2px;
-  background: rgba(0,0,0,0.15);
-  pointer-events: none;
-  border-radius: 1px;
+  display: none;
 }
