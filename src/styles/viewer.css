@@ -299,6 +299,3 @@ body.mode-horizontal .page-container.flip-backward-out {
 }
 
 /* 3. Page separator — removed, gap alone is sufficient */
-body.mode-horizontal .page-container::after {
-  display: none;
-}
