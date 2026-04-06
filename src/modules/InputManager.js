@@ -122,12 +122,12 @@ export class InputManager {
             if (e.metaKey || e.ctrlKey) {
                 if (key === '=' || key === '+' || code === 'Equal' || code === 'NumpadAdd') {
                     e.preventDefault()
-                    this.app.changeZoom(0.1)
+                    this.app.changeZoom(0.05)
                     return
                 }
                 if (key === '-' || code === 'Minus' || code === 'NumpadSubtract') {
                     e.preventDefault()
-                    this.app.changeZoom(-0.1)
+                    this.app.changeZoom(-0.05)
                     return
                 }
                 // Prevent trigger UI toggles when Cmd/Ctrl is held (e.g., Cmd+S)

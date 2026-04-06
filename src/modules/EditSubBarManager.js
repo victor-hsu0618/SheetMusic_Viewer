@@ -828,7 +828,7 @@ export class EditSubBarManager {
         zoomOutBtn.className = 'sf-others-style-btn'
         zoomOutBtn.title = 'Zoom Out (-)'
         zoomOutBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="5" y1="12" x2="19" y2="12"/></svg>`
-        zoomOutBtn.addEventListener('click', () => this.app.changeZoom?.(-0.1))
+        zoomOutBtn.addEventListener('click', () => this.app.changeZoom?.(-0.05))
         content.appendChild(zoomOutBtn)
 
         // Zoom Readout
@@ -843,7 +843,7 @@ export class EditSubBarManager {
         zoomInBtn.className = 'sf-others-style-btn'
         zoomInBtn.title = 'Zoom In (+)'
         zoomInBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
-        zoomInBtn.addEventListener('click', () => this.app.changeZoom?.(0.1))
+        zoomInBtn.addEventListener('click', () => this.app.changeZoom?.(0.05))
         content.appendChild(zoomInBtn)
 
         addVDivider(content)
