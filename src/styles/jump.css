@@ -582,23 +582,3 @@
     background: rgba(0, 0, 0, 0.1);
     border-radius: 3px;
 }
-
-/* Horizontal Mode: Position page display at scrollbar center */
-body.mode-horizontal #jump-page-display {
-    position: fixed !important;
-    right: 8px !important;
-    top: 50% !important;
-    left: auto !important;
-    bottom: auto !important;
-    transform: translateY(-50%) !important;
-    z-index: 10001 !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    backdrop-filter: blur(10px) !important;
-    padding: 8px 12px !important;
-    border-radius: 8px !important;
-    border: 1px solid var(--border) !important;
-    font-size: 0.75rem !important;
-    font-weight: 600 !important;
-    color: var(--text-secondary) !important;
-    margin: 0 !important;
-}

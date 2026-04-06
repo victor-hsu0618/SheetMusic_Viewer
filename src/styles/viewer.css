@@ -102,6 +102,19 @@ body:not([data-active-tool="view"])::before {
   animation: page-shimmer 1.6s ease-in-out infinite;
 }
 
+/* Page number in top-right corner (horizontal mode only) */
+body.mode-horizontal .page-container::after {
+  content: attr(data-page);
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 10;
+}
+
 .page-container[data-rendered="true"] {
   background: white;
   background-image: none;
