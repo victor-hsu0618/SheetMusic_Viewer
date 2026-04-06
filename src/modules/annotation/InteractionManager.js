@@ -512,6 +512,8 @@ export class InteractionManager {
             InteractionUI.showTrash(false, wrapper);
             isInteracting = true;
             this.app.isInteracting = true;
+            potentialNudge = null;  // Clear any leftover nudge state before starting new action
+            isNudging = false;  // Clear nudging state
 
             const pPos = CoordMapper.getStampPreviewPos(pos, pointerType, activeTool, this.app, overlay);
             const target = this.app.selectHoveredStamp || this.app.findClosestStamp(pageNum, pPos.x, pPos.y, true);
