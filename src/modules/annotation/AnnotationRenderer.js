@@ -260,6 +260,7 @@ export class AnnotationRenderer {
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.quadraticCurveTo(cx, cy, x2, y2);
+            ctx.stroke();
         } else if ((path.type === 'curly-left' || path.type === 'curly-right') && path.points.length >= 2) {
             const p1 = path.points[0];
             const p2 = path.points[path.points.length - 1];
@@ -276,6 +277,7 @@ export class AnnotationRenderer {
             ctx.bezierCurveTo(mx, y1 + h * 0.18,  mx + w, my - h * 0.06,  mx + w, my);
             // Bottom half: midpoint → curve back to straight end
             ctx.bezierCurveTo(mx + w, my + h * 0.06,  mx, y2 - h * 0.18,  mx, y2);
+            ctx.stroke();
         } else if ((path.type === 'bracket-left' || path.type === 'bracket-right') && path.points.length >= 2) {
             const p1 = path.points[0];
             const p2 = path.points[path.points.length - 1];
@@ -302,6 +304,7 @@ export class AnnotationRenderer {
             ctx.lineTo(x2, y2);
             // End cap
             ctx.lineTo(x2 + px, y2 + py);
+            ctx.stroke();
         } else if (path.type === 'rect-shape' && path.points.length >= 2) {
             const p2 = path.points[path.points.length - 1]
             ctx.beginPath()
