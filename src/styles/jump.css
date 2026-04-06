@@ -582,3 +582,21 @@
     background: rgba(0, 0, 0, 0.1);
     border-radius: 3px;
 }
+
+/* Horizontal Mode: Position page display at bottom center */
+body.mode-horizontal #jump-page-display {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    padding: 8px 12px;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
