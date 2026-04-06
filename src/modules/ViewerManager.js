@@ -1080,12 +1080,6 @@ export class ViewerManager {
         wrapper.style.display = 'block'
         wrapper.innerHTML = `<canvas class="pdf-canvas"></canvas>`
         
-        // Add page number for horizontal mode
-        const pageNum_el = document.createElement('div')
-        pageNum_el.className = 'page-num-badge'
-        pageNum_el.textContent = pageNum
-        wrapper.appendChild(pageNum_el)
-        
         div.appendChild(wrapper)
         return div
     }
