@@ -103,8 +103,7 @@ body:not([data-active-tool="view"])::before {
 }
 
 /* Page number in top-right corner (horizontal mode only) */
-body.mode-horizontal .page-container::after {
-  content: attr(data-page);
+body.mode-horizontal .page-num-badge {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -113,6 +112,10 @@ body.mode-horizontal .page-container::after {
   color: rgba(0, 0, 0, 0.4);
   pointer-events: none;
   z-index: 10;
+}
+
+body.mode-vertical .page-num-badge {
+  display: none;
 }
 
 .page-container[data-rendered="true"] {
@@ -167,6 +170,7 @@ body.mode-horizontal .page-container {
   min-width: calc(100vw - 12px) !important;
   display: flex;
   justify-content: center;
+  position: relative !important;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
