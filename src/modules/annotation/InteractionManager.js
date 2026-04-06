@@ -703,10 +703,6 @@ export class InteractionManager {
             if (!isInteracting) return;
             const pointerType = getPointerType(e);
             const toolType = this.app.activeStampType;
-            
-            if (activeObject?.type === 'rect-shape' || activeObject?.type === 'circle-shape') {
-                // Handle shape drawing
-            }
 
             // Update tracked position for all pointers
             this.app.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
