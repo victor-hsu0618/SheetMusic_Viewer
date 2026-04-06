@@ -1076,6 +1076,7 @@ export class ViewerManager {
         // Content wrapper to anchor annotation layers correctly
         const wrapper = document.createElement('div')
         wrapper.className = 'page-content-wrapper'
+        wrapper.dataset.page = pageNum
         wrapper.style.position = 'relative'
         wrapper.style.display = 'block'
         wrapper.innerHTML = `<canvas class="pdf-canvas"></canvas>`
