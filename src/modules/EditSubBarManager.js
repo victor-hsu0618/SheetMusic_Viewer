@@ -218,6 +218,7 @@ export class EditSubBarManager {
         bar.id = 'sf-sub-bar-' + name
         bar.className = 'sf-sub-bar'
             + (name === 'others' ? ' sf-others-bar sf-wide-bar' : '')
+            + (name === 'pen' ? ' sf-wide-bar' : '')
             + (name === 'stamp' ? ' sf-wide-bar' : '')
         return bar
     }
@@ -300,6 +301,7 @@ export class EditSubBarManager {
         const prevScrollLeft = prevContent?.scrollLeft ?? 0
         const prevScrollTop = prevContent?.scrollTop ?? 0
         bar.innerHTML = ''
+        if (name === 'pen')    this._buildWideBar(bar, 'pen')
         if (name === 'stamp')  this._buildWideBar(bar, 'stamp')
         if (name === 'others') this._buildOthersBar(bar)
         if (prevScrollLeft > 0 || prevScrollTop > 0) {
@@ -346,6 +348,7 @@ export class EditSubBarManager {
 
     _buildWideBar(bar, type) {
         const isStamp = type === 'stamp'
+        const isPen = type === 'pen'
 
         // Apply saved orientation
         const isVertical = localStorage.getItem('sf_stamp_orientation_' + type) === 'vertical'
@@ -359,6 +362,9 @@ export class EditSubBarManager {
         let flatItems
         if (isStamp) {
             flatItems = this._loadMyPanelItems()
+        } else if (isPen) {
+            const group = TOOLSETS.find(g => g.name === 'Pens')
+            flatItems = group ? group.tools.map(t => ({ ...t, _group: group })) : []
         } else {
             const group = TOOLSETS.find(g => g.name === 'Shapes')
             flatItems = group ? group.tools.map(t => ({ ...t, _group: group })) : []

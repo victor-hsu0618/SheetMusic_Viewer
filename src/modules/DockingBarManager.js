@@ -278,6 +278,7 @@ export class DockingBarManager {
                     { id: '_zoomin',  label: 'Zoom+', icon: `<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>`, action: () => this.app.changeZoom?.(0.25) },
                     { id: '_zoomout', label: 'Zoom-', icon: `<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>`,                                        action: () => this.app.changeZoom?.(-0.25) },
                     { divider: true },
+                    { id: 'pen-palette', label: 'Pens', pen: true, icon: `<path d="M18 13L16.5 5.5L2 2l3.5 14.5L13 18l5-5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 19l7-7l3 3l-7 7l-3-3z"/>` },
                     { id: 'stamp-palette', label: 'Stamps', stamp: true, icon: `<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>` },
                     { id: '_others', label: 'Others', icon: `<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>`, action: (btn) => this._subBarMgr?.toggle('others', btn) },
                 ]
@@ -316,10 +317,15 @@ export class DockingBarManager {
             btn.dataset.tool = cfg.id
             btn.title = cfg.label
 
+            const penBarOpen = this._subBarMgr?.activeBar === 'pen'
+
             if (cfg.stamp) {
                 if (!isCoreAction) btn.classList.add('active')
                 if (stampBarOpen)  btn.classList.add('open')
-            } else if (cfg.tool && curTool === cfg.id && !stampBarOpen) {
+            } else if (cfg.pen) {
+                if (!isCoreAction) btn.classList.add('active')
+                if (penBarOpen)    btn.classList.add('open')
+            } else if (cfg.tool && curTool === cfg.id && !stampBarOpen && !penBarOpen) {
                 btn.classList.add('active')
             }
 
@@ -328,6 +334,7 @@ export class DockingBarManager {
             btn.addEventListener('click', () => {
                 if (cfg.action) { cfg.action(btn); return }
                 if (cfg.stamp)  { this._subBarMgr?.toggle('stamp', btn); this.update(); return }
+                if (cfg.pen)    { this._subBarMgr?.toggle('pen', btn); this.update(); return }
                 if (cfg.tool) {
                     this._subBarMgr?.closeToolBars ? this._subBarMgr.closeToolBars() : this._subBarMgr?.closeAll()
                     const already = this.app.activeStampType === cfg.id && cfg.id !== 'view'
