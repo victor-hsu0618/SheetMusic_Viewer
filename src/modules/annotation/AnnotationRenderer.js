@@ -306,6 +306,7 @@ export class AnnotationRenderer {
             const p2 = path.points[path.points.length - 1]
             ctx.beginPath()
             ctx.rect(startX, startY, p2.x * canvas.width - startX, p2.y * canvas.height - startY)
+            ctx.stroke()
         } else if (path.type === 'circle-shape' && path.points.length >= 2) {
             const p2 = path.points[path.points.length - 1]
             const cx = (startX + p2.x * canvas.width) / 2
@@ -314,6 +315,7 @@ export class AnnotationRenderer {
             const ry = Math.abs(p2.y * canvas.height - startY) / 2
             ctx.beginPath()
             ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2)
+            ctx.stroke()
         } else {
             ctx.beginPath();
             ctx.moveTo(startX, startY);
