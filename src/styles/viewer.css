@@ -142,19 +142,23 @@ body.mode-horizontal #pdf-viewer {
   height: 100%;
   min-width: 100%;
   width: max-content; /* Critical: allow width to grow with pages */
-  gap: 12px; /* Add gap between pages */
 }
 
 body.mode-horizontal .page-container {
   margin-bottom: 0 !important;
-  margin-right: 0px; 
+  margin-left: 6px !important;
+  margin-right: 6px !important;
   scroll-snap-align: start;
-  flex: 0 0 calc(100vw - 12px) !important; /* Adjust for gap */
+  flex: 0 0 calc(100vw - 12px) !important; /* Adjust for margins */
   width: calc(100vw - 12px) !important;
   min-width: calc(100vw - 12px) !important;
   display: flex;
   justify-content: center;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+body.mode-horizontal .page-container:first-child {
+  margin-left: 0;
 }
 
 body.mode-horizontal .page-container:last-child {
