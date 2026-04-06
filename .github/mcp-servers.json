@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "node",
+      "args": [
+        "-e",
+        "import PlywrightMCP from '@modelcontextprotocol/server-playwright'; new PlywrightMCP().start();"
+      ],
+      "env": {
+        "PLAYWRIGHT_HEADLESS": "true"
+      },
+      "disabled": false,
+      "description": "Playwright browser automation for E2E testing. Useful for writing, debugging, and running UI tests on ScoreFlow.",
+      "alwaysAllow": [
+        "browser_*",
+        "page_*",
+        "element_*"
+      ]
+    }
+  },
+  "description": "MCP Server configuration for ScoreFlow PWA. Playwright MCP enables browser automation for E2E testing workflows."
+}

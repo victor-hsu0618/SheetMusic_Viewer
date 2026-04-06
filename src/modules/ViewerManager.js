@@ -389,6 +389,14 @@ export class ViewerManager {
         const rawStamps = (await db.get(`stamps_${fingerprint}`)) || []
         const now = Date.now()
         
+        // CRITICAL FIX: Ensure 'self' source always exists (for backward compatibility with old stamps)
+        // If sources don't include 'self' but stamps do, add 'self' back to sources
+        const hasSelfSource = this.app.sources.some(s => s.id === 'self');
+        if (!hasSelfSource && rawStamps.some(s => s.sourceId === 'self')) {
+            console.warn(`[ViewerManager] Restoring 'self' source — found stamps with sourceId:'self' but 'self' was removed from sources`);
+            this.app.sources.unshift({ id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' });
+        }
+        
         console.log(`[ViewerManager] loadStamps: Available Sources:`, this.app.sources.map(s => `${s.name}(${s.id})`));
         
         this.app.stamps = rawStamps.filter(s => !s.deleted).map(s => {

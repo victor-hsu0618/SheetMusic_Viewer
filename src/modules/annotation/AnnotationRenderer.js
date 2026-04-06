@@ -15,7 +15,9 @@ export class AnnotationRenderer {
         if (!wrapper) return
 
         const canvas = wrapper.querySelector('.annotation-layer.virtual-canvas')
-        if (!canvas) return
+        if (!canvas) {
+            return;
+        }
         const ctx = canvas.getContext('2d')
         ctx.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -25,7 +27,9 @@ export class AnnotationRenderer {
             s.page === page && !s.deleted &&
             (s.type !== 'system' || this.app.showSystemStamps)
         );
-        if (pageStamps.length === 0) return;
+        if (pageStamps.length === 0) {
+            return;
+        }
 
         this.app.sources.forEach(source => {
             if (!source.visible) return;
