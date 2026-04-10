@@ -11,6 +11,8 @@ export class InteractionManager {
         this._viewPanCleanup = null; // Shared across all overlays — prevents stacked doPan listeners
     }
 
+    // Diagnostic methods removed as per user request
+
     _updateCursor(overlay, pointerType) {
         if (!overlay) return;
         const tool = this.app.activeStampType;
@@ -162,6 +164,9 @@ export class InteractionManager {
         let isDraggingHandle = false;  // Dragging an endpoint handle on a two-point stroke
         let draggingHandleIndex = -1;  // 0 = start point, last = end point
 
+        // --- STABILIZATION STATE ---
+        let actionStartClient = { x: 0, y: 0 };
+
         // Force reset closure state when switching tools to prevent stuck interactions
         overlay._resetState = () => {
             isInteracting = false;
@@ -242,27 +247,45 @@ export class InteractionManager {
 
         // --- HANDLERS ---
 
-        const startAction = async (e) => {
+        const startAction = (e) => {
             if (e.target.closest('.text-editor-container')) return;
             this._dismissStampContextMenu();
 
+            // STOP PROPAGATION IMMEDIATELY: Ensure this overlay owns the event
+            e.stopPropagation();
+
             const toolType = this.app.activeStampType;
             const pointerType = getPointerType(e);
-            const isPen = pointerType === 'pen';
+            
+            // PRESSURE GATE: Optimized threshold for iPad Pro sensitivity
+            const PENCIL_PRESSURE_THRESHOLD = 0.02;
+            const hasValidPressure = (e.pressure !== undefined && e.pressure > PENCIL_PRESSURE_THRESHOLD);
+            
+            const isPenHardware = pointerType === 'pen' || (e.pressure > 0 && pointerType === 'touch' && !this.app.isMac);
+            const isPen = isPenHardware && (hasValidPressure || this.app.isMac);
 
-            // Safety: If this is the start of a potential single action (only 1 touch on screen),
-            // reset global state to ensure no ghost pointers from previous pages/gestures remain.
-            if (e.pointerType === 'touch' && e.isPrimary) {
-                // If it's a primary touch down, it's a fresh start. 
-                // We clear to resolve "only works once" issues.
+            if (isPen || (e.pointerType === 'touch' && e.isPrimary)) {
+                // If it's a pen down or a primary touch, it's a fresh start. 
                 this.app.activePointers.clear();
                 this.app.isTwoFingerPanning = false;
+
+                // If it's a pen, kill any pending touch buffers immediately
+                if (isPen && touchBufferTimer) {
+                    clearTimeout(touchBufferTimer);
+                    touchBufferTimer = null;
+                }
             } else if (e.pointerType === 'mouse') {
                 this.app.activePointers.clear();
             }
 
             // Always track pointers for multi-touch handling
-            this.app.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            this.app.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, type: pointerType });
+
+            // PENCIL SUPREMACY: If it's a pen, bypass EVERYTHING and proceed immediately
+            if (isPen) {
+                proceedWithAction(e);
+                return;
+            }
 
             if (this.app.activePointers.size >= 2) {
                 if (touchBufferTimer) clearTimeout(touchBufferTimer);
@@ -309,15 +332,21 @@ export class InteractionManager {
             proceedWithAction(e);
         };
 
-        const proceedWithAction = async (e) => {
+        const proceedWithAction = (e) => {
+            // STEP 0: Set synchronous flags immediately to prevent race conditions during async setup
+            isInteracting = true;
+            this.app.isInteracting = true;
+
             const toolTypeRaw = this.app.activeStampType;
             const pointerType = getPointerType(e);
 
-            if (isInteracting) {
-                detachGlobalListeners();
-            }
-            isInteracting = false;
-            this.app.isInteracting = false;
+            // TRACK STARTING COORDINATES FOR STABILIZATION
+            actionStartClient = { 
+                x: e.clientX !== undefined ? e.clientX : (e.touches?.[0]?.clientX || 0),
+                y: e.clientY !== undefined ? e.clientY : (e.touches?.[0]?.clientY || 0)
+            };
+
+            // Clean previous state before starting new one (but keep isInteracting true)
             activeObject = null;
             isMovingExisting = false;
             isDraggingHandle = false;
@@ -328,7 +357,7 @@ export class InteractionManager {
             eraserClickTarget = null;
             eraserHasDragged = false;
 
-            if (this.app.panCooldown) return;
+            if (this.app.panCooldown && pointerType !== 'pen') return;
 
             const pos = CoordMapper.getPos(e, overlay);
 
@@ -485,8 +514,6 @@ export class InteractionManager {
                     activeObject = graceObject;
                     isMovingExisting = true;
                     this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
-                    isInteracting = true;
-                    this.app.isInteracting = true;
 
                     const graceCenter = CoordMapper.getGraceCenter(graceObject);
                     const wCenter = getPixelsForWrapper(wrapper, graceCenter.x, graceCenter.y);
@@ -509,8 +536,6 @@ export class InteractionManager {
                     nudgeStartClient = { x: cx, y: cy };
                     nudgeStartObjectPos = { x: graceObject.x || (graceObject.points?.[0]?.x || 0), y: graceObject.y || (graceObject.points?.[0]?.y || 0) };
                     isNudging = false;
-                    isInteracting = true;
-                    this.app.isInteracting = true;
                     if (graceTimer) { clearTimeout(graceTimer); graceTimer = null; }
                     attachGlobalListeners();
                     return;
@@ -549,7 +574,7 @@ export class InteractionManager {
                             const nt = this.app.toolsets.flatMap(g => g.tools).find(t => t.id === target.type);
                             if (nt?.draw) target.draw = { ...nt.draw };
                             target.updatedAt = Date.now();
-                            await this.app.saveToStorage(true);
+                            this.app.saveToStorage(true);
                             this.app.redrawAllAnnotationLayers();
                         }
                         isInteracting = false;
@@ -558,12 +583,12 @@ export class InteractionManager {
                         const cid = activeTool.replace('cloak-', '');
                         target.hiddenGroup = (target.hiddenGroup === cid) ? undefined : cid;
                         target.updatedAt = Date.now();
-                        await this.app.saveToStorage(true);
+                        this.app.saveToStorage(true);
                         this.app.redrawAllAnnotationLayers();
                         isInteracting = false;
                         this.app.isInteracting = false;
                     } else if (activeTool === 'recycle-bin') {
-                        await this.app.annotationManager.eraseStampTarget(target);
+                        this.app.annotationManager.eraseStampTarget(target);
                         isInteracting = false;
                         this.app.isInteracting = false;
                     } else if (activeTool === 'copy') {
@@ -655,8 +680,6 @@ export class InteractionManager {
                     userScale: this.app.activeToolPreset || 1.0
                 };
                 if (activeTool === 'slur') activeObject.curvature = -0.28;
-                isInteracting = true;
-                this.app.isInteracting = true;
                 attachGlobalListeners();
                 InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
             } else if (activeTool === 'eraser') {
@@ -664,8 +687,6 @@ export class InteractionManager {
                 // Don't erase immediately — wait to see if user drags (segment erase) or releases (whole erase)
                 eraserClickTarget = et || null;
                 eraserHasDragged = false;
-                isInteracting = true;
-                this.app.isInteracting = true;
                 activeObject = null;
                 attachGlobalListeners();
                 InteractionUI.syncVirtualPointer(e, activeTool, overlay, virtualPointer, CoordMapper, this.app);
@@ -956,6 +977,29 @@ export class InteractionManager {
             if (this._penLongPressTimer) { clearTimeout(this._penLongPressTimer); this._penLongPressTimer = null; }
             if (!isInteracting) return;
 
+            const endX = e.clientX !== undefined ? e.clientX : (e.changedTouches?.[0]?.clientX || e.touches?.[0]?.clientX || 0);
+            const endY = e.clientY !== undefined ? e.clientY : (e.changedTouches?.[0]?.clientY || e.touches?.[0]?.clientY || 0);
+            const totalDist = Math.sqrt(Math.pow(endX - actionStartClient.x, 2) + Math.pow(endY - actionStartClient.y, 2));
+
+            // --- LIFT-OFF STABILIZATION (Snap-back Logic) ---
+            if (isMovingExisting && activeObject && !isDraggingHandle && !InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper)) {
+                // threshold based on user logs showing drift up to 15.6px
+                const SNAP_BACK_THRESHOLD = 20; 
+                if (totalDist > 0 && totalDist < SNAP_BACK_THRESHOLD && this.dragStartObject) {
+                    console.log(`%c[Interaction Stab] Snap-back! Dist ${totalDist.toFixed(1)}px < ${SNAP_BACK_THRESHOLD}px`, 'color: #00ff00; font-weight: bold;');
+                    
+                    // Revert the object state
+                    if (activeObject.points) {
+                        activeObject.points = JSON.parse(JSON.stringify(this.dragStartObject.points));
+                    } else {
+                        activeObject.x = this.dragStartObject.x;
+                        activeObject.y = this.dragStartObject.y;
+                    }
+                    activeObject.page = this.dragStartObject.page;
+                    this.app.redrawAllAnnotationLayers();
+                }
+            }
+
             // Eraser click (no drag) → whole-stroke erase
             if (this.app.activeStampType === 'eraser' && eraserClickTarget && !eraserHasDragged) {
                 await this.app.annotationManager.eraseStampTarget(eraserClickTarget);
@@ -968,10 +1012,9 @@ export class InteractionManager {
                 if (!isDragDone) {
                     if (graceTimer) clearTimeout(graceTimer); graceObject = null; this.app._lastGraceObject = null;
                     InteractionUI.showTrash(false, wrapper); this.app.redrawStamps(pageNum);
-                    const pt = getPointerType(e); const tt = this.app.activeStampType;
-                    if (!['view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle'].includes(tt) && !tt.startsWith('cloak-')) {
+                    if (!['view', 'select', 'eraser', 'copy', 'recycle-bin', 'cycle'].includes(toolType) && !toolType.startsWith('cloak-')) {
                         const tapPos = CoordMapper.getPos(e, overlay);
-                        const fPos = CoordMapper.getStampPreviewPos(tapPos, pt, tt, this.app, overlay);
+                        const fPos = CoordMapper.getStampPreviewPos(tapPos, pointerType, toolType, this.app, overlay);
                         activeObject = {
                             page: pageNum, layerId: 'draw', sourceId: this.app.activeSourceId, type: tt,
                             x: fPos.x, y: fPos.y, color: this.app.activeColor, data: null,
@@ -1284,7 +1327,8 @@ export class InteractionManager {
             // Track pointers even in hover mode for cross-page gesture detection
             this.app.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
             
-            if (this.app.activePointers.size >= 2 || this.app.isTwoFingerPanning || this.app.panCooldown) {
+            // For Pencil, bypass multi-touch blocking in hover too
+            if (pt !== 'pen' && (this.app.activePointers.size >= 2 || this.app.isTwoFingerPanning || this.app.panCooldown)) {
                 virtualPointer?.classList.remove('active');
                 return;
             }
@@ -1316,9 +1360,9 @@ export class InteractionManager {
         actualWrapper.appendChild(overlay);
 
         overlay.addEventListener('touchstart', (e) => { 
-            // iPad Fix: Only prevent default if it's a single-finger interaction (drawing/tapping)
-            // If it's 2+ fingers, let it bubble so GestureManager can handle Pan/Zoom.
+            // Minimalist touchstart prevention: Only for single-touch non-view mode
             if (this.app.activeStampType !== 'view' && e.touches.length < 2 && e.cancelable) {
+                // DON'T stop propagation here, let PointerEvents flow
                 e.preventDefault(); 
             }
         }, { passive: false });
@@ -1337,13 +1381,17 @@ export class InteractionManager {
     }
 
     updateAllOverlaysTouchAction() {
+        // PLAN E: Tweak touch-action to see if it restores Pencil flow
         const tt = this.app.activeStampType; const isView = tt === 'view';
         document.documentElement.dataset.activeTool = tt;
         document.body.dataset.activeTool = tt;
         if (this.app.viewer) this.app.viewer.dataset.activeTool = tt;
         document.querySelectorAll('.capture-overlay').forEach(el => {
             if (isView && el._resetState) el._resetState();
-            el.style.touchAction = 'none'; el.style.pointerEvents = 'auto'; el.style.zIndex = isView ? '10' : '50';
+            // Reverting to 'none' for drawing tools to ensure the system doesn't hijack the move events
+            el.style.touchAction = isView ? 'auto' : 'none'; 
+            el.style.pointerEvents = 'auto'; 
+            el.style.zIndex = isView ? '10' : '50';
             this._updateCursor(el, 'mouse');
         });
         if (this.app.viewer) {
