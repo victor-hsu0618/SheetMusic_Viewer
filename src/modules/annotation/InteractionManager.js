@@ -314,12 +314,20 @@ export class InteractionManager {
             const pointerType = getPointerType(e);
 
             if (isInteracting) {
-                isInteracting = false;
-                this.app.isInteracting = false;
-                activeObject = null;
-                isMovingExisting = false;
                 detachGlobalListeners();
             }
+            isInteracting = false;
+            this.app.isInteracting = false;
+            activeObject = null;
+            isMovingExisting = false;
+            isDraggingHandle = false;
+            draggingHandleIndex = -1;
+            this.isAdjustingCurvature = false;
+            potentialNudge = null;
+            isNudging = false;
+            eraserClickTarget = null;
+            eraserHasDragged = false;
+
             if (this.app.panCooldown) return;
 
             const pos = CoordMapper.getPos(e, overlay);

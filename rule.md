@@ -63,4 +63,4 @@
 ## 六、 資源與檔案查找 (Resource & File Discovery)
 
 1. **截圖查找路徑 (Screenshot Discovery)**
-   - 若開發者提及截圖或需要查看介面表現，AI 助理應優先前往 `/Users/victor_hsu/Downloads/screenshot` 路徑查找最新相關圖片。
+   - 若開發者提及截圖或需要查看介面表現，AI 助理應優先前往 `/Users/victor_hsu/Downloads/` 路徑查找最新相關圖片。

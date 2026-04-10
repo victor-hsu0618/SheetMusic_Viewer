@@ -64,4 +64,3 @@ npm run test:e2e     # Run Playwright E2E tests
 ## Documentation Reference
 - **`PRD.MD`**: Detailed product requirements and feature roadmap.
 - **`CLAUDE.md`**: Technical overview and command reference for AI assistants.
-- **`Known_Issue.md`**: Current bug list and planned enhancements.
