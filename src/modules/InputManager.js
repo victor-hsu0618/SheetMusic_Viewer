@@ -50,7 +50,7 @@ export class InputManager {
             return false
         }
 
-        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, .jump-sub-panel, .library-overlay, .sidebar-recent-item, .recent-score-card, .bookmark-item, .sf-sub-bar, .sf-wide-bar, .sf-stamp-settings-panel'
+        const uiSelector = 'button, label, input, select, .floating-stamp-bar, .floating-doc-bar, .modal-card, .jump-sub-panel, .library-overlay, .sidebar-recent-item, .recent-score-card, .bookmark-item, .sf-sub-bar, .sf-wide-bar, .sf-stamp-settings-panel, #sf-standalone-scrollbar, .sf-std-track, .sf-std-thumb, .sf-std-arrow'
         if (e.target.closest(uiSelector)) return true
 
         // On iOS, touch events can bleed through position:fixed overlays to the

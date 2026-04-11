@@ -163,6 +163,7 @@ export class StandaloneScrollbarManager {
             track.addEventListener('pointerdown', (e) => {
                 if (e.button !== 0 && e.pointerType === 'mouse') return
                 e.preventDefault()
+                e.stopPropagation()
                 track.setPointerCapture(e.pointerId)
                 dragging = true
                 lastClientY = e.clientY // Always vertical movement now
@@ -257,10 +258,10 @@ export class StandaloneScrollbarManager {
             }
         }
 
-        arrow.addEventListener('mousedown',  (e) => { e.stopPropagation(); startPress(e) })
+        arrow.addEventListener('mousedown',  (e) => { e.preventDefault(); e.stopPropagation(); startPress(e) })
         arrow.addEventListener('touchstart', (e) => { e.stopPropagation(); startPress(e) }, { passive: true })
-        arrow.addEventListener('mouseup',    (e) => { e.stopPropagation(); endPress(e) })
-        arrow.addEventListener('touchend',   (e) => { e.stopPropagation(); endPress(e) }, { passive: false })
+        arrow.addEventListener('mouseup',    (e) => { e.preventDefault(); e.stopPropagation(); endPress(e) })
+        arrow.addEventListener('touchend',   (e) => { e.preventDefault(); e.stopPropagation(); endPress(e) }, { passive: false })
         arrow.addEventListener('mouseleave', () => {
             if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
             arrow.classList.remove('active')
