@@ -303,9 +303,18 @@ export class ViewerManager {
             if (this.app.updateScoreDetailUI) {
                 this.app.updateScoreDetailUI(newFingerprint);
             }
+
+            // ✅ RACE CONDITION FIX: 在 loadStamps 完成後才啟動雲端雙向同步。
+            // 舊邏輯：syncAnnotationsOnLoad 與 loadStamps 並行，後者可能在前者寫入 IDB 前讀到空資料
+            // 並在完成時以空陣列覆寫 app.stamps，導致 annotation 消失。
+            // 新邏輯：loadStamps 完成後 syncAnnotationsOnLoad 以 fire-and-forget 啟動，
+            // 確保不會覆寫已正確設置的 app.stamps。
+            if (this.app.supabaseManager?.user && loadingId === this.latestLoadingId) {
+                this.app.supabaseManager.syncAnnotationsOnLoad(newFingerprint);
+            }
         })();
 
-        // 4. Background Storage Sync
+        // 4. Background Storage Sync (PDF buffer upload + Realtime)
         if (this.app.supabaseManager?.user) {
             // Defer buffer copy to avoid blocking the main thread before PDF parsing completes
             const capturedData = uint8Data;
@@ -321,10 +330,11 @@ export class ViewerManager {
             })();
             
             // Supabase Realtime subscription for live changes during this session
+            // (訂閱可立即建立，不需等 stamps 載入完成)
             this.app.supabaseManager.subscribeToAnnotations(newFingerprint);
 
-            // Bidirectional sync: pull cloud + push any local-only stamps up
-            this.app.supabaseManager.syncAnnotationsOnLoad(newFingerprint);
+            // NOTE: syncAnnotationsOnLoad 已移至 dataPromise 內（在 loadStamps 之後），
+            // 不在此處呼叫，以避免與 loadStamps 產生 Race Condition。
         }
 
         // --- SAFE CACHE: Persist buffer to IndexedDB (fire-and-forget — must not block PDF load) ---
