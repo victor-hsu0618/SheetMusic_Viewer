@@ -83,6 +83,12 @@ export class PersistenceManager {
             }
         }
 
+        // INVARIANT: 'self' source must always exist. Restore silently if missing
+        // (can happen if user accidentally deleted it via collaboration UI, or from corrupted storage).
+        if (!this.app.sources.some(s => s.id === 'self')) {
+            this.app.sources.unshift({ id: 'self', name: 'Primary Interpretation', visible: true, opacity: 1, color: '#6366f1' });
+        }
+
         // 2. Load Layers - Priority: Per-Score > Global
         let layersData = localStorage.getItem('scoreflow_layers')
         if (activeFp) {

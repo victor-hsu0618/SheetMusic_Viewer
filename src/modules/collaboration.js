@@ -125,8 +125,12 @@ export class CollaborationManager {
 
       const delBtn = item.querySelector('.delete-src')
       if (delBtn) {
+        if (source.id === 'self') {
+          delBtn.style.display = 'none'; // Primary source cannot be deleted
+        }
         delBtn.onclick = (e) => {
           e.stopPropagation()
+          if (source.id === 'self') return; // Guard: never delete the primary source
           if (confirm(`Remove "${source.name}" and all its annotations?`)) {
             const filteredStamps = stampsToUse.filter(s => s.sourceId !== source.id)
             const filteredSources = sourcesToRender.filter(s => s.id !== source.id)
