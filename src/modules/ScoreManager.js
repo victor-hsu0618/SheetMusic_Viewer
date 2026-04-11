@@ -496,9 +496,11 @@ export class ScoreManager {
             const oldMode = score.storageMode;
             score.storageMode = mode;
 
-            // Trigger download if switching from cloud to a local mode
-            if (oldMode === 'cloud' && (mode === 'pinned' || mode === 'cached')) {
-                const buffer = await db.get(`score_buf_${fp}`);
+            // Trigger download if switching to a local mode AND buffer is missing
+            // 注意：不限制 oldMode 必須為 'cloud'，避免 buffer 遺失但 mode 記錄為 cached 時漏掉下載
+            if (mode === 'pinned' || mode === 'cached') {
+                const existingBuf = await db.get(`score_buf_${fp}`);
+                const buffer = (!existingBuf || existingBuf.byteLength === 0) ? null : existingBuf;
                 if (!buffer) {
                     this.app.showMessage('正在下載樂譜檔...', 'system');
                     try {

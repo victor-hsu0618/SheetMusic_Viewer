@@ -69,6 +69,8 @@ export class SetlistManager {
     async mergeSetlists(cloudSetlists) {
         if (!cloudSetlists || !Array.isArray(cloudSetlists) || cloudSetlists.length === 0) {
             console.log('[SetlistManager] No cloud setlists to merge.');
+            // Even with no new cloud data, ensure existing setlist scores are locally available
+            this._ensureSetlistScoresDownloaded();
             return;
         }
         
@@ -96,6 +98,113 @@ export class SetlistManager {
             if (this.app.scoreManager?.overlay?.classList.contains('active')) {
                 this.render();
             }
+        }
+
+        // 背景靜默確保所有 Setlist 內的 score 都有本地 PDF 與 annotation
+        this._ensureSetlistScoresDownloaded();
+    }
+
+    /**
+     * 背景靜默下載所有 Setlist 內缺少本地 PDF buffer 的 score，並預取 annotation。
+     * 不阻塞 UI，不影響當前使用者操作。
+     */
+    async _ensureSetlistScoresDownloaded() {
+        if (!this.app.supabaseManager?.user) return;
+
+        // 收集所有活躍 setlist 中的唯一 fingerprint
+        const allFps = new Set();
+        this.setlists
+            .filter(l => !l.deleted)
+            .forEach(list => {
+                list.scores.forEach(item => {
+                    const fp = typeof item === 'object' ? item.fingerprint : item;
+                    // 跳過已標記為刪除的 ghost 項目
+                    if (fp && typeof fp === 'string' && !(typeof item === 'object' && item.status === 'deleted')) {
+                        allFps.add(fp);
+                    }
+                });
+            });
+
+        if (allFps.size === 0) return;
+
+        console.log(`[SetlistManager] 🔽 Background prefetch: checking ${allFps.size} setlist score(s)...`);
+
+        let pdfDownloaded = 0;
+        let annotSynced = 0;
+        let registryDirty = false;
+
+        for (const fp of allFps) {
+            // --- PDF Buffer 檢查 ---
+            let buffer = await db.get(`score_buf_${fp}`);
+            const bufferMissing = !buffer || buffer.byteLength === 0;
+
+            if (bufferMissing) {
+                try {
+                    console.log(`[SetlistManager] 📥 PDF missing, downloading: ${fp.substring(0, 8)}...`);
+                    const blob = await this.app.supabaseManager.downloadPDFBuffer(fp);
+                    if (blob) {
+                        // 相容性：部分環境缺少 arrayBuffer()
+                        const safeGetBuffer = async (b) => {
+                            if (b.arrayBuffer) return await b.arrayBuffer();
+                            return new Promise((resolve, reject) => {
+                                const fr = new FileReader();
+                                fr.onload = () => resolve(fr.result);
+                                fr.onerror = reject;
+                                fr.readAsArrayBuffer(b);
+                            });
+                        };
+                        const buf = await safeGetBuffer(blob);
+                        await db.set(`score_buf_${fp}`, buf);
+
+                        // 同步更新 registry
+                        const regEntry = this.app.scoreManager?.registry?.find(s => s.fingerprint === fp);
+                        if (regEntry) {
+                            regEntry.storageMode = 'pinned';
+                            regEntry.isCloudOnly = false;
+                            registryDirty = true;
+                        }
+                        pdfDownloaded++;
+                        console.log(`[SetlistManager] ✅ PDF saved: ${fp.substring(0, 8)}`);
+                    } else {
+                        console.warn(`[SetlistManager] ⚠️ No PDF blob returned for: ${fp.substring(0, 8)}`);
+                    }
+                } catch (e) {
+                    console.warn(`[SetlistManager] ⚠️ PDF download failed for ${fp.substring(0, 8)}:`, e.message || e);
+                }
+            } else {
+                // buffer 存在，確保 storageMode 為 pinned（setlist 裡的 score 應永遠 pinned）
+                const regEntry = this.app.scoreManager?.registry?.find(s => s.fingerprint === fp);
+                if (regEntry && regEntry.storageMode !== 'pinned') {
+                    regEntry.storageMode = 'pinned';
+                    registryDirty = true;
+                }
+            }
+
+            // --- Annotation 預取（只在本機尚無任何 stamp 時才 pull）---
+            try {
+                const localStamps = await db.get(`stamps_${fp}`);
+                if (!localStamps || localStamps.length === 0) {
+                    // pullAnnotations 若 fp !== pdfFingerprint 只寫 IDB，不影響畫面
+                    await this.app.supabaseManager.pullAnnotations(fp);
+                    annotSynced++;
+                }
+            } catch (e) {
+                console.warn(`[SetlistManager] ⚠️ Annotation prefetch failed for ${fp.substring(0, 8)}:`, e.message || e);
+            }
+
+            // 小暫停：避免大量 I/O 阻塞主執行緒
+            await new Promise(r => setTimeout(r, 80));
+        }
+
+        // 若 registry 有更新，統一儲存一次
+        if (registryDirty) {
+            await this.app.scoreManager?.saveRegistry();
+        }
+
+        if (pdfDownloaded > 0 || annotSynced > 0) {
+            console.log(`[SetlistManager] ✅ Prefetch complete: ${pdfDownloaded} PDF(s) downloaded, ${annotSynced} annotation set(s) synced.`);
+        } else {
+            console.log(`[SetlistManager] ✅ Prefetch complete: all setlist scores already available locally.`);
         }
     }
 
