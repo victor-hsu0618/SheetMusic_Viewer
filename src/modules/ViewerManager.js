@@ -278,6 +278,11 @@ export class ViewerManager {
             stopAtErrors: false,
             disableAutoFetch: true,
             disableStream: true,
+            // Cap PDF.js internal OffscreenCanvas for image processing (e.g. high-DPI scanned PDFs).
+            // Without this, PDF.js probes the browser and may create canvases > 67M px limit,
+            // causing "Canvas area exceeds the maximum limit" errors.
+            // 9M pixels × 4 bytes (RGBA) = 37,748,736 — matches our render canvas cap.
+            canvasMaxAreaInBytes: 37748736,
         });
         
         // Add a timeout logger
