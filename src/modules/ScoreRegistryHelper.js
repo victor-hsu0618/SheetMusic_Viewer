@@ -250,4 +250,47 @@ export class ScoreRegistryHelper {
             this.app.showMessage('Your library is already healthy. ✨', 'info');
         }
     }
+    
+    /**
+     * One-time background migration to backfill lastAnnotationUpdate timestamps
+     * by scanning local IndexedDB stamps for each registry entry.
+     */
+    async backfillLastAnnotationTimestamps() {
+        const needsUpdate = this.manager.registry.filter(s => !s.lastAnnotationUpdate);
+        if (needsUpdate.length === 0) return;
+
+        console.log(`[ScoreRegistryHelper] 🧹 Backfilling annotation timestamps for ${needsUpdate.length} scores...`);
+        let changed = false;
+
+        // Process in small batches to avoid blocking main thread extensively
+        for (const entry of needsUpdate) {
+            try {
+                const stamps = await db.get(`stamps_${entry.fingerprint}`);
+                if (stamps && Array.isArray(stamps) && stamps.length > 0) {
+                    // Find max updatedAt (standardized by our recent fixes to be numeric)
+                    const maxTime = Math.max(...stamps.map(s => Number(s.updatedAt) || 0));
+                    if (maxTime > 0) {
+                        entry.lastAnnotationUpdate = maxTime;
+                        changed = true;
+                    }
+                } else {
+                    // No stamps found, mark as 0 or null to avoid re-scanning every time?
+                    // Let's set to -1 as a seen-but-empty flag
+                    entry.lastAnnotationUpdate = -1; 
+                    changed = true;
+                }
+            } catch (err) {
+                console.error(`[ScoreRegistryHelper] Failed backfill for ${entry.fingerprint}:`, err);
+            }
+            
+            // Artificial breathing room every score
+            await new Promise(r => setTimeout(r, 20));
+        }
+
+        if (changed) {
+            console.log(`[ScoreRegistryHelper] ✅ Timestamp backfill complete.`);
+            await this.saveRegistry(this.manager.registry);
+            this.manager.render();
+        }
+    }
 }

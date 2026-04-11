@@ -47,10 +47,32 @@ export class ScoreManager {
         // Auto-load last score (or User Guide if library is empty)
         // [REVISION] Centered in main.js to avoid startup race conditions
         // this._autoLoadOnStartup();
+
+        // [New] Backfill annotation timestamps for registry entries that lack them
+        this.helper.backfillLastAnnotationTimestamps();
     }
 
     findByFingerprint(fp) {
         return this.registry.find(e => e.fingerprint === fp) || null
+    }
+
+    /**
+     * Updates the lastAnnotationUpdate timestamp for a score in the registry.
+     * @param {string} fp - PDF Fingerprint
+     * @param {number} timestamp - Unix timestamp
+     */
+    async updateLastAnnotationUpdate(fp, timestamp) {
+        if (!fp || !timestamp) return;
+        const entry = this.findByFingerprint(fp);
+        if (entry) {
+            // Only update if the new timestamp is fresher
+            if (!entry.lastAnnotationUpdate || timestamp > entry.lastAnnotationUpdate) {
+                entry.lastAnnotationUpdate = timestamp;
+                await this.helper.saveRegistry(this.registry);
+                // Also notify Sidebar/Library if needed (optional debounce)
+                this.render(); 
+            }
+        }
     }
 
     async _autoLoadOnStartup() {

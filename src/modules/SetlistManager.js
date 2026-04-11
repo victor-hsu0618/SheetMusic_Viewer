@@ -599,6 +599,12 @@ export class SetlistManager {
                     <div style="font-size: 0.85rem; opacity: 0.7; margin-top: 4px; ${isDeleted ? 'color: #ef4444;' : ''}">
                         ${isDeleted ? '⚠️ ' : ''}${composer}
                     </div>
+                    ${!isDeleted ? `
+                      <div style="font-size: 0.75rem; opacity: 0.5; margin-top: 4px; color: var(--primary); display: flex; align-items: center; gap: 4px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span>${regScore?.lastAnnotationUpdate && regScore.lastAnnotationUpdate > 0 ? '最後更新: ' + this.formatDate(regScore.lastAnnotationUpdate) : '尚未有標記'}</span>
+                      </div>
+                    ` : ''}
                 </div>
                 <button class="btn btn-ghost-mini remove-score-btn" style="color: #ef4444;" title="Remove from list">✕</button>
             `
@@ -699,5 +705,15 @@ export class SetlistManager {
         setTimeout(() => searchInput.focus(), 50)
 
         searchInput.addEventListener('input', () => renderList(searchInput.value))
+    }
+    formatDate(timestamp) {
+        if (!timestamp || timestamp <= 0) return '尚未有標記';
+        const date = new Date(timestamp);
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const h = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        return `${y}-${m}-${d} ${h}:${min}`;
     }
 }

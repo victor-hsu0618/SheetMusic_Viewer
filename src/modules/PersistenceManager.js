@@ -14,6 +14,14 @@ export class PersistenceManager {
             }
             if (this.app.scoreManager) {
                 await this.app.scoreManager.updateSyncStatus(this.app.pdfFingerprint, false);
+                
+                // [New] Update the lastAnnotationUpdate timestamp in registry
+                if (this.app.stamps && Array.isArray(this.app.stamps) && this.app.stamps.length > 0) {
+                    const latest = Math.max(...this.app.stamps.map(s => Number(s.updatedAt) || 0));
+                    if (latest > 0) {
+                        this.app.scoreManager.updateLastAnnotationUpdate(this.app.pdfFingerprint, latest);
+                    }
+                }
             }
             // Per-score isolation for Interpretations and Layers
             await db.set(`sources_${this.app.pdfFingerprint}`, this.app.sources)

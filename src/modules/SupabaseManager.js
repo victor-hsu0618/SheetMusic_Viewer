@@ -450,6 +450,14 @@ export class SupabaseManager {
         this.app.redrawAllAnnotationLayers?.()
         db.set(`stamps_${fingerprint}`, merged)
 
+        // [New] Update the lastAnnotationUpdate timestamp in registry
+        if (merged.length > 0 && this.app.scoreManager) {
+            const latest = Math.max(...merged.map(s => Number(s.updatedAt) || 0));
+            if (latest > 0) {
+                this.app.scoreManager.updateLastAnnotationUpdate(fingerprint, latest);
+            }
+        }
+
         console.log(`[Supabase] syncOnLoad: ${allCloudStamps.length} cloud, ${toUpload.length} uploaded, ${merged.length} active`)
     }
 
