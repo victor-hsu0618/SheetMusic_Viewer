@@ -287,6 +287,7 @@ export class SupabaseManager {
             // Silence warning for ordinary unauthenticated usage
             return
         }
+        if (!navigator.onLine) return
         if (!fingerprint) {
             console.warn('[Supabase] ⚠️ Push skipped: Missing score fingerprint.')
             return
@@ -595,6 +596,7 @@ export class SupabaseManager {
      */
     async backgroundSyncAllAnnotations() {
         if (!this.client || !this.user) return
+        if (!navigator.onLine) return
 
         const syncKey = `scoreflow_annot_sync_${this.user.id}`
         const lastSync = localStorage.getItem(syncKey)  // ISO string or null
@@ -716,6 +718,7 @@ export class SupabaseManager {
      */
     async pullProfile() {
         if (!this.client || !this.user) return null;
+        if (!navigator.onLine) return null;
         const { data, error } = await this.client
             .from('profiles')
             .select('data')
@@ -734,6 +737,7 @@ export class SupabaseManager {
      */
     async pushSetlists(setlists) {
         if (!this.client || !this.user) return;
+        if (!navigator.onLine) return;
         console.log(`[Supabase] ⬆️ Syncing ${setlists.length} Setlists...`);
 
         const { error } = await this.client
@@ -755,6 +759,7 @@ export class SupabaseManager {
      */
     async pullSetlists() {
         if (!this.client || !this.user) return null;
+        if (!navigator.onLine) return null;
         console.log('[Supabase] ↓ Pulling Setlists...');
         const { data, error } = await this.client
             .from('profiles')
@@ -833,6 +838,7 @@ export class SupabaseManager {
      */
     async pullUserContent() {
         if (!this.client || !this.user) return null;
+        if (!navigator.onLine) return null;
         const { data, error } = await this.client
             .from('profiles')
             .select('user_content')
@@ -850,6 +856,7 @@ export class SupabaseManager {
      */
     async pullPanelConfig() {
         if (!this.client || !this.user) return null;
+        if (!navigator.onLine) return null;
         const { data, error } = await this.client
             .from('profiles')
             .select('panel_config')
