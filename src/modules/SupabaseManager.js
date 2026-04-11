@@ -14,6 +14,10 @@ export class SupabaseManager {
         if (this.url && this.key) {
             this.initClient()
         }
+
+        // --- Realtime Retry State ---
+        this.realtimeRetryCount = 0
+        this.realtimeRetryTimer = null
     }
 
     initClient() {
@@ -97,6 +101,12 @@ export class SupabaseManager {
             return
         }
 
+        // Clear any existing retry timer to prevent concurrent attempts
+        if (this.realtimeRetryTimer) {
+            clearTimeout(this.realtimeRetryTimer)
+            this.realtimeRetryTimer = null
+        }
+
         this.unsubscribeAnnotations()
         this.currentFingerprint = fingerprint
 
@@ -122,14 +132,40 @@ export class SupabaseManager {
                 console.log(`[Supabase] 📡 Status [${fingerprint.substring(0,8)}]: ${status}`)
                 if (status === 'SUBSCRIBED') {
                     console.log('[Supabase] ✅ Live sync established.')
+                    this.realtimeRetryCount = 0 // Reset on success
                 } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                     console.error(`[Supabase] ❌ Realtime Channel Error [${status}]:`, err)
-                    this.app.uiManager?.showToast?.(`Sync Channel Error: ${status}`, 'error')
+                    
+                    // Trigger retry logic
+                    const MAX_RETRIES = 12
+                    if (this.realtimeRetryCount < MAX_RETRIES) {
+                        this.realtimeRetryCount++
+                        // Exponential backoff: 2s, 4s, 8s, 16s, 30s max
+                        const delay = Math.min(Math.pow(2, this.realtimeRetryCount) * 1000, 30000)
+                        
+                        console.log(`[Supabase] 🔄 Attempting reconnect in ${delay/1000}s... (Attempt ${this.realtimeRetryCount}/${MAX_RETRIES})`)
+                        
+                        if (this.realtimeRetryTimer) clearTimeout(this.realtimeRetryTimer)
+                        this.realtimeRetryTimer = setTimeout(() => {
+                            this.realtimeRetryTimer = null
+                            this.subscribeToAnnotations(fingerprint)
+                        }, delay)
+
+                        if (this.realtimeRetryCount === 1) {
+                            this.app.uiManager?.showToast?.(`Sync interrupted: ${status}. Reconnecting...`, 'warn')
+                        } else if (this.realtimeRetryCount === MAX_RETRIES) {
+                            this.app.uiManager?.showToast?.(`Sync persistent error. Try reloading.`, 'error')
+                        }
+                    }
                 }
             })
     }
 
     unsubscribeAnnotations() {
+        if (this.realtimeRetryTimer) {
+            clearTimeout(this.realtimeRetryTimer)
+            this.realtimeRetryTimer = null
+        }
         if (this.channel) {
             this.client.removeChannel(this.channel)
             this.channel = null

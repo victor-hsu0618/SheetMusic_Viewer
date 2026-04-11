@@ -789,7 +789,6 @@ export class ViewerManager {
             const canvas = wrapper.querySelector('.pdf-canvas')
             if (!canvas) return
 
-            // ── Bitmap cache: instant re-render for already-rendered pages ──
             const cached = this._bitmapCache[pageNum]
             if (cached) {
                 const context = canvas.getContext('2d', { alpha: false })
@@ -802,7 +801,9 @@ export class ViewerManager {
                     // Restore annotation layers
                     const vp = this._pageViewports[pageNum]
                     if (vp) {
-                        this.app.createAnnotationLayers(wrapper, pageNum, vp.width, vp.height, 1)
+                        // FIX: Use the actual scale of the cached bitmap instead of hardcoded 1.0
+                        const cachedScale = cached.width / vp.width;
+                        this.app.createAnnotationLayers(wrapper, pageNum, vp.width, vp.height, cachedScale)
                         this.app.createCaptureOverlay(wrapper, pageNum, vp.width, vp.height)
                         this.app.redrawStamps(pageNum)
                     }
@@ -1109,6 +1110,17 @@ export class ViewerManager {
         // Always ensure the correct classes are present for the renderer to find it
         canvas.className = 'annotation-layer virtual-canvas'
         
+        // --- Safety Cap: Enforce max area even for annotation layers ---
+        const MAX_AREA = 9437184; 
+        const currentArea = width * renderScale * height * renderScale;
+        if (currentArea > MAX_AREA && currentArea > 0) {
+            const safetyScale = Math.sqrt(MAX_AREA / (width * height));
+            if (safetyScale < renderScale) {
+                console.warn(`[ViewerManager] Annotation Layer for page ${pageNum} area too large. Capping scale ${renderScale.toFixed(2)} -> ${safetyScale.toFixed(2)}`);
+                renderScale = safetyScale;
+            }
+        }
+
         canvas.width = Math.floor(width * renderScale)
         canvas.height = Math.floor(height * renderScale)
         

@@ -18,6 +18,7 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - **延遲渲染 (Lazy Rendering)**：採用 `IntersectionObserver` 技術，僅在頁面進入可視區域時才進行繪製。
   - **佈局預校準 (Layout Pre-probing)**：載入 PDF 後立即探測所有頁面的真實 Viewport 尺寸與偏移量（offsetLeft/offsetTop），確保無論在何種閱讀模式下，座標映射與跳轉皆具備 100% 物理精確度。
   - **動態分段載入**：根據當前閱讀模式自動同步容器寬度或高度，大幅降低行動裝置記憶體負擔。
+  - **畫布面積限制 (Canvas Area Capping)**：嚴格限制 PDF 與標註層畫布的像素總量不超過 9.4M (約 3000x3100)，防止在大縮放比例下超出瀏覽器限制（67M px）導致崩潰或白屏。
 - **全離線支援**：具備 PWA 技術，可在無網路環境下正常運作。
 
 ### 2. 專業分層註記 (Structured Layered Annotations)

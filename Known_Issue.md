@@ -5,6 +5,7 @@ Issues:
 * [X] All notation category should be sync. example, measure number, anchor. bookmark...etc.
 * [X] User Profile should be sync once connected to Google Drive.
 * [X] 小節數工具計算裡的 increment 應該要是本次增加的小節數, 然後  增減 更新本次預計的小節數
+* [ ] iPad 螢幕左右邊緣觸控響應不穩定 (因 Full Screen 容器堆疊與 PDF 邊距引發的事件攔截衝突)
 
 
 

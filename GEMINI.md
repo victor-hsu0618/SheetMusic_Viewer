@@ -20,7 +20,7 @@ The application follows a modular "Manager" pattern coordinated by a central `Sc
 ### Manager Modules (`src/modules/`)
 - **`AnnotationManager`**: Centralizes logic for drawing (pens, stamps), coordinate mapping, erasing, and anchor/measure cleanup logic.
 - **`DockingBarManager`**: 提供「珍珠白」全屏可拖曳懸浮球 (FAB)，支援邊界磁吸、狀態持久化，並作為縮放與底欄控制的統一入口。
-- **`ViewerManager`**: 負責 PDF.js 渲染與縮放比例。具備「閱讀模式感知」佈局，在橫向模式下強制執行 `100vw` 以確保捲動一致性。
+- **`ViewerManager`**: 負責 PDF.js 渲染與縮放比例。具備「閱讀模式感知」佈局，在橫向模式下強制執行 `100vw` 以確保捲動一致性。內建 `MAX_CANVAS_AREA` (9.4M px) 安全上限，防止高縮放比例下 Canvas 溢出。
 - **`InputManager`**: Unified event hub for keyboard shortcuts, iPad touch gestures (Swipe Jump), and scroll-linked UI updates.
 - **`JumpManager`**: Central logic for navigation (Page/Anchor/History). Uses a **Navigation Epoch** design to clear history on manual warp jumps.
 - **`ToolManager`**: Manages the toolbar state, dynamic toolsets per layer, and last-used tool persistence.
