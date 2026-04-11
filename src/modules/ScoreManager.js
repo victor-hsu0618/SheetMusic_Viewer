@@ -161,17 +161,42 @@ export class ScoreManager {
         const currentPane = document.getElementById('pane-current-score');
         const toolbar = document.querySelector('.library-toolbar');
 
-        if (libraryGrid) libraryGrid.classList.toggle('hidden', tabId !== 'scores');
-        if (setlistGrid) setlistGrid.classList.toggle('hidden', tabId !== 'setlists');
-        if (currentPane) currentPane.classList.toggle('hidden', tabId !== 'current-score');
-        if (toolbar) toolbar.classList.toggle('hidden', tabId === 'current-score');
+        const isInsideSetlist = !!this.app.setlistManager?.activeDetailSetId;
+
+        if (libraryGrid) {
+            if (tabId === 'scores') libraryGrid.classList.remove('hidden');
+            else libraryGrid.classList.add('hidden');
+        }
+
+        if (setlistGrid) {
+            // ONLY show the main setlist grid if we are on the setlist tab AND NOT inside a specific setlist
+            if (tabId === 'setlists' && !isInsideSetlist) setlistGrid.classList.remove('hidden');
+            else setlistGrid.classList.add('hidden');
+        }
+
+        if (currentPane) {
+            if (tabId === 'current-score') currentPane.classList.remove('hidden');
+            else currentPane.classList.add('hidden');
+        }
+
+        if (toolbar) {
+            if (tabId === 'current-score' || isInsideSetlist) toolbar.classList.add('hidden');
+            else toolbar.classList.remove('hidden');
+        }
         
         const scoreActions = document.getElementById('score-actions-area');
         const setlistActions = document.getElementById('setlist-actions-area');
         const currentActions = document.getElementById('current-score-actions-area');
         
-        if (scoreActions) scoreActions.classList.toggle('hidden', tabId !== 'scores');
-        if (setlistActions) setlistActions.classList.toggle('hidden', tabId !== 'setlists');
+        if (scoreActions) {
+            if (tabId === 'scores') scoreActions.classList.remove('hidden');
+            else scoreActions.classList.add('hidden');
+        }
+
+        if (setlistActions) {
+            if (tabId === 'setlists' && !isInsideSetlist) setlistActions.classList.remove('hidden');
+            else setlistActions.classList.add('hidden');
+        }
         if (currentActions) currentActions.classList.toggle('hidden', tabId !== 'current-score');
 
         // User explicitly choosing a different parent tab closes any open detail views

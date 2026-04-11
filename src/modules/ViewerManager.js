@@ -20,6 +20,7 @@ export class ViewerManager {
         this._loadingPdf = false // True while any loadPDF is actively in progress
         this.baseNaturalWidth = 0 // Reference width for uniform rendering
         this._staleContainers = [] // Buffer for double-buffering (flash-free zoom)
+        this.pdfMetadata = null // Technical info (pages, dimensions, producer)
     }
 
     init() {
@@ -359,6 +360,22 @@ export class ViewerManager {
             }
             this.pdf = pdf;
             console.log(`[ViewerManager] PDF.js success. Pages: ${this.pdf.numPages}`);
+
+            // --- Technical Metadata Extraction ---
+            try {
+                const meta = await pdf.getMetadata();
+                const page = await pdf.getPage(1);
+                const vp = page.getViewport({ scale: 1.0 });
+                this.pdfMetadata = {
+                    pages: pdf.numPages,
+                    widthPts: vp.width,
+                    heightPts: vp.height,
+                    producer: meta.info?.Producer || meta.info?.Creator || 'Unknown',
+                    version: meta.info?.PDFFormatVersion || 'Unknown'
+                };
+            } catch (mErr) {
+                console.warn('[ViewerManager] Metadata extraction failed:', mErr);
+            }
 
 
         } catch (err) {

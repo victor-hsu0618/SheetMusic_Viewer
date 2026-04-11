@@ -343,6 +343,15 @@ export class SetlistManager {
             console.error('[SetlistManager] Grid not found during render');
             return;
         }
+
+        // --- Defensive Check: If we are in detail view, ensure Grid is hidden and STOP ---
+        if (this.activeDetailSetId) {
+            this.grid.classList.add('hidden');
+            const actionsArea = document.getElementById('setlist-actions-area');
+            if (actionsArea) actionsArea.classList.add('hidden');
+            return;
+        }
+
         this.grid.innerHTML = '';
 
         // Update Stats Label & Actions

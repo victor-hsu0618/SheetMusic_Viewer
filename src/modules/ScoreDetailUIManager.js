@@ -20,6 +20,11 @@ export class ScoreDetailUIManager {
         this.scoreStorageStatusDisplay = document.getElementById('score-storage-status-display')
         this.btnSave = document.getElementById('btn-save-score-detail')
 
+        // Technical Details
+        this.scorePageCount = document.getElementById('score-page-count')
+        this.scoreDimensions = document.getElementById('score-dimensions')
+        this.scoreProducer = document.getElementById('score-producer')
+
 
         this.mediaLabelInput = document.getElementById('sidebar-media-label')
         this.mediaUrlInput = document.getElementById('sidebar-media-url')
@@ -189,6 +194,24 @@ export class ScoreDetailUIManager {
             const mode = regScore?.storageMode || 'cached'
             const labels = { pinned: '📌 Pinned', cached: '📍 Cached', cloud: '☁️ Cloud only' }
             this.scoreStorageStatusDisplay.textContent = labels[mode] ?? '📍 Cached'
+        }
+
+        // Render Technical Metadata
+        const meta = (this.app.viewerManager?.pdfFingerprint === fingerprint) ? this.app.viewerManager.pdfMetadata : null;
+        if (this.scorePageCount) {
+            this.scorePageCount.textContent = meta ? `${meta.pages} Pages` : '—';
+        }
+        if (this.scoreDimensions) {
+            if (meta && meta.widthPts && meta.heightPts) {
+                const w_cm = (meta.widthPts / 72 * 2.54).toFixed(1);
+                const h_cm = (meta.heightPts / 72 * 2.54).toFixed(1);
+                this.scoreDimensions.textContent = `${w_cm} x ${h_cm} cm`;
+            } else {
+                this.scoreDimensions.textContent = '—';
+            }
+        }
+        if (this.scoreProducer) {
+            this.scoreProducer.textContent = meta?.producer || '—';
         }
 
 
