@@ -62,25 +62,6 @@ export class ToolManager {
         }, { passive: true })
     }
 
-    async preloadSvgs() {
-        const existingSvgs = [
-            'pen', 'highlighter', 'line',
-            'select', 'eraser',
-            'anchor'
-        ]
-        const base = import.meta.env.BASE_URL
-        const items = this.app.toolsets.flatMap(g =>
-            g.tools.filter(t => existingSvgs.includes(t.id)).map(t => ({ id: t.id, path: `${base}assets/icons/${g.type}/${t.id}.svg` }))
-        )
-        await Promise.allSettled(items.map(async ({ id, path }) => {
-            try {
-                const r = await fetch(path)
-                if (r.ok) this.app._svgCache[id] = await r.text()
-            } catch { }
-        }))
-        this.updateActiveTools()
-    }
-
     getIcon(tool, size = 24, color = null) {
         const strokeColor = color || 'currentColor'
         if (this.app._svgCache?.[tool.id]) {

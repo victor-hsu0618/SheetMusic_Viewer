@@ -331,7 +331,6 @@ this.playbackManager.init()
                 });
             }
 
-            this.toolManager.preloadSvgs()
             this.renderBuildInfo()
             console.log('[ScoreFlow] Boot complete - Version 3.1.4')
         } catch (err) {
