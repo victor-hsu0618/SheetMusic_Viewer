@@ -377,6 +377,7 @@ export class InputManager {
 
         viewer.addEventListener('touchmove', (e) => {
             if (e.touches.length === 1 && !this.app.isMac) {
+                if (this.app.activeStampType === 'view') return; // view mode uses JS pan, don't interfere
                 if (e.cancelable) e.preventDefault();
             }
         }, { passive: false });

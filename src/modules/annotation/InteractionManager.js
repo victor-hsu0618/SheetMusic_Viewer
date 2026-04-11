@@ -454,6 +454,8 @@ export class InteractionManager {
 
                 const stopPan = () => {
                     isPanning = false;
+                    isInteracting = false;
+                    this.app.isInteracting = false;
                     this._viewPanCleanup = null;
                     overlay.style.cursor = '';
                     this.app.viewer.style.scrollBehavior = '';
@@ -1359,11 +1361,13 @@ export class InteractionManager {
         const actualWrapper = wrapper.querySelector('.page-content-wrapper') || wrapper;
         actualWrapper.appendChild(overlay);
 
-        overlay.addEventListener('touchstart', (e) => { 
-            // Minimalist touchstart prevention: Only for single-touch non-view mode
-            if (this.app.activeStampType !== 'view' && e.touches.length < 2 && e.cancelable) {
-                // DON'T stop propagation here, let PointerEvents flow
-                e.preventDefault(); 
+        overlay.addEventListener('touchstart', (e) => {
+            // Prevent default for all single-touch to tell iOS not to initiate native scroll gesture.
+            // Without this, iOS fires pointercancel on the FIRST touch attempt in view mode
+            // (it tries to scroll, fails due to touch-action:none on viewer, cancels the pointer),
+            // causing the first drag to silently fail. Second drag works because iOS has "learned".
+            if (e.touches.length < 2 && e.cancelable) {
+                e.preventDefault();
             }
         }, { passive: false });
 
