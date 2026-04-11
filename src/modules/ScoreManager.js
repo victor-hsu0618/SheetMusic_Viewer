@@ -17,6 +17,7 @@ export class ScoreManager {
 
         this.helper = new ScoreRegistryHelper(app, this);
         this.ui = new ScoreLibraryUIManager(app, this);
+        this.activeTab = 'scores';
     }
 
     async init() {
@@ -152,6 +153,7 @@ export class ScoreManager {
     }
 
     switchToTab(tabId, userInitiated = false) {
+        this.activeTab = tabId;
         document.querySelectorAll('.library-tabs .sf-seg-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
 
         const libraryGrid = document.getElementById('library-grid');
@@ -172,13 +174,15 @@ export class ScoreManager {
         if (setlistActions) setlistActions.classList.toggle('hidden', tabId !== 'setlists');
         if (currentActions) currentActions.classList.toggle('hidden', tabId !== 'current-score');
 
+        // User explicitly choosing a different parent tab closes any open detail views
+        if (userInitiated && tabId !== 'setlists') {
+            this.app.setlistManager?.closeDetailView();
+        }
+
         if (tabId === 'scores') this.ui.render();
         if (tabId === 'setlists') this.app.setlistManager?.render();
         if (tabId === 'current-score' && this.app.scoreDetailManager) {
             const mgr = this.app.scoreDetailManager;
-            // User tapping the tab always resets to the current score.
-            // Programmatic calls (from showPanel) skip this so the explicitly
-            // loaded fingerprint is not overwritten.
             if (userInitiated || !mgr.currentFp || mgr.currentFp === this.app.pdfFingerprint) {
                 mgr.load(this.app.pdfFingerprint);
             }
@@ -599,11 +603,18 @@ export class ScoreManager {
         if (active) {
             // Close all other panels first (mutual exclusion)
             this.app.uiManager?.closeAllActivePanels('ScoreManager');
-            // Ensure header and toolbar are visible when opening library
-            document.querySelector('.library-header')?.classList.remove('hidden-important');
-            document.querySelector('.library-toolbar')?.classList.remove('hidden-important');
-            this.app.setlistManager?.closeDetailView(); // Close any left-over detail view
-            this.render();
+            // Restore context: If we are deep inside a setlist, stay in setlists tab.
+            const isInsideSetlist = !!this.app.setlistManager?.activeDetailSetId;
+            
+            // Ensure header and toolbar are visible ONLY if not inside a setlist detail view
+            if (!isInsideSetlist) {
+                document.querySelector('.library-header')?.classList.remove('hidden-important');
+                document.querySelector('.library-toolbar')?.classList.remove('hidden-important');
+            }
+            
+            const targetTab = isInsideSetlist ? 'setlists' : (this.activeTab || 'scores');
+            this.switchToTab(targetTab, false);
+
             this.app.activeStampType = 'view'
             this.app.toolManager?.updateActiveTools()
         }
