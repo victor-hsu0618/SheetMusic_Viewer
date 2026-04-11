@@ -144,6 +144,11 @@ export class DocActionManager {
         this.app.activeSourceId = newSourceId
         await this.app.saveToStorage()
         
+        // SYNC to Supabase immediately after import
+        if (this.app.supabaseManager) {
+            this.app.supabaseManager.pushAllAnnotations(this.app.pdfFingerprint, remappedStamps);
+        }
+        
         // UI Refresh instead of reload
         this.app.renderSourceUI()
         this.app.redrawAllAnnotationLayers()
@@ -171,6 +176,11 @@ export class DocActionManager {
         }
 
         await this.app.saveToStorage()
+        
+        // SYNC to Supabase immediately after overwrite
+        if (this.app.supabaseManager) {
+            this.app.supabaseManager.pushAllAnnotations(this.app.pdfFingerprint, this.app.stamps);
+        }
         
         // UI Refresh instead of reload
         this.app.renderSourceUI()

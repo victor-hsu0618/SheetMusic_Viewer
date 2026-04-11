@@ -118,10 +118,13 @@ export class SupabaseManager {
                     this.handleRealtimePayload(payload)
                 }
             })
-            .subscribe((status) => {
+            .subscribe((status, err) => {
                 console.log(`[Supabase] 📡 Status [${fingerprint.substring(0,8)}]: ${status}`)
                 if (status === 'SUBSCRIBED') {
                     console.log('[Supabase] ✅ Live sync established.')
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    console.error(`[Supabase] ❌ Realtime Channel Error [${status}]:`, err)
+                    this.app.uiManager?.showToast?.(`Sync Channel Error: ${status}`, 'error')
                 }
             })
     }
@@ -154,11 +157,19 @@ export class SupabaseManager {
                 const idx = this.app.stamps.findIndex(s => s.id === stamp.id)
                 if (idx !== -1) {
                     const localStamp = this.app.stamps[idx]
-                    if ((stamp.updatedAt || 0) <= (localStamp.updatedAt || 0)) {
+                    
+                    // CRITICAL FIX: Ensure comparison is purely numeric Unix timestamps
+                    const incomingT = Number(new Date(stamp.updatedAt || 0));
+                    const localT    = Number(new Date(localStamp.updatedAt || 0));
+
+                    console.log(`[Supabase] ⚡ Sync Match [${stamp.id.substring(0,8)}]: Incoming(${incomingT}) vs Local(${localT})`);
+
+                    if (incomingT <= localT) {
                         return
                     }
                     this.app.stamps[idx] = stamp
                 } else {
+                    console.log(`[Supabase] ⚡ New Stamp Received: ${stamp.type} (Page ${stamp.page})`);
                     this.app.stamps.push(stamp)
                 }
             }
@@ -173,9 +184,12 @@ export class SupabaseManager {
 
         // Redraw affected pages
         if (this.app.annotationManager) {
-            if (incomingPage) {
+            // Standardize page check: 0 is theoretically valid (though PDF.js is 1-indexed)
+            if (incomingPage !== undefined && incomingPage !== null) {
+                console.log(`[Supabase] 🖌️ Triggering redraw for remote update on Page ${incomingPage}`);
                 this.app.annotationManager.redrawStamps(incomingPage);
             }
+            // Always ensure visible layers are refreshed if it's a multi-page change or heavy update
             this.app.annotationRenderer?.redrawAllAnnotationLayers(true);
         }
 
@@ -248,7 +262,10 @@ export class SupabaseManager {
         }
 
         // Map app stamp structure to Supabase DB schema
-        const updatedAtStr = stamp.updatedAt ? new Date(stamp.updatedAt).toISOString() : new Date().toISOString()
+        // Ensure stamp.updatedAt is stored as number INSIDE JSONB, but ISO in row column
+        const numericUpdatedAt = Number(new Date(stamp.updatedAt || Date.now()));
+        const updatedAtStr = new Date(numericUpdatedAt).toISOString();
+
         const dbRecord = {
             id: stamp.id,
             fingerprint: fingerprint,
@@ -256,7 +273,7 @@ export class SupabaseManager {
             layer_id: stamp.layerId || 'draw',
             type: stamp.type,
             page: stamp.page || 0,
-            data: stamp,
+            data: { ...stamp, updatedAt: numericUpdatedAt }, // Standardized inside JSONB
             updated_at: updatedAtStr
         }
 
@@ -314,6 +331,8 @@ export class SupabaseManager {
         const dbRecords = stamps.map(stamp => {
             // Ensure ID is a string
             const id = String(stamp.id);
+            const numericUpdatedAt = Number(new Date(stamp.updatedAt || Date.now()));
+            const updatedAtStr = new Date(numericUpdatedAt).toISOString();
             
             return {
                 id: id,
@@ -322,8 +341,8 @@ export class SupabaseManager {
                 layer_id: stamp.layerId || 'draw',
                 type: stamp.type,
                 page: stamp.page || 0,
-                data: stamp,
-                updated_at: stamp.updated_at || stamp.updatedAt ? new Date(stamp.updated_at || stamp.updatedAt).toISOString() : new Date().toISOString()
+                data: { ...stamp, updatedAt: numericUpdatedAt },
+                updated_at: updatedAtStr
             };
         });
 
@@ -395,7 +414,9 @@ export class SupabaseManager {
         for (const local of localStamps) {
             const cloudS = cloudMap.get(local.id)
             if (cloudS) {
-                const cloudIsNewer = (cloudS.updatedAt || 0) >= (local.updatedAt || 0)
+                const cloudT = Number(new Date(cloudS.updatedAt || 0));
+                const localT = Number(new Date(local.updatedAt || 0));
+                const cloudIsNewer = cloudT >= localT;
                 const winner = cloudIsNewer ? cloudS : local
                 if (!cloudIsNewer) toUpload.push(local)
                 if (!winner.deleted) merged.push(winner)

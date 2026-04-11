@@ -75,6 +75,10 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
 - **精密對位 (Zero-Offset logic)**：
   - **Mouse/Pen**：1:1 對位。
   - **Touch**：印章類工具套用垂直偏移（防止手指遮掩），但 **Edit 工具 (Select/Copy/Erase)** 固定採 1:1 對位以保證 UI 互動直覺。
+- **Pencil 穩定化架構 (Pencil Stabilization)**：
+  - **壓力門檻 (Pressure Gate)**：點擊判定需壓力 > `0.02`。有效過濾新一代 iPad Pro 的 Hover (懸浮) 雜訊與隔空誤觸。
+  - **收筆落點校正 (Lift-off Stabilization)**：若互動全程總位移 < `20px`，自動執行 Snap-back 彈回原位，消除因筆身傾斜抬起產生的位移誤差。
+  - **同步互動機制 (Synchronous Interaction)**：關鍵互動起始點採同步（Non-async）執行，防止 iOS 微任務切換導致的 Pointer 事件漏接。
 
 ### 2. iPad 專屬手勢 (iPad Gestures)
 - **智慧點擊跳轉 (Zone Tap)**：僅在 View 模式啟用。
@@ -176,4 +180,4 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - 刪除當前開啟的樂譜後，系統會自動定位並載入最近使用的其他樂譜，維持工作流連續性。
 
 ---
-*最後更新日期：2026-04-02（同步：標記巡檢助手功能、雷達波視覺導航、Tombstone 墓碑同步重設機制）*
+*最後更新日期：2026-04-10（同步：Apple Pencil 壓力門檻、收筆落點校正、標記巡檢助手、雷達波視覺導航）*
