@@ -366,8 +366,8 @@ export class GestureManager {
             let success = true
 
             if (isHorizontal) {
-                // Horizontal Mode: Left 30% = Prev, Right 70% = Next
-                if (tapX < vw * 0.30) {
+                // Horizontal Mode: Left 50% = Prev, Right 50% = Next
+                if (tapX < vw * 0.50) {
                     success = this.app.jump(-1, true)
                     this.showZoneIndicator('left', tapX, tapY, !success)
                 } else {
