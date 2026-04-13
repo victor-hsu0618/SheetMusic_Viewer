@@ -629,6 +629,7 @@ export class ViewerManager {
         this._pageViewports = {}
         this._pageCache = {}      // Cache for PDFPageProxy objects
         this._bitmapCache = {}    // Cache for rendered page bitmaps (cleared on zoom change)
+        this._usePersistedCache = isInitialLoad // Use IndexedDB cache only on initial/re-open (not zoom)
 
         const numPages = this.pdf.numPages
         const pageIndices = Array.from({ length: numPages }, (_, i) => i + 1)
@@ -655,7 +656,7 @@ export class ViewerManager {
                 pageWrapper.style.width = `${firstViewport.width}px`
             }
             pageWrapper.style.zIndex = '2'
-            pageWrapper.style.opacity = '0'
+            pageWrapper.style.opacity = isInitialLoad ? '1' : '0'
             pageWrapper.style.transition = 'opacity 0.15s ease-out'
             
             fragment.appendChild(pageWrapper)
@@ -697,6 +698,16 @@ export class ViewerManager {
         }
 
         if (this.app.inputManager) this.app.inputManager.updateDividerPositions()
+
+        // Pre-warm in-memory bitmap cache from IndexedDB so next-page jumps are instant
+        if (isInitialLoad && this.pdfFingerprint && typeof createImageBitmap === 'function') {
+            // Estimate which page the user will see first based on saved scroll
+            const savedScroll = this.app.scoreDetailManager?.currentInfo?.lastScrollTop || 0
+            const estPageHeight = firstViewport.height + 8 // 8px gap estimate
+            const centerPage = Math.max(1, Math.floor(savedScroll / estPageHeight) + 1)
+            this._prewarmBitmapCache(centerPage)
+        }
+
         console.log(`[ViewerManager] renderPDF layout initiated for ${numPages} pages.`);
     }
 
@@ -761,6 +772,11 @@ export class ViewerManager {
             if (nextWrapper && nextWrapper.dataset.rendered === 'false') {
                 this.enqueueRender(pageNum + i, nextWrapper)
             }
+        }
+
+        // Slide the bitmap prewarm window to keep nearby pages in memory
+        if (this.pdfFingerprint && typeof createImageBitmap === 'function') {
+            this._prewarmBitmapCache(pageNum)
         }
     }
 
@@ -892,8 +908,44 @@ export class ViewerManager {
                 canvas.style.height = '';
             }
 
-            const renderTask = page.render({ 
-                canvasContext: context, 
+            // --- Persistent Bitmap Cache (instant display for previously-rendered pages) ---
+            if (this._usePersistedCache && this.pdfFingerprint && typeof createImageBitmap === 'function') {
+                const cacheKey = `page_render_${this.pdfFingerprint}_p${pageNum}`
+                try {
+                    const cachedBlob = await db.get(cacheKey)
+                    if (cachedBlob instanceof Blob) {
+                        const cachedBitmap = await createImageBitmap(cachedBlob)
+                        context.drawImage(cachedBitmap, 0, 0, canvas.width, canvas.height)
+                        cachedBitmap.close()
+
+                        this.app.createAnnotationLayers(wrapper, pageNum, viewport.width, viewport.height, renderScale)
+                        this.app.createCaptureOverlay(wrapper, pageNum, viewport.width, viewport.height)
+                        this.app.redrawStamps(pageNum)
+                        wrapper.dataset.rendered = 'true'
+                        wrapper.style.opacity = '1'
+
+                        if (this._staleContainers.length > 0) {
+                            const rect = wrapper.getBoundingClientRect()
+                            if (rect.top < window.innerHeight && rect.bottom > 0) {
+                                this.cleanupStale()
+                            }
+                        }
+
+                        if (canvas.width > 0 && canvas.height > 0) {
+                            createImageBitmap(canvas).then(bm => {
+                                this._bitmapCache[pageNum] = bm
+                            }).catch(() => {})
+                        }
+
+                        // Re-render at full quality off-screen, then swap
+                        this._rerenderOffScreen(page, pageNum, wrapper, canvas, specificScale, renderScale, viewport, cacheKey)
+                        return
+                    }
+                } catch (e) { /* persistent cache miss — fall through to normal render */ }
+            }
+
+            const renderTask = page.render({
+                canvasContext: context,
                 viewport: page.getViewport({ scale: specificScale * renderScale }),
                 intent: 'display'
             })
@@ -945,6 +997,14 @@ export class ViewerManager {
                 }).catch(() => {})
             }
 
+            // Save to persistent bitmap cache for instant display on re-open (fire-and-forget)
+            if (this.pdfFingerprint && canvas.width > 0 && canvas.height > 0) {
+                const cacheKey = `page_render_${this.pdfFingerprint}_p${pageNum}`
+                canvas.toBlob(blob => {
+                    if (blob) db.set(cacheKey, blob).catch(() => {})
+                }, 'image/jpeg', 0.85)
+            }
+
             // If this page scrolled off-screen while rendering, unrender it now.
             // (IntersectionObserver won't re-fire since the intersection didn't change after render.)
             const rect = wrapper.getBoundingClientRect()
@@ -973,8 +1033,96 @@ export class ViewerManager {
                     }
                 }
             } catch (_) { /* ignore drawing errors */ }
+            wrapper.dataset.rendered = 'true'
+            wrapper.style.opacity = '1'
         } finally {
             wrapper.dataset.rendering = 'false'
+        }
+    }
+
+    /**
+     * Pre-warm in-memory _bitmapCache from IndexedDB persistent cache.
+     * Only loads a window of up to PREWARM_WINDOW pages centered on centerPage,
+     * and evicts entries outside that window to cap memory usage.
+     */
+    async _prewarmBitmapCache(centerPage) {
+        const PREWARM_WINDOW = 10
+        const fp = this.pdfFingerprint
+        if (!fp || !this.pdf) return
+        const numPages = this.pdf.numPages
+
+        const half = Math.floor(PREWARM_WINDOW / 2)
+        let lo = Math.max(1, centerPage - half)
+        let hi = Math.min(numPages, lo + PREWARM_WINDOW - 1)
+        lo = Math.max(1, hi - PREWARM_WINDOW + 1) // re-adjust if hi was clamped
+
+        // Evict pages outside the new window to free memory
+        for (const key of Object.keys(this._bitmapCache)) {
+            const p = parseInt(key, 10)
+            if (p < lo || p > hi) {
+                this._bitmapCache[p]?.close?.()
+                delete this._bitmapCache[p]
+            }
+        }
+
+        // Load missing pages within the window
+        const prefix = `page_render_${fp}_p`
+        for (let p = lo; p <= hi; p++) {
+            if (this.pdfFingerprint !== fp) return
+            if (this._bitmapCache[p]) continue
+
+            try {
+                const blob = await db.get(`${prefix}${p}`)
+                if (!(blob instanceof Blob)) continue
+                if (this.pdfFingerprint !== fp) return
+                const bm = await createImageBitmap(blob)
+                if (this.pdfFingerprint !== fp) { bm.close(); return }
+                this._bitmapCache[p] = bm
+            } catch (e) { /* skip failed entries */ }
+        }
+    }
+
+    /**
+     * Background off-screen re-render after a persistent cache hit.
+     * Renders PDF.js to a temporary canvas, then swaps onto the visible canvas.
+     */
+    async _rerenderOffScreen(page, pageNum, wrapper, canvas, specificScale, renderScale, viewport, cacheKey) {
+        try {
+            const offCanvas = document.createElement('canvas')
+            offCanvas.width = canvas.width
+            offCanvas.height = canvas.height
+            const offCtx = offCanvas.getContext('2d', { alpha: false })
+            if (!offCtx) return
+
+            const renderTask = page.render({
+                canvasContext: offCtx,
+                viewport: page.getViewport({ scale: specificScale * renderScale }),
+                intent: 'display'
+            })
+            await renderTask.promise
+
+            // Only swap if page is still rendered and in the DOM
+            if (wrapper.dataset.rendered !== 'true' || !wrapper.isConnected) return
+
+            const mainCtx = canvas.getContext('2d', { alpha: false })
+            if (mainCtx) {
+                mainCtx.drawImage(offCanvas, 0, 0)
+            }
+
+            // Update in-memory bitmap cache with full-quality render
+            if (typeof createImageBitmap === 'function' && canvas.width > 0 && canvas.height > 0) {
+                createImageBitmap(canvas).then(bm => {
+                    this._bitmapCache[pageNum] = bm
+                }).catch(() => {})
+            }
+
+            // Update persistent cache with full-quality render
+            canvas.toBlob(blob => {
+                if (blob) db.set(cacheKey, blob).catch(() => {})
+            }, 'image/jpeg', 0.85)
+        } catch (err) {
+            if (err?.name === 'RenderingCancelledException') return
+            console.warn(`[ViewerManager] Off-screen re-render failed for page ${pageNum}:`, err)
         }
     }
 

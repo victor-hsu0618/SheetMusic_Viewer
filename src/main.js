@@ -268,7 +268,7 @@ this.playbackManager.init()
                     console.log('[ScoreFlow] ⚠️ Supabase Auth not ready after wait, skipping early sync.');
                 }
             }
-            this.showMessage(`[Boot] 已載入 ${this.setlistManager.setlists.length} 個歌單`, 'system')
+            console.log(`[Boot] 已載入 ${this.setlistManager.setlists.length} 個歌單`)
             await this.loadFromStorage()
             
             // 1. Primary Restore: Fingerprint-First (Most Reliable)
