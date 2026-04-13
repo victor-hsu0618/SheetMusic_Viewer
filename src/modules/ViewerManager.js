@@ -1355,7 +1355,9 @@ export class ViewerManager {
     async fitToHeight(isInitialLoad = false) {
         if (!this.pdf) return
 
-        const focalPoint = isInitialLoad ? null : this._captureFocalPoint()
+        const isHorizontal = this.app.readingMode === 'horizontal'
+        const focalPoint = isInitialLoad ? null : (isHorizontal ? null : this._captureFocalPoint())
+        const currentPage = (!isInitialLoad && isHorizontal) ? (this.app.jumpManager?.currentPage ?? 1) : null
 
         const page = await this.pdf.getPage(1)
         const naturalHeight = page.getViewport({ scale: 1 }).height
@@ -1373,7 +1375,14 @@ export class ViewerManager {
         await this.renderPDF(isInitialLoad)
 
         if (!isInitialLoad) {
-            this._restoreFocalPoint(focalPoint)
+            if (isHorizontal && currentPage) {
+                // Horizontal mode: restore by page number, not scroll position
+                this.updatePageMetrics()
+                const m = this._pageMetrics[currentPage]
+                if (m) this.app.viewer.scrollLeft = m.left
+            } else {
+                this._restoreFocalPoint(focalPoint)
+            }
         }
 
         setTimeout(() => { this.isApplyingZoom = false }, 800)

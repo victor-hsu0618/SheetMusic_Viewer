@@ -307,11 +307,11 @@ export class RulerManager {
             } else {
                 const metrics = this.app.viewerManager._pageMetrics
                 const viewportHeight = this.app.viewer.clientHeight
+                const isVertical = this.app.readingMode !== 'horizontal'
 
-                // In fit-to-height mode, jump to next page by index
-                if (this.app.viewerManager.isFitToHeight) {
+                // In vertical mode with no user anchors, always jump to next page
+                if (isVertical) {
                     const sortedPages = Object.keys(metrics).map(Number).sort((a, b) => a - b)
-                    // Current page = last page whose top is at or before current scroll
                     const currentPage = [...sortedPages].reverse().find(n => metrics[n].top <= effectiveScroll + 5) ?? sortedPages[0]
                     const nextPage = sortedPages.find(n => n > currentPage)
                     if (nextPage) {
@@ -322,65 +322,7 @@ export class RulerManager {
                     return true
                 }
 
-                // Sort all system stamps by absolute Y position
-                const systemStamps = this.app.stamps
-                    .filter(s => s.type === 'system' && !s.deleted)
-                    .sort((a, b) => {
-                        const ma = metrics[a.page], mb = metrics[b.page]
-                        return (ma?.top + a.y * ma?.height) - (mb?.top + b.y * mb?.height)
-                    })
-
-                if (this.app.showSystemStamps) {
-                    // ── System stamps VISIBLE: precise visible-overlap navigation ──────
-                    const overlap = this.app.systemJumpOverlap ?? 1
-                    const visibleSystems = systemStamps.filter(sys => {
-                        const m = metrics[sys.page]
-                        if (!m) return false
-                        const absY = m.top + sys.y * m.height
-                        return absY > effectiveScroll && absY < (effectiveScroll + viewportHeight - 30)
-                    })
-                    const overlapSystem = visibleSystems[Math.max(0, visibleSystems.length - overlap)]
-                    if (overlapSystem) {
-                        const m = metrics[overlapSystem.page]
-                        const targetY = m.top + overlapSystem.y * m.height
-                        if (targetY > effectiveScroll + this.jumpOffsetPx + 10) {
-                            this.jumpHistory.push(effectiveScroll)
-                            if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                            this._executeJump(targetY - this.jumpOffsetPx)
-                            return true
-                        }
-                    }
-                    // Secondary: next system after the jump line
-                    const nextSystem = systemStamps.find(sys => {
-                        const m = metrics[sys.page]
-                        if (!m) return false
-                        return m.top + sys.y * m.height > effectiveScroll + this.jumpOffsetPx + 2
-                    })
-                    if (nextSystem) {
-                        const m = metrics[nextSystem.page]
-                        this.jumpHistory.push(effectiveScroll)
-                        if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                        this._executeJump(m.top + nextSystem.y * m.height - this.jumpOffsetPx)
-                        return true
-                    }
-                } else if (systemStamps.length) {
-                    // ── System stamps HIDDEN: jump to next off-screen system position ──
-                    // (stamps detected but not displayed — navigate to first system not in view)
-                    const firstOffscreen = systemStamps.find(sys => {
-                        const m = metrics[sys.page]
-                        if (!m) return false
-                        return m.top + sys.y * m.height > effectiveScroll + viewportHeight
-                    })
-                    if (firstOffscreen) {
-                        const m = metrics[firstOffscreen.page]
-                        this.jumpHistory.push(effectiveScroll)
-                        if (this.jumpHistory.length > 50) this.jumpHistory.shift()
-                        this._executeJump(m.top + firstOffscreen.y * m.height - this.jumpOffsetPx)
-                        return true
-                    }
-                }
-
-                // Fallback: scroll by one viewport minus jump offset for symmetric navigation
+                // Horizontal mode fallback
                 const targetScroll = effectiveScroll + (viewportHeight - this.jumpOffsetPx)
                 this.jumpHistory.push(effectiveScroll)
                 if (this.jumpHistory.length > 50) this.jumpHistory.shift()
@@ -388,6 +330,14 @@ export class RulerManager {
             }
             return true;
         } else {
+            const isVertical = this.app.readingMode !== 'horizontal'
+
+            if (!isVertical) {
+                // Horizontal mode: always jump to prev page
+                return this.app.jumpManager?.prevPage() ?? false;
+            }
+
+            // Vertical mode: use jumpHistory first, then prev page
             if (this.jumpHistory.length > 0) {
                 const last = this.jumpHistory.pop()
                 this._executeJump(last)
@@ -395,20 +345,12 @@ export class RulerManager {
             } else {
                 if (effectiveScroll <= 2) return false; // Prevent spamming past the top
 
-                if (this.app.viewerManager.isFitToHeight) {
-                    const metrics = this.app.viewerManager._pageMetrics
-                    const sortedPages = Object.keys(metrics).map(Number).sort((a, b) => a - b)
-                    // Current page = last page whose top is at or before current scroll
-                    const currentPage = [...sortedPages].reverse().find(n => metrics[n].top <= effectiveScroll + 5) ?? sortedPages[0]
-                    const prevPage = [...sortedPages].reverse().find(n => n < currentPage)
-                    if (prevPage) {
-                        this._executeJump(metrics[prevPage].top)
-                        return true;
-                    }
-                } else {
-                    const viewportHeight = this.app.viewer.clientHeight
-                    const targetScroll = effectiveScroll - (viewportHeight - this.jumpOffsetPx)
-                    this._executeJump(targetScroll)
+                const metrics = this.app.viewerManager._pageMetrics
+                const sortedPages = Object.keys(metrics).map(Number).sort((a, b) => a - b)
+                const currentPage = [...sortedPages].reverse().find(n => metrics[n].top <= effectiveScroll + 5) ?? sortedPages[0]
+                const prevPage = [...sortedPages].reverse().find(n => n < currentPage)
+                if (prevPage) {
+                    this._executeJump(metrics[prevPage].top)
                     return true;
                 }
                 return false;
