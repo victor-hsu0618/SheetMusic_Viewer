@@ -12,6 +12,20 @@ npm run preview -- --host  # Preview production build with LAN access
 npm run test:e2e     # Run Playwright E2E tests
 ```
 
+## Versioning
+
+App version is set in `src/main.js` as `this.DEBUG_VERSION`, using the format `MM-DD_NNN` where `NNN` is the **total git commit count** (globally incrementing, not per-day).
+
+Example: `04-13_792` = April 13, commit #792.
+
+When bumping the version:
+1. Run `git rev-list --count HEAD` to get the current count
+2. Add 1 for the upcoming commit
+3. Update `DEBUG_VERSION` in `src/main.js`
+4. Commit as `chore: update version to MM-DD_NNN`
+
+> `package.json` version field is unused — do not update it.
+
 ## Architecture
 
 **ScoreFlow** is a PWA sheet music viewer for professional musicians built with **Vite + Vanilla JS** (no framework). The base URL path is `/SheetMusic_Viewer/`.
