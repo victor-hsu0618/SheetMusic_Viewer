@@ -1355,17 +1355,7 @@ export class ViewerManager {
     async fitToHeight(isInitialLoad = false) {
         if (!this.pdf) return
 
-        // Capture current page BEFORE re-render (scale-independent)
-        let targetPage = 1
-        if (!isInitialLoad) {
-            const scrollTop = this.app.viewer.scrollTop
-            for (const [num, m] of Object.entries(this._pageMetrics)) {
-                if (scrollTop >= m.top && scrollTop < m.top + m.height) {
-                    targetPage = parseInt(num)
-                    break
-                }
-            }
-        }
+        const focalPoint = isInitialLoad ? null : this._captureFocalPoint()
 
         const page = await this.pdf.getPage(1)
         const naturalHeight = page.getViewport({ scale: 1 }).height
@@ -1383,16 +1373,7 @@ export class ViewerManager {
         await this.renderPDF(isInitialLoad)
 
         if (!isInitialLoad) {
-            this.updatePageMetrics()
-            const m = this._pageMetrics[targetPage]
-            if (m) {
-                // Briefly disable overflow to stop any iOS momentum scroll, then snap to page top
-                this.app.viewer.style.overflowY = 'hidden'
-                this.app.viewer.scrollTop = m.top
-                requestAnimationFrame(() => {
-                    this.app.viewer.style.overflowY = ''
-                })
-            }
+            this._restoreFocalPoint(focalPoint)
         }
 
         setTimeout(() => { this.isApplyingZoom = false }, 800)
