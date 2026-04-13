@@ -87,10 +87,31 @@ export class SettingsPanelManager {
             const initialsEl = document.getElementById('supabase-user-initials')
             if (emailEl)    emailEl.textContent    = mgr.user.email
             if (initialsEl) initialsEl.textContent = mgr.user.email.slice(0, 1).toUpperCase()
+            this._updateSyncHistory()
         } else {
             loggedOutEl.classList.remove('hidden')
             loggedInEl.classList.add('hidden')
         }
+    }
+
+    _updateSyncHistory() {
+        const list = document.getElementById('sync-history-list')
+        if (!list) return
+        const history = this.app.supabaseManager?.getSyncHistory?.() || []
+        if (history.length === 0) {
+            list.innerHTML = `<div style="font-size:11px;color:var(--text-muted);opacity:0.6;">No sync recorded yet</div>`
+            return
+        }
+        list.innerHTML = history.map((iso, i) => {
+            const date = new Date(iso)
+            const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            const label = i === 0 ? 'Latest' : `${i + 1}${i === 1 ? 'nd' : 'rd'}`
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:rgba(var(--text-main-rgb),0.04);border-radius:6px;">
+                <span style="font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.05em;">${label}</span>
+                <span style="font-size:11px;color:var(--text-muted);">${dateStr} ${timeStr}</span>
+            </div>`
+        }).join('')
     }
 
     _bindLocalBackup() {

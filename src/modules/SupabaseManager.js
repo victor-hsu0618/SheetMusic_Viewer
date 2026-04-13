@@ -624,6 +624,7 @@ export class SupabaseManager {
         if (!data || data.length === 0) {
             console.log('[Supabase] Background sync: nothing new since last sync.')
             localStorage.setItem(syncKey, syncStartedAt)
+            this._recordSyncTime(syncStartedAt)
             return
         }
 
@@ -671,7 +672,30 @@ export class SupabaseManager {
 
         // Save sync timestamp only after successful update
         localStorage.setItem(syncKey, syncStartedAt)
+        this._recordSyncTime(syncStartedAt)
         console.log(`[Supabase] Background sync: ${data.length} record(s) across ${Object.keys(byFp).length} score(s) updated.`)
+    }
+
+    // ── Sync History ──────────────────────────────────────────────────────────
+
+    _syncHistoryKey() {
+        return this.user ? `scoreflow_sync_history_${this.user.id}` : null
+    }
+
+    _recordSyncTime(isoString = new Date().toISOString()) {
+        const key = this._syncHistoryKey()
+        if (!key) return
+        const history = this.getSyncHistory()
+        history.unshift(isoString)
+        localStorage.setItem(key, JSON.stringify(history.slice(0, 3)))
+    }
+
+    getSyncHistory() {
+        const key = this._syncHistoryKey()
+        if (!key) return []
+        try {
+            return JSON.parse(localStorage.getItem(key) || '[]')
+        } catch { return [] }
     }
 
     /**
