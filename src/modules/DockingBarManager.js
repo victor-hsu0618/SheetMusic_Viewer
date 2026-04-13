@@ -319,7 +319,7 @@ export class DockingBarManager {
             if (cfg.stamp) {
                 if (!isCoreAction) btn.classList.add('active')
                 if (stampBarOpen)  btn.classList.add('open')
-            } else if (cfg.tool && curTool === cfg.id && !stampBarOpen) {
+            } else if (cfg.tool && curTool === cfg.id) {
                 btn.classList.add('active')
             }
 

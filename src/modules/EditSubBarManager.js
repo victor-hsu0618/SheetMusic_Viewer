@@ -143,13 +143,12 @@ export class EditSubBarManager {
     }
 
     closeToolBars() {
-        ['pen', 'stamp'].forEach(name => {
-            if (this._bars[name]) {
-                this._bars[name].classList.remove('open')
-            }
-        })
-        this.activeBar = null
-        this._closeStampSettings()
+        if (this._bars['pen']) {
+            this._bars['pen'].classList.remove('open')
+        }
+        if (this.activeBar !== 'stamp') {
+            this.activeBar = null
+        }
         this.app.activeStampType = 'view'
         this.app.toolManager?.updateActiveTools()
     }
