@@ -30,35 +30,7 @@ export class StandaloneScrollbarManager {
         requestAnimationFrame(() => this._updatePageLabel())
     }
 
-    _updatePageLabel() {
-        if (!this._pageLabel) return
-        const metrics = this.app.viewerManager?._pageMetrics
-        if (!metrics) return
-        const isHorizontal = this.app.readingMode === 'horizontal'
-        const viewer = this.app.viewer
-        if (!viewer) return
-
-        let mid, best = -Infinity, currentPage = 1
-
-        if (isHorizontal) {
-            mid = (viewer.scrollLeft ?? 0) + (viewer.clientWidth ?? 0) * 0.5
-            for (const [num, m] of Object.entries(metrics)) {
-                if (m.left <= mid && m.left > best) {
-                    best = m.left
-                    currentPage = parseInt(num)
-                }
-            }
-        } else {
-            mid = (viewer.scrollTop ?? 0) + (viewer.clientHeight ?? 0) * 0.5
-            for (const [num, m] of Object.entries(metrics)) {
-                if (m.top <= mid && m.top > best) {
-                    best = m.top
-                    currentPage = parseInt(num)
-                }
-            }
-        }
-        this._pageLabel.textContent = currentPage
-    }
+    _updatePageLabel() {}
 
     // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -78,12 +50,6 @@ export class StandaloneScrollbarManager {
 
         const thumb = document.createElement('div')
         thumb.className = 'sf-std-thumb'
-
-        const pageLabel = document.createElement('span')
-        pageLabel.className = 'sf-std-page'
-        pageLabel.textContent = '1'
-        thumb.appendChild(pageLabel)
-        this._pageLabel = pageLabel
 
         track.appendChild(thumb)
 
