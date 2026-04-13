@@ -375,12 +375,14 @@ export class GestureManager {
                     this.showZoneIndicator('right', tapX, tapY, !success)
                 }
             } else {
-                // Vertical Mode: Top 35% = Prev, Left 40% = Prev, Rest = Next
+                // Vertical Mode: Top/Bottom 5% reserved for docking bar, Top 35% = Prev, Left 50% = Prev, Rest = Next
                 // skipAnchors=true: zone taps navigate page-by-page, not anchor-to-anchor
-                if (tapY < vh * 0.35) {
+                if (tapY < vh * 0.05 || tapY > vh * 0.95) {
+                    return
+                } else if (tapY < vh * 0.35) {
                     success = this.app.jump(-1, true)
                     this.showZoneIndicator('up', tapX, tapY, !success)
-                } else if (relX < rect.width * 0.40) {
+                } else if (relX < rect.width * 0.50) {
                     success = this.app.jump(-1, true)
                     this.showZoneIndicator('left', tapX, tapY, !success)
                 } else {
