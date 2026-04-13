@@ -293,4 +293,61 @@ export class ScoreRegistryHelper {
             this.manager.render();
         }
     }
+
+    /**
+     * LRU eviction for page-render bitmap cache.
+     * Keeps cache for only the 5 most recently accessed scores.
+     * Also removes orphan cache entries whose fingerprint is not in the registry.
+     */
+    async evictPageRenderCache() {
+        const MAX_CACHED_SCORES = 5;
+        try {
+            const allKeys = await db.getAllKeys();
+            const cacheKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith('page_render_'));
+
+            if (cacheKeys.length === 0) return;
+
+            // Extract unique fingerprints from cache keys (format: page_render_<fp>_p<num>)
+            const cachedFps = new Set();
+            for (const key of cacheKeys) {
+                const rest = key.slice('page_render_'.length); // <fp>_p<num>
+                const lastP = rest.lastIndexOf('_p');
+                if (lastP > 0) cachedFps.add(rest.slice(0, lastP));
+            }
+
+            const registryFps = new Set(this.manager.registry.map(s => s.fingerprint));
+
+            // 1. Find orphans — cached fingerprints not in registry
+            const orphanFps = new Set();
+            for (const fp of cachedFps) {
+                if (!registryFps.has(fp)) orphanFps.add(fp);
+            }
+
+            // 2. LRU eviction — among registry entries that have cache, keep top N by lastAccessed
+            const cachedRegistryEntries = this.manager.registry
+                .filter(s => cachedFps.has(s.fingerprint))
+                .sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
+
+            const evictFps = new Set();
+            for (let i = MAX_CACHED_SCORES; i < cachedRegistryEntries.length; i++) {
+                evictFps.add(cachedRegistryEntries[i].fingerprint);
+            }
+
+            // 3. Collect all keys to remove
+            const toRemoveFps = new Set([...orphanFps, ...evictFps]);
+            if (toRemoveFps.size === 0) return;
+
+            const keysToRemove = cacheKeys.filter(k => {
+                const rest = k.slice('page_render_'.length);
+                const lastP = rest.lastIndexOf('_p');
+                if (lastP <= 0) return false;
+                return toRemoveFps.has(rest.slice(0, lastP));
+            });
+
+            console.log(`[ScoreRegistryHelper] 🧹 Evicting page-render cache: ${orphanFps.size} orphan(s), ${evictFps.size} LRU eviction(s), ${keysToRemove.length} key(s) total`);
+            await Promise.all(keysToRemove.map(k => db.remove(k)));
+        } catch (err) {
+            console.error('[ScoreRegistryHelper] Page-render cache eviction failed:', err);
+        }
+    }
 }

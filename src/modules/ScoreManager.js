@@ -51,6 +51,9 @@ export class ScoreManager {
 
         // [New] Backfill annotation timestamps for registry entries that lack them
         this.helper.backfillLastAnnotationTimestamps();
+
+        // Evict stale page-render cache (fire-and-forget, non-blocking)
+        this.helper.evictPageRenderCache();
     }
 
     findByFingerprint(fp) {
@@ -395,7 +398,14 @@ export class ScoreManager {
         await db.remove(`stamps_${fp}`);
         await db.remove(`bookmarks_${fp}`);
 
-        // If we deleted the active score and aren't skipping autoload (e.g. not in a batch), 
+        // Remove bitmap page-render cache entries for this score
+        const allKeys = await db.getAllKeys();
+        await Promise.all(
+            allKeys.filter(k => typeof k === 'string' && k.startsWith(`page_render_${fp}_`))
+                   .map(k => db.remove(k))
+        );
+
+        // If we deleted the active score and aren't skipping autoload (e.g. not in a batch),
         // immediately switch to a different score.
         if (!skipAutoLoad && fp === this.app.pdfFingerprint) {
             console.log('[ScoreManager] Open score deleted individually, switching to next available...');
