@@ -67,7 +67,7 @@ const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'jus
 class ScoreFlow {
   constructor() {
     window.app = this
-    this.DEBUG_VERSION = '04-13_797'
+    this.DEBUG_VERSION = '04-13_798'
     this.isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
     this.isDev = window.location.hostname === 'localhost' || 
                  window.location.hostname === '127.0.0.1' || 
@@ -237,8 +237,8 @@ this.playbackManager.init()
 
     const boot = async () => {
         try {
-            this.showMessage('[Boot] 初始化系統 V3.1.4...', 'system')
-            console.log('[ScoreFlow] Boot sequence started V3.1.4')
+            this.showMessage(`[Boot] 初始化系統 ${this.DEBUG_VERSION}...`, 'system')
+            console.log(`[ScoreFlow] Boot sequence started ${this.DEBUG_VERSION}`)
             await this.scoreManager.init()
             await this.setlistManager.init()
 
@@ -332,7 +332,7 @@ this.playbackManager.init()
             }
 
             this.renderBuildInfo()
-            console.log('[ScoreFlow] Boot complete - Version 3.1.4')
+            console.log(`[ScoreFlow] Boot complete - ${this.DEBUG_VERSION}`)
         } catch (err) {
             console.error('[ScoreFlow] CRITICAL BOOT ERROR:', err)
             this.showMessage('啟動出錯: ' + err.message, 'error')
