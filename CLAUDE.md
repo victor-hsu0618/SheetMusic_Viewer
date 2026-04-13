@@ -26,6 +26,31 @@ When bumping the version:
 
 > `package.json` version field is unused — do not update it.
 
+## Jump / Navigation Rules (`src/modules/ruler.js`)
+
+`jump(delta, skipAnchors)` 是所有跳頁邏輯的核心（Space、方向鍵、手勢點擊都走這裡）。
+
+**優先順序（直式模式）：**
+1. 有使用者手動設定的 anchor stamp → 跳到 anchor
+2. 無 anchor → 跳到下一頁頂端（next page top）
+3. 找不到下一頁 → `return false`（不可繼續）
+
+**直式跳頁規則：**
+- `nextPage` 必須滿足 `metrics[n].top > effectiveScroll + minAdvance`
+  - `minAdvance = max(40px, viewportHeight × 15%)`
+  - 目的：跳過已經幾乎進入視窗的頁面，確保每次跳頁有明顯的視覺位移
+- 若無滿足 minAdvance 的頁面，退而求其次找任何 `top > effectiveScroll + 2px` 的下一頁（避免在最後幾頁卡住）
+- 若完全找不到下一頁 → `return false`（不是 `return true`！沒有實際跳頁就不能回傳 true）
+
+**橫式跳頁規則：**
+- 前進：viewport scroll fallback（`effectiveScroll + viewportHeight - jumpOffsetPx`）
+- 後退：直接呼叫 `jumpManager.prevPage()`（完全繞過 jumpHistory）
+- 無 System Stamps 設計，相關邏輯不應出現在橫式分支
+
+**回退（backward）直式規則：**
+- 先 pop `jumpHistory`（anchor 跳躍後的回溯）
+- 無 history → 跳到 prev page top
+
 ## Architecture
 
 **ScoreFlow** is a PWA sheet music viewer for professional musicians built with **Vite + Vanilla JS** (no framework). The base URL path is `/SheetMusic_Viewer/`.

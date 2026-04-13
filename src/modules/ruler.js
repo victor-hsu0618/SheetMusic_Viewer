@@ -313,13 +313,21 @@ export class RulerManager {
                 if (isVertical) {
                     const sortedPages = Object.keys(metrics).map(Number).sort((a, b) => a - b)
                     const currentPage = [...sortedPages].reverse().find(n => metrics[n].top <= effectiveScroll + 5) ?? sortedPages[0]
-                    const nextPage = sortedPages.find(n => n > currentPage)
+
+                    // Skip pages whose top is already very close to current scroll
+                    // (avoids tiny jumps when the next page has just barely started entering view)
+                    const minAdvance = Math.max(40, viewportHeight * 0.15)
+                    let nextPage = sortedPages.find(n => n > currentPage && metrics[n].top > effectiveScroll + minAdvance)
+                    // Fallback: any next page (so we never get stuck)
+                    if (!nextPage) nextPage = sortedPages.find(n => n > currentPage && metrics[n].top > effectiveScroll + 2)
+
                     if (nextPage) {
                         this.jumpHistory.push(effectiveScroll)
                         if (this.jumpHistory.length > 50) this.jumpHistory.shift()
                         this._executeJump(metrics[nextPage].top)
+                        return true
                     }
-                    return true
+                    return false // No next page available
                 }
 
                 // Horizontal mode fallback
