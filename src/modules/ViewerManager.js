@@ -829,24 +829,37 @@ export class ViewerManager {
 
             const cached = this._bitmapCache[pageNum]
             if (cached) {
-                const context = canvas.getContext('2d', { alpha: false })
-                if (context) {
-                    canvas.width = cached.width
-                    canvas.height = cached.height
-                    canvas.style.width = ''
-                    canvas.style.height = ''
-                    context.drawImage(cached, 0, 0)
-                    // Restore annotation layers
-                    const vp = this._pageViewports[pageNum]
-                    if (vp) {
-                        // FIX: Use the actual scale of the cached bitmap instead of hardcoded 1.0
-                        const cachedScale = cached.width / vp.width;
-                        this.app.createAnnotationLayers(wrapper, pageNum, vp.width, vp.height, cachedScale)
-                        this.app.createCaptureOverlay(wrapper, pageNum, vp.width, vp.height)
-                        this.app.redrawStamps(pageNum)
+                // Validate that the cached bitmap matches the current scale before using it.
+                // Stale bitmaps (from a previous zoom level) would cause the PDF canvas to be
+                // the wrong size while the annotation canvas/overlay remain at the correct size,
+                // making stamp positions appear offset from the PDF content.
+                const vp = this._pageViewports[pageNum]
+                if (vp) {
+                    const cachedScale = cached.width / vp.width
+                    if (Math.abs(cachedScale - 1.0) > 0.05) {
+                        // >5% scale mismatch — discard stale bitmap and do a fresh render
+                        cached?.close?.()
+                        delete this._bitmapCache[pageNum]
+                        // Fall through to full render below
+                    } else {
+                        const context = canvas.getContext('2d', { alpha: false })
+                        if (context) {
+                            canvas.width = cached.width
+                            canvas.height = cached.height
+                            canvas.style.width = ''
+                            canvas.style.height = ''
+                            context.drawImage(cached, 0, 0)
+                            this.app.createAnnotationLayers(wrapper, pageNum, vp.width, vp.height, cachedScale)
+                            this.app.createCaptureOverlay(wrapper, pageNum, vp.width, vp.height)
+                            this.app.redrawStamps(pageNum)
+                            wrapper.dataset.rendered = 'true'
+                            return
+                        }
                     }
-                    wrapper.dataset.rendered = 'true'
-                    return
+                } else {
+                    // vp not set yet — can't validate; discard to ensure fresh render sets vp
+                    cached?.close?.()
+                    delete this._bitmapCache[pageNum]
                 }
             }
 
@@ -1056,7 +1069,7 @@ export class ViewerManager {
         let hi = Math.min(numPages, lo + PREWARM_WINDOW - 1)
         lo = Math.max(1, hi - PREWARM_WINDOW + 1) // re-adjust if hi was clamped
 
-        // Evict pages outside the new window to free memory
+        // Evict pages outside the new window to free memory (always safe)
         for (const key of Object.keys(this._bitmapCache)) {
             const p = parseInt(key, 10)
             if (p < lo || p > hi) {
@@ -1064,6 +1077,13 @@ export class ViewerManager {
                 delete this._bitmapCache[p]
             }
         }
+
+        // Only load from IndexedDB during initial load (_usePersistedCache = true).
+        // After a zoom change _usePersistedCache is false and the persisted bitmaps
+        // were saved at a different scale — loading them would poison _bitmapCache
+        // with wrong-size bitmaps, causing the PDF canvas and annotation canvas to
+        // have mismatched dimensions and stamp positions to appear offset.
+        if (!this._usePersistedCache) return
 
         // Load missing pages within the window
         const prefix = `page_render_${fp}_p`
