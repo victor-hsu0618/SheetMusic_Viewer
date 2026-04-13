@@ -251,10 +251,17 @@ export class PdfExportManager {
                                     break;
                                 case 'special':
                                     if (d.variant === 'input-text') {
-                                        annoCtx.font = `bold ${15 * textScale}px Outfit`;
+                                        const content = group.data || '';
+                                        const hasCJK = /[\u4e00-\u9fa5]/.test(content);
+                                        let fontSize = 15 * textScale;
+                                        let fontWeight = 'bold';
+                                        if (hasCJK) { fontSize *= 0.85; fontWeight = '500'; }
+                                        annoCtx.font = `${fontWeight} ${fontSize}px Outfit`;
                                         annoCtx.fillStyle = color;
-                                        const lines = (group.data || '').split('\n');
-                                        const lineHeight = 15 * textScale;
+                                        annoCtx.textAlign = 'left';
+                                        annoCtx.textBaseline = 'top';
+                                        const lines = content.split('\n');
+                                        const lineHeight = fontSize * 1.2;
                                         lines.forEach((line, i) => {
                                             annoCtx.fillText(line, x, y + (i * lineHeight));
                                         });

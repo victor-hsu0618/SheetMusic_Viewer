@@ -979,6 +979,12 @@ export class InteractionManager {
             if (this._penLongPressTimer) { clearTimeout(this._penLongPressTimer); this._penLongPressTimer = null; }
             if (!isInteracting) return;
 
+            // Detach global listeners immediately to prevent race conditions:
+            // During `await saveToStorage()` below, the event loop yields and
+            // moveAction could process stale pointer events (e.g. Apple Pencil
+            // hover), corrupting the stamp's position.
+            detachGlobalListeners();
+
             const endX = e.clientX !== undefined ? e.clientX : (e.changedTouches?.[0]?.clientX || e.touches?.[0]?.clientX || 0);
             const endY = e.clientY !== undefined ? e.clientY : (e.changedTouches?.[0]?.clientY || e.touches?.[0]?.clientY || 0);
             const totalDist = Math.sqrt(Math.pow(endX - actionStartClient.x, 2) + Math.pow(endY - actionStartClient.y, 2));
@@ -1345,6 +1351,9 @@ export class InteractionManager {
                     this.app.redrawStamps(pageNum);
                 }
             } else if (this.app.isStampTool() && tt !== 'view' && tt !== 'sticky-note') {
+                // Suppress hover preview during grace period to prevent the
+                // just-placed stamp from appearing to "shift" to the hover position
+                if (graceObject) return;
                 const cvs = wrapper.querySelector('.annotation-layer.virtual-canvas');
                 if (cvs) {
                     this.app.redrawStamps(pageNum);
