@@ -166,6 +166,7 @@ export class InteractionManager {
 
         // --- STABILIZATION STATE ---
         let actionStartClient = { x: 0, y: 0 };
+        let isGracePeriodGrab = false; // True when re-grabbing a stamp during its grace period
 
         // Force reset closure state when switching tools to prevent stuck interactions
         overlay._resetState = () => {
@@ -356,6 +357,7 @@ export class InteractionManager {
             isNudging = false;
             eraserClickTarget = null;
             eraserHasDragged = false;
+            isGracePeriodGrab = false;
 
             if (this.app.panCooldown && pointerType !== 'pen') return;
 
@@ -515,6 +517,7 @@ export class InteractionManager {
                     }
                     activeObject = graceObject;
                     isMovingExisting = true;
+                    isGracePeriodGrab = true;
                     this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
 
                     const graceCenter = CoordMapper.getGraceCenter(graceObject);
@@ -990,7 +993,8 @@ export class InteractionManager {
             const totalDist = Math.sqrt(Math.pow(endX - actionStartClient.x, 2) + Math.pow(endY - actionStartClient.y, 2));
 
             // --- LIFT-OFF STABILIZATION (Snap-back Logic) ---
-            if (isMovingExisting && activeObject && !isDraggingHandle && !InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper)) {
+            // Skip for grace period grabs: user is intentionally adjusting position
+            if (isMovingExisting && !isGracePeriodGrab && activeObject && !isDraggingHandle && !InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper)) {
                 // threshold based on user logs showing drift up to 15.6px
                 const SNAP_BACK_THRESHOLD = 20; 
                 if (totalDist > 0 && totalDist < SNAP_BACK_THRESHOLD && this.dragStartObject) {
@@ -1258,7 +1262,7 @@ export class InteractionManager {
                         } else if (isMovingExisting && this.dragStartObject) {
                             const moved = syncObj.points ? JSON.stringify(syncObj.points) !== JSON.stringify(this.dragStartObject.points) : (syncObj.x !== this.dragStartObject.x || syncObj.y !== this.dragStartObject.y || syncObj.page !== this.dragStartObject.page);
                             if (moved) this.app.pushHistory({ type: 'move', oldObj: this.dragStartObject, newObj: JSON.parse(JSON.stringify(syncObj)) });
-                            else this._showStampContextMenu(syncObj, e.clientX, e.clientY);
+                            else if (!isGracePeriodGrab) this._showStampContextMenu(syncObj, e.clientX, e.clientY);
                         }
                         if (syncObj.type === 'anchor') this.app.updateRulerMarks();
                         this.app.redrawStamps(tPN);
