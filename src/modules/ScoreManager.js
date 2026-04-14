@@ -635,6 +635,11 @@ export class ScoreManager {
         this.overlay.classList.toggle('active', active);
         this.app.btnLibraryToggle?.classList.toggle('active', active);
 
+        if (!active) {
+            // Auto-save any unsaved changes in Page Information fields before hiding
+            this.app.scoreDetailManager?.handleAutoSave();
+        }
+
         if (active) {
             // Close all other panels first (mutual exclusion)
             this.app.uiManager?.closeAllActivePanels('ScoreManager');

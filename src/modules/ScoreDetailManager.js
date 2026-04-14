@@ -101,6 +101,7 @@ export class ScoreDetailManager {
         // 2. Final check: if fingerprint changed while we were awaiting DB, abort this load
         if (this.currentFp !== fingerprint) {
             console.warn(`[ScoreDetailManager] Abandoning load for ${fingerprint.slice(0, 8)} (Current is ${this.currentFp?.slice(0, 8)})`);
+            this.isLoading = false;
             return;
         }
 
