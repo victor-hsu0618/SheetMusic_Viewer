@@ -447,48 +447,69 @@
 
         async function handleFile(file) {
             if (!file) return;
-            
-            // Reset input so the same file can be picked again if needed
-            document.getElementById('file-input').value = '';
-            
-            document.getElementById('file-name').textContent = file.name;
-            
-            // 1. Get ArrayBuffer and keep a dedicated copy for Export (pdf-lib)
-            const arrayBuffer = await file.arrayBuffer();
-            pdfBytes = new Uint8Array(arrayBuffer);
-            
-            // 2. Compute fingerprint (uses pdfBytes)
-            loadingOverlay.style.display = 'flex';
-            loadingText.textContent = '正在計算檔案指紋 (SHA-256)...';
-            pdfFingerprint = await Fingerprint.computeFingerprint(pdfBytes);
+            try {
+                loadingOverlay.style.display = 'flex';
+                loadingText.textContent = '正在讀取檔案...';
 
-            // 3. Create a SEPARATE copy for Rendering (pdf.js) 
-            // This prevents detachment if pdf.js transfers the buffer
-            const pdfJsBytes = new Uint8Array(arrayBuffer.slice(0));
-            
-            pdfDoc = await pdfjsLib.getDocument({ data: pdfJsBytes }).promise;
-            totalPages = pdfDoc.numPages;
-            dropZone.style.display = 'none';
-            document.getElementById('btn-export').disabled = false;
-            document.getElementById('page-controls').style.display = 'flex';
-            document.getElementById('page-counter').textContent = `1 / ${totalPages}`;
-            
-            if (loadState()) {
-                loadingOverlay.style.display = 'none';
-                if (confirm(`發現進度，是否載入？`)) { 
-                    updateNumDisplay(); 
-                    await renderAllPages(false); 
+                // Reset state for new file
+                currentPageNum = 1;
+                markers = [];
+                allPageData = [];
+                activeMarkerIndex = -1;
+                activeField = 'measure';
+                isNewInput = true;
+                addMode = false;
+                dragTarget = null;
+                viewerContainer.innerHTML = '';
+                
+                // Reset input so the same file can be picked again if needed
+                document.getElementById('file-input').value = '';
+                document.getElementById('file-name').textContent = file.name;
+                
+                // 1. Get ArrayBuffer
+                const arrayBuffer = await file.arrayBuffer();
+                pdfBytes = new Uint8Array(arrayBuffer);
+                
+                // 2. Compute fingerprint
+                loadingText.textContent = '正在計算檔案指紋 (SHA-256)...';
+                pdfFingerprint = await Fingerprint.computeFingerprint(pdfBytes);
+
+                // 3. Create a SEPARATE copy for Rendering (pdf.js) 
+                const pdfJsBytes = new Uint8Array(arrayBuffer.slice(0));
+                
+                if (pdfDoc) {
+                    try { await pdfDoc.destroy(); } catch(e) {}
                 }
-                else { 
+                
+                pdfDoc = await pdfjsLib.getDocument({ data: pdfJsBytes }).promise;
+                totalPages = pdfDoc.numPages;
+                dropZone.style.display = 'none';
+                document.getElementById('btn-export').disabled = false;
+                document.getElementById('page-controls').style.display = 'flex';
+                document.getElementById('page-counter').textContent = `1 / ${totalPages}`;
+                
+                if (loadState()) {
+                    loadingOverlay.style.display = 'none';
+                    if (confirm(`發現進度，是否載入？`)) { 
+                        updateNumDisplay(); 
+                        await renderAllPages(false); 
+                    }
+                    else { 
+                        currentMeasure = 1; currentSection = ""; 
+                        updateNumDisplay();
+                        await renderAllPages(true); 
+                    }
+                } else { 
+                    loadingOverlay.style.display = 'none';
                     currentMeasure = 1; currentSection = ""; 
                     updateNumDisplay();
                     await renderAllPages(true); 
                 }
-            } else { 
+            } catch (err) {
+                console.error(err);
+                alert("載入失敗: " + err.message);
                 loadingOverlay.style.display = 'none';
-                currentMeasure = 1; currentSection = ""; 
-                updateNumDisplay();
-                await renderAllPages(true); 
+                dropZone.style.display = 'flex';
             }
         }
 
