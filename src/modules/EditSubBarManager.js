@@ -1153,6 +1153,12 @@ export class EditSubBarManager {
                 items = TOOLSETS
                     .filter(g => g.type !== 'edit')
                     .flatMap(g => g.tools.map(t => ({ ...t, _group: g, row: t.row ?? 1 })))
+                    // Ensure 'koppa' (thumb) is included if not already
+                    if (!items.find(i => i.id === 'koppa')) {
+                        const fingerGroup = TOOLSETS.find(g => g.type === 'fingering')
+                        const koppa = fingerGroup?.tools.find(t => t.id === 'koppa')
+                        if (koppa) items.push({ ...koppa, _group: fingerGroup, row: 1 })
+                    }
             } else {
                 // Map each {id, category, row, page?} to its tool object
                 for (const entry of stamps) {
