@@ -803,15 +803,61 @@ export class AnnotationManager {
     async promptBPM(noteSymbol) {
         return new Promise(resolve => {
             const dialog = document.getElementById('bpm-dialog')
+            const keypad = dialog.querySelector('.measure-keypad')
+            const header = dialog.querySelector('.measure-keypad-header')
             const noteDisplay = document.getElementById('bpm-note-display')
             const numDisplay  = document.getElementById('bpm-num-display')
             const cancelBtn   = document.getElementById('bpm-cancel')
 
-            if (!dialog || !numDisplay) {
+            if (!dialog || !numDisplay || !keypad || !header) {
                 const val = prompt(`${noteSymbol} = ?`, '80')
                 resolve(val?.trim() || null)
                 return
             }
+
+            // 初始化位置
+            let currentX = 0
+            let currentY = 0
+            keypad.style.transform = 'translate(0, 0)'
+            
+            // 拖曳邏輯
+            let isDragging = false
+            let startMouseX, startMouseY
+            let startX = 0, startY = 0
+
+            const onMove = (e) => {
+                if (!isDragging) return
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY
+                
+                currentX = startX + (clientX - startMouseX)
+                currentY = startY + (clientY - startMouseY)
+                keypad.style.transform = `translate(${currentX}px, ${currentY}px)`
+            }
+
+            const onEnd = () => {
+                isDragging = false
+                document.removeEventListener('mousemove', onMove)
+                document.removeEventListener('mouseup', onEnd)
+                document.removeEventListener('touchmove', onMove)
+                document.removeEventListener('touchend', onEnd)
+            }
+
+            const onStart = (e) => {
+                isDragging = true
+                startMouseX = e.touches ? e.touches[0].clientX : e.clientX
+                startMouseY = e.touches ? e.touches[0].clientY : e.clientY
+                startX = currentX
+                startY = currentY
+
+                document.addEventListener('mousemove', onMove)
+                document.addEventListener('mouseup', onEnd)
+                document.addEventListener('touchmove', onMove, { passive: false })
+                document.addEventListener('touchend', onEnd)
+            }
+
+            header.addEventListener('mousedown', onStart)
+            header.addEventListener('touchstart', onStart, { passive: false })
 
             if (noteDisplay) noteDisplay.textContent = noteSymbol
             let typed = ''
@@ -864,35 +910,48 @@ export class AnnotationManager {
             const header = dialog.querySelector('.measure-keypad-header')
             
             // 初始化位置
+            let currentX = 0
+            let currentY = 0
             keypad.style.transform = 'translate(0, 0)'
             
             // 拖曳邏輯
             let isDragging = false
-            let offsetX, offsetY
+            let startMouseX, startMouseY
+            let startX = 0, startY = 0
 
-            const onMouseMove = (e) => {
+            const onMove = (e) => {
                 if (!isDragging) return
-                const x = e.clientX - offsetX
-                const y = e.clientY - offsetY
-                keypad.style.transform = `translate(${x}px, ${y}px)`
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY
+                
+                currentX = startX + (clientX - startMouseX)
+                currentY = startY + (clientY - startMouseY)
+                keypad.style.transform = `translate(${currentX}px, ${currentY}px)`
             }
 
-            const onMouseUp = () => {
+            const onEnd = () => {
                 isDragging = false
-                document.removeEventListener('mousemove', onMouseMove)
-                document.removeEventListener('mouseup', onMouseUp)
+                document.removeEventListener('mousemove', onMove)
+                document.removeEventListener('mouseup', onEnd)
+                document.removeEventListener('touchmove', onMove)
+                document.removeEventListener('touchend', onEnd)
             }
 
-            header.addEventListener('mousedown', (e) => {
+            const onStart = (e) => {
                 isDragging = true
-                const rect = keypad.getBoundingClientRect()
-                // 計算滑鼠在面板上的偏移量
-                offsetX = e.clientX - rect.left
-                offsetY = e.clientY - rect.top
+                startMouseX = e.touches ? e.touches[0].clientX : e.clientX
+                startMouseY = e.touches ? e.touches[0].clientY : e.clientY
+                startX = currentX
+                startY = currentY
 
-                document.addEventListener('mousemove', onMouseMove)
-                document.addEventListener('mouseup', onMouseUp)
-            })
+                document.addEventListener('mousemove', onMove)
+                document.addEventListener('mouseup', onEnd)
+                document.addEventListener('touchmove', onMove, { passive: false })
+                document.addEventListener('touchend', onEnd)
+            }
+
+            header.addEventListener('mousedown', onStart)
+            header.addEventListener('touchstart', onStart, { passive: false })
 
             const songDisplay = document.getElementById('measure-song-display')
             const numDisplay = document.getElementById('measure-num-display')

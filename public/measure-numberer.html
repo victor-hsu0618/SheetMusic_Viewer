@@ -765,18 +765,36 @@
 
         function initDrag(e, marker, el, pageNum, idx) {
             dragTarget = { marker, element: el, pageNum }; focusMarker(idx);
+            
+            const layer = el.parentElement;
+            
             const onMove = (mv) => {
-                if (mv.touches) mv = mv.touches[0];
-                const r = el.parentElement.getBoundingClientRect();
-                marker.x = Math.max(0, Math.min(1, (mv.clientX - r.left) / r.width));
-                marker.y = Math.max(0, Math.min(1, (mv.clientY - r.top) / r.height));
-                el.style.left = (marker.x * 100) + '%'; el.style.top = (marker.y * 100) + '%';
+                mv.preventDefault();
+                const clientX = mv.touches ? mv.touches[0].clientX : mv.clientX;
+                const clientY = mv.touches ? mv.touches[0].clientY : mv.clientY;
+                
+                const r = layer.getBoundingClientRect();
+                marker.x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+                marker.y = Math.max(0, Math.min(1, (clientY - r.top) / r.height));
+                
+                el.style.left = (marker.x * 100) + '%'; 
+                el.style.top = (marker.y * 100) + '%';
             };
+
             const onEnd = () => {
-                document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
-                setTimeout(() => { dragTarget = null; }, 50); saveState();
+                document.removeEventListener('mousemove', onMove); 
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+                
+                setTimeout(() => { dragTarget = null; }, 50); 
+                saveState();
             };
-            document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+
+            document.addEventListener('mousemove', onMove, { passive: false });
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
         }
 
         async function exportPdf() {
