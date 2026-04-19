@@ -868,13 +868,13 @@ export class AnnotationManager {
             
             // 拖曳邏輯
             let isDragging = false
-            let initialMouseX, initialMouseY, initialKeypadX, initialKeypadY
+            let offsetX, offsetY
 
             const onMouseMove = (e) => {
                 if (!isDragging) return
-                const dx = e.clientX - initialMouseX
-                const dy = e.clientY - initialMouseY
-                keypad.style.transform = `translate(${initialKeypadX + dx}px, ${initialKeypadY + dy}px)`
+                const x = e.clientX - offsetX
+                const y = e.clientY - offsetY
+                keypad.style.transform = `translate(${x}px, ${y}px)`
             }
 
             const onMouseUp = () => {
@@ -885,14 +885,10 @@ export class AnnotationManager {
 
             header.addEventListener('mousedown', (e) => {
                 isDragging = true
-                initialMouseX = e.clientX
-                initialMouseY = e.clientY
-                
-                // 獲取當前 translate 值
-                const style = window.getComputedStyle(keypad)
-                const matrix = new WebKitCSSMatrix(style.transform)
-                initialKeypadX = matrix.m41
-                initialKeypadY = matrix.m42
+                const rect = keypad.getBoundingClientRect()
+                // 計算滑鼠在面板上的偏移量
+                offsetX = e.clientX - rect.left
+                offsetY = e.clientY - rect.top
 
                 document.addEventListener('mousemove', onMouseMove)
                 document.addEventListener('mouseup', onMouseUp)
