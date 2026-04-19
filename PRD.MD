@@ -79,8 +79,17 @@ ScoreFlow 是一款專為專業樂手設計的高階樂譜閱讀器 (SheetMusic 
   - **Touch**：印章類工具套用垂直偏移（防止手指遮掩），但 **Edit 工具 (Select/Copy/Erase)** 固定採 1:1 對位以保證 UI 互動直覺。
 - **Pencil 穩定化架構 (Pencil Stabilization)**：
   - **壓力門檻 (Pressure Gate)**：點擊判定需壓力 > `0.02`。有效過濾新一代 iPad Pro 的 Hover (懸浮) 雜訊與隔空誤觸。
-  - **收筆落點校正 (Lift-off Stabilization)**：若互動全程總位移 < `20px`，自動執行 Snap-back 彈回原位，消除因筆身傾斜抬起產生的位移誤差。
-  - **同步互動機制 (Synchronous Interaction)**：關鍵互動起始點採同步（Non-async）執行，防止 iOS 微任務切換導致的 Pointer 事件漏接。
+  - **交互冷卻 (Interaction Cooldown)**：Pencil 按鈕事件強制 0.6s 冷卻，防止連點導致動畫堆疊。
+  - **佈局洪水防護 (Layout Flood Protection)**：所有跨分頁佈局請求必須透過 `DispatchQueue.main.async` 合併處理，禁止同步觸發 Host 重繪。
+- **資料持久化安全特性 (Data Safety)**：
+  - **執行緒加固**：所有 Core Data 操作強制使用 `viewContext.perform` 保護，杜絕背景寫入導致的 `attempt to insert nil` 衝突。
+  - **自動保存機制**：縮放或全螢幕切換時自動觸發輕量化存檔。
+- **Pencil 硬體按鈕行為 (Hardware Buttons - Double Tap / Squeeze)**：
+  - **喚醒優先邏輯 (Wake-up Priority)**：
+    - 若目前處於「全螢幕模式」或「工具列已自動隱藏」，則動作必為：**退出全螢幕、顯示工具列、並開啟畫筆工具**。
+    - 若工具列已顯示但畫筆未開啟，動作為：**開啟畫筆並重置隱藏計時器**。
+    - 若工具列已顯示且畫筆已開啟，動作為：**進入全螢幕演奏模式 (Performance Mode)**。
+  - **物理感官優化**：所有切換過場採用 `.snappy` (物理彈簧) 動畫，反應時間控制在 `0.25s` 內。
 
 ### 2. iPad 專屬手勢 (iPad Gestures)
 - **智慧點擊跳轉 (Zone Tap)**：僅在 View 模式啟用。

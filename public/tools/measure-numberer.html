@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Measure Numberer — ScoreFlow Tools</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="BarlineStaffDetector.js"></script>
+    <link rel="stylesheet" href="shared-styles.css">
+    <script src="theme-manager.js"></script>
+    <style>
+        :root {
+            --sidebar-w: 300px;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        #app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* ── Sidebar ── */
+        #sidebar {
+            width: var(--sidebar-w);
+            min-width: var(--sidebar-w);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        #sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        #sidebar-header a {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: none;
+            opacity: 0.7;
+            margin-bottom: 12px;
+        }
+
+        #sidebar-header h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        #sidebar-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Section */
+        .s-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .s-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .s-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Keypad */
+        .keypad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .key-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .key-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .key-btn:active {
+            transform: scale(0.95);
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .key-btn.action {
+            font-size: 12px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+        }
+
+        /* Inputs */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .num-display {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 24px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--primary);
+            min-height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .step-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .step-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* ── Main View ── */
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: #080f1e;
+        }
+
+        #topbar {
+            height: 56px;
+            background: var(--sidebar-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 16px;
+            z-index: 5;
+        }
+
+        .file-info {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Canvas Area */
+        #viewer-container {
+            flex: 1;
+            overflow: auto;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        #canvas-wrapper {
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            background: white;
+        }
+
+        #interaction-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            cursor: crosshair;
+        }
+
+        .measure-marker {
+            position: absolute;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid var(--primary);
+            color: #000;
+            font-weight: 800;
+            font-size: 12px;
+            padding: 2px 4px;
+            border-radius: 2px;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
+        }
+
+        .system-guide {
+            position: absolute;
+            left: 0; width: 100%;
+            height: 2px;
+            background: rgba(34, 211, 238, 0.3);
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Drop Zone */
+        #drop-zone {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            z-index: 20;
+            gap: 20px;
+        }
+
+        .drop-icon { font-size: 64px; }
+        .drop-text { font-size: 18px; font-weight: 700; color: var(--text-muted); }
+
+        #file-input { display: none; }
+
+        /* Page Nav */
+        .page-nav {
+            position: fixed;
+            bottom: 30px;
+            left: calc(var(--sidebar-w) + 50% - 100px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(15, 23, 42, 0.8);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            padding: 8px 20px;
+            border-radius: 100px;
+            border: 1px solid var(--border);
+            color: white;
+            z-index: 100;
+        }
+
+        .nav-arrow {
+            cursor: pointer;
+            font-size: 20px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .nav-arrow:hover { opacity: 1; color: var(--primary); }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <header id="sidebar-header">
+                <a href="./index.html">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <path d="m15 18-6-6 6-6" />
+                    </svg>
+                    返回工具門戶
+                </a>
+                <h1>🔢 Measure Numberer</h1>
+            </header>
+
+            <div id="sidebar-body">
+                <!-- Status & Mode -->
+                <div class="s-section">
+                    <div class="s-title">標記模式</div>
+                    <label class="check-label" style="display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer;">
+                        <input type="checkbox" id="snap-toggle" checked style="accent-color:var(--primary);">
+                        Smart Snap (自動吸附 System)
+                    </label>
+                </div>
+
+                <!-- Keypad -->
+                <div class="s-section">
+                    <div class="s-title">小節序號設定</div>
+                    <div class="input-group">
+                        <label>當前預計標記數字</label>
+                        <div class="num-display" id="current-num-display">1</div>
+                    </div>
+                    <div class="keypad-grid">
+                        <div class="key-btn" onclick="appendNum(1)">1</div>
+                        <div class="key-btn" onclick="appendNum(2)">2</div>
+                        <div class="key-btn" onclick="appendNum(3)">3</div>
+                        <div class="key-btn" onclick="appendNum(4)">4</div>
+                        <div class="key-btn" onclick="appendNum(5)">5</div>
+                        <div class="key-btn" onclick="appendNum(6)">6</div>
+                        <div class="key-btn" onclick="appendNum(7)">7</div>
+                        <div class="key-btn" onclick="appendNum(8)">8</div>
+                        <div class="key-btn" onclick="appendNum(9)">9</div>
+                        <div class="key-btn action" onclick="clearNum()">C</div>
+                        <div class="key-btn" onclick="appendNum(0)">0</div>
+                        <div class="key-btn action" onclick="backspaceNum()">⌫</div>
+                    </div>
+                </div>
+
+                <!-- Auto Increment -->
+                <div class="s-section">
+                    <div class="s-title">自動遞增設定</div>
+                    <div class="input-row">
+                        <div class="input-group" style="flex:1;">
+                            <label>步進值 (Step)</label>
+                            <div class="stepper">
+                                <button class="step-btn" onclick="adjustStep(-1)">-</button>
+                                <span id="step-value" style="font-weight:700; min-width:20px; text-align:center;">1</span>
+                                <button class="step-btn" onclick="adjustStep(1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="s-section" style="margin-top:auto;">
+                    <button class="btn btn-outline" onclick="undoLast()">↩ 撤銷上一次標記</button>
+                    <button class="btn btn-outline" style="margin-top:8px; border-color:var(--danger); color:var(--danger);" onclick="clearAllOnPage()">🗑 清除本頁所有</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main id="main">
+            <header id="topbar">
+                <div class="file-info" id="file-name">未載入檔案</div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-outline" onclick="document.getElementById('file-input').click()">📂 開啟 PDF</button>
+                    <button class="btn btn-primary" id="btn-export" disabled onclick="exportPdf()">💾 導出 PDF</button>
+                </div>
+            </header>
+
+            <div id="viewer-container">
+                <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+                    <div class="drop-icon">📄</div>
+                    <div class="drop-text">拖曳 PDF 到這裡或點擊開啟</div>
+                    <input type="file" id="file-input" accept=".pdf" onchange="handleFile(this.files[0])">
+                </div>
+
+                <div id="canvas-wrapper" style="display:none;">
+                    <canvas id="pdf-canvas"></canvas>
+                    <div id="interaction-layer"></div>
+                    <!-- Markers will be injected here -->
+                </div>
+            </div>
+
+            <div class="page-nav" id="page-nav" style="display:none;">
+                <div class="nav-arrow" onclick="changePage(-1)">⇠</div>
+                <div id="page-info">1 / 1</div>
+                <div class="nav-arrow" onclick="changePage(1)">⇢</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let pdfDoc = null;
+        let pdfBytes = null;
+        let currentPage = 1;
+        let totalPages = 0;
+        let scale = 1.5;
+        let markers = []; // { page, x, y, value } - x, y are 0-1 normalized
+        let currentNum = 1;
+        let step = 1;
+        let detectedSystems = []; // Array of { top, bottom } for current page
+
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        const interactionLayer = document.getElementById('interaction-layer');
+        const wrapper = document.getElementById('canvas-wrapper');
+        const dropZone = document.getElementById('drop-zone');
+
+        // ── Initialization ──
+        async function handleFile(file) {
+            if (!file) return;
+            document.getElementById('file-name').textContent = file.name;
+            const arrayBuffer = await file.arrayBuffer();
+            pdfBytes = new Uint8Array(arrayBuffer);
+            
+            const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+            pdfDoc = await loadingTask.promise;
+            totalPages = pdfDoc.numPages;
+            
+            dropZone.style.display = 'none';
+            wrapper.style.display = 'block';
+            document.getElementById('page-nav').style.display = 'flex';
+            document.getElementById('btn-export').disabled = false;
+            
+            currentPage = 1;
+            renderPage();
+        }
+
+        async function renderPage() {
+            const page = await pdfDoc.getPage(currentPage);
+            const viewport = page.getViewport({ scale });
+            
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            
+            interactionLayer.style.width = viewport.width + 'px';
+            interactionLayer.style.height = viewport.height + 'px';
+            
+            document.getElementById('page-info').textContent = `${currentPage} / ${totalPages}`;
+            
+            // Run system detection
+            detectSystems();
+            renderMarkers();
+        }
+
+        async function detectSystems() {
+            detectedSystems = [];
+            const page = await pdfDoc.getPage(currentPage);
+            const viewport = page.getViewport({ scale: 1.5 }); // Use a fixed scale for detection
+            const canvasDetect = document.createElement('canvas');
+            canvasDetect.width = viewport.width;
+            canvasDetect.height = viewport.height;
+            const ctxDetect = canvasDetect.getContext('2d');
+            await page.render({ canvasContext: ctxDetect, viewport }).promise;
+            
+            const imgData = ctxDetect.getImageData(0, 0, canvasDetect.width, canvasDetect.height);
+            const gray = new Uint8Array(imgData.width * imgData.height);
+            for(let i=0; i<imgData.data.length; i+=4) {
+                gray[i/4] = imgData.data[i] * 0.299 + imgData.data[i+1] * 0.587 + imgData.data[i+2] * 0.114;
+            }
+            
+            const result = BarlineStaffDetector.detect(gray, imgData.width, imgData.height);
+            const systems = BarlineStaffDetector.detectSystems(gray, imgData.width, imgData.height, 128, { staffSegs: result.segments });
+            
+            // Convert to normalized coordinates
+            detectedSystems = systems.map(s => ({
+                top: s.top / imgData.height,
+                bottom: s.bottom / imgData.height
+            }));
+            
+            renderSystemGuides();
+        }
+
+        function renderSystemGuides() {
+            // Remove old guides
+            document.querySelectorAll('.system-guide').forEach(g => g.remove());
+            
+            detectedSystems.forEach(s => {
+                const guide = document.createElement('div');
+                guide.className = 'system-guide';
+                guide.style.top = (s.top * canvas.height) + 'px';
+                guide.style.display = 'block';
+                interactionLayer.appendChild(guide);
+            });
+        }
+
+        // ── Markers ──
+        interactionLayer.addEventListener('click', (e) => {
+            const rect = interactionLayer.getBoundingClientRect();
+            let x = (e.clientX - rect.left) / rect.width;
+            let y = (e.clientY - rect.top) / rect.height;
+            
+            // Smart Snap
+            if (document.getElementById('snap-toggle').checked) {
+                const closestSystem = detectedSystems.find(s => Math.abs(y - s.top) < 0.05);
+                if (closestSystem) {
+                    y = closestSystem.top;
+                    // Also snap X to a standard left margin if it's close to the left
+                    if (x < 0.2) x = 0.05; 
+                }
+            }
+            
+            markers.push({ page: currentPage, x, y, value: currentNum });
+            currentNum += step;
+            updateNumDisplay();
+            renderMarkers();
+        });
+
+        function renderMarkers() {
+            document.querySelectorAll('.measure-marker').forEach(m => m.remove());
+            markers.filter(m => m.page === currentPage).forEach(m => {
+                const el = document.createElement('div');
+                el.className = 'measure-marker';
+                el.textContent = m.value;
+                el.style.left = (m.x * 100) + '%';
+                el.style.top = (m.y * 100) + '%';
+                interactionLayer.appendChild(el);
+            });
+        }
+
+        function undoLast() {
+            if (markers.length > 0) {
+                const last = markers.pop();
+                currentNum = last.value;
+                updateNumDisplay();
+                renderMarkers();
+            }
+        }
+
+        function clearAllOnPage() {
+            markers = markers.filter(m => m.page !== currentPage);
+            renderMarkers();
+        }
+
+        // ── Keypad ──
+        let inputString = "1";
+        function appendNum(n) {
+            if (inputString === "0") inputString = n.toString();
+            else inputString += n;
+            currentNum = parseInt(inputString);
+            updateNumDisplay();
+        }
+        function clearNum() {
+            inputString = "0";
+            currentNum = 0;
+            updateNumDisplay();
+        }
+        function backspaceNum() {
+            inputString = inputString.slice(0, -1);
+            if (inputString === "") inputString = "0";
+            currentNum = parseInt(inputString);
+            updateNumDisplay();
+        }
+        function updateNumDisplay() {
+            inputString = currentNum.toString();
+            document.getElementById('current-num-display').textContent = currentNum;
+        }
+
+        function adjustStep(d) {
+            step = Math.max(1, step + d);
+            document.getElementById('step-value').textContent = step;
+        }
+
+        function changePage(d) {
+            const next = currentPage + d;
+            if (next >= 1 && next <= totalPages) {
+                currentPage = next;
+                renderPage();
+            }
+        }
+
+        // ── Export ──
+        async function exportPdf() {
+            const { PDFDocument, rgb, StandardFonts } = PDFLib;
+            const pdfDocLib = await PDFDocument.load(pdfBytes);
+            const pages = pdfDocLib.getPages();
+            const font = await pdfDocLib.embedFont(StandardFonts.HelveticaBold);
+            
+            for (const marker of markers) {
+                const page = pages[marker.page - 1];
+                const { width, height } = page.getSize();
+                
+                // PDF coordinates: (0,0) is bottom-left
+                const px = marker.x * width;
+                const py = height - (marker.y * height);
+                
+                page.drawText(marker.value.toString(), {
+                    x: px,
+                    y: py,
+                    size: 10,
+                    font: font,
+                    color: rgb(0, 0, 0)
+                });
+            }
+            
+            const savedBytes = await pdfDocLib.save();
+            const blob = new Blob([savedBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = document.getElementById('file-name').textContent.replace('.pdf', '_numbered.pdf');
+            a.click();
+        }
+
+        // Drag & Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--primary)';
+            dropZone.style.background = 'rgba(99, 102, 241, 0.05)';
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = 'var(--border)';
+            dropZone.style.background = 'var(--bg)';
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+    </script>
+</body>
+
+</html>
+ml>

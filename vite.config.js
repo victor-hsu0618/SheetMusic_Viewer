@@ -51,6 +51,7 @@ export default defineConfig({
                 cleanupOutdatedCaches: true,
                 globPatterns: ['**/*.{js,css,html,mjs,svg,bcmap,ttf,pfb,wasm}'],
                 navigateFallback: null,
+                navigateFallbackDenylist: [/^\/tools/],
                 runtimeCaching: [
                     {
                         urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
