@@ -718,29 +718,28 @@
         }
 
         function shiftX(delta) {
-            if (activeMarkerIndex < 0 && alignRange === 'single') return;
-            
-            const activePage = activeMarkerIndex >= 0 ? markers[activeMarkerIndex].page : null;
-            
+            // Use active marker page if focused, otherwise fall back to currently visible page
+            const activePage = activeMarkerIndex >= 0 ? markers[activeMarkerIndex].page : currentPageNum;
+
             markers.forEach((m, idx) => {
                 let shouldMove = false;
                 if (alignRange === 'all') shouldMove = true;
                 else if (alignRange === 'page' && m.page === activePage) shouldMove = true;
                 else if (alignRange === 'single' && idx === activeMarkerIndex) shouldMove = true;
-                
+
                 if (shouldMove) {
                     m.x = Math.max(0, Math.min(1, m.x + delta));
                 }
             });
-            
+
             // Re-render all affected pages
             for(let i=1; i<=totalPages; i++) renderMarkersForPage(i);
-            
+
             // Update UI display
             if (activeMarkerIndex >= 0) {
                 document.getElementById('x-display').textContent = Math.round(markers[activeMarkerIndex].x * 100) + '%';
             }
-            
+
             saveState();
         }
 
