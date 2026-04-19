@@ -860,12 +860,36 @@ export class AnnotationManager {
     async promptMeasureNumber(defVal) {
         return new Promise(resolve => {
             const dialog = document.getElementById('measure-dialog')
+            const keypad = dialog.querySelector('.measure-keypad')
+            const header = dialog.querySelector('.measure-keypad-header')
+            
+            // 初始化位置
+            keypad.style.transform = 'translate(0, 0)'
+            
+            // 拖曳邏輯
+            let isDragging = false
+            let offsetX, offsetY
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true
+                const rect = keypad.getBoundingClientRect()
+                offsetX = e.clientX - rect.left
+                offsetY = e.clientY - rect.top
+            })
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return
+                const x = e.clientX - offsetX
+                const y = e.clientY - offsetY
+                keypad.style.transform = `translate(${x}px, ${y}px)`
+            })
+            document.addEventListener('mouseup', () => isDragging = false)
+
             const songDisplay = document.getElementById('measure-song-display')
             const numDisplay = document.getElementById('measure-num-display')
             const stepDisplay = document.getElementById('measure-step-display')
             const btnDec = document.getElementById('measure-step-minus')
             const btnInc = document.getElementById('measure-step-plus')
             const btnCancel = document.getElementById('measure-cancel')
+            // ... 後續邏輯不變
 
             if (!dialog || !songDisplay || !numDisplay) {
                 resolve(prompt('Enter measure number:', defVal))

@@ -285,13 +285,16 @@
   border: 1px solid var(--border);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
   padding: 24px;
-  transform: translateY(20px);
-  transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  position: relative; /* 必要 */
+  cursor: default;
 }
 
 .measure-keypad-header {
   margin-bottom: 20px;
   text-align: center;
+  cursor: move; /* 指示可拖曳 */
+  padding: 10px;
+  margin: -10px;
 }
 
 .measure-keypad-title {
