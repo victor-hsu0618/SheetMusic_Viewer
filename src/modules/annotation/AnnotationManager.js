@@ -868,20 +868,35 @@ export class AnnotationManager {
             
             // 拖曳邏輯
             let isDragging = false
-            let offsetX, offsetY
+            let initialMouseX, initialMouseY, initialKeypadX, initialKeypadY
+
+            const onMouseMove = (e) => {
+                if (!isDragging) return
+                const dx = e.clientX - initialMouseX
+                const dy = e.clientY - initialMouseY
+                keypad.style.transform = `translate(${initialKeypadX + dx}px, ${initialKeypadY + dy}px)`
+            }
+
+            const onMouseUp = () => {
+                isDragging = false
+                document.removeEventListener('mousemove', onMouseMove)
+                document.removeEventListener('mouseup', onMouseUp)
+            }
+
             header.addEventListener('mousedown', (e) => {
                 isDragging = true
-                const rect = keypad.getBoundingClientRect()
-                offsetX = e.clientX - rect.left
-                offsetY = e.clientY - rect.top
+                initialMouseX = e.clientX
+                initialMouseY = e.clientY
+                
+                // 獲取當前 translate 值
+                const style = window.getComputedStyle(keypad)
+                const matrix = new WebKitCSSMatrix(style.transform)
+                initialKeypadX = matrix.m41
+                initialKeypadY = matrix.m42
+
+                document.addEventListener('mousemove', onMouseMove)
+                document.addEventListener('mouseup', onMouseUp)
             })
-            document.addEventListener('mousemove', (e) => {
-                if (!isDragging) return
-                const x = e.clientX - offsetX
-                const y = e.clientY - offsetY
-                keypad.style.transform = `translate(${x}px, ${y}px)`
-            })
-            document.addEventListener('mouseup', () => isDragging = false)
 
             const songDisplay = document.getElementById('measure-song-display')
             const numDisplay = document.getElementById('measure-num-display')
