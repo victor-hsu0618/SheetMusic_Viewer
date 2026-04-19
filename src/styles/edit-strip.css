@@ -645,13 +645,13 @@
     gap: 4px;
     flex-shrink: 0;
     min-width: max-content;
-    min-height: 48px; /* keep panel height consistent even on pages with fewer items */
+    min-height: 27px; /* keep panel height consistent even on pages with fewer items */
 }
 
 /* ── Vertical orientation overrides ── */
 .sf-wide-bar.vertical {
     flex-direction: column;
-    width: 132px; /* Fixed width for 2 rows of icons + padding */
+    width: 190px; /* Fixed width for 6 columns of icons + padding */
     height: auto; /* Allow content to fit while respecting max-height */
     /* 物理螢幕高度動態計算：同步 JS 的 topM(36) + botM(58) = 94，取 100 為安全預留點 */
     max-height: calc(100dvh - 100px - var(--safe-bottom, 0px)); 
@@ -682,9 +682,9 @@
     flex-direction: row; /* Two columns side-by-side */
     overflow-x: hidden;
     overflow-y: auto;
-    min-height: 0; 
-    padding: 12px 10px;
-    gap: 8px; 
+    min-height: 0;
+    padding: 6px 4px;
+    gap: 4px;
     scrollbar-width: thin;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
@@ -692,10 +692,10 @@
 
 .sf-wide-bar.vertical .sf-stamp-row {
     flex-direction: column; /* Items stack vertically in each column */
-    flex-wrap: nowrap;     
+    flex-wrap: nowrap;
     justify-content: flex-start;
     min-height: max-content;
-    gap: 6px;
+    gap: 3px;
 }
 
 .sf-wide-bar.vertical .sf-bar-right-nav {
@@ -725,8 +725,8 @@
 }
 
 .sf-stamp-row .sf-bar-cell {
-    width: 48px;
-    height: 48px;
+    width: 27px;
+    height: 27px;
     flex-shrink: 0;
     cursor: pointer;
     touch-action: auto;
@@ -734,9 +734,9 @@
 
 .sf-bar-grid {
     display: grid;
-    grid-template-rows: 48px 48px;
+    grid-template-rows: 27px 27px;
     grid-auto-flow: column;
-    grid-auto-columns: 48px;
+    grid-auto-columns: 27px;
     gap: 4px;
     flex-shrink: 0;
 }
@@ -860,20 +860,20 @@
 }
 
 .sf-bar-cell svg {
-    width: 28px;
-    height: 28px;
+    width: 15px;
+    height: 15px;
     pointer-events: none;
 }
 
 .sf-bar-cell-text {
-    font-size: 12px;
+    font-size: 8px;
     font-weight: 700;
     pointer-events: none;
 }
 
 /* Plain-text icons: dynamics (ppp, pp, p, mf, f, ff, fff …) */
 .sf-bar-cell-dynamic {
-    font-size: 13px;
+    font-size: 8px;
     font-weight: 800;
     font-style: italic;
     font-family: serif;

@@ -424,33 +424,27 @@ export class EditSubBarManager {
         if (isStamp) {
             // Determine page layout: explicit page field (new) or category-pair grouping (legacy)
             const hasExplicitPages = flatItems.some(item => item._page != null)
-            let row1Items, row2Items, title1, title2, pageCount
+            let rowItemsList, rowTitles, pageCount
 
             if (hasExplicitPages) {
                 pageCount = Math.max(...flatItems.map(item => item._page ?? 1))
                 if (this._stampPage >= pageCount) this._stampPage = 0
                 const curPage = this._stampPage + 1
-                row1Items = flatItems.filter(item => (item._page ?? 1) === curPage && (item.row ?? 1) === 1)
-                row2Items = flatItems.filter(item => (item._page ?? 1) === curPage && (item.row ?? 1) === 2)
-                title1 = ''
-                title2 = ''
+                rowItemsList = [
+                    flatItems.filter(item => (item._page ?? 1) === curPage && (item.row ?? 1) === 1),
+                    flatItems.filter(item => (item._page ?? 1) === curPage && (item.row ?? 1) === 2),
+                ]
+                rowTitles = ['', '']
             } else {
-                // Legacy: group by category, paginate 2 categories per page
-                const groups = []
-                flatItems.forEach(item => {
-                    const gName = item._group?.name || 'Stamp'
-                    let g = groups.find(x => x.name === gName)
-                    if (!g) { g = { name: gName, items: [] }; groups.push(g) }
-                    g.items.push(item)
-                })
-                const pageSize = 2
-                pageCount = Math.ceil(groups.length / pageSize)
-                if (this._stampPage >= pageCount) this._stampPage = 0
-                const pageGroups = groups.slice(this._stampPage * pageSize, this._stampPage * pageSize + pageSize)
-                row1Items = pageGroups[0]?.items || []
-                row2Items = pageGroups[1]?.items || []
-                title1 = pageGroups[0]?.name || ''
-                title2 = pageGroups[1]?.name || ''
+                // No pages: group by row value (1-N), each row = one column, no pagination
+                const maxRow = flatItems.length > 0
+                    ? Math.max(...flatItems.map(item => item.row ?? 1))
+                    : 1
+                pageCount = 1
+                rowItemsList = Array.from({ length: maxRow }, (_, i) =>
+                    flatItems.filter(item => (item.row ?? 1) === i + 1)
+                )
+                rowTitles = Array.from({ length: maxRow }, () => '')
             }
 
             const buildRow = (items, categoryTitle) => {
@@ -482,10 +476,8 @@ export class EditSubBarManager {
                 return rowEl
             }
 
-            // Always render both rows so the panel keeps a consistent height across pages.
-            // An empty row is kept via min-height in CSS.
-            content.appendChild(buildRow(row1Items, title1))
-            content.appendChild(buildRow(row2Items, title2))
+            // Render all columns; empty columns kept consistent via min-height in CSS.
+            rowItemsList.forEach((items, i) => content.appendChild(buildRow(items, rowTitles[i])))
 
             bar.appendChild(this._barDivider())
 

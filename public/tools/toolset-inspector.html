@@ -754,7 +754,7 @@
 
         /* Middle content: grid only */
         .lp-stamp-content {
-            flex: 1; display: flex; flex-direction: column;
+            flex: 1; display: flex; flex-direction: row;
             min-width: 0; padding: 5px 6px 6px;
             overflow-x: auto; overflow-y: hidden;
             scrollbar-width: none;
@@ -787,10 +787,10 @@
         }
         .lp-page-dot.active-dot { background: #fff; }
 
-        /* 2-row × 20-col stamp grid inside bar */
+        /* 6-row stamp grid inside bar */
         .lp-stamp-grid {
             display: grid;
-            grid-template-rows: 28px 28px;
+            grid-template-rows: repeat(6, 28px);
             grid-auto-flow: column;
             grid-auto-columns: 28px;
             gap: 3px;
@@ -1439,6 +1439,21 @@ function persistPanelConfig(cfg, { showStatus = false } = {}) {
     if (navigator.onLine) _pushPanelConfigToCloud(cfg)
 }
 
+function migratePageRowToRow(stamps) {
+    // Old format: { id, category, row: 1|2, page: 1|2|3 }
+    // New format: { id, category, row: 1-6 }  (no page)
+    // Formula: new_row = (page - 1) * 2 + row
+    const hasPages = stamps.some(s => s.page != null)
+    if (!hasPages) return { entries: stamps, changed: false }
+    const migrated = stamps.map(s => {
+        const p = s.page ?? 1
+        const r = s.row ?? 1
+        const { page: _page, ...rest } = s
+        return { ...rest, row: (p - 1) * 2 + r }
+    })
+    return { entries: migrated, changed: true }
+}
+
 function loadMyPanel() {
     try {
         const cfg = JSON.parse(localStorage.getItem(LS_PANEL_CONFIG) || '{}')
@@ -1450,7 +1465,9 @@ function loadMyPanel() {
         docBarOrder = savedDocBar.length ? savedDocBar : DOC_BAR_BTNS.map(b => b.id)
         const migrated = migrateCustomTextPanelEntries(myPanel)
         myPanel = migrated.entries
-        if (migrated.changed) {
+        const pageMigrated = migratePageRowToRow(myPanel)
+        myPanel = pageMigrated.entries
+        if (migrated.changed || pageMigrated.changed) {
             persistPanelConfig({ stamps: myPanel, editBar: editBarOrder, docBar: docBarOrder })
         }
     } catch { myPanel = []; editBarOrder = EDIT_TOOLS.map(t => t.id); docBarOrder = DOC_BAR_BTNS.map(b => b.id) }
@@ -1764,25 +1781,25 @@ function getUserTextLibrary() {
     }
 }
 
-// ── Stamp page+row text editor ────────────────────────────────────────────────
+// ── Stamp row text editor (no pagination) ─────────────────────────────────────
 
 let _lastFocusedTA = null  // used by bar reorder textareas
 
-const STAMP_NUM_PAGES = 3
+const NUM_ROWS = 6
 
-function getPageRowText(page, row) {
+function getRowText(row) {
     return myPanel
-        .filter(s => (s.page ?? 1) === page && (s.row ?? 1) === row)
+        .filter(s => (s.row ?? 1) === row)
         .map(s => s.id)
         .join(', ')
 }
 
-function parseStampText(text, page, row) {
+function parseStampText(text, row) {
     return text.split(',').map(s => s.trim()).filter(Boolean).map(id => {
         const found = findToolById(id)
         return found
-            ? { id: found.tool.id || id, category: found.group.name, row, page, _valid: true }
-            : { id, category: '', row, page, _valid: false }
+            ? { id: found.tool.id || id, category: found.group.name, row, _valid: true }
+            : { id, category: '', row, _valid: false }
     })
 }
 
@@ -1799,13 +1816,11 @@ function buildStampChips(items) {
 
 function applyStampInputs() {
     const result = []
-    for (let p = 1; p <= STAMP_NUM_PAGES; p++) {
-        for (let r = 1; r <= 2; r++) {
-            const ta = document.getElementById(`stamp-ta-p${p}r${r}`)
-            if (!ta) continue
-            const parsed = parseStampText(ta.value, p, r).filter(x => x._valid)
-            result.push(...parsed)
-        }
+    for (let r = 1; r <= NUM_ROWS; r++) {
+        const ta = document.getElementById(`stamp-ta-r${r}`)
+        if (!ta) continue
+        const parsed = parseStampText(ta.value, r).filter(x => x._valid)
+        result.push(...parsed)
     }
     myPanel = result
     saveMyPanel()
@@ -1818,39 +1833,28 @@ function renderRowEditor() {
     if (!el) return
     el.innerHTML = ''
 
-    for (let p = 1; p <= STAMP_NUM_PAGES; p++) {
-        const pageBlock = document.createElement('div')
-        pageBlock.className = 'row-input-block'
+    for (let r = 1; r <= NUM_ROWS; r++) {
+        const lbl = document.createElement('div')
+        lbl.style.cssText = 'font-size:10px;color:var(--sf-muted);font-weight:600;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.05em'
+        lbl.textContent = `欄 ${r}`
+        el.appendChild(lbl)
 
-        pageBlock.innerHTML = `<div class="row-input-header">
-            <div class="row-input-badge">頁 ${p}</div>
-        </div>`
+        const ta = document.createElement('textarea')
+        ta.id = `stamp-ta-r${r}`
+        ta.className = 'row-textarea'
+        ta.placeholder = 'stamp ID, stamp ID, …  (從下方對照表複製 ID)'
+        ta.value = getRowText(r)
+        el.appendChild(ta)
 
-        for (let r = 1; r <= 2; r++) {
-            const lbl = document.createElement('div')
-            lbl.style.cssText = 'font-size:10px;color:var(--sf-muted);font-weight:600;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.05em'
-            lbl.textContent = `Row ${r}`
-            pageBlock.appendChild(lbl)
+        const chips = document.createElement('div')
+        chips.className = 'row-chips'
+        chips.id = `stamp-chips-r${r}`
+        chips.innerHTML = buildStampChips(parseStampText(ta.value, r))
+        el.appendChild(chips)
 
-            const ta = document.createElement('textarea')
-            ta.id = `stamp-ta-p${p}r${r}`
-            ta.className = 'row-textarea'
-            ta.placeholder = 'stamp ID, stamp ID, …  (從下方對照表複製 ID)'
-            ta.value = getPageRowText(p, r)
-            pageBlock.appendChild(ta)
-
-            const chips = document.createElement('div')
-            chips.className = 'row-chips'
-            chips.id = `stamp-chips-p${p}r${r}`
-            chips.innerHTML = buildStampChips(parseStampText(ta.value, p, r))
-            pageBlock.appendChild(chips)
-
-            ta.addEventListener('input', () => {
-                chips.innerHTML = buildStampChips(parseStampText(ta.value, p, r))
-            })
-        }
-
-        el.appendChild(pageBlock)
+        ta.addEventListener('input', () => {
+            chips.innerHTML = buildStampChips(parseStampText(ta.value, r))
+        })
     }
 
     const applyRow = document.createElement('div')
@@ -2622,28 +2626,7 @@ function renderLpStampBar() {
         ? Array.from({ length: 80 }, (_, i) => ({ _ghost: true, _idx: i }))
         : allStamps
 
-    // ── LEFT: nav column (prev / next) ──
-    const navCol = document.createElement('div')
-    navCol.className = 'lp-stamp-nav'
-
-    const prevBtn = document.createElement('div')
-    prevBtn.className = 'lp-nav-btn disabled'
-    prevBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M15 18l-6-6 6-6"/></svg>`
-
-    const nextBtn = document.createElement('div')
-    nextBtn.className = 'lp-nav-btn disabled'
-    nextBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M9 18l6-6-6-6"/></svg>`
-
-    navCol.appendChild(prevBtn)
-    navCol.appendChild(nextBtn)
-    bar.appendChild(navCol)
-
-    // Divider
-    const div1 = document.createElement('div')
-    div1.className = 'lp-bar-divider'
-    bar.appendChild(div1)
-
-    // ── MIDDLE: content area (grid populated after layout measurement) ──
+    // ── MIDDLE: content area ──
     const content = document.createElement('div')
     content.className = 'lp-stamp-content'
     const grid = document.createElement('div')
@@ -2692,29 +2675,18 @@ function renderLpStampBar() {
     })
     bar.appendChild(grip)
 
-    // ── After layout: measure content width → calculate cols per page ──
+    // ── Populate grid: all items, no pagination, explicit grid-row by row value ──
     requestAnimationFrame(() => {
-        const CELL = 28, GAP = 3
-        const contentW = content.clientWidth
-        const cols = Math.max(1, Math.floor((contentW + GAP) / (CELL + GAP)))
-        const perPage = cols * 2  // 2 rows
+        const items = isDemoMode
+            ? Array.from({ length: NUM_ROWS * 8 }, (_, i) => ({ _ghost: true, row: (i % NUM_ROWS) + 1 }))
+            : [...flatItems].sort((a, b) => (a.row ?? 1) - (b.row ?? 1))
 
-        const pageCount = Math.max(1, Math.ceil(flatItems.length / perPage))
-        lpStampPage = Math.max(0, Math.min(lpStampPage, pageCount - 1))
-        const pageItems = flatItems.slice(lpStampPage * perPage, (lpStampPage + 1) * perPage)
-
-        // Update nav button states
-        prevBtn.classList.toggle('disabled', lpStampPage === 0)
-        nextBtn.classList.toggle('disabled', lpStampPage >= pageCount - 1)
-        prevBtn.onclick = e => { e.stopPropagation(); if (lpStampPage > 0) { lpStampPage--; renderLpStampBar() } }
-        nextBtn.onclick = e => { e.stopPropagation(); if (lpStampPage < pageCount - 1) { lpStampPage++; renderLpStampBar() } }
-
-        // Populate grid
-        pageItems.forEach(item => {
+        items.forEach(item => {
             const cell = document.createElement('div')
             if (item._ghost) {
                 cell.className = 'lp-cell'
                 cell.style.cssText = 'opacity:0.15;cursor:default;'
+                cell.style.gridRow = item.row ?? 1
                 grid.appendChild(cell)
                 return
             }
@@ -2723,6 +2695,7 @@ function renderLpStampBar() {
             const isActive = lpActiveStamp === item.id + '_' + item.category
             cell.className = 'lp-cell' + (isActive ? ' active-stamp' : '')
             cell.style.borderColor = group?.color ? group.color + '55' : ''
+            cell.style.gridRow = item.row ?? 1
             cell.innerHTML = (tool?.icon
                 ? `<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5">${tool.icon}</svg>`
                 : `<span class="lp-cell-text">${tool?.textIcon || tool?.label || item.id}</span>`)
