@@ -755,7 +755,7 @@
 
         function shiftX(delta) {
             // Use active marker page if focused, otherwise fall back to currently visible page
-            const activePage = activeMarkerIndex >= 0 ? markers[activeMarkerIndex].page : currentPageNum;
+            const activePage = (activeMarkerIndex >= 0 && markers[activeMarkerIndex]) ? markers[activeMarkerIndex].page : currentPageNum;
 
             markers.forEach((m, idx) => {
                 let shouldMove = false;
@@ -780,15 +780,23 @@
         }
 
         function updateNumDisplay() {
-            document.getElementById('section-display').textContent = currentSection || "-";
-            document.getElementById('measure-display').textContent = currentMeasure;
-            document.getElementById('next-section-preview').textContent = currentSection || "-";
-            document.getElementById('next-measure-preview').textContent = currentMeasure + step;
+            const sectionEl = document.getElementById('section-display');
+            const measureEl = document.getElementById('measure-display');
+            const nextSecEl = document.getElementById('next-section-preview');
+            const nextMeaEl = document.getElementById('next-measure-preview');
+            const xDispEl = document.getElementById('x-display');
+
+            if (sectionEl) sectionEl.textContent = currentSection || "-";
+            if (measureEl) measureEl.textContent = currentMeasure;
+            if (nextSecEl) nextSecEl.textContent = currentSection || "-";
+            if (nextMeaEl) nextMeaEl.textContent = currentMeasure + step;
             
-            if (activeMarkerIndex >= 0) {
-                document.getElementById('x-display').textContent = Math.round(markers[activeMarkerIndex].x * 100) + '%';
-            } else {
-                document.getElementById('x-display').textContent = "-";
+            if (xDispEl) {
+                if (activeMarkerIndex >= 0 && markers[activeMarkerIndex]) {
+                    xDispEl.textContent = Math.round(markers[activeMarkerIndex].x * 100) + '%';
+                } else {
+                    xDispEl.textContent = "-";
+                }
             }
         }
 
@@ -803,13 +811,20 @@
             dragTarget = { marker, element: el, pageNum }; focusMarker(idx);
             
             const layer = el.parentElement;
+            if (!layer) return;
             
             const onMove = (mv) => {
-                mv.preventDefault();
+                if (mv.touches && mv.touches.length > 0) {
+                    // Use preventDefault to stop scrolling while dragging
+                    mv.preventDefault();
+                }
+                
                 const clientX = mv.touches ? mv.touches[0].clientX : mv.clientX;
                 const clientY = mv.touches ? mv.touches[0].clientY : mv.clientY;
                 
+                if (!layer) return;
                 const r = layer.getBoundingClientRect();
+                if (!r) return;
                 marker.x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
                 marker.y = Math.max(0, Math.min(1, (clientY - r.top) / r.height));
                 
