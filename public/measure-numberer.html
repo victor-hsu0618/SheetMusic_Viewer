@@ -383,8 +383,8 @@
                 <div id="drop-zone" onclick="document.getElementById('file-input').click()">
                     <div class="drop-icon">📄</div>
                     <div class="drop-text">拖曳 PDF 到這裡</div>
-                    <input type="file" id="file-input" accept=".pdf" onchange="handleFile(this.files[0])">
                 </div>
+                <input type="file" id="file-input" accept=".pdf" style="display:none;" onchange="handleFile(this.files[0])">
             </div>
 
             <div id="loading-overlay">
@@ -447,6 +447,10 @@
 
         async function handleFile(file) {
             if (!file) return;
+            
+            // Reset input so the same file can be picked again if needed
+            document.getElementById('file-input').value = '';
+            
             document.getElementById('file-name').textContent = file.name;
             
             // 1. Get ArrayBuffer and keep a dedicated copy for Export (pdf-lib)
@@ -471,10 +475,19 @@
             
             if (loadState()) {
                 loadingOverlay.style.display = 'none';
-                if (confirm(`發現進度，是否載入？`)) { await renderAllPages(false); }
-                else { await renderAllPages(true); }
+                if (confirm(`發現進度，是否載入？`)) { 
+                    updateNumDisplay(); 
+                    await renderAllPages(false); 
+                }
+                else { 
+                    currentMeasure = 1; currentSection = ""; 
+                    updateNumDisplay();
+                    await renderAllPages(true); 
+                }
             } else { 
                 loadingOverlay.style.display = 'none';
+                currentMeasure = 1; currentSection = ""; 
+                updateNumDisplay();
                 await renderAllPages(true); 
             }
         }
