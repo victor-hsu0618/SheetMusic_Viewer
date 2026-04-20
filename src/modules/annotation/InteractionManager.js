@@ -67,7 +67,9 @@ export class InteractionManager {
     }
 
     _showStampContextMenu(stamp, clientX, clientY) {
+        // [User Request] Disable the Duplicate/Delete popup menu when selecting an object
         this._dismissStampContextMenu()
+        return;
 
         const menu = document.createElement('div')
         menu.id = 'sf-stamp-ctx-menu'
@@ -965,6 +967,8 @@ export class InteractionManager {
         };
 
         const endAction = async (e) => {
+            const toolType = this.app.activeStampType;
+            const tt = toolType;
             const pointerType = getPointerType(e);
             if (e?.pointerId !== undefined) this.app.activePointers.delete(e.pointerId);
 
