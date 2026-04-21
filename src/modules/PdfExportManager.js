@@ -92,8 +92,9 @@ export class PdfExportManager {
                 
                 // Get scale ratio between export viewport and abstract 595.0 width used for stamps
                 const exportScale = viewport.width / 595.0;
-                // Unified drawing scale (matching live renderer's zoom/1.5 logic)
-                const drawScale = exportScale / 1.5;
+                // Unified drawing scale (matching PDF export render scale 2.0)
+                // This ensures stamps are sized relative to the page consistently
+                const drawScale = exportScale / 2.0;
 
                 // Determine visible sources and layers beforehand
                 const visibleSources = new Set(this.app.sources.filter(s => s.visible).map(s => s.id));
