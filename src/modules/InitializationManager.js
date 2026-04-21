@@ -122,6 +122,7 @@ export class InitializationManager {
 
 
 
+        document.getElementById('btn-export-pdf')?.addEventListener('click', () => app.pdfExportManager?.exportFlattenedPDF())
         document.getElementById('btn-gist-share')?.addEventListener('click', () => app.shareManager?.sharePDF())
     }
 }
