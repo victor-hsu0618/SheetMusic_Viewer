@@ -1000,25 +1000,19 @@ export class InteractionManager {
             const endY = e.clientY !== undefined ? e.clientY : (e.changedTouches?.[0]?.clientY || e.touches?.[0]?.clientY || 0);
             const totalDist = Math.sqrt(Math.pow(endX - actionStartClient.x, 2) + Math.pow(endY - actionStartClient.y, 2));
 
-            // --- LIFT-OFF STABILIZATION (Snap-back Logic) ---
-            // Skip for grace period grabs: user is intentionally adjusting position
-            if (isMovingExisting && !isGracePeriodGrab && activeObject && !isDraggingHandle && !InteractionUI.isObjectOverTrash(activeObject, wrapper, CoordMapper)) {
-                // threshold based on user logs showing drift up to 15.6px
-                const SNAP_BACK_THRESHOLD = 20; 
-                if (totalDist > 0 && totalDist < SNAP_BACK_THRESHOLD && this.dragStartObject) {
-                    console.log(`%c[Interaction Stab] Snap-back! Dist ${totalDist.toFixed(1)}px < ${SNAP_BACK_THRESHOLD}px`, 'color: #00ff00; font-weight: bold;');
-                    
-                    // Revert the object state
-                    if (activeObject.points) {
-                        activeObject.points = JSON.parse(JSON.stringify(this.dragStartObject.points));
-                    } else {
-                        activeObject.x = this.dragStartObject.x;
-                        activeObject.y = this.dragStartObject.y;
-                    }
-                    activeObject.page = this.dragStartObject.page;
-                    this.app.redrawAllAnnotationLayers();
-                }
-            }
+            // --- LIFT-OFF STABILIZATION (Snap-back Logic Disabled for Testing) ---
+            // const SNAP_BACK_THRESHOLD = 20; 
+            // if (totalDist > 0 && totalDist < SNAP_BACK_THRESHOLD && this.dragStartObject) {
+            //     console.log(`%c[Interaction Stab] Snap-back! Dist ${totalDist.toFixed(1)}px < ${SNAP_BACK_THRESHOLD}px`, 'color: #00ff00; font-weight: bold;');
+            //     if (activeObject.points) {
+            //         activeObject.points = JSON.parse(JSON.stringify(this.dragStartObject.points));
+            //     } else {
+            //         activeObject.x = this.dragStartObject.x;
+            //         activeObject.y = this.dragStartObject.y;
+            //     }
+            //     activeObject.page = this.dragStartObject.page;
+            //     this.app.redrawAllAnnotationLayers();
+            // }
 
             // Eraser click (no drag) → whole-stroke erase
             if (this.app.activeStampType === 'eraser' && eraserClickTarget && !eraserHasDragged) {
