@@ -1056,6 +1056,12 @@ export class InteractionManager {
             }
 
             let syncObj = activeObject;
+            
+            // 修正：拖曳結束後，更新基準點至當前位置，確保下次拖曳從新位置開始
+            if (syncObj && isMovingExisting) {
+                this.dragStartObject = JSON.parse(JSON.stringify(syncObj));
+            }
+
             try {
                 if (syncObj) {
                     const tPN = syncObj.page;
