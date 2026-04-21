@@ -92,6 +92,8 @@ export class PdfExportManager {
                 
                 // Get scale ratio between export viewport and abstract 595.0 width used for stamps
                 const exportScale = viewport.width / 595.0;
+                // Unified drawing scale (matching live renderer's zoom/1.5 logic)
+                const drawScale = exportScale / 1.5;
 
                 // Determine visible sources and layers beforehand
                 const visibleSources = new Set(this.app.sources.filter(s => s.visible).map(s => s.id));
@@ -122,16 +124,16 @@ export class PdfExportManager {
                         
                         // Adjust dash for export scale
                         if (isForeign || group.dashed) {
-                            annoCtx.setLineDash([8 * exportScale, 6 * exportScale]);
+                            annoCtx.setLineDash([8 * drawScale, 6 * drawScale]);
                         }
 
                         if (group.type && group.type.includes('highlighter')) {
                             const baseColor = group.color || '#fde047';
                             annoCtx.strokeStyle = isForeign ? '#e5e7ebAA' : baseColor + '44';
-                            annoCtx.lineWidth = 14 * exportScale;
+                            annoCtx.lineWidth = 14 * drawScale;
                         } else {
                             annoCtx.strokeStyle = group.color || layer?.color || '#ff4757';
-                            annoCtx.lineWidth = (group.type === 'line' ? 1.2 : 1.8) * exportScale;
+                            annoCtx.lineWidth = (group.type === 'line' ? 1.2 : 1.8) * drawScale;
                         }
 
                         const startX = group.points[0].x * annoCanvas.width;
@@ -200,7 +202,10 @@ export class PdfExportManager {
                         const toolSize = this.app.stampSizeOverrides?.[toolDef?.id] ?? toolDef?.draw?.size ?? 24;
                         const userMultiplier = this.app.stampSizeMultiplier || 1.0;
                         const scoreMultiplier = this.app.scoreStampScale || 1.0;
-                        const globalScale = exportScale * userMultiplier * scoreMultiplier;
+                        
+                        // Unified Scale Factor (Standardizing on reference scale 1.5 to match live renderer)
+                        const globalScale = drawScale * userMultiplier * scoreMultiplier;
+                        
                         const size = toolSize * globalScale;
                         const textScale = globalScale;
                         const color = group.color || layer?.color || '#ff4757';
