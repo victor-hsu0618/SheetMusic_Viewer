@@ -564,6 +564,7 @@ export class InteractionManager {
                 this.dragStartObject = JSON.parse(JSON.stringify(activeObject));
                 this.app.lastFocusedStamp = activeObject;
                 this.app._dragLastPos = pPos;
+                console.log(`[Interaction] Stamp Grabbed: ${activeObject.id}, Pos: (${activeObject.x}, ${activeObject.y}), StartPos: (${pPos.x}, ${pPos.y})`);
                 InteractionUI.syncVirtualPointer(e, activeObject.type, overlay, virtualPointer, CoordMapper, this.app);
                 attachGlobalListeners();
                 return;
@@ -883,6 +884,9 @@ export class InteractionManager {
                     }
                     const dx = tPos.x - (this.app._dragLastPos?.x ?? tPos.x);
                     const dy = tPos.y - (this.app._dragLastPos?.y ?? tPos.y);
+                    if (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) {
+                         console.log(`[Interaction] Dragging: Delta(${dx.toFixed(4)}, ${dy.toFixed(4)}), NewPos(${activeObject.x}, ${activeObject.y})`);
+                    }
                     if (activeObject.points) activeObject.points = activeObject.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
                     else { activeObject.x = Number(activeObject.x) + dx; activeObject.y = Number(activeObject.y) + dy; }
                     this.app._dragLastPos = tPos;
