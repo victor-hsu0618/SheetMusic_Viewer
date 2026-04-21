@@ -645,13 +645,13 @@
     gap: 4px;
     flex-shrink: 0;
     min-width: max-content;
-    min-height: 27px; /* keep panel height consistent even on pages with fewer items */
+    min-height: 34px; /* keep panel height consistent even on pages with fewer items */
 }
 
 /* ── Vertical orientation overrides ── */
 .sf-wide-bar.vertical {
     flex-direction: column;
-    width: 190px; /* Fixed width for 6 columns of icons + padding */
+    width: 238px; /* Fixed width for 6 columns of icons + padding */
     height: auto; /* Allow content to fit while respecting max-height */
     /* 物理螢幕高度動態計算：同步 JS 的 topM(36) + botM(58) = 94，取 100 為安全預留點 */
     max-height: calc(100dvh - 100px - var(--safe-bottom, 0px)); 
@@ -725,8 +725,8 @@
 }
 
 .sf-stamp-row .sf-bar-cell {
-    width: 27px;
-    height: 27px;
+    width: 34px;
+    height: 34px;
     flex-shrink: 0;
     cursor: pointer;
     touch-action: auto;
@@ -734,10 +734,10 @@
 
 .sf-bar-grid {
     display: grid;
-    grid-template-rows: 27px 27px;
+    grid-template-rows: 34px 34px;
     grid-auto-flow: column;
-    grid-auto-columns: 27px;
-    gap: 4px;
+    grid-auto-columns: 34px;
+    gap: 5px;
     flex-shrink: 0;
 }
 
@@ -860,13 +860,13 @@
 }
 
 .sf-bar-cell svg {
-    width: 15px;
-    height: 15px;
+    width: 19px;
+    height: 19px;
     pointer-events: none;
 }
 
 .sf-bar-cell-text {
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 700;
     pointer-events: none;
 }
