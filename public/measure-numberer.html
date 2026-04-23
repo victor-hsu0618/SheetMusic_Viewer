@@ -252,7 +252,7 @@
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
                         </button>
-                        <button id="btn-system-mode" class="btn btn-outline" onclick="toggleSystemMode()" title="手動編輯譜表區塊 (拖曳新增/右鍵刪除)" style="padding:0;">
+                        <button id="btn-system-mode" class="btn btn-outline" onclick="toggleSystemMode()" title="手動編輯譜表區塊 (拖曳新增/點擊巡檢)" style="padding:0;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                                 <rect x="3" y="5" width="18" height="14" rx="2" ry="2"></rect>
                                 <line x1="3" y1="10" x2="21" y2="10"></line>
@@ -320,7 +320,7 @@
                         </button>
                         
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                            <button class="btn btn-outline" onclick="deleteActiveMarker()" style="color:var(--danger); border-color:rgba(239, 68, 68, 0.3); background:rgba(239, 68, 68, 0.05);">
+                            <button class="btn btn-outline" id="btn-delete-item" onclick="deleteActiveMarker()" style="color:var(--danger); border-color:rgba(239, 68, 68, 0.3); background:rgba(239, 68, 68, 0.05);">
                                 🗑️ 刪除標記
                             </button>
                             <button class="btn btn-outline" onclick="recalculatePage()" style="font-size:11px; opacity:0.8;">
@@ -419,6 +419,7 @@
         let pdfFingerprint = null;
         let scale = 1.3, markers = [], allPageData = [];
         let activeMarkerIndex = -1, activeField = 'measure';
+        let activeSystemIndex = -1; 
         let currentSection = "", currentMeasure = 1, step = 4, isNewInput = true, dragTarget = null;
         let addMode = false, systemMode = false, dragBox = null;
 
@@ -429,9 +430,11 @@
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); navigateMarker(1); }
-            else if ((e.key === 'Delete' || e.key === 'Backspace') && activeMarkerIndex >= 0) {
-                // Ensure we aren't editing a number field
-                if (isNewInput) { e.preventDefault(); deleteActiveMarker(); }
+            else if ((e.key === 'Delete' || e.key === 'Backspace')) {
+                // Only delete if focused on a marker/system and not inputting
+                if (isNewInput && (activeMarkerIndex >= 0 || activeSystemIndex >= 0)) {
+                    e.preventDefault(); deleteActiveMarker();
+                }
             }
         });
 
@@ -442,7 +445,6 @@
 
         function saveState() {
             if (!pdfDoc || !pdfFingerprint) return;
-            // Also save systems if they were modified/manually added
             const systemsData = allPageData.map(p => p ? p.systems : []);
             const data = { markers, currentSection, currentMeasure, step, activeMarkerIndex, systemsData };
             localStorage.setItem(getStorageKey(), JSON.stringify(data));
@@ -458,7 +460,6 @@
                     currentSection = data.currentSection || "";
                     currentMeasure = data.currentMeasure || 1;
                     step = data.step || 4;
-                    // Note: allPageData will be rebuilt, we'll restore systemsData later in renderAllPages
                     return { markers, currentSection, currentMeasure, step, systemsData: data.systemsData };
                 } catch (e) { console.error(e); }
             }
@@ -473,11 +474,11 @@
                 loadingOverlay.style.display = 'flex';
                 loadingText.textContent = '正在讀取檔案...';
 
-                // Reset state for new file
                 currentPageNum = 1;
                 markers = [];
                 allPageData = [];
                 activeMarkerIndex = -1;
+                activeSystemIndex = -1;
                 activeField = 'measure';
                 isNewInput = true;
                 addMode = false;
@@ -485,26 +486,19 @@
                 dragTarget = null;
                 viewerContainer.innerHTML = '';
                 
-                // Reset input so the same file can be picked again if needed
                 const fileInput = document.getElementById('sf-measure-file-input');
                 if (fileInput) fileInput.value = '';
 
                 document.getElementById('file-name').textContent = file.name;
                 
-                // 1. Get ArrayBuffer
                 const arrayBuffer = await file.arrayBuffer();
                 pdfBytes = new Uint8Array(arrayBuffer);
                 
-                // 2. Compute fingerprint
-                loadingText.textContent = '正在計算檔案指紋 (SHA-256)...';
+                loadingText.textContent = '正在計算指紋...';
                 pdfFingerprint = await Fingerprint.computeFingerprint(pdfBytes);
 
-                // 3. Create a SEPARATE copy for Rendering (pdf.js) 
                 const pdfJsBytes = new Uint8Array(arrayBuffer.slice(0));
-                
-                if (pdfDoc) {
-                    try { await pdfDoc.destroy(); } catch(e) {}
-                }
+                if (pdfDoc) { try { await pdfDoc.destroy(); } catch(e) {} }
                 
                 pdfDoc = await pdfjsLib.getDocument({ data: pdfJsBytes }).promise;
                 totalPages = pdfDoc.numPages;
@@ -550,7 +544,6 @@
             }
         }
 
-        // Track current page on scroll
         viewerContainer.addEventListener('scroll', () => {
             if (!totalPages) return;
             const viewportMiddle = viewerContainer.scrollTop + viewerContainer.clientHeight / 2;
@@ -637,10 +630,10 @@
 
         function renderSystemGuidesForPage(pageNum) {
             const layer = document.getElementById(`page-container-${pageNum}`).querySelector('.interaction-layer');
-            // Clear both guides and buttons
             layer.querySelectorAll('.system-guide, .sys-del-btn').forEach(el => el.remove());
             
             allPageData[pageNum].systems.forEach((s, idx) => {
+                const isActive = (systemMode && activeSystemIndex === idx && currentPageNum === pageNum);
                 const guide = document.createElement('div');
                 guide.className = 'system-guide';
                 guide.style.top = (s.staffTop * 100) + '%';
@@ -649,17 +642,17 @@
                 guide.style.pointerEvents = systemMode ? 'auto' : 'none';
                 guide.style.cursor = systemMode ? 'move' : 'none';
                 
-                // Visual enhancement for the guide itself
-                guide.style.background = systemMode ? 'rgba(34, 211, 238, 0.3)' : 'rgba(34, 211, 238, 0.1)';
-                guide.style.borderTop = systemMode ? '2px solid rgba(34, 211, 238, 0.6)' : '1px solid rgba(34, 211, 238, 0.3)';
-                guide.style.borderBottom = systemMode ? '2px solid rgba(34, 211, 238, 0.6)' : '1px solid rgba(34, 211, 238, 0.3)';
-                guide.style.zIndex = systemMode ? '1000' : '10'; // Elevate when editing
+                guide.style.background = isActive ? 'rgba(245, 158, 11, 0.4)' : (systemMode ? 'rgba(34, 211, 238, 0.3)' : 'rgba(34, 211, 238, 0.1)');
+                guide.style.borderTop = isActive ? '3px solid #f59e0b' : (systemMode ? '2px solid rgba(34, 211, 238, 0.6)' : '1px solid rgba(34, 211, 238, 0.3)');
+                guide.style.borderBottom = isActive ? '3px solid #f59e0b' : (systemMode ? '2px solid rgba(34, 211, 238, 0.6)' : '1px solid rgba(34, 211, 238, 0.3)');
+                guide.style.zIndex = isActive ? '1001' : (systemMode ? '1000' : '10');
 
-                // Drag to move system
                 guide.onmousedown = (e) => {
                     if (!systemMode) return;
                     e.stopPropagation(); 
                     if (e.button === 0) {
+                        activeSystemIndex = idx;
+                        focusSystem(pageNum, idx);
                         initSystemDrag(e, s, guide, pageNum);
                     }
                 };
@@ -667,85 +660,23 @@
                 guide.ontouchstart = (e) => {
                     if (!systemMode) return;
                     e.stopPropagation();
+                    activeSystemIndex = idx;
+                    focusSystem(pageNum, idx);
                     initSystemDrag(e.touches[0], s, guide, pageNum);
                 };
-
-                // Double click to delete
-                guide.ondblclick = (e) => {
-                    if (!systemMode) return;
-                    e.stopPropagation();
-                    allPageData[pageNum].systems.splice(idx, 1);
-                    renderSystemGuidesForPage(pageNum);
-                    saveState();
-                };
-
-                // Add a visible delete button on the right (Attach to LAYER, not guide)
-                if (systemMode) {
-                    const delBtn = document.createElement('div');
-                    delBtn.className = 'sys-del-btn';
-                    delBtn.innerHTML = '×';
-                    delBtn.style.cssText = `
-                        position: absolute; right: 20px; top: ${(s.staffTop + s.staffBottom) / 2 * 100}%;
-                        transform: translateY(-50%); width: 30px; height: 30px; 
-                        background: #ff4d4f; color: white; border-radius: 50%; 
-                        display: flex; align-items: center; justify-content: center;
-                        font-weight: 900; font-size: 20px; cursor: pointer; pointer-events: auto;
-                        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 4px 12px rgba(0, 0, 0, 0.4); 
-                        z-index: 2000; border: 2.5px solid white; line-height: 1;
-                    `;
-                    delBtn.onclick = (e) => {
-                        e.preventDefault(); e.stopPropagation();
-                        allPageData[pageNum].systems.splice(idx, 1);
-                        renderSystemGuidesForPage(pageNum);
-                        saveState();
-                    };
-                    layer.appendChild(delBtn);
-                }
 
                 layer.appendChild(guide);
             });
 
-            // Prevent context menu to avoid interference
             layer.oncontextmenu = (e) => { if (systemMode) e.preventDefault(); };
         }
 
-        function initSystemDrag(e, system, el, pageNum) {
-            const startY = e.clientY;
-            const initialStaffTop = system.staffTop;
-            const initialStaffBottom = system.staffBottom;
-            const initialTop = system.top;
-            const initialBottom = system.bottom;
-            
-            const layer = el.parentElement;
-            const rect = layer.getBoundingClientRect();
-            const startYPercent = (startY - rect.top) / rect.height;
-
-            const onMove = (mv) => {
-                const currentY = mv.touches ? mv.touches[0].clientY : mv.clientY;
-                const currentYPercent = (currentY - rect.top) / rect.height;
-                const delta = currentYPercent - startYPercent;
-
-                system.staffTop = initialStaffTop + delta;
-                system.staffBottom = initialStaffBottom + delta;
-                system.top = initialTop + delta;
-                system.bottom = initialBottom + delta;
-
-                el.style.top = (system.staffTop * 100) + '%';
-                // Height stays same
-            };
-
-            const onEnd = () => {
-                document.removeEventListener('mousemove', onMove);
-                document.removeEventListener('mouseup', onEnd);
-                document.removeEventListener('touchmove', onMove);
-                document.removeEventListener('touchend', onEnd);
-                saveState();
-            };
-
-            document.addEventListener('mousemove', onMove);
-            document.addEventListener('mouseup', onEnd);
-            document.addEventListener('touchmove', onMove, { passive: false });
-            document.addEventListener('touchend', onEnd);
+        function focusSystem(pageNum, index) {
+            activeSystemIndex = index;
+            const systemsCount = allPageData[pageNum] ? allPageData[pageNum].systems.length : 0;
+            document.getElementById('nav-info').textContent = `譜表區塊 ${index + 1} / ${systemsCount} (第 ${pageNum} 頁)`;
+            document.getElementById('btn-delete-item').textContent = "🗑️ 刪除譜表區塊";
+            renderSystemGuidesForPage(pageNum);
         }
 
         function renderMarkersForPage(pageNum) {
@@ -764,7 +695,6 @@
                 };
                 el.ontouchstart = (e) => { e.stopPropagation(); initDrag(e.touches[0], m, el, pageNum, idx); };
                 
-                // Right-click to delete
                 el.oncontextmenu = (e) => {
                     e.preventDefault(); e.stopPropagation();
                     activeMarkerIndex = idx; deleteActiveMarker();
@@ -777,6 +707,7 @@
         function focusMarker(index) {
             if (index < 0 || index >= markers.length) return;
             activeMarkerIndex = index;
+            activeSystemIndex = -1;
             const m = markers[index];
             currentSection = m.section; currentMeasure = m.value;
             isNewInput = true; updateNumDisplay();
@@ -786,11 +717,19 @@
             const targetEl = markerEls.find(el => el.textContent === (m.section ? `${m.section} - ${m.value}` : m.value.toString()));
             if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             document.getElementById('nav-info').textContent = `標記 ${index + 1} / ${markers.length}`;
+            document.getElementById('btn-delete-item').textContent = "🗑️ 刪除標記";
         }
 
         function navigateMarker(dir) {
-            let next = activeMarkerIndex + dir;
-            if (next >= 0 && next < markers.length) focusMarker(next);
+            if (systemMode) {
+                const systems = allPageData[currentPageNum].systems;
+                if (!systems || systems.length === 0) return;
+                let next = activeSystemIndex + dir;
+                if (next >= 0 && next < systems.length) focusSystem(currentPageNum, next);
+            } else {
+                let next = activeMarkerIndex + dir;
+                if (next >= 0 && next < markers.length) focusMarker(next);
+            }
         }
 
         function toggleAddMode() {
@@ -801,7 +740,10 @@
 
         function toggleSystemMode() {
             systemMode = !systemMode;
-            if (systemMode) addMode = false;
+            if (systemMode) {
+                addMode = false;
+                activeSystemIndex = -1;
+            }
             updateModeUI();
         }
 
@@ -862,7 +804,6 @@
                     saveState();
                 }
             } else if (addMode && phase === 'down' && (e.button === 0 || e.touches)) {
-                // Manual Add Marker Logic (Moved from onclick for stability)
                 if (dragTarget) return; 
                 addManualMarker(pageNum, x, y);
             }
@@ -882,16 +823,13 @@
             focusMarker(newIdx);
             saveState();
             
-            // Auto-predict next for the next click
             currentMeasure += step;
             updateNumDisplay();
         }
 
         function handleManualClick(e, pageNum) {
-            // This is now only for Shift+Click shortcut when NOT in addMode
             if (dragTarget || dragBox || systemMode || addMode) return;
             if (!e.shiftKey) return;
-
             const rect = e.currentTarget.getBoundingClientRect();
             let x = (e.clientX - rect.left) / rect.width, y = (e.clientY - rect.top) / rect.height;
             addManualMarker(pageNum, x, y);
@@ -911,21 +849,15 @@
 
         async function recalculatePage() {
             if (!confirm("確定要重新偵測並計算本頁的小節標記嗎？")) return;
-            
-            // 1. Determine starting measure for this page
-            // Find markers on PREVIOUS pages
             let prevMarkers = markers.filter(m => m.page < currentPageNum);
             let startMeasure = 1;
             let startSection = currentSection;
-
             if (prevMarkers.length > 0) {
                 prevMarkers.sort((a, b) => a.page !== b.page ? a.page - b.page : a.y - b.y);
                 const lastPrev = prevMarkers[prevMarkers.length - 1];
                 startMeasure = lastPrev.value + step;
                 startSection = lastPrev.section;
             } else {
-                // If it's the first page with markers, use the current input's first value
-                // Find if there's any marker on this page currently to get its original start value
                 let currentPageMarkers = markers.filter(m => m.page === currentPageNum);
                 if (currentPageMarkers.length > 0) {
                     currentPageMarkers.sort((a, b) => a.y - b.y);
@@ -936,25 +868,14 @@
                     startSection = currentSection;
                 }
             }
-
-            // 2. Clear current page markers
             markers = markers.filter(m => m.page !== currentPageNum);
-            
-            // 3. Re-generate markers based on EXISTING systems (which might have been manually adjusted)
             const systems = allPageData[currentPageNum].systems;
             if (systems && systems.length > 0) {
                 systems.forEach(s => {
-                    markers.push({ 
-                        page: currentPageNum, 
-                        x: 0.05, 
-                        y: (s.staffTop + s.staffBottom) / 2, 
-                        section: startSection, 
-                        value: startMeasure 
-                    });
+                    markers.push({ page: currentPageNum, x: 0.05, y: (s.staffTop + s.staffBottom) / 2, section: startSection, value: startMeasure });
                     startMeasure += step;
                 });
             } else {
-                // If no systems, maybe try re-detecting once
                 loadingOverlay.style.display = 'flex';
                 loadingText.textContent = `重新偵測第 ${currentPageNum} 頁譜表...`;
                 const page = await pdfDoc.getPage(currentPageNum);
@@ -962,46 +883,38 @@
                 const newSystems = await detectSystemsForPage(page, viewport);
                 allPageData[currentPageNum].systems = newSystems;
                 loadingOverlay.style.display = 'none';
-                
                 newSystems.forEach(s => {
-                    markers.push({ 
-                        page: currentPageNum, 
-                        x: 0.05, 
-                        y: (s.staffTop + s.staffBottom) / 2, 
-                        section: startSection, 
-                        value: startMeasure 
-                    });
+                    markers.push({ page: currentPageNum, x: 0.05, y: (s.staffTop + s.staffBottom) / 2, section: startSection, value: startMeasure });
                     startMeasure += step;
                 });
             }
-
-            // 4. Sort and Ripple
             markers.sort((a, b) => a.page !== b.page ? a.page - b.page : a.y - b.y);
-            
             const firstNewIndex = markers.findIndex(m => m.page === currentPageNum);
-            if (firstNewIndex >= 0) {
-                focusMarker(firstNewIndex);
-                rippleRecalculate(); // This will also handle markers on subsequent pages
-            } else {
-                for (let i = 1; i <= totalPages; i++) renderMarkersForPage(i);
-                updateNumDisplay();
-            }
-
+            if (firstNewIndex >= 0) { focusMarker(firstNewIndex); rippleRecalculate(); }
+            else { for (let i = 1; i <= totalPages; i++) renderMarkersForPage(i); updateNumDisplay(); }
             saveState();
-            document.getElementById('nav-info').textContent = markers.length > 0 ? `標記 ${activeMarkerIndex + 1} / ${markers.length}` : "無標記";
         }
 
         function deleteActiveMarker() {
+            if (systemMode) {
+                if (activeSystemIndex < 0) return;
+                const sys = allPageData[currentPageNum].systems;
+                if (!sys) return;
+                sys.splice(activeSystemIndex, 1);
+                activeSystemIndex = Math.min(activeSystemIndex, sys.length - 1);
+                renderSystemGuidesForPage(currentPageNum);
+                if (sys.length > 0) focusSystem(currentPageNum, activeSystemIndex);
+                else document.getElementById('nav-info').textContent = "本頁無譜表區塊";
+                saveState();
+                return;
+            }
             if (activeMarkerIndex < 0) return;
             const p = markers[activeMarkerIndex].page;
             markers.splice(activeMarkerIndex, 1);
             activeMarkerIndex = Math.min(activeMarkerIndex, markers.length - 1);
             renderMarkersForPage(p);
             if (markers.length > 0 && activeMarkerIndex >= 0) focusMarker(activeMarkerIndex);
-            else {
-                document.getElementById('nav-info').textContent = "無標記";
-                updateNumDisplay();
-            }
+            else { document.getElementById('nav-info').textContent = "無標記"; updateNumDisplay(); }
             saveState();
         }
 
@@ -1044,7 +957,7 @@
             updateNumDisplay(); saveState();
         }
 
-        let alignRange = 'single'; // 'single' | 'page' | 'all'
+        let alignRange = 'single'; 
 
         function setAlignRange(r) {
             alignRange = r;
@@ -1052,28 +965,16 @@
         }
 
         function shiftX(delta) {
-            // Use active marker page if focused, otherwise fall back to currently visible page
             const activePage = (activeMarkerIndex >= 0 && markers[activeMarkerIndex]) ? markers[activeMarkerIndex].page : currentPageNum;
-
             markers.forEach((m, idx) => {
                 let shouldMove = false;
                 if (alignRange === 'all') shouldMove = true;
                 else if (alignRange === 'page' && m.page === activePage) shouldMove = true;
                 else if (alignRange === 'single' && idx === activeMarkerIndex) shouldMove = true;
-
-                if (shouldMove) {
-                    m.x = Math.max(0, Math.min(1, m.x + delta));
-                }
+                if (shouldMove) m.x = Math.max(0, Math.min(1, m.x + delta));
             });
-
-            // Re-render all affected pages
             for(let i=1; i<=totalPages; i++) renderMarkersForPage(i);
-
-            // Update UI display
-            if (activeMarkerIndex >= 0) {
-                document.getElementById('x-display').textContent = Math.round(markers[activeMarkerIndex].x * 100) + '%';
-            }
-
+            if (activeMarkerIndex >= 0) document.getElementById('x-display').textContent = Math.round(markers[activeMarkerIndex].x * 100) + '%';
             saveState();
         }
 
@@ -1083,18 +984,13 @@
             const nextSecEl = document.getElementById('next-section-preview');
             const nextMeaEl = document.getElementById('next-measure-preview');
             const xDispEl = document.getElementById('x-display');
-
             if (sectionEl) sectionEl.textContent = currentSection || "-";
             if (measureEl) measureEl.textContent = currentMeasure;
             if (nextSecEl) nextSecEl.textContent = currentSection || "-";
             if (nextMeaEl) nextMeaEl.textContent = currentMeasure + step;
-            
             if (xDispEl) {
-                if (activeMarkerIndex >= 0 && markers[activeMarkerIndex]) {
-                    xDispEl.textContent = Math.round(markers[activeMarkerIndex].x * 100) + '%';
-                } else {
-                    xDispEl.textContent = "-";
-                }
+                if (activeMarkerIndex >= 0 && markers[activeMarkerIndex]) xDispEl.textContent = Math.round(markers[activeMarkerIndex].x * 100) + '%';
+                else xDispEl.textContent = "-";
             }
         }
 
@@ -1107,43 +1003,52 @@
 
         function initDrag(e, marker, el, pageNum, idx) {
             dragTarget = { marker, element: el, pageNum }; focusMarker(idx);
-            
             const layer = el.parentElement;
             if (!layer) return;
-            
             const onMove = (mv) => {
-                if (mv.touches && mv.touches.length > 0) {
-                    // Use preventDefault to stop scrolling while dragging
-                    mv.preventDefault();
-                }
-                
+                if (mv.touches && mv.touches.length > 0) mv.preventDefault();
                 const clientX = mv.touches ? mv.touches[0].clientX : mv.clientX;
                 const clientY = mv.touches ? mv.touches[0].clientY : mv.clientY;
-                
-                if (!layer) return;
                 const r = layer.getBoundingClientRect();
-                if (!r) return;
                 marker.x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
                 marker.y = Math.max(0, Math.min(1, (clientY - r.top) / r.height));
-                
-                el.style.left = (marker.x * 100) + '%'; 
-                el.style.top = (marker.y * 100) + '%';
+                el.style.left = (marker.x * 100) + '%'; el.style.top = (marker.y * 100) + '%';
             };
-
             const onEnd = () => {
-                document.removeEventListener('mousemove', onMove); 
-                document.removeEventListener('mouseup', onEnd);
-                document.removeEventListener('touchmove', onMove);
-                document.removeEventListener('touchend', onEnd);
-                
-                setTimeout(() => { dragTarget = null; }, 50); 
-                saveState();
+                document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
+                setTimeout(() => { dragTarget = null; }, 50); saveState();
             };
-
             document.addEventListener('mousemove', onMove, { passive: false });
             document.addEventListener('mouseup', onEnd);
             document.addEventListener('touchmove', onMove, { passive: false });
             document.addEventListener('touchend', onEnd);
+        }
+
+        function initSystemDrag(e, system, el, pageNum) {
+            const startY = e.clientY;
+            const initialStaffTop = system.staffTop;
+            const initialStaffBottom = system.staffBottom;
+            const initialTop = system.top;
+            const initialBottom = system.bottom;
+            const layer = el.parentElement;
+            const rect = layer.getBoundingClientRect();
+            const startYPercent = (startY - rect.top) / rect.height;
+            const onMove = (mv) => {
+                const currentY = mv.touches ? mv.touches[0].clientY : mv.clientY;
+                const currentYPercent = (currentY - rect.top) / rect.height;
+                const delta = currentYPercent - startYPercent;
+                system.staffTop = initialStaffTop + delta; system.staffBottom = initialStaffBottom + delta;
+                system.top = initialTop + delta; system.bottom = initialBottom + delta;
+                el.style.top = (system.staffTop * 100) + '%';
+            };
+            const onEnd = () => {
+                document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
+                saveState();
+            };
+            document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('touchend', onEnd);
         }
 
         async function exportPdf() {
