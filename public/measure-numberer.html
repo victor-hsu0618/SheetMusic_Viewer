@@ -419,7 +419,7 @@
         let pdfFingerprint = null;
         let scale = 1.3, markers = [], allPageData = [];
         let activeMarkerIndex = -1, activeField = 'measure';
-        let activeSystemIndex = -1; 
+        let activeSystemIndex = -1, activeSystemPage = -1; 
         let currentSection = "", currentMeasure = 1, step = 4, isNewInput = true, dragTarget = null;
         let addMode = false, systemMode = false, dragBox = null;
 
@@ -432,7 +432,7 @@
             if (e.key === 'Enter') { e.preventDefault(); navigateMarker(1); }
             else if ((e.key === 'Delete' || e.key === 'Backspace')) {
                 // Only delete if focused on a marker/system and not inputting
-                if (isNewInput && (activeMarkerIndex >= 0 || activeSystemIndex >= 0)) {
+                if (isNewInput && (activeMarkerIndex >= 0 || (activeSystemIndex >= 0 && activeSystemPage >= 0))) {
                     e.preventDefault(); deleteActiveMarker();
                 }
             }
@@ -479,6 +479,7 @@
                 allPageData = [];
                 activeMarkerIndex = -1;
                 activeSystemIndex = -1;
+                activeSystemPage = -1;
                 activeField = 'measure';
                 isNewInput = true;
                 addMode = false;
@@ -633,7 +634,7 @@
             layer.querySelectorAll('.system-guide, .sys-del-btn').forEach(el => el.remove());
             
             allPageData[pageNum].systems.forEach((s, idx) => {
-                const isActive = (systemMode && activeSystemIndex === idx && currentPageNum === pageNum);
+                const isActive = (systemMode && activeSystemIndex === idx && activeSystemPage === pageNum);
                 const guide = document.createElement('div');
                 guide.className = 'system-guide';
                 guide.style.top = (s.staffTop * 100) + '%';
@@ -651,7 +652,6 @@
                     if (!systemMode) return;
                     e.stopPropagation(); 
                     if (e.button === 0) {
-                        activeSystemIndex = idx;
                         focusSystem(pageNum, idx);
                         initSystemDrag(e, s, guide, pageNum);
                     }
@@ -660,7 +660,6 @@
                 guide.ontouchstart = (e) => {
                     if (!systemMode) return;
                     e.stopPropagation();
-                    activeSystemIndex = idx;
                     focusSystem(pageNum, idx);
                     initSystemDrag(e.touches[0], s, guide, pageNum);
                 };
@@ -673,10 +672,17 @@
 
         function focusSystem(pageNum, index) {
             activeSystemIndex = index;
+            activeSystemPage = pageNum;
+            activeMarkerIndex = -1;
             const systemsCount = allPageData[pageNum] ? allPageData[pageNum].systems.length : 0;
             document.getElementById('nav-info').textContent = `譜表區塊 ${index + 1} / ${systemsCount} (第 ${pageNum} 頁)`;
             document.getElementById('btn-delete-item').textContent = "🗑️ 刪除譜表區塊";
-            renderSystemGuidesForPage(pageNum);
+            for(let i=1; i<=totalPages; i++) {
+                if (i === pageNum || i === (pageNum === currentPageNum ? -1 : currentPageNum)) {
+                     renderSystemGuidesForPage(i);
+                     renderMarkersForPage(i);
+                }
+            }
         }
 
         function renderMarkersForPage(pageNum) {
@@ -708,10 +714,14 @@
             if (index < 0 || index >= markers.length) return;
             activeMarkerIndex = index;
             activeSystemIndex = -1;
+            activeSystemPage = -1;
             const m = markers[index];
             currentSection = m.section; currentMeasure = m.value;
             isNewInput = true; updateNumDisplay();
-            for(let i=1; i<=totalPages; i++) renderMarkersForPage(i);
+            for(let i=1; i<=totalPages; i++) {
+                renderMarkersForPage(i);
+                if (systemMode) renderSystemGuidesForPage(i);
+            }
             const container = document.getElementById(`page-container-${m.page}`);
             const markerEls = Array.from(container.querySelectorAll('.measure-marker'));
             const targetEl = markerEls.find(el => el.textContent === (m.section ? `${m.section} - ${m.value}` : m.value.toString()));
@@ -721,11 +731,12 @@
         }
 
         function navigateMarker(dir) {
-            if (systemMode) {
-                const systems = allPageData[currentPageNum].systems;
+            if (systemMode && activeSystemIndex >= 0 && activeSystemPage >= 0) {
+                const page = activeSystemPage;
+                const systems = allPageData[page].systems;
                 if (!systems || systems.length === 0) return;
                 let next = activeSystemIndex + dir;
-                if (next >= 0 && next < systems.length) focusSystem(currentPageNum, next);
+                if (next >= 0 && next < systems.length) focusSystem(page, next);
             } else {
                 let next = activeMarkerIndex + dir;
                 if (next >= 0 && next < markers.length) focusMarker(next);
@@ -743,6 +754,7 @@
             if (systemMode) {
                 addMode = false;
                 activeSystemIndex = -1;
+                activeSystemPage = -1;
             }
             updateModeUI();
         }
@@ -896,15 +908,19 @@
         }
 
         function deleteActiveMarker() {
-            if (systemMode) {
-                if (activeSystemIndex < 0) return;
-                const sys = allPageData[currentPageNum].systems;
+            if (systemMode && activeSystemIndex >= 0 && activeSystemPage >= 0) {
+                const sysPage = activeSystemPage;
+                const sys = allPageData[sysPage].systems;
                 if (!sys) return;
                 sys.splice(activeSystemIndex, 1);
                 activeSystemIndex = Math.min(activeSystemIndex, sys.length - 1);
-                renderSystemGuidesForPage(currentPageNum);
-                if (sys.length > 0) focusSystem(currentPageNum, activeSystemIndex);
-                else document.getElementById('nav-info').textContent = "本頁無譜表區塊";
+                renderSystemGuidesForPage(sysPage);
+                if (sys.length > 0) focusSystem(sysPage, activeSystemIndex);
+                else {
+                    activeSystemIndex = -1;
+                    activeSystemPage = -1;
+                    document.getElementById('nav-info').textContent = "本頁無譜表區塊";
+                }
                 saveState();
                 return;
             }
