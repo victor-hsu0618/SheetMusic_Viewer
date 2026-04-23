@@ -653,9 +653,6 @@
                     e.stopPropagation(); 
                     if (e.button === 0) {
                         initSystemDrag(e, s, guide, pageNum);
-                    } else if (e.button === 2) {
-                        // Ensure right click doesn't trigger anything on mousedown
-                        e.preventDefault();
                     }
                 };
 
@@ -665,26 +662,40 @@
                     initSystemDrag(e.touches[0], s, guide, pageNum);
                 };
 
-                // Right click to delete system (using addEventListener for better reliability)
-                guide.addEventListener('contextmenu', (e) => {
+                // Double click to delete
+                guide.ondblclick = (e) => {
                     if (!systemMode) return;
-                    e.preventDefault(); 
                     e.stopPropagation();
                     allPageData[pageNum].systems.splice(idx, 1);
                     renderSystemGuidesForPage(pageNum);
                     saveState();
-                    return false;
-                });
+                };
+
+                // Add a visible delete button on the right
+                if (systemMode) {
+                    const delBtn = document.createElement('div');
+                    delBtn.innerHTML = '×';
+                    delBtn.style.cssText = `
+                        position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+                        width: 24px; height: 24px; background: #ef4444; color: white;
+                        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                        font-weight: bold; font-size: 16px; cursor: pointer; pointer-events: auto;
+                        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4); z-index: 100;
+                    `;
+                    delBtn.onclick = (e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        allPageData[pageNum].systems.splice(idx, 1);
+                        renderSystemGuidesForPage(pageNum);
+                        saveState();
+                    };
+                    guide.appendChild(delBtn);
+                }
 
                 layer.appendChild(guide);
             });
 
-            // Also prevent context menu on the layer itself in systemMode to avoid leaks
-            if (systemMode) {
-                layer.oncontextmenu = (e) => { e.preventDefault(); return false; };
-            } else {
-                layer.oncontextmenu = null;
-            }
+            // Prevent context menu to avoid interference, but we don't rely on it anymore
+            layer.oncontextmenu = (e) => { if (systemMode) e.preventDefault(); };
         }
 
         function initSystemDrag(e, system, el, pageNum) {
