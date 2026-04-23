@@ -645,8 +645,20 @@
                 guide.style.height = ((s.staffBottom - s.staffTop) * 100) + '%';
                 guide.style.display = 'block';
                 guide.style.pointerEvents = systemMode ? 'auto' : 'none';
-                guide.style.cursor = systemMode ? 'not-allowed' : 'none';
+                guide.style.cursor = systemMode ? 'move' : 'none';
                 
+                // Drag to move system
+                guide.onmousedown = (e) => {
+                    if (!systemMode || e.button !== 0) return;
+                    e.stopPropagation();
+                    initSystemDrag(e, s, guide, pageNum);
+                };
+                guide.ontouchstart = (e) => {
+                    if (!systemMode) return;
+                    e.stopPropagation();
+                    initSystemDrag(e.touches[0], s, guide, pageNum);
+                };
+
                 // Right click to delete system
                 guide.oncontextmenu = (e) => {
                     if (!systemMode) return;
@@ -658,6 +670,45 @@
 
                 layer.appendChild(guide);
             });
+        }
+
+        function initSystemDrag(e, system, el, pageNum) {
+            const startY = e.clientY;
+            const initialStaffTop = system.staffTop;
+            const initialStaffBottom = system.staffBottom;
+            const initialTop = system.top;
+            const initialBottom = system.bottom;
+            
+            const layer = el.parentElement;
+            const rect = layer.getBoundingClientRect();
+            const startYPercent = (startY - rect.top) / rect.height;
+
+            const onMove = (mv) => {
+                const currentY = mv.touches ? mv.touches[0].clientY : mv.clientY;
+                const currentYPercent = (currentY - rect.top) / rect.height;
+                const delta = currentYPercent - startYPercent;
+
+                system.staffTop = initialStaffTop + delta;
+                system.staffBottom = initialStaffBottom + delta;
+                system.top = initialTop + delta;
+                system.bottom = initialBottom + delta;
+
+                el.style.top = (system.staffTop * 100) + '%';
+                // Height stays same
+            };
+
+            const onEnd = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+                saveState();
+            };
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
         }
 
         function renderMarkersForPage(pageNum) {
