@@ -809,72 +809,91 @@
             const btnSys = document.getElementById('btn-system-mode');
             
             btnAdd.style.background = addMode ? 'var(--primary)' : 'transparent';
-            btnAdd.style.color = addMode ? 'white' : 'var(--text)';
+            btnAdd.style.color = btnAdd.style.fill = addMode ? 'white' : 'var(--text)';
             
             btnSys.style.background = systemMode ? 'var(--primary)' : 'transparent';
-            btnSys.style.color = systemMode ? 'white' : 'var(--text)';
+            btnSys.style.color = btnSys.style.fill = systemMode ? 'white' : 'var(--text)';
             
             document.querySelectorAll('.interaction-layer').forEach(l => {
                 if (systemMode) l.style.cursor = 'ns-resize';
-                else if (addMode) l.style.cursor = 'copy';
-                else l.style.cursor = 'crosshair';
+                else if (addMode) l.style.cursor = 'crosshair';
+                else l.style.cursor = 'default';
             });
             
             for(let i=1; i<=totalPages; i++) renderSystemGuidesForPage(i);
         }
 
         function handleLayerInteraction(e, pageNum, phase) {
-            if (!systemMode) return;
             const rect = e.currentTarget.getBoundingClientRect();
-            const y = (e.clientY - rect.top) / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const x = (clientX - rect.left) / rect.width;
+            const y = (clientY - rect.top) / rect.height;
 
-            if (phase === 'down' && e.button === 0) {
-                dragBox = { startY: y, element: document.createElement('div') };
-                dragBox.element.className = 'system-guide';
-                dragBox.element.style.top = (y * 100) + '%';
-                dragBox.element.style.height = '0%';
-                dragBox.element.style.background = 'rgba(34, 211, 238, 0.4)';
-                dragBox.element.style.border = '2px dashed #22d3ee';
-                e.currentTarget.appendChild(dragBox.element);
-            } 
-            else if (phase === 'move' && dragBox) {
-                const top = Math.min(y, dragBox.startY);
-                const height = Math.abs(y - dragBox.startY);
-                dragBox.element.style.top = (top * 100) + '%';
-                dragBox.element.style.height = (height * 100) + '%';
-            } 
-            else if (phase === 'up' && dragBox) {
-                const top = Math.min(y, dragBox.startY);
-                const bottom = Math.max(y, dragBox.startY);
-                if (Math.abs(bottom - top) > 0.005) {
-                    allPageData[pageNum].systems.push({
-                        top: top, bottom: bottom, staffTop: top, staffBottom: bottom
-                    });
-                    allPageData[pageNum].systems.sort((a, b) => a.top - b.top);
+            if (systemMode) {
+                if (phase === 'down' && (e.button === 0 || e.touches)) {
+                    dragBox = { startY: y, element: document.createElement('div') };
+                    dragBox.element.className = 'system-guide';
+                    dragBox.element.style.top = (y * 100) + '%';
+                    dragBox.element.style.height = '0%';
+                    dragBox.element.style.background = 'rgba(34, 211, 238, 0.4)';
+                    dragBox.element.style.border = '2px dashed #22d3ee';
+                    e.currentTarget.appendChild(dragBox.element);
+                } 
+                else if (phase === 'move' && dragBox) {
+                    const top = Math.min(y, dragBox.startY);
+                    const height = Math.abs(y - dragBox.startY);
+                    dragBox.element.style.top = (top * 100) + '%';
+                    dragBox.element.style.height = (height * 100) + '%';
+                } 
+                else if (phase === 'up' && dragBox) {
+                    const top = Math.min(y, dragBox.startY);
+                    const bottom = Math.max(y, dragBox.startY);
+                    if (Math.abs(bottom - top) > 0.005) {
+                        allPageData[pageNum].systems.push({
+                            top: top, bottom: bottom, staffTop: top, staffBottom: bottom
+                        });
+                        allPageData[pageNum].systems.sort((a, b) => a.top - b.top);
+                    }
+                    dragBox.element.remove();
+                    dragBox = null;
+                    renderSystemGuidesForPage(pageNum);
+                    saveState();
                 }
-                dragBox.element.remove();
-                dragBox = null;
-                renderSystemGuidesForPage(pageNum);
-                saveState();
+            } else if (addMode && phase === 'down' && (e.button === 0 || e.touches)) {
+                // Manual Add Marker Logic (Moved from onclick for stability)
+                if (dragTarget) return; 
+                addManualMarker(pageNum, x, y);
             }
         }
 
+        function addManualMarker(pageNum, x, y) {
+            const data = allPageData[pageNum];
+            let finalY = y;
+            const closestSystem = data.systems.find(s => y >= s.top && y <= s.bottom);
+            if (closestSystem) finalY = (closestSystem.staffTop + closestSystem.staffBottom) / 2;
+            
+            markers.push({ page: pageNum, x, y: finalY, section: currentSection, value: currentMeasure });
+            markers.sort((a, b) => a.page !== b.page ? a.page - b.page : a.y - b.y);
+            renderMarkersForPage(pageNum);
+            
+            const newIdx = markers.findIndex(m => m.page === pageNum && m.y === finalY && m.x === x);
+            focusMarker(newIdx);
+            saveState();
+            
+            // Auto-predict next for the next click
+            currentMeasure += step;
+            updateNumDisplay();
+        }
+
         function handleManualClick(e, pageNum) {
-            if (dragTarget || dragBox || systemMode) return;
-            if (!e.shiftKey && !addMode) return;
+            // This is now only for Shift+Click shortcut when NOT in addMode
+            if (dragTarget || dragBox || systemMode || addMode) return;
+            if (!e.shiftKey) return;
 
             const rect = e.currentTarget.getBoundingClientRect();
             let x = (e.clientX - rect.left) / rect.width, y = (e.clientY - rect.top) / rect.height;
-            const data = allPageData[pageNum];
-            const closestSystem = data.systems.find(s => y >= s.top && y <= s.bottom);
-            if (closestSystem) y = (closestSystem.staffTop + closestSystem.staffBottom) / 2;
-            
-            markers.push({ page: pageNum, x, y, section: currentSection, value: currentMeasure });
-            markers.sort((a, b) => a.page !== b.page ? a.page - b.page : a.y - b.y);
-            renderMarkersForPage(pageNum);
-            focusMarker(markers.findIndex(m => m.page === pageNum && m.y === y && m.x === x));
-            saveState();
-            if (addMode) toggleAddMode();
+            addManualMarker(pageNum, x, y);
         }
 
         function rippleRecalculate() {
