@@ -243,13 +243,20 @@
                 <!-- Navigation -->
                 <div class="s-section">
                     <div class="s-title">巡檢與導航</div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 40px; gap:8px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 40px 40px; gap:8px;">
                         <button class="btn btn-outline" onclick="navigateMarker(-1)" style="padding:8px 2px; font-size:11px;">上一個</button>
                         <button class="btn btn-outline" onclick="navigateMarker(1)" style="padding:8px 2px; font-size:11px;">下一個</button>
                         <button id="btn-add-mode" class="btn btn-outline" onclick="toggleAddMode()" title="臨時手動新增標記" style="padding:0;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button id="btn-system-mode" class="btn btn-outline" onclick="toggleSystemMode()" title="手動編輯譜表區塊 (拖曳新增/右鍵刪除)" style="padding:0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <rect x="3" y="5" width="18" height="14" rx="2" ry="2"></rect>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                                <line x1="3" y1="14" x2="21" y2="14"></line>
                             </svg>
                         </button>
                     </div>
@@ -401,7 +408,8 @@
         let pdfFingerprint = null;
         let scale = 1.3, markers = [], allPageData = [];
         let activeMarkerIndex = -1, activeField = 'measure';
-        let currentSection = "", currentMeasure = 1, step = 4, isNewInput = true, dragTarget = null, addMode = false;
+        let currentSection = "", currentMeasure = 1, step = 4, isNewInput = true, dragTarget = null;
+        let addMode = false, systemMode = false, dragBox = null;
 
         const viewerContainer = document.getElementById('viewer-container');
         const dropZone = document.getElementById('drop-zone');
@@ -423,7 +431,9 @@
 
         function saveState() {
             if (!pdfDoc || !pdfFingerprint) return;
-            const data = { markers, currentSection, currentMeasure, step, activeMarkerIndex };
+            // Also save systems if they were modified/manually added
+            const systemsData = allPageData.map(p => p ? p.systems : []);
+            const data = { markers, currentSection, currentMeasure, step, activeMarkerIndex, systemsData };
             localStorage.setItem(getStorageKey(), JSON.stringify(data));
         }
 
@@ -437,7 +447,8 @@
                     currentSection = data.currentSection || "";
                     currentMeasure = data.currentMeasure || 1;
                     step = data.step || 4;
-                    return true;
+                    // Note: allPageData will be rebuilt, we'll restore systemsData later in renderAllPages
+                    return { markers, currentSection, currentMeasure, step, systemsData: data.systemsData };
                 } catch (e) { console.error(e); }
             }
             return false;
@@ -459,6 +470,7 @@
                 activeField = 'measure';
                 isNewInput = true;
                 addMode = false;
+                systemMode = false;
                 dragTarget = null;
                 viewerContainer.innerHTML = '';
                 
@@ -490,11 +502,12 @@
                 document.getElementById('page-controls').style.display = 'flex';
                 document.getElementById('page-counter').textContent = `1 / ${totalPages}`;
                 
-                if (loadState()) {
+                const savedData = loadState();
+                if (savedData) {
                     loadingOverlay.style.display = 'none';
                     if (confirm(`發現進度，是否載入？`)) { 
                         updateNumDisplay(); 
-                        await renderAllPages(false); 
+                        await renderAllPages(false, savedData.systemsData); 
                     }
                     else { 
                         currentMeasure = 1; currentSection = ""; 
@@ -541,7 +554,7 @@
             }
         });
 
-        async function renderAllPages(autoGen = true) {
+        async function renderAllPages(autoGen = true, restoredSystemsData = null) {
             loadingOverlay.style.display = 'flex';
             viewerContainer.innerHTML = '';
             allPageData = [];
@@ -565,7 +578,14 @@
                 container.appendChild(layer);
                 viewerContainer.appendChild(container);
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-                const systems = await detectSystemsForPage(page, viewport);
+                
+                let systems = [];
+                if (restoredSystemsData && restoredSystemsData[i]) {
+                    systems = restoredSystemsData[i];
+                } else {
+                    systems = await detectSystemsForPage(page, viewport);
+                }
+                
                 allPageData[i] = { width: viewport.width, height: viewport.height, systems };
                 
                 if (autoGen) {
@@ -575,7 +595,11 @@
                     });
                 }
 
-                layer.addEventListener('click', (e) => handleManualClick(e, i));
+                layer.onmousedown = (e) => handleLayerInteraction(e, i, 'down');
+                layer.onmousemove = (e) => handleLayerInteraction(e, i, 'move');
+                layer.onmouseup = (e) => handleLayerInteraction(e, i, 'up');
+                layer.onclick = (e) => handleManualClick(e, i);
+
                 renderSystemGuidesForPage(i);
                 renderMarkersForPage(i);
             }
@@ -602,12 +626,25 @@
 
         function renderSystemGuidesForPage(pageNum) {
             const layer = document.getElementById(`page-container-${pageNum}`).querySelector('.interaction-layer');
-            allPageData[pageNum].systems.forEach(s => {
+            layer.querySelectorAll('.system-guide').forEach(g => g.remove());
+            allPageData[pageNum].systems.forEach((s, idx) => {
                 const guide = document.createElement('div');
                 guide.className = 'system-guide';
                 guide.style.top = (s.staffTop * 100) + '%';
                 guide.style.height = ((s.staffBottom - s.staffTop) * 100) + '%';
                 guide.style.display = 'block';
+                guide.style.pointerEvents = systemMode ? 'auto' : 'none';
+                guide.style.cursor = systemMode ? 'not-allowed' : 'none';
+                
+                // Right click to delete system
+                guide.oncontextmenu = (e) => {
+                    if (!systemMode) return;
+                    e.preventDefault(); e.stopPropagation();
+                    allPageData[pageNum].systems.splice(idx, 1);
+                    renderSystemGuidesForPage(pageNum);
+                    saveState();
+                };
+
                 layer.appendChild(guide);
             });
         }
@@ -659,16 +696,73 @@
 
         function toggleAddMode() {
             addMode = !addMode;
-            const btn = document.getElementById('btn-add-mode');
-            btn.style.background = addMode ? 'var(--primary)' : 'transparent';
-            btn.style.color = addMode ? 'white' : 'var(--text)';
+            if (addMode) systemMode = false;
+            updateModeUI();
+        }
+
+        function toggleSystemMode() {
+            systemMode = !systemMode;
+            if (systemMode) addMode = false;
+            updateModeUI();
+        }
+
+        function updateModeUI() {
+            const btnAdd = document.getElementById('btn-add-mode');
+            const btnSys = document.getElementById('btn-system-mode');
+            
+            btnAdd.style.background = addMode ? 'var(--primary)' : 'transparent';
+            btnAdd.style.color = addMode ? 'white' : 'var(--text)';
+            
+            btnSys.style.background = systemMode ? 'var(--primary)' : 'transparent';
+            btnSys.style.color = systemMode ? 'white' : 'var(--text)';
+            
             document.querySelectorAll('.interaction-layer').forEach(l => {
-                l.style.cursor = addMode ? 'copy' : 'crosshair';
+                if (systemMode) l.style.cursor = 'ns-resize';
+                else if (addMode) l.style.cursor = 'copy';
+                else l.style.cursor = 'crosshair';
             });
+            
+            for(let i=1; i<=totalPages; i++) renderSystemGuidesForPage(i);
+        }
+
+        function handleLayerInteraction(e, pageNum, phase) {
+            if (!systemMode) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const y = (e.clientY - rect.top) / rect.height;
+
+            if (phase === 'down' && e.button === 0) {
+                dragBox = { startY: y, element: document.createElement('div') };
+                dragBox.element.className = 'system-guide';
+                dragBox.element.style.top = (y * 100) + '%';
+                dragBox.element.style.height = '0%';
+                dragBox.element.style.background = 'rgba(34, 211, 238, 0.4)';
+                dragBox.element.style.border = '2px dashed #22d3ee';
+                e.currentTarget.appendChild(dragBox.element);
+            } 
+            else if (phase === 'move' && dragBox) {
+                const top = Math.min(y, dragBox.startY);
+                const height = Math.abs(y - dragBox.startY);
+                dragBox.element.style.top = (top * 100) + '%';
+                dragBox.element.style.height = (height * 100) + '%';
+            } 
+            else if (phase === 'up' && dragBox) {
+                const top = Math.min(y, dragBox.startY);
+                const bottom = Math.max(y, dragBox.startY);
+                if (Math.abs(bottom - top) > 0.005) {
+                    allPageData[pageNum].systems.push({
+                        top: top, bottom: bottom, staffTop: top, staffBottom: bottom
+                    });
+                    allPageData[pageNum].systems.sort((a, b) => a.top - b.top);
+                }
+                dragBox.element.remove();
+                dragBox = null;
+                renderSystemGuidesForPage(pageNum);
+                saveState();
+            }
         }
 
         function handleManualClick(e, pageNum) {
-            if (dragTarget) return;
+            if (dragTarget || dragBox || systemMode) return;
             if (!e.shiftKey && !addMode) return;
 
             const rect = e.currentTarget.getBoundingClientRect();
