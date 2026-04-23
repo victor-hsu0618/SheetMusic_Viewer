@@ -323,8 +323,8 @@
                             <button class="btn btn-outline" onclick="deleteActiveMarker()" style="color:var(--danger); border-color:rgba(239, 68, 68, 0.3); background:rgba(239, 68, 68, 0.05);">
                                 🗑️ 刪除標記
                             </button>
-                            <button class="btn btn-outline" onclick="clearPageMarkers()" style="font-size:11px; opacity:0.8;">
-                                💥 清空本頁
+                            <button class="btn btn-outline" onclick="recalculatePage()" style="font-size:11px; opacity:0.8;">
+                                🔄 重新計算本頁
                             </button>
                         </div>
                     </div>
@@ -649,9 +649,11 @@
                 
                 // Drag to move system
                 guide.onmousedown = (e) => {
-                    if (!systemMode || e.button !== 0) return;
-                    e.stopPropagation();
-                    initSystemDrag(e, s, guide, pageNum);
+                    if (!systemMode) return;
+                    e.stopPropagation(); // Stop bubbling for all buttons
+                    if (e.button === 0) {
+                        initSystemDrag(e, s, guide, pageNum);
+                    }
                 };
                 guide.ontouchstart = (e) => {
                     if (!systemMode) return;
@@ -662,7 +664,8 @@
                 // Right click to delete system
                 guide.oncontextmenu = (e) => {
                     if (!systemMode) return;
-                    e.preventDefault(); e.stopPropagation();
+                    e.preventDefault(); 
+                    e.stopPropagation();
                     allPageData[pageNum].systems.splice(idx, 1);
                     renderSystemGuidesForPage(pageNum);
                     saveState();
@@ -853,6 +856,88 @@
             updateNumDisplay(); saveState();
         }
 
+        async function recalculatePage() {
+            if (!confirm("確定要重新偵測並計算本頁的小節標記嗎？")) return;
+            
+            // 1. Determine starting measure for this page
+            // Find markers on PREVIOUS pages
+            let prevMarkers = markers.filter(m => m.page < currentPageNum);
+            let startMeasure = 1;
+            let startSection = currentSection;
+
+            if (prevMarkers.length > 0) {
+                prevMarkers.sort((a, b) => a.page !== b.page ? a.page - b.page : a.y - b.y);
+                const lastPrev = prevMarkers[prevMarkers.length - 1];
+                startMeasure = lastPrev.value + step;
+                startSection = lastPrev.section;
+            } else {
+                // If it's the first page with markers, use the current input's first value
+                // Find if there's any marker on this page currently to get its original start value
+                let currentPageMarkers = markers.filter(m => m.page === currentPageNum);
+                if (currentPageMarkers.length > 0) {
+                    currentPageMarkers.sort((a, b) => a.y - b.y);
+                    startMeasure = currentPageMarkers[0].value;
+                    startSection = currentPageMarkers[0].section;
+                } else {
+                    startMeasure = currentMeasure;
+                    startSection = currentSection;
+                }
+            }
+
+            // 2. Clear current page markers
+            markers = markers.filter(m => m.page !== currentPageNum);
+            
+            // 3. Re-generate markers based on EXISTING systems (which might have been manually adjusted)
+            const systems = allPageData[currentPageNum].systems;
+            if (systems && systems.length > 0) {
+                systems.forEach(s => {
+                    markers.push({ 
+                        page: currentPageNum, 
+                        x: 0.05, 
+                        y: (s.staffTop + s.staffBottom) / 2, 
+                        section: startSection, 
+                        value: startMeasure 
+                    });
+                    startMeasure += step;
+                });
+            } else {
+                // If no systems, maybe try re-detecting once
+                loadingOverlay.style.display = 'flex';
+                loadingText.textContent = `重新偵測第 ${currentPageNum} 頁譜表...`;
+                const page = await pdfDoc.getPage(currentPageNum);
+                const viewport = page.getViewport({ scale });
+                const newSystems = await detectSystemsForPage(page, viewport);
+                allPageData[currentPageNum].systems = newSystems;
+                loadingOverlay.style.display = 'none';
+                
+                newSystems.forEach(s => {
+                    markers.push({ 
+                        page: currentPageNum, 
+                        x: 0.05, 
+                        y: (s.staffTop + s.staffBottom) / 2, 
+                        section: startSection, 
+                        value: startMeasure 
+                    });
+                    startMeasure += step;
+                });
+            }
+
+            // 4. Sort and Ripple
+            markers.sort((a, b) => a.page !== b.page ? a.page - b.page : a.y - b.y);
+            
+            const firstNewIndex = markers.findIndex(m => m.page === currentPageNum);
+            if (firstNewIndex >= 0) {
+                focusMarker(firstNewIndex);
+                rippleRecalculate(); // This will also handle markers on subsequent pages
+            } else {
+                for (let i = 1; i <= totalPages; i++) renderMarkersForPage(i);
+                updateNumDisplay();
+            }
+
+            saveState();
+            document.getElementById('nav-info').textContent = markers.length > 0 ? `標記 ${activeMarkerIndex + 1} / ${markers.length}` : "無標記";
+        }
+
         function deleteActiveMarker() {
             if (activeMarkerIndex < 0) return;
             const p = markers[activeMarkerIndex].page;
@@ -865,16 +950,6 @@
                 updateNumDisplay();
             }
             saveState();
-        }
-
-        function clearPageMarkers() {
-            if (!confirm("確定要刪除本頁所有小節標記嗎？")) return;
-            markers = markers.filter(m => m.page !== currentPageNum);
-            activeMarkerIndex = -1;
-            renderMarkersForPage(currentPageNum);
-            updateNumDisplay();
-            saveState();
-            document.getElementById('nav-info').textContent = markers.length > 0 ? `標記 - / ${markers.length}` : "無標記";
         }
 
         function setActiveField(field) {
