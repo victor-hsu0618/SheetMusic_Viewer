@@ -314,9 +314,20 @@
                     </div>
 
                     <!-- 4. Confirm Button -->
-                    <button class="btn btn-primary" id="btn-confirm-next" onclick="navigateMarker(1)" style="margin-top:5px; height:56px; font-size:18px; background:var(--success); box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); border: 2px solid rgba(255,255,255,0.2);">
-                        ✅ 確認並跳轉
-                    </button>
+                    <div style="display:flex; flex-direction:column; gap:8px; margin-top:5px;">
+                        <button class="btn btn-primary" id="btn-confirm-next" onclick="navigateMarker(1)" style="height:56px; font-size:18px; background:var(--success); box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); border: 2px solid rgba(255,255,255,0.2);">
+                            ✅ 確認並跳轉
+                        </button>
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                            <button class="btn btn-outline" onclick="deleteActiveMarker()" style="color:var(--danger); border-color:rgba(239, 68, 68, 0.3); background:rgba(239, 68, 68, 0.05);">
+                                🗑️ 刪除標記
+                            </button>
+                            <button class="btn btn-outline" onclick="clearPageMarkers()" style="font-size:11px; opacity:0.8;">
+                                💥 清空本頁
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- Keypad -->
                     <div class="keypad-grid" style="margin-top:5px;">
@@ -797,8 +808,22 @@
             markers.splice(activeMarkerIndex, 1);
             activeMarkerIndex = Math.min(activeMarkerIndex, markers.length - 1);
             renderMarkersForPage(p);
-            if (markers.length > 0) focusMarker(activeMarkerIndex);
+            if (markers.length > 0 && activeMarkerIndex >= 0) focusMarker(activeMarkerIndex);
+            else {
+                document.getElementById('nav-info').textContent = "無標記";
+                updateNumDisplay();
+            }
             saveState();
+        }
+
+        function clearPageMarkers() {
+            if (!confirm("確定要刪除本頁所有小節標記嗎？")) return;
+            markers = markers.filter(m => m.page !== currentPageNum);
+            activeMarkerIndex = -1;
+            renderMarkersForPage(currentPageNum);
+            updateNumDisplay();
+            saveState();
+            document.getElementById('nav-info').textContent = markers.length > 0 ? `標記 - / ${markers.length}` : "無標記";
         }
 
         function setActiveField(field) {
