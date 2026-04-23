@@ -647,11 +647,18 @@
                 guide.style.pointerEvents = systemMode ? 'auto' : 'none';
                 guide.style.cursor = systemMode ? 'move' : 'none';
                 
+                // Visual enhancement for the guide itself
+                guide.style.background = systemMode ? 'rgba(34, 211, 238, 0.25)' : 'rgba(34, 211, 238, 0.1)';
+                guide.style.borderTop = systemMode ? '2px solid rgba(34, 211, 238, 0.5)' : '1px solid rgba(34, 211, 238, 0.3)';
+                guide.style.borderBottom = systemMode ? '2px solid rgba(34, 211, 238, 0.5)' : '1px solid rgba(34, 211, 238, 0.3)';
+
                 // Drag to move system
                 guide.onmousedown = (e) => {
                     if (!systemMode) return;
                     e.stopPropagation(); 
                     if (e.button === 0) {
+                        // Only drag if not clicking the delete button
+                        if (e.target.classList.contains('sys-del-btn')) return;
                         initSystemDrag(e, s, guide, pageNum);
                     }
                 };
@@ -659,6 +666,7 @@
                 guide.ontouchstart = (e) => {
                     if (!systemMode) return;
                     e.stopPropagation();
+                    if (e.target.classList.contains('sys-del-btn')) return;
                     initSystemDrag(e.touches[0], s, guide, pageNum);
                 };
 
@@ -674,13 +682,15 @@
                 // Add a visible delete button on the right
                 if (systemMode) {
                     const delBtn = document.createElement('div');
+                    delBtn.className = 'sys-del-btn';
                     delBtn.innerHTML = '×';
                     delBtn.style.cssText = `
-                        position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-                        width: 24px; height: 24px; background: #ef4444; color: white;
+                        position: absolute; right: -12px; top: -12px;
+                        width: 26px; height: 26px; background: #ff4d4f; color: white;
                         border-radius: 50%; display: flex; align-items: center; justify-content: center;
-                        font-weight: bold; font-size: 16px; cursor: pointer; pointer-events: auto;
-                        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4); z-index: 100;
+                        font-weight: 900; font-size: 18px; cursor: pointer; pointer-events: auto;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 200;
+                        border: 2px solid white; line-height: 1;
                     `;
                     delBtn.onclick = (e) => {
                         e.preventDefault(); e.stopPropagation();
