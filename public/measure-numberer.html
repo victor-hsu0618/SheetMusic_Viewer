@@ -637,7 +637,9 @@
 
         function renderSystemGuidesForPage(pageNum) {
             const layer = document.getElementById(`page-container-${pageNum}`).querySelector('.interaction-layer');
-            layer.querySelectorAll('.system-guide').forEach(g => g.remove());
+            // Clear both guides and buttons
+            layer.querySelectorAll('.system-guide, .sys-del-btn').forEach(el => el.remove());
+            
             allPageData[pageNum].systems.forEach((s, idx) => {
                 const guide = document.createElement('div');
                 guide.className = 'system-guide';
@@ -658,8 +660,6 @@
                     if (!systemMode) return;
                     e.stopPropagation(); 
                     if (e.button === 0) {
-                        // Only drag if not clicking the delete button (class check)
-                        if (e.target.closest('.sys-del-btn')) return;
                         initSystemDrag(e, s, guide, pageNum);
                     }
                 };
@@ -667,7 +667,6 @@
                 guide.ontouchstart = (e) => {
                     if (!systemMode) return;
                     e.stopPropagation();
-                    if (e.target.closest('.sys-del-btn')) return;
                     initSystemDrag(e.touches[0], s, guide, pageNum);
                 };
 
@@ -680,18 +679,19 @@
                     saveState();
                 };
 
-                // Add a visible delete button on the right
+                // Add a visible delete button on the right (Attach to LAYER, not guide)
                 if (systemMode) {
                     const delBtn = document.createElement('div');
                     delBtn.className = 'sys-del-btn';
                     delBtn.innerHTML = '×';
                     delBtn.style.cssText = `
-                        position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-                        width: 28px; height: 28px; background: #ff4d4f; color: white;
-                        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                        position: absolute; right: 20px; top: ${(s.staffTop + s.staffBottom) / 2 * 100}%;
+                        transform: translateY(-50%); width: 30px; height: 30px; 
+                        background: #ff4d4f; color: white; border-radius: 50%; 
+                        display: flex; align-items: center; justify-content: center;
                         font-weight: 900; font-size: 20px; cursor: pointer; pointer-events: auto;
                         box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 4px 12px rgba(0, 0, 0, 0.4); 
-                        z-index: 1001; border: 2.5px solid white; line-height: 1;
+                        z-index: 2000; border: 2.5px solid white; line-height: 1;
                     `;
                     delBtn.onclick = (e) => {
                         e.preventDefault(); e.stopPropagation();
@@ -699,13 +699,13 @@
                         renderSystemGuidesForPage(pageNum);
                         saveState();
                     };
-                    guide.appendChild(delBtn);
+                    layer.appendChild(delBtn);
                 }
 
                 layer.appendChild(guide);
             });
 
-            // Prevent context menu to avoid interference, but we don't rely on it anymore
+            // Prevent context menu to avoid interference
             layer.oncontextmenu = (e) => { if (systemMode) e.preventDefault(); };
         }
 
