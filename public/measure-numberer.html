@@ -650,29 +650,41 @@
                 // Drag to move system
                 guide.onmousedown = (e) => {
                     if (!systemMode) return;
-                    e.stopPropagation(); // Stop bubbling for all buttons
+                    e.stopPropagation(); 
                     if (e.button === 0) {
                         initSystemDrag(e, s, guide, pageNum);
+                    } else if (e.button === 2) {
+                        // Ensure right click doesn't trigger anything on mousedown
+                        e.preventDefault();
                     }
                 };
+
                 guide.ontouchstart = (e) => {
                     if (!systemMode) return;
                     e.stopPropagation();
                     initSystemDrag(e.touches[0], s, guide, pageNum);
                 };
 
-                // Right click to delete system
-                guide.oncontextmenu = (e) => {
+                // Right click to delete system (using addEventListener for better reliability)
+                guide.addEventListener('contextmenu', (e) => {
                     if (!systemMode) return;
                     e.preventDefault(); 
                     e.stopPropagation();
                     allPageData[pageNum].systems.splice(idx, 1);
                     renderSystemGuidesForPage(pageNum);
                     saveState();
-                };
+                    return false;
+                });
 
                 layer.appendChild(guide);
             });
+
+            // Also prevent context menu on the layer itself in systemMode to avoid leaks
+            if (systemMode) {
+                layer.oncontextmenu = (e) => { e.preventDefault(); return false; };
+            } else {
+                layer.oncontextmenu = null;
+            }
         }
 
         function initSystemDrag(e, system, el, pageNum) {
