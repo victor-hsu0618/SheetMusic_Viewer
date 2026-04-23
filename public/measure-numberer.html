@@ -377,6 +377,13 @@
                     }
                     .btn-range.active { background: var(--primary); color: white; }
                 </style>
+                <!-- Danger Zone -->
+                <div class="s-section" style="margin-top:20px; border-top:1px solid rgba(239, 68, 68, 0.2); padding-top:15px;">
+                    <div class="s-title" style="color:var(--danger);">危險區域</div>
+                    <button class="btn btn-outline" onclick="clearAllData()" style="width:100%; color:var(--danger); border-color:var(--danger); background:rgba(239, 68, 68, 0.05); font-weight:800;">
+                        💥 徹底清空所有資料
+                    </button>
+                </div>
             </div>
         </aside>
 
@@ -932,6 +939,33 @@
             if (markers.length > 0 && activeMarkerIndex >= 0) focusMarker(activeMarkerIndex);
             else { document.getElementById('nav-info').textContent = "無標記"; updateNumDisplay(); }
             saveState();
+        }
+
+        async function clearAllData() {
+            if (!pdfFingerprint) return;
+            if (!confirm("⚠️ 警告：確定要徹底刪除本樂譜的所有小節標記與譜表偵測資料嗎？這項動作將無法還原。")) return;
+            
+            // 1. Clear state
+            markers = [];
+            allPageData.forEach(p => {
+                if (p) p.systems = [];
+            });
+            activeMarkerIndex = -1;
+            activeSystemIndex = -1;
+            activeSystemPage = -1;
+            
+            // 2. Remove from LocalStorage
+            localStorage.removeItem(getStorageKey());
+            
+            // 3. UI Update
+            for(let i=1; i<=totalPages; i++) {
+                renderMarkersForPage(i);
+                renderSystemGuidesForPage(i);
+            }
+            
+            updateNumDisplay();
+            document.getElementById('nav-info').textContent = "無標記";
+            alert("✅ 所有資料已從資料庫清空。");
         }
 
         function setActiveField(field) {
